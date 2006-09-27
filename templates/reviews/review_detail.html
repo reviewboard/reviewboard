@@ -10,7 +10,7 @@
  <tr>
   <td class="label"><label for="submitter">Submitter:</label></td>
   <td class="value" id="submitter"><a href="{{object.submitter.get_absolute_url}}">{{object.submitter}}</a></td>
-  <td id="status">{{object.status}}</td>
+  <td id="status">{{object.get_status_display}}</td>
  </tr>
  <tr>
   <td class="label"><label for="branch">Branch:</label></td>
