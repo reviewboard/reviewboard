@@ -56,6 +56,9 @@ class ReviewRequest(models.Model):
                                            related_name="target_people",
                                            core=False, blank=True)
 
+    def get_bug_list(self):
+        return self.bugs_closed.split(',')
+
     def get_absolute_url(self):
         return "/reviews/%s/" % self.id
 
@@ -63,4 +66,7 @@ class ReviewRequest(models.Model):
         return self.summary
 
     class Admin:
-        pass
+        list_display = ('summary', 'submitter', 'status', 'last_updated')
+
+    class Meta:
+        ordering = ['status', 'last_updated', 'submitter', 'summary']
