@@ -11,8 +11,10 @@ urlpatterns = patterns('',
     (r'images/(.*)$', 'django.views.static.serve',
      {'document_root': HTDOC_URL + '/images'}),
 
-    (r'^$', 'django.views.generic.simple.direct_to_template',
-     {'template': 'frontpage.html'}),
+    (r'^$', 'django.views.generic.list_detail.object_list',
+     {'queryset':
+      ReviewRequest.objects.filter(status='P').order_by('last_updated')[:25],
+      'template_name': 'frontpage.html'}),
 
     (r'reviews/$', 'django.views.generic.list_detail.object_list',
      {'queryset': ReviewRequest.objects.all(),

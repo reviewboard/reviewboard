@@ -1,0 +1,20 @@
+{% block reviewlist %}
+{% if object_list %}
+<table class="list">
+ <tr>
+  <th>Summary</th>
+  <th>Submitter</th>
+  <th>Last Updated</th>
+ </tr>
+{%  for review in object_list %}
+ <tr class="{% cycle odd,even %}">
+  <td><a href="{{review.get_absolute_url}}">{{review}}</a></td>
+  <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
+  <td>{{review.last_updated}}</td>
+ </tr>
+{%  endfor %}
+</ul>
+{% else %}
+<p>No pending reviews.</p>
+{% endif %}
+{% endblock %}

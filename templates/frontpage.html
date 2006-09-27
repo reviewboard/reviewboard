@@ -2,10 +2,8 @@
 {% block title %}Welcome{% endblock %}
 
 {% block content %}
-<p>This is temporary.</p>
-<ul>
- <li><a href="/reviews/">All reviews</a></li>
- <li><a href="/groups/">All groups</a></li>
- <li><a href="/submitters/">All submitters</a></li>
-</ul>
+<h1>Last 25 pending review requests</h1>
+
+{% include "reviews/review_list_base.html" %}
+
 {% endblock %}
