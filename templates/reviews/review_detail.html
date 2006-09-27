@@ -37,11 +37,16 @@
   </td>
  </tr>
 {% endifnotequal %}
+{% if object.bugs_closed %}
  <tr>
   <td class="label"><label for="bugs">Bugs Closed:</label></td>
   <td class="value" id="bugs" colspan="2">
-  {{object.bugs_closed}}</td>
+{%  for bug in object.get_bug_list %}
+   <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </td>
  </tr>
+{% endif %}
  <tr>
   <td class="vertlabel" colspan="3"><label for="description">Description:</label></td>
  </tr>
