@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 class Group(models.Model):
@@ -15,9 +16,6 @@ class Group(models.Model):
 
 class Person(models.Model):
     username = models.CharField("Username", maxlength=30, core=True)
-
-    def email_address(self):
-        return "%s@vmware.com" % self.username
 
     def get_absolute_url(self):
         return "/submitters/%s/" % self.username

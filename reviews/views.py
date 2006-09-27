@@ -14,7 +14,8 @@ def group(request, name, template_name, paginate_by=25, allow_empty=True):
 
 def submitter(request, username, template_name, paginate_by=25, allow_empty=True):
     return object_list(request,
-        queryset=ReviewRequest.objects.filter(submitter__username__exact=username),
+        queryset=ReviewRequest.objects.filter(
+            submitter__username__exact=username),
         paginate_by=paginate_by,
         allow_empty=allow_empty,
         template_name=template_name,
