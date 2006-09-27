@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}All submitters{% endblock %}
+
+{% block content %}
+<h1>All submitters</h1>
+
+{% if object_list %}
+<table class="list">
+ <tr>
+  <th>Name</th>
+  <th>Pending Reviews</th>
+ </tr>
+{%  for submitter in object_list %}
+ <tr class="{% cycle odd,even %}">
+  <td><a href="{{submitter.get_absolute_url}}">{{submitter}}</a></td>
+  <td>{{submitter.reviewrequest_set.count}}</a></td>
+ </tr>
+{%  endfor %}
+</ul>
+{% else %}
+<p>No submitters.</p>
+{% endif %}
+
+{% endblock %}

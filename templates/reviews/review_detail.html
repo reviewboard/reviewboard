@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Review Request | {{object}}{% endblock %}
+
+{% block content %}
+<table id="review-details">
+ <tr>
+  <td id="summary" colspan="2">{{object.summary}}</td>
+  <td id="updated_time">Last updated {{object.last_updated|timesince}} ago</td>
+ </tr>
+ <tr>
+  <td class="label"><label for="submitter">Submitter:</label></td>
+  <td class="value" id="submitter"><a href="{{object.submitter.email_address}}">{{object.submitter}}</a></td>
+  <td id="status">{{object.status}}</td>
+ </tr>
+ <tr>
+  <td class="label"><label for="branch">Branch:</label></td>
+  <td class="value" id="branch">{{object.branch}}</td>
+  <td id="viewdiff"><a href="{{object.htmldiff}}">View diff</a></td>
+ </tr>
+{% ifnotequal object.target_groups.count 0 %}
+ <tr>
+  <td class="label"><label for="groupreviewers">Group reviewers:</label></td>
+  <td class="value" id="groupreviewers" colspan="2">
+{%  for group in object.target_groups.all %}
+<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </td>
+ </tr>
+{% endifnotequal %}
+{% ifnotequal object.target_people.count 0 %}
+ <tr>
+  <td class="label"><label for="personreviewers">Individual reviewers:</label></td>
+  <td class="value" id="groupreviewers" colspan="2">
+{%  for person in object.target_people.all %}
+<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </td>
+ </tr>
+{% endifnotequal %}
+ <tr>
+  <td class="label"><label for="bugs">Bugs Closed:</label></td>
+  <td class="value" id="bugs" colspan="2">
+  {{object.bugs_closed}}</td>
+ </tr>
+ <tr>
+  <td class="vertlabel" colspan="3"><label for="description">Description:</label></td>
+ </tr>
+ <tr>
+  <td id="description" colspan="3"><pre>{{object.description|escape}}</pre></td>
+ </tr>
+ <tr>
+  <td class="vertlabel" colspan="3"><label for="testingdone">Testing Done:</label></td>
+ </tr>
+ <tr>
+  <td id="testingdone" colspan="3"><pre>{{object.testing_done|escape}}</pre></td>
+ </tr>
+</table>
+{% endblock %}
