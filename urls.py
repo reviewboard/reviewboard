@@ -1,15 +1,14 @@
+from django.conf import settings
 from django.conf.urls.defaults import *
 from reviewboard.reviews.models import ReviewRequest, Person, Group
-
-HTDOC_URL = '//home/chipx86/src/reviewboard/htdocs'
 
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
 
     (r'css/(.*)$', 'django.views.static.serve',
-     {'document_root': HTDOC_URL + '/css'}),
+     {'document_root': settings.HTDOCS_ROOT + '/css'}),
     (r'images/(.*)$', 'django.views.static.serve',
-     {'document_root': HTDOC_URL + '/images'}),
+     {'document_root': settings.HTDOCS_ROOT + '/images'}),
 
     (r'^$', 'django.views.generic.list_detail.object_list',
      {'queryset':
@@ -20,10 +19,15 @@ urlpatterns = patterns('',
      {'queryset': ReviewRequest.objects.all(),
       'template_name': 'reviews/review_list.html',
       'allow_empty': True}),
+
+    (r'reviews/new/$', 'reviewboard.reviews.views.new_review_request',
+     {'template_name': 'reviews/new.html'}),
+
     (r'reviews/(?P<object_id>[0-9]+)/$',
      'django.views.generic.list_detail.object_detail',
      {'queryset': ReviewRequest.objects.all(),
       'template_name': 'reviews/review_detail.html'}),
+
     (r'reviews/new/$', 'reviewboard.reviews.views.new_review',
      {'template_name': 'reviews/new_review.html'}),
 

@@ -1,5 +1,5 @@
 # Django settings for reviewboard project.
-
+URL
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -64,6 +64,8 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'reviewboard.urls'
 
 TEMPLATE_ROOT = '/var/www/reviewboard'
+HTDOCS_ROOT = TEMPLATE_ROOT + '/htdocs'
+
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
