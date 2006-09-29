@@ -1,10 +1,9 @@
 # Django settings for reviewboard project.
-URL
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-    ('Example Joe', 'admin@example.com
+    ('Example Joe', 'admin@example.com')
 )
 
 MANAGERS = ADMINS
@@ -78,5 +77,6 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sites',
+    'django.contrib.sessions',
     'reviewboard.reviews',
 )
