@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}New Review Request{% endblock %}
+
+{% block content %}
+<h1>New review request</h1>
+
+<div class="section">
+ <div class="title">Quickly add a review request by typing in the change number</div>
+ <div class="body">
+  <form method="post" action="{{ app_path }}/changenum">
+   <label for="changenum" class="label">Change Number:</label>
+   <input type="text" id="changenum">
+  </form>
+ </div>
+</div>
+
+<div class="section">
+ <div class="title">Enter the review request information</div>
+ <div class="body">
+  {% if form.has_errors %}
+  {%  errorbox %}
+  You need to fix the following error{{form.error_dict|pluralize}}.
+  {%  enderrorbox %}
+  {% endif %}
+  <form action="{{ app_path }}" method="post">
+   <table id="review_request_form">
+    {% formfield summary %}
+    {% formfield description %}
+    {% formfield testing_done %}
+    {% formfield bugs_closed %}
+    {% formfield htmldiff %}
+    {% formfield branch %}
+    <tr>
+     <td>&nbsp;</td>
+     <td class="field" colspan="2">
+      <input type="submit" value="Preview" />
+     </td>
+    </tr>
+   </table>
+  </form>
+ </div>
+</div>
+
+
+{% endblock %}
