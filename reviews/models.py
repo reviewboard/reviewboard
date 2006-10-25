@@ -57,7 +57,9 @@ class ReviewRequest(models.Model):
                                            core=False, blank=True)
 
     def get_bug_list(self):
-        return self.bugs_closed.split(',')
+        bugs = self.bugs_closed.split(',')
+        bugs.sort(cmp=lambda x,y: int(x) - int(y))
+        return bugs
 
     def get_absolute_url(self):
         return "/reviews/%s/" % self.id
