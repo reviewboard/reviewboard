@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Review Requests{% endblock %}
+{% block head %}
+<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feeds/reviews/" />
+{% endblock %}
 
 {% block content %}
 <h1>{% firstof source "All" %} pending review requests</h1>
