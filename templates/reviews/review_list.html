@@ -1,12 +1,27 @@
-{% extends "base.html" %}
-{% block title %}Review Requests{% endblock %}
-{% block head %}
-<link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feeds/reviews/" />
-{% endblock %}
+{% extends "base_feeds.html" %}
+{% block title %}{% firstof source "All" %} pending review requests{% endblock %}
 
 {% block content %}
+
 <h1>{% firstof source "All" %} pending review requests</h1>
 
-{% include "reviews/review_list_base.html" %}
+{% if object_list %}
+<table class="list">
+ <tr>
+  <th>Summary</th>
+  <th>Submitter</th>
+  <th>Last Updated</th>
+ </tr>
+{%  for review in object_list %}
+ <tr class="{% cycle odd,even %}">
+  <td><a href="{{review.get_absolute_url}}">{{review}}</a></td>
+  <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
+  <td>{{review.last_updated|timesince}} ago</td>
+ </tr>
+{%  endfor %}
+</ul>
+{% else %}
+<p>No pending reviews.</p>
+{% endif %}
 
 {% endblock %}

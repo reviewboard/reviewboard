@@ -1,10 +1,17 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
 from reviewboard.reviews.models import ReviewRequest, Person, Group
-from reviewboard.reviews.feeds import ReviewsFeed
+from reviewboard.reviews.feeds import RssReviewsFeed, RssSubmittersFeed
+from reviewboard.reviews.feeds import AtomReviewsFeed, AtomSubmittersFeed
 
-feeds = {
-    'reviews': ReviewsFeed,
+rss_feeds = {
+    'reviews': RssReviewsFeed,
+    'submitters': RssSubmittersFeed,
+}
+
+atom_feeds = {
+    'reviews': AtomReviewsFeed,
+    'submitters': AtomSubmittersFeed,
 }
 
 urlpatterns = patterns('',
@@ -15,15 +22,12 @@ urlpatterns = patterns('',
     (r'^images/(.*)$', 'django.views.static.serve',
      {'document_root': settings.HTDOCS_ROOT + '/images'}),
 
-    (r'^$', 'django.views.generic.list_detail.object_list',
-     {'queryset':
-      ReviewRequest.objects.filter(status='P').order_by('last_updated')[:25],
-      'template_name': 'frontpage.html'}),
+    (r'^$', 'django.views.generic.simple.redirect_to',
+     {'url': '/reviews/'}),
 
-    (r'^reviews/$', 'django.views.generic.list_detail.object_list',
+    (r'^reviews/$', 'reviewboard.reviews.views.review_list',
      {'queryset': ReviewRequest.objects.all(),
-      'template_name': 'reviews/review_list.html',
-      'allow_empty': True}),
+      'template_name': 'reviews/review_list.html'}),
 
     (r'^reviews/new/$', 'reviewboard.reviews.views.new_review_request',
      {'template_name': 'reviews/new.html'}),
@@ -36,22 +40,15 @@ urlpatterns = patterns('',
     (r'^reviews/new/$', 'reviewboard.reviews.views.new_review',
      {'template_name': 'reviews/new_review.html'}),
 
-    (r'^submitters/$', 'django.views.generic.list_detail.object_list',
-     {'queryset': Person.objects.all(),
-      'template_name': 'reviews/submitter_list.html',
-      'allow_empty': True,
-      'paginate_by': 50}),
+    (r'^submitters/$', 'reviewboard.reviews.views.submitter_list',
+     {'template_name': 'reviews/submitter_list.html'}),
 
     (r'^submitters/(?P<username>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.submitter',
-     {'template_name': 'reviews/review_list.html',
-      'paginate_by': 25}),
+     {'template_name': 'reviews/review_list.html'}),
 
-    (r'^groups/$', 'django.views.generic.list_detail.object_list',
-     {'queryset': Group.objects.all(),
-      'template_name': 'reviews/group_list.html',
-      'allow_empty': True,
-      'paginate_by': 50}),
+    (r'^groups/$', 'reviewboard.reviews.views.group_list',
+     {'template_name': 'reviews/group_list.html'}),
 
     (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.group',
@@ -59,6 +56,8 @@ urlpatterns = patterns('',
       'paginate_by': 25}),
 
     # Feeds
-    (r'^feeds/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
-     {'feed_dict': feeds}),
+    (r'^feeds/rss/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
+     {'feed_dict': rss_feeds}),
+    (r'^feeds/atom/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
+     {'feed_dict': atom_feeds}),
 )

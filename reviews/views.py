@@ -1,6 +1,6 @@
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
-from reviewboard.reviews.models import ReviewRequest, Person
+from reviewboard.reviews.models import ReviewRequest, Person, Group
 
 def new_review_request(request, template_name):
     manipulator = ReviewRequest.AddManipulator()
@@ -46,14 +46,45 @@ def group(request, name, template_name, paginate_by=25, allow_empty=True):
             'source': name,
         })
 
-
-def submitter(request, username, template_name, paginate_by=25, allow_empty=True):
+def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
+        queryset=queryset,
+        paginate_by=50,
+        allow_empty=True,
+        template_name=template_name,
+        extra_context=dict(
+            {'app_path': request.path},
+            **extra_context
+        ))
+
+
+def submitter(request, username, template_name):
+    return review_list(request,
         queryset=ReviewRequest.objects.filter(
             submitter__username__exact=username),
-        paginate_by=paginate_by,
-        allow_empty=allow_empty,
         template_name=template_name,
         extra_context={
             'source': username + "'s",
+        })
+
+
+def submitter_list(request, template_name):
+    return object_list(request,
+        queryset=Person.objects.all(),
+        template_name=template_name,
+        paginate_by=50,
+        allow_empty=True,
+        extra_context={
+            'app_path': request.path,
+        })
+
+
+def group_list(request, template_name):
+    return object_list(request,
+        queryset=Group.objects.all(),
+        template_name=template_name,
+        paginate_by=50,
+        allow_empty=True,
+        extra_context={
+            'app_path': request.path,
         })
