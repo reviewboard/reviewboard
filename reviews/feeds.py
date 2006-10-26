@@ -30,7 +30,7 @@ class RssReviewsFeed(BaseReviewFeed):
         return ReviewRequest.objects.order_by('-last_updated')[:20]
 
 
-class RssSubmittersFeed(BaseReviewFeed):
+class RssSubmitterReviewsFeed(BaseReviewFeed):
     def get_object(self, bits):
         if len(bits) != 1:
             raise ObjectDoesNotExist
@@ -51,9 +51,33 @@ class RssSubmittersFeed(BaseReviewFeed):
             order_by('-last_updated')[:20]
 
 
+class RssGroupReviewsFeed(BaseReviewFeed):
+    def get_object(self, bits):
+        if len(bits) != 1:
+            raise ObjectDoesNotExist
+
+        return ReviewRequest.objects.get(target_groups__name__exact=bits[0])
+
+    def title(self, group):
+        return "Review Requests on group %s" % group
+
+    def link(self, group):
+        return group.get_absolute_url()
+
+    def description(self, group):
+        return "Pending review requests by %s" % group
+
+    def items(self, group):
+        return ReviewRequest.objects.filter(target_groups=group).\
+            order_by('-last_updated')[:20]
+
+
 # Atom feeds
 class AtomReviewsFeed(RssReviewsFeed):
     feed_type = Atom1Feed
 
-class AtomSubmittersFeed(RssSubmittersFeed):
+class AtomSubmitterReviewsFeed(RssSubmitterReviewsFeed):
+    feed_type = Atom1Feed
+
+class AtomGroupReviewsFeed(RssGroupReviewsFeed):
     feed_type = Atom1Feed

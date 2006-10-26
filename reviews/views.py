@@ -36,16 +36,6 @@ def new_review_request(request, template_name):
                 'status': False,})
 
 
-def group(request, name, template_name, paginate_by=25, allow_empty=True):
-    return object_list(request,
-        queryset=ReviewRequest.objects.filter(target_groups__name__exact=name),
-        paginate_by=paginate_by,
-        allow_empty=allow_empty,
-        template_name=template_name,
-        extra_context={
-            'source': name,
-        })
-
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
         queryset=queryset,
@@ -56,16 +46,6 @@ def review_list(request, queryset, template_name, extra_context={}):
             {'app_path': request.path},
             **extra_context
         ))
-
-
-def submitter(request, username, template_name):
-    return review_list(request,
-        queryset=ReviewRequest.objects.filter(
-            submitter__username__exact=username),
-        template_name=template_name,
-        extra_context={
-            'source': username + "'s",
-        })
 
 
 def submitter_list(request, template_name):
@@ -87,4 +67,23 @@ def group_list(request, template_name):
         allow_empty=True,
         extra_context={
             'app_path': request.path,
+        })
+
+
+def group(request, name, template_name):
+    return review_list(request,
+        queryset=ReviewRequest.objects.filter(target_groups__name__exact=name),
+        template_name=template_name,
+        extra_context={
+            'source': name,
+        })
+
+
+def submitter(request, username, template_name):
+    return review_list(request,
+        queryset=ReviewRequest.objects.filter(
+            submitter__username__exact=username),
+        template_name=template_name,
+        extra_context={
+            'source': username + "'s",
         })

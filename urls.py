@@ -1,17 +1,22 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
 from reviewboard.reviews.models import ReviewRequest, Person, Group
-from reviewboard.reviews.feeds import RssReviewsFeed, RssSubmittersFeed
-from reviewboard.reviews.feeds import AtomReviewsFeed, AtomSubmittersFeed
+from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed
+from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
+from reviewboard.reviews.feeds import AtomSubmitterReviewsFeed
+from reviewboard.reviews.feeds import RssGroupReviewsFeed
+from reviewboard.reviews.feeds import AtomGroupReviewsFeed
 
 rss_feeds = {
     'reviews': RssReviewsFeed,
-    'submitters': RssSubmittersFeed,
+    'submitters': RssSubmitterReviewsFeed,
+    'groups': RssGroupReviewsFeed,
 }
 
 atom_feeds = {
     'reviews': AtomReviewsFeed,
-    'submitters': AtomSubmittersFeed,
+    'submitters': AtomSubmitterReviewsFeed,
+    'groups': AtomGroupReviewsFeed,
 }
 
 urlpatterns = patterns('',
@@ -52,8 +57,7 @@ urlpatterns = patterns('',
 
     (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.group',
-     {'template_name': 'reviews/review_list.html',
-      'paginate_by': 25}),
+     {'template_name': 'reviews/review_list.html'}),
 
     # Feeds
     (r'^feeds/rss/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
