@@ -38,7 +38,7 @@ def new_review_request(request, template_name):
 
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
-        queryset=queryset,
+        queryset=queryset.order_by('-last_updated'),
         paginate_by=50,
         allow_empty=True,
         template_name=template_name,
@@ -50,7 +50,7 @@ def review_list(request, queryset, template_name, extra_context={}):
 
 def submitter_list(request, template_name):
     return object_list(request,
-        queryset=Person.objects.all(),
+        queryset=Person.objects.all().order_by('name'),
         template_name=template_name,
         paginate_by=50,
         allow_empty=True,
@@ -61,7 +61,7 @@ def submitter_list(request, template_name):
 
 def group_list(request, template_name):
     return object_list(request,
-        queryset=Group.objects.all(),
+        queryset=Group.objects.all().order_by('name'),
         template_name=template_name,
         paginate_by=50,
         allow_empty=True,
@@ -72,7 +72,8 @@ def group_list(request, template_name):
 
 def group(request, name, template_name):
     return review_list(request,
-        queryset=ReviewRequest.objects.filter(target_groups__name__exact=name),
+        queryset=ReviewRequest.objects.filter(
+            target_groups__name__exact=name),
         template_name=template_name,
         extra_context={
             'source': name,
