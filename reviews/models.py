@@ -41,6 +41,7 @@ class ReviewRequest(models.Model):
     time_added = models.DateTimeField("Time Added", auto_now_add=True)
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
     status = models.CharField(maxlength=1, choices=STATUSES)
+    public = models.BooleanField("Public", default=False)
     summary = models.CharField("Summary", maxlength=300, core=True)
     description = models.TextField("Description")
     testing_done = models.TextField("Testing Done")
