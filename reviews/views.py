@@ -2,7 +2,7 @@ from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
 from reviewboard.reviews.models import ReviewRequest, Person, Group
 
-def new_review_request(request, template_name):
+def new_review_request(request, template_name, changenum_path):
     manipulator = ReviewRequest.AddManipulator()
 
     if request.POST:
@@ -23,9 +23,12 @@ def new_review_request(request, template_name):
                 new_reviewreq.submitter = person
                 new_reviewreq.save()
 
-                # TODO: E-mail it out
+                return HttpResponseRedirect(
+                    '/reviews/new/edit_details/%s/' % new_reviewreq.id)
             except:
                 print errors
+    else:
+        errors = form_data = {}
 
     return create_object(request,
         model=ReviewRequest,
@@ -33,8 +36,16 @@ def new_review_request(request, template_name):
         follow={'time_added': False,
                 'last_updated': False,
                 'submitter': False,
-                'status': False,})
+                'status': False,
+                'public': False,
+        },
+        extra_context={
+            'changenum_path': changenum_path,
+        })
 
+
+def edit_new_details(request, template_name):
+    pass
 
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,

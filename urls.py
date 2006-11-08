@@ -35,15 +35,17 @@ urlpatterns = patterns('',
       'template_name': 'reviews/review_list.html'}),
 
     (r'^reviews/new/$', 'reviewboard.reviews.views.new_review_request',
-     {'template_name': 'reviews/new.html'}),
+     {'template_name': 'reviews/new.html',
+      'changenum_path': '/reviews/new/changenum/'}),
 
     (r'^reviews/(?P<object_id>[0-9]+)/$',
      'django.views.generic.list_detail.object_detail',
      {'queryset': ReviewRequest.objects.all(),
       'template_name': 'reviews/review_detail.html'}),
 
-    (r'^reviews/new/$', 'reviewboard.reviews.views.new_review',
-     {'template_name': 'reviews/new_review.html'}),
+    (r'^reviews/new/(?P<reviewreq_id>[0-9]+)/$',
+      'reviewboard.reviews.views.edit_new_details',
+     {'template_name': 'reviews/edit_new_details.html'}),
 
     (r'^submitters/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),

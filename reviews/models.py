@@ -46,7 +46,7 @@ class ReviewRequest(models.Model):
     description = models.TextField("Description")
     testing_done = models.TextField("Testing Done")
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
-                                                    maxlength=300)
+                                                    maxlength=300, blank=True)
     htmldiff = models.URLField("HTML Diff URL", core=True,
                                verify_exists=False) # XXX
     branch = models.CharField("Branch", maxlength=30)
