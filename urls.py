@@ -31,7 +31,7 @@ urlpatterns = patterns('',
      {'url': '/reviews/'}),
 
     (r'^reviews/$', 'reviewboard.reviews.views.review_list',
-     {'queryset': ReviewRequest.objects.all(),
+     {'queryset': ReviewRequest.objects.filter(public=True),
       'template_name': 'reviews/review_list.html'}),
 
     (r'^reviews/new/$', 'reviewboard.reviews.views.new_review_request',
