@@ -1,3 +1,4 @@
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
 from reviewboard.reviews.models import ReviewRequest, Person, Group
@@ -7,38 +8,32 @@ def new_review_request(request, template_name, changenum_path):
 
     if request.POST:
         # XXX
-        person, person_is_new = Person.objects.get_or_create(username='christian')
+        person, person_is_new = \
+            Person.objects.get_or_create(username='christian')
+
         if person_is_new:
             person.save()
 
         new_data = request.POST.copy()
         new_data['submitter'] = person.id
+        new_data['status'] = 'P'
         errors = manipulator.get_validation_errors(new_data)
 
         if not errors:
             manipulator.do_html2python(new_data)
 
-            try:
-                new_reviewreq = manipulator.save(new_data)
-                new_reviewreq.submitter = person
-                new_reviewreq.save()
+            new_reviewreq = manipulator.save(new_data)
+            new_reviewreq.submitter = person
+            new_reviewreq.save()
 
-                return HttpResponseRedirect(
-                    '/reviews/new/edit_details/%s/' % new_reviewreq.id)
-            except:
-                print errors
+            return HttpResponseRedirect(
+                '/reviews/new/edit_details/%s/' % new_reviewreq.id)
     else:
         errors = form_data = {}
 
     return create_object(request,
         model=ReviewRequest,
         template_name=template_name,
-        follow={'time_added': False,
-                'last_updated': False,
-                'submitter': False,
-                'status': False,
-                'public': False,
-        },
         extra_context={
             'changenum_path': changenum_path,
         })
