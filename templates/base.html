@@ -10,13 +10,27 @@
  <body>
   <div id="container">
    <div id="headbar">
-    <h1 id="title"><a href="/"><span>Review Board</span></a></h1>
-    <ul>
-     <li><a href="/reviews/new/">New review request</a></li>
-     <li><a href="/reviews/">All review requests</a></li>
-     <li><a href="/groups/">Groups</a></li>
-     <li><a href="/submitters/">Submitters</a></li>
+    <h1 id="title"><a href="/">Review Board</a></h1>
+    <h2 id="beta">beta</h2>
    </div>
+   <table id="navbar">
+    <tr>
+     <td>
+      <ul>
+       <li><a href="/reviews/">All review requests</a></li>
+       <li><a href="/groups/">Groups</a></li>
+       <li><a href="/submitters/">Submitters</a></li>
+      </ul>
+     </td>
+     <td id="addchangenum">
+      <form id="changenumform" method="post" action="/reviews/new/changenum/">
+       <label for="changenum">Change #</label>
+       <input type="text" id="changenum" name="changenum" size="8" />
+       <input type="submit" value="Add" />
+      </form>
+     </td>
+    </tr>
+   </table>
    <div id="content">
 {% block content %}{% endblock %}
    </div>
