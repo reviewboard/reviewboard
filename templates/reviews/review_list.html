@@ -3,23 +3,30 @@
 
 {% block content %}
 
-<h1>{% firstof source "All" %} pending review requests</h1>
-
 {% if object_list %}
 <table class="list">
- <tr>
-  <th>Summary</th>
-  <th>Submitter</th>
-  <th>Last Updated</th>
- </tr>
+ <colgroup>
+  <col class="summary" />
+  <col class="submitter" width="1*" />
+  <col class="updated" width="1*" />
+ </colgroup>
+ <thead>
+  <tr class="headers">
+   <th>Summary</th>
+   <th>Submitter</th>
+   <th>Last Updated</th>
+  </tr>
+ </thead>
+ <tbody>
 {%  for review in object_list %}
- <tr class="{% cycle odd,even %}">
-  <td><a href="{{review.get_absolute_url}}">{{review}}</a></td>
-  <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
-  <td>{{review.last_updated|timesince}} ago</td>
- </tr>
+  <tr class="{% cycle odd,even %}">
+   <td><a href="{{review.get_absolute_url}}">{{review}}</a></td>
+   <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
+   <td>{{review.last_updated|timesince}} ago</td>
+  </tr>
 {%  endfor %}
-</ul>
+ </tbody>
+</table>
 {% else %}
 <p>No pending reviews.</p>
 {% endif %}
