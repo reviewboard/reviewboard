@@ -34,7 +34,7 @@ urlpatterns = patterns('',
      {'queryset': ReviewRequest.objects.filter(public=True),
       'template_name': 'reviews/review_list.html'}),
 
-    (r'^reviews/new/changenum/$', 'reviewboard.reviews.views.new_from_changenum'),
+    (r'^reviews/new/$', 'reviewboard.reviews.views.new_review_request'),
 
     (r'^reviews/(?P<object_id>[0-9]+)/$',
      'django.views.generic.list_detail.object_detail',

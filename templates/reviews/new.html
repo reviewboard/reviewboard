@@ -3,19 +3,6 @@
 {% block title %}New Review Request{% endblock %}
 
 {% block content %}
-<h1>New review request</h1>
-
-<div class="section">
- <div class="title">Quickly add a review request by typing in the change number</div>
- <div class="body">
-  <form method="post" action="{{ changenum_path }}">
-   <label for="changenum" class="label">Change Number:</label>
-   <input type="text" id="changenum" size="10" />
-   <input type="submit" value="Next" />
-  </form>
- </div>
-</div>
-
 <div class="section">
  <div class="title">Enter the review request information</div>
  <div class="body">
