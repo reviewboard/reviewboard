@@ -37,6 +37,7 @@ def parse_change_desc(changedesc, result_dict):
             continue
         elif line == "Files:":
             process_files = True
+            cur_key = None
             continue
         elif line == "" or line == "\t":
             if process_summary:
@@ -50,6 +51,7 @@ def parse_change_desc(changedesc, result_dict):
 
             if process_files:
                 files.append(line)
+                continue
             elif line.find(':') != -1:
                 key, value = line.split(':', 2)
 
@@ -74,7 +76,7 @@ def parse_change_desc(changedesc, result_dict):
     result_dict['testing_done'] = changedesc_keys['Testing Done']
 
     result_dict['bugs_closed'] = \
-        ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number']))
+        ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number'])).strip()
 
     # This is gross.
     if len(files) > 0:
@@ -86,7 +88,6 @@ def parse_change_desc(changedesc, result_dict):
 
 def new_review_request(request, template_name='reviews/new.html',
                        changenum_path='changenum'):
-
     changedesc = "\
 Description:\n\
 	This is my summary.\n\
@@ -112,9 +113,8 @@ Files:\n\
     errors = {}
 
     if request.POST:
-        changenum = request.POST['changenum']
-
-        if changenum:
+        if request.POST.has_key('changenum'):
+            changenum = request.POST['changenum']
             parse_change_desc(changedesc, new_data)
             # TODO: Parse the change description
         else:
