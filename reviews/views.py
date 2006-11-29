@@ -4,6 +4,7 @@ from django.shortcuts import render_to_response
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
 from reviewboard.reviews.models import ReviewRequest, Person, Group
+import re
 
 
 def parse_change_desc(changedesc, result_dict):
@@ -30,9 +31,7 @@ def parse_change_desc(changedesc, result_dict):
 
     cur_key = None
 
-    print "change desc: ``%s''" % changedesc
     for line in changedesc.split("\n"):
-        print ">> `%s'" % line
         if line == "Description:":
             process_summary = True
             continue
@@ -74,8 +73,8 @@ def parse_change_desc(changedesc, result_dict):
     result_dict['description'] = description
     result_dict['testing_done'] = changedesc_keys['Testing Done']
 
-    # TODO: Normalize bug number
-    result_dict['bugs_closed'] = changedesc_keys['Bug Number']
+    result_dict['bugs_closed'] = \
+        ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number']))
 
     # This is gross.
     if len(files) > 0:
@@ -101,7 +100,7 @@ Description:\n\
 	QA Notes:\n\
 	Testing Done: I ate a hamburger and thought, \"Wow, that was rad.\"\n\
 	Note how it carries to the next line, since some people do that.\n\
-	Bug Number: 456123\n\
+	Bug Number: 456123, 12873  1298371\n\
 \n\
 Files:\n\
 	//depot/bora/foo/apps/lib/foo.c\n\
