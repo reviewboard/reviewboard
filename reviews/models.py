@@ -69,7 +69,8 @@ class ReviewRequest(models.Model):
         return self.summary
 
     class Admin:
-        list_display = ('summary', 'submitter', 'status', 'last_updated')
+        list_display = ('summary', 'submitter', 'status', 'public', \
+                        'last_updated')
 
     class Meta:
-        ordering = ['status', 'last_updated', 'submitter', 'summary']
+        ordering = ['-last_updated', 'submitter', 'summary']
