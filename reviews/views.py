@@ -4,6 +4,7 @@ from django.shortcuts import render_to_response
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
 from reviewboard.reviews.models import ReviewRequest, Person, Group
+from reviewboard.reviews.forms import AddReviewRequestManipulator
 import re
 
 
@@ -78,6 +79,9 @@ def parse_change_desc(changedesc, result_dict):
     result_dict['bugs_closed'] = \
         ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number'])).strip()
 
+    result_dict['target_groups'] = 'hosted-ui, foo-group'
+    result_dict['target_people'] = 'davidt, christian'
+
     # This is gross.
     if len(files) > 0:
         parts = files[0].split('/')
@@ -108,7 +112,7 @@ Files:\n\
 	//depot/bora/foo/apps/lib/bar.c\n\
 "
 
-    manipulator = ReviewRequest.AddManipulator()
+    manipulator = AddReviewRequestManipulator()
     new_data = {}
     errors = {}
 

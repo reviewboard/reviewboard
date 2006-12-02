@@ -9,6 +9,7 @@
   {% if form.has_errors %}
   {%  errorbox %}
   You need to fix the following error{{form.error_dict|pluralize}}.
+  {{form.error_dict}}
   {%  enderrorbox %}
   {% endif %}
   <form method="post" action=".">
@@ -19,6 +20,8 @@
     {% formfield bugs_closed %}
     {% formfield htmldiff %}
     {% formfield branch %}
+    {% formfield target_groups %}
+    {% formfield target_people %}
     <tr>
      <td>&nbsp;</td>
      <td class="field" colspan="2"><input type="submit" value="Next" /></td>
