@@ -13,7 +13,7 @@
 {%  for submitter in object_list %}
  <tr class="{% cycle odd,even %}">
   <td><a href="{{submitter.get_absolute_url}}">{{submitter}}</a></td>
-  <td>{{submitter.reviewrequest_set.count}}</a></td>
+  <td>{{submitter.count_public_review_requests}}</td>
  </tr>
 {%  endfor %}
 </ul>

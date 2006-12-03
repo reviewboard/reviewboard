@@ -13,7 +13,7 @@
 {%  for group in object_list %}
  <tr class="{% cycle odd,even %}">
   <td><a href="{{group.get_absolute_url}}">{{group}}</a></td>
-  <td>{{group.reviewrequest_set.count}}</td>
+  <td>{{group.count_public_review_requests}}</td>
  </tr>
 {%  endfor %}
 </ul>
