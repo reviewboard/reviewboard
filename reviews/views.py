@@ -120,7 +120,6 @@ Files:\n\
         if request.POST.has_key('changenum'):
             changenum = request.POST['changenum']
             parse_change_desc(changedesc, new_data)
-            # TODO: Parse the change description
         else:
             # XXX
             person, person_is_new = \
@@ -139,6 +138,7 @@ Files:\n\
 
                 new_reviewreq = manipulator.save(new_data)
                 new_reviewreq.submitter = person
+                new_reviewreq.public = True
                 new_reviewreq.save()
 
                 return HttpResponseRedirect('/reviews/%s/edit/' %
