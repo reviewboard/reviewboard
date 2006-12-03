@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.views.generic.list_detail import object_list
@@ -187,7 +188,7 @@ def group_list(request, template_name):
 def group(request, name, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(
-            target_groups__name__exact=name),
+            Q(target_groups__name__exact=name), Q(public=True)),
         template_name=template_name,
         extra_context={
             'source': name,
@@ -197,7 +198,7 @@ def group(request, name, template_name):
 def submitter(request, username, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(
-            submitter__username__exact=username),
+            Q(submitter__username__exact=username), Q(public=True)),
         template_name=template_name,
         extra_context={
             'source': username + "'s",
