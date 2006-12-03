@@ -4,6 +4,9 @@ from django.db import models
 class Group(models.Model):
     name = models.CharField("Name", maxlength=30, core=True)
 
+    def count_public_review_requests(self):
+        return self.reviewrequest_set.filter(public=True).count()
+
     def get_absolute_url(self):
         return "/groups/%s/" % self.name
 
@@ -13,9 +16,15 @@ class Group(models.Model):
     class Admin:
         pass
 
+    class Meta:
+        ordering = ['name']
+
 
 class Person(models.Model):
     username = models.CharField("Username", maxlength=30, core=True)
+
+    def count_public_review_requests(self):
+        return self.reviewrequest_set.filter(public=True).count()
 
     def get_absolute_url(self):
         return "/submitters/%s/" % self.username
@@ -28,6 +37,7 @@ class Person(models.Model):
 
     class Meta:
         verbose_name_plural = "People"
+        ordering = ['username']
 
 
 class ReviewRequest(models.Model):

@@ -165,7 +165,7 @@ def review_list(request, queryset, template_name, extra_context={}):
 
 def submitter_list(request, template_name):
     return object_list(request,
-        queryset=Person.objects.all().order_by('name'),
+        queryset=Person.objects.all(),
         template_name=template_name,
         paginate_by=50,
         allow_empty=True,
@@ -176,7 +176,7 @@ def submitter_list(request, template_name):
 
 def group_list(request, template_name):
     return object_list(request,
-        queryset=Group.objects.all().order_by('name'),
+        queryset=Group.objects.all(),
         template_name=template_name,
         paginate_by=50,
         allow_empty=True,
