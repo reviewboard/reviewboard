@@ -142,7 +142,7 @@ Files:\n\
                 new_reviewreq.public = True
                 new_reviewreq.save()
 
-                return HttpResponseRedirect('/reviews/%s/edit/' %
+                return HttpResponseRedirect('/reviews/%s/' %
                                             new_reviewreq.id)
 
     form = forms.FormWrapper(manipulator, new_data, errors)
