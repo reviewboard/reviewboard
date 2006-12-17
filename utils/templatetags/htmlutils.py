@@ -2,6 +2,7 @@ from django import template
 from django.template import resolve_variable
 from django.template import TemplateSyntaxError, VariableDoesNotExist
 from django.template.defaultfilters import capfirst
+import datetime, time
 
 register = template.Library()
 
@@ -218,3 +219,47 @@ def formfield(parser, token):
             "%r tag requires an element ID and a string label"
 
     return FormField(elementid)
+
+
+class AgeId(template.Node):
+    def __init__(self, timestamp):
+        self.timestamp = timestamp
+
+    def render(self, context):
+        try:
+            timestamp = resolve_variable(self.timestamp, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid element ID %s passed to ageid tag." % self.timestamp
+
+        # Convert datetime.date into datetime.datetime
+        if timestamp.__class__ is not datetime.datetime:
+            timestamp = datetime.datetime(timestamp.year, timestamp.month,
+                                          timestamp.day)
+
+
+        t = time.localtime()
+        now = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], tzinfo=None)
+        delta = now - (timestamp -
+                       datetime.timedelta(0, 0, timestamp.microsecond))
+
+        if delta.days == 0:
+            return "age1"
+        elif delta.days == 1:
+            return "age2"
+        elif delta.days == 2:
+            return "age3"
+        elif delta.days == 3:
+            return "age4"
+        else:
+            return "age5"
+
+@register.tag
+def ageid(parser, token):
+    try:
+        tag_name, timestamp = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag requires a timestamp"
+
+    return AgeId(timestamp)

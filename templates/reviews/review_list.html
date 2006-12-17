@@ -1,4 +1,5 @@
 {% extends "base_feeds.html" %}
+{% load htmlutils %}
 {% block title %}{% firstof source "All" %} pending review requests{% endblock %}
 
 {% block content %}
@@ -19,10 +20,10 @@
  </thead>
  <tbody>
 {%  for review in object_list %}
-  <tr class="{% cycle odd,even %}">
+  <tr>
    <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
    <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
-   <td>{{review.last_updated|timesince}} ago</td>
+   <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
   </tr>
 {%  endfor %}
  </tbody>
