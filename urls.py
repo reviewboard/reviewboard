@@ -60,6 +60,9 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.group',
      {'template_name': 'reviews/review_list.html'}),
 
+    (r'^viewdiff/(?P<object_id>[0-9]+)/$',
+     'reviewboard.diffviewer.views.view_diff'),
+
     # Feeds
     (r'^feeds/rss/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
      {'feed_dict': rss_feeds}),

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}Diff Viewer{% endblock %}
+
+{% block content %}
+<ul id="diffs">
+{% for file in files %}
+<li><h1>{{ file.filename }}</h1>
+<table class="sidebyside">
+ <colgroup>
+  <col class="left" width="50%" />
+  <col class="right" width="50%" />
+ </colgroup>
+{% spaceless %}
+{% for line in file.lines %}
+ <tr{% ifnotequal line.0 "" %} class="{{line.0}}"{% endifnotequal %}>
+  <td><tt>&nbsp;{{ line.1|escape|escapespaces }}</tt></td>
+  <td><tt>&nbsp;{{ line.2|escape|escapespaces }}</tt></td>
+ </tr>
+{% endfor %}
+{% endspaceless %}
+</table></li>
+{% endfor %}
+</ul>
+{% endblock %}

@@ -263,3 +263,8 @@ def ageid(parser, token):
             "%r tag requires a timestamp"
 
     return AgeId(timestamp)
+
+
+@register.filter
+def escapespaces(value):
+    return value.replace(' ', '&nbsp;')

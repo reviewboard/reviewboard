@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from reviewboard.diffviewer.models import DiffSet
 
 class Group(models.Model):
     name = models.CharField("Name", maxlength=30, core=True)
@@ -38,6 +39,17 @@ class Person(models.Model):
     class Meta:
         verbose_name_plural = "People"
         ordering = ['username']
+
+
+class Comment(models.Model):
+    filename = models.CharField("Filename", maxlength=256, core=True)
+
+
+class Review(models.Model):
+    ship_it = models.BooleanField("Ship It", default=False)
+    comments = models.ManyToManyField(Comment, verbose_name="Comments",
+                                      core=False, blank=True)
+    reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff")
 
 
 class ReviewRequest(models.Model):
