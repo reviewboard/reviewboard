@@ -1,0 +1,5 @@
+{% load htmlutils %}
+<tr{% ifnotequal class "" %} class="{{class}}"{% endifnotequal %}>
+ <td><tt>{{ oldline|escape|escapespaces }}</tt></td>
+ <td><tt>{{ newline|escape|escapespaces }}</tt></td>
+</tr>

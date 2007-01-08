@@ -1,25 +1,29 @@
 {% extends "base.html" %}
-{% load htmlutils %}
+{% load difftags %}
 {% block title %}Diff Viewer{% endblock %}
 
 {% block content %}
-<ul id="diffs">
+<div id="diffs">
 {% for file in files %}
-<li><h1>{{ file.filename }}</h1>
 <table class="sidebyside">
  <colgroup>
   <col class="left" width="50%" />
   <col class="right" width="50%" />
  </colgroup>
+ <thead>
+  <tr>
+   <td>{{ file.depot_filename }}</td>
+   <td>{{ file.user_filename }}</td>
+  </tr>
+ </thead>
+ <tbody>
 {% spaceless %}
 {% for line in file.lines %}
- <tr{% ifnotequal line.0 "" %} class="{{line.0}}"{% endifnotequal %}>
-  <td><tt>&nbsp;{{ line.1|escape|escapespaces }}</tt></td>
-  <td><tt>&nbsp;{{ line.2|escape|escapespaces }}</tt></td>
- </tr>
+{% sidebyside_diffline %}
 {% endfor %}
 {% endspaceless %}
+ </tbody>
 </table></li>
 {% endfor %}
-</ul>
+</div>
 {% endblock %}
