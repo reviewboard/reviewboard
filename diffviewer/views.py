@@ -70,10 +70,10 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             f = open('/tmp/sidediff', 'w')
             f.write(sidebyside_diff)
             f.close()
+            prev_change = ""
 
             for line in sidebyside_diff.split('\n'):
                 change = ""
-                prev_change = ""
 
                 if len(line) > DIFF_COL_WIDTH:
                     mark = line[DIFF_COL_WIDTH:DIFF_COL_WIDTH+3].strip()

@@ -9,7 +9,7 @@ def sidebyside_diffline(context):
     lineclass = ""
     line = context['line']
 
-    if line[0] != None:
+    if line[0]:
         lineclass = "new_chunk "
 
     if line[1] != None:
