@@ -69,8 +69,8 @@ class ReviewRequest(models.Model):
     testing_done = models.TextField("Testing Done")
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
-    htmldiff = models.URLField("HTML Diff URL", core=True,
-                               verify_exists=False) # XXX
+    diffset = models.ManyToManyField(DiffSet, verbose_name='DiffSet',
+                                     core=True, blank=False)
     branch = models.CharField("Branch", maxlength=30)
 
     target_groups = models.ManyToManyField(Group, verbose_name="Target Group",
