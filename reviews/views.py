@@ -1,13 +1,14 @@
-from django import forms
+from django import newforms as forms
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect
+from django.newforms import widgets
+from django.newforms.util import smart_unicode
 from django.shortcuts import render_to_response
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
 from reviewboard.reviews.models import ReviewRequest, Person, Group
-from reviewboard.reviews.forms import AddReviewRequestManipulator
+from reviewboard.reviews.forms import NewReviewRequestForm
 import re
-
 
 def parse_change_desc(changedesc, result_dict):
     summary = ""
@@ -113,39 +114,30 @@ Files:\n\
 	//depot/bora/foo/apps/lib/bar.c\n\
 "
 
-    manipulator = AddReviewRequestManipulator()
-    new_data = {}
-    errors = {}
-
     if request.POST:
         if request.POST.has_key('changenum'):
             changenum = request.POST['changenum']
-            parse_change_desc(changedesc, new_data)
+            form_data = {}
+            parse_change_desc(changedesc, form_data)
         else:
-            # XXX
-            person, person_is_new = \
-                Person.objects.get_or_create(username='christian')
+            form_data = request.POST.copy()
+            form = NewReviewRequestForm(form_data)
+            if form.is_valid():
+                # XXX
+                person, person_is_new = \
+                    Person.objects.get_or_create(username='christian')
 
-            if person_is_new:
-                person.save()
+                if person_is_new:
+                    person.save()
 
-            new_data = request.POST.copy()
-            new_data['submitter'] = person.id
-            new_data['status'] = 'P'
-            errors = manipulator.get_validation_errors(new_data)
+                form.clean_data['submitter'] = person
+                form.clean_data['status'] = 'P'
+                form.clean_data['public'] = True
+                new_reviewreq = form.create()
 
-            if not errors:
-                manipulator.do_html2python(new_data)
+                return HttpResponseRedirect('/reviews/%s/' % new_reviewreq.id)
 
-                new_reviewreq = manipulator.save(new_data)
-                new_reviewreq.submitter = person
-                new_reviewreq.public = True
-                new_reviewreq.save()
-
-                return HttpResponseRedirect('/reviews/%s/' %
-                                            new_reviewreq.id)
-
-    form = forms.FormWrapper(manipulator, new_data, errors)
+    form = NewReviewRequestForm(form_data)
     return render_to_response(template_name, {
         'form': form,
     })

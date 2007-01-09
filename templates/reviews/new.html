@@ -14,13 +14,7 @@
   {% endif %}
   <form method="post" action=".">
    <table id="review_request_form">
-    {% formfield summary %}
-    {% formfield description %}
-    {% formfield testing_done %}
-    {% formfield bugs_closed %}
-    {% formfield branch %}
-    {% formfield target_groups %}
-    {% formfield target_people %}
+    {{ form.as_table }}
     <tr>
      <td>&nbsp;</td>
      <td class="field" colspan="2"><input type="submit" value="Next" /></td>

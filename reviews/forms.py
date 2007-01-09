@@ -1,31 +1,25 @@
-from django import forms
+from django import newforms as forms
 from django.core import validators
 from django.core.validators import ValidationError
 from reviewboard.reviews.models import Group, Person, ReviewRequest
 
-class AddReviewRequestManipulator(ReviewRequest.AddManipulator):
-    def __init__(self):
-        ReviewRequest.AddManipulator.__init__(self)
+class NewReviewRequestForm(forms.Form):
+    summary = forms.CharField()
+    description = forms.CharField(widget=forms.Textarea)
+    testing_done = forms.CharField(widget=forms.Textarea)
+    bugs_closed = forms.CharField()
+    branch = forms.CharField()
+    target_groups = forms.CharField()
+    target_people = forms.CharField()
 
-        new_fields = []
-        for field in self.fields:
-            if field.field_name == 'target_groups' or \
-               field.field_name == 'target_people':
-               name = field.field_name
-               field = forms.TextField(field_name=name,
-                                       length=50, maxlength=500,
-                                       is_required=False)
-            new_fields.append(field)
+    def create(self):
+        target_groups = self.clean_data['target_groups']
+        target_people = self.clean_data['target_people']
+        del(self.clean_data['target_groups'])
+        del(self.clean_data['target_people'])
 
-        self.fields = new_fields
-
-    def save(self, new_data):
-        target_groups = new_data['target_groups']
-        target_people = new_data['target_people']
-        del(new_data['target_groups'])
-        del(new_data['target_people'])
-
-        review_request = super(AddReviewRequestManipulator, self).save(new_data)
+        review_request = ReviewRequest(**self.clean_data)
+        review_request.save()
 
         if target_groups and target_groups.strip().lower():
             for group_name in target_groups.split(','):
@@ -36,7 +30,10 @@ class AddReviewRequestManipulator(ReviewRequest.AddManipulator):
                 if group_is_new:
                     group.save()
 
+                print 'group = %s, new = %s, id = %s' % \
+                    (group_name, group_is_new, group.id)
                 review_request.target_groups.add(group)
+
 
         if target_people and target_people.strip().lower():
             for person_name in target_people.split(','):
@@ -50,4 +47,4 @@ class AddReviewRequestManipulator(ReviewRequest.AddManipulator):
                 review_request.target_people.add(person)
 
         review_request.save()
-        return review_request;
+        return review_request
