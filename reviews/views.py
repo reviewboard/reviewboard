@@ -74,9 +74,9 @@ def parse_change_desc(changedesc, result_dict):
         elif cur_key != None:
             changedesc_keys[cur_key] += line
 
-    result_dict['summary'] = summary
-    result_dict['description'] = description
-    result_dict['testing_done'] = changedesc_keys['Testing Done']
+    result_dict['summary'] = summary.strip()
+    result_dict['description'] = description.strip()
+    result_dict['testing_done'] = changedesc_keys['Testing Done'].strip()
 
     result_dict['bugs_closed'] = \
         ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number'])).strip()

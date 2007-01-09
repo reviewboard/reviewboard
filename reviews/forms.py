@@ -4,9 +4,9 @@ from django.core.validators import ValidationError
 from reviewboard.reviews.models import Group, Person, ReviewRequest
 
 class NewReviewRequestForm(forms.Form):
-    summary = forms.CharField()
-    description = forms.CharField(widget=forms.Textarea)
-    testing_done = forms.CharField(widget=forms.Textarea)
+    summary = forms.CharField(max_length=300)
+    description = forms.CharField(widget=forms.Textarea(attrs={'rows': 10}))
+    testing_done = forms.CharField(widget=forms.Textarea(attrs={'rows': 10}))
     bugs_closed = forms.CharField()
     branch = forms.CharField()
     target_groups = forms.CharField()
