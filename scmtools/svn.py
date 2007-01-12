@@ -1,3 +1,4 @@
+from scmtools.core import SCMException, HEAD, SCMTool
 import pysvn
 import re
 
@@ -12,12 +13,12 @@ class SVNTool(SCMTool):
 
     def get_file(self, path, revision=HEAD):
         if revision == HEAD:
-            revision = pysvn.Revision(opt_revision_kind.head)
+            revision = pysvn.Revision(pysvn.opt_revision_kind.head)
 
         try:
             return self.client.cat(self.__normalize_path(path), revision)
         except pysvn.ClientError, e:
-            raise SCMException(e.arg)
+            raise SCMException("Unable to retrieve file %s" % path)
 
 
     def get_diff_header_info(self, header):
@@ -51,5 +52,7 @@ class SVNTool(SCMTool):
     def __normalize_path(self, path):
         if path.startswith(self.repopath):
             return path
+        elif path[0] == '/':
+            return self.repopath + path
         else:
             return self.repopath + "/" + path

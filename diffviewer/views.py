@@ -5,13 +5,13 @@ from django.template import RequestContext
 from popen2 import Popen3
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 import os, sys, tempfile
+import reviewboard.scmtools as scmtools
 
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 DIFF_COL_WIDTH=90
 DIFF_OPTS = "--side-by-side --expand-tabs --width=%s" % (DIFF_COL_WIDTH * 2 + 3)
 
 def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
-
     try:
         diffset = DiffSet.objects.get(pk=object_id)
     except DiffSet.DoesNotExist:
@@ -28,16 +28,18 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
             if orig_buffer == None:
                 # It's not cached. Let's go get it.
-                # TODO: Call the SCM manager.
                 try:
-                    f = open(filediff.source_path, 'r')
-                    orig_buffer = ''.join(f.readlines())
-                    f.close()
-                    cache.set(filediff.source_path, orig_buffer,
-                              CACHE_EXPIRATION_TIME)
-                except IOError:
-                    # TODO: Print an error saying we can't get the file.
-                    raise Http404 # XXX
+                    orig_buffer = \
+                        scmtools.get_tool().get_file(filediff.source_path)
+                except Exception:
+                    # TODO: Include the actual error.
+                    return render_to_response(template_name, {
+                        'error': "Unable to retrieve the source file %s" % \
+                                 filediff.source_path
+                    })
+
+                cache.set(filediff.source_path, orig_buffer,
+                          CACHE_EXPIRATION_TIME)
 
             try:
                 (fd, tempname) = tempfile.mkstemp()
@@ -45,15 +47,19 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 f.write(orig_buffer)
                 f.close()
 
-                # TODO: Handle the case where there's actually an error.
-                #       Shouldn't happen, which is why it will.
                 new_file = '%s-new' % tempname
                 p = Popen3('patch -o %s %s' % (new_file, tempname))
                 p.tochild.write(filediff.diff)
                 p.tochild.close()
                 ret = p.wait()
 
-                # TODO: Check ret
+                if ret != 0:
+                    os.unlink(tempname)
+                    os.unlink(new_file)
+                    return render_to_response(template_name, {
+                        'error': "The patch didn't apply cleanly. Try " +
+                                 "re-uploading the patch."
+                    })
 
                 f = os.popen('diff %s %s %s' % (DIFF_OPTS, tempname, new_file))
                 sidebyside_diff = ''.join(f.readlines())

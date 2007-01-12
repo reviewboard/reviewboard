@@ -1,10 +1,12 @@
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
 class SCMException(Exception):
-    pass
+    def __init__(self, msg):
+        Exception.__init__(self)
 
 class Revision:
     pass
-
-HEAD = Revision()
 
 class DiffHeader:
     orig_file = None
@@ -30,3 +32,25 @@ class SCMTool:
 
     def get_changeset(self, uri, userid):
         raise NotImplementedError
+
+
+HEAD = Revision()
+
+def get_tool():
+    path = settings.SCMTOOL_BACKEND
+    i = path.rfind('.')
+    module, attr = path[:i], path[i+1:]
+
+    try:
+        mod = __import__(module, {}, {}, [attr])
+    except ImportError, e:
+        raise ImproperlyConfigured, \
+            'Error importing SCM Tool %s: "%s"' % (module, e)
+
+    try:
+        cls = getattr(mod, attr)
+    except AttributeError:
+        raise ImproperlyConfigured, \
+            'Module "%s" does not define a "%s" SCM Tool' % (module, attr)
+
+    return cls(settings.SCMTOOL_REPOPATH)

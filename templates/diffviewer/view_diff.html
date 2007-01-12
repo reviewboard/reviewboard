@@ -4,6 +4,9 @@
 
 {% block content %}
 <div id="diffs">
+{% if error %}
+{{ error }}
+{% else %}
 {% for file in files %}
 <table class="sidebyside">
  <colgroup>
@@ -25,5 +28,6 @@
  </tbody>
 </table></li>
 {% endfor %}
+{% endif %}
 </div>
 {% endblock %}
