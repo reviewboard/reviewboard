@@ -20,11 +20,9 @@
   </tr>
  </thead>
  <tbody>
-{% spaceless %}
 {% for line in file.lines %}
 {% sidebyside_diffline %}
 {% endfor %}
-{% endspaceless %}
  </tbody>
 </table></li>
 {% endfor %}

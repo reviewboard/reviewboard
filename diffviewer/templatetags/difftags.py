@@ -7,19 +7,23 @@ register = template.Library()
                         takes_context=True)
 def sidebyside_diffline(context):
     lineclass = ""
+    name = ""
     line = context['line']
 
-    if line[0]:
+    chunk_changed, chunk_id, change, oldline, newline = context['line']
+
+    if chunk_changed:
         lineclass = "new_chunk "
 
-    if line[1] != None:
-        lineclass += line[1]
+    if chunk_id != None:
+        name = "%s.%s" % (context['file']['id'], chunk_id)
 
-    oldline = line[2]
+    if change != None:
+        lineclass += change
+
     if oldline == "":
         oldline = " "
 
-    newline = line[3]
     if newline == "":
         newline = " "
 
@@ -27,4 +31,5 @@ def sidebyside_diffline(context):
         'class': lineclass,
         'oldline': oldline,
         'newline': newline,
+        'name': name,
     }

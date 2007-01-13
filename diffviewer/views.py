@@ -72,6 +72,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 raise e # XXX
 
             lines = []
+            next_chunk_id = 0
 
             f = open('/tmp/sidediff', 'w')
             f.write(sidebyside_diff)
@@ -80,6 +81,8 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
             for line in sidebyside_diff.split('\n'):
                 change = ""
+                chunk_id = None
+                chunk_changed = False
 
                 if len(line) > DIFF_COL_WIDTH:
                     mark = line[DIFF_COL_WIDTH:DIFF_COL_WIDTH+3].strip()
@@ -92,21 +95,24 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                         change = "added"
 
                 if prev_change != change:
-                    new_chunk = True
-                else:
-                    new_chunk = False
+                    chunk_changed = True
+                    if change != "":
+                        chunk_id = next_chunk_id
+                        next_chunk_id = chunk_id + 1
 
                 prev_change = change
 
                 oldline = line[0:DIFF_COL_WIDTH]
                 newline = line[DIFF_COL_WIDTH+3:]
-                lines.append([new_chunk, change, oldline, newline])
+                lines.append([chunk_changed, chunk_id, change,
+                              oldline, newline])
 
             cache.set(key, lines, CACHE_EXPIRATION_TIME)
 
 
         files.append({'depot_filename': filediff.source_path,
                       'user_filename': filediff.filename,
+                      'id': filediff.id,
                       'lines': lines})
 
     return render_to_response(template_name, {
