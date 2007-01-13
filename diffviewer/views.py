@@ -73,24 +73,20 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 raise e # XXX
 
             lines = []
-            next_chunk_id = 0
+            next_chunk_index = 0
 
             f = open('/tmp/sidediff', 'w')
             f.write(sidebyside_diff)
             f.close()
-            prev_change = ""
+            prev_change = None
 
             chunks = []
-            old_chunk_text = ""
-            new_chunk_text = ""
-            chunk_id = None
-            next_chunk_id = 0
-            change = ""
-            cur_chunk_id = None
+            next_chunk_index = 0
+            change = None
+            chunk_info = None
 
             for line in sidebyside_diff.split('\n'):
                 chunk_changed = False
-                old_change = change
 
                 oldline = line[0:DIFF_COL_WIDTH].rstrip()
                 newline = line[DIFF_COL_WIDTH+3:].rstrip()
@@ -107,29 +103,28 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                     else:
                         change = ""
 
-                if prev_change == change:
-                    old_chunk_text += oldline + '\n'
-                    new_chunk_text += newline + '\n'
-                else:
-                    # Save the chunk we just finished with
-                    chunks.append([chunk_id, old_change,
-                                   old_chunk_text[0:-1],
-                                   new_chunk_text[0:-1]])
-                    old_chunk_text = oldline + '\n'
-                    new_chunk_text = newline + '\n'
+                if prev_change != change:
+                    if chunk_info != None:
+                        chunks.append(chunk_info)
+
+                    chunk_info = {
+                        'oldtext': oldline,
+                        'newtext': newline,
+                        'change': change
+                    }
 
                     if change != "":
-                        chunk_id = next_chunk_id
-                        next_chunk_id += 1
+                        chunk_info['index'] = next_chunk_index
+                        next_chunk_index += 1
                     else:
-                        chunk_id = None
-
+                        chunk_info['index'] = None
+                else:
+                    chunk_info['oldtext'] += '\n' + oldline
+                    chunk_info['newtext'] += '\n' + newline
 
                 prev_change = change
 
-            # XXX We shouldn't be doing this twice.
-            chunks.append([chunk_id, old_change,
-                           old_chunk_text[0:-1], new_chunk_text[0:-1]])
+            chunks.append(chunk_info)
             cache.set(key, chunks, CACHE_EXPIRATION_TIME)
 
 
@@ -137,7 +132,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                       'user_filename': filediff.filename,
                       'index': file_index,
                       'chunks': chunks,
-                      'num_chunks': next_chunk_id,
+                      'num_chunks': next_chunk_index,
         })
 
         file_index += 1

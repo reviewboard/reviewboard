@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load difftags %}
 {% block title %}Diff Viewer{% endblock %}
 
 {% block content %}
@@ -12,8 +11,8 @@
  <li><a href="#{{file.index}}">{{file.user_filename}}</a>:
      {{ file.num_chunks }} change{{ file.num_chunks|pluralize }} [
 {%  for chunk in file.chunks %}
-{% ifnotequal chunk.1 "" %}
-<a href="#{{file.index}}.{{chunk.0}}">{{ chunk.0 }}</a>
+{% ifnotequal chunk.change "" %}
+<a href="#{{file.index}}.{{chunk.index}}">{{chunk.index}}</a>
 {% endifnotequal %}
 {%  endfor %}
 ]</li>
@@ -35,7 +34,10 @@
  </thead>
  <tbody>
 {% for chunk in file.chunks %}
-{% sidebyside_diffline %}
+  <tr{% ifnotequal chunk.change "" %} class="{{chunk.change}}"{% endifnotequal %}>
+   <td>{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}<pre>{{ chunk.oldtext|escape }}</pre></td>
+   <td><pre>{{ chunk.newtext|escape }}</pre></td>
+  </tr>
 {% endfor %}
  </tbody>
 </table></li>
