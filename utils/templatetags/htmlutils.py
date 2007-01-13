@@ -267,4 +267,4 @@ def ageid(parser, token):
 
 @register.filter
 def escapespaces(value):
-    return value.replace(' ', '&nbsp;').replace('\n', '<br />')
+    return value.replace('  ', '&nbsp; ').replace('\n', '<br />')
