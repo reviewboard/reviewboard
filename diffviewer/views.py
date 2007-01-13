@@ -79,10 +79,20 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             f.close()
             prev_change = ""
 
+            chunks = []
+            old_chunk_text = ""
+            new_chunk_text = ""
+            chunk_id = None
+            next_chunk_id = 0
+            change = ""
+            cur_chunk_id = None
+
             for line in sidebyside_diff.split('\n'):
-                change = ""
-                chunk_id = None
                 chunk_changed = False
+                old_change = change
+
+                oldline = line[0:DIFF_COL_WIDTH].rstrip()
+                newline = line[DIFF_COL_WIDTH+3:].rstrip()
 
                 if len(line) > DIFF_COL_WIDTH:
                     mark = line[DIFF_COL_WIDTH:DIFF_COL_WIDTH+3].strip()
@@ -93,27 +103,39 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                         change = "removed"
                     elif mark == ">":
                         change = "added"
+                    else:
+                        change = ""
 
-                if prev_change != change:
-                    chunk_changed = True
+                if prev_change == change:
+                    old_chunk_text += oldline + '\n'
+                    new_chunk_text += newline + '\n'
+                else:
+                    # Save the chunk we just finished with
+                    chunks.append([chunk_id, old_change,
+                                   old_chunk_text[0:-1],
+                                   new_chunk_text[0:-1]])
+                    old_chunk_text = oldline + '\n'
+                    new_chunk_text = newline + '\n'
+
                     if change != "":
                         chunk_id = next_chunk_id
-                        next_chunk_id = chunk_id + 1
+                        next_chunk_id += 1
+                    else:
+                        chunk_id = None
+
 
                 prev_change = change
 
-                oldline = line[0:DIFF_COL_WIDTH]
-                newline = line[DIFF_COL_WIDTH+3:]
-                lines.append([chunk_changed, chunk_id, change,
-                              oldline, newline])
-
-            cache.set(key, lines, CACHE_EXPIRATION_TIME)
+            # XXX We shouldn't be doing this twice.
+            chunks.append([chunk_id, old_change,
+                           old_chunk_text[0:-1], new_chunk_text[0:-1]])
+            cache.set(key, chunks, CACHE_EXPIRATION_TIME)
 
 
         files.append({'depot_filename': filediff.source_path,
                       'user_filename': filediff.filename,
                       'id': filediff.id,
-                      'lines': lines})
+                      'chunks': chunks})
 
     return render_to_response(template_name, {
         'files': files,

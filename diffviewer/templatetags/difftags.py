@@ -6,30 +6,25 @@ register = template.Library()
 @register.inclusion_tag('diffviewer/sidebyside_diffline.html',
                         takes_context=True)
 def sidebyside_diffline(context):
-    lineclass = ""
+    cls = ""
     name = ""
-    line = context['line']
-
-    chunk_changed, chunk_id, change, oldline, newline = context['line']
-
-    if chunk_changed:
-        lineclass = "new_chunk "
+    chunk_id, change, oldtext, newtext = context['chunk']
 
     if chunk_id != None:
         name = "%s.%s" % (context['file']['id'], chunk_id)
 
     if change != None:
-        lineclass += change
+        cls += change
 
-    if oldline == "":
-        oldline = " "
+    if oldtext == "":
+        oldtext = " "
 
-    if newline == "":
-        newline = " "
+    if newtext == "":
+        newtext = " "
 
     return {
-        'class': lineclass,
-        'oldline': oldline,
-        'newline': newline,
+        'class': cls,
+        'oldtext': oldtext,
+        'newtext': newtext,
         'name': name,
     }

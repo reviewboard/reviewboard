@@ -20,7 +20,7 @@
   </tr>
  </thead>
  <tbody>
-{% for line in file.lines %}
+{% for chunk in file.chunks %}
 {% sidebyside_diffline %}
 {% endfor %}
  </tbody>
