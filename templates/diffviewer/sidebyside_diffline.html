@@ -1,6 +1,5 @@
 {% load htmlutils %}
 <tr{% ifnotequal class "" %} class="{{class}}"{% endifnotequal %}>
- <td><tt>{% ifnotequal name "" %}<a name="#{{name}}"></a>{% endifnotequal %}
- {{ oldtext|escape|escapespaces }}</tt></td>
- <td><tt>{{ newtext|escape|escapespaces }}</tt></td>
+ <td>{% ifnotequal name "" %}<a name="#{{name}}"></a>{% endifnotequal %}<pre>{{ oldtext|escape }}</pre></td>
+ <td><pre>{{ newtext|escape }}</pre></td>
 </tr>
