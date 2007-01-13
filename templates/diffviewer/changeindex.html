@@ -1,0 +1,12 @@
+<ol class="index">
+{% for file in files %}
+ <li><a href="#{{file.index}}">{{file.user_filename}}</a>:
+     {{ file.num_chunks }} change{{ file.num_chunks|pluralize }} [
+{%  for chunk in file.chunks %}
+{% ifnotequal chunk.change "" %}
+<a href="#{{file.index}}.{{chunk.index}}">{{chunk.index}}</a>
+{% endifnotequal %}
+{%  endfor %}
+]</li>
+{% endfor %}
+</ol>

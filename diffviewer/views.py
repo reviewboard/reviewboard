@@ -18,7 +18,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         raise Http404
 
     files = []
-    file_index = 0
+    file_index = 1 # Start at one, since the file index will be 0
 
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
@@ -84,6 +84,8 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             next_chunk_index = 0
             change = None
             chunk_info = None
+            last_changed_index = 0
+            i = 0
 
             for line in sidebyside_diff.split('\n'):
                 chunk_changed = False
@@ -114,10 +116,22 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                     }
 
                     if change != "":
+                        last_changed_index = i
                         chunk_info['index'] = next_chunk_index
                         next_chunk_index += 1
+
+                        if chunk_info['index'] == 0:
+                            chunk_info['previd'] = file_index
+                        else:
+                            chunk_info['previd'] = "%s.%s" % \
+                                (file_index, chunk_info['index'] - 1)
+
+                        chunk_info['nextid'] = "%s.%s" % \
+                            (file_index, chunk_info['index'] + 1)
                     else:
                         chunk_info['index'] = None
+
+                    i += 1
                 else:
                     chunk_info['oldtext'] += '\n' + oldline
                     chunk_info['newtext'] += '\n' + newline
@@ -125,6 +139,10 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 prev_change = change
 
             chunks.append(chunk_info)
+
+            # Override the nextid of the last chunk to point to the next
+            # file or section
+            chunks[last_changed_index]['nextid'] = file_index + 1
             cache.set(key, chunks, CACHE_EXPIRATION_TIME)
 
 
@@ -138,5 +156,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         file_index += 1
 
     return render_to_response(template_name, {
+        'header_id': 0,
+        'footer_id': file_index,
         'files': files,
     })
