@@ -7,7 +7,21 @@
 {% if error %}
 {{ error }}
 {% else %}
+<ol id="index">
 {% for file in files %}
+ <li><a href="#{{file.index}}">{{file.user_filename}}</a>:
+     {{ file.num_chunks }} change{{ file.num_chunks|pluralize }} [
+{%  for chunk in file.chunks %}
+{% ifnotequal chunk.1 "" %}
+<a href="#{{file.index}}.{{chunk.0}}">{{ chunk.0 }}</a>
+{% endifnotequal %}
+{%  endfor %}
+]</li>
+{% endfor %}
+</ol>
+
+{% for file in files %}
+<a name="{{file.index}}"></a>
 <table class="sidebyside">
  <colgroup>
   <col class="left" width="50%" />

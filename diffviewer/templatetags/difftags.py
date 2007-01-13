@@ -11,7 +11,7 @@ def sidebyside_diffline(context):
     chunk_id, change, oldtext, newtext = context['chunk']
 
     if chunk_id != None:
-        name = "%s.%s" % (context['file']['id'], chunk_id)
+        name = "%s.%s" % (context['file']['index'], chunk_id)
 
     if change != None:
         cls += change
