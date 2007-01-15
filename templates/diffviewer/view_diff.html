@@ -64,6 +64,28 @@ function handleKey(evt) {
 	}
 }
 
+function gotoAnchor(name) {
+	var anchor = GetAnchorByName(name);
+
+	if (anchor == INVALID) {
+		return false;
+	} else {
+		scrollToAnchor(anchor, 1);
+	}
+
+	return true;
+}
+
+function GetAnchorByName(name) {
+	for (var anchor = 0; anchor < document.anchors.length; anchor++) {
+		if (document.anchors[anchor].name == name) {
+			return anchor;
+		}
+	}
+
+	return INVALID
+}
+
 function handleOnLoad() {
 	/* Skip over the change index to the first item */
 	gSelectedAnchor = 1;
@@ -131,19 +153,6 @@ function SetHighlighted(anchor, highlighted) {
 		controlsNode.nodeValue = "";
 	}
 }
-
-function GetContainingElement(anchor, elementName) {
-	for (var parent = document.anchors[anchor].parentNode; parent;
-	     parent = parent.parentNode) {
-
-		if (parent.tagName == elementName) {
-			return parent;
-		}
-	}
-
-	return 0;
-}
-
 </script>
 
 <div id="diffs">
@@ -170,7 +179,7 @@ function GetContainingElement(anchor, elementName) {
  </thead>
  <tbody>
 {% for chunk in file.chunks %}
-  <tr{% ifnotequal chunk.change "" %} class="{{chunk.change}}"{% endifnotequal %}>
+  <tr{% ifnotequal chunk.change "" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
    <td class="controls">&nbsp;</td>
    <td>{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}<pre>{{ chunk.oldtext|escape }}</pre></td>
    <td><pre>{{ chunk.newtext|escape }}</pre></td>

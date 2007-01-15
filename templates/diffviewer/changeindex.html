@@ -4,7 +4,7 @@
      {{ file.num_chunks }} change{{ file.num_chunks|pluralize }} [
 {%  for chunk in file.chunks %}
 {% ifnotequal chunk.change "" %}
-<a href="#{{file.index}}.{{chunk.index}}">{{chunk.index}}</a>
+<a href="#{{file.index}}.{{chunk.index}}" onClick="return !gotoAnchor('{{file.index}}.{{chunk.index}}');">{{chunk.index}}</a>
 {% endifnotequal %}
 {%  endfor %}
 ]</li>
