@@ -1,12 +1,156 @@
 {% extends "base.html" %}
 {% block title %}Diff Viewer{% endblock %}
 
+{% block bodytag %}
+<body onLoad="handleOnLoad();" onKeyPress="handleKey(event);">
+{% endblock %}
+
 {% block content %}
+<script language="javascript">
+// Constants
+var BACKWARD = -1;
+var FORWARD  = 1;
+var INVALID  = -1;
+var DIFF_SCROLLDOWN_AMOUNT = 250;
+var DIFF_OFFSET_FROM_TOP   = 15;
+
+// Keyboard shortcuts
+var gPrevFileKeys = "aAKP<m";
+var gNextFileKeys = "fFJN>/";
+var gPrevDiffKeys = "sSkp,,";
+var gNextDiffKeys = "dDjn..";
+var gRecenterDiffKeys = unescape("%0D"); // Enter
+var gHeaderKeys = "gu;";
+var gFooterKeys = "GU:";
+
+// State variables
+var gSelectedAnchor = INVALID;
+var gCurrentAnchor = 0;
+
+function keyCode(evt) {
+	if (navigator.appName.indexOf("Explorer") != -1) {
+		return evt.keyCode;
+	} else {
+		return evt.which;
+	}
+}
+
+function handleKey(evt) {
+	var code = keyCode(evt);
+	var keyChar = String.fromCharCode(code);
+	var newAnchor = gSelectedAnchor;
+	var center = true;
+
+	if (gPrevDiffKeys.indexOf(keyChar) != -1) {
+		newAnchor = GetNextAnchor(BACKWARD);
+	} else if (gNextDiffKeys.indexOf(keyChar) != -1) {
+		newAnchor = GetNextAnchor(FORWARD);
+	} else if (gPrevFileKeys.indexOf(keyChar) != -1) {
+		newAnchor = GetNextAnchor(BACKWARD);
+	} else if (gNextFileKeys.indexOf(keyChar) != -1) {
+		newAnchor = GetNextAnchor(FORWARD);
+	} else if (gRecenterDiffKeys.indexOf(keyChar) != -1) {
+		/*
+		 * Don't update the anchor. This will cause a recenter of the
+		 * current anchor.
+		 */
+	} else {
+		window.status = "unbound key: keycode=" + code;
+		return;
+	}
+
+	if (newAnchor != INVALID) {
+		scrollToAnchor(newAnchor, center);
+	}
+}
+
+function handleOnLoad() {
+	/* Skip over the change index to the first item */
+	gSelectedAnchor = 1;
+	SetHighlighted(gSelectedAnchor, 1)
+}
+
+function scrollToAnchor(anchor, center) {
+	var scrollAdjustment = -DIFF_SCROLLDOWN_AMOUNT;
+
+	if (!center) {
+		scrollAdjustment = -DIFF_OFFSET_FROM_TOP;
+	}
+
+	window.scrollTo(0,
+		GetYPos(document.anchors[anchor]) - DIFF_SCROLLDOWN_AMOUNT);
+	SetHighlighted(gSelectedAnchor, 0);
+	SetHighlighted(anchor, 1);
+
+	window.scrollTo(0, GetYPos(document.anchors[anchor]) + scrollAdjustment);
+	gSelectedAnchor = anchor;
+}
+
+function GetYPos(obj) {
+	return obj.offsetTop + (obj.offsetParent ? GetYPos(obj.offsetParent) : 0);
+}
+
+function GetNextAnchor(dir) {
+	var newAnchor = gSelectedAnchor + dir;
+	if (newAnchor < 0 || newAnchor >= document.anchors.length) {
+		return INVALID;
+	}
+
+	var name = document.anchors[newAnchor].name;
+
+	if (name == "index_header" || name == "index_footer") {
+		return INVALID;
+	}
+
+	return newAnchor;
+}
+
+function SetHighlighted(anchor, highlighted) {
+	var anchorNode = document.anchors[anchor];
+	var node = anchorNode.parentNode;
+	var nextNode = anchorNode.nextSibling.nextSibling;
+	var controlsNode;
+
+	if (node.tagName == "TD" || node.tagName == "TH") {
+		node = node.parentNode;
+		controlsNode = node.getElementsByTagName('td')[0].firstChild;
+	}
+	else if (nextNode.className == "sidebyside") {
+		node = nextNode.getElementsByTagName('tr')[0];
+		controlsNode = node.getElementsByTagName('th')[0].firstChild;
+	}
+	else {
+		return;
+	}
+
+	if (highlighted) {
+		node.className += " selected";
+		controlsNode.nodeValue = "▶";
+	} else {
+		node.className = node.className.replace(" selected", "");
+		controlsNode.nodeValue = "";
+	}
+}
+
+function GetContainingElement(anchor, elementName) {
+	for (var parent = document.anchors[anchor].parentNode; parent;
+	     parent = parent.parentNode) {
+
+		if (parent.tagName == elementName) {
+			return parent;
+		}
+	}
+
+	return 0;
+}
+
+</script>
+
 <div id="diffs">
 {% if error %}
 {{ error }}
 {% else %}
-<a name="{{header_id}}"></a>
+<a name="index_header"></a>
 {% include "diffviewer/changeindex.html" %}
 
 {% for file in files %}
@@ -19,7 +163,7 @@
  </colgroup>
  <thead>
   <tr>
-   <th>&nbsp;</th>
+   <th class="controls">&nbsp;</th>
    <th>{{ file.depot_filename }}</th>
    <th>{{ file.user_filename }}</th>
   </tr>
@@ -27,7 +171,7 @@
  <tbody>
 {% for chunk in file.chunks %}
   <tr{% ifnotequal chunk.change "" %} class="{{chunk.change}}"{% endifnotequal %}>
-   <td>{% ifnotequal chunk.change "" %}<a href="#{{chunk.nextid}}">▼</a><a href="#{{chunk.previd}}">▲</a>{% endifnotequal %}</td>
+   <td class="controls">&nbsp;</td>
    <td>{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}<pre>{{ chunk.oldtext|escape }}</pre></td>
    <td><pre>{{ chunk.newtext|escape }}</pre></td>
   </tr>
@@ -35,7 +179,7 @@
  </tbody>
 </table></li>
 {% endfor %}
-<a name="{{footer_id}}"></a>
+<a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
 {% endif %}
 </div>

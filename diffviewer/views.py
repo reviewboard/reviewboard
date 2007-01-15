@@ -18,7 +18,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         raise Http404
 
     files = []
-    file_index = 1 # Start at one, since the file index will be 0
+    file_index = 0
 
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
@@ -156,7 +156,5 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         file_index += 1
 
     return render_to_response(template_name, {
-        'header_id': 0,
-        'footer_id': file_index,
         'files': files,
     })
