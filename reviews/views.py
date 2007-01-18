@@ -135,7 +135,7 @@ Files:\n\
                 form.clean_data['public'] = True
                 new_reviewreq = form.create()
 
-                return HttpResponseRedirect('/reviews/%s/' % new_reviewreq.id)
+                return HttpResponseRedirect(new_reviewreq.get_absolute_url())
 
     form = NewReviewRequestForm(form_data)
     return render_to_response(template_name, {

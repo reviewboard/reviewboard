@@ -46,13 +46,6 @@ class Comment(models.Model):
     filename = models.CharField("Filename", maxlength=256, core=True)
 
 
-class Review(models.Model):
-    ship_it = models.BooleanField("Ship It", default=False)
-    comments = models.ManyToManyField(Comment, verbose_name="Comments",
-                                      core=False, blank=True)
-    reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff")
-
-
 class ReviewRequest(models.Model):
     STATUSES = (
         ('P', 'Pending Review'),
@@ -71,10 +64,9 @@ class ReviewRequest(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
     diffset = models.ManyToManyField(DiffSet, verbose_name='DiffSet',
-                                     core=True, blank=False)
+                                     blank=False)
     branch = models.CharField("Branch", maxlength=30)
-
-    target_groups = models.ManyToManyField(Group, verbose_name="Target Group",
+    target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
     target_people = models.ManyToManyField(Person, verbose_name="Target People",
                                            related_name="target_people",
@@ -97,3 +89,47 @@ class ReviewRequest(models.Model):
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
+
+
+class Review(models.Model):
+    review_request = models.ForeignKey(ReviewRequest)
+    ship_it = models.BooleanField("Ship It", default=False)
+    comments = models.ManyToManyField(Comment, verbose_name="Comments",
+                                      core=False, blank=True)
+    reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff")
+
+
+class ReviewRequestDraft(models.Model):
+    review_request = models.ForeignKey(ReviewRequest,
+                                       verbose_name="Review Request", core=True)
+    last_updated = models.DateTimeField("Last Updated", auto_now=True)
+    summary = models.CharField("Summary", maxlength=300, core=True)
+    description = models.TextField("Description")
+    testing_done = models.TextField("Testing Done")
+    bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
+                                                    maxlength=300, blank=True)
+    diffset = models.ManyToManyField(DiffSet, verbose_name='DiffSet',
+                                     blank=False)
+    branch = models.CharField("Branch", maxlength=30)
+    target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
+                                           core=False, blank=True)
+    target_people = models.ManyToManyField(Person, verbose_name="Target People",
+                                           related_name="draft_target_people",
+                                           core=False, blank=True)
+
+    def get_bug_list(self):
+        bugs = re.split(r"[, ]+", self.bugs_closed)
+        bugs.sort(cmp=lambda x,y: int(x) - int(y))
+        return bugs
+
+    def __str__(self):
+        return str(self.details)
+
+    def _submitter(self):
+        return self.review_request.submitter
+
+    class Admin:
+        list_display = ('summary', '_submitter', 'last_updated')
+
+    class Meta:
+        ordering = ['-last_updated']
