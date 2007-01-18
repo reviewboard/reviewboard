@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from reviewboard.diffviewer.models import DiffSet
+import re
 
 class Group(models.Model):
     name = models.CharField("Name", maxlength=30, core=True)
@@ -80,7 +81,7 @@ class ReviewRequest(models.Model):
                                            core=False, blank=True)
 
     def get_bug_list(self):
-        bugs = self.bugs_closed.split(',')
+        bugs = re.split(r"[, ]+", self.bugs_closed)
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
         return bugs
 
