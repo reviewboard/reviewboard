@@ -14,6 +14,7 @@ class FileDiff(models.Model):
 
 class DiffSet(models.Model):
     revision = models.IntegerField("Revision", core=True)
+    timestamp = models.DateTimeField("Timestamp", auto_now_add=True)
     files = models.ManyToManyField(FileDiff, verbose_name="Files", core=True)
 
     def __str__(self):
@@ -21,3 +22,6 @@ class DiffSet(models.Model):
 
     class Admin:
         list_display = ('__str__', 'revision',)
+
+    class Meta:
+        get_latest_by = 'timestamp'

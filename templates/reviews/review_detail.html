@@ -6,6 +6,8 @@
 {% endblock %}
 
 {% block content %}
+<div id="servererror"></div>
+
 <table id="review-details">
  <tr>
   <td colspan="2"><span id="summary">{{object.summary}}</span> <img id="summary_edit" src="/images/edit.png" width="14" height="14" /></td>
@@ -66,19 +68,29 @@
 </table>
 
 <script type="text/javascript">
-	new Ajax.InPlaceEditor('summary', 'field/summary/',
-	                       {externalControl: 'summary_edit'});
-	new Ajax.InPlaceEditor('branch', 'field/branch/',
-	                       {externalControl: 'branch_edit'});
-	new Ajax.InPlaceEditor('groupreviewers', 'field/target_groups/',
-	                       {externalControl: 'groupreviewers_edit'});
-	new Ajax.InPlaceEditor('personreviewers', 'field/target_people/',
-	                       {externalControl: 'personreviewers_edit'});
-	new Ajax.InPlaceEditor('bugs', 'field/bugs_closed/',
-	                       {externalControl: 'bugs_edit'});
-	new Ajax.InPlaceEditor('description', 'field/description/',
-	                       {rows: 10, cols: 80});
-	new Ajax.InPlaceEditor('testingdone', 'field/testing_done/',
-	                       {rows: 10, cols: 80});
+	function onSubmitFailure(transport) {
+		$('servererror').innerHTML = transport.responseText;
+	}
+
+	function registerEditor(field) {
+		new Ajax.InPlaceEditor(field, 'field/' + field + '/',
+		                       {externalControl: field + '_edit',
+							    onFailure: onSubmitFailure})
+	}
+
+	function registerMultiEditor(field) {
+		new Ajax.InPlaceEditor(field, 'field/' + field + '/',
+		                       {externalControl: field + '_edit',
+							    rows: 10, cols: 80,
+							    onFailure: 'onSubmitFailure'});
+	}
+
+	registerEditor('summary');
+	registerEditor('branch');
+	registerEditor('description');
+	registerEditor('testingdone');
+	//registerEditor('bugs');
+	//registerMultiEditor('target_groups');
+	//registerMultiEditor('target_people');
 </script>
 {% endblock %}

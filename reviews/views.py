@@ -171,6 +171,9 @@ def field(request, review_request_id, field_name):
                 for person in review_request.target_people.all():
                     draft.target_people.add(person)
 
+                if review_request.diffsets.count() >= 0:
+                    draft.diffset = review_request.diffsets.latest()
+
 
             setattr(draft, field_name, form_data['value'])
             draft.save()

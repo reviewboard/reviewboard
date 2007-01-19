@@ -63,8 +63,8 @@ class ReviewRequest(models.Model):
     testing_done = models.TextField("Testing Done")
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
-    diffset = models.ManyToManyField(DiffSet, verbose_name='DiffSet',
-                                     blank=False)
+    diffsets = models.ManyToManyField(DiffSet, verbose_name='Diff Sets',
+                                      blank=True)
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
@@ -108,8 +108,8 @@ class ReviewRequestDraft(models.Model):
     testing_done = models.TextField("Testing Done")
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
-    diffset = models.ManyToManyField(DiffSet, verbose_name='DiffSet',
-                                     blank=False)
+    diffset = models.ForeignKey(DiffSet, verbose_name='DiffSet', blank=True,
+                                null=True)
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
