@@ -1,12 +1,13 @@
 from django import newforms as forms
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.newforms import widgets
 from django.newforms.util import smart_unicode
-from django.shortcuts import render_to_response
+from django.shortcuts import get_object_or_404, render_to_response
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
-from reviewboard.reviews.models import ReviewRequest, Person, Group
+from reviewboard.reviews.models import \
+    ReviewRequest, ReviewRequestDraft, Person, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
 import re
 
@@ -144,6 +145,48 @@ Files:\n\
         'form': form,
     })
 
+
+def field(request, review_request_id, field_name):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.POST:
+        form_data = request.POST.copy()
+
+        if hasattr(review_request, field_name) and form_data['value']:
+            draft, draft_is_new = \
+                ReviewRequestDraft.objects.get_or_create(
+                    review_request=review_request,
+                    defaults={
+                        'summary': review_request.summary,
+                        'description': review_request.description,
+                        'testing_done': review_request.testing_done,
+                        'bugs_closed': review_request.bugs_closed,
+                        'branch': review_request.branch,
+                    })
+
+            if draft_is_new:
+                for group in review_request.target_groups.all():
+                    draft.target_groups.add(group)
+
+                for person in review_request.target_people.all():
+                    draft.target_people.add(person)
+
+
+            setattr(draft, field_name, form_data['value'])
+            draft.save()
+
+            return HttpResponse(getattr(draft, field_name))
+    else:
+        try:
+            obj = ReviewRequestDraft.objects.get(review_request=review_request)
+        except ReviewRequestDraft.DoesNotExist:
+            obj = review_request
+
+        if field_name != None:
+            if hasattr(obj, field_name):
+                return HttpResponse(getattr(obj, field_name))
+
+    raise Http404()
 
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,

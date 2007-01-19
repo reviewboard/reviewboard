@@ -66,17 +66,19 @@
 </table>
 
 <script type="text/javascript">
-	new Ajax.InPlaceEditor('summary', '',
+	new Ajax.InPlaceEditor('summary', 'field/summary/',
 	                       {externalControl: 'summary_edit'});
-	new Ajax.InPlaceEditor('branch', '',
+	new Ajax.InPlaceEditor('branch', 'field/branch/',
 	                       {externalControl: 'branch_edit'});
-	new Ajax.InPlaceEditor('groupreviewers', '',
+	new Ajax.InPlaceEditor('groupreviewers', 'field/target_groups/',
 	                       {externalControl: 'groupreviewers_edit'});
-	new Ajax.InPlaceEditor('personreviewers', '',
+	new Ajax.InPlaceEditor('personreviewers', 'field/target_people/',
 	                       {externalControl: 'personreviewers_edit'});
-	new Ajax.InPlaceEditor('bugs', '',
+	new Ajax.InPlaceEditor('bugs', 'field/bugs_closed/',
 	                       {externalControl: 'bugs_edit'});
-	new Ajax.InPlaceEditor('description', '', {rows: 10, cols: 80});
-	new Ajax.InPlaceEditor('testingdone', '', {rows: 10, cols: 80});
+	new Ajax.InPlaceEditor('description', 'field/description/',
+	                       {rows: 10, cols: 80});
+	new Ajax.InPlaceEditor('testingdone', 'field/testing_done/',
+	                       {rows: 10, cols: 80});
 </script>
 {% endblock %}

@@ -123,7 +123,7 @@ class ReviewRequestDraft(models.Model):
         return bugs
 
     def __str__(self):
-        return str(self.details)
+        return self.summary
 
     def _submitter(self):
         return self.review_request.submitter
