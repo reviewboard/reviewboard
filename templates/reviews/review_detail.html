@@ -25,32 +25,32 @@
  </tr>
 {% ifnotequal object.target_groups.count 0 %}
  <tr>
-  <td class="label"><label for="groupreviewers">Group reviewers:</label></td>
-  <td class="value" colspan="2"><span id="groupreviewers">
+  <td class="label"><label for="target_groups">Group reviewers:</label></td>
+  <td class="value" colspan="2"><span id="target_groups">
 {%  for group in object.target_groups.all %}
 <a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </span> <img id="groupreviewers_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </span> <img id="target_groups_edit" src="/images/edit.png" width="14" height="14" /></td>
  </tr>
 {% endifnotequal %}
 {% ifnotequal object.target_people.count 0 %}
  <tr>
-  <td class="label"><label for="personreviewers">Individual reviewers:</label></td>
-  <td class="value" colspan="2"><span id="personreviewers">
+  <td class="label"><label for="target_people">Individual reviewers:</label></td>
+  <td class="value" colspan="2"><span id="target_people">
 {%  for person in object.target_people.all %}
 <a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </span> <img id="personreviewers_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </span> <img id="target_people_edit" src="/images/edit.png" width="14" height="14" /></td>
  </tr>
 {% endifnotequal %}
 {% if object.bugs_closed %}
  <tr>
-  <td class="label"><label for="bugs">Bugs Closed:</label></td>
-  <td class="value" colspan="2"><span id="bugs">
+  <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
+  <td class="value" colspan="2"><span id="bugs_closed">
 {%  for bug in object.get_bug_list %}
    <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </span> <img id="bugs_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </span> <img id="bugs_closed_edit" src="/images/edit.png" width="14" height="14" /></td>
  </tr>
 {% endif %}
  <tr>
@@ -60,10 +60,10 @@
   <td colspan="3"><pre><div id="description">{{object.description|escape}}</div></pre></td>
  </tr>
  <tr>
-  <td class="vertlabel" colspan="3"><label for="testingdone">Testing Done:</label></td>
+  <td class="vertlabel" colspan="3"><label for="testing_done">Testing Done:</label></td>
  </tr>
  <tr>
-  <td colspan="3"><pre><div id="testingdone">{{object.testing_done|escape}}</div></pre></td>
+  <td colspan="3"><pre><div id="testing_done">{{object.testing_done|escape}}</div></pre></td>
  </tr>
 </table>
 
