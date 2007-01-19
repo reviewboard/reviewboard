@@ -191,6 +191,45 @@ def field(request, review_request_id, field_name):
 
     raise Http404()
 
+
+def revert_draft(request, object_id):
+    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+        draft.delete()
+    except ReviewRequestDraft.DoesNotExist:
+        pass
+
+    return HttpResponse("Draft reverted.")
+
+
+def save_draft(request, object_id):
+    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+    draft = get_object_or_404(ReviewRequestDraft, review_request=review_request)
+
+    review_request.summary = draft.summary
+    review_request.description = draft.description
+    review_request.testing_done = draft.testing_done
+    review_request.bugs_closed = draft.bugs_closed
+    review_request.branch = draft.branch
+
+    review_request.target_groups.clear()
+    for group in draft.target_groups.all():
+        review_request.target_groups.add(group)
+
+    review_request.target_people.clear()
+    for person in draft.target_people.all():
+        review_request.target_people.add(person)
+
+    if draft.diffset:
+        review_request.diffsets.add(draft.diffset)
+
+    review_request.save()
+    draft.delete()
+
+    return HttpResponse("Draft saved.")
+
+
 def review_detail(request, object_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 

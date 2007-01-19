@@ -13,12 +13,12 @@
 <table id="review-details">
  <tr>
   <td colspan="2"><span id="summary">{{details.summary}}</span> <img id="summary_edit" src="/images/edit.png" width="14" height="14" /></td>
-  <td id="updated_time">Last updated {{details.last_updated|timesince}} ago</td>
+  <td id="updated_time">Last updated {{object.last_updated|timesince}} ago</td>
  </tr>
  <tr>
   <td class="label"><label for="submitter">Submitter:</label></td>
-  <td class="value" id="submitter"><a href="{{details.submitter.get_absolute_url}}">{{details.submitter}}</a></td>
-  <td id="status">{{details.get_status_display}}</td>
+  <td class="value" id="submitter"><a href="{{object.submitter.get_absolute_url}}">{{object.submitter}}</a></td>
+  <td id="status">{{object.get_status_display}}</td>
  </tr>
  <tr>
   <td class="label"><label for="branch">Branch:</label></td>
@@ -70,29 +70,74 @@
 </table>
 
 <script type="text/javascript">
-	function onSubmitFailure(transport) {
-		$('servererror').innerHTML = transport.responseText;
-	}
-
-	function onSubmitComplete(transport, element) {
-		//new Effect.Highlight(element,
-		//	{startcolor: transport.options.highlightcolor});
-		showDraftBanner();
-	}
-
 	function registerEditor(field) {
-		new Ajax.InPlaceEditor(field, 'field/' + field + '/',
-		                       {externalControl: field + '_edit',
-							    onFailure: onSubmitFailure,
-								onComplete: onSubmitComplete});
+		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
+			{
+				externalControl: field + '_edit',
+				highlightendcolor: '#E9E9E9', // XXX
+				onFailure: function() {
+					$('servererror').innerHTML = transport.responseText;
+				},
+				onComplete: showDraftBanner
+			});
 	}
 
 	function registerMultiEditor(field) {
-		new Ajax.InPlaceEditor(field, 'field/' + field + '/',
-		                       {externalControl: field + '_edit',
-							    rows: 10, cols: 80,
-							    onFailure: onSubmitFailure,
-								onComplete: onSubmitComplete});
+		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
+			{
+				externalControl: field + '_edit',
+				highlightendcolor: '#FAFAFA', // XXX
+				rows: 10, cols: 80,
+				onFailure: function() {
+					$('servererror').innerHTML = transport.responseText;
+				},
+				onComplete: showDraftBanner
+			});
+		editor.highlightendcolor = editor.originalBackground;
+	}
+
+	function updateField(field) {
+		new Ajax.Updater(field, 'field/' + field + '/', {method: 'get'});
+	}
+
+	function submitDraft() {
+		new Ajax.Request('draft/save/',
+			{
+				method: 'get',
+		        onSuccess: function() { hideDraftBanner(); },
+				onFailure: function() {
+					alert("Saving the draft has failed due to a server " +
+					      "error. Please try again later. If this " +
+						  "continues to happen, please report it to your " +
+						  "administrator.");
+				}
+			});
+	}
+
+	function onRevertDraftSuccess() {
+		hideDraftBanner();
+
+		updateField('summary');
+		updateField('branch');
+		updateField('description');
+		updateField('testing_done');
+		//updateField('bugs_closed');
+		//updateField('target_groups');
+		//updateField('target_people');
+	}
+
+	function revertDraft() {
+		new Ajax.Request('draft/revert/',
+			{
+				method: 'get',
+		        onSuccess: onRevertDraftSuccess,
+				onFailure: function() {
+					alert("Reverting the draft has failed due to a server " +
+					      "error. Please try again later. If this " +
+						  "continues to happen, please report it to your " +
+						  "administrator.");
+				}
+			});
 	}
 
 	function showDraftBanner() {
