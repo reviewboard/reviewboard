@@ -238,8 +238,7 @@ class AgeId(template.Node):
                                           timestamp.day)
 
 
-        t = time.localtime()
-        now = datetime.datetime(t[0], t[1], t[2], t[3], t[4], t[5], tzinfo=None)
+        now = datetime.datetime.now()
         delta = now - (timestamp -
                        datetime.timedelta(0, 0, timestamp.microsecond))
 
