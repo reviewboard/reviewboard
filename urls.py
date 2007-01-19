@@ -26,6 +26,8 @@ urlpatterns = patterns('',
      {'document_root': settings.HTDOCS_ROOT + '/css'}),
     (r'^images/(.*)$', 'django.views.static.serve',
      {'document_root': settings.HTDOCS_ROOT + '/images'}),
+    (r'^scripts/(.*)$', 'django.views.static.serve',
+     {'document_root': settings.HTDOCS_ROOT + '/scripts'}),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
      {'url': '/reviews/'}),

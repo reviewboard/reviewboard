@@ -92,7 +92,7 @@ def parse_change_desc(changedesc, result_dict):
             result_dict['branch'] = parts[4]
 
 
-def new_review_request(request, template_name='reviews/new.html',
+def new_review_request(request, template_name='reviews/review_detail.html',
                        changenum_path='changenum'):
     changedesc = "\
 Description:\n\
@@ -121,21 +121,23 @@ Files:\n\
             parse_change_desc(changedesc, form_data)
         else:
             form_data = request.POST.copy()
-            form = NewReviewRequestForm(form_data)
-            if form.is_valid():
-                # XXX
-                person, person_is_new = \
-                    Person.objects.get_or_create(username='christian')
 
-                if person_is_new:
-                    person.save()
+        form = NewReviewRequestForm(form_data)
 
-                form.clean_data['submitter'] = person
-                form.clean_data['status'] = 'P'
-                form.clean_data['public'] = True
-                new_reviewreq = form.create()
+        if form.is_valid():
+            # XXX
+            person, person_is_new = \
+                Person.objects.get_or_create(username='christian')
 
-                return HttpResponseRedirect(new_reviewreq.get_absolute_url())
+            if person_is_new:
+                person.save()
+
+            form.clean_data['submitter'] = person
+            form.clean_data['status'] = 'P'
+            form.clean_data['public'] = True
+            new_reviewreq = form.create()
+
+            return HttpResponseRedirect(new_reviewreq.get_absolute_url())
 
     form = NewReviewRequestForm(form_data)
     return render_to_response(template_name, {

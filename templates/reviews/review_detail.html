@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Review Request | {{object}}{% endblock %}
+{% block extrahead %}
+<script type="text/javascript" src="/scripts/prototype.js"></script>
+<script type="text/javascript" src="/scripts/scriptaculous.js"></script>
+{% endblock %}
 
 {% block content %}
 <table id="review-details">
  <tr>
-  <td id="summary" colspan="2">{{object.summary}}</td>
+  <td colspan="2"><span id="summary">{{object.summary}}</span> <img id="summary_edit" src="/images/edit.png" width="14" height="14" /></td>
   <td id="updated_time">Last updated {{object.last_updated|timesince}} ago</td>
  </tr>
  <tr>
@@ -14,50 +18,65 @@
  </tr>
  <tr>
   <td class="label"><label for="branch">Branch:</label></td>
-  <td class="value" id="branch">{{object.branch}}</td>
+  <td class="value"><span id="branch">{{object.branch}}</span> <img id="branch_edit" src="/images/edit.png" width="14" height="14" /></td>
   <td id="viewdiff"><a href="{{object.htmldiff}}">View diff</a></td>
  </tr>
 {% ifnotequal object.target_groups.count 0 %}
  <tr>
   <td class="label"><label for="groupreviewers">Group reviewers:</label></td>
-  <td class="value" id="groupreviewers" colspan="2">
+  <td class="value" colspan="2"><span id="groupreviewers">
 {%  for group in object.target_groups.all %}
 <a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </td>
+  </span> <img id="groupreviewers_edit" src="/images/edit.png" width="14" height="14" /></td>
  </tr>
 {% endifnotequal %}
 {% ifnotequal object.target_people.count 0 %}
  <tr>
   <td class="label"><label for="personreviewers">Individual reviewers:</label></td>
-  <td class="value" id="groupreviewers" colspan="2">
+  <td class="value" colspan="2"><span id="personreviewers">
 {%  for person in object.target_people.all %}
 <a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </td>
+  </span> <img id="personreviewers_edit" src="/images/edit.png" width="14" height="14" /></td>
  </tr>
 {% endifnotequal %}
 {% if object.bugs_closed %}
  <tr>
   <td class="label"><label for="bugs">Bugs Closed:</label></td>
-  <td class="value" id="bugs" colspan="2">
+  <td class="value" colspan="2"><span id="bugs">
 {%  for bug in object.get_bug_list %}
    <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </td>
+  </span> <img id="bugs_edit" src="/images/edit.png" width="14" height="14" /></td>
  </tr>
 {% endif %}
  <tr>
   <td class="vertlabel" colspan="3"><label for="description">Description:</label></td>
  </tr>
  <tr>
-  <td id="description" colspan="3"><pre>{{object.description|escape}}</pre></td>
+  <td colspan="3"><pre><div id="description">{{object.description|escape}}</div></pre></td>
  </tr>
  <tr>
   <td class="vertlabel" colspan="3"><label for="testingdone">Testing Done:</label></td>
  </tr>
  <tr>
-  <td id="testingdone" colspan="3"><pre>{{object.testing_done|escape}}</pre></td>
+  <td colspan="3"><pre><div id="testingdone">{{object.testing_done|escape}}</div></pre></td>
  </tr>
 </table>
+
+<script type="text/javascript">
+	new Ajax.InPlaceEditor('summary', '',
+	                       {externalControl: 'summary_edit'});
+	new Ajax.InPlaceEditor('branch', '',
+	                       {externalControl: 'branch_edit'});
+	new Ajax.InPlaceEditor('groupreviewers', '',
+	                       {externalControl: 'groupreviewers_edit'});
+	new Ajax.InPlaceEditor('personreviewers', '',
+	                       {externalControl: 'personreviewers_edit'});
+	new Ajax.InPlaceEditor('bugs', '',
+	                       {externalControl: 'bugs_edit'});
+	new Ajax.InPlaceEditor('description', '', {rows: 10, cols: 80});
+	new Ajax.InPlaceEditor('testingdone', '', {rows: 10, cols: 80});
+</script>
 {% endblock %}
