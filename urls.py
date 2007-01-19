@@ -39,9 +39,8 @@ urlpatterns = patterns('',
     (r'^reviews/new/$', 'reviewboard.reviews.views.new_review_request'),
 
     (r'^reviews/(?P<object_id>[0-9]+)/$',
-     'django.views.generic.list_detail.object_detail',
-     {'queryset': ReviewRequest.objects.all(),
-      'template_name': 'reviews/review_detail.html'}),
+     'reviewboard.reviews.views.review_detail',
+     {'template_name': 'reviews/review_detail.html'}),
 
     (r'^reviews/(?P<review_request_id>[0-9]+)/field/(?P<field_name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.field'),

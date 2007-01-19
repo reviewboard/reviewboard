@@ -171,7 +171,7 @@ def field(request, review_request_id, field_name):
                 for person in review_request.target_people.all():
                     draft.target_people.add(person)
 
-                if review_request.diffsets.count() >= 0:
+                if review_request.diffsets.count() > 0:
                     draft.diffset = review_request.diffsets.latest()
 
 
@@ -190,6 +190,20 @@ def field(request, review_request_id, field_name):
                 return HttpResponse(getattr(obj, field_name))
 
     raise Http404()
+
+def review_detail(request, object_id, template_name):
+    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+    except ReviewRequestDraft.DoesNotExist:
+        draft = None
+
+    return render_to_response(template_name, {
+        'draft': draft,
+        'object': review_request,
+        'details': draft or review_request,
+    })
 
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
