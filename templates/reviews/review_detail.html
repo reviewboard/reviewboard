@@ -70,6 +70,12 @@
 </table>
 
 <script type="text/javascript">
+	function onEditComplete(transport, element) {
+		if (transport != null) {
+			showDraftBanner();
+		}
+	}
+
 	function registerEditor(field) {
 		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
 			{
@@ -78,7 +84,7 @@
 				onFailure: function() {
 					$('servererror').innerHTML = transport.responseText;
 				},
-				onComplete: showDraftBanner
+				onComplete: onEditComplete
 			});
 	}
 
@@ -91,7 +97,7 @@
 				onFailure: function() {
 					$('servererror').innerHTML = transport.responseText;
 				},
-				onComplete: showDraftBanner
+				onComplete: onEditComplete
 			});
 		editor.highlightendcolor = editor.originalBackground;
 	}
