@@ -78,6 +78,7 @@
 	function onEditComplete(transport, element) {
 		if (transport != null) {
 			showDraftBanner();
+			//updateField('last_updated');
 		}
 	}
 
@@ -131,6 +132,7 @@
 		updateField('branch');
 		updateField('description');
 		updateField('testing_done');
+		//updateField('last_updated'); // TODO
 		//updateField('bugs_closed');
 		//updateField('target_groups');
 		//updateField('target_people');
