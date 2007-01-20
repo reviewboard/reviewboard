@@ -17,10 +17,7 @@
    <col />
   </colgroup>
   <tr>
-   <td rowspan="2">
-    <h1 id="summary">{{details.summary}}</h1>
-    <img id="summary_edit" src="/images/edit.png" width="14" height="14" />
-   </td>
+   <td rowspan="2"><h1 id="summary">{{details.summary}}</h1></td>
    <td id="updated_time" nowrap="nowrap">Last updated {{object.last_updated|timesince}} ago</td>
   </tr>
   <tr><td id="status" nowrap="nowrap">{{object.get_status_display}}</td></tr>
@@ -41,13 +38,13 @@
   </tr>
   <tr>
    <td class="label"><label for="branch">Branch:</label></td>
-   <td class="value"><span id="branch">{{details.branch}}</span> <img id="branch_edit" src="/images/edit.png" width="14" height="14" /></td>
+   <td class="value"><span id="branch">{{details.branch}}</span></td>
    <td class="indented label"><label for="target_groups">Groups:</label></td>
    <td class="value"><span id="target_groups">
 {%  for group in details.target_groups.all %}
 <a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </span> <img id="target_groups_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </span></td>
   </tr>
   <tr>
    <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
@@ -55,13 +52,13 @@
 {%  for bug in details.get_bug_list %}
    <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </span> <img id="bugs_closed_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </span></td>
    <td class="indented label"><label for="target_people">People:</label></td>
    <td class="value"><span id="target_people">
 {%  for person in details.target_people.all %}
 <a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
-  </span> <img id="target_people_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </span></td>
   </tr>
  </table>
  <div class="content">
@@ -82,29 +79,36 @@
 		}
 	}
 
-	function registerEditor(field) {
+	function registerEditorCommon(field, rows, cols) {
+		var editid = field + '_edit';
+		var node = $(field);
+
+		new Insertion.Bottom(node, " ");
+		node.appendChild(Builder.node("img", {id: editid,
+		                                      src: '/images/edit.png',
+											  width: 14, height: 14}));
+
 		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
 			{
-				externalControl: field + '_edit',
+				externalControl: editid,
 				highlightendcolor: '#fffad3', // XXX
 				onFailure: function() {
 					$('servererror').innerHTML = transport.responseText;
 				},
-				onComplete: onEditComplete
+				onComplete: onEditComplete,
+				rows: rows,
+				cols: cols
 			});
+
+		return editor;
+	}
+
+	function registerEditor(field) {
+		registerEditorCommon(field, 1, 50)
 	}
 
 	function registerMultiEditor(field) {
-		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
-			{
-				externalControl: field + '_edit',
-				highlightendcolor: '#FAFAFA', // XXX
-				rows: 10, cols: 80,
-				onFailure: function() {
-					$('servererror').innerHTML = transport.responseText;
-				},
-				onComplete: onEditComplete
-			});
+		registerEditorCommon(field, 10, 100);
 	}
 
 	function updateField(field) {
