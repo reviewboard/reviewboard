@@ -10,64 +10,69 @@
 
 <div id="banner">
 </div>
-<table id="review-details">
- <tr>
-  <td colspan="2"><span id="summary">{{details.summary}}</span> <img id="summary_edit" src="/images/edit.png" width="14" height="14" /></td>
-  <td id="updated_time">Last updated {{object.last_updated|timesince}} ago</td>
- </tr>
- <tr>
-  <td class="label"><label for="submitter">Submitter:</label></td>
-  <td class="value" id="submitter"><a href="{{object.submitter.get_absolute_url}}">{{object.submitter}}</a></td>
-  <td id="status">{{object.get_status_display}}</td>
- </tr>
- <tr>
-  <td class="label"><label for="branch">Branch:</label></td>
-  <td class="value"><span id="branch">{{details.branch}}</span> <img id="branch_edit" src="/images/edit.png" width="14" height="14" /></td>
-  <td id="viewdiff"><a href="{{details.htmldiff}}">View diff</a></td>
- </tr>
-{% ifnotequal details.target_groups.count 0 %}
- <tr>
-  <td class="label"><label for="target_groups">Group reviewers:</label></td>
-  <td class="value" colspan="2"><span id="target_groups">
+<div id="review-request">
+ <table class="header">
+  <colgroup>
+   <col width="100%" />
+   <col />
+  </colgroup>
+  <tr>
+   <td rowspan="2">
+    <h1 id="summary">{{details.summary}}</h1>
+    <img id="summary_edit" src="/images/edit.png" width="14" height="14" />
+   </td>
+   <td id="updated_time" nowrap="nowrap">Last updated {{object.last_updated|timesince}} ago</td>
+  </tr>
+  <tr><td id="status" nowrap="nowrap">{{object.get_status_display}}</td></tr>
+ </table>
+ <table id="details">
+  <colgroup>
+   <col width="0*" />
+   <col width="1*" />
+  </colgroup>
+  <colgroup>
+   <col width="0*" />
+   <col width="1*" />
+  </colgroup>
+  <tr>
+   <td class="label"><label for="submitter">Submitter:</label></td>
+   <td class="value"><a id="submitter" href="{{object.submitter.get_absolute_url}}">{{object.submitter}}</a></td>
+   <td class="caption" colspan="2">Reviewers</td>
+  </tr>
+  <tr>
+   <td class="label"><label for="branch">Branch:</label></td>
+   <td class="value"><span id="branch">{{details.branch}}</span> <img id="branch_edit" src="/images/edit.png" width="14" height="14" /></td>
+   <td class="indented label"><label for="target_groups">Groups:</label></td>
+   <td class="value"><span id="target_groups">
 {%  for group in details.target_groups.all %}
 <a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
   </span> <img id="target_groups_edit" src="/images/edit.png" width="14" height="14" /></td>
- </tr>
-{% endifnotequal %}
-{% ifnotequal details.target_people.count 0 %}
- <tr>
-  <td class="label"><label for="target_people">Individual reviewers:</label></td>
-  <td class="value" colspan="2"><span id="target_people">
-{%  for person in details.target_people.all %}
-<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
-{%  endfor %}
-  </span> <img id="target_people_edit" src="/images/edit.png" width="14" height="14" /></td>
- </tr>
-{% endifnotequal %}
-{% if details.bugs_closed %}
- <tr>
-  <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
-  <td class="value" colspan="2"><span id="bugs_closed">
+  </tr>
+  <tr>
+   <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
+   <td class="value"><span id="bugs_closed">
 {%  for bug in details.get_bug_list %}
    <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
   </span> <img id="bugs_closed_edit" src="/images/edit.png" width="14" height="14" /></td>
- </tr>
-{% endif %}
- <tr>
-  <td class="vertlabel" colspan="3"><label for="description">Description:</label></td>
- </tr>
- <tr>
-  <td colspan="3"><pre><div id="description">{{details.description|escape}}</div></pre></td>
- </tr>
- <tr>
-  <td class="vertlabel" colspan="3"><label for="testing_done">Testing Done:</label></td>
- </tr>
- <tr>
-  <td colspan="3"><pre><div id="testing_done">{{details.testing_done|escape}}</div></pre></td>
- </tr>
-</table>
+   <td class="indented label"><label for="target_people">People:</label></td>
+   <td class="value"><span id="target_people">
+{%  for person in details.target_people.all %}
+<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </span> <img id="target_people_edit" src="/images/edit.png" width="14" height="14" /></td>
+  </tr>
+ </table>
+ <div class="content">
+  <label for="description">Description:</label>
+  <pre><div id="description">{{details.description|escape}}</div></pre>
+ </div>
+ <div class="content">
+  <label for="testing_done">Testing Done:</label>
+  <pre><div id="testing_done">{{details.testing_done|escape}}</div></pre>
+ </div>
+</div>
 
 <script type="text/javascript">
 	function onEditComplete(transport, element) {
@@ -80,7 +85,7 @@
 		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
 			{
 				externalControl: field + '_edit',
-				highlightendcolor: '#E9E9E9', // XXX
+				highlightendcolor: '#fffad3', // XXX
 				onFailure: function() {
 					$('servererror').innerHTML = transport.responseText;
 				},
@@ -99,7 +104,6 @@
 				},
 				onComplete: onEditComplete
 			});
-		editor.highlightendcolor = editor.originalBackground;
 	}
 
 	function updateField(field) {
