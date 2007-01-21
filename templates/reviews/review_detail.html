@@ -72,14 +72,7 @@
 </div>
 
 <script type="text/javascript">
-	function onEditComplete(transport, element) {
-		if (transport != null) {
-			showDraftBanner();
-			//updateField('last_updated');
-		}
-	}
-
-	function registerEditorCommon(field, rows, cols) {
+	function registerEditorCommon(field, rows, cols, bgcolor) {
 		var editid = field + '_edit';
 		var node = $(field);
 
@@ -91,11 +84,16 @@
 		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
 			{
 				externalControl: editid,
-				highlightendcolor: '#fffad3', // XXX
+				highlightendcolor: bgcolor,
 				onFailure: function() {
 					$('servererror').innerHTML = transport.responseText;
 				},
-				onComplete: onEditComplete,
+				onComplete: function() {
+					if (transport != null) {
+						showDraftBanner();
+						//updateField('last_updated');
+					}
+				},
 				rows: rows,
 				cols: cols
 			});
@@ -104,11 +102,11 @@
 	}
 
 	function registerEditor(field) {
-		registerEditorCommon(field, 1, 50)
+		registerEditorCommon(field, 1, 50, '#fffad3');
 	}
 
 	function registerMultiEditor(field) {
-		registerEditorCommon(field, 10, 100);
+		registerEditorCommon(field, 10, 100, '#fafafa');
 	}
 
 	function updateField(field) {
