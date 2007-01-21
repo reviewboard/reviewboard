@@ -6,6 +6,7 @@ from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
 from reviewboard.reviews.feeds import AtomSubmitterReviewsFeed
 from reviewboard.reviews.feeds import RssGroupReviewsFeed
 from reviewboard.reviews.feeds import AtomGroupReviewsFeed
+import os.path
 
 rss_feeds = {
     'reviews': RssReviewsFeed,
@@ -21,13 +22,6 @@ atom_feeds = {
 
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
-
-    (r'^css/(.*)$', 'django.views.static.serve',
-     {'document_root': settings.HTDOCS_ROOT + '/css'}),
-    (r'^images/(.*)$', 'django.views.static.serve',
-     {'document_root': settings.HTDOCS_ROOT + '/images'}),
-    (r'^scripts/(.*)$', 'django.views.static.serve',
-     {'document_root': settings.HTDOCS_ROOT + '/scripts'}),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
      {'url': '/reviews/'}),
@@ -78,3 +72,23 @@ urlpatterns = patterns('',
     (r'^feeds/atom/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
      {'feed_dict': atom_feeds}),
 )
+
+# Add static media if running in DEBUG mode
+if settings.DEBUG:
+    def htdocs_path(leaf):
+        return os.path.join(settings.HTDOCS_ROOT, leaf)
+
+    urlpatterns += patterns('',
+        (r'^css/(?P<path>.*)$', 'django.views.static.serve', {
+            'show_indexes': True,
+            'document_root': htdocs_path('css'),
+            }),
+        (r'^images/(?P<path>.*)$', 'django.views.static.serve', {
+            'show_indexes': True,
+            'document_root': htdocs_path('images'),
+            }),
+        (r'^scripts/(?P<path>.*)$', 'django.views.static.serve', {
+            'show_indexes': True,
+            'document_root': htdocs_path('scripts')
+            }),
+    )
