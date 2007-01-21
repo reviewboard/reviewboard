@@ -1,4 +1,7 @@
 # Django settings for reviewboard project.
+
+import os
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -7,13 +10,6 @@ ADMINS = (
 )
 
 MANAGERS = ADMINS
-
-DATABASE_ENGINE = 'mysql'           # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'reviewboard'             # Or path to database file if using sqlite3.
-DATABASE_USER = '********'             # Not used with sqlite3.
-DATABASE_PASSWORD = '********'         # Not used with sqlite3.
-DATABASE_HOST = ''             # Set to empty string for localhost. Not used with sqlite3.
-DATABASE_PORT = ''             # Set to empty string for default. Not used with sqlite3.
 
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
@@ -62,14 +58,16 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'reviewboard.urls'
 
+REVIEWBOARD_ROOT = os.path.abspath(os.path.join(os.path.split(__file__)[0], '..'))
+
 TEMPLATE_ROOT = '/var/www/reviewboard'
-HTDOCS_ROOT = TEMPLATE_ROOT + '/htdocs'
+HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    r'%s/reviewboard/templates' % TEMPLATE_ROOT
+    os.path.join(REVIEWBOARD_ROOT, 'reviewboard', 'templates'),
 )
 
 INSTALLED_APPS = (
@@ -78,6 +76,11 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sites',
     'django.contrib.sessions',
+    'reviewboard.diffviewer',
     'reviewboard.reviews',
     'reviewboard.utils',
 )
+
+# Load local settings.  This can override anything in here, but at the very
+# least it needs to define database connectivity.
+from settings_local import *
