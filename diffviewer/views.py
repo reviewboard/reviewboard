@@ -19,10 +19,14 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     files = []
     file_index = 0
+    chunks = []
+    next_chunk_index = 0
 
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
         lines = cache.get(key)
+        chunks = []
+        next_chunk_index = 0
 
         if lines == None:
             orig_buffer = cache.get(filediff.source_path)
@@ -80,8 +84,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             f.close()
             prev_change = None
 
-            chunks = []
-            next_chunk_index = 0
             change = None
             chunk_info = None
             last_changed_index = 0
