@@ -139,8 +139,9 @@ Files:\n\
             new_reviewreq = form.create()
 
             return HttpResponseRedirect(new_reviewreq.get_absolute_url())
+    else:
+        form = NewReviewRequestForm()
 
-    form = NewReviewRequestForm(form_data)
     return render_to_response(template_name, {
         'form': form,
     })
