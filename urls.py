@@ -49,6 +49,11 @@ urlpatterns = patterns('',
      {'model': ReviewRequest,
       'template_name': 'reviews/edit_details.html'}),
 
+    (r'^reviews/(?P<object_id>[0-9]+)/diff/$',
+     'reviewboard.reviews.views.diff'),
+    (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
+     'reviewboard.reviews.views.diff'),
+
     (r'^submitters/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),
 
@@ -62,9 +67,6 @@ urlpatterns = patterns('',
     (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.group',
      {'template_name': 'reviews/review_list.html'}),
-
-    (r'^viewdiff/(?P<object_id>[0-9]+)/$',
-     'reviewboard.diffviewer.views.view_diff'),
 
     # Feeds
     (r'^feeds/rss/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',

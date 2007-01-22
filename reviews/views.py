@@ -6,6 +6,8 @@ from django.newforms.util import smart_unicode
 from django.shortcuts import get_object_or_404, render_to_response
 from django.views.generic.list_detail import object_list
 from django.views.generic.create_update import create_object
+from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.views import view_diff
 from reviewboard.reviews.models import \
     ReviewRequest, ReviewRequestDraft, Person, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
@@ -297,3 +299,23 @@ def submitter(request, username, template_name):
         extra_context={
             'source': username + "'s",
         })
+
+
+def diff(request, object_id, revision=None):
+    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+
+    query = Q(reviewrequest=review_request)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+        query = query | Q(reviewrequestdraft=draft)
+
+        if revision == None:
+            query = query | Q(revision=revision)
+
+    except ReviewRequestDraft.DoesNotExist:
+        pass
+
+    query = query | Q(revision=revision)
+    diffset = get_object_or_404(DiffSet, query)
+    return view_diff(request, diffset.id)
