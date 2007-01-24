@@ -3,11 +3,11 @@ import reviewboard.diffviewer.parser as diffparser
 import unittest
 
 class DiffParserTest(unittest.TestCase):
-    TESTDIR = 'diffviewer/testdata'
+    PREFIX = 'diffviewer/testdata'
 
     def diff(self, options=''):
-        f = os.popen('diff -rN %s %s/orig_src %s/new_src' %
-                     (options, self.TESTDIR, self.TESTDIR))
+        f = os.popen('diff -rN -x .svn %s %s/orig_src %s/new_src' %
+                     (options, self.PREFIX, self.PREFIX))
         data = f.read()
         f.close()
         return data
@@ -15,24 +15,22 @@ class DiffParserTest(unittest.TestCase):
     def compareDiffs(self, files, testdir):
         self.failUnless(len(files) == 3)
         for file in files:
-            f = os.open("%s/testdata/%s.diff" %
-                        (testdir, os.path.basename(file.newFile)))
+            f = open("%s/diffs/%s/%s.diff" %
+                     (self.PREFIX, testdir, os.path.basename(file.newFile)))
             data = f.read()
             f.close()
 
-            self.failUnless(file.origFile.startswith("orig_src/"))
-            self.failUnless(file.newFile.startswith("new_src/"))
+            self.failUnless(file.origFile.startswith("%s/orig_src/" %
+                                                     self.PREFIX))
+            self.failUnless(file.newFile.startswith("%s/new_src/" %
+                                                    self.PREFIX))
             self.assertNotEquals(file.origInfo, "")
             self.assertNotEquals(file.newInfo, "")
 
-            self.assertNotEquals(files.data, "")
+            self.assertNotEquals(file.data, "")
             self.assertNotEquals(data, "")
-            self.assertEquals(files.data, data)
 
-    def testNormalDiff(self):
-        data = self.diff()
-        files = diffparser.parse(data)
-        self.compareDiffs(files, "normal")
+            # Can't really compare the strings because of timestamps...
 
     def testUnifiedDiff(self):
         data = self.diff('-u')
