@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
-from reviewboard.reviews.models import ReviewRequest, Person, Group
+from reviewboard.reviews.models import ReviewRequest, Group
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed
 from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
 from reviewboard.reviews.feeds import AtomSubmitterReviewsFeed
@@ -10,13 +10,13 @@ import os.path
 
 rss_feeds = {
     'reviews': RssReviewsFeed,
-    'submitters': RssSubmitterReviewsFeed,
+    'users': RssSubmitterReviewsFeed,
     'groups': RssGroupReviewsFeed,
 }
 
 atom_feeds = {
     'reviews': AtomReviewsFeed,
-    'submitters': AtomSubmitterReviewsFeed,
+    'users': AtomSubmitterReviewsFeed,
     'groups': AtomGroupReviewsFeed,
 }
 
@@ -54,10 +54,10 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
      'reviewboard.reviews.views.diff'),
 
-    (r'^submitters/$', 'reviewboard.reviews.views.submitter_list',
+    (r'^users/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),
 
-    (r'^submitters/(?P<username>[A-Za-z0-9_-]+)/$',
+    (r'^users/(?P<username>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.submitter',
      {'template_name': 'reviews/review_list.html'}),
 
@@ -73,7 +73,18 @@ urlpatterns = patterns('',
      {'feed_dict': rss_feeds}),
     (r'^feeds/atom/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
      {'feed_dict': atom_feeds}),
+
+    # Authentication and accounts
+    (r'^account/login/$', 'djblets.auth.views.login',
+     {'next_page': '/account/'}),
+    (r'^account/logout/$', 'django.contrib.auth.views.logout',
+     {'next_page': settings.LOGIN_URL})
 )
+
+if settings.BUILTIN_AUTH:
+    urlpatterns += patterns('',
+        (r'^account/register/$', 'djblets.auth.views.register'),
+    )
 
 # Add static media if running in DEBUG mode
 if settings.DEBUG:

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="section">
+ <div class="title">Log in</div>
+ <div class="body">
+  {% if error %}
+  {%  errorbox %}
+  {{ error }}
+  {%  enderrorbox %}
+  {% endif %}
+  <form method="post" action=".">
+   <table id="login_form">
+    <tr>
+     <td><label for="id_username">Username:</label></td>
+     <td><input type="text" name="username" id="id_username" /></td>
+    </tr>
+    <tr>
+     <td><label for="id_password">Password:</label></td>
+     <td><input type="password" name="password" id="id_password" /></td>
+    </tr>
+    <tr>
+     <td>&nbsp;</td>
+     <td class="field" colspan="2"><input type="submit" value="Log in" /></td>
+    </tr>
+   </table>
+  </form>
+ </div>
+</div>
+{% endblock %}

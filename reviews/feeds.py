@@ -14,7 +14,7 @@ class BaseReviewFeed(Feed):
         return item.submitter.username
 
     def item_author_email(self, item):
-        return item.submitter.username + "@vmware.com" # XXX
+        return item.submitter.email
 
     def item_pubdate(self, item):
         return item.last_updated

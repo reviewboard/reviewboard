@@ -14,6 +14,16 @@
    <div id="headbar">
     <h1 id="title"><a href="/">Review Board</a></h1>
     <h2 id="beta">beta</h2>
+
+    <ul>
+    {% if user.is_authenticated %}
+     <li>Welcome, {{ user.get_full_name|escape }}.</li>
+     <li>&raquo; <a href="/account/logout/">Log out</a></li>
+    {% else %}
+     <li>&raquo; <a href="/account/login/">Log in</a></li>
+     <li>&raquo; <a href="/account/register/">Register</a></li>
+    {% endif %}
+    </ul>
    </div>
    <table id="navbar">
     <tr>
@@ -21,7 +31,7 @@
       <ul>
        <li><a href="/reviews/">All review requests</a></li>
        <li><a href="/groups/">Groups</a></li>
-       <li><a href="/submitters/">Submitters</a></li>
+       <li><a href="/users/">Submitters</a></li>
       </ul>
      </td>
      <td id="addchangenum">

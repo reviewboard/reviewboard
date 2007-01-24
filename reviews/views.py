@@ -1,15 +1,14 @@
 from django import newforms as forms
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User, Group
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
-from django.newforms import widgets
-from django.newforms.util import smart_unicode
 from django.shortcuts import get_object_or_404, render_to_response
+from django.template.context import RequestContext
 from django.views.generic.list_detail import object_list
-from django.views.generic.create_update import create_object
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff
-from reviewboard.reviews.models import \
-    ReviewRequest, ReviewRequestDraft, Person, Group
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.reviews.forms import NewReviewRequestForm
 import re
 
@@ -84,9 +83,6 @@ def parse_change_desc(changedesc, result_dict):
     result_dict['bugs_closed'] = \
         ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number'])).strip()
 
-    result_dict['target_groups'] = 'hosted-ui, foo-group'
-    result_dict['target_people'] = 'davidt, christian'
-
     # This is gross.
     if len(files) > 0:
         parts = files[0].split('/')
@@ -95,6 +91,7 @@ def parse_change_desc(changedesc, result_dict):
             result_dict['branch'] = parts[4]
 
 
+@login_required
 def new_review_request(request, template_name='reviews/review_detail.html',
                        changenum_path='changenum'):
     changedesc = "\
@@ -128,25 +125,18 @@ Files:\n\
         form = NewReviewRequestForm(form_data)
 
         if form.is_valid():
-            # XXX
-            person, person_is_new = \
-                Person.objects.get_or_create(username='christian')
-
-            if person_is_new:
-                person.save()
-
-            form.clean_data['submitter'] = person
+            form.clean_data['submitter'] = request.user
             form.clean_data['status'] = 'P'
             form.clean_data['public'] = True
             new_reviewreq = form.create()
 
             return HttpResponseRedirect(new_reviewreq.get_absolute_url())
     else:
-        form = NewReviewRequestForm()
+        form = NewReviewRequestForm(initial={'submitter': request.user})
 
-    return render_to_response(template_name, {
+    return render_to_response(template_name, RequestContext(request, {
         'form': form,
-    })
+    }))
 
 
 def field(request, review_request_id, field_name):
@@ -241,11 +231,11 @@ def review_detail(request, object_id, template_name):
     except ReviewRequestDraft.DoesNotExist:
         draft = None
 
-    return render_to_response(template_name, {
+    return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'object': review_request,
         'details': draft or review_request,
-    })
+    }))
 
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
@@ -261,7 +251,7 @@ def review_list(request, queryset, template_name, extra_context={}):
 
 def submitter_list(request, template_name):
     return object_list(request,
-        queryset=Person.objects.all(),
+        queryset=User.objects.all(),
         template_name=template_name,
         paginate_by=50,
         allow_empty=True,

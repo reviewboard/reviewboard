@@ -1,46 +1,8 @@
 from django.conf import settings
+from django.contrib.auth.models import User, Group
 from django.db import models
 from reviewboard.diffviewer.models import DiffSet
 import re
-
-class Group(models.Model):
-    name = models.CharField("Name", maxlength=30, core=True)
-
-    def count_public_review_requests(self):
-        return self.reviewrequest_set.filter(public=True).count()
-
-    def get_absolute_url(self):
-        return "/groups/%s/" % self.name
-
-    def __str__(self):
-        return self.name
-
-    class Admin:
-        pass
-
-    class Meta:
-        ordering = ['name']
-
-
-class Person(models.Model):
-    username = models.CharField("Username", maxlength=30, core=True)
-
-    def count_public_review_requests(self):
-        return self.reviewrequest_set.filter(public=True).count()
-
-    def get_absolute_url(self):
-        return "/submitters/%s/" % self.username
-
-    def __str__(self):
-        return self.username
-
-    class Admin:
-        pass
-
-    class Meta:
-        verbose_name_plural = "People"
-        ordering = ['username']
-
 
 class Comment(models.Model):
     filename = models.CharField("Filename", maxlength=256, core=True)
@@ -53,7 +15,7 @@ class ReviewRequest(models.Model):
         ('D', 'Discarded'),
     )
 
-    submitter = models.ForeignKey(Person, verbose_name="Submitter")
+    submitter = models.ForeignKey(User, verbose_name="Submitter")
     time_added = models.DateTimeField("Time Added", auto_now_add=True)
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
     status = models.CharField(maxlength=1, choices=STATUSES)
@@ -68,7 +30,7 @@ class ReviewRequest(models.Model):
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
-    target_people = models.ManyToManyField(Person, verbose_name="Target People",
+    target_people = models.ManyToManyField(User, verbose_name="Target People",
                                            related_name="target_people",
                                            core=False, blank=True)
 
@@ -113,7 +75,7 @@ class ReviewRequestDraft(models.Model):
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
-    target_people = models.ManyToManyField(Person, verbose_name="Target People",
+    target_people = models.ManyToManyField(User, verbose_name="Target People",
                                            related_name="draft_target_people",
                                            core=False, blank=True)
 

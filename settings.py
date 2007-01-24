@@ -73,10 +73,18 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sites',
     'django.contrib.sessions',
+    'reviewboard.accounts',
     'reviewboard.diffviewer',
     'reviewboard.reviews',
     'reviewboard.utils',
 )
+
+# Whether to use django's built-in system for users.  This turns on certain
+# features like the registration page and profile editing.  If you're tying
+# reviewboard in to an existing authentication environment (such as NIS),
+# this data will come in from outside.
+BUILTIN_AUTH = True
+LOGIN_URL = '/account/login'
 
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
