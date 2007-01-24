@@ -301,7 +301,7 @@ def dashboard(request, template_name):
 
     indirect = ReviewRequest.objects.filter(
         public=True,
-        target_groups__in=request.user.groups.all())
+        target_groups__in=request.user.groups.all())[:50 - len(direct_list)]
 
     # XXX: this is small but really inefficient.  maybe there's a way to do it
     # with the database?
