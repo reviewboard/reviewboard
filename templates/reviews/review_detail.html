@@ -80,6 +80,7 @@
  </ul>
 </div>
 
+{% ifequal request.user object.submitter %}
 <script type="text/javascript">
 	function registerEditorCommon(field, rows, cols, bgcolor) {
 		var editid = field + '_edit';
@@ -101,7 +102,7 @@
 				onFailure: function() {
 					$('servererror').innerHTML = transport.responseText;
 				},
-				onComplete: function() {
+				onComplete: function(transport) {
 					if (transport != null) {
 						showDraftBanner();
 						//updateField('last_updated');
@@ -205,4 +206,5 @@
 	}
 
 </script>
+{% endifequal %}
 {% endblock %}

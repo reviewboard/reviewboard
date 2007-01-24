@@ -249,10 +249,12 @@ def review_detail(request, object_id, template_name):
     except ReviewRequestDraft.DoesNotExist:
         draft = None
 
+
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'object': review_request,
         'details': draft or review_request,
+        'request': request,
     }))
 
 def review_list(request, queryset, template_name, extra_context={}):
