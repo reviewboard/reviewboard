@@ -15,13 +15,13 @@
     <h1 id="title"><a href="/">Review Board</a></h1>
     <h2 id="beta">beta</h2>
 
-    <ul>
+    <ul id="accountnav">
     {% if user.is_authenticated %}
-     <li>Welcome, {{ user.get_full_name|escape }}.</li>
-     <li>&raquo; <a href="/account/logout/">Log out</a></li>
+     <li>Welcome <b>{% ifnotequal user.get_full_name "" %}{{user.get_full_name|escape}}{% else %}{{user.username|escape}}{% endifnotequal %}</b></li>
+     <li>- <a href="/account/logout/">Log out</a></li>
     {% else %}
-     <li>&raquo; <a href="/account/login/">Log in</a></li>
-     <li>&raquo; <a href="/account/register/">Register</a></li>
+     <li><a href="/account/login/">Log in</a></li>
+     <li>- <a href="/account/register/">Register</a></li>
     {% endif %}
     </ul>
    </div>
