@@ -95,8 +95,7 @@ def parse_change_desc(changedesc, review_request):
 @login_required
 def new_review_request(request, template_name='reviews/review_detail.html'):
     if request.POST:
-        form_data = request.POST.copy()
-        form = NewReviewRequestForm(form_data)
+        form = NewReviewRequestForm(request.POST.copy())
 
         if form.is_valid():
             form.clean_data['submitter'] = request.user
@@ -113,6 +112,7 @@ def new_review_request(request, template_name='reviews/review_detail.html'):
     }))
 
 
+@login_required
 def new_from_changenum(request):
     changedesc = "\
 Description:\n\
