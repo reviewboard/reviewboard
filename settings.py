@@ -73,7 +73,6 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sites',
     'django.contrib.sessions',
-    'reviewboard.accounts',
     'reviewboard.diffviewer',
     'reviewboard.reviews',
     'reviewboard.utils',
