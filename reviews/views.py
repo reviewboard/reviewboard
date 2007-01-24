@@ -299,13 +299,11 @@ def dashboard(request, template_name):
         public=True,
         target_people=request.user)[:50]
 
-    indirect = ReviewRequest.objects.filter(
+    group_list = ReviewRequest.objects.filter(
         public=True,
-        target_groups__in=request.user.groups.all())[:50 - len(direct_list)]
-
-    # XXX: this is small but really inefficient.  maybe there's a way to do it
-    # with the database?
-    group_list = [x for x in indirect if x not in direct_list]
+        target_groups__in=request.user.groups.all()).exclude(
+            id__in=[x.id for x in direct_list]
+        )[:50 - len(direct_list)]
 
     return render_to_response(template_name, RequestContext(request, {
         'direct_list': direct_list,
