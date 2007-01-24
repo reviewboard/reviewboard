@@ -160,6 +160,9 @@ def field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if request.POST:
+        if request.user != review_request.submitter:
+            raise Http403()
+
         form_data = request.POST.copy()
 
         if hasattr(review_request, field_name) and form_data['value']:
@@ -249,13 +252,13 @@ def review_detail(request, object_id, template_name):
     except ReviewRequestDraft.DoesNotExist:
         draft = None
 
-
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'object': review_request,
         'details': draft or review_request,
         'request': request,
     }))
+
 
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
