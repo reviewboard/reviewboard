@@ -38,7 +38,9 @@ class NewReviewRequestForm(forms.Form):
             raise forms.ValidationError('Group does not exist')
 
     def clean(self):
-        if not self.clean_data['target_people'] and \
+        if 'target_people' in self.clean_data and \
+           'target_groups' in self.clean_data and \
+           not self.clean_data['target_people'] and \
            not self.clean_data['target_groups']:
             raise forms.ValidationError(
                 'You must specify at least one reviewer or group')
