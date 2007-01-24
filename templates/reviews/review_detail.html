@@ -73,7 +73,9 @@
  </div>
  <ul class="controls">
   <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+{% ifnotequal details.diffset_history.diffsets.count 0 %}
   <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+{% endifnotequal %}
   <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
  </ul>
 </div>

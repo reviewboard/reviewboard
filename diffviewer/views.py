@@ -4,6 +4,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from popen2 import Popen3
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 import os, sys, tempfile
 import reviewboard.scmtools as scmtools
 
@@ -159,4 +160,20 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     return render_to_response(template_name, {
         'files': files,
+    })
+
+
+def upload(request, reviewrequest_id, template_name='diffviewer/upload.html'):
+    if request.POST:
+        form_data = request.POST.copy()
+        form_data.update(request.FILES)
+        form = UploadDiffForm(form_data)
+
+        if form.is_valid():
+            return
+    else:
+        form = UploadDiffForm()
+
+    return render_to_response(template_name, {
+        'form': form,
     })

@@ -25,3 +25,10 @@ class DiffSet(models.Model):
 
     class Meta:
         get_latest_by = 'timestamp'
+
+
+class DiffSetHistory(models.Model):
+    diffsets = models.ManyToManyField(DiffSet)
+
+    class Admin:
+        pass

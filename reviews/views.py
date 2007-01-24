@@ -7,13 +7,13 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.diffviewer.views import view_diff
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.reviews.forms import NewReviewRequestForm
 import re
 
-def parse_change_desc(changedesc, result_dict):
+def parse_change_desc(changedesc, review_request):
     summary = ""
     description = ""
     files = []
@@ -77,11 +77,11 @@ def parse_change_desc(changedesc, result_dict):
         elif cur_key != None:
             changedesc_keys[cur_key] += line
 
-    result_dict['summary'] = summary.strip()
-    result_dict['description'] = description.strip()
-    result_dict['testing_done'] = changedesc_keys['Testing Done'].strip()
+    review_request.summary = summary.strip()
+    review_request.description = description.strip()
+    review_request.testing_done = changedesc_keys['Testing Done'].strip()
 
-    result_dict['bugs_closed'] = \
+    review_request.bugs_closed = \
         ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number'])).strip()
 
     # This is gross.
@@ -89,12 +89,31 @@ def parse_change_desc(changedesc, result_dict):
         parts = files[0].split('/')
 
         if parts[2] == "depot":
-            result_dict['branch'] = parts[4]
+            review_request.branch = parts[4]
 
 
 @login_required
-def new_review_request(request, template_name='reviews/review_detail.html',
-                       changenum_path='changenum'):
+def new_review_request(request, template_name='reviews/review_detail.html'):
+    if request.POST:
+        form_data = request.POST.copy()
+        form = NewReviewRequestForm(form_data)
+
+        if form.is_valid():
+            form.clean_data['submitter'] = request.user
+            form.clean_data['status'] = 'P'
+            form.clean_data['public'] = True
+            new_reviewreq = form.create()
+
+            return HttpResponseRedirect(new_reviewreq.get_absolute_url())
+    else:
+        form = NewReviewRequestForm(initial={'submitter': request.user})
+
+    return render_to_response(template_name, RequestContext(request, {
+        'form': form,
+    }))
+
+
+def new_from_changenum(request):
     changedesc = "\
 Description:\n\
 	This is my summary.\n\
@@ -118,26 +137,23 @@ Files:\n\
     if request.POST:
         if request.POST.has_key('changenum'):
             changenum = request.POST['changenum']
-            form_data = {}
-            parse_change_desc(changedesc, form_data)
-        else:
-            form_data = request.POST.copy()
 
-        form = NewReviewRequestForm(form_data)
+            diffset_history = DiffSetHistory()
+            diffset_history.save()
 
-        if form.is_valid():
-            form.clean_data['submitter'] = request.user
-            form.clean_data['status'] = 'P'
-            form.clean_data['public'] = True
-            new_reviewreq = form.create()
+            review_request = ReviewRequest()
+            parse_change_desc(changedesc, review_request)
 
-            return HttpResponseRedirect(new_reviewreq.get_absolute_url())
+            review_request.diffset_history = diffset_history
+            review_request.submitter = request.user
+            review_request.status = 'P'
+            review_request.public = True
+            review_request.save()
+
+            return HttpResponseRedirect(review_request.get_absolute_url())
     else:
-        form = NewReviewRequestForm(initial={'submitter': request.user})
-
-    return render_to_response(template_name, RequestContext(request, {
-        'form': form,
-    }))
+        # XXX Display an error page
+        return HttpResponseRedirect('/reviews/new/')
 
 
 def field(request, review_request_id, field_name):
