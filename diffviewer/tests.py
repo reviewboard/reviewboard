@@ -19,6 +19,8 @@ class DiffParserTest(unittest.TestCase):
             data = f.read()
             f.close()
 
+            self.assertNotEquals(files.data, "")
+            self.assertNotEquals(data, "")
             self.assertEquals(files.data, data)
 
     def testNormalDiff(self):
