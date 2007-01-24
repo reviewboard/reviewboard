@@ -1,11 +1,11 @@
 from django import newforms as forms
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User, Group
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.views.generic.list_detail import object_list
+from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
