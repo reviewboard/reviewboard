@@ -85,10 +85,14 @@
 		var editid = field + '_edit';
 		var node = $(field);
 
-		new Insertion.Bottom(node, " ");
-		node.appendChild(Builder.node("img", {id: editid,
-		                                      src: '/images/edit.png',
-											  width: 14, height: 14}));
+		var imgtext = " <img src='/images/edit.png' width='14' height='14' " +
+		              "id='" + editid + "' class='editicon' />";
+
+		if (rows == 1) {
+			new Insertion.After(node, imgtext);
+		} else {
+			new Insertion.Bottom(node.parentNode.previousSibling.previousSibling, imgtext);
+		}
 
 		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
 			{
