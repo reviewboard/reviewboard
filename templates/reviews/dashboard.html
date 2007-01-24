@@ -1,0 +1,70 @@
+{% extends "base_feeds.html" %}
+{% load htmlutils %}
+{% block title %}{% firstof source "All" %} pending review requests{% endblock %}
+
+{% block content %}
+
+{% if direct_list or group_list %}
+ {% if direct_list %}
+  <h2>Direct Reviews</h2>
+  <p>These requests asked for you by name.  Doh!  Better get cracking.</p>
+
+  <table class="list">
+   <colgroup>
+    <col class="summary" />
+    <col class="submitter" width="1*" />
+    <col class="updated" width="1*" />
+   </colgroup>
+   <thead>
+    <tr class="headers">
+     <th>Summary</th>
+     <th>Submitter</th>
+     <th>Last Updated</th>
+    </tr>
+   </thead>
+   <tbody>
+{%  for review in direct_list %}
+     <tr>
+      <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
+      <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
+      <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
+     </tr>
+{%  endfor %}
+   </tbody>
+  </table>
+ {% endif %}
+
+ {% if group_list %}
+  <h2>Group Reviews</h2>
+  <p>These requests included a group of which you are a member.  Maybe if you
+     wait long enough, someone else will do it.</p>
+
+  <table class="list">
+   <colgroup>
+    <col class="summary" />
+    <col class="submitter" width="1*" />
+    <col class="updated" width="1*" />
+   </colgroup>
+   <thead>
+    <tr class="headers">
+     <th>Summary</th>
+     <th>Submitter</th>
+     <th>Last Updated</th>
+    </tr>
+   </thead>
+   <tbody>
+{%  for review in group_list %}
+     <tr>
+      <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
+      <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
+      <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
+     </tr>
+{%  endfor %}
+   </tbody>
+  </table>
+ {% endif %}
+{% else %}
+<p>You have no pending reviews.  Time to party!</p>
+{% endif %}
+
+{% endblock %}

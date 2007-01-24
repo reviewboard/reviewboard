@@ -294,6 +294,25 @@ def group_list(request, template_name):
         })
 
 
+def dashboard(request, template_name):
+    direct_list = ReviewRequest.objects.filter(
+        public=True,
+        target_people=request.user)[:50]
+
+    indirect = ReviewRequest.objects.filter(
+        public=True,
+        target_groups__in=request.user.groups.all())
+
+    # XXX: this is small but really inefficient.  maybe there's a way to do it
+    # with the database?
+    group_list = [x for x in indirect if x not in direct_list]
+
+    return render_to_response(template_name, RequestContext(request, {
+        'direct_list': direct_list,
+        'group_list': group_list,
+    }))
+
+
 def group(request, name, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(

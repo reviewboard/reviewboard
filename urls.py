@@ -26,7 +26,10 @@ urlpatterns = patterns('',
     (r'^$', 'django.views.generic.simple.redirect_to',
      {'url': '/reviews/'}),
 
-    (r'^reviews/$', 'reviewboard.reviews.views.review_list',
+    (r'^reviews/$', 'reviewboard.reviews.views.dashboard',
+     {'template_name': 'reviews/dashboard.html'}),
+
+    (r'^reviews/all/$', 'reviewboard.reviews.views.review_list',
      {'queryset': ReviewRequest.objects.filter(public=True),
       'template_name': 'reviews/review_list.html'}),
 
