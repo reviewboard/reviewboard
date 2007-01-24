@@ -13,42 +13,15 @@ class NewReviewRequestForm(forms.Form):
     target_groups = forms.CharField()
     target_people = forms.CharField()
 
-    def create_from_list(self, data, constructor, error):
+    @staticmethod
+    def create_from_list(data, constructor, error):
         """Helper function to combine the common bits of clean_target_people
            and clean_target_groups"""
-        return None # XXX Bail out for now. This is broken
-
         result = []
         names = [x for x in map(str.strip, re.split('[, ]+', data)) if x]
         for name in names:
             result.append(constructor(name))
         return set(result)
-
-    def clean_target_people(self):
-        try:
-            return self.create_from_list(self.clean_data['target_people'],
-                                         lambda x: User.objects.get(username=x),
-                                         None)
-        except User.DoesNotExist:
-            # XXX: it'd be nice to have a way of getting the offending name
-            raise forms.ValidationError('Reviewer does not exist')
-
-    def clean_target_groups(self):
-        try:
-            return self.create_from_list(self.clean_data['target_groups'],
-                                         lambda x: Group.objects.get(name=x),
-                                         None)
-        except Group.DoesNotExist:
-            # XXX: it'd be nice to have a way of getting the offending name
-            raise forms.ValidationError('Group does not exist')
-
-    def clean(self):
-        if 'target_people' in self.clean_data and \
-           'target_groups' in self.clean_data and \
-           not self.clean_data['target_people'] and \
-           not self.clean_data['target_groups']:
-            raise forms.ValidationError(
-                'You must specify at least one reviewer or group')
 
     def create(self):
         diffset_history = DiffSetHistory()
