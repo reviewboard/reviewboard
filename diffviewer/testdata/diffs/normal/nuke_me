@@ -1,0 +1,5 @@
+diff -rN orig_src/nuke_me new_src/nuke_me
+1,3d0
+< I want to be nuked.
+< 
+< Delete me!

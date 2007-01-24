@@ -1,0 +1,16 @@
+diff -ruN orig_src/README new_src/README
+--- orig_src/README	2007-01-24 02:10:28.000000000 -0800
++++ new_src/README	2007-01-24 02:11:01.000000000 -0800
+@@ -1,9 +1,10 @@
+ Test data for a README file.
+ 
+ There's a line here.
+-
+ A line there.
+ 
+ And here.
+ Yes, this is a good README file. Like most README files, this doesn't tell you
+-anything you really didn't already know.
++anything you really didn't already know. Oh well.
++
++*squee*

@@ -1,0 +1,9 @@
+diff -rN orig_src/README new_src/README
+4d3
+< 
+9c8,10
+< anything you really didn't already know.
+---
+> anything you really didn't already know. Oh well.
+> 
+> *squee*
