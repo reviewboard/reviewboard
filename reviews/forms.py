@@ -51,6 +51,10 @@ class NewReviewRequestForm(forms.Form):
                 'You must specify at least one reviewer or group')
 
     def create(self):
+        diffset_history = DiffSetHistory()
+        diffset_history.save()
+
         review_request = ReviewRequest(**self.clean_data)
+        review_request.diffset_history = diffset_history
         review_request.save()
         return review_request

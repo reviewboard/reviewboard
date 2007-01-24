@@ -165,8 +165,9 @@ def field(request, review_request_id, field_name):
                 for person in review_request.target_people.all():
                     draft.target_people.add(person)
 
-                if review_request.diffsets.count() > 0:
-                    draft.diffset = review_request.diffsets.latest()
+                if review_request.diffset_history.diffsets.count() > 0:
+                    draft.diffset = \
+                        review_request.diffset_history.diffsets.latest()
 
 
             setattr(draft, field_name, form_data['value'])
@@ -216,7 +217,7 @@ def save_draft(request, object_id):
         review_request.target_people.add(person)
 
     if draft.diffset:
-        review_request.diffsets.add(draft.diffset)
+        review_request.diffset_history.diffsets.add(draft.diffset)
 
     review_request.save()
     draft.delete()
@@ -295,18 +296,16 @@ def submitter(request, username, template_name):
 def diff(request, object_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
-    query = Q(reviewrequest=review_request)
+    query = Q(diffsethistory=review_request.diffset_history)
 
     try:
         draft = ReviewRequestDraft.objects.get(review_request=review_request)
         query = query | Q(reviewrequestdraft=draft)
-
-        if revision == None:
-            query = query | Q(revision=revision)
-
     except ReviewRequestDraft.DoesNotExist:
         pass
 
-    query = query | Q(revision=revision)
+    if revision != None:
+        query = query | Q(revision=revision)
+
     diffset = get_object_or_404(DiffSet, query)
     return view_diff(request, diffset.id)

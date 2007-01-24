@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.db import models
-from reviewboard.diffviewer.models import DiffSet
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 import re
 
 class Comment(models.Model):
@@ -25,8 +25,9 @@ class ReviewRequest(models.Model):
     testing_done = models.TextField("Testing Done")
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
-    diffsets = models.ManyToManyField(DiffSet, verbose_name='Diff Sets',
-                                      blank=True)
+    diffset_history = models.ForeignKey(DiffSetHistory,
+                                        verbose_name='diff set history',
+                                        blank=True)
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
@@ -70,7 +71,7 @@ class ReviewRequestDraft(models.Model):
     testing_done = models.TextField("Testing Done")
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
-    diffset = models.ForeignKey(DiffSet, verbose_name='DiffSet', blank=True,
+    diffset = models.ForeignKey(DiffSet, verbose_name='diff set', blank=True,
                                 null=True)
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
