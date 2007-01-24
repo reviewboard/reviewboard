@@ -13,11 +13,17 @@ class DiffParserTest(unittest.TestCase):
         return data
 
     def compareDiffs(self, files, testdir):
+        self.failUnless(len(files) == 3)
         for file in files:
             f = os.open("%s/testdata/%s.diff" %
                         (testdir, os.path.basename(file.newFile)))
             data = f.read()
             f.close()
+
+            self.failUnless(file.origFile.startswith("orig_src/"))
+            self.failUnless(file.newFile.startswith("new_src/"))
+            self.assertNotEquals(file.origInfo, "")
+            self.assertNotEquals(file.newInfo, "")
 
             self.assertNotEquals(files.data, "")
             self.assertNotEquals(data, "")
