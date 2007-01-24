@@ -1,4 +1,5 @@
 from django import newforms as forms
+from reviewboard.diffviewer.models import DiffSetHistory
 from django.contrib.auth.models import User, Group
 from reviewboard.reviews.models import ReviewRequest
 import re
@@ -12,9 +13,11 @@ class NewReviewRequestForm(forms.Form):
     target_groups = forms.CharField()
     target_people = forms.CharField()
 
-    def create_from_list(data, constructor, error):
+    def create_from_list(self, data, constructor, error):
         """Helper function to combine the common bits of clean_target_people
            and clean_target_groups"""
+        return None # XXX Bail out for now. This is broken
+
         result = []
         names = [x for x in map(str.strip, re.split('[, ]+', data)) if x]
         for name in names:
@@ -23,16 +26,18 @@ class NewReviewRequestForm(forms.Form):
 
     def clean_target_people(self):
         try:
-            return create_from_list(self.clean_data['target_people'],
-                                    lambda x: User.objects.get(username=x))
+            return self.create_from_list(self.clean_data['target_people'],
+                                         lambda x: User.objects.get(username=x),
+                                         None)
         except User.DoesNotExist:
             # XXX: it'd be nice to have a way of getting the offending name
             raise forms.ValidationError('Reviewer does not exist')
 
     def clean_target_groups(self):
         try:
-            return create_from_list(self.clean_data['target_groups'],
-                                    lambda x: Group.objects.get(name=x))
+            return self.create_from_list(self.clean_data['target_groups'],
+                                         lambda x: Group.objects.get(name=x),
+                                         None)
         except Group.DoesNotExist:
             # XXX: it'd be nice to have a way of getting the offending name
             raise forms.ValidationError('Group does not exist')
