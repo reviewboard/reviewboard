@@ -1,24 +1,42 @@
 from django.db import models
 
 class FileDiff(models.Model):
-    filename = models.CharField("Filename", maxlength=256, core=True)
-    source_path = models.CharField("Source Path", maxlength=256, core=True)
+    diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
+                                related_name='files')
+
+    source_file = models.CharField("Source File", maxlength=256, core=True)
+    dest_file = models.CharField("Destination File", maxlength=256, core=True)
+    source_detail = models.CharField("Source File Details", maxlength=512)
+    dest_detail = models.CharField("Destination File Details", maxlength=512)
     diff = models.TextField("Diff")
 
     def __str__(self):
-        return self.source_path
+        return "%s %s -> %s %s" % (self.source_file, self.source_detail,
+                                  self.dest_file, self.dest_detail)
 
     class Admin:
-        list_display = ('source_path', 'filename')
+        list_display = ('source_file', 'source_detail',
+                        'dest_file', 'dest_detail')
 
 
 class DiffSet(models.Model):
+    name = models.CharField('Name', maxlength=256, core=True)
     revision = models.IntegerField("Revision", core=True)
     timestamp = models.DateTimeField("Timestamp", auto_now_add=True)
-    files = models.ManyToManyField(FileDiff, verbose_name="Files", core=True)
+    history = models.ForeignKey('DiffSetHistory', null=True, core=True,
+                                edit_inline=models.STACKED)
+
+    def save(self):
+        if self.revision == None and self.history != None:
+            if self.history.diffsets.count() == 0:
+                self.revision = 0
+            else:
+                self.revision = self.history.latest().revision + 1
+
+        super(DiffSet, self).save()
 
     def __str__(self):
-        return 'Diff Set'
+        return self.name
 
     class Admin:
         list_display = ('__str__', 'revision',)
@@ -28,7 +46,11 @@ class DiffSet(models.Model):
 
 
 class DiffSetHistory(models.Model):
-    diffsets = models.ManyToManyField(DiffSet)
+    name = models.CharField('Name', maxlength=256)
+    timestamp = models.DateTimeField("Timestamp", auto_now_add=True)
+
+    def __str__(self):
+        return 'Diff Set History (%s revisions)' % (self.diffset_set.count())
 
     class Admin:
         pass

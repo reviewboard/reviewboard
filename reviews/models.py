@@ -92,7 +92,7 @@ class ReviewRequestDraft(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField("Bugs Closed",
                                                     maxlength=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name='diff set', blank=True,
-                                null=True)
+                                null=True, core=False)
     branch = models.CharField("Branch", maxlength=30)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)

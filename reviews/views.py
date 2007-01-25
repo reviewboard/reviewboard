@@ -184,9 +184,9 @@ def field(request, review_request_id, field_name):
                 for person in review_request.target_people.all():
                     draft.target_people.add(person)
 
-                if review_request.diffset_history.diffsets.count() > 0:
+                if review_request.diffset_history.diffset_set.count() > 0:
                     draft.diffset = \
-                        review_request.diffset_history.diffsets.latest()
+                        review_request.diffset_history.diffset_set.latest()
 
 
             setattr(draft, field_name, form_data['value'])
@@ -347,7 +347,7 @@ def submitter(request, username, template_name):
 def diff(request, object_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
-    query = Q(diffsethistory=review_request.diffset_history)
+    query = Q(history=review_request.diffset_history)
 
     try:
         draft = review_request.reviewrequestdraft_set.get()
@@ -360,3 +360,22 @@ def diff(request, object_id, revision=None):
 
     diffset = get_object_or_404(DiffSet, query)
     return view_diff(request, diffset.id)
+
+
+def upload_diff_done(request, review_request_id, diffset_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    diffset = get_object_or_404(DiffSet, pk=diffset_id)
+
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+
+        if draft.diffset and draft.diffset != diffset:
+            draft.diffset.delete()
+
+        draft.diffset = diffset
+        draft.save()
+    except ReviewRequestDraft.DoesNotExist:
+        diffset.history = review_request.diffset_history
+        diffset.save()
+
+    return HttpResponseRedirect(review_request.get_absolute_url())

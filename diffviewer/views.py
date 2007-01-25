@@ -1,10 +1,10 @@
 from django.core.cache import cache
-from django.http import HttpResponse
-from django.shortcuts import render_to_response
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from popen2 import Popen3
+from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 import os, sys, tempfile
 import reviewboard.scmtools as scmtools
 
@@ -30,21 +30,21 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         next_chunk_index = 0
 
         if lines == None:
-            orig_buffer = cache.get(filediff.source_path)
+            orig_buffer = cache.get(filediff.source_file)
 
             if orig_buffer == None:
                 # It's not cached. Let's go get it.
                 try:
                     orig_buffer = \
-                        scmtools.get_tool().get_file(filediff.source_path)
+                        scmtools.get_tool().get_file(filediff.source_file)
                 except Exception:
                     # TODO: Include the actual error.
                     return render_to_response(template_name, {
                         'error': "Unable to retrieve the source file %s" % \
-                                 filediff.source_path
+                                 filediff.source_file
                     })
 
-                cache.set(filediff.source_path, orig_buffer,
+                cache.set(filediff.source_file, orig_buffer,
                           CACHE_EXPIRATION_TIME)
 
             try:
@@ -149,8 +149,8 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             cache.set(key, chunks, CACHE_EXPIRATION_TIME)
 
 
-        files.append({'depot_filename': filediff.source_path,
-                      'user_filename': filediff.filename,
+        files.append({'depot_filename': filediff.source_file,
+                      'user_filename': filediff.dest_file,
                       'index': file_index,
                       'chunks': chunks,
                       'num_chunks': next_chunk_index,
@@ -158,22 +158,30 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
         file_index += 1
 
-    return render_to_response(template_name, {
+    return render_to_response(template_name, RequestContext(request, {
         'files': files,
-    })
+    }))
 
 
-def upload(request, reviewrequest_id, template_name='diffviewer/upload.html'):
-    if request.POST:
+def upload(request, donepath, diffset_history_id=None,
+           template_name='diffviewer/upload.html'):
+    if request.method == 'POST':
         form_data = request.POST.copy()
         form_data.update(request.FILES)
         form = UploadDiffForm(form_data)
 
         if form.is_valid():
-            return
+            if diffset_history_id != None:
+                diffset_history = get_object_or_404(DiffSetHistory,
+                                                    pk=diffset_history_id)
+            else:
+                diffset_history = None
+
+            diffset = form.create(request.FILES['path'], diffset_history)
+            return HttpResponseRedirect(donepath % diffset.id)
     else:
         form = UploadDiffForm()
 
-    return render_to_response(template_name, {
+    return render_to_response(template_name, RequestContext(request, {
         'form': form,
-    })
+    }))

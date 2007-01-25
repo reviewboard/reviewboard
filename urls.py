@@ -59,6 +59,13 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
      'reviewboard.reviews.views.diff'),
 
+    (r'^reviews/[0-9]+/diff/upload/$',
+     'reviewboard.diffviewer.views.upload',
+      {'donepath': 'done/%s/'}),
+
+    (r'^reviews/(?P<review_request_id>[0-9]+)/diff/upload/done/(?P<diffset_id>[0-9]+)/$',
+     'reviewboard.reviews.views.upload_diff_done'),
+
     (r'^users/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),
 

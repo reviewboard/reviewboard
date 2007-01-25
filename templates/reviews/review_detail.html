@@ -75,7 +75,7 @@
 {% ifequal request.user object.submitter %}
   <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
 {% endifequal %}
-{% ifnotequal details.diffset_history.diffsets.count 0 %}
+{% ifnotequal details.diffset_history.diffset_set.count 0 %}
   <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
 {% endifnotequal %}
 {% ifequal request.user object.submitter %}
@@ -103,7 +103,7 @@
 			{
 				externalControl: editid,
 				highlightendcolor: bgcolor,
-				onFailure: function() {
+				onFailure: function(transport) {
 					$('servererror').innerHTML = transport.responseText;
 				},
 				onComplete: function(transport) {
