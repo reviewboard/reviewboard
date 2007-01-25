@@ -25,24 +25,27 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from reviewboard.reviews.models import Quip
 
+def create_object(type, **kwargs):
+    (o, c) = type.objects.get_or_create(**kwargs)
+    if c:
+        o.save()
+
 def add_quips():
-    def create_quip(**kwargs):
-        (q, c) = Quip.objects.get_or_create(**kwargs)
-        if c:
-            q.save()
+    create_object(Quip,
+                  place='de',
+                  text='You have nothing to review. Time to party!')
 
+    create_object(Quip,
+                  place='dm',
+                  text='You worked hard on these review requests. Make sure people are giving them the attention they deserve.')
 
-    create_quip(place='de',
-                text='You have nothing to review. Time to party!')
+    create_object(Quip,
+                  place='dg',
+                  text='These requests included a group of which you are a member.  Maybe if you wait long enough, someone else will do it.')
 
-    create_quip(place='dm',
-                text='You worked hard on these review requests. Make sure people are giving them the attention they deserve.')
-
-    create_quip(place='dg',
-                text='These requests included a group of which you are a member.  Maybe if you wait long enough, someone else will do it.')
-
-    create_quip(place='dn',
-                text='These requests asked for you by name.  Doh!  Better get cracking.')
+    create_object(Quip,
+                  place='dn',
+                  text='These requests asked for you by name.  Doh!  Better get cracking.')
 
 if __name__ == '__main__':
     add_quips()
