@@ -39,8 +39,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                         scmtools.get_tool().get_file(filediff.source_file)
                 except Exception, e:
                     return render_to_response(template_name, {
-                        'error': "Unable to retrieve the source file %s: %s" % \
-                                 (filediff.source_file, e)
+                        'error': "%s: %s" % (e, e.detail)
                     })
 
                 cache.set(filediff.source_file, orig_buffer,
@@ -164,6 +163,8 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
 def upload(request, donepath, diffset_history_id=None,
            template_name='diffviewer/upload.html'):
+    differror = None
+
     if request.method == 'POST':
         form_data = request.POST.copy()
         form_data.update(request.FILES)
@@ -176,11 +177,15 @@ def upload(request, donepath, diffset_history_id=None,
             else:
                 diffset_history = None
 
-            diffset = form.create(request.FILES['path'], diffset_history)
-            return HttpResponseRedirect(donepath % diffset.id)
+            try:
+                diffset = form.create(request.FILES['path'], diffset_history)
+                return HttpResponseRedirect(donepath % diffset.id)
+            except scmtools.FileNotFoundException, e:
+                differror = str(e)
     else:
         form = UploadDiffForm()
 
     return render_to_response(template_name, RequestContext(request, {
+        'differror': differror,
         'form': form,
     }))
