@@ -1,0 +1,27 @@
+{% extends "base_feeds.html" %}
+{% load htmlutils %}
+{% block title %}Upload diff{% endblock %}
+
+{% block content %}
+<div class="section">
+ <div class="title">Upload diff</div>
+ <div class="body">
+  {% if differror %}
+  {%  errorbox %}
+  <p>There were errors in the diff file. {{differror}}
+  {%  enderrorbox %}
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" action=".">
+   <table id="upload_diff_form">
+    <tr>
+     <td><label for="id_path">Filename:</label></td>
+     <td>{{form.path}} {{form.path.errors}}</td>
+    </tr>
+    <tr>
+     <td>&nbsp;</td>
+     <td class="field"><input type="submit" value="Upload" /></td>
+    </tr>
+  </form>
+ </div>
+</div>
+{% endblock %}
