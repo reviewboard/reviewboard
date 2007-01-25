@@ -41,7 +41,7 @@ def add_quips():
     create_quip(place='dg',
                 text='These requests included a group of which you are a member.  Maybe if you wait long enough, someone else will do it.')
 
-    create_quip(place='db',
+    create_quip(place='dn',
                 text='These requests asked for you by name.  Doh!  Better get cracking.')
 
 if __name__ == '__main__':
