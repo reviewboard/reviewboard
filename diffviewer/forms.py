@@ -6,6 +6,7 @@ import reviewboard.diffviewer.parser as diffparser
 import reviewboard.scmtools as scmtools
 
 class UploadDiffForm(forms.Form):
+    basedir = forms.CharField()
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, file, diffset_history=None):
@@ -18,10 +19,17 @@ class UploadDiffForm(forms.Form):
         # Check that we can actually get all these files.
         tool = scmtools.get_tool()
 
-        for file in files:
-            revision = tool.parse_diff_revision(file.origInfo)
-            if not tool.file_exists(file.origFile, revision):
-                raise scmtools.FileNotFoundException(file.origFile, revision)
+        if tool.get_diffs_use_absolute_paths():
+            basedir = ''
+        else:
+            basedir = str(self.clean_data['basedir']) + '/'
+
+        for f in files:
+            revision = tool.parse_diff_revision(f.origInfo)
+            filename = basedir + f.origFile
+
+            if not tool.file_exists(filename, revision):
+                raise scmtools.FileNotFoundException(filename, revision)
 
         diffset = DiffSet(name=file["filename"], revision=0,
                           history=diffset_history)
@@ -29,8 +37,8 @@ class UploadDiffForm(forms.Form):
 
         for file in files:
             filediff = FileDiff(diffset=diffset,
-                                source_file=file.origFile,
-                                dest_file=file.newFile,
+                                source_file=basedir + file.origFile,
+                                dest_file=basedir + file.newFile,
                                 source_detail=file.origInfo,
                                 dest_detail=file.newInfo,
                                 diff=file.data)

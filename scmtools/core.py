@@ -46,6 +46,9 @@ class SCMTool:
     def parse_diff_revision(self, revision_str):
         raise NotImplementedError
 
+    def get_diffs_use_absolute_paths(self):
+        return False
+
     def get_diff_header_info(self, header):
         raise NotImplementedError
 

@@ -358,7 +358,11 @@ def diff(request, object_id, revision=None):
     if revision != None:
         query = query | Q(revision=revision)
 
-    diffset = get_object_or_404(DiffSet, query)
+    try:
+        diffset = DiffSet.objects.filter(query).latest()
+    except:
+        raise Http404
+
     return view_diff(request, diffset.id)
 
 

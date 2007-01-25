@@ -147,8 +147,17 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             cache.set(key, chunks, CACHE_EXPIRATION_TIME)
 
 
+        revision = \
+            scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+
+        if revision == scmtools.HEAD:
+            revision = "HEAD"
+        else:
+            revision = "r" + revision
+
         files.append({'depot_filename': filediff.source_file,
                       'user_filename': filediff.dest_file,
+                      'revision': revision,
                       'index': file_index,
                       'chunks': chunks,
                       'num_chunks': next_chunk_index,
@@ -188,4 +197,6 @@ def upload(request, donepath, diffset_history_id=None,
     return render_to_response(template_name, RequestContext(request, {
         'differror': differror,
         'form': form,
+        'diffs_use_absolute_paths':
+            scmtools.get_tool().get_diffs_use_absolute_paths(),
     }))
