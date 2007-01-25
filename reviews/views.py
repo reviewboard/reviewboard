@@ -195,7 +195,7 @@ def field(request, review_request_id, field_name):
             return HttpResponse(getattr(draft, field_name))
     else:
         try:
-            obj = ReviewRequestDraft.objects.get(review_request=review_request)
+            obj = review_request.reviewrequestdraft_set.get()
         except ReviewRequestDraft.DoesNotExist:
             obj = review_request
 
@@ -209,7 +209,7 @@ def field(request, review_request_id, field_name):
 def revert_draft(request, object_id):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
     try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+        draft = review_request.reviewrequestdraft_set.get()
         draft.delete()
     except ReviewRequestDraft.DoesNotExist:
         pass
@@ -248,7 +248,7 @@ def review_detail(request, object_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
     try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+        draft = review_request.reviewrequestdraft_set.get()
     except ReviewRequestDraft.DoesNotExist:
         draft = None
 
@@ -342,7 +342,7 @@ def diff(request, object_id, revision=None):
     query = Q(diffsethistory=review_request.diffset_history)
 
     try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+        draft = review_request.reviewrequestdraft_set.get()
         query = query | Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
         pass
