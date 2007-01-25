@@ -147,7 +147,7 @@ Files:\n\
             review_request.diffset_history = diffset_history
             review_request.submitter = request.user
             review_request.status = 'P'
-            review_request.public = True
+            review_request.public = False
             review_request.save()
 
             return HttpResponseRedirect(review_request.get_absolute_url())
@@ -305,9 +305,14 @@ def dashboard(request, template_name):
             id__in=[x.id for x in direct_list]
         )[:50 - len(direct_list)]
 
+    your_list = ReviewRequest.objects.filter(
+        status='P',
+        submitter=request.user)[:50]
+
     return render_to_response(template_name, RequestContext(request, {
         'direct_list': direct_list,
         'group_list': group_list,
+        'your_list': your_list,
     }))
 
 

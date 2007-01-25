@@ -1,5 +1,6 @@
 {% extends "base_feeds.html" %}
 {% load htmlutils %}
+{% load reviewtags %}
 {% block title %}{% firstof source "All" %} pending review requests{% endblock %}
 
 {% block content %}
@@ -64,7 +65,37 @@
   </table>
  {% endif %}
 {% else %}
-<p>You have no pending reviews.  Time to party!</p>
+<p>You have nothing to review. Time to party!</p>
+{% endif %}
+
+{% if your_list %}
+  <h2>Your Pending Reviews</h2>
+  <p>
+   You worked hard on these review requests. Make sure people are giving them
+   the attention they deserve.
+  </p>
+
+  <table class="list">
+   <colgroup>
+    <col class="summary" />
+    <col class="submitter" width="1*" />
+    <col class="updated" width="1*" />
+   </colgroup>
+   <thead>
+    <tr class="headers">
+     <th>Summary</th>
+     <th>Last Updated</th>
+    </tr>
+   </thead>
+   <tbody>
+{%  for review in your_list %}
+     <tr>
+      <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{% reviewsummary review %}</a></td>
+      <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
+     </tr>
+{%  endfor %}
+   </tbody>
+  </table>
 {% endif %}
 
 {% endblock %}
