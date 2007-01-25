@@ -8,7 +8,9 @@
 {% if direct_list or group_list %}
  {% if direct_list %}
   <h2>Direct Reviews</h2>
-  <p>{{ quips.direct.text }}</p>
+  {% if quips.direct %}
+   <p>{{ quips.direct.0.text }}</p>
+  {% endif %}
 
   <table class="list">
    <colgroup>
@@ -37,7 +39,9 @@
 
  {% if group_list %}
   <h2>Group Reviews</h2>
-  <p>{{ quips.group.text }}</p>
+  {% if quips.group %}
+   <p>{{ quips.group.0.text }}</p>
+  {% endif %}
 
   <table class="list">
    <colgroup>
@@ -64,12 +68,16 @@
   </table>
  {% endif %}
 {% else %}
-<p>{{ quips.empty.text }}</p>
+ {% if quips.empty %}
+  <p>{{ quips.empty.0.text }}</p>
+ {% endif %}
 {% endif %}
 
 {% if your_list %}
   <h2>Your Pending Reviews</h2>
-  <p>{{ quips.mine.text }}</p>
+  {% if quips.mine %}
+   <p>{{ quips.mine.0.text }}</p>
+  {% endif %}
 
   <table class="list">
    <colgroup>

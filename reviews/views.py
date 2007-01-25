@@ -311,10 +311,10 @@ def dashboard(request, template_name):
 
     # The most important part
     quips = {}
-    quips['direct'] = Quip.objects.filter(place='dn').order_by('?')[0]
-    quips['group']  = Quip.objects.filter(place='dg').order_by('?')[0]
-    quips['empty']  = Quip.objects.filter(place='de').order_by('?')[0]
-    quips['mine']   = Quip.objects.filter(place='dm').order_by('?')[0]
+    quips['direct'] = Quip.objects.filter(place='dn').order_by('?')[:1]
+    quips['group']  = Quip.objects.filter(place='dg').order_by('?')[:1]
+    quips['empty']  = Quip.objects.filter(place='de').order_by('?')[:1]
+    quips['mine']   = Quip.objects.filter(place='dm').order_by('?')[:1]
 
     return render_to_response(template_name, RequestContext(request, {
         'direct_list': direct_list,
