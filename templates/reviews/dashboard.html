@@ -8,7 +8,7 @@
 {% if direct_list or group_list %}
  {% if direct_list %}
   <h2>Direct Reviews</h2>
-  <p>These requests asked for you by name.  Doh!  Better get cracking.</p>
+  <p>{{ quips.direct.text }}</p>
 
   <table class="list">
    <colgroup>
@@ -37,8 +37,7 @@
 
  {% if group_list %}
   <h2>Group Reviews</h2>
-  <p>These requests included a group of which you are a member.  Maybe if you
-     wait long enough, someone else will do it.</p>
+  <p>{{ quips.group.text }}</p>
 
   <table class="list">
    <colgroup>
@@ -65,15 +64,12 @@
   </table>
  {% endif %}
 {% else %}
-<p>You have nothing to review. Time to party!</p>
+<p>{{ quips.empty.text }}</p>
 {% endif %}
 
 {% if your_list %}
   <h2>Your Pending Reviews</h2>
-  <p>
-   You worked hard on these review requests. Make sure people are giving them
-   the attention they deserve.
-  </p>
+  <p>{{ quips.mine.text }}</p>
 
   <table class="list">
    <colgroup>

@@ -9,7 +9,7 @@ from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.diffviewer.views import view_diff
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.forms import NewReviewRequestForm
 import re
 
@@ -309,10 +309,18 @@ def dashboard(request, template_name):
         status='P',
         submitter=request.user)[:50]
 
+    # The most important part
+    quips = {}
+    quips['direct'] = Quip.objects.filter(place='dn').order_by('?')[0]
+    quips['group']  = Quip.objects.filter(place='dg').order_by('?')[0]
+    quips['empty']  = Quip.objects.filter(place='de').order_by('?')[0]
+    quips['mine']   = Quip.objects.filter(place='dm').order_by('?')[0]
+
     return render_to_response(template_name, RequestContext(request, {
         'direct_list': direct_list,
         'group_list': group_list,
         'your_list': your_list,
+        'quips': quips,
     }))
 
 

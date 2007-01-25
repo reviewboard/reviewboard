@@ -8,6 +8,26 @@ class Comment(models.Model):
     filename = models.CharField("Filename", maxlength=256, core=True)
 
 
+class Quip(models.Model):
+    PLACES = (
+        ('dn', 'Dashboard: By Name'),
+        ('dg', 'Dashboard: By Group'),
+        ('de', 'Dashboard: Empty'),
+        ('dm', 'Dashboard: Mine'),
+    )
+    place = models.CharField(maxlength=2, choices=PLACES)
+    text = models.TextField()
+
+    def __str__(self):
+        if len(self.text) < 100:
+            return self.text
+        else:
+            return '%s...' % self.text[:97]
+
+    class Admin:
+        pass
+
+
 class ReviewRequest(models.Model):
     STATUSES = (
         ('P', 'Pending Review'),
