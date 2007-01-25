@@ -37,11 +37,10 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 try:
                     orig_buffer = \
                         scmtools.get_tool().get_file(filediff.source_file)
-                except Exception:
-                    # TODO: Include the actual error.
+                except Exception, e:
                     return render_to_response(template_name, {
-                        'error': "Unable to retrieve the source file %s" % \
-                                 filediff.source_file
+                        'error': "Unable to retrieve the source file %s: %s" % \
+                                 (filediff.source_file, e)
                     })
 
                 cache.set(filediff.source_file, orig_buffer,

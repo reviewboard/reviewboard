@@ -18,7 +18,7 @@ class SVNTool(SCMTool):
         try:
             return self.client.cat(self.__normalize_path(path), revision)
         except pysvn.ClientError, e:
-            raise SCMException("Unable to retrieve file %s" % path)
+            raise SCMException(e)
 
 
     def get_diff_header_info(self, header):
