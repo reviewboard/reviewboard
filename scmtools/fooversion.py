@@ -1,6 +1,7 @@
 from scmtools.core import SCMException, FileNotFoundException, HEAD, SCMTool
 from scmtools.svn import SVNTool
 from scmtools.perforce import PerforceTool
+import os
 
 class FooVersionTool(SVNTool):
     """
@@ -31,7 +32,11 @@ Files:\n\
     //depot/bora/foo/apps/lib/foo.c\n\
     //depot/bora/foo/apps/lib/bar.c\n\
 "
-        return PerforceTool.parse_change_desc(changesetid, changedesc)
+        changedesc = PerforceTool.parse_change_desc(changesetid, changedesc)
+        changedesc.summary = os.popen('fortune -s').readlines()[0]
+        changedesc.description = os.popen('fortune').read()
+        changedesc.testing_done = os.popen('fortune').read()
+        return changedesc
 
     def get_pending_changesets(self, userid):
         return [parse_change_desc("12345"),
