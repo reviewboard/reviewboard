@@ -7,25 +7,27 @@
 
 {% if direct_list or group_list %}
  {% if direct_list %}
+ <div class="dashboard">
   <h2>Direct Reviews</h2>
-  {% if quips.direct %}
+  <div class="content">
+   {% if quips.direct %}
    <p>{{ quips.direct.0.text }}</p>
-  {% endif %}
+   {% endif %}
 
-  <table class="list">
-   <colgroup>
-    <col class="summary" />
-    <col class="submitter" width="1*" />
-    <col class="updated" width="1*" />
-   </colgroup>
-   <thead>
-    <tr class="headers">
-     <th>Summary</th>
-     <th>Submitter</th>
-     <th>Last Updated</th>
-    </tr>
-   </thead>
-   <tbody>
+   <table class="list">
+    <colgroup>
+     <col class="summary" />
+     <col class="submitter" width="1*" />
+     <col class="updated" width="1*" />
+    </colgroup>
+    <thead>
+     <tr class="headers">
+      <th>Summary</th>
+      <th>Submitter</th>
+      <th>Last Updated</th>
+     </tr>
+    </thead>
+    <tbody>
 {%  for review in direct_list %}
      <tr>
       <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
@@ -33,30 +35,34 @@
       <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
      </tr>
 {%  endfor %}
-   </tbody>
-  </table>
+    </tbody>
+   </table>
+  </div>
+ </div>
  {% endif %}
 
  {% if group_list %}
+ <div class="dashboard">
   <h2>Group Reviews</h2>
-  {% if quips.group %}
+  <div class="content">
+   {% if quips.group %}
    <p>{{ quips.group.0.text }}</p>
-  {% endif %}
+   {% endif %}
 
-  <table class="list">
-   <colgroup>
-    <col class="summary" />
-    <col class="submitter" width="1*" />
-    <col class="updated" width="1*" />
-   </colgroup>
-   <thead>
-    <tr class="headers">
-     <th>Summary</th>
-     <th>Submitter</th>
-     <th>Last Updated</th>
-    </tr>
-   </thead>
-   <tbody>
+   <table class="list">
+    <colgroup>
+     <col class="summary" />
+     <col class="submitter" width="1*" />
+     <col class="updated" width="1*" />
+    </colgroup>
+    <thead>
+     <tr class="headers">
+      <th>Summary</th>
+      <th>Submitter</th>
+      <th>Last Updated</th>
+     </tr>
+    </thead>
+    <tbody>
 {%  for review in group_list %}
      <tr>
       <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
@@ -64,8 +70,10 @@
       <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
      </tr>
 {%  endfor %}
-   </tbody>
-  </table>
+    </tbody>
+   </table>
+  </div>
+ </div>
  {% endif %}
 {% else %}
  {% if quips.empty %}
@@ -74,32 +82,35 @@
 {% endif %}
 
 {% if your_list %}
+ <div class="dashboard">
   <h2>Your Pending Reviews</h2>
-  {% if quips.mine %}
+  <div class="content">
+   {% if quips.mine %}
    <p>{{ quips.mine.0.text }}</p>
-  {% endif %}
+   {% endif %}
 
-  <table class="list">
-   <colgroup>
-    <col class="summary" />
-    <col class="submitter" width="1*" />
-    <col class="updated" width="1*" />
-   </colgroup>
-   <thead>
-    <tr class="headers">
-     <th>Summary</th>
-     <th>Last Updated</th>
-    </tr>
-   </thead>
-   <tbody>
+   <table class="list">
+    <colgroup>
+     <col class="summary" />
+     <col class="updated" width="1*" />
+    </colgroup>
+    <thead>
+     <tr class="headers">
+      <th>Summary</th>
+      <th>Last Updated</th>
+     </tr>
+    </thead>
+    <tbody>
 {%  for review in your_list %}
      <tr>
       <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{% reviewsummary review %}</a></td>
       <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
      </tr>
 {%  endfor %}
-   </tbody>
-  </table>
+    </tbody>
+   </table>
+  </div>
+ </div>
 {% endif %}
 
 {% endblock %}
