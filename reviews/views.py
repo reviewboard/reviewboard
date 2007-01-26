@@ -64,6 +64,7 @@ def new_from_changenum(request):
     return HttpResponseRedirect('/reviews/new/')
 
 
+@login_required
 def field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
@@ -114,6 +115,7 @@ def field(request, review_request_id, field_name):
     raise Http404()
 
 
+@login_required
 def revert_draft(request, object_id):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
     try:
@@ -125,6 +127,7 @@ def revert_draft(request, object_id):
     return HttpResponse("Draft reverted.")
 
 
+@login_required
 def save_draft(request, object_id):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
     draft = get_object_or_404(ReviewRequestDraft, review_request=review_request)
@@ -144,7 +147,8 @@ def save_draft(request, object_id):
         review_request.target_people.add(person)
 
     if draft.diffset:
-        review_request.diffset_history.diffsets.add(draft.diffset)
+        draft.diffset.history = review_request.diffset_history
+        draft.diffset.save()
 
     review_request.save()
     draft.delete()
@@ -152,6 +156,7 @@ def save_draft(request, object_id):
     return HttpResponse("Draft saved.")
 
 
+@login_required
 def review_detail(request, object_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
@@ -168,6 +173,7 @@ def review_detail(request, object_id, template_name):
     }))
 
 
+@login_required
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
         queryset=queryset.order_by('-last_updated'),
@@ -180,6 +186,7 @@ def review_list(request, queryset, template_name, extra_context={}):
         ))
 
 
+@login_required
 def submitter_list(request, template_name):
     return object_list(request,
         queryset=User.objects.all(),
@@ -191,6 +198,7 @@ def submitter_list(request, template_name):
         })
 
 
+@login_required
 def group_list(request, template_name):
     return object_list(request,
         queryset=Group.objects.all(),
@@ -202,6 +210,7 @@ def group_list(request, template_name):
         })
 
 
+@login_required
 def dashboard(request, template_name):
     direct_list = ReviewRequest.objects.filter(
         public=True,
@@ -232,6 +241,7 @@ def dashboard(request, template_name):
     }))
 
 
+@login_required
 def group(request, name, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(
@@ -242,6 +252,7 @@ def group(request, name, template_name):
         })
 
 
+@login_required
 def submitter(request, username, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(
@@ -252,6 +263,7 @@ def submitter(request, username, template_name):
         })
 
 
+@login_required
 def diff(request, object_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
@@ -274,6 +286,7 @@ def diff(request, object_id, revision=None):
     return view_diff(request, diffset.id)
 
 
+@login_required
 def upload_diff_done(request, review_request_id, diffset_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
@@ -291,3 +304,15 @@ def upload_diff_done(request, review_request_id, diffset_id):
         diffset.save()
 
     return HttpResponseRedirect(review_request.get_absolute_url())
+
+
+@login_required
+def publish(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if review_request.submitter == request.user:
+        review_request.public = True
+        review_request.save()
+        return HttpResponseRedirect(review_request.get_absolute_url())
+    else:
+        raise Http404() # XXX Error out

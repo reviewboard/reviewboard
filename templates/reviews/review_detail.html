@@ -73,6 +73,9 @@
  </div>
  <ul class="controls">
 {% ifequal request.user object.submitter %}
+{%  if not details.public %}
+  <li><a href="publish/">Publish</a></li>
+{%  endif %}
   <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
 {% endifequal %}
 {% ifnotequal details.diffset_history.diffset_set.count 0 %}
@@ -136,7 +139,8 @@
 			{
 				method: 'get',
 		        onSuccess: function() { hideDraftBanner(); },
-				onFailure: function() {
+				onFailure: function(transport) {
+					$('servererror').innerHTML = transport.responseText;
 					alert("Saving the draft has failed due to a server " +
 					      "error. Please try again later. If this " +
 						  "continues to happen, please report it to your " +
