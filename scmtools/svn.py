@@ -1,6 +1,5 @@
 from scmtools.core import SCMException, FileNotFoundException, HEAD, SCMTool
 import pysvn
-import re
 
 class SVNTool(SCMTool):
     def __init__(self, repopath):
@@ -31,15 +30,6 @@ class SVNTool(SCMTool):
         else:
             raise SCMException("Unable to parse diff revision header '%s'" %
                                revision_str)
-
-
-    def get_diff_header_info(self, header):
-        diffheader = DiffHeader()
-        diffheader.orig_file, diffheader.orig_revision = \
-            self.__parse_diff_info_lne('---')
-        diffheader.new_file, diffheader.new_revision = \
-            self.__parse_diff_info_lne('+++')
-        return diffheader
 
 
     def __parse_diff_info_line(self, prefix):

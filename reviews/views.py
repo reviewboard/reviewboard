@@ -11,86 +11,8 @@ from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.diffviewer.views import view_diff
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.forms import NewReviewRequestForm
+import reviewboard.scmtools as scmtools
 import re
-
-def parse_change_desc(changedesc, review_request):
-    summary = ""
-    description = ""
-    files = []
-
-    changedesc_keys = {
-        'QA Notes': "",
-        'Testing Done': "",
-        'Documentation Notes': "",
-        'Bug Number': "",
-        'Reviewed by': "",
-        'Approved by': "",
-        'Breaks vmcore compatibility': "",
-        'Breaks vmkernel compatibility': "",
-        'Breaks vmkdrivers compatibility': "",
-        'Mailto': "",
-    }
-
-    process_summary = False
-    process_description = False
-    process_files = False
-
-    cur_key = None
-
-    for line in changedesc.split("\n"):
-        if line == "Description:":
-            process_summary = True
-            continue
-        elif line == "Files:":
-            process_files = True
-            cur_key = None
-            continue
-        elif line == "" or line == "\t":
-            if process_summary:
-                process_summary = False
-                process_description = True
-                continue
-
-            line = ""
-        elif line.startswith("\t"):
-            line = line[1:]
-
-            if process_files:
-                files.append(line)
-                continue
-            elif line.find(':') != -1:
-                key, value = line.split(':', 2)
-
-                if changedesc_keys.has_key(key):
-                    process_description = False
-                    cur_key = key
-
-                    changedesc_keys[key] = value.lstrip() + "\n"
-                    continue
-
-        line += "\n"
-
-        if process_summary:
-            summary += line
-        elif process_description:
-            description += line
-        elif cur_key != None:
-            changedesc_keys[cur_key] += line
-
-    review_request.summary = summary.strip()
-    review_request.description = description.strip()
-    review_request.testing_done = changedesc_keys['Testing Done'].strip()
-
-    review_request.bugs_closed = \
-        ", ".join(re.split(r"[, ]+", changedesc_keys['Bug Number'])).strip()
-
-    # This is gross.
-    if len(files) > 0:
-        parts = files[0].split('/')
-
-        if parts[2] == "depot":
-            review_request.branch = parts[4]
-
 
 @login_required
 def new_review_request(request, template_name='reviews/review_detail.html'):
@@ -114,26 +36,6 @@ def new_review_request(request, template_name='reviews/review_detail.html'):
 
 @login_required
 def new_from_changenum(request):
-    changedesc = "\
-Description:\n\
-	This is my summary.\n\
-	\n\
-	This is a body of text, which can\n\
-	wrap to the next line.\n\
-\n\
-	And skip lines.\n\
-	\n\
-\n\
-	QA Notes:\n\
-	Testing Done: I ate a hamburger and thought, \"Wow, that was rad.\"\n\
-	Note how it carries to the next line, since some people do that.\n\
-	Bug Number: 456123, 12873  1298371\n\
-\n\
-Files:\n\
-	//depot/bora/foo/apps/lib/foo.c\n\
-	//depot/bora/foo/apps/lib/bar.c\n\
-"
-
     if request.POST:
         if request.POST.has_key('changenum'):
             changenum = request.POST['changenum']
@@ -142,18 +44,24 @@ Files:\n\
             diffset_history.save()
 
             review_request = ReviewRequest()
-            parse_change_desc(changedesc, review_request)
+            changeset = scmtools.get_tool().get_changeset(changenum)
 
-            review_request.diffset_history = diffset_history
-            review_request.submitter = request.user
-            review_request.status = 'P'
-            review_request.public = False
-            review_request.save()
+            if changeset != None:
+                review_request.summary = changeset.summary
+                review_request.description = changeset.description
+                review_request.testing_done = changeset.testing_done
+                review_request.branch = changeset.branch
+                review_request.bugs_closed = ','.join(changeset.bugs_closed)
+                review_request.diffset_history = diffset_history
+                review_request.submitter = request.user
+                review_request.status = 'P'
+                review_request.public = False
+                review_request.save()
 
-            return HttpResponseRedirect(review_request.get_absolute_url())
-    else:
-        # XXX Display an error page
-        return HttpResponseRedirect('/reviews/new/')
+                return HttpResponseRedirect(review_request.get_absolute_url())
+
+    # XXX Display an error page
+    return HttpResponseRedirect('/reviews/new/')
 
 
 def field(request, review_request_id, field_name):

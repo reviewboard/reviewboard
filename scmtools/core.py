@@ -6,6 +6,16 @@ class SCMException(Exception):
         Exception.__init__(self, msg)
 
 
+class ChangeSet:
+    def __init__(self):
+        self.changenum = None
+        self.summary = ""
+        self.description = ""
+        self.branch = ""
+        self.bugs_closed = []
+        self.files = []
+
+
 class FileNotFoundException(Exception):
     def __init__(self, path, revision=None, detail=None):
         if revision == None or revision == HEAD:
@@ -22,12 +32,6 @@ class FileNotFoundException(Exception):
 
 class Revision:
     pass
-
-class DiffHeader:
-    orig_file = None
-    orig_revision = None
-    new_file = None
-    new_revision = None
 
 class SCMTool:
     def __init__(self, repopath):
@@ -49,16 +53,10 @@ class SCMTool:
     def get_diffs_use_absolute_paths(self):
         return False
 
-    def get_diff_header_info(self, header):
-        raise NotImplementedError
-
     def get_changeset(self, changesetid):
         raise NotImplementedError
 
     def get_pending_changesets(self, userid):
-        raise NotImplementedError
-
-    def get_changeset(self, uri, userid):
         raise NotImplementedError
 
 
