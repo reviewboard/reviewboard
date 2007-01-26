@@ -33,9 +33,11 @@ Files:\n\
     //depot/bora/foo/apps/lib/bar.c\n\
 "
         changedesc = PerforceTool.parse_change_desc(changesetid, changedesc)
-        changedesc.summary = os.popen('fortune -s').readlines()[0]
-        changedesc.description = os.popen('fortune').read()
-        changedesc.testing_done = os.popen('fortune').read()
+
+        if not os.popen('fortune').close():
+            changedesc.summary = os.popen('fortune -s').readline()
+            changedesc.description = os.popen('fortune').read()
+            changedesc.testing_done = os.popen('fortune').read()
         return changedesc
 
     def get_pending_changesets(self, userid):
