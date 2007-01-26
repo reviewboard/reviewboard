@@ -38,9 +38,10 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                     orig_buffer = \
                         scmtools.get_tool().get_file(filediff.source_file)
                 except Exception, e:
-                    return render_to_response(template_name, {
+                    return render_to_response(template_name,
+                                              RequestContext(request, {
                         'error': "%s: %s" % (e, e.detail)
-                    })
+                    }))
 
                 cache.set(filediff.source_file, orig_buffer,
                           CACHE_EXPIRATION_TIME)
@@ -60,10 +61,11 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 if ret != 0:
                     os.unlink(tempname)
                     os.unlink(new_file)
-                    return render_to_response(template_name, {
+                    return render_to_response(template_name,
+                                              RequestContext(request, {
                         'error': "The patch didn't apply cleanly. Try " +
                                  "re-uploading the patch."
-                    })
+                    }))
 
                 f = os.popen('diff %s %s %s' % (DIFF_OPTS, tempname, new_file))
                 sidebyside_diff = ''.join(f.readlines())
