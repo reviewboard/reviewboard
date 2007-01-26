@@ -73,7 +73,7 @@ class PerforceTool(SCMTool):
         changeset.description = changeset.description.strip()
         changeset.testing_done = changedesc_keys['Testing Done'].strip()
         changeset.bugs_closed = re.split(r"[, ]+",
-                                         changedesc_keys['Bug Number'])
+                                         changedesc_keys['Bug Number'].strip())
 
         # This is gross.
         if len(changeset.files) > 0:
