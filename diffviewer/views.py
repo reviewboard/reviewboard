@@ -58,6 +58,34 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
         return data
 
+    def get_chunks(filediff):
+        old = get_original_file(filediff.source_file)
+        new = patch(filediff.diff, old)
+        # XXX: compute chunks
+        return []
+
+    # Create a list of file objects.  We then postprocess this to reconcile
+    # all of the chunk IDs.
+    try:
+        files = []
+        for filediff in diffset.files.all():
+            revision = scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+            chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
+                                   lambda: get_chunks(filediff))
+
+            files.append({
+                'depot_filename': filediff.source_file,
+                'user_filename': filediff.dest_file,
+                'revision': revision,
+                'chunks': chunks,
+            })
+
+        # XXX: reconcile chunks
+    except Exception, e:
+        return render_to_response(template_name,
+                                  RequestContext(request, {
+            'error': '%s: %s' % (e, e.detail)
+        }))
 
     ##### CRUFT BARRIER #####
 
