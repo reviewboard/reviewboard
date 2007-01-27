@@ -23,14 +23,17 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     chunks = []
     next_chunk_index = 0
 
+    def cache_memoize(key, lookup_callable):
+        if cache.has_key(key):
+            return cache.get(key)
+        data = lookup_callable()
+        cache.set(file, buffer, CACHE_EXPIRATION_TIME)
+        return data
+
     def get_original_file(file):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
-        if cache.has_key(file):
-            return cache.get(file)
-        buffer = scmtools.get_tool().get_file(file)
-        cache.set(file, buffer, CACHE_EXPIRATION_TIME)
-        return buffer
+        return cache_memoize(file, lambda: scmtools.get_tool().get_file(file))
 
     def diff2sidebyside(diff, file):
         """Helper to convert a normal diff to a side-by-side diff"""
@@ -50,6 +53,9 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             os.unlink(newfile)
             raise Exception("The patch didn't apply cleanly.")
 
+        # FIXME: this chops everything to 90 characters.  Yes, p4 htmldiff does
+        # this, but it also has a way to override it.  It'd be nice if this could
+        # just generate wide diffs when appropriate.
         f = os.popen('diff %s %s %s' % (DIFF_OPTS, oldfile, newfile))
         sidebyside = f.read()
         f.close()
@@ -78,9 +84,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             lines = []
             next_chunk_index = 0
 
-            f = open('/tmp/sidediff', 'w')
-            f.write(sidebyside_diff)
-            f.close()
             prev_change = None
 
             change = ""
