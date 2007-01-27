@@ -69,7 +69,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                     }))
 
                 f = os.popen('diff %s %s %s' % (DIFF_OPTS, tempname, new_file))
-                sidebyside_diff = ''.join(f.readlines())
+                sidebyside_diff = f.read()
                 f.close()
 
                 os.unlink(tempname)
