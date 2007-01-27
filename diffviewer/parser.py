@@ -29,7 +29,7 @@ def parseFile(lines, linenum, lastline, filename):
          lines[lastline - 1].startswith("Index: "):
         lastline -= 2
 
-    file.data = '\n'.join(lines[linenum:lastline - 1])
+    file.data = '\n'.join(lines[linenum:lastline])
 
     return file
 
