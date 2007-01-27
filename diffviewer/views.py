@@ -66,7 +66,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         b = (new or '').splitlines(True)
 
         chunks = []
-        # XXX: remove ugly tag mapping hack
         for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b).get_opcodes():
             chunks.append({
                 'oldtext': ''.join(a[i1:i2]),
