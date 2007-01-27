@@ -30,6 +30,37 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
            passed back to the caller."""
         return cache_memoize(file, lambda: scmtools.get_tool().get_file(file))
 
+    def patch(diff, file):
+        """Apply a diff to a file.  Delegates out to `patch` because noone
+           except Larry Wall knows how to patch."""
+        (fd, oldfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, "w+b")
+        f.write(file)
+        f.close()
+
+        newfile = '%s-new' % oldfile
+        p = Popen3('patch -o %s %s' % (newfile, oldfile))
+        p.tochild.write(diff)
+        p.tochild.close()
+        failure = p.wait()
+
+        if failure:
+            os.unlink(oldfile)
+            os.unlink(newfile)
+            raise Exception("The patch didn't apply cleanly: %s" % p.fromchild)
+
+        f = open(newfile, "r")
+        data = f.read()
+        f.close()
+
+        os.unlink(oldfile)
+        os.unlink(newfile)
+
+        return data
+
+
+    ##### CRUFT BARRIER #####
+
     def diff2sidebyside(diff, file):
         """Helper to convert a normal diff to a side-by-side diff"""
         (fd, oldfile) = tempfile.mkstemp()
@@ -62,14 +93,11 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     files = []
     file_index = 0
-    chunks = []
-    next_chunk_index = 0
 
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
         lines = cache.get(key)
         chunks = []
-        next_chunk_index = 0
 
         if lines == None:
             try:
