@@ -18,11 +18,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     except DiffSet.DoesNotExist:
         raise Http404
 
-    files = []
-    file_index = 0
-    chunks = []
-    next_chunk_index = 0
-
     def cache_memoize(key, lookup_callable):
         if cache.has_key(key):
             return cache.get(key)
@@ -64,6 +59,11 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         os.unlink(newfile)
 
         return sidebyside
+
+    files = []
+    file_index = 0
+    chunks = []
+    next_chunk_index = 0
 
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
