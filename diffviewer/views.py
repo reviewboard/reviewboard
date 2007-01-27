@@ -85,7 +85,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             f.close()
             prev_change = None
 
-            change = None
+            change = ""
             chunk_info = None
             last_changed_index = 0
             i = 0
