@@ -32,6 +32,33 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         cache.set(file, buffer, CACHE_EXPIRATION_TIME)
         return buffer
 
+    def diff2sidebyside(diff, file):
+        """Helper to convert a normal diff to a side-by-side diff"""
+        (fd, oldfile) = tempfile.mkstemp()
+        f = os.fdopen(fd, "w+b")
+        f.write(file)
+        f.close()
+
+        newfile = '%s-new' % oldfile
+        p = Popen3('patch -o %s %s' % (newfile, oldfile))
+        p.tochild.write(diff)
+        p.tochild.close()
+        failure = p.wait()
+
+        if failure:
+            os.unlink(oldfile)
+            os.unlink(newfile)
+            raise Exception("The patch didn't apply cleanly.")
+
+        f = os.popen('diff %s %s %s' % (DIFF_OPTS, oldfile, newfile))
+        sidebyside = f.read()
+        f.close()
+
+        os.unlink(oldfile)
+        os.unlink(newfile)
+
+        return sidebyside
+
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
         lines = cache.get(key)
@@ -41,42 +68,12 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if lines == None:
             try:
                 orig_buffer = get_original_file(filediff.source_file)
+                sidebyside_diff = diff2sidebyside(filediff.diff, orig_buffer)
             except Exception, e:
                 return render_to_response(template_name,
                                           RequestContext(request, {
                     'error': '%s: %s' % (e, e.detail)
                 }))
-
-            try:
-                (fd, tempname) = tempfile.mkstemp()
-                f = os.fdopen(fd, "w+b")
-                f.write(orig_buffer)
-                f.close()
-
-                new_file = '%s-new' % tempname
-                p = Popen3('patch -o %s %s' % (new_file, tempname))
-                p.tochild.write(filediff.diff)
-                p.tochild.close()
-                ret = p.wait()
-
-                if ret != 0:
-                    os.unlink(tempname)
-                    os.unlink(new_file)
-                    return render_to_response(template_name,
-                                              RequestContext(request, {
-                        'error': "The patch didn't apply cleanly. Try " +
-                                 "re-uploading the patch."
-                    }))
-
-                f = os.popen('diff %s %s %s' % (DIFF_OPTS, tempname, new_file))
-                sidebyside_diff = f.read()
-                f.close()
-
-                os.unlink(tempname)
-                os.unlink(new_file)
-
-            except IOError, e:
-                raise e # XXX
 
             lines = []
             next_chunk_index = 0
