@@ -5,7 +5,7 @@ from django.template import RequestContext
 from popen2 import Popen3
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-import os, sys, tempfile
+import os, sys, tempfile, difflib
 import reviewboard.scmtools as scmtools
 
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
@@ -22,7 +22,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if cache.has_key(key):
             return cache.get(key)
         data = lookup_callable()
-        cache.set(file, buffer, CACHE_EXPIRATION_TIME)
+        cache.set(key, buffer, CACHE_EXPIRATION_TIME)
         return data
 
     def get_original_file(file):
@@ -61,8 +61,20 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     def get_chunks(filediff):
         old = get_original_file(filediff.source_file)
         new = patch(filediff.diff, old)
-        # XXX: compute chunks
-        return []
+
+        a = (old or '').splitlines(True)
+        b = (new or '').splitlines(True)
+
+        chunks = []
+        # XXX: remove ugly tag mapping hack
+        for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b).get_opcodes():
+            chunks.append({
+                'oldtext': ''.join(a[i1:i2]),
+                'newtext': ''.join(b[j1:j2]),
+                'change': tag,
+            })
+
+        return chunks
 
     # Create a list of file objects.  We then postprocess this to reconcile
     # all of the chunk IDs.
@@ -80,154 +92,33 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 'chunks': chunks,
             })
 
-        # XXX: reconcile chunks
+        # Go through and set index, nextid and previd for each chunk.
+        # FIXME: this is a little ugly, at least comparatively ;)
+        # FIXME: this assigns indices to un-changed blocks, which kind of sucks
+        for i in range(len(files)):
+            file = files[i]
+            file['index'] = i
+
+            chunks = file['chunks']
+            for j in range(len(chunks)):
+                chunk = chunks[j]
+                chunk['index'] = j
+                chunk['nextid'] = '%s.%s' % (i, j + 1)
+                if j == 0:
+                    chunk['previd'] = i
+                else:
+                    chunk['previd'] = '%s.%s' % (i, j)
+            chunks[-1]['nextid'] = i + 1
+
+        return render_to_response(template_name, RequestContext(request, {
+            'files': files,
+        }))
+
     except Exception, e:
         return render_to_response(template_name,
                                   RequestContext(request, {
-            'error': '%s: %s' % (e, e.detail)
+            'error': '%s' % e
         }))
-
-    ##### CRUFT BARRIER #####
-
-    def diff2sidebyside(diff, file):
-        """Helper to convert a normal diff to a side-by-side diff"""
-        (fd, oldfile) = tempfile.mkstemp()
-        f = os.fdopen(fd, "w+b")
-        f.write(file)
-        f.close()
-
-        newfile = '%s-new' % oldfile
-        p = Popen3('patch -o %s %s' % (newfile, oldfile))
-        p.tochild.write(diff)
-        p.tochild.close()
-        failure = p.wait()
-
-        if failure:
-            os.unlink(oldfile)
-            os.unlink(newfile)
-            raise Exception("The patch didn't apply cleanly.")
-
-        # FIXME: this chops everything to 90 characters.  Yes, p4 htmldiff does
-        # this, but it also has a way to override it.  It'd be nice if this could
-        # just generate wide diffs when appropriate.
-        f = os.popen('diff %s %s %s' % (DIFF_OPTS, oldfile, newfile))
-        sidebyside = f.read()
-        f.close()
-
-        os.unlink(oldfile)
-        os.unlink(newfile)
-
-        return sidebyside
-
-    files = []
-    file_index = 0
-
-    for filediff in diffset.files.all():
-        key = 'diff-sidebyside-%s' % filediff.id
-        lines = cache.get(key)
-        chunks = []
-
-        if lines == None:
-            try:
-                orig_buffer = get_original_file(filediff.source_file)
-                sidebyside_diff = diff2sidebyside(filediff.diff, orig_buffer)
-            except Exception, e:
-                return render_to_response(template_name,
-                                          RequestContext(request, {
-                    'error': '%s: %s' % (e, e.detail)
-                }))
-
-            lines = []
-            next_chunk_index = 0
-
-            prev_change = None
-
-            change = ""
-            chunk_info = None
-            last_changed_index = 0
-            i = 0
-
-            for line in sidebyside_diff.split('\n'):
-                chunk_changed = False
-
-                oldline = line[0:DIFF_COL_WIDTH].rstrip()
-                newline = line[DIFF_COL_WIDTH+3:].rstrip()
-
-                if len(line) > DIFF_COL_WIDTH:
-                    mark = line[DIFF_COL_WIDTH:DIFF_COL_WIDTH+3].strip()
-
-                    if mark == "|":
-                        change = "changed"
-                    elif mark == "<":
-                        change = "removed"
-                    elif mark == ">":
-                        change = "added"
-                    else:
-                        change = ""
-
-                if prev_change != change:
-                    if chunk_info != None:
-                        chunks.append(chunk_info)
-
-                    chunk_info = {
-                        'oldtext': oldline,
-                        'newtext': newline,
-                        'change': change
-                    }
-
-                    if change != "":
-                        last_changed_index = i
-                        chunk_info['index'] = next_chunk_index
-                        next_chunk_index += 1
-
-                        if chunk_info['index'] == 0:
-                            chunk_info['previd'] = file_index
-                        else:
-                            chunk_info['previd'] = "%s.%s" % \
-                                (file_index, chunk_info['index'] - 1)
-
-                        chunk_info['nextid'] = "%s.%s" % \
-                            (file_index, chunk_info['index'] + 1)
-                    else:
-                        chunk_info['index'] = None
-
-                    i += 1
-                else:
-                    chunk_info['oldtext'] += '\n' + oldline
-                    chunk_info['newtext'] += '\n' + newline
-
-                prev_change = change
-
-            chunks.append(chunk_info)
-
-            # Override the nextid of the last chunk to point to the next
-            # file or section
-            chunks[last_changed_index]['nextid'] = file_index + 1
-            cache.set(key, chunks, CACHE_EXPIRATION_TIME)
-
-
-        revision = \
-            scmtools.get_tool().parse_diff_revision(filediff.source_detail)
-
-        if revision == scmtools.HEAD:
-            revision = "HEAD"
-        else:
-            revision = "r" + revision
-
-        files.append({'depot_filename': filediff.source_file,
-                      'user_filename': filediff.dest_file,
-                      'revision': revision,
-                      'index': file_index,
-                      'chunks': chunks,
-                      'num_chunks': next_chunk_index,
-        })
-
-        file_index += 1
-
-    return render_to_response(template_name, RequestContext(request, {
-        'files': files,
-    }))
-
 
 def upload(request, donepath, diffset_history_id=None,
            template_name='diffviewer/upload.html'):

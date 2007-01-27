@@ -179,7 +179,7 @@ function SetHighlighted(anchor, highlighted) {
  </thead>
  <tbody>
 {% for chunk in file.chunks %}
-  <tr{% ifnotequal chunk.change "" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
+  <tr{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
    <td class="controls">&nbsp;</td>
    <td>{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}<pre>{{ chunk.oldtext|escape }}</pre></td>
    <td><pre>{{ chunk.newtext|escape }}</pre></td>
