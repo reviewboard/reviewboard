@@ -23,6 +23,15 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     chunks = []
     next_chunk_index = 0
 
+    def get_original_file(file):
+        """Get a file either from the cache or the SCM.  SCM exceptions are
+           passed back to the caller."""
+        if cache.has_key(file):
+            return cache.get(file)
+        buffer = scmtools.get_tool().get_file(file)
+        cache.set(file, buffer, CACHE_EXPIRATION_TIME)
+        return buffer
+
     for filediff in diffset.files.all():
         key = 'diff-sidebyside-%s' % filediff.id
         lines = cache.get(key)
@@ -30,21 +39,13 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         next_chunk_index = 0
 
         if lines == None:
-            orig_buffer = cache.get(filediff.source_file)
-
-            if orig_buffer == None:
-                # It's not cached. Let's go get it.
-                try:
-                    orig_buffer = \
-                        scmtools.get_tool().get_file(filediff.source_file)
-                except Exception, e:
-                    return render_to_response(template_name,
-                                              RequestContext(request, {
-                        'error': "%s: %s" % (e, e.detail)
-                    }))
-
-                cache.set(filediff.source_file, orig_buffer,
-                          CACHE_EXPIRATION_TIME)
+            try:
+                orig_buffer = get_original_file(filediff.source_file)
+            except Exception, e:
+                return render_to_response(template_name,
+                                          RequestContext(request, {
+                    'error': '%s: %s' % (e, e.detail)
+                }))
 
             try:
                 (fd, tempname) = tempfile.mkstemp()
