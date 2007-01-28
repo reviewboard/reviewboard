@@ -1,3 +1,4 @@
+from difflib import SequenceMatcher
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -5,7 +6,7 @@ from django.template import RequestContext
 from popen2 import Popen3
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-import os, sys, tempfile, difflib
+import os, sys, tempfile
 import reviewboard.scmtools as scmtools
 
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
@@ -66,7 +67,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         b = (new or '').splitlines(True)
 
         chunks = []
-        for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, a, b).get_opcodes():
+        for tag, i1, i2, j1, j2 in SequenceMatcher(None, a, b).get_opcodes():
             chunks.append({
                 'oldtext': ''.join(a[i1:i2]),
                 'newtext': ''.join(b[j1:j2]),
@@ -80,7 +81,8 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     try:
         files = []
         for filediff in diffset.files.all():
-            revision = scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+            revision = \
+                scmtools.get_tool().parse_diff_revision(filediff.source_detail)
             chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                    lambda: get_chunks(filediff))
 
