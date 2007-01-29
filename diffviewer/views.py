@@ -6,7 +6,7 @@ from django.template import RequestContext
 from popen2 import Popen3
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-import os, sys, tempfile
+import os, sys, tempfile, traceback
 import reviewboard.scmtools as scmtools
 
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
@@ -23,7 +23,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if cache.has_key(key):
             return cache.get(key)
         data = lookup_callable()
-        cache.set(key, buffer, CACHE_EXPIRATION_TIME)
+        cache.set(key, data, CACHE_EXPIRATION_TIME)
         return data
 
     def get_original_file(file):
@@ -123,9 +123,11 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         }))
 
     except Exception, e:
+        # FIXME: create a "user visible error" exception, and only show
+        # backtraces for exceptions that aren't.
         return render_to_response(template_name,
                                   RequestContext(request, {
-            'error': '%s' % e
+            'error': '%s\n%s' % (e, traceback.format_exc())
         }))
 
 def upload(request, donepath, diffset_history_id=None,
