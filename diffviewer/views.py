@@ -48,7 +48,8 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if failure:
             os.unlink(oldfile)
             os.unlink(newfile)
-            raise Exception("The patch didn't apply cleanly: %s" % p.fromchild)
+            raise Exception("The patch didn't apply cleanly: %s" % \
+                p.fromchild.read())
 
         f = open(newfile, "r")
         data = f.read()
