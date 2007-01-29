@@ -89,38 +89,62 @@
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">
-	function registerEditorCommon(field, rows, cols, bgcolor) {
-		var editid = field + '_edit';
+	var gBugsClosed = "{{details.bugs_closed}}";
+
+    function addEditIcon(field, inline) {
 		var node = $(field);
 
 		var imgtext = " <img src='/images/edit.png' width='14' height='14' " +
-		              "id='" + editid + "' class='editicon' />";
+		              "id='" + field + "_edit' class='editicon' />";
 
-		if (rows == 1) {
+		if (inline) {
 			new Insertion.After(node, imgtext);
 		} else {
-			new Insertion.Bottom(node.parentNode.previousSibling.previousSibling, imgtext);
+			new Insertion.Bottom(
+                node.parentNode.previousSibling.previousSibling, imgtext);
 		}
+    }
 
-		editor = new Ajax.InPlaceEditor(field, 'field/' + field + '/',
+    function onEditFailure(transport) {
+        $('servererror').innerHTML = transport.responseText;
+    }
+
+    function onEditComplete(transport) {
+        if (transport != null) {
+            showDraftBanner();
+            //updateField('last_updated');
+        }
+    }
+
+	function registerEditorCommon(field, rows, cols, bgcolor) {
+        addEditIcon(field, rows == 1);
+
+		editor = new RB.InlineEditor(field, 'field/' + field + '/',
 			{
-				externalControl: editid,
+				externalControl: field + "_edit",
 				highlightendcolor: bgcolor,
-				onFailure: function(transport) {
-					$('servererror').innerHTML = transport.responseText;
-				},
-				onComplete: function(transport) {
-					if (transport != null) {
-						showDraftBanner();
-						//updateField('last_updated');
-					}
-				},
+				onFailure: onEditFailure,
+				onComplete: onEditComplete,
 				rows: rows,
 				cols: cols
 			});
 
 		return editor;
 	}
+
+    function registerCommaListEditor(field) {
+        addEditIcon(field, 1);
+
+		editor = new RB.InlineCommaListEditor(field, 'field/' + field + '/',
+			{
+				externalControl: field + "_edit",
+				highlightendcolor: '#fffad3',
+				onFailure: onEditFailure,
+				onComplete: onEditComplete
+			});
+
+		return editor;
+    }
 
 	function registerEditor(field) {
 		registerEditorCommon(field, 1, 50, '#fffad3');
@@ -203,16 +227,15 @@
 	registerEditor('branch');
 	registerMultiEditor('description');
 	registerMultiEditor('testing_done');
-	registerEditor('bugs_closed');
-	registerEditor('target_groups');
-	registerEditor('target_people');
+	registerCommaListEditor('bugs_closed');
+	registerCommaListEditor('target_groups');
+	registerCommaListEditor('target_people');
 
 	if ({% ifequal draft None %}0{% else %}1{% endifequal %}) {
 		showDraftBanner();
 	} else {
 		hideDraftBanner();
 	}
-
 </script>
 {% endifequal %}
 {% endblock %}
