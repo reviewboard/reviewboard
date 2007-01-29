@@ -48,7 +48,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if failure:
             os.unlink(oldfile)
             os.unlink(newfile)
-            raise Exception("The patch didn't apply cleanly: %s" % \
+            raise Exception("The patch didn't apply cleanly: %s" %
                 p.fromchild.read())
 
         f = open(newfile, "r")
@@ -96,20 +96,26 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
         # Go through and set index, nextid and previd for each chunk.
         # FIXME: this is a little ugly, at least comparatively ;)
-        # FIXME: this assigns indices to un-changed blocks, which kind of sucks
         for i in range(len(files)):
             file = files[i]
             file['index'] = i
 
+            prev_chunk_id = 0
+
             chunks = file['chunks']
             for j in range(len(chunks)):
                 chunk = chunks[j]
-                chunk['index'] = j
-                chunk['nextid'] = '%s.%s' % (i, j + 1)
-                if j == 0:
+                if chunk['change'] == 'equal':
+                    continue
+
+                chunk['index'] = prev_chunk_id + 1
+                chunk['nextid'] = '%s.%s' % (i, prev_chunk_id + 1)
+                if prev_chunk_id == 0:
                     chunk['previd'] = i
                 else:
-                    chunk['previd'] = '%s.%s' % (i, j)
+                    chunk['previd'] = '%s.%s' % (i, prev_chunk_id)
+
+                prev_chunk_id += 1
             chunks[-1]['nextid'] = i + 1
 
         return render_to_response(template_name, RequestContext(request, {
