@@ -26,6 +26,7 @@ urlpatterns = patterns('',
     (r'^$', 'django.views.generic.simple.redirect_to',
      {'url': '/reviews/'}),
 
+    # Review request browsing
     (r'^reviews/$', 'reviewboard.reviews.views.dashboard',
      {'template_name': 'reviews/dashboard.html'}),
 
@@ -33,10 +34,12 @@ urlpatterns = patterns('',
      {'queryset': ReviewRequest.objects.filter(public=True),
       'template_name': 'reviews/review_list.html'}),
 
+    # Review request creation
     (r'^reviews/new/changenum/$',
       'reviewboard.reviews.views.new_from_changenum'),
     (r'^reviews/new/$', 'reviewboard.reviews.views.new_review_request'),
 
+    # Review request detail
     (r'^reviews/(?P<object_id>[0-9]+)/$',
      'reviewboard.reviews.views.review_detail',
      {'template_name': 'reviews/review_detail.html'}),
@@ -44,20 +47,23 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<review_request_id>[0-9]+)/field/(?P<field_name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.field'),
 
+    # Review request diffs
+    (r'^reviews/(?P<object_id>[0-9]+)/diff/$',
+     'reviewboard.reviews.views.diff'),
+    (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
+     'reviewboard.reviews.views.diff'),
+
+    # Review request drafts
     (r'^reviews/(?P<object_id>[0-9]+)/draft/save/$',
      'reviewboard.reviews.views.save_draft'),
     (r'^reviews/(?P<object_id>[0-9]+)/draft/revert/$',
      'reviewboard.reviews.views.revert_draft'),
 
+    # Review request modification
     (r'^reviews/(?P<object_id>[0-9]+)/edit/$',
       'django.views.generic.create_update.update_object',
      {'model': ReviewRequest,
       'template_name': 'reviews/edit_details.html'}),
-
-    (r'^reviews/(?P<object_id>[0-9]+)/diff/$',
-     'reviewboard.reviews.views.diff'),
-    (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
-     'reviewboard.reviews.views.diff'),
 
     (r'^reviews/[0-9]+/diff/upload/$',
      'reviewboard.diffviewer.views.upload',
@@ -69,6 +75,7 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<review_request_id>[0-9]+)/publish/$',
      'reviewboard.reviews.views.publish'),
 
+    # Users
     (r'^users/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),
 
@@ -76,6 +83,7 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.submitter',
      {'template_name': 'reviews/review_list.html'}),
 
+    # Groups
     (r'^groups/$', 'reviewboard.reviews.views.group_list',
      {'template_name': 'reviews/group_list.html'}),
 
