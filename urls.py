@@ -44,9 +44,6 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.review_detail',
      {'template_name': 'reviews/review_detail.html'}),
 
-    (r'^reviews/(?P<review_request_id>[0-9]+)/field/(?P<field_name>[A-Za-z0-9_-]+)/$',
-     'reviewboard.reviews.views.field'),
-
     # Review request diffs
     (r'^reviews/(?P<object_id>[0-9]+)/diff/$',
      'reviewboard.reviews.views.diff'),
@@ -74,6 +71,13 @@ urlpatterns = patterns('',
 
     (r'^reviews/(?P<review_request_id>[0-9]+)/publish/$',
      'reviewboard.reviews.views.publish'),
+
+    # Review request JSON/XML handlers
+    (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/(?P<field_name>[A-Za-z0-9_-]+)/$',
+     'reviewboard.reviews.views.review_request_field'),
+
+    (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/$',
+     'reviewboard.reviews.views.review_request_field'),
 
     # Users
     (r'^users/$', 'reviewboard.reviews.views.submitter_list',

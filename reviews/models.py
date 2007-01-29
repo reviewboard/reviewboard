@@ -66,6 +66,10 @@ class ReviewRequest(models.Model):
     def __str__(self):
         return self.summary
 
+    def save(self):
+        self.bugs_closed = self.bugs_closed.strip()
+        super(ReviewRequest, self).save()
+
     class Admin:
         list_display = ('summary', 'submitter', 'status', 'public', \
                         'last_updated')
@@ -110,6 +114,10 @@ class ReviewRequestDraft(models.Model):
 
     def _submitter(self):
         return self.review_request.submitter
+
+    def save(self):
+        self.bugs_closed = self.bugs_closed.strip()
+        super(ReviewRequestDraft, self).save()
 
     class Admin:
         list_display = ('summary', '_submitter', 'last_updated')

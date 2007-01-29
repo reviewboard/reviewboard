@@ -109,22 +109,19 @@
         $('servererror').innerHTML = transport.responseText;
     }
 
-    function onEditComplete(transport) {
-        if (transport != null) {
-            showDraftBanner();
-            //updateField('last_updated');
-        }
-    }
-
 	function registerEditorCommon(field, rows, cols, bgcolor) {
         addEditIcon(field, rows == 1);
 
-		editor = new RB.InlineEditor(field, 'field/' + field + '/',
+		editor = new RB.InlineEditor(field, 'json/' + field + '/',
 			{
 				externalControl: field + "_edit",
 				highlightendcolor: bgcolor,
 				onFailure: onEditFailure,
-				onComplete: onEditComplete,
+				onComplete: function(transport) {
+                    if (transport != null) {
+                        showDraftBanner();
+                    }
+                },
 				rows: rows,
 				cols: cols
 			});
@@ -132,15 +129,27 @@
 		return editor;
 	}
 
-    function registerCommaListEditor(field) {
+    function registerCommaListEditor(path_prefix, field) {
         addEditIcon(field, 1);
 
-		editor = new RB.InlineCommaListEditor(field, 'field/' + field + '/',
+		editor = new RB.InlineCommaListEditor(field, 'json/' + field + '/',
 			{
 				externalControl: field + "_edit",
 				highlightendcolor: '#fffad3',
 				onFailure: onEditFailure,
-				onComplete: onEditComplete
+				onComplete: function(transport, element, value) {
+                    var str = "";
+                    for (var i = 0; i < value.length; i++) {
+                        str += "<a href=\"" + path_prefix + value[i] + "\">";
+                        str += value[i] + "</a>";
+
+                        if (i < value.length - 1) {
+                            str += ", ";
+                        }
+                    }
+
+                    element.innerHTML = str;
+                }
 			});
 
 		return editor;
@@ -180,7 +189,7 @@
 		updateField('branch');
 		updateField('description');
 		updateField('testing_done');
-		//updateField('last_updated'); // TODO
+		updateField('last_updated'); // TODO
 		//updateField('bugs_closed');
 		//updateField('target_groups');
 		//updateField('target_people');
@@ -227,9 +236,9 @@
 	registerEditor('branch');
 	registerMultiEditor('description');
 	registerMultiEditor('testing_done');
-	registerCommaListEditor('bugs_closed');
-	registerCommaListEditor('target_groups');
-	registerCommaListEditor('target_people');
+	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=', 'bugs_closed');
+	registerCommaListEditor('/groups/', 'target_groups');
+	registerCommaListEditor('/users/', 'target_people');
 
 	if ({% ifequal draft None %}0{% else %}1{% endifequal %}) {
 		showDraftBanner();

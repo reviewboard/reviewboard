@@ -1,10 +1,11 @@
 from django import newforms as forms
-from djblets.auth.util import login_required
 from django.contrib.auth.models import User, Group
+from django.core.serializers import serialize
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
+from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
@@ -62,57 +63,6 @@ def new_from_changenum(request):
 
     # XXX Display an error page
     return HttpResponseRedirect('/reviews/new/')
-
-
-@login_required
-def field(request, review_request_id, field_name):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    if request.POST:
-        if request.user != review_request.submitter:
-            raise Http403()
-
-        form_data = request.POST.copy()
-
-        if hasattr(review_request, field_name) and form_data['value']:
-            draft, draft_is_new = \
-                ReviewRequestDraft.objects.get_or_create(
-                    review_request=review_request,
-                    defaults={
-                        'summary': review_request.summary,
-                        'description': review_request.description,
-                        'testing_done': review_request.testing_done,
-                        'bugs_closed': review_request.bugs_closed,
-                        'branch': review_request.branch,
-                    })
-
-            if draft_is_new:
-                for group in review_request.target_groups.all():
-                    draft.target_groups.add(group)
-
-                for person in review_request.target_people.all():
-                    draft.target_people.add(person)
-
-                if review_request.diffset_history.diffset_set.count() > 0:
-                    draft.diffset = \
-                        review_request.diffset_history.diffset_set.latest()
-
-
-            setattr(draft, field_name, form_data['value'])
-            draft.save()
-
-            return HttpResponse(getattr(draft, field_name))
-    else:
-        try:
-            obj = review_request.reviewrequestdraft_set.get()
-        except ReviewRequestDraft.DoesNotExist:
-            obj = review_request
-
-        if field_name != None:
-            if hasattr(obj, field_name):
-                return HttpResponse(getattr(obj, field_name))
-
-    raise Http404()
 
 
 @login_required
@@ -316,3 +266,66 @@ def publish(request, review_request_id):
         return HttpResponseRedirect(review_request.get_absolute_url())
     else:
         raise Http404() # XXX Error out
+
+
+@login_required
+def review_request_field(request, review_request_id, method, field_name=None):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.POST:
+        if request.user != review_request.submitter:
+            raise Http403()
+
+        # Should probably throw a real error here.
+        if field_name == None:
+            raise Http404()
+
+        form_data = request.POST.copy()
+
+        if hasattr(review_request, field_name) and form_data['value']:
+            draft, draft_is_new = \
+                ReviewRequestDraft.objects.get_or_create(
+                    review_request=review_request,
+                    defaults={
+                        'summary': review_request.summary,
+                        'description': review_request.description,
+                        'testing_done': review_request.testing_done,
+                        'bugs_closed': review_request.bugs_closed,
+                        'branch': review_request.branch,
+                    })
+
+            if draft_is_new:
+                for group in review_request.target_groups.all():
+                    draft.target_groups.add(group)
+
+                for person in review_request.target_people.all():
+                    draft.target_people.add(person)
+
+                if review_request.diffset_history.diffset_set.count() > 0:
+                    draft.diffset = \
+                        review_request.diffset_history.diffset_set.latest()
+
+
+            setattr(draft, field_name, form_data['value'])
+            draft.save()
+            obj = draft
+    else:
+        try:
+            obj = review_request.reviewrequestdraft_set.get()
+        except ReviewRequestDraft.DoesNotExist:
+            obj = review_request
+
+    if method == "xml" and field_name != None:
+        if hasattr(obj, field_name):
+            data = serialize(method, [obj], fields=[field_name])
+        else:
+            raise Http404() # XXX
+    else:
+        data = serialize(method, [obj])
+
+    response = HttpResponse(getattr(obj, field_name),
+                            mimetype='application/%s' % method)
+    if method == "json":
+        response['X-JSON'] = data
+
+    return response
