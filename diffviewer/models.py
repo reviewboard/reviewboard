@@ -66,5 +66,7 @@ class Comment(models.Model):
     # the line within the entire file, starting at 1.
     line = models.PositiveIntegerField(blank=True, null=True)
 
+    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+
     class Admin:
         pass
