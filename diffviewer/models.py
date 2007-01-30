@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class FileDiff(models.Model):
     diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
@@ -51,6 +52,19 @@ class DiffSetHistory(models.Model):
 
     def __str__(self):
         return 'Diff Set History (%s revisions)' % (self.diffset_set.count())
+
+    class Admin:
+        pass
+
+class Comment(models.Model):
+    comment = models.TextField()
+    author = models.ForeignKey(User)
+
+    diff = models.ForeignKey(FileDiff)
+
+    # A null line number applies to an entire diff.  Non-null line numbers are
+    # the line within the entire file, starting at 1.
+    line = models.PositiveIntegerField(blank=True, null=True)
 
     class Admin:
         pass

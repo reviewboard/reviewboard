@@ -1,12 +1,9 @@
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.db import models
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import FileDiff, DiffSet, \
+                                          DiffSetHistory, Comment
 import re
-
-class Comment(models.Model):
-    filename = models.CharField("Filename", maxlength=256, core=True)
-
 
 class Quip(models.Model):
     PLACES = (
