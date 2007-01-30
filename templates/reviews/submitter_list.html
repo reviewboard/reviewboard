@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load reviewtags %}
 {% block title %}All submitters{% endblock %}
 
 {% block content %}
@@ -10,12 +11,12 @@
   <th>Name</th>
   <th>Pending Reviews</th>
  </tr>
-{%  for submitter in object_list %}
+{% for submitter in object_list %}
  <tr class="{% cycle odd,even %}">
-  <td><a href="{{submitter.get_absolute_url}}">{{submitter}}</a></td>
-  <td>{{submitter.count_public_review_requests}}</td>
+  <td><a href="{{submitter}}">{{submitter}}</a></td>
+  <td>{% pendingreviewcount submitter %}</td>
  </tr>
-{%  endfor %}
+{% endfor %}
 </ul>
 {% else %}
 <p>No submitters.</p>

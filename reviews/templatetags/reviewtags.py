@@ -37,3 +37,30 @@ def reviewsummary(parser, token):
             "%r tag requires a timestamp"
 
     return ReviewSummary(review_request)
+
+
+class PendingReviewCount(template.Node):
+    def __init__(self, obj):
+        self.obj = obj
+
+    def render(self, context):
+        try:
+            obj = resolve_variable(self.obj, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid variable %s passed to pendingreviewcount tag." % \
+                self.obj
+
+        return str(obj.reviewrequest_set.filter(public=True,
+                                                status='P').count())
+
+
+@register.tag
+def pendingreviewcount(parser, token):
+    try:
+        tag_name, obj = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag requires a user or group object"
+
+    return PendingReviewCount(obj)
