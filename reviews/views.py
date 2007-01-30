@@ -1,7 +1,7 @@
 from django import newforms as forms
 from django.contrib.auth.models import User, Group
 from django.core.serializers import serialize
-from django.db.models import Q
+from django.db.models import Q, ManyToManyField
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
@@ -306,7 +306,28 @@ def review_request_field(request, review_request_id, method, field_name=None):
                         review_request.diffset_history.diffset_set.latest()
 
 
-            setattr(draft, field_name, form_data['value'])
+            if field_name == "target_groups" or field_name == "target_people":
+                values = re.split(r"[, ]+", form_data['value'])
+                target = getattr(draft, field_name)
+                target.clear()
+
+                invalid_entries = []
+
+                for value in values:
+                    try:
+                        if field_name == "target_groups":
+                            obj = Group.objects.get(name=value)
+                        elif field_name == "target_people":
+                            obj = User.objects.get(username=value)
+
+                        target.add(obj)
+                    except:
+                        invalid_entries.append(value)
+
+                #print ', '.join(invalid_entries)
+            else:
+                setattr(draft, field_name, form_data['value'])
+
             draft.save()
             obj = draft
     else:
@@ -323,7 +344,16 @@ def review_request_field(request, review_request_id, method, field_name=None):
     else:
         data = serialize(method, [obj])
 
-    response = HttpResponse(getattr(obj, field_name),
+    fieldobj = getattr(obj, field_name)
+
+    if field_name == 'target_groups':
+        value = ','.join([x.name for x in fieldobj.all()])
+    elif field_name == 'target_people':
+        value = ','.join([x.username for x in fieldobj.all()])
+    else:
+        value = fieldobj
+
+    response = HttpResponse(value,
                             mimetype='application/%s' % method)
     if method == "json":
         response['X-JSON'] = data
