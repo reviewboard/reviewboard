@@ -17,13 +17,13 @@ var gActions = [
 	// Previous file
 	{
 		keys: "aAKP<m",
-		onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
+		onPress: function() { scrollToAnchor(GetNextFileAnchor(BACKWARD)); }
 	},
 
 	// Next file
 	{
 		keys: "fFJN>/",
-		onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
+		onPress: function() { scrollToAnchor(GetNextFileAnchor(FORWARD)); }
 	},
 
 	// Previous diff
@@ -135,6 +135,12 @@ function GetNextAnchor(dir) {
 	}
 
 	return newAnchor;
+}
+
+function GetNextFileAnchor(dir) {
+	var fileId = document.anchors[gSelectedAnchor].name.split(".")[0];
+	var newAnchor = parseInt(fileId) + dir;
+	return GetAnchorByName(newAnchor);
 }
 
 function SetHighlighted(anchor, highlighted) {
