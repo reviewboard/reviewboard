@@ -10,48 +10,40 @@
 var BACKWARD = -1;
 var FORWARD  = 1;
 var INVALID  = -1;
-var DIFF_SCROLLDOWN_AMOUNT = 250;
-var DIFF_OFFSET_FROM_TOP   = 15;
+var DIFF_SCROLLDOWN_AMOUNT = 100;
 
 var gActions = [
-	// Previous file
-	{
+	{ // Previous file
 		keys: "aAKP<m",
 		onPress: function() { scrollToAnchor(GetNextFileAnchor(BACKWARD)); }
 	},
 
-	// Next file
-	{
+	{ // Next file
 		keys: "fFJN>/",
 		onPress: function() { scrollToAnchor(GetNextFileAnchor(FORWARD)); }
 	},
 
-	// Previous diff
-	{
+	{ // Previous diff
 		keys: "sSkp,,",
 		onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
 	},
 
-	// Next diff
-	{
+	{ // Next diff
 		keys: "dDjn..",
 		onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
 	},
 
-	// Recenter
-	{
+	{ // Recenter
 		keys: unescape("%0D"),
 		onPress: function() { scrollToAnchor(gSelectedAnchor); }
 	},
 
-	// Go to header
-	{
+	{ // Go to header
 		keys: "gu;",
 		onPress: function() {}
 	},
 
-	// Go to footer
-	{
+	{ // Go to footer
 		keys: "GU:",
 		onPress: function() {}
 	},
