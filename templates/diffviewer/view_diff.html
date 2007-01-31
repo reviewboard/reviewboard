@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Diff Viewer{% endblock %}
-
-{% block bodytag %}
-<body onLoad="handleOnLoad();" onKeyPress="handleKey(event);">
+{% block extrahead %}
+<script type="text/javascript" src="/scripts/prototype.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -14,18 +13,55 @@ var INVALID  = -1;
 var DIFF_SCROLLDOWN_AMOUNT = 250;
 var DIFF_OFFSET_FROM_TOP   = 15;
 
-// Keyboard shortcuts
-var gPrevFileKeys = "aAKP<m";
-var gNextFileKeys = "fFJN>/";
-var gPrevDiffKeys = "sSkp,,";
-var gNextDiffKeys = "dDjn..";
-var gRecenterDiffKeys = unescape("%0D"); // Enter
-var gHeaderKeys = "gu;";
-var gFooterKeys = "GU:";
+var gActions = [
+	// Previous file
+	{
+		keys: "aAKP<m",
+		onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
+	},
+
+	// Next file
+	{
+		keys: "fFJN>/",
+		onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
+	},
+
+	// Previous diff
+	{
+		keys: "sSkp,,",
+		onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
+	},
+
+	// Next diff
+	{
+		keys: "dDjn..",
+		onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
+	},
+
+	// Recenter
+	{
+		keys: unescape("%0D"),
+		onPress: function() { scrollToAnchor(gSelectedAnchor); }
+	},
+
+	// Go to header
+	{
+		keys: "gu;",
+		onPress: function() {}
+	},
+
+	// Go to footer
+	{
+		keys: "GU:",
+		onPress: function() {}
+	},
+];
 
 // State variables
 var gSelectedAnchor = INVALID;
 var gCurrentAnchor = 0;
+
+Event.observe(window, 'load', onPageLoaded, false);
 
 function keyCode(evt) {
 	if (navigator.appName.indexOf("Explorer") != -1) {
@@ -35,45 +71,19 @@ function keyCode(evt) {
 	}
 }
 
-function handleKey(evt) {
-	var code = keyCode(evt);
-	var keyChar = String.fromCharCode(code);
-	var newAnchor = gSelectedAnchor;
-	var center = true;
+function onKeyPress(evt) {
+	var keyChar = String.fromCharCode(keyCode(evt));
 
-	if (gPrevDiffKeys.indexOf(keyChar) != -1) {
-		newAnchor = GetNextAnchor(BACKWARD);
-	} else if (gNextDiffKeys.indexOf(keyChar) != -1) {
-		newAnchor = GetNextAnchor(FORWARD);
-	} else if (gPrevFileKeys.indexOf(keyChar) != -1) {
-		newAnchor = GetNextAnchor(BACKWARD);
-	} else if (gNextFileKeys.indexOf(keyChar) != -1) {
-		newAnchor = GetNextAnchor(FORWARD);
-	} else if (gRecenterDiffKeys.indexOf(keyChar) != -1) {
-		/*
-		 * Don't update the anchor. This will cause a recenter of the
-		 * current anchor.
-		 */
-	} else {
-		window.status = "unbound key: keycode=" + code;
-		return;
-	}
-
-	if (newAnchor != INVALID) {
-		scrollToAnchor(newAnchor, center);
+	for (var i = 0; i < gActions.length; i++) {
+		if (gActions[i].keys.indexOf(keyChar) != -1) {
+			gActions[i].onPress();
+			return;
+		}
 	}
 }
 
 function gotoAnchor(name) {
-	var anchor = GetAnchorByName(name);
-
-	if (anchor == INVALID) {
-		return false;
-	} else {
-		scrollToAnchor(anchor, 1);
-	}
-
-	return true;
+	return scrollToAnchor(GetAnchorByName(name));
 }
 
 function GetAnchorByName(name) {
@@ -83,29 +93,29 @@ function GetAnchorByName(name) {
 		}
 	}
 
-	return INVALID
+	return INVALID;
 }
 
-function handleOnLoad() {
+function onPageLoaded(evt) {
 	/* Skip over the change index to the first item */
 	gSelectedAnchor = 1;
-	SetHighlighted(gSelectedAnchor, 1)
+	SetHighlighted(gSelectedAnchor, true)
+
+	Event.observe(window, 'keypress', onKeyPress, false);
 }
 
-function scrollToAnchor(anchor, center) {
-	var scrollAdjustment = -DIFF_SCROLLDOWN_AMOUNT;
-
-	if (!center) {
-		scrollAdjustment = -DIFF_OFFSET_FROM_TOP;
+function scrollToAnchor(anchor) {
+	if (anchor == INVALID) {
+		return false;
 	}
 
 	window.scrollTo(0,
 		GetYPos(document.anchors[anchor]) - DIFF_SCROLLDOWN_AMOUNT);
-	SetHighlighted(gSelectedAnchor, 0);
-	SetHighlighted(anchor, 1);
-
-	window.scrollTo(0, GetYPos(document.anchors[anchor]) + scrollAdjustment);
+	SetHighlighted(gSelectedAnchor, false);
+	SetHighlighted(anchor, true);
 	gSelectedAnchor = anchor;
+
+	return true;
 }
 
 function GetYPos(obj) {
@@ -146,10 +156,10 @@ function SetHighlighted(anchor, highlighted) {
 	}
 
 	if (highlighted) {
-		node.className += " selected";
+		Element.addClassName(node, "selected");
 		controlsNode.nodeValue = "▶";
 	} else {
-		node.className = node.className.replace(" selected", "");
+		Element.removeClassName(node, "selected");
 		controlsNode.nodeValue = "";
 	}
 }
