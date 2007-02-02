@@ -31,7 +31,7 @@ urlpatterns = patterns('',
      {'template_name': 'reviews/dashboard.html'}),
 
     (r'^reviews/all/$', 'reviewboard.reviews.views.review_list',
-     {'queryset': ReviewRequest.objects.filter(public=True),
+     {'queryset': ReviewRequest.objects.filter(public=True, status='P'),
       'template_name': 'reviews/review_list.html'}),
 
     # Review request creation
@@ -71,6 +71,9 @@ urlpatterns = patterns('',
 
     (r'^reviews/(?P<review_request_id>[0-9]+)/publish/$',
      'reviewboard.reviews.views.publish'),
+
+    (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<action>(discard|submitted|reopen))/$',
+     'reviewboard.reviews.views.setstatus'),
 
     # Review request JSON/XML handlers
     (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/(?P<field_name>[A-Za-z0-9_-]+)/$',

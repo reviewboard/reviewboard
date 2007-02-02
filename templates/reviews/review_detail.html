@@ -74,7 +74,14 @@
  </div>
  <ul class="controls">
 {% ifequal request.user object.submitter %}
-{%  if not details.public %}
+{%  if details.public %}
+{%    ifequal details.status 'P' %}
+  <li><a href="submitted/">Set Submitted</a></li>
+  <li><a href="discard/">Discard</a></li>
+{%    else %}
+  <li><a href="reopen/">Reopen for Review</a></li>
+{%    endifequal %}
+{%  else %}
   <li><a href="publish/">Publish</a></li>
 {%  endif %}
   <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>

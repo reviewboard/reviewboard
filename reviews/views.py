@@ -139,7 +139,7 @@ def review_list(request, queryset, template_name, extra_context={}):
 @login_required
 def submitter_list(request, template_name):
     return object_list(request,
-        queryset=User.objects.all(),
+        queryset=User.objects.filter(),
         template_name=template_name,
         paginate_by=50,
         allow_empty=True,
@@ -195,7 +195,7 @@ def dashboard(request, template_name):
 def group(request, name, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(
-            Q(target_groups__name__exact=name), Q(public=True)),
+            target_groups__name__exact=name, public=True, status='P'),
         template_name=template_name,
         extra_context={
             'source': name,
@@ -206,7 +206,7 @@ def group(request, name, template_name):
 def submitter(request, username, template_name):
     return review_list(request,
         queryset=ReviewRequest.objects.filter(
-            Q(submitter__username__exact=username), Q(public=True)),
+            submitter__username__exact=username, public=True, status='P'),
         template_name=template_name,
         extra_context={
             'source': username + "'s",
@@ -266,6 +266,26 @@ def publish(request, review_request_id):
         return HttpResponseRedirect(review_request.get_absolute_url())
     else:
         raise Http404() # XXX Error out
+
+
+@login_required
+def setstatus(request, review_request_id, action):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.user != review_request.submitter:
+        raise Http403()
+
+    if action == 'discard':
+        review_request.status = 'D'
+    elif action == 'submitted':
+        review_request.status = 'S'
+    elif action == 'reopen':
+        review_request.status = 'P'
+    else:
+        raise Http404() # Should never happen. Need a better handler.
+
+    review_request.save()
+    return HttpResponseRedirect(review_request.get_absolute_url())
 
 
 @login_required
