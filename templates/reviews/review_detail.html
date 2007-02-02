@@ -218,14 +218,14 @@
 		}
 	}
 
-	registerEditor('summary'),
-	registerEditor('branch'),
-	registerMultiEditor('description'),
-	registerMultiEditor('testing_done'),
+	registerEditor('summary');
+	registerEditor('branch');
+	registerMultiEditor('description');
+	registerMultiEditor('testing_done');
 	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=',
-							'bugs_closed'),
-	registerCommaListEditor('/groups/', 'target_groups'),
-	registerCommaListEditor('/users/', 'target_people'),
+							'bugs_closed');
+	registerCommaListEditor('/groups/', 'target_groups');
+	registerCommaListEditor('/users/', 'target_people');
 
 	if ({% ifequal draft None %}0{% else %}1{% endifequal %}) {
 		showDraftBanner();
