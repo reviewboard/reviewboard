@@ -138,9 +138,10 @@
 				externalControl: field + "_edit",
 				highlightendcolor: '#fffad3',
 				onFailure: onEditFailure,
-				onComplete: function(transport, element, value) {
+				onComplete: function(transport, element, list) {
 					var str = "";
 					for (var i = 0; i < list.length; i++) {
+						list[i] = list[i].stripTags().strip();
 						str += "<a href=\"" + path_prefix + list[i] + "\">";
 						str += list[i] + "</a>";
 
