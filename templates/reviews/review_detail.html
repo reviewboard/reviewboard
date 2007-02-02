@@ -19,9 +19,9 @@
    </colgroup>
    <tr>
     <td rowspan="2"><h1 id="summary">{{details.summary}}</h1></td>
-    <td id="updated_time" nowrap="nowrap">Last updated {{object.last_updated|timesince}} ago</td>
+    <td id="created_time" nowrap="nowrap">Created {{object.time_added|timesince}} ago</td>
    </tr>
-   <tr><td id="status" nowrap="nowrap">{{object.get_status_display}}</td></tr>
+    <td id="updated_time" nowrap="nowrap">Last updated {{details.last_updated|timesince}} ago</td>
   </table>
   <table id="details">
    <colgroup>
@@ -89,8 +89,6 @@
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">
-	var gBugsClosed = "{{details.bugs_closed}}";
-
     function addEditIcon(field, inline) {
 		var node = $(field);
 
@@ -109,62 +107,63 @@
         $('servererror').innerHTML = transport.responseText;
     }
 
+    function onEditComplete(transport) {
+        if (transport != null && !gReverting) {
+            showDraftBanner();
+        }
+    }
+
 	function registerEditorCommon(field, rows, cols, bgcolor) {
         addEditIcon(field, rows == 1);
+        var url = 'json/' + field + '/';
 
-		editor = new RB.InlineEditor(field, 'json/' + field + '/',
+		return new RB.InlineEditor(field, url,
 			{
+				loadTextURL: url,
+				autoloadExternalText: false,
 				externalControl: field + "_edit",
 				highlightendcolor: bgcolor,
 				onFailure: onEditFailure,
-				onComplete: function(transport) {
-                    if (transport != null) {
-                        showDraftBanner();
-                    }
-                },
+				onComplete: onEditComplete,
 				rows: rows,
 				cols: cols
 			});
-
-		return editor;
 	}
 
     function registerCommaListEditor(path_prefix, field) {
-        addEditIcon(field, 1);
+        addEditIcon(field, true);
+		var url = 'json/' + field + '/';
 
-		editor = new RB.InlineCommaListEditor(field, 'json/' + field + '/',
+		return new RB.InlineCommaListEditor(field, url,
 			{
+				loadTextURL: url,
+				autoloadExternalText: false,
 				externalControl: field + "_edit",
 				highlightendcolor: '#fffad3',
 				onFailure: onEditFailure,
 				onComplete: function(transport, element, value) {
-                    var str = "";
-                    for (var i = 0; i < value.length; i++) {
-                        str += "<a href=\"" + path_prefix + value[i] + "\">";
-                        str += value[i] + "</a>";
+					var str = "";
+					for (var i = 0; i < list.length; i++) {
+						str += "<a href=\"" + path_prefix + list[i] + "\">";
+						str += list[i] + "</a>";
 
-                        if (i < value.length - 1) {
-                            str += ", ";
-                        }
-                    }
+						if (i < list.length - 1) {
+							str += ", ";
+						}
+					}
 
                     element.innerHTML = str;
+                    onEditComplete(transport);
                 }
 			});
-
-		return editor;
     }
 
 	function registerEditor(field) {
-		registerEditorCommon(field, 1, 50, '#fffad3');
+		return registerEditorCommon(field, 1, 50, '#fffad3');
 	}
 
 	function registerMultiEditor(field) {
-		registerEditorCommon(field, 10, 100, '#fafafa');
-	}
-
-	function updateField(field) {
-		new Ajax.Updater(field, 'field/' + field + '/', {method: 'get'});
+		return registerEditorCommon(field, 10, 100, '#fafafa');
 	}
 
 	function submitDraft() {
@@ -182,24 +181,11 @@
 			});
 	}
 
-	function onRevertDraftSuccess() {
-		hideDraftBanner();
-
-		updateField('summary');
-		updateField('branch');
-		updateField('description');
-		updateField('testing_done');
-		updateField('last_updated'); // TODO
-		//updateField('bugs_closed');
-		//updateField('target_groups');
-		//updateField('target_people');
-	}
-
 	function revertDraft() {
 		new Ajax.Request('draft/revert/',
 			{
 				method: 'get',
-		        onSuccess: onRevertDraftSuccess,
+		        onSuccess: function() { window.location.reload(); },
 				onFailure: function() {
 					alert("Reverting the draft has failed due to a server " +
 					      "error. Please try again later. If this " +
@@ -232,13 +218,14 @@
 		}
 	}
 
-	registerEditor('summary');
-	registerEditor('branch');
-	registerMultiEditor('description');
-	registerMultiEditor('testing_done');
-	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=', 'bugs_closed');
-	registerCommaListEditor('/groups/', 'target_groups');
-	registerCommaListEditor('/users/', 'target_people');
+	registerEditor('summary'),
+	registerEditor('branch'),
+	registerMultiEditor('description'),
+	registerMultiEditor('testing_done'),
+	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=',
+							'bugs_closed'),
+	registerCommaListEditor('/groups/', 'target_groups'),
+	registerCommaListEditor('/users/', 'target_people'),
 
 	if ({% ifequal draft None %}0{% else %}1{% endifequal %}) {
 		showDraftBanner();
