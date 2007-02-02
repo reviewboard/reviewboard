@@ -18,9 +18,10 @@
     <col />
    </colgroup>
    <tr>
-    <td rowspan="2"><h1 id="summary">{{details.summary}}</h1></td>
+    <td id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></td>
     <td id="created_time" nowrap="nowrap">Created {{object.time_added|timesince}} ago</td>
    </tr>
+	<td id="status">{{object.get_status_display}}</td>
     <td id="updated_time" nowrap="nowrap">Last updated {{details.last_updated|timesince}} ago</td>
   </table>
   <table id="details">
@@ -108,7 +109,7 @@
     }
 
     function onEditComplete(transport) {
-        if (transport != null && !gReverting) {
+        if (transport != null) {
             showDraftBanner();
         }
     }
@@ -119,8 +120,6 @@
 
 		return new RB.InlineEditor(field, url,
 			{
-				loadTextURL: url,
-				autoloadExternalText: false,
 				externalControl: field + "_edit",
 				highlightendcolor: bgcolor,
 				onFailure: onEditFailure,
@@ -136,8 +135,6 @@
 
 		return new RB.InlineCommaListEditor(field, url,
 			{
-				loadTextURL: url,
-				autoloadExternalText: false,
 				externalControl: field + "_edit",
 				highlightendcolor: '#fffad3',
 				onFailure: onEditFailure,
