@@ -101,8 +101,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             chunk['previd'] = previous
             chunk['nextid'] = next
 
-    # Create a list of file objects.  We then postprocess this to reconcile
-    # all of the chunk IDs.
     try:
         files = []
         for filediff in diffset.files.all():
