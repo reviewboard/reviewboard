@@ -86,20 +86,27 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         interesting = []
         indices = []
         for i in range(len(files)):
-            chunks = files[i]['chunks']
+            file = files[i]
+            file['index'] = i
+
+            k = 1
+            chunks = file['chunks']
             for j in range(len(chunks)):
                 chunk = chunks[j]
                 if chunk['change'] != 'equal':
                     interesting.append(chunk)
-                    indices.append('%d.%d' % (i, j))
+                    indices.append((i, k))
+                    k += 1
 
         for chunk, previous, current, next in zip(interesting,
                                                   [None] + indices[:-1],
                                                   indices,
                                                   indices[1:] + [None]):
-            chunk['index'] = current
-            chunk['previd'] = previous
-            chunk['nextid'] = next
+            chunk['index'] = current[1]
+            if previous:
+                chunk['previd'] = '%d.%d' % previous
+            if next:
+                chunk['nextid'] = '%d.%d' % next
 
     try:
         files = []
