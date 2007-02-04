@@ -82,28 +82,24 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     def add_navigation_cues(files):
         """Add index, nextid and previd data to a list of files/chunks"""
-        # FIXME: this modifies in-place right now, plus it's ugly.  yick.
+        # FIXME: this modifies in-place right now, which is kind of ugly
+        interesting = []
+        indices = []
         for i in range(len(files)):
-            file = files[i]
-            file['index'] = i
-
-            prev_chunk_id = 0
-
-            chunks = file['chunks']
+            chunks = files[i]['chunks']
             for j in range(len(chunks)):
                 chunk = chunks[j]
-                if chunk['change'] == 'equal':
-                    continue
+                if chunk['change'] != 'equal':
+                    interesting.append(chunk)
+                    indices.append('%d.%d' % (i, j))
 
-                chunk['index'] = prev_chunk_id + 1
-                chunk['nextid'] = '%s.%s' % (i, prev_chunk_id + 1)
-                if prev_chunk_id == 0:
-                    chunk['previd'] = i
-                else:
-                    chunk['previd'] = '%s.%s' % (i, prev_chunk_id)
-
-                prev_chunk_id += 1
-            chunks[-1]['nextid'] = i + 1
+        for chunk, previous, current, next in zip(interesting,
+                                                  [None] + indices[:-1],
+                                                  indices,
+                                                  indices[1:] + [None]):
+            chunk['index'] = current
+            chunk['previd'] = previous
+            chunk['nextid'] = next
 
     # Create a list of file objects.  We then postprocess this to reconcile
     # all of the chunk IDs.
