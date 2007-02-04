@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -8,10 +9,6 @@ from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 import os, sys, tempfile, traceback
 import reviewboard.scmtools as scmtools
-
-CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
-DIFF_COL_WIDTH=90
-DIFF_OPTS = "--side-by-side --expand-tabs --width=%s" % (DIFF_COL_WIDTH * 2 + 3)
 
 def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     try:
@@ -26,7 +23,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if cache.has_key(key):
             return cache.get(key)
         data = lookup_callable()
-        cache.set(key, data, CACHE_EXPIRATION_TIME)
+        cache.set(key, data, settings.CACHE_EXPIRATION_TIME)
         return data
 
     def get_original_file(file):

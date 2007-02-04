@@ -61,8 +61,6 @@ TEMPLATE_ROOT = '/var/www/reviewboard'
 HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
 
 TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     os.path.join(REVIEWBOARD_ROOT, 'reviewboard', 'templates'),
 )
@@ -84,6 +82,10 @@ INSTALLED_APPS = (
 # this data will come in from outside.
 BUILTIN_AUTH = True
 LOGIN_URL = '/account/login'
+
+# Default expiration time for the cache.  Note that this has no effect unless
+# CACHE_BACKEND is specified in settings_local.py
+CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
