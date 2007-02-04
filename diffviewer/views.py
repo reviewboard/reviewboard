@@ -1,9 +1,8 @@
 from difflib import SequenceMatcher
-from django.conf import settings
-from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from djblets.util import cache_memoize
 from popen2 import Popen3
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -18,13 +17,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     class UserVisibleError(Exception):
         pass
-
-    def cache_memoize(key, lookup_callable):
-        if cache.has_key(key):
-            return cache.get(key)
-        data = lookup_callable()
-        cache.set(key, data, settings.CACHE_EXPIRATION_TIME)
-        return data
 
     def get_original_file(file):
         """Get a file either from the cache or the SCM.  SCM exceptions are
