@@ -165,9 +165,8 @@ function SetHighlighted(anchor, highlighted) {
 
 <div id="diffs">
 {% if error %}
-<pre>
-{{ error }}
-</pre>
+ {{ error }}
+ {% if trace %}<pre>{{ trace }}</pre>{% endif %}
 {% else %}
 <a name="index_header"></a>
 {% include "diffviewer/changeindex.html" %}

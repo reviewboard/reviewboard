@@ -19,6 +19,9 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     except DiffSet.DoesNotExist:
         raise Http404
 
+    class UserVisibleError(Exception):
+        pass
+
     def cache_memoize(key, lookup_callable):
         if cache.has_key(key):
             return cache.get(key)
@@ -29,7 +32,10 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     def get_original_file(file):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
-        return cache_memoize(file, lambda: scmtools.get_tool().get_file(file))
+        try:
+            return cache_memoize(file, lambda: scmtools.get_tool().get_file(file))
+        except Exception, e:
+            raise UserVisibleError(str(e))
 
     def patch(diff, file):
         """Apply a diff to a file.  Delegates out to `patch` because noone
@@ -48,7 +54,7 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         if failure:
             os.unlink(oldfile)
             os.unlink(newfile)
-            raise Exception("The patch didn't apply cleanly: %s" %
+            raise UserVisibleError("The patch didn't apply cleanly: %s" %
                 p.fromchild.read())
 
         f = open(newfile, "r")
@@ -77,25 +83,9 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
         return chunks
 
-    # Create a list of file objects.  We then postprocess this to reconcile
-    # all of the chunk IDs.
-    try:
-        files = []
-        for filediff in diffset.files.all():
-            revision = \
-                scmtools.get_tool().parse_diff_revision(filediff.source_detail)
-            chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
-                                   lambda: get_chunks(filediff))
-
-            files.append({
-                'depot_filename': filediff.source_file,
-                'user_filename': filediff.dest_file,
-                'revision': revision,
-                'chunks': chunks,
-            })
-
-        # Go through and set index, nextid and previd for each chunk.
-        # FIXME: this is a little ugly, at least comparatively ;)
+    def add_navigation_cues(files):
+        """Add index, nextid and previd data to a list of files/chunks"""
+        # FIXME: this modifies in-place right now, plus it's ugly.  yick.
         for i in range(len(files)):
             file = files[i]
             file['index'] = i
@@ -118,17 +108,36 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 prev_chunk_id += 1
             chunks[-1]['nextid'] = i + 1
 
+    # Create a list of file objects.  We then postprocess this to reconcile
+    # all of the chunk IDs.
+    try:
+        files = []
+        for filediff in diffset.files.all():
+            revision = \
+                scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+            chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
+                                   lambda: get_chunks(filediff))
+
+            files.append({
+                'depot_filename': filediff.source_file,
+                'user_filename': filediff.dest_file,
+                'revision': revision,
+                'chunks': chunks,
+            })
+
+        add_navigation_cues(files)
+
         return render_to_response(template_name, RequestContext(request, {
             'files': files,
         }))
 
     except Exception, e:
-        # FIXME: create a "user visible error" exception, and only show
-        # backtraces for exceptions that aren't.
+        context = { 'error': e, }
+        if e.__class__ is not UserVisibleError:
+            context['trace'] = traceback.format_exc()
+
         return render_to_response(template_name,
-                                  RequestContext(request, {
-            'error': '%s\n%s' % (e, traceback.format_exc())
-        }))
+                                  RequestContext(request, context))
 
 def upload(request, donepath, diffset_history_id=None,
            template_name='diffviewer/upload.html'):
