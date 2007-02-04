@@ -85,14 +85,10 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         # FIXME: this modifies in-place right now, which is kind of ugly
         interesting = []
         indices = []
-        for i in range(len(files)):
-            file = files[i]
+        for i, file in zip(range(len(files)), files):
             file['index'] = i
-
             k = 1
-            chunks = file['chunks']
-            for j in range(len(chunks)):
-                chunk = chunks[j]
+            for j, chunk in zip(range(len(file['chunks'])), file['chunks']):
                 if chunk['change'] != 'equal':
                     interesting.append(chunk)
                     indices.append((i, k))
