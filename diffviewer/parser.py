@@ -18,10 +18,10 @@ def parseFile(lines, linenum, lastline, filename):
         lines[linenum + 1].startswith('--- ')):
 
         # Unified or Context diff
-        junk, file.origFile, file.origInfo = lines[linenum].split(None, 2)
-        junk, file.newFile,  file.newInfo  = lines[linenum + 1].split(None, 2)
+        file.origFile, file.origInfo = lines[linenum].split(None, 2)[1:]
+        file.newFile,  file.newInfo  = lines[linenum + 1].split(None, 2)[1:]
     else:
-        raise "WTF is this diff file format?"
+        raise Exception('Unable to parse file.  Is this a diff?')
 
     if lines[lastline].startswith("diff "):
         lastline -= 1
@@ -41,26 +41,18 @@ def parse(data):
     r = p.fromchild.read().strip()
     ret = p.wait()
 
+    if ret:
+        raise Exception('Error running lsdiff')
+
     lines = data.splitlines()
     files = []
 
-    if ret == 0:
-        info = []
+    info = [line.split() for line in r.splitlines()]
+    for current, next in zip(info, info[1:] + [[len(lines), '']]):
+        begin = int(current[0]) - 1
+        end = int(next[0]) - 1
+        file = current[1]
 
-        for line in r.splitlines():
-            info.append(line.split())
-
-        numFiles = len(info)
-
-        for i in range(numFiles):
-            [linenum, filename] = info[i]
-
-            if i == numFiles - 1:
-                lastline = len(lines)
-            else:
-                lastline = info[i + 1][0]
-
-            files.append(parseFile(lines, int(linenum) - 1,
-                                   int(lastline) - 1, filename))
+        files.append(parseFile(lines, begin, end, file))
 
     return files
