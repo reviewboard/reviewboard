@@ -21,7 +21,7 @@ def parseFile(lines, linenum, lastline, filename):
         file.origFile, file.origInfo = lines[linenum].split(None, 2)[1:]
         file.newFile,  file.newInfo  = lines[linenum + 1].split(None, 2)[1:]
     else:
-        raise Exception('Unable to parse file.  Is this a diff?')
+        raise Exception('Unable to recognize diff format')
 
     if lines[lastline].startswith("diff "):
         lastline -= 1
@@ -47,12 +47,12 @@ def parse(data):
     lines = data.splitlines()
     files = []
 
-    info = [line.split() for line in r.splitlines()]
-    for current, next in zip(info, info[1:] + [[len(lines), '']]):
-        begin = int(current[0]) - 1
-        end = int(next[0]) - 1
-        file = current[1]
+    current_slice = r.splitlines()
+    next_slice = current_slice[1:] + ['%d' % len(lines)]
+    for current, next in zip(current_slice, next_slice):
+        begin, file = current.split()
+        end = next.split()[0]
 
-        files.append(parseFile(lines, begin, end, file))
+        files.append(parseFile(lines, int(begin) - 1, int(end) - 1, file))
 
     return files
