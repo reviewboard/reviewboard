@@ -14,7 +14,7 @@ class UploadDiffForm(forms.Form):
         files = diffparser.parse(file["content"])
 
         if len(files) == 0:
-            raise "Empty diff" # XXX
+            raise Exception("Empty diff") # XXX
 
         # Check that we can actually get all these files.
         tool = scmtools.get_tool()
