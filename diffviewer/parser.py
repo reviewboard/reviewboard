@@ -39,9 +39,9 @@ def parse(data):
     p.tochild.write(data)
     p.tochild.close()
     r = p.fromchild.read().strip()
-    ret = p.wait()
+    failure = p.wait()
 
-    if ret:
+    if failure:
         raise Exception('Error running lsdiff')
 
     lines = data.splitlines()
