@@ -1,8 +1,9 @@
 from django import template
-from django.template import resolve_variable
+from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.utils import simplejson
 from reviewboard.reviews.models import ReviewRequestDraft
+import re
 
 register = template.Library()
 
@@ -164,3 +165,14 @@ def commentcountlist(parser, token):
             "%r tag requires a timestamp"
 
     return CommentCountList(filediff)
+
+
+@register.filter
+def embedcomments(value, review):
+    value = re.sub("{#.*?#}", "", value)
+
+    if value.find("{{comments}}") == -1:
+        return value
+
+    s = loader.render_to_string('reviews/comment.html', {'review': review})
+    return value.replace("{{comments}}", s)

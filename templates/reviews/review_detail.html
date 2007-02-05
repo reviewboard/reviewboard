@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% load reviewtags %}
+
 {% block title %}Review Request | {{details}}{% endblock %}
 {% block extrahead %}
 <script type="text/javascript" src="/scripts/prototype.js"></script>
@@ -103,7 +105,7 @@
    <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
    <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
   </div>
-  <pre class="body">{{review.body|escape}}</pre>
+  <div class="body"><pre>{{review.body|embedcomments:review}}</pre></div>
  </div>
  <ul class="controls">
   <li>Reply</li>

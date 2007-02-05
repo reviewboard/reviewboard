@@ -112,14 +112,14 @@ function addComments(fileid, lines) {
 			cell = row.cells[0];
 		}
 
+        cell.innerHTML = "<a name=\"line" + line + "\">" + line + "</a>";
+
 		// TODO: Count the number of comments
 		var commentNode = Builder.node('span',
 			{class: 'commentflag',
 			 style: 'top: ' + GetYPos(cell) + 'px;'},
 			lines[line]);
 		cell.insertBefore(commentNode, cell.firstChild);
-
-		console.dir(cell);
 	}
 }
 
