@@ -133,6 +133,9 @@ class Comment(models.Model):
         list_display = ('text', 'filediff', 'first_line', 'num_lines',
                         'timestamp')
 
+    class Meta:
+        ordering = ['filediff', 'first_line', 'timestamp']
+
 
 class Review(models.Model):
     review_request = models.ForeignKey(ReviewRequest)
