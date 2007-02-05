@@ -71,6 +71,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sites',
     'django.contrib.sessions',
+    'djblets.util',
     'reviewboard.diffviewer',
     'reviewboard.reviews',
     'reviewboard.utils',

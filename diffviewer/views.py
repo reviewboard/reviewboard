@@ -63,10 +63,17 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         b = (new or '').splitlines(True)
 
         chunks = []
+        linenum = 1
         for tag, i1, i2, j1, j2 in SequenceMatcher(None, a, b).get_opcodes():
+            oldlines = a[i1:i2]
+            newlines = b[j1:j2]
+            numlines = max(len(oldlines), len(newlines))
+            lines = map(lambda i,x,y: [i, x or "", y or ""],
+                        range(linenum, linenum + numlines), oldlines, newlines)
+            linenum += numlines
             chunks.append({
-                'oldtext': ''.join(a[i1:i2]),
-                'newtext': ''.join(b[j1:j2]),
+                'lines': lines,
+                'numlines': numlines,
                 'change': tag,
             })
 
@@ -109,11 +116,13 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
                 'user_filename': filediff.dest_file,
                 'revision': revision,
                 'chunks': chunks,
+                'filediff': filediff,
             })
 
         add_navigation_cues(files)
 
         return render_to_response(template_name, RequestContext(request, {
+            'diffset': diffset,
             'files': files,
         }))
 

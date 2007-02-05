@@ -7,9 +7,8 @@
 
 {% block content %}
 <div id="servererror"></div>
+<div id="banner"></div>
 
-<div id="banner">
-</div>
 <div id="review-request">
  <div class="main">
   <table class="header">
@@ -35,7 +34,7 @@
    </colgroup>
    <tr>
     <td class="label"><label for="submitter">Submitter:</label></td>
-    <td class="value"><a id="submitter" href="{{object.submitter.get_absolute_url}}">{{object.submitter}}</a></td>
+    <td class="value"><a id="submitter" href="{{object.submitter.get_absolute_url}}">{% firstof object.submitter.get_full_name object.submitter.username %}</a></td>
     <td class="caption" colspan="2">Reviewers</td>
    </tr>
    <tr>
@@ -94,6 +93,23 @@
 {% endifequal %}
  </ul>
 </div>
+
+{% for review in reviews %}
+<a name="review{{forloop.counter}}"></a>
+<div class="review{% ifequal review.user object.submitter %} fromsubmitter{% endifequal %}">
+ <div class="main">
+  <div class="header">
+   {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
+   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
+   <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
+  </div>
+  <pre class="body">{{review.body|escape}}</pre>
+ </div>
+ <ul class="controls">
+  <li>Reply</li>
+ </ul>
+</div>
+{% endfor %}
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">

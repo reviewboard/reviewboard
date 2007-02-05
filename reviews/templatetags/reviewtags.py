@@ -1,6 +1,7 @@
 from django import template
 from django.template import resolve_variable
-from django.template import TemplateSyntaxError, VariableDoesNotExist
+from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
+from django.utils import simplejson
 from reviewboard.reviews.models import ReviewRequestDraft
 
 register = template.Library()
@@ -64,3 +65,102 @@ def pendingreviewcount(parser, token):
             "%r tag requires a user or group object"
 
     return PendingReviewCount(obj)
+
+
+class ForComment(template.Node):
+    def __init__(self, filediff, review, nodelist_loop):
+        self.filediff = filediff
+        self.review = review
+        self.nodelist_loop = nodelist_loop
+
+    def render(self, context):
+        try:
+            filediff = resolve_variable(self.filediff, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid variable %s passed to 'forcomment' tag." % \
+                self.filediff
+
+        if self.review == None:
+            review = None
+        else:
+            try:
+                review = resolve_variable(self.review, context)
+            except VariableDoesNotExist:
+                raise template.TemplateSyntaxError, \
+                    "Invalid variable %s passed to 'forcomment' tag." % \
+                    self.review
+
+        nodelist = NodeList()
+        context.push()
+
+        if review == None:
+            comments = filediff.comment_set.all()
+        else:
+            comments = filediff.comment_set.filter(review=review)
+
+        for comment in comments:
+            context['comment'] = comment
+
+            for node in self.nodelist_loop:
+                nodelist.append(node.render(context))
+
+        context.pop()
+        return nodelist.render(context)
+
+
+@register.tag
+def forcomment(parser, token):
+    bits = token.contents.split()
+    del(bits[0])
+
+    if len(bits) == 0 or len(bits) > 2:
+        raise TemplateSyntaxError, "too many arguments passed to 'forcomment'"
+
+    filediff = bits[0]
+
+    if len(bits) == 2:
+        review = bits[1]
+    else:
+        review = None
+
+    nodelist_loop = parser.parse(('endforcomment',))
+    parser.delete_first_token()
+
+    return ForComment(filediff, review, nodelist_loop)
+
+
+class CommentCountList(template.Node):
+    def __init__(self, filediff):
+        self.filediff = filediff
+
+    def render(self, context):
+        try:
+            filediff = resolve_variable(self.filediff, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid variable %s passed to commentcountlist tag." % \
+                self.filediff
+
+        comments = {}
+
+        for comment in filediff.comment_set.all():
+            line = comment.first_line
+
+            if comments.has_key(line):
+                comments[line] += 1
+            else:
+                comments[line] = 1
+
+        return simplejson.dumps(comments)
+
+
+@register.tag
+def commentcountlist(parser, token):
+    try:
+        tag_name, filediff = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag requires a timestamp"
+
+    return CommentCountList(filediff)

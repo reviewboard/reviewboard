@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% load reviewtags %}
+
 {% block title %}Diff Viewer{% endblock %}
 {% block extrahead %}
 <script type="text/javascript" src="/scripts/prototype.js"></script>
+<script type="text/javascript" src="/scripts/scriptaculous.js?load=builder"></script>
 {% endblock %}
 
 {% block content %}
@@ -96,6 +99,30 @@ function onPageLoaded(evt) {
 	Event.observe(window, 'keypress', onKeyPress, false);
 }
 
+function addComments(fileid, lines) {
+	var table = $(fileid);
+
+	for (line in lines) {
+		var row = table.rows[line];
+		var cell;
+
+		if (row.cells.length == 4) {
+			cell = row.cells[1];
+		} else {
+			cell = row.cells[0];
+		}
+
+		// TODO: Count the number of comments
+		var commentNode = Builder.node('span',
+			{class: 'commentflag',
+			 style: 'top: ' + GetYPos(cell) + 'px;'},
+			lines[line]);
+		cell.insertBefore(commentNode, cell.firstChild);
+
+		console.dir(cell);
+	}
+}
+
 function scrollToAnchor(anchor) {
 	if (anchor == INVALID) {
 		return false;
@@ -143,7 +170,7 @@ function SetHighlighted(anchor, highlighted) {
 
 	if (node.tagName == "TD" || node.tagName == "TH") {
 		node = node.parentNode;
-		controlsNode = node.getElementsByTagName('td')[0].firstChild;
+		controlsNode = node.getElementsByTagName('th')[0].firstChild.nextSibling;
 	}
 	else if (nextNode.className == "sidebyside") {
 		node = nextNode.getElementsByTagName('tr')[0];
@@ -154,10 +181,8 @@ function SetHighlighted(anchor, highlighted) {
 	}
 
 	if (highlighted) {
-		Element.addClassName(node, "selected");
 		controlsNode.nodeValue = "▶";
 	} else {
-		Element.removeClassName(node, "selected");
 		controlsNode.nodeValue = "";
 	}
 }
@@ -173,29 +198,40 @@ function SetHighlighted(anchor, highlighted) {
 
 {% for file in files %}
 <a name="{{file.index}}"></a>
-<table class="sidebyside">
+<table class="sidebyside" id="file{{file.index}}">
  <colgroup>
   <col class="controls" />
-  <col class="left" width="50%" />
-  <col class="right" width="50%" />
+  <col class="line" />
+  <col class="left" />
+  <col class="right" />
  </colgroup>
  <thead>
   <tr onClick="gotoAnchor('{{file.index}}');">
    <th class="controls">&nbsp;</th>
+   <th>&nbsp;</th>
    <th>{{ file.depot_filename }} ({{file.revision}})</th>
    <th>{{ file.user_filename }}</th>
   </tr>
  </thead>
- <tbody>
 {% for chunk in file.chunks %}
-  <tr{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
-   <td class="controls">&nbsp;</td>
-   <td>{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}<pre>{{ chunk.oldtext|escape }}</pre></td>
-   <td><pre>{{ chunk.newtext|escape }}</pre></td>
+ <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
+  <tr>
+   <th class="controls" rowspan="{{chunk.numlines}}">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</td>
+{% for line in chunk.lines %}
+   <th>{{line.0}}</td>
+   <td><pre>{{ line.1|escape }}</pre></td>
+   <td><pre>{{ line.2|escape }}</pre></td>
   </tr>
+{% if not forloop.last %}
+  <tr>
+{% endif %}
 {% endfor %}
  </tbody>
+{% endfor %}
 </table></li>
+<script language="javascript">
+  addComments("file{{file.index}}", {% commentcountlist file.filediff %});
+</script>
 {% endfor %}
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}

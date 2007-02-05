@@ -1,8 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.db import models
-from reviewboard.diffviewer.models import FileDiff, DiffSet, \
-                                          DiffSetHistory, Comment
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 import re
 
 class Quip(models.Model):
@@ -75,14 +74,6 @@ class ReviewRequest(models.Model):
         ordering = ['-last_updated', 'submitter', 'summary']
 
 
-class Review(models.Model):
-    review_request = models.ForeignKey(ReviewRequest)
-    ship_it = models.BooleanField("Ship It", default=False)
-    comments = models.ManyToManyField(Comment, verbose_name="Comments",
-                                      core=False, blank=True)
-    reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff")
-
-
 class ReviewRequestDraft(models.Model):
     review_request = models.ForeignKey(ReviewRequest,
                                        verbose_name="Review Request", core=True)
@@ -121,3 +112,48 @@ class ReviewRequestDraft(models.Model):
 
     class Meta:
         ordering = ['-last_updated']
+
+
+class Comment(models.Model):
+    filediff = models.ForeignKey(FileDiff, verbose_name='File')
+    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+    text = models.TextField("Comment Text");
+
+    # A null line number applies to an entire diff.  Non-null line numbers are
+    # the line within the entire file, starting at 1.
+    first_line = models.PositiveIntegerField("First Line", blank=True,
+                                             null=True)
+    num_lines = models.PositiveIntegerField("Number of lines", blank=True,
+                                            null=True)
+
+    def __str__(self):
+        return self.text
+
+    class Admin:
+        list_display = ('text', 'filediff', 'first_line', 'num_lines',
+                        'timestamp')
+
+
+class Review(models.Model):
+    review_request = models.ForeignKey(ReviewRequest)
+    user = models.ForeignKey(User)
+    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+    public = models.BooleanField("Public", default=False)
+    ship_it = models.BooleanField("Ship It", default=False)
+    body = models.TextField("Body")
+    comments = models.ManyToManyField(Comment, verbose_name="Comments",
+                                      core=False, blank=True)
+    reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
+                                         blank=True, null=True)
+    replies = models.ManyToManyField("self", verbose_name='Replies',
+                                     core=False, symmetrical=False, blank=True)
+
+    def __str__(self):
+        return "Review of '%s'" % self.review_request
+
+    class Admin:
+        list_display = ('review_request', 'user', 'public', 'ship_it',
+                        'timestamp')
+
+    class Meta:
+        ordering = ['timestamp']

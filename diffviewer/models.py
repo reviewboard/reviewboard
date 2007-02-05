@@ -55,18 +55,3 @@ class DiffSetHistory(models.Model):
 
     class Admin:
         pass
-
-class Comment(models.Model):
-    comment = models.TextField()
-    author = models.ForeignKey(User)
-
-    diff = models.ForeignKey(FileDiff)
-
-    # A null line number applies to an entire diff.  Non-null line numbers are
-    # the line within the entire file, starting at 1.
-    line = models.PositiveIntegerField(blank=True, null=True)
-
-    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
-
-    class Admin:
-        pass
