@@ -1,0 +1,11 @@
+</pre>
+{% for comment in review.comments.all %}
+<dl class="comments">
+ <dt>
+  <div class="filename"><a href="diff/{{review.reviewed_diffset.id}}">{{comment.filediff.dest_file}}</a>
+  line <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a></div>
+ </dt>
+ <dd><pre>{{comment.text|escape}}</pre></dd>
+</dl>
+{% endfor %}
+<pre>
