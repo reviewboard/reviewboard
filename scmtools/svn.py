@@ -1,4 +1,5 @@
-from scmtools.core import SCMException, FileNotFoundException, HEAD, SCMTool
+from scmtools.core import SCMException, FileNotFoundException, SCMTool
+from scmtools.core import HEAD, PRE_CREATION
 import pysvn
 
 class SVNTool(SCMTool):
@@ -13,6 +14,8 @@ class SVNTool(SCMTool):
     def get_file(self, path, revision=HEAD):
         if revision == HEAD:
             r = pysvn.Revision(pysvn.opt_revision_kind.head)
+        elif revision == PRE_CREATION:
+            raise FileNotFoundException(path, revision)
         else:
             r = pysvn.Revision(pysvn.opt_revision_kind.number, revision)
 
@@ -26,7 +29,12 @@ class SVNTool(SCMTool):
         if revision_str == "(working copy)":
             return HEAD
         elif revision_str.startswith("(revision "):
-            return revision_str.split()[1][:-1]
+            revision = revision_str.split()[1][:-1]
+
+            if revision == "0":
+                revision = PRE_CREATION
+
+            return revision
         else:
             raise SCMException("Unable to parse diff revision header '%s'" %
                                revision_str)

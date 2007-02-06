@@ -4,6 +4,7 @@ from django.core.validators import ValidationError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 import reviewboard.diffviewer.parser as diffparser
 import reviewboard.scmtools as scmtools
+from scmtools import PRE_CREATION
 
 class UploadDiffForm(forms.Form):
     basedir = forms.CharField()
@@ -28,7 +29,8 @@ class UploadDiffForm(forms.Form):
             revision = tool.parse_diff_revision(f.origInfo)
             filename = basedir + f.origFile
 
-            if not tool.file_exists(filename, revision):
+            if revision != PRE_CREATION and \
+               not tool.file_exists(filename, revision):
                 raise scmtools.FileNotFoundException(filename, revision)
 
         diffset = DiffSet(name=file["filename"], revision=0,

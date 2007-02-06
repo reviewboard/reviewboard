@@ -23,13 +23,18 @@ def parseFile(lines, linenum, lastline, filename):
     else:
         raise Exception('Unable to recognize diff format')
 
-    if lines[lastline].startswith("diff "):
-        lastline -= 1
-    elif lines[lastline].startswith("====================") and \
-         lines[lastline - 1].startswith("Index: "):
-        lastline -= 2
+    file.data = ""
 
-    file.data = '\n'.join(lines[linenum:lastline])
+    for i in range(linenum, lastline + 1):
+        line = lines[i]
+        if line.startswith("diff ") or \
+           (line.startswith("Index: ") and \
+            lines[i + 1].startswith("====================")) or \
+           (line.startswith("Property changes on: ") and \
+            lines[i + 1].startswith("____________________")):
+            break
+        else:
+            file.data += line + "\n"
 
     return file
 

@@ -31,7 +31,11 @@ class FileNotFoundException(Exception):
 
 
 class Revision:
-    pass
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
 
 class SCMTool:
     def __init__(self, repopath):
@@ -60,7 +64,8 @@ class SCMTool:
         raise NotImplementedError
 
 
-HEAD = Revision()
+HEAD = Revision("HEAD")
+PRE_CREATION = Revision("PRE-CREATION")
 
 def get_tool():
     path = settings.SCMTOOL_BACKEND

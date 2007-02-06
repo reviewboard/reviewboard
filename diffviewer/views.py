@@ -8,17 +8,19 @@ from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 import os, sys, tempfile, traceback
 import reviewboard.scmtools as scmtools
+from scmtools import PRE_CREATION
 
 class UserVisibleError(Exception):
     pass
 
 
 def get_diff_files(diffset):
-    def get_original_file(file):
+    def get_original_file(file, revision):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
         try:
-            return cache_memoize(file, lambda: scmtools.get_tool().get_file(file))
+            return cache_memoize(file,
+                lambda: scmtools.get_tool().get_file(file, revision))
         except Exception, e:
             raise UserVisibleError(str(e))
 
@@ -52,7 +54,14 @@ def get_diff_files(diffset):
         return data
 
     def get_chunks(filediff):
-        old = get_original_file(filediff.source_file)
+        revision = \
+            scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+
+        if revision == PRE_CREATION:
+            old = ""
+        else:
+            old = get_original_file(filediff.source_file, revision)
+
         new = patch(filediff.diff, old)
 
         a = (old or '').splitlines(True)
@@ -186,11 +195,11 @@ def upload(request, donepath, diffset_history_id=None,
             else:
                 diffset_history = None
 
-            try:
-                diffset = form.create(request.FILES['path'], diffset_history)
-                return HttpResponseRedirect(donepath % diffset.id)
-            except scmtools.FileNotFoundException, e:
-                differror = str(e)
+            #try:
+            diffset = form.create(request.FILES['path'], diffset_history)
+            return HttpResponseRedirect(donepath % diffset.id)
+            #except scmtools.FileNotFoundException, e:
+            #    differror = str(e)
     else:
         form = UploadDiffForm()
 
