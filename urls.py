@@ -50,6 +50,9 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
      'reviewboard.reviews.views.diff'),
 
+    (r'^reviews/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
+     'reviewboard.reviews.views.diff_fragment'),
+
     # Review request drafts
     (r'^reviews/(?P<object_id>[0-9]+)/draft/save/$',
      'reviewboard.reviews.views.save_draft'),

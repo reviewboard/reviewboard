@@ -1,9 +1,38 @@
+{% load difftags %}
 </pre>
 {% for comment in review.comments.all %}
 <dl class="comments">
  <dt>
-  <div class="filename"><a href="diff/{{review.reviewed_diffset.id}}">{{comment.filediff.dest_file}}</a>
-  line <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a></div>
+  <table class="sidebyside">
+   <colgroup>
+    <col class="line" />
+    <col class="left" />
+    <col class="right" />
+   </colgroup>
+   <thead>
+    <tr>
+     <th colspan="3" class="filename">
+      <a href="diff/{{review.reviewed_diffset.id}}">{{comment.filediff.dest_file}}</a>
+{% ifequal comment.first_line comment.last_line %}
+line <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a>
+{% else %}
+lines <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a> - <b>{{comment.last_line}}</b>
+{% endifequal %}
+     </th>
+    </tr>
+   </thead>
+{% forchunkswithlines comment.filediff comment.first_line comment.num_lines %}
+   <tbody class="{{chunk.change}}">
+{% for line in chunk.lines %}
+    <tr>
+     <th>{{line.0}}</td>
+     <td><pre>{{ line.1|escape }}</pre></td>
+     <td><pre>{{ line.2|escape }}</pre></td>
+    </tr>
+{% endfor %}
+   </tbody>
+{% endforchunkswithlines %}
+  </table>
  </dt>
  <dd><pre>{{comment.text|escape}}</pre></dd>
 </dl>

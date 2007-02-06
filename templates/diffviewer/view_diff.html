@@ -198,37 +198,7 @@ function SetHighlighted(anchor, highlighted) {
 
 {% for file in files %}
 <a name="{{file.index}}"></a>
-<table class="sidebyside" id="file{{file.index}}">
- <colgroup>
-  <col class="controls" />
-  <col class="line" />
-  <col class="left" />
-  <col class="right" />
- </colgroup>
- <thead>
-  <tr onClick="gotoAnchor('{{file.index}}');">
-   <th class="controls">&nbsp;</th>
-   <th>&nbsp;</th>
-   <th>{{ file.depot_filename }} ({{file.revision}})</th>
-   <th>{{ file.user_filename }}</th>
-  </tr>
- </thead>
-{% for chunk in file.chunks %}
- <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
-  <tr>
-   <th class="controls" rowspan="{{chunk.numlines}}">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</td>
-{% for line in chunk.lines %}
-   <th>{{line.0}}</td>
-   <td><pre>{{ line.1|escape }}</pre></td>
-   <td><pre>{{ line.2|escape }}</pre></td>
-  </tr>
-{% if not forloop.last %}
-  <tr>
-{% endif %}
-{% endfor %}
- </tbody>
-{% endfor %}
-</table></li>
+{% include "diffviewer/diff_file_fragment.html" %}
 <script language="javascript">
   addComments("file{{file.index}}", {% commentcountlist file.filediff %});
 </script>

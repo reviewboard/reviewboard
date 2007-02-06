@@ -9,7 +9,7 @@ from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
-from reviewboard.diffviewer.views import view_diff
+from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.forms import NewReviewRequestForm
 import reviewboard.scmtools as scmtools
@@ -235,6 +235,27 @@ def diff(request, object_id, revision=None):
         raise Http404
 
     return view_diff(request, diffset.id)
+
+
+@login_required
+def diff_fragment(request, object_id, revision, filediff_id,
+                  template_name='diffviewer/diff_file_fragment.html'):
+    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+
+    query = Q(history=review_request.diffset_history) | Q(revision=revision)
+
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+        query = query | Q(reviewrequestdraft=draft)
+    except ReviewRequestDraft.DoesNotExist:
+        pass
+
+    try:
+        diffset = DiffSet.objects.filter(query).latest()
+    except:
+        raise Http404
+
+    return view_diff_fragment(request, diffset.id, filediff_id, template_name)
 
 
 @login_required

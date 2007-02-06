@@ -9,15 +9,11 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 import os, sys, tempfile, traceback
 import reviewboard.scmtools as scmtools
 
-def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
-    try:
-        diffset = DiffSet.objects.get(pk=object_id)
-    except DiffSet.DoesNotExist:
-        raise Http404
+class UserVisibleError(Exception):
+    pass
 
-    class UserVisibleError(Exception):
-        pass
 
+def get_diff_files(diffset):
     def get_original_file(file):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
@@ -103,29 +99,39 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
             if next:
                 chunk['nextid'] = '%d.%d' % next
 
+
+    files = []
+    for filediff in diffset.files.all():
+        revision = \
+            scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+        chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
+                               lambda: get_chunks(filediff))
+
+        files.append({
+            'depot_filename': filediff.source_file,
+            'user_filename': filediff.dest_file,
+            'revision': revision,
+            'chunks': chunks,
+            'filediff': filediff,
+        })
+
+    add_navigation_cues(files)
+
+    return files
+
+
+def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     try:
-        files = []
-        for filediff in diffset.files.all():
-            revision = \
-                scmtools.get_tool().parse_diff_revision(filediff.source_detail)
-            chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
-                                   lambda: get_chunks(filediff))
+        diffset = DiffSet.objects.get(pk=object_id)
+    except DiffSet.DoesNotExist:
+        raise Http404
 
-            files.append({
-                'depot_filename': filediff.source_file,
-                'user_filename': filediff.dest_file,
-                'revision': revision,
-                'chunks': chunks,
-                'filediff': filediff,
-            })
-
-        add_navigation_cues(files)
-
+    try:
+        files = get_diff_files(diffset)
         return render_to_response(template_name, RequestContext(request, {
             'diffset': diffset,
             'files': files,
         }))
-
     except Exception, e:
         context = { 'error': e, }
         if e.__class__ is not UserVisibleError:
@@ -133,6 +139,36 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
         return render_to_response(template_name,
                                   RequestContext(request, context))
+
+
+def view_diff_fragment(request, diffset_id, filediff_id,
+                       template_name='diffviewer/diff_file_fragment.html'):
+    diffset = get_object_or_404(DiffSet, pk=diffset_id)
+    filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
+
+    try:
+        files = get_diff_files(filediff.diffset)
+
+        for file in files:
+            if file['filediff'].id == filediff.id:
+                return render_to_response(template_name,
+                    RequestContext(request, {
+                        'file': file,
+                        'standalone': True,
+                    })
+                )
+
+        raise UserVisibleError(
+            "Internal error. Unable to locate file record for filediff %s" % \
+            filediff.id)
+    except Exception, e:
+        context = { 'error': e, 'standalone': True, }
+        if e.__class__ is not UserVisibleError:
+            context['trace'] = traceback.format_exc()
+
+        return render_to_response(template_name,
+                                  RequestContext(request, context))
+
 
 def upload(request, donepath, diffset_history_id=None,
            template_name='diffviewer/upload.html'):

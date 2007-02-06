@@ -126,6 +126,9 @@ class Comment(models.Model):
     num_lines = models.PositiveIntegerField("Number of lines", blank=True,
                                             null=True)
 
+    def last_line(self):
+        return self.first_line + self.num_lines - 1
+
     def __str__(self):
         return self.text
 
