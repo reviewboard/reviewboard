@@ -276,13 +276,13 @@ def setstatus(request, review_request_id, action):
     if request.user != review_request.submitter:
         raise Http403()
 
-    if action == 'discard':
-        review_request.status = 'D'
-    elif action == 'submitted':
-        review_request.status = 'S'
-    elif action == 'reopen':
-        review_request.status = 'P'
-    else:
+    try:
+        review_request.status = {
+            'discard':   'D',
+            'submitted': 'S',
+            'reopen':    'P',
+        }[action]
+    except KeyError:
         raise Http404() # Should never happen. Need a better handler.
 
     review_request.save()
