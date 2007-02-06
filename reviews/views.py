@@ -326,54 +326,56 @@ def review_request_field(request, review_request_id, method, field_name=None):
 
         form_data = request.POST.copy()
 
-        if hasattr(review_request, field_name) and form_data['value']:
-            draft, draft_is_new = \
-                ReviewRequestDraft.objects.get_or_create(
-                    review_request=review_request,
-                    defaults={
-                        'summary': review_request.summary,
-                        'description': review_request.description,
-                        'testing_done': review_request.testing_done,
-                        'bugs_closed': review_request.bugs_closed,
-                        'branch': review_request.branch,
-                    })
+        if not hasattr(review_request, field_name):
+            raise Http404()
 
-            if draft_is_new:
-                for group in review_request.target_groups.all():
-                    draft.target_groups.add(group)
+        draft, draft_is_new = \
+            ReviewRequestDraft.objects.get_or_create(
+                review_request=review_request,
+                defaults={
+                    'summary': review_request.summary,
+                    'description': review_request.description,
+                    'testing_done': review_request.testing_done,
+                    'bugs_closed': review_request.bugs_closed,
+                    'branch': review_request.branch,
+                })
 
-                for person in review_request.target_people.all():
-                    draft.target_people.add(person)
+        if draft_is_new:
+            for group in review_request.target_groups.all():
+                draft.target_groups.add(group)
 
-                if review_request.diffset_history.diffset_set.count() > 0:
-                    draft.diffset = \
-                        review_request.diffset_history.diffset_set.latest()
+            for person in review_request.target_people.all():
+                draft.target_people.add(person)
+
+            if review_request.diffset_history.diffset_set.count() > 0:
+                draft.diffset = \
+                    review_request.diffset_history.diffset_set.latest()
 
 
-            if field_name == "target_groups" or field_name == "target_people":
-                values = re.split(r"[, ]+", form_data['value'])
-                target = getattr(draft, field_name)
-                target.clear()
+        if field_name == "target_groups" or field_name == "target_people":
+            values = re.split(r"[, ]+", form_data['value'])
+            target = getattr(draft, field_name)
+            target.clear()
 
-                invalid_entries = []
+            invalid_entries = []
 
-                for value in values:
-                    try:
-                        if field_name == "target_groups":
-                            obj = Group.objects.get(name=value)
-                        elif field_name == "target_people":
-                            obj = User.objects.get(username=value)
+            for value in values:
+                try:
+                    if field_name == "target_groups":
+                        obj = Group.objects.get(name=value)
+                    elif field_name == "target_people":
+                        obj = User.objects.get(username=value)
 
-                        target.add(obj)
-                    except:
-                        invalid_entries.append(value)
+                    target.add(obj)
+                except:
+                    invalid_entries.append(value)
 
-                #print ', '.join(invalid_entries)
-            else:
-                setattr(draft, field_name, form_data['value'])
+            #print ', '.join(invalid_entries)
+        else:
+            setattr(draft, field_name, form_data['value'])
 
-            draft.save()
-            obj = draft
+        draft.save()
+        obj = draft
     else:
         try:
             obj = review_request.reviewrequestdraft_set.get()
