@@ -37,32 +37,35 @@ def new_review_request(request, template_name='reviews/review_detail.html'):
 
 @login_required
 def new_from_changenum(request):
-    if request.POST:
-        if request.POST.has_key('changenum'):
-            changenum = request.POST['changenum']
+    if not request.POST or 'changenum' not in request.POST:
+        # XXX Display an error page
+        return HttpResponseRedirect('/reviews/new/')
 
-            diffset_history = DiffSetHistory()
-            diffset_history.save()
+    changenum = request.POST['changenum']
 
-            review_request = ReviewRequest()
-            changeset = scmtools.get_tool().get_changeset(changenum)
+    diffset_history = DiffSetHistory()
+    diffset_history.save()
 
-            if changeset != None:
-                review_request.summary = changeset.summary
-                review_request.description = changeset.description
-                review_request.testing_done = changeset.testing_done
-                review_request.branch = changeset.branch
-                review_request.bugs_closed = ','.join(changeset.bugs_closed)
-                review_request.diffset_history = diffset_history
-                review_request.submitter = request.user
-                review_request.status = 'P'
-                review_request.public = False
-                review_request.save()
+    review_request = ReviewRequest()
+    changeset = scmtools.get_tool().get_changeset(changenum)
 
-                return HttpResponseRedirect(review_request.get_absolute_url())
+    if changeset:
+        review_request.summary = changeset.summary
+        review_request.description = changeset.description
+        review_request.testing_done = changeset.testing_done
+        review_request.branch = changeset.branch
+        review_request.bugs_closed = ','.join(changeset.bugs_closed)
+        review_request.diffset_history = diffset_history
+        review_request.submitter = request.user
+        review_request.status = 'P'
+        review_request.public = False
+        review_request.save()
 
-    # XXX Display an error page
+        return HttpResponseRedirect(review_request.get_absolute_url())
+
+    # XXX Remove diffset_history from the database and display an error page
     return HttpResponseRedirect('/reviews/new/')
+
 
 
 @login_required
@@ -179,10 +182,9 @@ def dashboard(request, template_name):
 
     # The most important part
     quips = {}
-    quips['direct'] = Quip.objects.filter(place='dn').order_by('?')[:1]
-    quips['group']  = Quip.objects.filter(place='dg').order_by('?')[:1]
-    quips['empty']  = Quip.objects.filter(place='de').order_by('?')[:1]
-    quips['mine']   = Quip.objects.filter(place='dm').order_by('?')[:1]
+    for variable, place_id in zip(['direct', 'group', 'empty', 'mine'],
+                                  ['dn',     'dg',    'de',    'dm']):
+        quips[variable] = Quip.objects.filter(place=place_id).order_by('?')[:1]
 
     return render_to_response(template_name, RequestContext(request, {
         'direct_list': direct_list,
