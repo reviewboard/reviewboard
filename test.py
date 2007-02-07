@@ -33,7 +33,8 @@ def runner(module_list, verbosity=1, extra_tests=[]):
     create_test_db(verbosity)
     management.syncdb(verbosity, interactive=False)
 
-    # nose uses pretty much everything in locals, which is really silly
+    # Nose uses all local modules, which is really silly.  These were getting
+    # tested (and failing), so turn them off.
     exclusion = '|'.join(['setup_test_environment',
                           'teardown_test_environment',
                           'create_test_db',
