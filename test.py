@@ -24,8 +24,7 @@ from django.core import management
 from django.test.utils import setup_test_environment, teardown_test_environment
 from django.test.utils import create_test_db, destroy_test_db
 import nose
-import os
-import sys
+import reviewboard
 
 def runner(module_list, verbosity=1, extra_tests=[]):
     setup_test_environment()
@@ -34,15 +33,16 @@ def runner(module_list, verbosity=1, extra_tests=[]):
     create_test_db(verbosity)
     management.syncdb(verbosity, interactive=False)
 
-    modules = ['accounts', 'auth', 'diffviewer', 'djblets', 'reviews',
-               'scmtools', 'utils']
+    # nose uses pretty much everything in locals, which is really silly
+    exclusion = '|'.join(['setup_test_environment',
+                          'teardown_test_environment',
+                          'create_test_db',
+                          'destroy_test_db'])
 
-    for module in modules:
-        nose.main(argv=['test.py', '-v',
-                        '--with-coverage',
-                        '--with-doctest',
-                        '-w', os.path.dirname(__file__)],
-                  module=module)
+    nose.main(argv=['test.py', '-v',
+                    '--with-coverage',
+                    '--with-doctest',
+                    '-e', exclusion])
 
     destroy_test_db(old_name, verbosity)
     teardown_test_environment()
