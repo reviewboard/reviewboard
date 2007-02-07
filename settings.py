@@ -88,6 +88,8 @@ LOGIN_URL = '/account/login'
 # CACHE_BACKEND is specified in settings_local.py
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 
+TEST_RUNNER = 'reviewboard.test.runner'
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 from settings_local import *

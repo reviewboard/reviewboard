@@ -19,9 +19,30 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 
-import sys, os
-os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
+from django.conf import settings
+from django.core import management
+from django.test.utils import setup_test_environment, teardown_test_environment
+from django.test.utils import create_test_db, destroy_test_db
 import nose
-nose.main(argv=['test.py', '-v', '--with-coverage'])
+import os
+import sys
+
+def runner(module_list, verbosity=1, extra_tests=[]):
+    setup_test_environment()
+    settings.DEBUG = False
+    old_name = settings.DATABASE_NAME
+    create_test_db(verbosity)
+    management.syncdb(verbosity, interactive=False)
+
+    modules = ['accounts', 'auth', 'diffviewer', 'djblets', 'reviews',
+               'scmtools', 'utils']
+
+    for module in modules:
+        nose.main(argv=['test.py', '-v',
+                        '--with-coverage',
+                        '--with-doctest',
+                        '-w', os.path.dirname(__file__)],
+                  module=module)
+
+    destroy_test_db(old_name, verbosity)
+    teardown_test_environment()
