@@ -8,7 +8,7 @@ from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 import os, sys, tempfile, traceback
 import reviewboard.scmtools as scmtools
-from scmtools import PRE_CREATION
+from scmtools import HEAD, PRE_CREATION
 
 class UserVisibleError(Exception):
     pass
@@ -115,6 +115,13 @@ def get_diff_files(diffset):
             scmtools.get_tool().parse_diff_revision(filediff.source_detail)
         chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                lambda: get_chunks(filediff))
+
+        if revision == HEAD:
+            revision = "HEAD"
+        elif revision == PRE_CREATION:
+            revision = "Pre-creation"
+        else:
+            revision = "Revision %s" % revision
 
         files.append({
             'depot_filename': filediff.source_file,
