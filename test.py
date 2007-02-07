@@ -39,9 +39,11 @@ def runner(module_list, verbosity=1, extra_tests=[]):
                           'create_test_db',
                           'destroy_test_db'])
 
+    covers = ','.join(['reviewboard'])
+
     nose.main(argv=['test.py', '-v',
-                    '--with-coverage',
-                    '--with-doctest',
+                    '--with-coverage', '--cover-package=' + covers,
+                    '--with-doctest', '--doctest-extension=.py',
                     '-e', exclusion])
 
     destroy_test_db(old_name, verbosity)
