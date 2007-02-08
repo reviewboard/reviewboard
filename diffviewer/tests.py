@@ -33,11 +33,13 @@ class DiffParserTest(unittest.TestCase):
             # Can't really compare the strings because of timestamps...
 
     def testUnifiedDiff(self):
+        """Checking parse on a unified diff"""
         data = self.diff('-u')
         files = diffparser.parse(data)
         self.compareDiffs(files, "unified")
 
     def testContextDiff(self):
+        """Checking parse on a context diff"""
         data = self.diff('-c')
         files = diffparser.parse(data)
         self.compareDiffs(files, "context")
