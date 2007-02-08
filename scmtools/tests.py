@@ -1,12 +1,14 @@
-from reviewboard import scmtools
-import reviewboard.scmtools.svn as svn
+from scmtools.core import SCMException, FileNotFoundException
+from scmtools.core import HEAD, PRE_CREATION
+from scmtools.core import Revision
+from scmtools.svn import SVNTool
 import unittest
 
 class SubversionTests(unittest.TestCase):
     """Unit tests for subversion.  These will fail if you're offline."""
 
     def setUp(self):
-        self.tool = svn.SVNTool(repopath='http://svn.collab.net/repos/svn/')
+        self.tool = SVNTool(repopath='http://svn.collab.net/repos/svn/')
 
     def testGetFile(self):
         """Checking SVNTool.get_file"""
@@ -15,10 +17,33 @@ class SubversionTests(unittest.TestCase):
                    'hare/doc/subversion\ninclude ../tools/Makefile.base-rul' + \
                    'es\n'
 
-        rev = scmtools.Revision('19741')
-        data = self.tool.get_file('trunk/doc/misc-docs/Makefile', )
+        data = self.tool.get_file('trunk/doc/misc-docs/Makefile',
+                                  Revision('19741'))
 
         self.assertEqual(data, expected)
+
+
+        self.assertRaises(FileNotFoundException,
+                          lambda: self.tool.get_file(''))
+
+        self.assertRaises(FileNotFoundException,
+                          lambda: self.tool.get_file('hello',
+                                                     PRE_CREATION))
+
+    def testRevisionParsing(self):
+        """Testing revision number parsing"""
+        self.assertEqual(self.tool.parse_diff_revision('(working copy)'),
+                         HEAD)
+        self.assertEqual(self.tool.parse_diff_revision('(revision 0)'),
+                         PRE_CREATION)
+
+        self.assertEqual(self.tool.parse_diff_revision('(revision 1)'),
+                         '1')
+        self.assertEqual(self.tool.parse_diff_revision('(revision 23)'),
+                         '23')
+
+        self.assertRaises(SCMException,
+                          lambda: self.tool.parse_diff_revision('hello'))
 
     def testInterface(self):
         """Sanity checking SVNTool API"""

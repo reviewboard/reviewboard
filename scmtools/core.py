@@ -30,12 +30,18 @@ class FileNotFoundException(Exception):
         self.detail = detail
 
 
-class Revision:
+class Revision(object):
     def __init__(self, name):
         self.name = name
 
     def __str__(self):
         return self.name
+
+    def __eq__(self, other):
+        return self.name == str(other)
+
+    def __repr__(self):
+        return '<Revision: %s>' % self.name
 
 class SCMTool:
     def __init__(self, repopath):

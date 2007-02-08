@@ -12,12 +12,15 @@ class SVNTool(SCMTool):
 
 
     def get_file(self, path, revision=HEAD):
+        if not path:
+            raise FileNotFoundException(path, revision)
+
         if revision == HEAD:
             r = pysvn.Revision(pysvn.opt_revision_kind.head)
         elif revision == PRE_CREATION:
             raise FileNotFoundException(path, revision)
         else:
-            r = pysvn.Revision(pysvn.opt_revision_kind.number, revision)
+            r = pysvn.Revision(pysvn.opt_revision_kind.number, str(revision))
 
         try:
             return self.client.cat(self.__normalize_path(path), r)
