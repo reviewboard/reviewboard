@@ -1,6 +1,6 @@
-from scmtools.core import SCMException, FileNotFoundException, HEAD, SCMTool
-from scmtools.svn import SVNTool
-from scmtools.perforce import PerforceTool
+from reviewboard.scmtools.core import SCMException, FileNotFoundException, HEAD, SCMTool
+from reviewboard.scmtools.svn import SVNTool
+from reviewboard.scmtools.perforce import PerforceTool
 import os
 
 class FooVersionTool(SVNTool):

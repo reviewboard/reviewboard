@@ -1,7 +1,7 @@
-from scmtools.core import SCMException, FileNotFoundException
-from scmtools.core import HEAD, PRE_CREATION
-from scmtools.core import Revision
-from scmtools.svn import SVNTool
+from reviewboard.scmtools.core import SCMException, FileNotFoundException
+from reviewboard.scmtools.core import HEAD, PRE_CREATION
+from reviewboard.scmtools.core import Revision
+from reviewboard.scmtools.svn import SVNTool
 import unittest
 
 class SubversionTests(unittest.TestCase):

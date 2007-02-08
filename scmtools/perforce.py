@@ -1,4 +1,4 @@
-from scmtools.core import *
+from reviewboard.scmtools.core import *
 import re
 
 class PerforceTool(SCMTool):

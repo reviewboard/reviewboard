@@ -1,5 +1,5 @@
-from scmtools.core import SCMException, FileNotFoundException, SCMTool
-from scmtools.core import HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMException, FileNotFoundException, SCMTool
+from reviewboard.scmtools.core import HEAD, PRE_CREATION
 import pysvn
 
 class SVNTool(SCMTool):
