@@ -1,43 +1,29 @@
-from reviewboard.scmtools.core import SCMException, FileNotFoundException, HEAD, SCMTool
+from reviewboard.scmtools.core import SCMException, FileNotFoundException, HEAD
+from reviewboard.scmtools.core import SCMTool, ChangeSet
 from reviewboard.scmtools.svn import SVNTool
-from reviewboard.scmtools.perforce import PerforceTool
 import os
 
 class FooVersionTool(SVNTool):
     """
     Hacky testing version control tool that subclasses the SVN tool in
-    order to get files and calls out to the PerforceTool to parse fake
-    changesets.
+    order to get files and fills the rest with rubbish.
     """
     def __init__(self, repopath):
         SVNTool.__init__(self, repopath)
 
     def get_changeset(self, changesetid):
-        changedesc = "\
-Description:\n\
-    This is my summary.\n\
-    \n\
-    This is a body of text, which can\n\
-    wrap to the next line.\n\
-\n\
-    And skip lines.\n\
-    \n\
-\n\
-    QA Notes:\n\
-    Testing Done: I ate a hamburger and thought, \"Wow, that was rad.\"\n\
-    Note how it carries to the next line, since some people do that.\n\
-    Bug Number: 456123, 12873  1298371\n\
-\n\
-Files:\n\
-    //depot/bora/foo/apps/lib/foo.c\n\
-    //depot/bora/foo/apps/lib/bar.c\n\
-"
-        changedesc = PerforceTool.parse_change_desc(changesetid, changedesc)
+        changedesc = ChangeSet()
+        changedesc.bugs_closed = ['456123', '12873', '1298371']
 
         if not os.popen('fortune').close():
             changedesc.summary = os.popen('fortune -s').readline()
             changedesc.description = os.popen('fortune').read()
             changedesc.testing_done = os.popen('fortune').read()
+        else:
+            changedesc.summary = 'This is my summary.'
+            changedesc.description = 'Blah blah blah.'
+            changedesc.testing_done = \
+                'I ate a hamburger and thought, \"Wow, that was rad.\"'
         return changedesc
 
     def get_pending_changesets(self, userid):
