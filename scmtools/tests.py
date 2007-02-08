@@ -8,7 +8,8 @@ class SubversionTests(unittest.TestCase):
     """Unit tests for subversion.  These will fail if you're offline."""
 
     def setUp(self):
-        self.tool = SVNTool(repopath='http://svn.collab.net/repos/svn/')
+        self.repo = 'http://svn.collab.net/repos/svn/'
+        self.tool = SVNTool(repopath=self.repo)
 
     def testGetFile(self):
         """Checking SVNTool.get_file"""
@@ -17,10 +18,17 @@ class SubversionTests(unittest.TestCase):
                    'hare/doc/subversion\ninclude ../tools/Makefile.base-rul' + \
                    'es\n'
 
-        data = self.tool.get_file('trunk/doc/misc-docs/Makefile',
-                                  Revision('19741'))
+        # There are 3 versions of this test in order to get 100% coverage of
+        # the svn module.
+        rev = Revision('19741')
+        file = 'trunk/doc/misc-docs/Makefile'
 
-        self.assertEqual(data, expected)
+        self.assertEqual(self.tool.get_file(file, rev), expected)
+
+        self.assertEqual(self.tool.get_file('/' + file, rev), expected)
+
+        self.assertEqual(self.tool.get_file(self.repo + '/' + file, rev),
+                         expected)
 
 
         self.assertRaises(FileNotFoundException,

@@ -43,25 +43,6 @@ class SVNTool(SCMTool):
                                revision_str)
 
 
-    def __parse_diff_info_line(self, prefix):
-        pattern = re.compile(r'^%s ([^ ]+) *\((.*)\)' % prefix)
-        result = pattern.search(header)
-        if result == None:
-            return None
-
-        groups = result.groups()
-        return groups[0], self.__parse_diff_revision(groups[1])
-
-
-    def __parse_diff_revision(self, revision):
-        if revision.startswith("revision "):
-            return revision.split()[1]
-        elif revision == "working copy":
-            return HEAD
-        else:
-            raise SCMException("Unknown revision '%s'" % revision)
-
-
     def __normalize_path(self, path):
         if path.startswith(self.repopath):
             return path
