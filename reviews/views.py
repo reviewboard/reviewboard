@@ -311,7 +311,10 @@ def setstatus(request, review_request_id, action):
         raise Http404() # Should never happen. Need a better handler.
 
     review_request.save()
-    return HttpResponseRedirect(review_request.get_absolute_url())
+    if action == 'discard':
+        return HttpResponseRedirect('/reviews/')
+    else:
+        return HttpResponseRedirect(review_request.get_absolute_url())
 
 
 @login_required

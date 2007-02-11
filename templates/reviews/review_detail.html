@@ -78,12 +78,13 @@
 {%  if details.public %}
 {%    ifequal details.status 'P' %}
   <li><a href="submitted/">Set Submitted</a></li>
-  <li><a href="discard/">Discard</a></li>
+  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%    else %}
   <li><a href="reopen/">Reopen for Review</a></li>
 {%    endifequal %}
 {%  else %}
   <li><a href="publish/">Publish</a></li>
+  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
   <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
 {% endifequal %}
@@ -234,11 +235,35 @@
 	}
 
 	function hideDraftBanner() {
-		var node = $('draft');
+		var node = $('draft') || $('discard');
 
 		if (node != null) {
 			$('banner').removeChild(node);
 		}
+	}
+
+	function showDiscardBanner() {
+		$('banner').appendChild(
+			Builder.node('div', {id: 'discard'}, [
+				Builder.node("h1", "Confirm Discard?"),
+				" This cannot be undone.",
+				Builder.node('input', {type: 'submit',
+				                       value: 'Confirm',
+						       onClick: 'discardReview();'}),
+				Builder.node('input', {type: 'submit',
+				                       value: 'Cancel',
+						       onClick: 'hideDraftBanner();'})
+			])
+		);
+	}
+
+	function discardReview() {
+		/*
+		 * The link that can get us here adds a '#', so it has to be
+		 * stripped off.
+		 */
+		loc = String(window.location);
+		window.location = loc.substring(0, loc.length - 1) + 'discard/';
 	}
 
 	registerEditor('summary');
