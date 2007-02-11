@@ -168,10 +168,12 @@ def group_list(request, template_name):
 def dashboard(request, template_name):
     direct_list = ReviewRequest.objects.filter(
         public=True,
-        target_people=request.user)[:50]
+        target_people=request.user,
+        status='P')[:50]
 
     group_list = ReviewRequest.objects.filter(
         public=True,
+        status='P',
         target_groups__in=request.user.groups.all()).exclude(
             id__in=[x.id for x in direct_list]
         )[:50 - len(direct_list)]
