@@ -346,11 +346,8 @@ def review_request_field(request, review_request_id, method, field_name=None):
                 })
 
         if draft_is_new:
-            for group in review_request.target_groups.all():
-                draft.target_groups.add(group)
-
-            for person in review_request.target_people.all():
-                draft.target_people.add(person)
+            map(draft.target_groups.add, review_request.target_groups.all())
+            map(draft.target_people.add, review_request.target_people.all())
 
             if review_request.diffset_history.diffset_set.count() > 0:
                 draft.diffset = \
@@ -374,8 +371,6 @@ def review_request_field(request, review_request_id, method, field_name=None):
                     target.add(obj)
                 except:
                     invalid_entries.append(value)
-
-            #print ', '.join(invalid_entries)
         else:
             setattr(draft, field_name, form_data['value'])
 
