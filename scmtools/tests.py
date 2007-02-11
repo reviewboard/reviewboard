@@ -1,8 +1,41 @@
-from reviewboard.scmtools.core import SCMException, FileNotFoundException
-from reviewboard.scmtools.core import HEAD, PRE_CREATION
-from reviewboard.scmtools.core import Revision
+from django.core.exceptions import ImproperlyConfigured
+from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
+                                      Revision, HEAD, PRE_CREATION, get_tool, \
+                                      ChangeSet
 from reviewboard.scmtools.svn import SVNTool
+from reviewboard.scmtools.perforce import PerforceTool
 import unittest
+
+class CoreTests(unittest.TestCase):
+    """Tests for the scmtools.core module"""
+
+    def testGetTool(self):
+        """Testing tool instantiation"""
+        tool = get_tool('reviewboard.scmtools.svn.SVNTool')
+        self.assertEqual(tool.__class__, SVNTool)
+
+        tool = get_tool('reviewboard.scmtools.perforce.PerforceTool')
+        self.assertEqual(tool.__class__, PerforceTool)
+
+        self.assertRaises(ImproperlyConfigured,
+                          lambda: get_tool('blah.blah'))
+
+        self.assertRaises(ImproperlyConfigured,
+                          lambda: get_tool('reviewboard.scmtools.svn.Foo'))
+
+
+    def testInterface(self):
+        """Sanity checking scmtools.core API"""
+
+        # Empty changeset
+        cs = ChangeSet()
+        self.assertEqual(cs.changenum, None)
+        self.assertEqual(cs.summary, '')
+        self.assertEqual(cs.description, '')
+        self.assertEqual(cs.branch, '')
+        self.assert_(len(cs.bugs_closed) == 0)
+        self.assert_(len(cs.files) == 0)
+
 
 class SubversionTests(unittest.TestCase):
     """Unit tests for subversion.  These will fail if you're offline."""

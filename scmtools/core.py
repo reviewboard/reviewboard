@@ -73,8 +73,7 @@ class SCMTool:
 HEAD = Revision("HEAD")
 PRE_CREATION = Revision("PRE-CREATION")
 
-def get_tool():
-    path = settings.SCMTOOL_BACKEND
+def get_tool(path = settings.SCMTOOL_BACKEND):
     i = path.rfind('.')
     module, attr = path[:i], path[i+1:]
 
