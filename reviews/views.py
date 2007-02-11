@@ -92,12 +92,10 @@ def save_draft(request, object_id):
     review_request.branch = draft.branch
 
     review_request.target_groups.clear()
-    for group in draft.target_groups.all():
-        review_request.target_groups.add(group)
+    map(review_request.target_groups.add, draft.target_groups.all())
 
     review_request.target_people.clear()
-    for person in draft.target_people.all():
-        review_request.target_people.add(person)
+    map(review_request.target_people.add, draft.target_people.all())
 
     if draft.diffset:
         draft.diffset.history = review_request.diffset_history
