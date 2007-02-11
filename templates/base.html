@@ -17,7 +17,7 @@
 
     <ul id="accountnav">
     {% if user.is_authenticated %}
-     <li>Welcome <b>{% ifnotequal user.get_full_name "" %}{{user.get_full_name|escape}}{% else %}{{user.username|escape}}{% endifnotequal %}</b></li>
+     <li>Welcome, <b>{% ifnotequal user.get_full_name "" %}{{user.get_full_name|escape}}{% else %}{{user.username|escape}}{% endifnotequal %}</b></li>
      <li>- <a href="/account/logout/">Log out</a></li>
     {% else %}
      <li><a href="/account/login/">Log in</a></li>
