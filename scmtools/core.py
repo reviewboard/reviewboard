@@ -48,6 +48,9 @@ class SCMTool:
     def __init__(self, repopath):
         self.repopath = repopath
 
+    def connect(self):
+        pass
+
     def get_file(self, path, revision=None):
         raise NotImplementedError
 

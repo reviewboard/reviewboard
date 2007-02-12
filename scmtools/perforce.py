@@ -16,6 +16,8 @@ class PerforceTool(SCMTool):
         self.p4.port = p4port
         self.p4.user = p4user
         self.p4.password = p4password
+
+    def connect(self):
         self.p4.connect()
 
     def get_pending_changesets(self, userid):
