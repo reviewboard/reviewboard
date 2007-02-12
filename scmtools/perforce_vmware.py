@@ -11,79 +11,50 @@ class VMwarePerforceTool(PerforceTool):
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):
-        changeset = ChangeSet()
-        changeset.changenum = changenum
+        changeset = PerforceTool.parse_change_desc(changedesc, changenum)
+        # FIXME: none of this has been tested!
 
-        changedesc_keys = {
-            'QA Notes': "",
-            'Testing Done': "",
-            'Documentation Notes': "",
-            'Bug Number': "",
-            'Reviewed by': "",
-            'Approved by': "",
-            'Breaks vmcore compatibility': "",
-            'Breaks vmkernel compatibility': "",
-            'Breaks vmkdrivers compatibility': "",
-            'Mailto': "",
-        }
+        # VMware's perforce changeset template is basically the basic perforce
+        # one with a bunch of extra fields at the end of the description.  We
+        # leave the summary and file list as-is, and process the description
+        # field to populate a couple more members of the ChangeSet object and
+        # remove a lot of stuff that reviewers don't care about.
+        sections = ['QA Notes:',
+                    'Testing Done:',
+                    'Documentation Notes:',
+                    'Bug Number:',
+                    'Reviewed by:',
+                    'Approved by:',
+                    'Breaks vmcore compatibility:',
+                    'Breaks vmkernel compatibility:',
+                    'Breaks vmkdrivers compatibility:',
+                    'Mailto:']
 
-        process_summary = False
-        process_description = False
-        process_files = False
+        lines = changeset.description.split('\n')
 
-        cur_key = None
+        # First we go through and find the line numbers that start each section.
+        # We then sort these line numbers so we can slice out each individual
+        # section of text.
+        locations = {}
+        for line, i in zip(lines, range(len(lines))):
+            for section in sections:
+                if line.startwith(section):
+                    locations[i] = section
+        section_indices = sorted(locations.keys)
 
-        for line in changedesc.split('\n'):
-            if line == "Description:":
-                process_summary = True
-                continue
-            elif line == "Files:":
-                process_files = True
-                cur_key = None
-                continue
-            elif line.strip() == "":
-                if process_summary:
-                    process_summary = False
-                    process_description = True
-                    continue
+        # The interesting part of the description field contains everything up
+        # to the first marked section.
+        changeset.description = '\n'.join(lines[:section_indices[0]])
 
-                line = ""
-            elif line.startswith("\t") or line.startswith("    "):
-                line = line.lstrip()
+        # Now pull out each individual section.  This gives us a dictionary
+        # mapping section name to a string.
+        sections = {}
+        for start, end in map(None, section_indices, section_indices[1:]):
+            name = locations[start]
+            sections[name] = ' '.join(lines[start:end])[len(name):].strip()
 
-                if process_files:
-                    changeset.files.append(line)
-                    continue
-                elif line.find(':') != -1:
-                    key, value = line.split(':', 2)
-
-                    if changedesc_keys.has_key(key):
-                        process_description = False
-                        cur_key = key
-
-                        changedesc_keys[key] = value.lstrip() + "\n"
-                        continue
-
-            line += "\n"
-
-            if process_summary:
-                changeset.summary += line
-            elif process_description:
-                changeset.description += line
-            elif cur_key != None:
-                changedesc_keys[cur_key] += line
-
-        changeset.summary = changeset.summary.strip()
-        changeset.description = changeset.description.strip()
-        changeset.testing_done = changedesc_keys['Testing Done'].strip()
-        changeset.bugs_closed = re.split(r"[, ]+",
-                                         changedesc_keys['Bug Number'].strip())
-
-        # This is gross.
-        if len(changeset.files) > 0:
-            parts = changeset.files[0].split('/')
-
-            if parts[2] == "depot":
-                changeset.branch = parts[4]
+        changeset.testing_done = sections['Testing Done:']
+        changeset.bugs_closed = re.split(r"[, ]+", sections['Bug Number:'])
+        # FIXME: branch
 
         return changeset

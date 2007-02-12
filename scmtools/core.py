@@ -12,6 +12,7 @@ class ChangeSet:
         self.changenum = None
         self.summary = ""
         self.description = ""
+        self.testing_done = ""
         self.branch = ""
         self.bugs_closed = []
         self.files = []
