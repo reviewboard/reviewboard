@@ -27,6 +27,7 @@ class FooVersionTool(SVNTool):
         return changedesc
 
     def get_pending_changesets(self, userid):
+        # XXX: this is broken
         return [parse_change_desc("12345"),
                 parse_change_desc("314150"),
                 parse_change_desc("202020")]
