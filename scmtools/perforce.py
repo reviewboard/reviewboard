@@ -16,9 +16,17 @@ class PerforceTool(SCMTool):
         self.p4.port = p4port
         self.p4.user = p4user
         self.p4.password = p4password
+        self.p4.connect()
 
     def get_pending_changesets(self, userid):
-        raise NotImplementedError
+        changes = self.p4.run('changes', '-s', 'pending', '-u', userid)
+        # XXX: Not sure what format this will be in.
+        return changes
+
+    def get_changeset(self, changesetid):
+        changeset = self.p4.run('describe', '-s', changesetid)
+        # XXX: postprocess at all?
+        return changeset
 
     @staticmethod
     def parse_change_desc(changenum, changedesc):
