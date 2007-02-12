@@ -28,7 +28,8 @@ class VMwarePerforceTool(PerforceTool):
                     'Breaks vmcore compatibility:',
                     'Breaks vmkernel compatibility:',
                     'Breaks vmkdrivers compatibility:',
-                    'Mailto:']
+                    'Mailto:',
+                    'Merge to:']
 
         lines = changeset.description.split('\n')
 
