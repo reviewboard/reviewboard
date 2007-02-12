@@ -29,9 +29,9 @@ class PerforceTool(SCMTool):
 
     def get_pending_changesets(self, userid):
         self._connect()
-        changenums = [x.split()[1] for x in
-                          self.p4.run_changes('-s', 'pending', '-u', userid)]
-        return map(self.get_changeset, changenums)
+        return map(self.get_changeset,
+                   [x.split()[1] for x in
+                       self.p4.run_changes('-s', 'pending', '-u', userid)])
 
     def get_changeset(self, changesetid):
         self._connect()
