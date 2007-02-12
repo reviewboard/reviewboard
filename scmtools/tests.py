@@ -1,10 +1,12 @@
+import unittest
+
 from django.core.exceptions import ImproperlyConfigured
+
 from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
                                       Revision, HEAD, PRE_CREATION, get_tool, \
                                       ChangeSet
 from reviewboard.scmtools.svn import SVNTool
 from reviewboard.scmtools.perforce import PerforceTool
-import unittest
 
 class CoreTests(unittest.TestCase):
     """Tests for the scmtools.core module"""
@@ -95,3 +97,8 @@ class SubversionTests(unittest.TestCase):
 
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_pending_changesets(1))
+
+
+class PerforceTests(unittest.TestCase):
+    """Unit tests for perforce."""
+    pass

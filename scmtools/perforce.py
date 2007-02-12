@@ -1,9 +1,24 @@
-from reviewboard.scmtools.core import *
 import re
 
+from django.conf import settings
+
+from reviewboard.scmtools.core import *
+
 class PerforceTool(SCMTool):
-    def __init__(self, repopath):
+    def __init__(self, repopath,
+                 p4port = settings.P4_PORT,
+                 p4user = settings.P4_USER,
+                 p4password = settings.P4_PASSWORD):
         SCMTool.__init__(self, repopath)
+
+        import p4
+        self.p4 = p4.P4()
+        self.p4.port = p4port
+        self.p4.user = p4user
+        self.p4.password = p4password
+
+    def get_pending_changesets(self, userid):
+        raise NotImplementedError
 
     @staticmethod
     def parse_change_desc(changenum, changedesc):

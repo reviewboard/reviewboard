@@ -88,6 +88,15 @@ LOGIN_URL = '/account/login'
 # CACHE_BACKEND is specified in settings_local.py
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 
+# Default values for the perforce SCMTool.  These should be overridden in
+# settings_local.py, but exist here so you can import scmtools.perforce
+P4_PORT = ''
+P4_USER = ''
+P4_PASSWORD = ''
+
+# Custom test runner, which uses nose to find tests and execute them.  This
+# gives us a somewhat more comprehensive test execution than django's built-in
+# runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.runner'
 
 # Load local settings.  This can override anything in here, but at the very
