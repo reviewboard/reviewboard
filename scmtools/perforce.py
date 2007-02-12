@@ -35,8 +35,8 @@ class PerforceTool(SCMTool):
 
     def get_changeset(self, changesetid):
         self._connect()
-        return parse_change_desc(
-            '\n'.join(self.p4.run_describe('-s', str(changesetid))),
+        return self.parse_change_desc(
+            self.p4.run_describe('-s', str(changesetid)),
             changesetid)
 
     def get_file(self, path, revision=None):
@@ -58,6 +58,32 @@ class PerforceTool(SCMTool):
         changeset = ChangeSet()
         changeset.changenum = changenum
 
-        # FIXME: parse what little perforce gives us
+        # At it's most basic, a perforce changeset description has three
+        # sections.
+        #
+        # ---------------------------------------------------------
+        # Change <num> by <user>@<client> on <timestamp> *pending*
+        #
+        #         description...
+        #         this can be any number of lines
+        #
+        # Affected files ...
+        #
+        # //depot/branch/etc/file.cc#<revision> branch
+        # //depot/branch/etc/file.hh#<revision> delete
+        # ---------------------------------------------------------
+        #
+        # At the moment, we only care about the description and the list of
+        # files.  We take the first line of the description as the summary.
+        description = '\n'.join(changedesc[1:])
+        file_header = re.search('Affected files ...', description)
+
+        changeset.description = '\n'.join(filter(lambda x: len(x),
+            [x.strip() for x in
+                description[:file_header.start() - 1].split('\n')]))
+        changeset.summary = changeset.description.split('\n', 1)[0]
+        changeset.files = filter(lambda x: len(x),
+            [x.strip().split('#', 1)[0] for x in
+                description[file_header.end():].split('\n')])
 
         return changeset

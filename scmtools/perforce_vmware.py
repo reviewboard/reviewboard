@@ -33,7 +33,7 @@ class VMwarePerforceTool(PerforceTool):
 
         cur_key = None
 
-        for line in changedesc.split("\n"):
+        for line in changedesc.split('\n'):
             if line == "Description:":
                 process_summary = True
                 continue

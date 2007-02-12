@@ -114,7 +114,21 @@ class PerforceTests(unittest.TestCase):
         """Checking PerforceTool.get_changeset"""
 
         desc = self.tool.get_changeset(157)
-        self.assertEqual(hash(desc), -310125428)
+        self.assertEqual(desc.changenum, 157)
+        self.assertEqual(hash(desc.description), -209144366)
+
+        expected_files = [
+            '//public/perforce/api/python/P4Client/P4Clientmodule.cc',
+            '//public/perforce/api/python/P4Client/p4.py',
+            '//public/perforce/api/python/P4Client/review.py',
+            '//public/perforce/python/P4Client/P4Clientmodule.cc',
+            '//public/perforce/python/P4Client/p4.py',
+            '//public/perforce/python/P4Client/review.py',
+        ]
+        for file, expected in zip(desc.files, expected_files):
+            self.assertEqual(file, expected)
+
+        self.assertEqual(hash(desc.summary), 588429333)
 
     def testGetFile(self):
         """Checking PerforceTool.get_file"""
