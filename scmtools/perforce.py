@@ -29,13 +29,15 @@ class PerforceTool(SCMTool):
 
     def get_pending_changesets(self, userid):
         self._connect()
-        changes = self.p4.run_changes('-s', 'pending', '-u', userid)
-        # XXX: This will need to parse the result
-        return changes
+        changenums = [x.split()[1] for x in
+                          self.p4.run_changes('-s', 'pending', '-u', userid)]
+        return map(self.get_changeset, changenums)
 
     def get_changeset(self, changesetid):
         self._connect()
-        return '\n'.join(self.p4.run_describe('-s', str(changesetid)))
+        return parse_change_desc(
+            '\n'.join(self.p4.run_describe('-s', str(changesetid))),
+            changesetid)
 
     def get_file(self, path, revision=None):
         self._connect()
@@ -52,7 +54,7 @@ class PerforceTool(SCMTool):
         return '\n'.join(self.p4.run_print(path))
 
     @staticmethod
-    def parse_change_desc(changenum, changedesc):
+    def parse_change_desc(changedesc, changenum):
         changeset = ChangeSet()
         changeset.changenum = changenum
 

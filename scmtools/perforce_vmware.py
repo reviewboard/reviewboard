@@ -10,7 +10,7 @@ class VMwarePerforceTool(PerforceTool):
        """
 
     @staticmethod
-    def parse_change_desc(changenum, changedesc):
+    def parse_change_desc(changedesc, changenum):
         changeset = ChangeSet()
         changeset.changenum = changenum
 
