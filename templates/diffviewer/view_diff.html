@@ -219,9 +219,9 @@ function toggleChunkCollapse(tbody) {
  </div>
  <ul class="controls">
 {% if collapseall %}
-  <li><a href=".">Expand changes</a></li>
+  <li><a href="."><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> Expand changes</a></li>
 {% else %}
-  <li><a href="{{request.path}}?collapse=1">Collapse changes</a></li>
+  <li><a href="{{request.path}}?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> Collapse changes</a></li>
 {% endif %}
  </ul>
 </div>
