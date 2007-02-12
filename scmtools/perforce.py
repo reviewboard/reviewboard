@@ -5,30 +5,33 @@ from django.conf import settings
 from reviewboard.scmtools.core import *
 
 class PerforceTool(SCMTool):
-    def __init__(self, repopath,
+    def __init__(self,
                  p4port = settings.P4_PORT,
                  p4user = settings.P4_USER,
                  p4password = settings.P4_PASSWORD):
-        SCMTool.__init__(self, repopath)
+        SCMTool.__init__(self, p4port)
 
         import p4
         self.p4 = p4.P4()
         self.p4.port = p4port
         self.p4.user = p4user
         self.p4.password = p4password
+        self.connected = False
 
     def _connect(self):
-        self.p4.connect()
+        if not self.connected or self.p4.dropped():
+            self.p4.connect()
+            self.connected = True
 
     def get_pending_changesets(self, userid):
-        changes = self.p4.run('changes', '-s', 'pending', '-u', userid)
-        # XXX: Not sure what format this will be in.
+        self._connect()
+        changes = self.p4.run_changes('-s', 'pending', '-u', userid)
+        # XXX: This will need to parse the result
         return changes
 
     def get_changeset(self, changesetid):
-        changeset = self.p4.run('describe', '-s', changesetid)
-        # XXX: postprocess at all?
-        return changeset
+        self._connect()
+        return '\n'.join(self.p4.run_describe('-s', str(changesetid)))
 
     @staticmethod
     def parse_change_desc(changenum, changedesc):

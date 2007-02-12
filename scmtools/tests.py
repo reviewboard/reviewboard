@@ -101,4 +101,12 @@ class SubversionTests(unittest.TestCase):
 
 class PerforceTests(unittest.TestCase):
     """Unit tests for perforce."""
-    pass
+
+    def setUp(self):
+        self.tool = PerforceTool('public.perforce.com:1666')
+
+    def testChangeset(self):
+        """Checking PerforceTool.get_changeset"""
+
+        desc = self.tool.get_changeset(157)
+        self.assertEqual(hash(desc), -310125428)
