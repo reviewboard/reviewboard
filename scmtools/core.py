@@ -42,6 +42,9 @@ class Revision(object):
     def __eq__(self, other):
         return self.name == str(other)
 
+    def __ne__(self, other):
+        return self.name != str(other)
+
     def __repr__(self):
         return '<Revision: %s>' % self.name
 
