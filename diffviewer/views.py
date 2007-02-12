@@ -4,10 +4,10 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from djblets.util import cache_memoize
-from popen2 import Popen3
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-import os, sys, tempfile, traceback
+import sys, traceback
+import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.scmtools as scmtools
 from scmtools import HEAD, PRE_CREATION
 
@@ -25,63 +25,10 @@ def get_diff_files(diffset):
         except Exception, e:
             raise UserVisibleError(str(e))
 
-    def patch(diff, file, filename):
-        """Apply a diff to a file.  Delegates out to `patch` because noone
-           except Larry Wall knows how to patch."""
-        (fd, oldfile) = tempfile.mkstemp()
-        f = os.fdopen(fd, "w+b")
-        f.write(file)
-        f.close()
-
-        newfile = '%s-new' % oldfile
-        p = Popen3('patch -o %s %s' % (newfile, oldfile))
-        p.tochild.write(diff)
-        p.tochild.close()
-        failure = p.wait()
-
-        if failure:
-            os.unlink(oldfile)
-            os.unlink(newfile)
-
-            try:
-                os.unlink(newfile + ".rej")
-            except:
-                pass
-
-            raise UserVisibleError(("The patch to '%s' didn't apply cleanly. " +
-                                    "`patch` returned: %s") %
-                                   (filename, p.fromchild.read()))
-
-        f = open(newfile, "r")
-        data = f.read()
-        f.close()
-
-        os.unlink(oldfile)
-        os.unlink(newfile)
-
-        return data
-
     def get_chunks(filediff):
         def diff_line(linenum, oldline, newline):
-            if oldline is None or newline is None:
-                return [linenum, oldline or "", None, newline or "", None]
-
-            s = SequenceMatcher(None, oldline, newline)
-            oldchanges = []
-            newchanges = []
-            back = (0, 0)
-
-            for tag, i1, i2, j1, j2 in s.get_opcodes():
-                if tag == "equal":
-                    if (i2 - i1 < 3) or (j2 - j1 < 3):
-                        back = (j2 - j1, i2 - i1)
-                    continue
-
-                oldchanges.append((i1 - back[0], i2))
-                newchanges.append((j1 - back[1], j2))
-                back = (0, 0)
-
-            return [linenum, oldline, oldchanges, newline, newchanges]
+            region = diffutils.get_line_changed_regions(oldline, newline)
+            return [linenum, oldline or "", region[0], newline or "", region[1]]
 
         def new_chunk(lines, numlines, tag, collapsable=False):
             return {
@@ -104,7 +51,7 @@ def get_diff_files(diffset):
         else:
             old = get_original_file(filediff.source_file, revision)
 
-        new = patch(filediff.diff, old, filediff.dest_file)
+        new = diffutils.patch(filediff.diff, old, filediff.dest_file)
 
         a = (old or '').splitlines(True)
         b = (new or '').splitlines(True)
@@ -119,8 +66,6 @@ def get_diff_files(diffset):
             numlines = max(len(oldlines), len(newlines))
             lines = map(diff_line,
                         range(linenum, linenum + numlines), oldlines, newlines)
-            #lines = map(lambda i,x,y: [i, x or "", y or ""],
-            #            range(linenum, linenum + numlines), oldlines, newlines)
             linenum += numlines
 
             if tag == 'equal' and \
