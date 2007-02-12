@@ -1,6 +1,7 @@
 from django import template
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
+from django.utils.html import escape
 from reviewboard.diffviewer.views import get_diff_files
 
 register = template.Library()
@@ -83,3 +84,21 @@ def forchunkswithlines(parser, token):
 
     return ForChunksWithLines(filediff, first_line, num_lines,
                               nodelist_loop)
+
+
+@register.filter
+def highlightregion(value, r):
+    if r == None:
+        return escape(value)
+    else:
+        prev = 0
+        s = ""
+
+        for i, j in r:
+            s += "%s<span class=\"hl\">%s</span>" % \
+                 (escape(value[prev:i]), escape(value[i:j]))
+            prev = j
+
+        s += escape(value[prev:])
+
+        return s

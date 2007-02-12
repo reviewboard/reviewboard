@@ -62,6 +62,27 @@ def get_diff_files(diffset):
         return data
 
     def get_chunks(filediff):
+        def diff_line(linenum, oldline, newline):
+            if oldline is None or newline is None:
+                return [linenum, oldline or "", None, newline or "", None]
+
+            s = SequenceMatcher(None, oldline, newline)
+            oldchanges = []
+            newchanges = []
+            back = (0, 0)
+
+            for tag, i1, i2, j1, j2 in s.get_opcodes():
+                if tag == "equal":
+                    if (i2 - i1 < 3) or (j2 - j1 < 3):
+                        back = (j2 - j1, i2 - i1)
+                    continue
+
+                oldchanges.append((i1 - back[0], i2))
+                newchanges.append((j1 - back[1], j2))
+                back = (0, 0)
+
+            return [linenum, oldline, oldchanges, newline, newchanges]
+
         def new_chunk(lines, numlines, tag, collapsable=False):
             return {
                 'lines': lines,
@@ -96,8 +117,10 @@ def get_diff_files(diffset):
             oldlines = a[i1:i2]
             newlines = b[j1:j2]
             numlines = max(len(oldlines), len(newlines))
-            lines = map(lambda i,x,y: [i, x or "", y or ""],
+            lines = map(diff_line,
                         range(linenum, linenum + numlines), oldlines, newlines)
+            #lines = map(lambda i,x,y: [i, x or "", y or ""],
+            #            range(linenum, linenum + numlines), oldlines, newlines)
             linenum += numlines
 
             if tag == 'equal' and \
