@@ -50,7 +50,7 @@ class PerforceTool(SCMTool):
         else:
             file = '%s@%s' % (path, revision)
 
-        return '\n'.join(self.p4.run_print(path))
+        return '\n'.join(self.p4.run_print(file))
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):
