@@ -100,7 +100,12 @@ class SubversionTests(unittest.TestCase):
 
 
 class PerforceTests(unittest.TestCase):
-    """Unit tests for perforce."""
+    """Unit tests for perforce.
+
+       This uses the open server at public.perforce.com to test various
+       pieces.  Because we have no control over things like pending
+       changesets, not everything can be tested.
+       """
 
     def setUp(self):
         self.tool = PerforceTool('public.perforce.com:1666')

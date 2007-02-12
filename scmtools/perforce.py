@@ -35,7 +35,17 @@ class PerforceTool(SCMTool):
 
     def get_file(self, path, revision=None):
         self._connect()
-        return '\n'.join(self.p4.run_print('%s@%s' % (path, revision)))
+
+        file = path
+        if revision:
+            if revision == PRE_CREATION:
+                file = '%s@0' % path
+            elif revision == HEAD:
+                pass
+            else:
+                file = '%s@%s' % (path, revision)
+
+        return '\n'.join(self.p4.run_print(path))
 
     @staticmethod
     def parse_change_desc(changenum, changedesc):
