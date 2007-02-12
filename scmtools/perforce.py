@@ -33,6 +33,10 @@ class PerforceTool(SCMTool):
         self._connect()
         return '\n'.join(self.p4.run_describe('-s', str(changesetid)))
 
+    def get_file(self, path, revision=None):
+        self._connect()
+        return '\n'.join(self.p4.run_print('%s@%s' % (path, revision)))
+
     @staticmethod
     def parse_change_desc(changenum, changedesc):
         changeset = ChangeSet()

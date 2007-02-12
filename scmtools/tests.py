@@ -110,3 +110,10 @@ class PerforceTests(unittest.TestCase):
 
         desc = self.tool.get_changeset(157)
         self.assertEqual(hash(desc), -310125428)
+
+    def testGetFile(self):
+        """Checking PerforceTool.get_file"""
+
+        file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py',
+                                  157)
+        self.assertEqual(hash(file), 1241177531)
