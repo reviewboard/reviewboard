@@ -66,6 +66,9 @@ class SubversionTests(unittest.TestCase):
                          expected)
 
 
+        self.assert_(self.tool.file_exists('trunk/doc/misc-docs/Makefile'))
+        self.assert_(not self.tool.file_exists('trunk/doc/misc-docs/Makefile2'))
+
         self.assertRaises(FileNotFoundException,
                           lambda: self.tool.get_file(''))
 

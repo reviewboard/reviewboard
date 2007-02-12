@@ -39,17 +39,16 @@ class PerforceTool(SCMTool):
             self.p4.run_describe('-s', str(changesetid)),
             changesetid)
 
-    def get_file(self, path, revision=None):
+    def get_file(self, path, revision=HEAD):
         self._connect()
 
-        file = path
-        if revision:
-            if revision == PRE_CREATION:
-                file = '%s@0' % path
-            elif revision == HEAD:
-                pass
-            else:
-                file = '%s@%s' % (path, revision)
+        if revision == PRE_CREATION:
+            return ''
+
+        if revision == HEAD:
+            file = path
+        else:
+            file = '%s@%s' % (path, revision)
 
         return '\n'.join(self.p4.run_print(path))
 
@@ -75,12 +74,16 @@ class PerforceTool(SCMTool):
         #
         # At the moment, we only care about the description and the list of
         # files.  We take the first line of the description as the summary.
+        #
+        # We start by chopping off the first line (which we don't care about
+        # right now).  We then split everything around the 'Affected files ...'
+        # line, and process the results.
         description = '\n'.join(changedesc[1:])
         file_header = re.search('Affected files ...', description)
 
         changeset.description = '\n'.join(filter(lambda x: len(x),
             [x.strip() for x in
-                description[:file_header.start() - 1].split('\n')]))
+                description[:file_header.start()].split('\n')]))
         changeset.summary = changeset.description.split('\n', 1)[0]
         changeset.files = filter(lambda x: len(x),
             [x.strip().split('#', 1)[0] for x in

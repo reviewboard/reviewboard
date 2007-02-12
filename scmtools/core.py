@@ -44,6 +44,11 @@ class Revision(object):
     def __repr__(self):
         return '<Revision: %s>' % self.name
 
+
+HEAD = Revision("HEAD")
+PRE_CREATION = Revision("PRE-CREATION")
+
+
 class SCMTool:
     def __init__(self, repopath):
         self.repopath = repopath
@@ -51,7 +56,7 @@ class SCMTool:
     def get_file(self, path, revision=None):
         raise NotImplementedError
 
-    def file_exists(self, path, revision=None):
+    def file_exists(self, path, revision=HEAD):
         try:
             self.get_file(path, revision)
             return True
@@ -70,9 +75,6 @@ class SCMTool:
     def get_pending_changesets(self, userid):
         raise NotImplementedError
 
-
-HEAD = Revision("HEAD")
-PRE_CREATION = Revision("PRE-CREATION")
 
 def get_tool(path = settings.SCMTOOL_BACKEND):
     i = path.rfind('.')
