@@ -186,7 +186,6 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     try:
         files = get_diff_files(diffset)
-        print dir(request.path)
 
         return render_to_response(template_name, RequestContext(request, {
             'diffset': diffset,
