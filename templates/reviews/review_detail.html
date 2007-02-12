@@ -22,8 +22,10 @@
     <td id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></td>
     <td id="created_time" nowrap="nowrap">Created {{object.time_added|timesince}} ago</td>
    </tr>
-	<td id="status">{{object.get_status_display}}</td>
+   <tr>
+    <td id="status">{{object.get_status_display}}</td>
     <td id="updated_time" nowrap="nowrap">Last updated {{details.last_updated|timesince}} ago</td>
+   </tr>
   </table>
   <table id="details">
    <colgroup>

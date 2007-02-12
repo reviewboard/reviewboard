@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -24,7 +25,7 @@ def get_diff_files(diffset):
         except Exception, e:
             raise UserVisibleError(str(e))
 
-    def patch(diff, file):
+    def patch(diff, file, filename):
         """Apply a diff to a file.  Delegates out to `patch` because noone
            except Larry Wall knows how to patch."""
         (fd, oldfile) = tempfile.mkstemp()
@@ -41,8 +42,15 @@ def get_diff_files(diffset):
         if failure:
             os.unlink(oldfile)
             os.unlink(newfile)
-            raise UserVisibleError("The patch didn't apply cleanly: %s" %
-                p.fromchild.read())
+
+            try:
+                os.unlink(newfile + ".rej")
+            except:
+                pass
+
+            raise UserVisibleError(("The patch to '%s' didn't apply cleanly. " +
+                                    "`patch` returned: %s") %
+                                   (filename, p.fromchild.read()))
 
         f = open(newfile, "r")
         data = f.read()
@@ -54,6 +62,19 @@ def get_diff_files(diffset):
         return data
 
     def get_chunks(filediff):
+        def new_chunk(lines, numlines, tag, collapsable=False):
+            return {
+                'lines': lines,
+                'numlines': numlines,
+                'change': tag,
+                'collapsable': collapsable,
+            }
+
+        def add_ranged_chunks(lines, start, end, collapsable=False):
+            numlines = end - start
+            chunks.append(new_chunk(lines[start:end], end - start, 'equal',
+                          collapsable))
+
         revision = \
             scmtools.get_tool().parse_diff_revision(filediff.source_detail)
 
@@ -62,10 +83,12 @@ def get_diff_files(diffset):
         else:
             old = get_original_file(filediff.source_file, revision)
 
-        new = patch(filediff.diff, old)
+        new = patch(filediff.diff, old, filediff.dest_file)
 
         a = (old or '').splitlines(True)
         b = (new or '').splitlines(True)
+        a_num_lines = len(a)
+        b_num_lines = len(b)
 
         chunks = []
         linenum = 1
@@ -76,11 +99,28 @@ def get_diff_files(diffset):
             lines = map(lambda i,x,y: [i, x or "", y or ""],
                         range(linenum, linenum + numlines), oldlines, newlines)
             linenum += numlines
-            chunks.append({
-                'lines': lines,
-                'numlines': numlines,
-                'change': tag,
-            })
+
+            if tag == 'equal' and \
+               numlines >= settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
+                last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
+
+                if len(chunks) == 0:
+                    add_ranged_chunks(lines, 0, last_range_start, True)
+                    add_ranged_chunks(lines, last_range_start, numlines)
+                else:
+                    add_ranged_chunks(lines, 0, settings.DIFF_CONTEXT_NUM_LINES)
+
+                    if i2 == a_num_lines and j2 == b_num_lines:
+                        add_ranged_chunks(lines,
+                                          settings.DIFF_CONTEXT_NUM_LINES,
+                                          numlines, True)
+                    else:
+                        add_ranged_chunks(lines,
+                                          settings.DIFF_CONTEXT_NUM_LINES,
+                                          last_range_start, True)
+                        add_ranged_chunks(lines, last_range_start, numlines)
+            else:
+                chunks.append(new_chunk(lines, numlines, tag))
 
         return chunks
 
@@ -97,6 +137,8 @@ def get_diff_files(diffset):
                     interesting.append(chunk)
                     indices.append((i, k))
                     k += 1
+
+            file['num_changes'] = k - 1
 
         for chunk, previous, current, next in zip(interesting,
                                                   [None] + indices[:-1],
@@ -144,9 +186,12 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
 
     try:
         files = get_diff_files(diffset)
+        print dir(request.path)
+
         return render_to_response(template_name, RequestContext(request, {
             'diffset': diffset,
             'files': files,
+            'collapseall': request.GET.get('collapse', False)
         }))
     except Exception, e:
         context = { 'error': e, }

@@ -99,6 +99,10 @@ P4_PASSWORD = ''
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.runner'
 
+# Default diff settings
+DIFF_CONTEXT_NUM_LINES = 5
+DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 from settings_local import *

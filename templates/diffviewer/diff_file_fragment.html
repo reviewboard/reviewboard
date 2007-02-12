@@ -20,7 +20,8 @@
   </tr>
  </thead>
 {% for chunk in file.chunks %}
- <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% endifnotequal %}>
+{%  if not chunk.collapsable or not collapseall %}
+ <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
   <tr>
    <th class="controls" rowspan="{{chunk.numlines}}">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</td>
 {% for line in chunk.lines %}
@@ -33,5 +34,14 @@
 {% endif %}
 {% endfor %}
  </tbody>
+{% else %}
+ <tbody class="collapsed">
+  <tr>
+   <th class="controls">&nbsp;</th>
+   <th>...</th>
+   <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden</td>
+  </tr>
+ </tbody>
+{% endif %}
 {% endfor %}
 </table>

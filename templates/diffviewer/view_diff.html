@@ -14,6 +14,7 @@ var BACKWARD = -1;
 var FORWARD  = 1;
 var INVALID  = -1;
 var DIFF_SCROLLDOWN_AMOUNT = 100;
+var VISIBLE_CONTEXT_SIZE = 5;
 
 var gActions = [
 	{ // Previous file
@@ -186,15 +187,50 @@ function SetHighlighted(anchor, highlighted) {
 		controlsNode.nodeValue = "";
 	}
 }
+
+function toggleChunkCollapse(tbody) {
+	for (var i = VISIBLE_CONTEXT_SIZE;
+	     i < tbody.rows.length - VISIBLE_CONTEXT_SIZE;
+		 i++) {
+
+		tbody.rows[i].toggle();
+	}
+}
 </script>
+
+<div id="review-request">
+ <div class="main">
+  <table class="header">
+   <colgroup>
+    <col width="100%" />
+    <col />
+   </colgroup>
+   <tr>
+    <td id="summary_wrapper"><h1 id="summary"><a href="{{diffset.history.reviewrequest_set.get.get_absolute_url}}">{{diffset.history.reviewrequest_set.get.summary}}</a></h1></td>
+    <td id="diff_revision" nowrap="nowrap">Diff revision {{diffset.revision}}</td>
+   </tr>
+   <tr>
+    <td id="status">{{diffset.history.reviewrequest_set.get.get_status_display}}</td>
+    <td id="created_time" nowrap="nowrap">Uploaded {{diffset.timestamp|timesince}} ago</td>
+   </tr>
+  </table>
+  <a name="index_header"></a>
+{% include "diffviewer/changeindex.html" %}
+ </div>
+ <ul class="controls">
+{% if collapseall %}
+  <li><a href=".">Expand changes</a></li>
+{% else %}
+  <li><a href="{{request.path}}?collapse=1">Collapse changes</a></li>
+{% endif %}
+ </ul>
+</div>
 
 <div id="diffs">
 {% if error %}
  {{ error }}
  {% if trace %}<pre>{{ trace }}</pre>{% endif %}
 {% else %}
-<a name="index_header"></a>
-{% include "diffviewer/changeindex.html" %}
 
 {% for file in files %}
 <a name="{{file.index}}"></a>
