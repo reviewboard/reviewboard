@@ -36,7 +36,7 @@ class VMwarePerforceTool(PerforceTool):
         # We then sort these line numbers so we can slice out each individual
         # section of text.
         locations = {}
-        for line, i in zip(lines, range(len(lines))):
+        for i, line in enumerate(lines):
             for section in sections:
                 if line.startswith(section):
                     locations[i] = section

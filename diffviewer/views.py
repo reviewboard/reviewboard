@@ -97,10 +97,10 @@ def get_diff_files(diffset):
         # FIXME: this modifies in-place right now, which is kind of ugly
         interesting = []
         indices = []
-        for i, file in zip(range(len(files)), files):
+        for i, file in enumerate(files):
             file['index'] = i
             k = 1
-            for j, chunk in zip(range(len(file['chunks'])), file['chunks']):
+            for j, chunk in enumerate(file['chunks']):
                 if chunk['change'] != 'equal':
                     interesting.append(chunk)
                     indices.append((i, k))

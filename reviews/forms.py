@@ -1,8 +1,11 @@
-from django import newforms as forms
-from reviewboard.diffviewer.models import DiffSetHistory
-from django.contrib.auth.models import User, Group
-from reviewboard.reviews.models import ReviewRequest
 import re
+
+from django import newforms as forms
+from django.contrib.auth.models import User, Group
+from djblets.images.widgets import ImageWidget
+
+from reviewboard.diffviewer.models import DiffSetHistory
+from reviewboard.reviews.models import ReviewRequest
 
 class NewReviewRequestForm(forms.Form):
     summary = forms.CharField(max_length=300)
@@ -12,6 +15,7 @@ class NewReviewRequestForm(forms.Form):
     branch = forms.CharField()
     target_groups = forms.CharField()
     target_people = forms.CharField()
+    images = forms.CharField(widget=ImageWidget)
 
     @staticmethod
     def create_from_list(data, constructor, error):
