@@ -204,8 +204,8 @@
 					$('servererror').innerHTML = transport.responseText;
 					alert("Saving the draft has failed due to a server " +
 					      "error. Please try again later. If this " +
-						  "continues to happen, please report it to your " +
-						  "administrator.");
+					      "continues to happen, please report it to your " +
+					      "administrator.");
 				}
 			});
 	}
@@ -218,8 +218,8 @@
 				onFailure: function() {
 					alert("Reverting the draft has failed due to a server " +
 					      "error. Please try again later. If this " +
-						  "continues to happen, please report it to your " +
-						  "administrator.");
+					      "continues to happen, please report it to your " +
+					      "administrator.");
 				}
 			});
 	}
@@ -231,9 +231,9 @@
 					Builder.node("h1", "This is a draft."),
 					" Be sure to save when finished.",
 					Builder.node('input', {type: 'submit', value: 'Save',
-										   onClick: 'submitDraft();'}),
+					             onClick: 'submitDraft();'}),
 					Builder.node('input', {type: 'submit', value: 'Revert',
-										   onClick: 'revertDraft();'})
+					             onClick: 'revertDraft();'})
 				])
 			);
 		}
@@ -254,10 +254,10 @@
 				" This cannot be undone.",
 				Builder.node('input', {type: 'submit',
 				                       value: 'Confirm',
-						       onClick: 'discardReview();'}),
+				                       onClick: 'discardReview();'}),
 				Builder.node('input', {type: 'submit',
 				                       value: 'Cancel',
-						       onClick: 'hideDraftBanner();'})
+				                       onClick: 'hideDraftBanner();'})
 			])
 		);
 	}
@@ -276,7 +276,7 @@
 	registerMultiEditor('description');
 	registerMultiEditor('testing_done');
 	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=',
-		'bugs_closed');
+	                        'bugs_closed');
 	registerCommaListEditor('/groups/', 'target_groups');
 	registerCommaListEditor('/users/', 'target_people');
 
