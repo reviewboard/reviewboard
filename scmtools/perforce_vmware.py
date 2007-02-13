@@ -12,7 +12,6 @@ class VMwarePerforceTool(PerforceTool):
     @staticmethod
     def parse_change_desc(changedesc, changenum):
         changeset = PerforceTool.parse_change_desc(changedesc, changenum)
-        # FIXME: none of this has been tested!
 
         # VMware's perforce changeset template is basically the basic perforce
         # one with a bunch of extra fields at the end of the description.  We
@@ -56,6 +55,6 @@ class VMwarePerforceTool(PerforceTool):
 
         changeset.testing_done = sections['Testing Done:']
         changeset.bugs_closed = re.split(r"[, ]+", sections['Bug Number:'])
-        # FIXME: branch
+        # FIXME: branch?
 
         return changeset
