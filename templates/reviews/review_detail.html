@@ -74,6 +74,10 @@
    <label for="testing_done">Testing Done:</label>
    <pre><div id="testing_done">{{details.testing_done|escape}}</div></pre>
   </div>
+  <div class="content">
+   <label for="images">Images:</label>
+   <div id="images">{{details.images}}</div>
+  </div>
  </div>
  <ul class="controls">
 {% ifequal request.user object.submitter %}
@@ -118,7 +122,7 @@
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">
-    function addEditIcon(field, inline) {
+	function addEditIcon(field, inline) {
 		var node = $(field);
 
 		var imgtext = " <img src='/images/edit.png' width='14' height='14' " +
@@ -128,23 +132,23 @@
 			new Insertion.After(node, imgtext);
 		} else {
 			new Insertion.Bottom(
-                node.parentNode.previousSibling.previousSibling, imgtext);
+				node.parentNode.previousSibling.previousSibling, imgtext);
 		}
-    }
+	}
 
-    function onEditFailure(transport) {
-        $('servererror').innerHTML = transport.responseText;
-    }
+	function onEditFailure(transport) {
+		$('servererror').innerHTML = transport.responseText;
+	}
 
-    function onEditComplete(transport) {
-        if (transport != null) {
-            showDraftBanner();
-        }
-    }
+	function onEditComplete(transport) {
+		if (transport != null) {
+			showDraftBanner();
+		}
+	}
 
 	function registerEditorCommon(field, rows, cols, bgcolor) {
-        addEditIcon(field, rows == 1);
-        var url = 'json/' + field + '/';
+		addEditIcon(field, rows == 1);
+		var url = 'json/' + field + '/';
 
 		return new RB.InlineEditor(field, url,
 			{
@@ -157,32 +161,31 @@
 			});
 	}
 
-    function registerCommaListEditor(path_prefix, field) {
-        addEditIcon(field, true);
+	function registerCommaListEditor(path_prefix, field) {
+		addEditIcon(field, true);
 		var url = 'json/' + field + '/';
 
-		return new RB.InlineCommaListEditor(field, url,
-			{
-				externalControl: field + "_edit",
-				highlightendcolor: '#fffad3',
-				onFailure: onEditFailure,
-				onComplete: function(transport, element, list) {
-					var str = "";
-					for (var i = 0; i < list.length; i++) {
-						list[i] = list[i].stripTags().strip();
-						str += "<a href=\"" + path_prefix + list[i] + "\">";
-						str += list[i] + "</a>";
+		return new RB.InlineCommaListEditor(field, url, {
+			externalControl: field + "_edit",
+			highlightendcolor: '#fffad3',
+			onFailure: onEditFailure,
+			onComplete: function(transport, element, list) {
+				var str = "";
+				for (var i = 0; i < list.length; i++) {
+					list[i] = list[i].stripTags().strip();
+					str += "<a href=\"" + path_prefix + list[i] + "\">";
+					str += list[i] + "</a>";
 
-						if (i < list.length - 1) {
-							str += ", ";
-						}
+					if (i < list.length - 1) {
+						str += ", ";
 					}
+				}
 
-                    element.innerHTML = str;
-                    onEditComplete(transport);
-                }
-			});
-    }
+				element.innerHTML = str;
+				onEditComplete(transport);
+			}
+		});
+	}
 
 	function registerEditor(field) {
 		return registerEditorCommon(field, 1, 50, '#fffad3');
@@ -273,7 +276,7 @@
 	registerMultiEditor('description');
 	registerMultiEditor('testing_done');
 	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=',
-							'bugs_closed');
+		'bugs_closed');
 	registerCommaListEditor('/groups/', 'target_groups');
 	registerCommaListEditor('/users/', 'target_people');
 
