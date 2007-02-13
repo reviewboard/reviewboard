@@ -39,9 +39,9 @@ class VMwarePerforceTool(PerforceTool):
         locations = {}
         for line, i in zip(lines, range(len(lines))):
             for section in sections:
-                if line.startwith(section):
+                if line.startswith(section):
                     locations[i] = section
-        section_indices = sorted(locations.keys)
+        section_indices = sorted(locations.keys())
 
         # The interesting part of the description field contains everything up
         # to the first marked section.

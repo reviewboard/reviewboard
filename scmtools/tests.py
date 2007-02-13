@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from django.core.exceptions import ImproperlyConfigured
@@ -7,6 +8,7 @@ from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
                                       ChangeSet
 from reviewboard.scmtools.svn import SVNTool
 from reviewboard.scmtools.perforce import PerforceTool
+from reviewboard.scmtools.perforce_vmware import VMwarePerforceTool
 
 class CoreTests(unittest.TestCase):
     """Tests for the scmtools.core module"""
@@ -128,7 +130,7 @@ class PerforceTests(unittest.TestCase):
             '//public/perforce/python/P4Client/p4.py',
             '//public/perforce/python/P4Client/review.py',
         ]
-        for file, expected in zip(desc.files, expected_files):
+        for file, expected in map(None, desc.files, expected_files):
             self.assertEqual(file, expected)
 
         self.assertEqual(hash(desc.summary), 588429333)
@@ -139,3 +141,36 @@ class PerforceTests(unittest.TestCase):
         file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py',
                                   157)
         self.assertEqual(hash(file), 1241177531)
+
+
+class VMWareTests(unittest.TestCase):
+    """Tests for VMware specific code"""
+
+    def setUp(self):
+        self.tool = VMwarePerforceTool()
+
+    def testParse(self):
+        """Checking VMwarePerforceTool.parse_change_desc"""
+
+        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
+                                 'vmware-changeset.txt'), 'r')
+        data = file.read().split('\n')
+        file.close()
+
+        changeset = self.tool.parse_change_desc(data, 123456)
+        self.assertEqual(changeset.summary, "Emma")
+        self.assertEqual(hash(changeset.description), 315618127)
+        self.assertEqual(changeset.changenum, 123456)
+        self.assertEqual(changeset.testing_done, "- Read a book.")
+
+        self.assertEqual(len(changeset.bugs_closed), 1)
+        self.assertEqual(changeset.bugs_closed[0], '128700')
+
+        expected_files = [
+            '//depot/bora/hosted07/foo.cc',
+            '//depot/bora/hosted07/foo.hh',
+            '//depot/bora/hosted07/bar.cc',
+            '//depot/bora/hosted07/bar.hh',
+        ]
+        for file, expected in map(None, changeset.files, expected_files):
+            self.assertEqual(file, expected)
