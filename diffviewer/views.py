@@ -147,10 +147,7 @@ def get_diff_files(diffset):
 
 
 def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
-    try:
-        diffset = DiffSet.objects.get(pk=object_id)
-    except DiffSet.DoesNotExist:
-        raise Http404
+    diffset = get_object_or_404(DiffSet, pk=object_id)
 
     try:
         files = get_diff_files(diffset)
