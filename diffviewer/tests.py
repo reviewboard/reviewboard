@@ -79,9 +79,11 @@ class DiffParserTest(unittest.TestCase):
             else:
                 self.assertEqual(A, B)
 
+        deepEqual(diffutils.get_line_changed_regions(None, None),
+                  [None, None])
+
         old = 'submitter = models.ForeignKey(Person, verbose_name="Submitter")'
         new = 'submitter = models.ForeignKey(User, verbose_name="Submitter")'
-
         regions = diffutils.get_line_changed_regions(old, new)
         deepEqual(regions, [[(30, 31), (31, 36)],
                             [(30, 32), (32, 34)]])
@@ -89,10 +91,6 @@ class DiffParserTest(unittest.TestCase):
 
         old = '-from reviews.models import ReviewRequest, Person, Group'
         new = '+from .reviews.models import ReviewRequest, Group'
-
         regions = diffutils.get_line_changed_regions(old, new)
         deepEqual(regions, [[(0, 1), (6, 6), (43, 51)],
                             [(0, 1), (6, 7), (44, 44)]])
-
-        deepEqual(diffutils.get_line_changed_regions(None, new),
-                  [None, None])
