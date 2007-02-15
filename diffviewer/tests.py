@@ -1,6 +1,8 @@
 import os
-import reviewboard.diffviewer.parser as diffparser
 import unittest
+
+import reviewboard.diffviewer.parser as diffparser
+from reviewboard.diffviewer.diffutils import patch
 
 class DiffParserTest(unittest.TestCase):
     PREFIX = 'diffviewer/testdata'
@@ -33,13 +35,34 @@ class DiffParserTest(unittest.TestCase):
             # Can't really compare the strings because of timestamps...
 
     def testUnifiedDiff(self):
-        """Checking parse on a unified diff"""
+        """Testing parse on a unified diff"""
         data = self.diff('-u')
         files = diffparser.parse(data)
         self.compareDiffs(files, "unified")
 
     def testContextDiff(self):
-        """Checking parse on a context diff"""
+        """Testing parse on a context diff"""
         data = self.diff('-c')
         files = diffparser.parse(data)
         self.compareDiffs(files, "context")
+
+    def testPatch(self):
+        """Testing patching"""
+
+        def get_file(*relative):
+            f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))
+            data = f.read()
+            f.close()
+            return data
+
+        file = 'foo.c'
+
+        old = get_file('orig_src', file)
+        new = get_file('new_src', file)
+        diff = get_file('diffs', 'unified', 'foo.c.diff')
+
+        patched = patch(diff, old, file)
+        self.assertEqual(patched, new)
+
+        diff = get_file('diffs', 'unified', 'README.diff')
+        self.assertRaises(Exception, lambda: patch(diff, old, file))

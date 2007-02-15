@@ -29,7 +29,7 @@ class CoreTests(unittest.TestCase):
 
 
     def testInterface(self):
-        """Sanity checking scmtools.core API"""
+        """Testing basic scmtools.core API"""
 
         # Empty changeset
         cs = ChangeSet()
@@ -49,7 +49,7 @@ class SubversionTests(unittest.TestCase):
         self.tool = SVNTool(repopath=self.repo)
 
     def testGetFile(self):
-        """Checking SVNTool.get_file"""
+        """Testing SVNTool.get_file"""
         expected = 'include ../tools/Makefile.base-vars\nNAME = misc-docs\n' + \
                    'OUTNAME = svn-misc-docs\nINSTALL_DIR = $(DESTDIR)/usr/s' + \
                    'hare/doc/subversion\ninclude ../tools/Makefile.base-rul' + \
@@ -94,7 +94,7 @@ class SubversionTests(unittest.TestCase):
                           lambda: self.tool.parse_diff_revision('hello'))
 
     def testInterface(self):
-        """Sanity checking SVNTool API"""
+        """Testing basic SVNTool API"""
         self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
 
         self.assertRaises(NotImplementedError,
@@ -116,7 +116,7 @@ class PerforceTests(unittest.TestCase):
         self.tool = PerforceTool('public.perforce.com:1666')
 
     def testChangeset(self):
-        """Checking PerforceTool.get_changeset"""
+        """Testing PerforceTool.get_changeset"""
 
         desc = self.tool.get_changeset(157)
         self.assertEqual(desc.changenum, 157)
@@ -136,7 +136,7 @@ class PerforceTests(unittest.TestCase):
         self.assertEqual(hash(desc.summary), 588429333)
 
     def testGetFile(self):
-        """Checking PerforceTool.get_file"""
+        """Testing PerforceTool.get_file"""
 
         file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py',
                                   157)
@@ -150,7 +150,7 @@ class VMWareTests(unittest.TestCase):
         self.tool = VMwarePerforceTool()
 
     def testParse(self):
-        """Checking VMwarePerforceTool.parse_change_desc"""
+        """Testing VMwarePerforceTool.parse_change_desc"""
 
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
                                  'vmware-changeset.txt'), 'r')

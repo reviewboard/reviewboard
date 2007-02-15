@@ -1,15 +1,18 @@
+import sys
+import traceback
 from difflib import SequenceMatcher
+
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from djblets.util import cache_memoize
+
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-import sys, traceback
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.scmtools as scmtools
-from scmtools import HEAD, PRE_CREATION
+
 
 class UserVisibleError(Exception):
     pass
@@ -46,12 +49,15 @@ def get_diff_files(diffset):
         revision = \
             scmtools.get_tool().parse_diff_revision(filediff.source_detail)
 
-        if revision == PRE_CREATION:
+        if revision == scmtools.PRE_CREATION:
             old = ""
         else:
             old = get_original_file(filediff.source_file, revision)
 
-        new = diffutils.patch(filediff.diff, old, filediff.dest_file)
+        try:
+            new = diffutils.patch(filediff.diff, old, filediff.dest_file)
+        except Exception, e:
+            raise UserVisibleError(str(e))
 
         a = (old or '').splitlines(True)
         b = (new or '').splitlines(True)
@@ -126,9 +132,9 @@ def get_diff_files(diffset):
         chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                lambda: get_chunks(filediff))
 
-        if revision == HEAD:
+        if revision == scmtools.HEAD:
             revision = "HEAD"
-        elif revision == PRE_CREATION:
+        elif revision == scmtools.PRE_CREATION:
             revision = "Pre-creation"
         else:
             revision = "Revision %s" % revision

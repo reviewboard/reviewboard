@@ -1,6 +1,6 @@
-from difflib import SequenceMatcher
-from popen2 import Popen3
+import difflib
 import os
+from popen2 import Popen3
 import tempfile
 
 def patch(diff, file, filename):
@@ -26,9 +26,9 @@ def patch(diff, file, filename):
         except:
             pass
 
-        raise UserVisibleError(("The patch to '%s' didn't apply cleanly. " +
-                                "`patch` returned: %s") %
-                               (filename, p.fromchild.read()))
+        raise Exception(("The patch to '%s' didn't apply cleanly. " +
+                         "`patch` returned: %s") %
+                        (filename, p.fromchild.read()))
 
     f = open(newfile, "r")
     data = f.read()
@@ -44,7 +44,7 @@ def get_line_changed_regions(oldline, newline):
     if oldline is None or newline is None:
         return [None, None]
 
-    s = SequenceMatcher(None, oldline, newline)
+    s = difflib.SequenceMatcher(None, oldline, newline)
     oldchanges = []
     newchanges = []
     back = (0, 0)
