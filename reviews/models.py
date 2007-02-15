@@ -1,8 +1,11 @@
+import os
+import re
+
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.db import models
+
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-import re
 
 class Quip(models.Model):
     PLACES = (
@@ -112,6 +115,16 @@ class ReviewRequestDraft(models.Model):
 
     class Meta:
         ordering = ['-last_updated']
+
+
+class Screenshot(models.Model):
+    caption = models.CharField(maxlength=256, blank=True)
+    image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
+    review = models.ForeignKey(ReviewRequest,
+                               verbose_name='Review Request')
+
+    class Admin:
+        pass
 
 
 class Comment(models.Model):

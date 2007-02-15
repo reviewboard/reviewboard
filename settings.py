@@ -26,14 +26,6 @@ SITE_ID = 1
 # to load the internationalization machinery.
 USE_I18N = True
 
-# Absolute path to the directory that holds media.
-# Example: "/home/media/media.lawrence.com/"
-MEDIA_ROOT = ''
-
-# URL that handles the media served from MEDIA_ROOT.
-# Example: "http://media.lawrence.com"
-MEDIA_URL = ''
-
 # URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
 # Examples: "http://foo.com/media/", "/media/".
@@ -59,6 +51,8 @@ REVIEWBOARD_ROOT = os.path.abspath(os.path.join(os.path.split(__file__)[0], '..'
 
 TEMPLATE_ROOT = '/var/www/reviewboard'
 HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
+MEDIA_ROOT = HTDOCS_ROOT
+MEDIA_URL = '/'
 
 TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
