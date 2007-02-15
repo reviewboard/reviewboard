@@ -30,8 +30,25 @@ def get_diff_files(diffset):
 
     def get_chunks(filediff):
         def diff_line(linenum, oldline, newline):
+            if not oldline or not newline:
+                return [linenum, oldline or '', [], newline or '', []]
+
             region = diffutils.get_line_changed_regions(oldline, newline)
-            return [linenum, oldline or "", region[0], newline or "", region[1]]
+            print region
+
+            # We only want inter-line diffs for small changes.  This somewhat
+            # dense block of code computes the ratio of changed/not-changed.
+            # If that ratio is more than 25% of the line, we don't show changes
+            # inline.
+            changed = (region[0] and sum(y - x for x, y in region[0]) or 0) + \
+                      (region[1] and sum(y - x for x, y in region[1]) or 0)
+
+            oldline = oldline or ''
+            newline = newline or ''
+            if float(changed) / (len(oldline) + len(newline)) > 0.25:
+                region = ([], [])
+
+            return [linenum, oldline, region[0], newline, region[1]]
 
         def new_chunk(lines, numlines, tag, collapsable=False):
             return {
