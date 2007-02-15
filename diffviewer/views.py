@@ -34,7 +34,6 @@ def get_diff_files(diffset):
                 return [linenum, oldline or '', [], newline or '', []]
 
             region = diffutils.get_line_changed_regions(oldline, newline)
-            print region
 
             # We only want inter-line diffs for small changes.  This somewhat
             # dense block of code computes the ratio of changed/not-changed.
@@ -43,8 +42,6 @@ def get_diff_files(diffset):
             changed = (region[0] and sum(y - x for x, y in region[0]) or 0) + \
                       (region[1] and sum(y - x for x, y in region[1]) or 0)
 
-            oldline = oldline or ''
-            newline = newline or ''
             if float(changed) / (len(oldline) + len(newline)) > 0.25:
                 region = ([], [])
 
