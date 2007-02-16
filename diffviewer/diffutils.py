@@ -51,7 +51,7 @@ def get_line_changed_regions(oldline, newline):
 
     for tag, i1, i2, j1, j2 in s.get_opcodes():
         if tag == "equal":
-            if (i2 - i1 < 3) or (j2 - j1 < 3):
+            if (i2 - i1 < 10) or (j2 - j1 < 10):
                 back = (j2 - j1, i2 - i1)
             continue
 
