@@ -51,12 +51,23 @@ def get_line_changed_regions(oldline, newline):
 
     for tag, i1, i2, j1, j2 in s.get_opcodes():
         if tag == "equal":
-            if (i2 - i1 < 10) or (j2 - j1 < 10):
+            if (i2 - i1 < 3) or (j2 - j1 < 3):
                 back = (j2 - j1, i2 - i1)
             continue
 
-        oldchanges.append((i1 - back[0], i2))
-        newchanges.append((j1 - back[1], j2))
+        oldstart, oldend = i1 - back[0], i2
+        newstart, newend = j1 - back[1], j2
+
+        if oldchanges != [] and oldstart <= oldchanges[-1][1] < oldend:
+            oldchanges[-1] = (oldchanges[-1][0], oldend)
+        elif not oldline[oldstart:oldend].isspace():
+            oldchanges.append((oldstart, oldend))
+
+        if newchanges != [] and newstart <= newchanges[-1][1] < newend:
+            newchanges[-1] = (newchanges[-1][0], newend)
+        elif not newline[newstart:newend].isspace():
+            newchanges.append((newstart, newend))
+
         back = (0, 0)
 
-    return [oldchanges, newchanges]
+    return [s.ratio(), oldchanges, newchanges]
