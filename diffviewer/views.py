@@ -33,12 +33,8 @@ def get_diff_files(diffset):
             if not oldline or not newline:
                 return [linenum, oldline or '', [], newline or '', []]
 
-            ratio, oldregion, newregion = \
+            oldregion, newregion = \
                 diffutils.get_line_changed_regions(oldline, newline)
-
-            if ratio < 0.5:
-                oldregion = None
-                newregion = None
 
             return [linenum, oldline, oldregion, newline, newregion]
 

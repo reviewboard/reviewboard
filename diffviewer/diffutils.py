@@ -49,7 +49,11 @@ def get_line_changed_regions(oldline, newline):
     newchanges = []
     back = (0, 0)
 
-    for tag, i1, i2, j1, j2 in s.get_opcodes():
+    opcodes = s.get_opcodes()
+    if s.ratio() < 0.5:
+        return (None, None)
+
+    for tag, i1, i2, j1, j2 in opcodes:
         if tag == "equal":
             if (i2 - i1 < 3) or (j2 - j1 < 3):
                 back = (j2 - j1, i2 - i1)
@@ -70,4 +74,4 @@ def get_line_changed_regions(oldline, newline):
 
         back = (0, 0)
 
-    return [s.ratio(), oldchanges, newchanges]
+    return (oldchanges, newchanges)
