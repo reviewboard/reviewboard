@@ -37,10 +37,10 @@ class DiffSet(models.Model):
         super(DiffSet, self).save()
 
     def __str__(self):
-        return self.name
+        return "%s r%s" % (self.name, self.revision)
 
     class Admin:
-        list_display = ('__str__', 'revision',)
+        list_display = ('__str__', 'revision', 'timestamp')
 
     class Meta:
         get_latest_by = 'timestamp'
