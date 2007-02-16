@@ -1,6 +1,7 @@
 import difflib
+import math
 import os
-from popen2 import Popen3
+import popen2
 import tempfile
 
 def patch(diff, file, filename):
@@ -12,7 +13,7 @@ def patch(diff, file, filename):
     f.close()
 
     newfile = '%s-new' % oldfile
-    p = Popen3('patch -o %s %s' % (newfile, oldfile))
+    p = popen2.Popen3('patch -o %s %s' % (newfile, oldfile))
     p.tochild.write(diff)
     p.tochild.close()
     failure = p.wait()
@@ -50,8 +51,12 @@ def get_line_changed_regions(oldline, newline):
     back = (0, 0)
 
     # This thresholds our results -- we don't want to show inter-line diffs if
-    # most of the line has changed.
+    # most of the line has changed, unless those lines are very short.
     opcodes = s.get_opcodes()
+
+    # FIXME: just a plain, linear threshold is pretty crummy here.  Short
+    # changes in a short line get lost.  I haven't yet thought of a fancy
+    # nonlinear test.
     if s.ratio() < 0.6:
         return (None, None)
 
