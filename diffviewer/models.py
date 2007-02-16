@@ -28,11 +28,11 @@ class DiffSet(models.Model):
                                 edit_inline=models.STACKED)
 
     def save(self):
-        if self.revision == None and self.history != None:
-            if self.history.diffsets.count() == 0:
+        if self.revision == 0 and self.history != None:
+            if self.history.diffset_set.count() == 0:
                 self.revision = 0
             else:
-                self.revision = self.history.latest().revision + 1
+                self.revision = self.history.diffset_set.latest().revision + 1
 
         super(DiffSet, self).save()
 
