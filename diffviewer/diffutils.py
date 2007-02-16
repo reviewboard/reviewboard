@@ -43,7 +43,7 @@ def patch(diff, file, filename):
 
 def get_line_changed_regions(oldline, newline):
     if oldline is None or newline is None:
-        return [None, None]
+        return (None, None)
 
     s = difflib.SequenceMatcher(None, oldline, newline)
     oldchanges = []
