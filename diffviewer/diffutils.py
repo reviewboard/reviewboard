@@ -49,8 +49,10 @@ def get_line_changed_regions(oldline, newline):
     newchanges = []
     back = (0, 0)
 
+    # This thresholds our results -- we don't want to show inter-line diffs if
+    # most of the line has changed.
     opcodes = s.get_opcodes()
-    if s.ratio() < 0.5:
+    if s.ratio() < 0.6:
         return (None, None)
 
     for tag, i1, i2, j1, j2 in opcodes:
