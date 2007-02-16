@@ -47,7 +47,7 @@
 <a name="{{file.index}}"></a>
 {% include "diffviewer/diff_file_fragment.html" %}
 <script language="javascript">
-  addComments("file{{file.index}}", {% commentcountlist file.filediff %});
+  addComments("file{{file.index}}", {% commentinfo file.filediff %});
 </script>
 {% endfor %}
 <a name="index_footer"></a>
