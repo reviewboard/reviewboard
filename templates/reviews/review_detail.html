@@ -3,8 +3,14 @@
 
 {% block title %}Review Request | {{details}}{% endblock %}
 {% block extrahead %}
-<script type="text/javascript" src="/scripts/prototype.js"></script>
-<script type="text/javascript" src="/scripts/scriptaculous.js?load=builder,effects,controls,extensions"></script>
+<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="/scripts/rb/core.js"></script>
+<script type="text/javascript" src="/scripts/rb/widgets.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -68,11 +74,11 @@
   </table>
   <div class="content">
    <label for="description">Description:</label>
-   <pre><div id="description">{{details.description|escape}}</div></pre>
+   <pre id="description">{{details.description|escape}}</pre>
   </div>
   <div class="content">
    <label for="testing_done">Testing Done:</label>
-   <pre><div id="testing_done">{{details.testing_done|escape}}</div></pre>
+   <pre id="testing_done">{{details.testing_done|escape}}</pre>
   </div>
   <div class="content">
    <label for="images">Images:</label>
@@ -93,6 +99,8 @@
   <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
   <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+{% else %}
+  <li><a href="scrutinize/">Review</a></li>
 {% endifequal %}
 {% ifnotequal details.diffset_history.diffset_set.count 0 %}
   <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
@@ -122,144 +130,118 @@
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">
-	function addEditIcon(field, inline) {
-		var node = $(field);
+	var dh = YAHOO.ext.DomHelper;
 
-		var imgtext = " <img src='/images/edit.png' width='14' height='14' " +
-		              "id='" + field + "_edit' class='editicon' />";
-
-		if (inline) {
-			new Insertion.After(node, imgtext);
-		} else {
-			new Insertion.Bottom(
-				node.parentNode.previousSibling.previousSibling, imgtext);
-		}
+	function onEditComplete(field, value, callback) {
+		getEl(field).load('json/' + field + '/', {value: value}, callback);
+		showDraftBanner();
 	}
 
-	function onEditFailure(transport) {
-		$('servererror').innerHTML = transport.responseText;
-	}
+	function registerEditor(field, multiline) {
+		var editor = new RB.widgets.InlineEditor({
+			el: field,
+			multiline: multiline,
+			cls: field + '-editor',
+			showEditIcon: true,
+		});
 
-	function onEditComplete(transport) {
-		if (transport != null) {
-			showDraftBanner();
-		}
-	}
-
-	function registerEditorCommon(field, rows, cols, bgcolor) {
-		addEditIcon(field, rows == 1);
-		var url = 'json/' + field + '/';
-
-		return new RB.InlineEditor(field, url,
-			{
-				externalControl: field + "_edit",
-				highlightendcolor: bgcolor,
-				onFailure: onEditFailure,
-				onComplete: onEditComplete,
-				rows: rows,
-				cols: cols
-			});
+		editor.on('complete',
+			function(editor, value) { onEditComplete(field, value); },
+			this, true);
 	}
 
 	function registerCommaListEditor(path_prefix, field) {
-		addEditIcon(field, true);
-		var url = 'json/' + field + '/';
+		var editor = new RB.widgets.InlineCommaListEditor({
+			el: field,
+			cls: field + '-editor',
+			showEditIcon: true,
+			useEditIconOnly: true,
+			notifyUnchangedCompletion: true,
+		});
 
-		return new RB.InlineCommaListEditor(field, url, {
-			externalControl: field + "_edit",
-			highlightendcolor: '#fffad3',
-			onFailure: onEditFailure,
-			onComplete: function(transport, element, list) {
-				var str = "";
-				for (var i = 0; i < list.length; i++) {
-					list[i] = list[i].stripTags().strip();
-					str += "<a href=\"" + path_prefix + list[i] + "\">";
-					str += list[i] + "</a>";
+		editor.on('complete',
+			function(editor, value) {
+				onEditComplete(field, value,
+					function(el, success) {
+						var list = editor.getList();
+						var str = "";
 
-					if (i < list.length - 1) {
-						str += ", ";
+						for (var i = 0; i < list.length; i++) {
+							list[i] = list[i].stripTags().strip();
+							str += "<a href=\"" + path_prefix + list[i] + "\">";
+							str += list[i] + "</a>";
+
+							if (i < list.length - 1) {
+								str += ", ";
+							}
+						}
+
+						getEl(field).dom.innerHTML = str;
 					}
-				}
+				)
+			}
+		);
+	}
 
-				element.innerHTML = str;
-				onEditComplete(transport);
+	function submitDraft() {
+		YAHOO.util.Connect.asyncRequest('GET', 'draft/save/', {
+			success: hideDraftBanner,
+			failure: function(response) {
+				getEl('servererror').dom.innerHTML = response.responseText;
+				alert("Saving the draft has failed due to a server " +
+					  "error. Please try again later. If this " +
+					  "continues to happen, please report it to your " +
+					  "administrator.");
 			}
 		});
 	}
 
-	function registerEditor(field) {
-		return registerEditorCommon(field, 1, 50, '#fffad3');
-	}
-
-	function registerMultiEditor(field) {
-		return registerEditorCommon(field, 10, 100, '#fafafa');
-	}
-
-	function submitDraft() {
-		new Ajax.Request('draft/save/',
-			{
-				method: 'get',
-		        onSuccess: function() { hideDraftBanner(); },
-				onFailure: function(transport) {
-					$('servererror').innerHTML = transport.responseText;
-					alert("Saving the draft has failed due to a server " +
-					      "error. Please try again later. If this " +
-					      "continues to happen, please report it to your " +
-					      "administrator.");
-				}
-			});
-	}
-
 	function revertDraft() {
-		new Ajax.Request('draft/revert/',
-			{
-				method: 'get',
-		        onSuccess: function() { window.location.reload(); },
-				onFailure: function() {
-					alert("Reverting the draft has failed due to a server " +
-					      "error. Please try again later. If this " +
-					      "continues to happen, please report it to your " +
-					      "administrator.");
-				}
-			});
+		YAHOO.util.Connect.asyncRequest('GET', 'draft/revert/', {
+			success: function() { window.location.reload(); },
+			failure: function(response) {
+				alert("Reverting the draft has failed due to a server " +
+					  "error. Please try again later. If this " +
+					  "continues to happen, please report it to your " +
+					  "administrator.");
+			}
+		});
 	}
 
 	function showDraftBanner() {
-		if ($('draft') == null) {
-			$('banner').appendChild(
-				Builder.node('div', {id: 'draft'}, [
-					Builder.node("h1", "This is a draft."),
-					" Be sure to save when finished.",
-					Builder.node('input', {type: 'submit', value: 'Save',
-					             onClick: 'submitDraft();'}),
-					Builder.node('input', {type: 'submit', value: 'Revert',
-					             onClick: 'revertDraft();'})
-				])
-			);
+		if (getEl('draft') == null) {
+			dh.append(getEl('banner').dom, {
+				tag: 'div', id: 'draft', children: [
+					{tag: 'h1', html: 'This is a draft.'},
+					{html: ' Be sure to save when finished.'},
+					{tag: 'input', type: 'submit', value: 'Save',
+					 onClick: 'submitDraft();'},
+					{tag: 'input', type: 'submit', value: 'Revert',
+					 onClick: 'revertDraft();'}
+				]
+			});
 		}
 	}
 
 	function hideDraftBanner() {
-		var node = $('draft') || $('discard');
+		var node = getEl('draft') || getEl('discard')
 
 		if (node != null) {
-			$('banner').removeChild(node);
+			node.remove();
 		}
 	}
 
 	function showDiscardBanner() {
-		$('banner').appendChild(
-			Builder.node('div', {id: 'discard'}, [
-				Builder.node("h1", "Confirm Discard?"),
-				" This cannot be undone.",
-				Builder.node('input', {type: 'submit',
-				                       value: 'Confirm',
-				                       onClick: 'discardReview();'}),
-				Builder.node('input', {type: 'submit',
-				                       value: 'Cancel',
-				                       onClick: 'hideDraftBanner();'})
-			])
-		);
+		dh.append(getEl('banner').dom, {
+			tag: 'div', id: 'discard', children: [
+				{tag: 'h1', html: 'Confirm Discard?'},
+				{html:' This cannot be undone.'},
+				{tag: 'input', type: 'submit', value: 'Confirm',
+				 onClick: 'discardReview();'},
+				{tag: 'input', type: 'submit', value: 'Cancel',
+				 onClick: 'hideDraftBanner();'}
+			]
+		});
 	}
 
 	function discardReview() {
@@ -271,20 +253,19 @@
 		window.location = loc.substring(0, loc.length - 1) + 'discard/';
 	}
 
-	registerEditor('summary');
-	registerEditor('branch');
-	registerMultiEditor('description');
-	registerMultiEditor('testing_done');
-	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=',
-	                        'bugs_closed');
+	registerEditor('summary', false);
+	registerEditor('branch', false);
+	registerEditor('description', true);
+	registerEditor('testing_done', true);
+	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=', 'bugs_closed');
 	registerCommaListEditor('/groups/', 'target_groups');
 	registerCommaListEditor('/users/', 'target_people');
 
-	if ({% ifequal draft None %}0{% else %}1{% endifequal %}) {
-		showDraftBanner();
-	} else {
-		hideDraftBanner();
-	}
+{% if draft %}
+	showDraftBanner();
+{% else %}
+	hideDraftBanner();
+{% endif %}
 </script>
 {% endifequal %}
 {% endblock %}
