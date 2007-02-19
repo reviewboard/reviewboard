@@ -26,8 +26,8 @@ lines <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">
 {% for line in chunk.lines %}
     <tr>
      <th>{{line.0}}</td>
-     <td><pre>{{ line.1|escape }}</pre></td>
-     <td><pre>{{ line.2|escape }}</pre></td>
+     <td><pre>{{ line.1|highlightregion:line.2 }}</pre></td>
+     <td><pre>{{ line.3|highlightregion:line.4 }}</pre></td>
     </tr>
 {% endfor %}
    </tbody>
