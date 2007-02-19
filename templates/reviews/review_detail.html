@@ -183,7 +183,13 @@
 		);
 	}
 
+	function disableDraftButtons() {
+		getEl('btn-draft-save').dom.setAttribute('disabled', 'disabled');
+		getEl('btn-draft-revert').dom.setAttribute('disabled', 'disabled');
+	}
+
 	function submitDraft() {
+		disableDraftButtons();
 		YAHOO.util.Connect.asyncRequest('GET', 'draft/save/', {
 			success: hideDraftBanner,
 			failure: function(response) {
@@ -197,6 +203,7 @@
 	}
 
 	function revertDraft() {
+		disableDraftButtons();
 		YAHOO.util.Connect.asyncRequest('GET', 'draft/revert/', {
 			success: function() { window.location.reload(); },
 			failure: function(response) {
@@ -214,10 +221,10 @@
 				tag: 'div', id: 'draft', children: [
 					{tag: 'h1', html: 'This is a draft.'},
 					{html: ' Be sure to save when finished.'},
-					{tag: 'input', type: 'submit', value: 'Save',
-					 onClick: 'submitDraft();'},
-					{tag: 'input', type: 'submit', value: 'Revert',
-					 onClick: 'revertDraft();'}
+					{tag: 'input', type: 'submit', id: 'btn-draft-save',
+					 value: 'Save', onClick: 'submitDraft();'},
+					{tag: 'input', type: 'submit', id: 'btn-draft-revert',
+					 value: 'Revert', onClick: 'revertDraft();'}
 				]
 			});
 		}
