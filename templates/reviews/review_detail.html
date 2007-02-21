@@ -133,6 +133,8 @@
 	var dh = YAHOO.ext.DomHelper;
 
 	function onEditComplete(field, value, callback) {
+		var updateManager = getEl(field).getUpdateManager();
+		updateManager.showLoadIndicator = false;
 		getEl(field).load('json/' + field + '/', {value: value}, callback);
 		showDraftBanner();
 	}
