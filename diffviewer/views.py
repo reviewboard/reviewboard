@@ -163,11 +163,25 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
     try:
         files = get_diff_files(diffset)
 
-        return render_to_response(template_name, RequestContext(request, {
+        if request.GET.get('expand', False):
+            collapseall = False
+        elif request.GET.get('collapse', False):
+            collapseall = True
+        elif request.COOKIES.has_key('collapsediffs'):
+            collapseall = (request.COOKIES['collapsediffs'] == "True")
+        else:
+            collapseall = True
+
+        response = render_to_response(template_name, RequestContext(request, {
             'diffset': diffset,
             'files': files,
-            'collapseall': request.GET.get('collapse', False)
+            'collapseall': collapseall,
         }))
+
+        response.set_cookie('collapsediffs', collapseall)
+
+        return response
+
     except Exception, e:
         context = { 'error': e, }
         if e.__class__ is not UserVisibleError:
