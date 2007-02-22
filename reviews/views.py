@@ -1,3 +1,5 @@
+import re
+
 from django import newforms as forms
 from django.contrib.auth.models import User, Group
 from django.core.serializers import serialize
@@ -8,12 +10,13 @@ from django.template.context import RequestContext
 from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
+
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.forms import NewReviewRequestForm
-import reviewboard.scmtools as scmtools
-import re
+from reviewboard import scmtools
+
 
 @login_required
 def new_review_request(request, template_name='reviews/review_detail.html'):
