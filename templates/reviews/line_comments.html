@@ -1,12 +1,14 @@
 <ol id="comments-list">
 {% for comment in comments %}
- <li class="comment">
+ <li class="comment{% if comment.draft %} draft{% endif %}">
   <dl>
    <dt>
-    <a href="{{comment.review_set.get.user.get_absolute_url}}">{% firstof comment.review_set.get.user.get_full_name comment.review_set.get.user.username %}</a>
+    {% if comment.draft %}<label for="id_yourcomment">{% endif %}
+    <a href="{{comment.user.get_absolute_url}}">{% firstof comment.user.get_full_name comment.user.username %}</a>
     <span class="timestamp">{{comment.timestamp}}</span>
+    {% if comment.draft %}</label>{% endif %}
    </dt>
-   <dd>{{comment.text|escape|linebreaks}}</dd>
+   <dd{% if comment.draft %} id="id_yourcomment"{% endif %}>{{comment.text|escape|linebreaks}}</dd>
   </dl>
  </li>
 {% endfor %}

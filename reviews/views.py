@@ -475,7 +475,12 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
         if comment.review_set.count() > 0 and comment.first_line == line:
             review = comment.review_set.get()
             if review.public or review.user == request.user:
-                comments.append(comment)
+                comments.append({
+                    'user': review.user,
+                    'draft': not review.public and review.user == request.user,
+                    'timestamp': comment.timestamp,
+                    'text': comment.text,
+                })
 
     return render_to_response(template_name, RequestContext(request, {
         'comments': comments,

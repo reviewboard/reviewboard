@@ -11,6 +11,7 @@
 <script type="text/javascript" src="/scripts/yui/dragdrop/dragdrop-min.js"></script>
 <script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
 <script language="javascript" src="/scripts/rb/core.js"></script>
+<script language="javascript" src="/scripts/rb/widgets.js"></script>
 <script language="javascript" src="/scripts/diffviewer.js"></script>
 <link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
 {% endblock %}
@@ -66,15 +67,14 @@
 <div id="comment-dlg">
  <div class="ydlg-hd">Comments</div>
  <div class="ydlg-bd">
-  <div id="tab-review" class="ydlg-tab" title="Review this line">
-   <form id="commentform" method="post" action="comments/">
+  <div id="tab-comments" class="ydlg-tab" title="Comments">
+   <div id="existing-comments"></div>
+   <form id="commentform" class="comment draft" method="post" action="comments/">
 	<input type="hidden" name="action" id="id_action" value="" />
 	<input type="hidden" name="num_lines" id="id_num_lines" value="" />
-    <label for="id_comment">Comment</label>
-	<textarea id="id_comment" name="text" rows="15" cols="40"></textarea>
+    <label for="id_comment">Your comment:</label><br />
+	<textarea id="id_comment" name="text" rows="4" cols="20"></textarea>
    </form>
-  </div>
-  <div id="tab-comments" class="ydlg-tab" title="Comments">
  </div>
 </div>
 {% endblock %}
