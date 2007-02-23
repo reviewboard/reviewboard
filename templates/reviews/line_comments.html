@@ -6,7 +6,7 @@
     <a href="{{comment.review_set.get.user.get_absolute_url}}">{% firstof comment.review_set.get.user.get_full_name comment.review_set.get.user.username %}</a>
     <span class="timestamp">{{comment.timestamp}}</span>
    </dt>
-   <dd><pre>{{comment.text|escape}}</pre></dd>
+   <dd>{{comment.text|escape|linebreaks}}</dd>
   </dl>
  </li>
 {% endfor %}
