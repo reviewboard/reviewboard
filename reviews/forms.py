@@ -4,7 +4,7 @@ from django import newforms as forms
 from django.contrib.auth.models import User, Group
 
 from reviewboard.diffviewer.models import DiffSetHistory
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models import Review, ReviewRequest
 
 class NewReviewRequestForm(forms.Form):
     summary = forms.CharField(max_length=300)

@@ -85,6 +85,12 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/$',
      'reviewboard.reviews.views.review_request_field'),
 
+    # Comments
+    (r'^reviews/(?P<review_request_id>[0-9]+)/diff/comments/(?P<filediff_id>[0-9]+)/(?P<line>[0-9]+)/$',
+     'reviewboard.reviews.views.comments'),
+    (r'^reviews/(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/comments/(?P<filediff_id>[0-9]+)/(?P<line>[0-9]+)/$',
+     'reviewboard.reviews.views.comments'),
+
     # Users
     (r'^users/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),

@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 
 from django import newforms as forms
@@ -11,9 +12,11 @@ from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
+from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
+from reviewboard.reviews.models import Review, Comment
 from reviewboard.reviews.forms import NewReviewRequestForm
 from reviewboard import scmtools
 
@@ -406,3 +409,74 @@ def review_request_field(request, review_request_id, method, field_name=None):
         response['X-JSON'] = data
 
     return response
+
+
+@login_required
+def comments(request, review_request_id, filediff_id, line, revision=None,
+             template_name='reviews/line_comments.html'):
+    line = int(line)
+
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    filediff = get_object_or_404(FileDiff, pk=filediff_id)
+
+    if request.POST:
+        text = request.POST['text']
+        num_lines = request.POST['num_lines']
+
+        # TODO: Sanity check the fields
+        if filediff.diffset.history != review_request.diffset_history:
+            raise Http403();
+
+
+        if request.POST['action'] == "set":
+            review, review_is_new = Review.objects.get_or_create(
+                review_request=review_request,
+                user=request.user,
+                public=False,
+                reviewed_diffset=filediff.diffset)
+
+            if review_is_new:
+                review.save()
+
+            comment, comment_is_new = review.comments.get_or_create(
+                filediff=filediff,
+                first_line=line)
+
+            comment.text = request.POST['text']
+            comment.num_lines = num_lines
+            comment.timestamp = datetime.now()
+            comment.save()
+
+            review.comments.add(comment)
+            review.save()
+        elif request.POST['action'] == "delete":
+            review = get_object_or_404(Review,
+                review_request=review_request,
+                user=request.user,
+                public=False,
+                reviewed_diffset=filediff.diffset)
+
+            try:
+                comment = review.comments.get(filediff=filediff,
+                                              first_line=line)
+                comment.delete()
+            except Comment.DoesNotExist:
+                pass
+
+            stripped_body = review.body.strip()
+            if (stripped_body == "{{comments}}" or stripped_body == "") and \
+               review.comments.count() == 0:
+                review.delete()
+        else:
+            raise Http403()
+
+    comments = []
+    for comment in filediff.comment_set.all():
+        if comment.review_set.count() > 0 and comment.first_line == line:
+            review = comment.review_set.get()
+            if review.public or review.user == request.user:
+                comments.append(comment)
+
+    return render_to_response(template_name, RequestContext(request, {
+        'comments': comments,
+    }))

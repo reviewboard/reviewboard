@@ -4,10 +4,15 @@
 {% block title %}Diff Viewer{% endblock %}
 {% block extrahead %}
 <script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/dragdrop/dragdrop-min.js"></script>
 <script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script language="javascript" src="/scripts/rb/core.js"></script>
 <script language="javascript" src="/scripts/diffviewer.js"></script>
+<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
 {% endblock %}
 
 {% block content %}
@@ -49,11 +54,27 @@
 <a name="{{file.index}}"></a>
 {% include "diffviewer/diff_file_fragment.html" %}
 <script language="javascript">
-  addComments("file{{file.index}}", {% commentinfo file.filediff %});
+  gFileAnchorToId["file{{file.index}}"] = {{file.filediff.id}};
+  addComments("file{{file.index}}", {% commentcounts file.filediff %});
 </script>
 {% endfor %}
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
 {% endif %}
+</div>
+
+<div id="comment-dlg">
+ <div class="ydlg-hd">Comments</div>
+ <div class="ydlg-bd">
+  <div id="tab-review" class="ydlg-tab" title="Review this line">
+   <form id="commentform" method="post" action="comments/">
+	<input type="hidden" name="action" id="id_action" value="" />
+	<input type="hidden" name="num_lines" id="id_num_lines" value="" />
+    <label for="id_comment">Comment</label>
+	<textarea id="id_comment" name="text" rows="15" cols="40"></textarea>
+   </form>
+  </div>
+  <div id="tab-comments" class="ydlg-tab" title="Comments">
+ </div>
 </div>
 {% endblock %}

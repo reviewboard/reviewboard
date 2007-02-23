@@ -161,7 +161,7 @@ class Review(models.Model):
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
     public = models.BooleanField("Public", default=False)
     ship_it = models.BooleanField("Ship It", default=False)
-    body = models.TextField("Body")
+    body = models.TextField("Body", default="\n\n{{comments}}")
     comments = models.ManyToManyField(Comment, verbose_name="Comments",
                                       core=False, blank=True)
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",

@@ -131,7 +131,7 @@ def forcomment(parser, token):
     return ForComment(filediff, review, nodelist_loop)
 
 
-class CommentInfo(template.Node):
+class CommentCounts(template.Node):
     def __init__(self, filediff):
         self.filediff = filediff
 
@@ -140,35 +140,39 @@ class CommentInfo(template.Node):
             filediff = resolve_variable(self.filediff, context)
         except VariableDoesNotExist:
             raise template.TemplateSyntaxError, \
-                "Invalid variable %s passed to commentinfo tag." % \
+                "Invalid variable %s passed to commentcounts tag." % \
                 self.filediff
 
         comments = {}
+        user = context.get('user', None)
 
         for comment in filediff.comment_set.all():
-            line = comment.first_line
+            if comment.review_set.count() > 0:
+                review = comment.review_set.get()
+                if review.public or review.user == user:
+                    line = comment.first_line
 
-            if not comments.has_key(line):
-                comments[line] = []
+                    if not comments.has_key(line):
+                        comments[line] = []
 
-            comments[line].append({
-                'text': comment.text,
-                'timestamp': comment.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                'num_lines': comment.num_lines,
-            })
+                    comments[line].append({
+                        'text': comment.text,
+                        'localdraft': review.user == user and \
+                                      not review.public,
+                    })
 
         return simplejson.dumps(comments)
 
 
 @register.tag
-def commentinfo(parser, token):
+def commentcounts(parser, token):
     try:
         tag_name, filediff = token.split_contents()
     except ValueError:
         raise template.TemplateSyntaxError, \
             "%r tag requires a timestamp"
 
-    return CommentInfo(filediff)
+    return CommentCounts(filediff)
 
 
 @register.filter
