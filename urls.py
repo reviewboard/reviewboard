@@ -116,7 +116,8 @@ urlpatterns = patterns('',
 
 if settings.BUILTIN_AUTH:
     urlpatterns += patterns('',
-        (r'^account/register/$', 'djblets.auth.views.register'),
+        (r'^account/register/$', 'djblets.auth.views.register',
+         {'next_page': '/reviews/'}),
     )
 
 # Add static media if running in DEBUG mode
