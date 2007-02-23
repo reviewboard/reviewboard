@@ -106,7 +106,7 @@ def highlightregion(value, r):
         return s
 
 
-extraWhitespace = re.compile(r'((^ +|\s+$)|(\s$| +\t))')
+extraWhitespace = re.compile(r'(\s+$| +\t)')
 
 @register.filter
 def showextrawhitespace(value):
