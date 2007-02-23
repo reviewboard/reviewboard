@@ -27,8 +27,8 @@
    <th class="controls" rowspan="{{chunk.numlines}}">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</td>
 {% for line in chunk.lines %}
    <th>{{line.0}}</td>
-   <td><pre>{{ line.1|highlightregion:line.2 }}</pre></td>
-   <td><pre>{{ line.3|highlightregion:line.4 }}</pre></td>
+   <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
+   <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
   </tr>
 {% if not forloop.last %}
   <tr>

@@ -1,3 +1,5 @@
+import re
+
 from django import template
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
@@ -102,3 +104,12 @@ def highlightregion(value, r):
         s += escape(value[prev:])
 
         return s
+
+
+extraWhitespace = re.compile(r'((^ +|\s+$)|(\s$| +\t))')
+
+@register.filter
+def showextrawhitespace(value):
+    return extraWhitespace.sub(
+        lambda m: "<span class=\"ew\">%s</span>" % m.group(0),
+        value)
