@@ -69,7 +69,8 @@ def new_from_changenum(request):
 
         return HttpResponseRedirect(review_request.get_absolute_url())
 
-    # XXX Remove diffset_history from the database and display an error page
+    diffset_history.delete()
+    # XXX Display an error page
     return HttpResponseRedirect('/reviews/new/')
 
 
@@ -295,7 +296,7 @@ def publish(request, review_request_id):
         review_request.save()
         return HttpResponseRedirect(review_request.get_absolute_url())
     else:
-        raise Http404() # XXX Error out
+        raise Http403() # XXX Error out
 
 
 @login_required
@@ -312,7 +313,8 @@ def setstatus(request, review_request_id, action):
             'reopen':    'P',
         }[action]
     except KeyError:
-        raise Http404() # Should never happen. Need a better handler.
+        # This should never happen under normal circumstances
+        raise Exception('Error when setting review status: unknown status code')
 
     review_request.save()
     if action == 'discard':
@@ -329,7 +331,7 @@ def review_request_field(request, review_request_id, method, field_name=None):
         if request.user != review_request.submitter:
             raise Http403()
 
-        # Should probably throw a real error here.
+        # XXX Should probably throw a real error here.
         if field_name == None:
             raise Http404()
 
