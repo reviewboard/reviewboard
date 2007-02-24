@@ -22,7 +22,7 @@
  </thead>
 {% for chunk in file.chunks %}
 {%  if not chunk.collapsable or not collapseall %}
- <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}" onClick="gotoAnchor('{{file.index}}.{{chunk.index}}');"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
+ <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
   <tr>
    <th class="controls" rowspan="{{chunk.numlines}}">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</td>
 {% for line in chunk.lines %}
