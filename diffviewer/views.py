@@ -64,8 +64,8 @@ def get_diff_files(diffset):
         except Exception, e:
             raise UserVisibleError(str(e))
 
-        a = (old or '').splitlines(True)
-        b = (new or '').splitlines(True)
+        a = (old or '').splitlines()
+        b = (new or '').splitlines()
         a_num_lines = len(a)
         b_num_lines = len(b)
 
