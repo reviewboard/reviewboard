@@ -1,0 +1,17 @@
+{% if comments %}
+<ol>
+{% for comment in comments %}
+ <li class="comment">
+  <dl>
+   <dt>
+    <span class="filename">{{comment.filediff.source_file}}</span>
+    <span class="lines">{% ifequal comment.num_lines 1 %}line {{comment.first_line}}{% else %}lines {{comment.first_line}} - {{comment.last_line}}{% endifequal %}</span>
+   </dt>
+   <dd>{{comment.text|escape|linebreaks}}</dd>
+  </dl>
+ </li>
+{% endfor %}
+</ol>
+{% else %}
+<i>All Comments, if any, will be displayed here once added.</i>
+{% endif %}

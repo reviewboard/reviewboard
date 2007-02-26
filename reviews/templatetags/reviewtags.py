@@ -183,4 +183,4 @@ def embedcomments(value, review):
         return value
 
     s = loader.render_to_string('reviews/comment.html', {'review': review})
-    return value.replace("{{comments}}", s)
+    return re.sub("(\n\n)?{{comments}}(\n\n)?", s, value)

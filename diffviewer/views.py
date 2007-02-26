@@ -157,7 +157,8 @@ def get_diff_files(diffset):
     return files
 
 
-def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
+def view_diff(request, object_id, extra_context={},
+              template_name='diffviewer/view_diff.html'):
     diffset = get_object_or_404(DiffSet, pk=object_id)
 
     try:
@@ -172,11 +173,15 @@ def view_diff(request, object_id, template_name='diffviewer/view_diff.html'):
         else:
             collapseall = True
 
-        response = render_to_response(template_name, RequestContext(request, {
+        context = {
             'diffset': diffset,
             'files': files,
             'collapseall': collapseall,
-        }))
+        }
+        context.update(extra_context)
+
+        response = render_to_response(template_name,
+                                      RequestContext(request, context))
 
         response.set_cookie('collapsediffs', collapseall)
 

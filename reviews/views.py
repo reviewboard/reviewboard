@@ -243,7 +243,15 @@ def diff(request, object_id, revision=None):
     except:
         raise Http404
 
-    return view_diff(request, diffset.id)
+    try:
+        review = Review.objects.get(user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    reviewed_diffset=diffset)
+    except Review.DoesNotExist:
+        review = None
+
+    return view_diff(request, diffset.id, {'review': review})
 
 
 @login_required
@@ -429,7 +437,6 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
         if filediff.diffset.history != review_request.diffset_history:
             raise Http403();
 
-
         if request.POST['action'] == "set":
             review, review_is_new = Review.objects.get_or_create(
                 review_request=review_request,
@@ -483,6 +490,90 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
                     'timestamp': comment.timestamp,
                     'text': comment.text,
                 })
+
+    return render_to_response(template_name, RequestContext(request, {
+        'comments': comments,
+    }))
+
+
+@login_required
+def reply_save(request, review_request_id, revision, publish=False):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.POST:
+        try:
+            diffset = review_request.diffset_history.diffset_set.get(
+                revision=revision)
+        except DiffSet.DoesNotExist:
+            raise Http404()
+
+        review, review_is_new = Review.objects.get_or_create(
+            user=request.user,
+            review_request=review_request,
+            public=False,
+            reviewed_diffset=diffset)
+        review.public = publish
+        review.ship_it = request.POST.has_key('shipit')
+        review.body = request.POST['body_top'] + "\n\n{{comments}}\n\n" + \
+                      request.POST['body_bottom']
+        review.save()
+
+        if publish:
+            return HttpResponse("Published")
+        else:
+            return HttpResponse("Saved")
+
+    raise Http403()
+
+
+@login_required
+def reply_publish(request, review_request_id, revision):
+    return reply_save(request, review_request_id, revision, True)
+
+
+@login_required
+def reply_delete(request, review_request_id, revision):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.POST:
+        try:
+            diffset = review_request.diffset_history.diffset_set.get(
+                revision=revision)
+        except DiffSet.DoesNotExist:
+            raise Http404()
+
+        try:
+            review = Review.objects.get(user=request.user,
+                                        review_request=review_request,
+                                        public=False,
+                                        reviewed_diffset=diffset)
+            review.delete()
+            return HttpResponse("Deleted")
+        except Review.DoesNotExist:
+            return HttpResponse("Not found")
+
+    raise Http403()
+
+
+@login_required
+def reply_comments(request, review_request_id, revision,
+                   template_name='reviews/inline_reply_comments.html'):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        diffset = review_request.diffset_history.diffset_set.get(
+            revision=revision)
+    except DiffSet.DoesNotExist:
+        raise Http404()
+
+    try:
+        review = Review.objects.get(user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    reviewed_diffset=diffset)
+        comments = review.comments.all()
+    except Review.DoesNotExist:
+        comments = []
 
     return render_to_response(template_name, RequestContext(request, {
         'comments': comments,
