@@ -1,0 +1,27 @@
+{% extends "base_feeds.html" %}
+{% load htmlutils %}
+{% block title %}User Preferences{% endblock %}
+
+{% block content %}
+
+<div class="preferences">
+ <h2>User Preferences</h2>
+
+ <form>
+  <table>
+   <tr>
+    <td class="value">{{ form.collapsed_diffs }}</td>
+    <td><label for="id_collapsed_diffs">Collapse diffs</td>
+   </tr>
+   <tr>
+    <td class="value">{{ form.wordwrapped_diffs }}</td>
+    <td><label for="id_wordwrapped_diffs">Wrap lines</td>
+   </tr>
+   <tr>
+    <td colspan="2"><input type="submit" value="Save" /></td>
+   </tr>
+  </table>
+ </form>
+</div>
+
+{% endblock %}
