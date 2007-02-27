@@ -488,6 +488,9 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
                     'user': review.user,
                     'draft': not review.public and review.user == request.user,
                     'timestamp': comment.timestamp,
+                    'first_line': comment.first_line,
+                    'num_lines': comment.num_lines,
+                    'last_line': comment.last_line(),
                     'text': comment.text,
                 })
 
