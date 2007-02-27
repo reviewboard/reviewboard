@@ -130,7 +130,8 @@ urlpatterns = patterns('',
     (r'^account/login/$', 'djblets.auth.views.login',
      {'next_page': '/reviews/'}),
     (r'^account/logout/$', 'django.contrib.auth.views.logout',
-     {'next_page': settings.LOGIN_URL})
+     {'next_page': settings.LOGIN_URL}),
+    (r'^account/preferences/$', 'reviewboard.accounts.views.user_preferences',),
 )
 
 if settings.BUILTIN_AUTH:
