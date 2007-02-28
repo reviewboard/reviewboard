@@ -1,0 +1,82 @@
+/*
+Copyright (c) 2007, Yahoo! Inc. All rights reserved.
+Code licensed under the BSD License:
+http://developer.yahoo.net/yui/license.txt
+version: 2.2.0
+*/
+/*debug css
+.example span, .example .yui-dt-columntext {border:1px solid red;}*/
+
+/*foundational css*/
+td {
+    overflow:hidden;
+}
+
+.yui-dt-headcontainer {
+    position:relative;
+    
+}
+
+.yui-dt-headtext {
+    position:relative;
+    border-right:10px;
+}
+
+.yui-dt-headresizer {
+    position:absolute;
+    margin-right:-6px;
+    right:0;
+    bottom:0;
+    width:6px;
+    height:100%;
+    cursor:w-resize;
+    cursor:col-resize;
+}
+
+.yui-dt-firstlink,.yui-dt-prevlink,.yui-dt-nextlink,.yui-dt-lastlink,.yui-dt-pagelink {
+    cursor:hand;
+    cursor:pointer;
+    text-decoration:underline;
+}
+
+.yui-dt-scrollable  {
+   width:20em;
+   margin-bottom:3em;
+}
+
+
+.yui-dt-scrollable  thead {
+   background:#696969; /*  IE needs a bgcolor to hide tbody as it scrolls */
+   border:1px solid #000;
+   display:block; /* enables tbody scrolling for safari and opera */
+}
+
+.yui-dt-scrollable  thead th {
+   width:10em; /* any value seems to here, just need something */
+}
+
+tbody.yui-dt-scrollable {
+   display:block; /* enables tbody scrolling for safari and opera */
+   height:10em;
+   overflow:auto; /* for scrolling other than IE */
+}
+
+/* IE specific */
+.yui-dt-scrollable  {
+   height:10em;
+   *overflow-y:auto;
+}
+
+.yui-dt-scrollable  tbody {
+   *height:auto; /* override the non IE height */
+}
+
+.yui-dt-scrollable thead tr {
+   position:relative;  /* IE cant scroll tbody, so trick it into fixing thead */
+}
+
+.yui-dt-scrollable tbody td {
+    width:10em;
+}
+
+

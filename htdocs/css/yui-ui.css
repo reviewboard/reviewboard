@@ -1,0 +1,469 @@
+/*
+ * Dialog
+ */
+.ydlg-proxy {
+	background-image: url('/images/ui/gradient-bg.gif');
+	background-color:#c3daf9;
+	border:1px solid #6593cf;
+	z-index:10001;
+	overflow:hidden;
+	position:absolute;
+	left:0;top:0;
+}
+.ydlg-shadow{
+	background:#aaaaaa;
+	position:absolute;
+	left:0;top:0;
+}
+.ydlg-mask{
+	z-index:10000;   
+   display:none;
+   position:absolute;
+   top:0;
+   left:0;
+   -moz-opacity: 0.5;
+   opacity:.50;
+   filter: alpha(opacity=50);
+   background-color:#CCC;
+}
+body.masked{
+	overflow:hidden;
+}
+body.masked select {
+	visibility:hidden;
+}
+body.masked .ydlg select {
+	visibility:visible;
+}
+.ydlg{
+	z-index:10001;
+	overflow:hidden;
+	position:absolute;
+	left:300;top:0;
+}
+.yresizable-proxy{
+	z-index:10002;
+}
+.ydlg .ydlg-hd {
+	background: url(/images/ui/basic-dialog/hd-sprite.gif) repeat-x 0px -82px;
+	background-color:navy;
+	color:#FFF;
+	font:bold 12px "sans serif", tahoma, verdana, helvetica;
+	overflow:hidden;
+	padding:5px;
+}
+.ydlg .ydlg-hd-left {
+	background: url(/images/ui/basic-dialog/hd-sprite.gif) no-repeat 0px -41px;
+	padding-left:3px;
+	margin:0px;
+}
+.ydlg .ydlg-hd-right {
+	background: url(/images/ui/basic-dialog/hd-sprite.gif) no-repeat right 0px;
+	padding-right:3px;
+}
+.ydlg .ydlg-dlg-body{
+	background:url(/images/ui/layout/gradient-bg.gif);
+	border:1px solid #6593cf;
+	border-top:0px none;
+	padding:10px;
+	overflow:hidden;
+}
+.ydlg .ydlg-bd{
+	overflow:hidden;
+}
+.ydlg .ydlg-ft{
+	overflow:hidden;
+	padding:5px;
+	padding-bottom:0px;
+}
+.ydlg .yui-ext-tabbody{
+	background:white;
+	overflow:auto;
+}
+.ydlg .ytabs-top .yui-ext-tabbody{
+	border:1px solid #6593cf;
+	border-top:0px none;
+}
+.ydlg .ytabs-bottom .yui-ext-tabbody{
+	border:1px solid #6593cf;
+	border-bottom:0px none;
+}
+.ydlg .ylayout-container  .yui-ext-tabbody{
+	border:0px none;
+}
+.ydlg .inner-tab{
+	margin:5px;
+}
+.ydlg .ydlg-ft .ybtn{
+	margin-right:5px;
+	float:right;
+	clear:none;
+}
+.ydlg-draggable .ydlg-hd{
+	cursor:move;
+}
+.ydlg-closable .ydlg-hd{
+	padding-right:22px;
+}
+.ydlg .ydlg-close {
+	position:absolute;
+	top:4px;
+	right:4px;
+	z-index:6;
+	height:15px;
+	width:15px;
+	margin:0px;
+	padding:0px;
+	line-height:1px;
+	font-size:1px;
+	background-repeat:no-repeat;
+	cursor:pointer;
+	visibility:inherit;
+	background-image:url(/images/ui/basic-dialog/close.gif);
+}
+.ydlg div.yresizable-handle-east{
+	background-image:url(/images/ui/basic-dialog/e-handle.gif);
+	border:0px;
+	background-position:right;
+	margin-right:0;
+}
+.ydlg div.yresizable-handle-south{
+	background-image:url(/images/ui/sizer/s-handle-dark.gif);
+	border:0px;
+	height:6px;
+}
+.ydlg div.yresizable-handle-west{
+	background-image:url(/images/ui/basic-dialog/e-handle.gif);
+	border:0px;
+	background-position:1px;
+}
+.ydlg div.yresizable-handle-north{
+	background-image:url(/images/ui/s.gif);
+	border:0px;
+}
+.ydlg div.yresizable-handle-southeast{
+	background-image:url(/images/ui/basic-dialog/se-handle.gif);
+	background-position: bottom right;
+	width:8px;
+	height:8px;
+	border:0px;
+}
+.ydlg div.yresizable-handle-southwest{
+	background-image:url(/images/ui/sizer/sw-handle-dark.gif);
+	background-position: top right;
+	margin-left:1px;
+	margin-bottom:1px;
+	border:0px;
+}
+
+
+.ybtn{
+	font:normal 11px arial, tahoma, verdana, helvetica;
+	cursor:pointer;
+}
+.ybtn-left, .ybtn-right{
+	font-size:1px;
+	line-height:1px;
+}
+.ybtn-left{
+	width:3px;
+	height:21px;
+	background:url(/images/ui/basic-dialog/btn-sprite.gif) no-repeat 0px 0px;
+}
+.ybtn-right{
+	width:3px;
+	height:21px;
+	background:url(/images/ui/basic-dialog/btn-sprite.gif) no-repeat 0px -21px;
+}
+.ybtn-focus{
+	text-decoration:none !important;
+	color:black !important;
+	display:block;
+	width:auto;
+	position:relative;
+}
+.ybtn-center{
+	background:url(/images/ui/basic-dialog/btn-sprite.gif) repeat-x 0px -42px;
+	font:normal 11px "san serif",tahoma,verdana,helvetica;
+	vertical-align: middle;
+	text-align:center;
+	padding:0px 5px;
+	cursor:pointer;
+	white-space:nowrap;
+	-moz-user-select: none;
+	-khtml-user-select: none;
+}
+.ybtn-over .ybtn-left{
+	background-position:0px -63px;
+}
+.ybtn-over .ybtn-right{
+	background-position:0px -84px;
+}
+.ybtn-over .ybtn-center{
+	background-position:0px -105px;
+}
+.ybtn-click .ybtn-center{
+	background-position:0px -126px;
+}
+.ybtn-disabled{
+	cursor:default;
+}
+.ybtn-disabled .ybtn-center{
+	color:gray;
+	cursor:default;
+}
+
+.yresizable-handle {
+    position:absolute;
+    z-index:100;
+    /* ie needs these */
+    font-size:1px;
+    line-height:6px;
+    overflow:hidden;
+	 background:white;
+	 filter:alpha(opacity=0);
+	 opacity:0;
+	 zoom:1;
+}
+.yresizable-handle-east{
+    width:6px;
+    cursor:e-resize;
+    right:0px;
+    top:0px;
+    height:100%;
+	 margin-right:-1px; /*IE rounding error*/
+}
+.yresizable-handle-south{
+    width:100%;
+    cursor:s-resize;
+    left:0px;
+    bottom:0px;
+    height:6px;
+	 margin-bottom:-1px; /*IE rounding error*/
+}
+.yresizable-handle-west{
+    width:6px;
+    cursor:w-resize;
+    left:0px;
+    top:0px;
+    height:100%;
+}
+.yresizable-handle-north{
+    width:100%;
+    cursor:n-resize;
+    left:0px;
+    top:0px;
+    height:6px;
+}
+.yresizable-handle-southeast{
+    width:6px;
+    cursor:se-resize;
+    right:0px;
+    bottom:0px;
+    height:6px;
+    z-index:101;
+}
+.yresizable-handle-northwest{
+    width:6px;
+    cursor:nw-resize;
+    left:0px;
+    top:0px;
+    height:6px;
+    z-index:101;
+}
+.yresizable-handle-northeast{
+    width:6px;
+    cursor:ne-resize;
+    right:0px;
+    top:0px;
+    height:6px;
+    z-index:101;
+}
+.yresizable-handle-southwest{
+    width:6px;
+    cursor:sw-resize;
+    left:0px;
+    bottom:0px;
+    height:6px;
+    z-index:101;
+}
+.yresizable-over .yresizable-handle, .yresizable-pinned .yresizable-handle{
+    filter:alpha(opacity=100);
+	 opacity:1;
+}
+.yresizable-over .yresizable-handle-east, .yresizable-pinned .yresizable-handle-east{
+    background:url(/images/ui/sizer/e-handle.gif);
+	 background-position: left;
+}
+.yresizable-over .yresizable-handle-west, .yresizable-pinned .yresizable-handle-west{
+    background:url(/images/ui/sizer/e-handle.gif);
+	 background-position: left;
+}
+.yresizable-over .yresizable-handle-south, .yresizable-pinned .yresizable-handle-south{
+    background:url(/images/ui/sizer/s-handle.gif);
+    background-position: top;
+}
+.yresizable-over .yresizable-handle-north, .yresizable-pinned .yresizable-handle-north{
+    background:url(/images/ui/sizer/s-handle.gif);
+    background-position: top;
+}
+.yresizable-over .yresizable-handle-southeast, .yresizable-pinned .yresizable-handle-southeast{
+    background:url(/images/ui/sizer/se-handle.gif);
+    background-position: top left;
+}
+.yresizable-over .yresizable-handle-northwest, .yresizable-pinned .yresizable-handle-northwest{
+    background:url(/images/ui/sizer/nw-handle.gif);
+    background-position:bottom right;
+}
+.yresizable-over .yresizable-handle-northeast, .yresizable-pinned .yresizable-handle-northeast{
+    background:url(/images/ui/sizer/ne-handle.gif);
+    background-position: bottom left;
+}
+.yresizable-over .yresizable-handle-southwest, .yresizable-pinned .yresizable-handle-southwest{
+    background:url(/images/ui/sizer/sw-handle.gif);
+    background-position: top right;
+}
+.yresizable-proxy{
+    border: 1px dashed #6593cf;
+    position:absolute;
+    overflow:hidden;
+    visibility:hidden;
+	 left:0;top:0;
+    z-index:1001;
+}
+.yresizable-overlay{
+    width:100%;
+	 height:100%;
+	 display:none;
+	 position:absolute;
+	 left:0;
+	 top:0;
+	 background:white;
+	 z-index:20000;
+	 -moz-opacity: 0;
+    opacity:0;
+    filter: alpha(opacity=0);
+	 border:1px solid red;
+}
+
+.ytab-wrap {
+	border-bottom:1px solid #6593cf;
+	padding-top:2px;
+}
+.ytab-strip-wrap{
+	width:100%;	
+}
+.ytab-wrap table{
+	position:relative;
+	top:0; left:0;
+}
+.ytab-strip td{
+	padding:0px;
+	padding-left:2px;
+}
+.ytab-strip a, .ytab-strip span, .ytab-strip em {
+	display:block;
+}
+.ytab-strip a {
+	text-decoration:none !important;
+	-moz-outline: none;
+	outline: none;
+	cursor:pointer;
+}
+.ytab-strip .ytab-text {
+	font:bold 11px tahoma,arial,helvetica;
+	color:#666;
+	overflow:hidden;
+	white-space: nowrap;
+	cursor:pointer;
+	text-overflow: ellipsis;
+}
+.ytab-strip .on .ytab-text {
+	cursor:default;
+	color:#083772;
+}
+.ytab-strip .disabled .ytab-text {
+	cursor:default;
+	color:#aaaaaa;
+}
+.ytab-strip .ytab-inner {
+	 padding:4px 10px;	
+}
+
+.ytab-strip .on .ytab-right {
+	 background: url(/images/ui/tabs/tab-sprite.gif) no-repeat right 0px;
+}
+.ytab-strip .on .ytab-left {
+	 background: url(/images/ui/tabs/tab-sprite.gif) no-repeat 0px -100px;
+}
+.ytab-strip .ytab-right {
+	 background: url(/images/ui/tabs/tab-sprite.gif) no-repeat right -50px;
+}
+.ytab-strip .ytab-left {
+	 background: url(/images/ui/tabs/tab-sprite.gif) no-repeat 0px -150px;
+}
+
+.ytab-strip  a {
+	position:relative;
+	top:1px; left:0;
+}
+.ytab-strip .on a {
+	position:relative;
+}
+.ytab-strip .on .ytab-inner {
+	padding-bottom:5px;
+}
+/** closable tabs */
+.ytab-strip .ytab-closable .ytab-inner{
+	padding-right:22px;
+	position:relative;
+}
+.ytab-strip .ytab-closable .close-icon{
+	line-height: 1px;
+	font-size:1px;
+	background-image:url(/images/ui/layout/tab-close.gif);
+	display:block;
+	position:absolute;
+	right:5px;top:4px;
+	width:11px;height:11px;
+	cursor:pointer;
+}
+.ytab-strip .on .close-icon{
+	background-image:url(/images/ui/layout/tab-close-on.gif);
+}
+.ytab-strip .ytab-closable .close-over{
+	background-image:url(/images/ui/layout/tab-close-on.gif);
+}
+
+.ytabs-bottom .ytab-wrap {
+	border-top:1px solid #6593cf;
+	border-bottom:0px none;
+	padding-top:0px;
+	padding-bottom:2px;
+}
+.ytabs-bottom .ytab-strip .ytab-right {
+	 background: url(/images/ui/tabs/tab-btm-inactive-right-bg.gif) no-repeat bottom left;
+}
+.ytabs-bottom .ytab-strip .ytab-left {
+	 background: url(/images/ui/tabs/tab-btm-inactive-left-bg.gif) no-repeat bottom right;
+}
+.ytabs-bottom .ytab-strip .on .ytab-right {
+	 background: url(/images/ui/tabs/tab-btm-right-bg.gif) no-repeat bottom left;
+}
+.ytabs-bottom .ytab-strip .on .ytab-left {
+	 background: url(/images/ui/tabs/tab-btm-left-bg.gif) no-repeat bottom right;
+}
+.ytabs-bottom .ytab-strip  a {
+	position:relative;
+	top:0; left:0;
+}
+.ytabs-bottom .ytab-strip .on a {
+	margin-top:-1px;
+}
+.ytabs-bottom .ytab-strip .on .ytab-inner {
+	padding-top:5px;
+}
+
+.yui-ext-tabitembody {
+  padding: 10px;
+}

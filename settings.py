@@ -47,7 +47,7 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'reviewboard.urls'
 
-REVIEWBOARD_ROOT = os.path.abspath(os.path.join(os.path.split(__file__)[0], '..'))
+REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
 TEMPLATE_ROOT = '/var/www/reviewboard'
 HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
@@ -56,7 +56,7 @@ MEDIA_URL = '/'
 
 TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
-    os.path.join(REVIEWBOARD_ROOT, 'reviewboard', 'templates'),
+    os.path.join(REVIEWBOARD_ROOT, 'templates'),
 )
 
 INSTALLED_APPS = (
