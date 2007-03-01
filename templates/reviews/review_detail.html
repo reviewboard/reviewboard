@@ -188,15 +188,20 @@
 	}
 
 	function disableDraftButtons() {
-		getEl('btn-draft-save').dom.setAttribute('disabled', 'disabled');
-		getEl('btn-draft-revert').dom.setAttribute('disabled', 'disabled');
+		getEl('btn-draft-save').dom.setAttribute('disabled', 'true');
+		getEl('btn-draft-revert').dom.setAttribute('disabled', 'true');
+	}
+
+	function enableDraftButtons() {
+		getEl('btn-draft-save').dom.removeAttribute('disabled');
+		getEl('btn-draft-revert').dom.removeAttribute('disabled');
 	}
 
 	function showServerError(specific) {
 		dh.append(getEl('error').dom, {
 			tag: 'div', id: 'servererror', children: [
 				{tag: 'h1', html: 'Error:'},
-				{html: specific + "Please try again later. If this " +
+				{html: specific + " Please try again later. If this " +
 					"continues to happen, please report " +
 					"it to your administrator"},
 				{tag: 'input', type: 'submit',
@@ -218,6 +223,7 @@
 			success: hideDraftBanner,
 			failure: function(response) {
 				showServerError('Saving the draft has failed due to a server error.');
+				enableDraftButtons();
 			}
 		});
 	}
@@ -227,7 +233,8 @@
 		YAHOO.util.Connect.asyncRequest('GET', 'draft/revert/', {
 			success: function() { window.location.reload(); },
 			failure: function(response) {
-				showServerError('Reverting the draft has failed due to a server error');
+				showServerError('Reverting the draft has failed due to a server error.');
+				enableDraftButtons();
 			}
 		});
 	}
