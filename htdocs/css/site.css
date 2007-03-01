@@ -152,6 +152,23 @@ ul#accountnav {
   text-align: right;
 }
 
+#error div {
+  background: #ffcd9c;
+  padding: 8px 10px;
+  border: 1px #9a4306 solid;
+  margin-bottom: 10px;
+}
+
+#error h1 {
+  padding: 0;
+  margin: 0;
+  display: inline;
+}
+
+#error input[type='submit'] {
+  margin-left: 10px;
+}
+
 #banner div {
   background: #cdff9c;
   padding: 8px 10px;

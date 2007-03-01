@@ -14,7 +14,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="servererror"></div>
+<div id="error"></div>
 <div id="banner"></div>
 
 <div id="review-request">
@@ -192,16 +192,32 @@
 		getEl('btn-draft-revert').dom.setAttribute('disabled', 'disabled');
 	}
 
+	function showServerError(specific) {
+		dh.append(getEl('error').dom, {
+			tag: 'div', id: 'servererror', children: [
+				{tag: 'h1', html: 'Error:'},
+				{html: specific + "Please try again later. If this " +
+					"continues to happen, please report " +
+					"it to your administrator"},
+				{tag: 'input', type: 'submit',
+				 value: 'Dismiss', onClick: "hideError('servererror');"}
+			]
+		});
+	}
+
+	function hideError(error) {
+		var node = getEl(error);
+		if (node != null) {
+			node.remove();
+		}
+	}
+
 	function submitDraft() {
 		disableDraftButtons();
 		YAHOO.util.Connect.asyncRequest('GET', 'draft/save/', {
 			success: hideDraftBanner,
 			failure: function(response) {
-				getEl('servererror').dom.innerHTML = response.responseText;
-				alert("Saving the draft has failed due to a server " +
-					  "error. Please try again later. If this " +
-					  "continues to happen, please report it to your " +
-					  "administrator.");
+				showServerError('Saving the draft has failed due to a server error.');
 			}
 		});
 	}
@@ -211,10 +227,7 @@
 		YAHOO.util.Connect.asyncRequest('GET', 'draft/revert/', {
 			success: function() { window.location.reload(); },
 			failure: function(response) {
-				alert("Reverting the draft has failed due to a server " +
-					  "error. Please try again later. If this " +
-					  "continues to happen, please report it to your " +
-					  "administrator.");
+				showServerError('Reverting the draft has failed due to a server error');
 			}
 		});
 	}
@@ -235,7 +248,7 @@
 	}
 
 	function hideDraftBanner() {
-		var node = getEl('draft') || getEl('discard')
+		var node = getEl('draft') || getEl('discard');
 
 		if (node != null) {
 			node.remove();
