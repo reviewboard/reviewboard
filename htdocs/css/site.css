@@ -704,7 +704,11 @@ table.sidebyside .commentflag.draft {
   margin: 5px 0 0 0;
   border: 1px #b8b5a0 solid;
   padding: 10px;
-  background-color: #FAFAFA;
+  background-color: #FFFFFF;
+}
+
+.review-request textarea {
+  border: 1px #b8b5a0 solid;
 }
 
 .review-request noscript form {
