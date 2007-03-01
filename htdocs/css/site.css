@@ -186,21 +186,55 @@ ul#accountnav {
   margin-left: 10px;
 }
 
+.box-container {
+  border: 1px #DCDCDC solid;
+  margin-bottom: 10px;
+}
+
+.box {
+  border: 1px #888A85 solid;
+  background: url('/images/box_top_bg.png') repeat-x top left;
+}
+
+.box-inner {
+  background: url('/images/box_bottom_bg.png') repeat-x bottom left;
+}
+
+.box .main {
+  padding: 5px;
+}
+
+.box h1.title {
+  background: #a2bedc url('/images/box_top_bg.png') repeat-x top left;
+  font-size: 120%;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.dashboard .main,
+.reviewlist .main,
+.grouplist .main,
+.submitterlist .main {
+  padding: 10px;
+}
+
+.reviewlist .main {
+  padding: 10px;
+}
+
 table.list {
-  margin-left: 1px;
   border-collapse: collapse;
   width: 100%;
 }
 
 table.list th {
-  background-color: #EEEEEE;
   padding: 4px;
   text-align: left;
 }
 
 table.list tr {
   background-color: #F8F8F8;
-  border: 1px #D3D7CF solid;
+  border: 1px #B3C7BF solid;
 }
 
 table.list tr:hover {
@@ -208,7 +242,12 @@ table.list tr:hover {
 }
 
 table.list tr.headers {
-  border: 1px #888888 solid;
+  border: 0px;
+  border-bottom: 1px #888888 solid;
+}
+
+table.list tr:hover.headers {
+  background-color: transparent;
 }
 
 table.list .age1 {
@@ -587,47 +626,41 @@ table.sidebyside .commentflag.draft {
   width: 400px;
 }
 
-#review-request {
-  background: #fefadf url('/images/details_top_bg.png') repeat-x top left;
-  border: 1px #888a85 solid;
-  margin-bottom: 20px;
+.review-request {
+  background-color: #fefadf;
 }
 
-#review-request .main {
-  padding: 5px;
-}
-
-#review-request label {
+.review-request label {
   font-weight: bold;
   color: #575012;
 }
 
-#review-request #summary {
+.review-request #summary {
   display: inline;
   font-size: 130%;
 }
 
-#review-request #summary a {
+.review-request #summary a {
   color: black;
 }
 
-#review-request #updated_time,
-#review-request #created_time {
+.review-request #updated_time,
+.review-request #created_time {
   text-align: right;
   vertical-align: bottom;
 }
 
-#review-request #diff_revision {
+.review-request #diff_revision {
   text-align: right;
   vertical-align: bottom;
   font-weight: bold;
 }
 
-#review-request #status {
+.review-request #status {
   color: #39350b;
 }
 
-#review-request #details {
+.review-request #details {
   width: 100%;
   border-spacing: 8px;
   border-top: 1px #c2c1b0 solid;
@@ -642,67 +675,65 @@ table.sidebyside .commentflag.draft {
   cursor: pointer;
 }
 
-#review-request #details .label {
+.review-request #details .label {
   text-align: right;
   white-space: nowrap;
 }
 
-#review-request #details .caption {
+.review-request #details .caption {
   color: #39350b;
   font-weight: bold;
   white-space: nowrap;
 }
 
-#review-request #details .indented {
+.review-request #details .indented {
   padding-left: 20px;
 }
 
-#review-request .content {
+.review-request .content {
   margin: 5px;
   padding: 0;
 }
 
-#review-request .content label {
+.review-request .content label {
   display: block;
   margin-top: 20px;
 }
 
-#review-request .content pre {
+.review-request .content pre {
   margin: 5px 0 0 0;
-  border: 1px #888888 solid;
+  border: 1px #b8b5a0 solid;
   padding: 10px;
   background-color: #FAFAFA;
 }
 
-#review-request noscript form {
+.review-request noscript form {
   text-align: right;
   margin: 10px 5px 5px 5px;
 }
 
-#review-request .controls {
-  background: #ede6b7;
-  border-top: 1px #888a85 solid;
-  padding: 4px 8px;
+.review-request .controls {
+  padding: 0px 8px 4px 8px;
   text-align: right;
   list-style: none;
   margin: 0;
 }
 
-#review-request .controls li {
+.review-request .controls li {
   display: inline;
   padding-left: 8px;
 }
 
-#review-request .controls img {
+.review-request .controls img {
   vertical-align: bottom;
 }
 
-#review-request .controls a {
+.review-request .controls a {
   text-decoration: none;
   color: black;
 }
 
-#review-request .controls a:hover {
+.review-request .controls a:hover {
   color: #0000C0;
 }
 
@@ -716,27 +747,16 @@ span.draftlabel {
  * Reviews
  *****************************************************************/
 .review {
-  background: #c6d8ed url('/images/details_top_bg.png') repeat-x top left;
-  border: 1px #888a85 solid;
-  margin-bottom: 20px;
-}
-
-.review.fromsubmitter {
-  background-color: #f7d0ba;
-}
-
-.review .main {
-  padding: 5px;
+  background-color: #e9edf5;
 }
 
 .review .header {
-  border-bottom: 1px #89a0bd solid;
-  padding: 2px 5px 10px 0px;
-  margin-bottom: 10px;
+  padding: 2px 4px;
 }
 
 .review .header a {
   color: black;
+  text-decoration: none;
 }
 
 .review .shipit {
@@ -745,7 +765,7 @@ span.draftlabel {
   padding: 4px 8px;
   float: left;
   position: relative;
-  left: -6px;
+  left: -10px;
   top: -8px;
   font-weight: bold;
   margin-right: 5px;
@@ -762,23 +782,17 @@ span.draftlabel {
 
 .review .body {
   clear: both;
-  border: 1px #888888 solid;
+  border: 1px #AAAAAA solid;
   padding: 10px;
   background-color: #FAFAFA;
   margin: 5px;
 }
 
 .review ul.controls {
-  background: #9fbee2;
-  border-top: 1px #666666 solid;
-  padding: 4px 8px;
+  padding: 0px 8px 4px 8px;
   text-align: right;
   list-style: none;
   margin: 0;
-}
-
-.review.fromsubmitter ul.controls {
-  background: #f3b694;
 }
 
 .review .comments dt thead th {
@@ -801,7 +815,7 @@ span.draftlabel {
  *****************************************************************/
 
 #new-review {
-  background: #fefadf url('/images/details_top_bg.png') repeat-x top left;
+  background: #fefadf url('/images/box_top_bg.png') repeat-x top left;
   border: 1px #888a85 solid;
   margin-bottom: 20px;
 }
@@ -864,30 +878,4 @@ span.draftlabel {
 
 #new-review .controls a:hover {
   color: #0000C0;
-}
-
-/*****************************************************************
- * Dashboard
- *****************************************************************/
-.dashboard {
-  border: 1px black solid;
-  margin-bottom: 20px;
-  padding: 0px;
-}
-
-.dashboard h2 {
-  background: #a2bedc;
-  font-size: 120%;
-  margin: 0;
-  padding: 5px 10px;
-}
-
-.dashboard .content {
-  background: #e2e5e8;
-  margin: 0px;
-  padding: 10px;
-}
-
-.dashboard .content p {
-  margin-top: 0px;
 }

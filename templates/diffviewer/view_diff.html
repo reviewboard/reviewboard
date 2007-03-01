@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load reviewtags %}
+{% load htmlutils %}
 
 {% block title %}Diff Viewer{% endblock %}
 {% block extrahead %}
@@ -16,7 +17,7 @@
 {% endblock %}
 
 {% block content %}
-<div id="review-request">
+{% box review-request %}
  <div class="main">
   <table class="header">
    <colgroup>
@@ -42,7 +43,7 @@
   <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> Collapse changes</a></li>
 {% endif %}
  </ul>
-</div>
+{% endbox %}
 
 <div id="diffs">
 {% if error %}

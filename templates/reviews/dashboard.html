@@ -7,9 +7,9 @@
 
 {% if direct_list or group_list %}
  {% if direct_list %}
- <div class="dashboard">
-  <h2>Direct Reviews</h2>
-  <div class="content">
+  {% box dashboard %}
+  <h1 class="title">Direct Reviews</h1>
+  <div class="main">
    {% if quips.direct %}
    <p>{{ quips.direct.0.text }}</p>
    {% endif %}
@@ -38,13 +38,13 @@
     </tbody>
    </table>
   </div>
- </div>
+  {% endbox %}
  {% endif %}
 
  {% if group_list %}
- <div class="dashboard">
-  <h2>Group Reviews</h2>
-  <div class="content">
+ {% box dashboard %}
+  <h1 class="title">Group Reviews</h1>
+  <div class="main">
    {% if quips.group %}
    <p>{{ quips.group.0.text }}</p>
    {% endif %}
@@ -73,7 +73,7 @@
     </tbody>
    </table>
   </div>
- </div>
+ {% endbox %}
  {% endif %}
 {% else %}
  {% if quips.empty %}
@@ -82,9 +82,9 @@
 {% endif %}
 
 {% if your_list %}
- <div class="dashboard">
-  <h2>Your Pending Reviews</h2>
-  <div class="content">
+ {% box dashboard %}
+  <h1 class="title">Your Pending Reviews</h1>
+  <div class="main">
    {% if quips.mine %}
    <p>{{ quips.mine.0.text }}</p>
    {% endif %}
@@ -110,7 +110,7 @@
     </tbody>
    </table>
   </div>
- </div>
+ {% endbox %}
 {% endif %}
 
 {% endblock %}

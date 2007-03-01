@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% load reviewtags %}
+{% load htmlutils %}
 {% block title %}All submitters{% endblock %}
 
 {% block content %}
-<h1>All submitters</h1>
-
+{% box submitterlist %}
+<h1 class="title">All submitters</h1>
+<div class="main">
 {% if object_list %}
 <table class="list">
  <colgroup>
@@ -25,5 +27,7 @@
 {% else %}
 <p>No submitters.</p>
 {% endif %}
+</div>
+{% endbox %}
 
 {% endblock %}

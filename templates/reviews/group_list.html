@@ -1,10 +1,12 @@
 {% extends "base.html" %}
 {% load reviewtags %}
+{% load htmlutils %}
 {% block title %}Groups{% endblock %}
 
 {% block content %}
-<h1>All groups</h1>
-
+{% box grouplist %}
+<h1 class="title">All groups</h1>
+<div class="main">
 {% if object_list %}
 <table class="list">
  <colgroup>
@@ -25,5 +27,7 @@
 {% else %}
 <p>No groups.</p>
 {% endif %}
+</div>
+{% endbox %}
 
 {% endblock %}

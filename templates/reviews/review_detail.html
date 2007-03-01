@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load reviewtags %}
+{% load htmlutils %}
 
 {% block title %}Review Request | {{details}}{% endblock %}
 {% block extrahead %}
@@ -17,117 +18,117 @@
 <div id="error"></div>
 <div id="banner"></div>
 
-<div id="review-request">
- <div class="main">
-  <table class="header">
-   <colgroup>
-    <col width="100%" />
-    <col />
-   </colgroup>
-   <tr>
-    <td id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></td>
-    <td id="created_time" nowrap="nowrap">Created {{object.time_added|timesince}} ago</td>
-   </tr>
-   <tr>
-    <td id="status">{{object.get_status_display}}</td>
-    <td id="updated_time" nowrap="nowrap">Last updated {{details.last_updated|timesince}} ago</td>
-   </tr>
-  </table>
-  <table id="details">
-   <colgroup>
-    <col width="0*" />
-    <col width="1*" />
-   </colgroup>
-   <colgroup>
-    <col width="0*" />
-    <col width="1*" />
-   </colgroup>
-   <tr>
-    <td class="label"><label for="submitter">Submitter:</label></td>
-    <td class="value"><a id="submitter" href="{{object.submitter.get_absolute_url}}">{% firstof object.submitter.get_full_name object.submitter.username %}</a></td>
-    <td class="caption" colspan="2">Reviewers</td>
-   </tr>
-   <tr>
-    <td class="label"><label for="branch">Branch:</label></td>
-    <td class="value"><span id="branch">{{details.branch}}</span></td>
-    <td class="indented label"><label for="target_groups">Groups:</label></td>
-    <td class="value"><span id="target_groups">
- {%  for group in details.target_groups.all %}
- <a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
- {%  endfor %}
-   </span></td>
-   </tr>
-   <tr>
-    <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
-    <td class="value"><span id="bugs_closed">
- {%  for bug in details.get_bug_list %}
-    <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
- {%  endfor %}
-   </span></td>
-    <td class="indented label"><label for="target_people">People:</label></td>
-    <td class="value"><span id="target_people">
- {%  for person in details.target_people.all %}
- <a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
- {%  endfor %}
-   </span></td>
-   </tr>
-  </table>
-  <div class="content">
-   <label for="description">Description:</label>
-   <pre id="description">{{details.description|escape}}</pre>
-  </div>
-  <div class="content">
-   <label for="testing_done">Testing Done:</label>
-   <pre id="testing_done">{{details.testing_done|escape}}</pre>
-  </div>
-  <!--
-  <div class="content">
-   <label for="images">Images:</label>
-   <div id="images">{{details.images}}</div>
-  </div>
-  -->
+{% box review-request %}
+<div class="main">
+ <table class="header">
+  <colgroup>
+   <col width="100%" />
+   <col />
+  </colgroup>
+  <tr>
+   <td id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></td>
+   <td id="created_time" nowrap="nowrap">Created {{object.time_added|timesince}} ago</td>
+  </tr>
+  <tr>
+   <td id="status">{{object.get_status_display}}</td>
+   <td id="updated_time" nowrap="nowrap">Last updated {{details.last_updated|timesince}} ago</td>
+  </tr>
+ </table>
+ <table id="details">
+  <colgroup>
+   <col width="0*" />
+   <col width="1*" />
+  </colgroup>
+  <colgroup>
+   <col width="0*" />
+   <col width="1*" />
+  </colgroup>
+  <tr>
+   <td class="label"><label for="submitter">Submitter:</label></td>
+   <td class="value"><a id="submitter" href="{{object.submitter.get_absolute_url}}">{% firstof object.submitter.get_full_name object.submitter.username %}</a></td>
+   <td class="caption" colspan="2">Reviewers</td>
+  </tr>
+  <tr>
+   <td class="label"><label for="branch">Branch:</label></td>
+   <td class="value"><span id="branch">{{details.branch}}</span></td>
+   <td class="indented label"><label for="target_groups">Groups:</label></td>
+   <td class="value"><span id="target_groups">
+{%  for group in details.target_groups.all %}
+<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </span></td>
+  </tr>
+  <tr>
+   <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
+   <td class="value"><span id="bugs_closed">
+{%  for bug in details.get_bug_list %}
+   <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </span></td>
+   <td class="indented label"><label for="target_people">People:</label></td>
+   <td class="value"><span id="target_people">
+{%  for person in details.target_people.all %}
+<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </span></td>
+  </tr>
+ </table>
+ <div class="content">
+  <label for="description">Description:</label>
+  <pre id="description">{{details.description|escape}}</pre>
  </div>
- <ul class="controls">
+ <div class="content">
+  <label for="testing_done">Testing Done:</label>
+  <pre id="testing_done">{{details.testing_done|escape}}</pre>
+ </div>
+ <!--
+ <div class="content">
+  <label for="images">Images:</label>
+  <div id="images">{{details.images}}</div>
+ </div>
+ -->
+</div>
+<ul class="controls">
 {% ifequal request.user object.submitter %}
 {%  if details.public %}
 {%    ifequal details.status 'P' %}
-  <li><a href="submitted/">Set Submitted</a></li>
-  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
+ <li><a href="submitted/">Set Submitted</a></li>
+ <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%    else %}
-  <li><a href="reopen/">Reopen for Review</a></li>
+ <li><a href="reopen/">Reopen for Review</a></li>
 {%    endifequal %}
 {%  else %}
-  <li><a href="publish/">Publish</a></li>
-  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
+ <li><a href="publish/">Publish</a></li>
+ <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
-  <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+ <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
 {% else %}
-  <li><a href="scrutinize/">Review</a></li>
+ <li><a href="scrutinize/">Review</a></li>
 {% endifequal %}
 {% ifnotequal details.diffset_history.diffset_set.count 0 %}
-  <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+ <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
 {% endifnotequal %}
 {% ifequal request.user object.submitter %}
-  <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
+ <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
 {% endifequal %}
- </ul>
-</div>
+</ul>
+{% endbox %}
 
 {% for review in reviews %}
 <a name="review{{forloop.counter}}"></a>
-<div class="review{% ifequal review.user object.submitter %} fromsubmitter{% endifequal %}">
- <div class="main">
-  <div class="header">
-   {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
-   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
-   <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
-  </div>
-  <div class="body"><pre>{{review.body|embedcomments:review}}</pre></div>
+{% box review %}
+<div class="main">
+ <div class="header">
+  {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
+  <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
+  <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
  </div>
- <ul class="controls">
-  <li>Reply</li>
- </ul>
+ <div class="body"><pre>{{review.body|embedcomments:review}}</pre></div>
 </div>
+<ul class="controls">
+ <li>Reply</li>
+</ul>
+{% endbox %}
 {% endfor %}
 
 {% ifequal request.user object.submitter %}

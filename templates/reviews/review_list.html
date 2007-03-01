@@ -5,6 +5,9 @@
 
 {% block content %}
 
+{% box reviewlist %}
+<h1 class="title">{% firstof source "All" %} pending review requests</h1>
+<div class="main">
 {% if object_list %}
 <table class="list">
  <colgroup>
@@ -32,5 +35,7 @@
 {% else %}
 <p>No pending reviews.</p>
 {% endif %}
+</div>
+{% endbox %}
 
 {% endblock %}
