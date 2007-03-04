@@ -198,17 +198,26 @@
 		getEl('btn-draft-revert').dom.removeAttribute('disabled');
 	}
 
-	function showServerError(specific) {
+	var errorID = 0;
+	function showError(text) {
+		id = 'error' + errorID;
+		closeHandler = "hideError('" + id + "');";
+
 		dh.append(getEl('error').dom, {
-			tag: 'div', id: 'servererror', children: [
+			tag: 'div', id: id, children: [
 				{tag: 'h1', html: 'Error:'},
-				{html: specific + " Please try again later. If this " +
-					"continues to happen, please report " +
-					"it to your administrator"},
+				{html: text},
 				{tag: 'input', type: 'submit',
-				 value: 'Dismiss', onClick: "hideError('servererror');"}
+				 value: 'Dismiss', onClick: closeHandler}
 			]
 		});
+		errorID += 1;
+	}
+
+	function showServerError(specific) {
+		showError(specific +
+		          " Please try again later. If this continues to" +
+		          " happen, please report it to your administrator");
 	}
 
 	function hideError(error) {
