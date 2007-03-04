@@ -2,10 +2,11 @@ import os
 import re
 
 from django.conf import settings
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 from django.db import models
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+
 
 class Quip(models.Model):
     PLACES = (
@@ -22,6 +23,18 @@ class Quip(models.Model):
             return self.text
         else:
             return '%s...' % self.text[:97]
+
+    class Admin:
+        pass
+
+
+class Group(models.Model):
+    name = models.CharField(maxlength=64)
+    mailing_list = models.EmailField()
+    users = models.ManyToManyField(User, core=False, blank=True)
+
+    def __str__(self):
+        return self.name
 
     class Admin:
         pass
