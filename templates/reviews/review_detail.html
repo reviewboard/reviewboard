@@ -200,8 +200,8 @@
 
 	var errorID = 0;
 	function showError(text) {
-		id = 'error' + errorID;
-		closeHandler = "hideError('" + id + "');";
+		var id = 'error' + errorID;
+		var closeHandler = "hideError('" + id + "');";
 
 		dh.append(getEl('error').dom, {
 			tag: 'div', id: id, children: [

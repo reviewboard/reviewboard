@@ -301,6 +301,10 @@ def publish(request, review_request_id):
 
     if review_request.submitter == request.user:
         review_request.public = True
+
+        if not reviews.target_groups and not reviews.target_people:
+            pass # FIXME show an error
+
         review_request.save()
         return HttpResponseRedirect(review_request.get_absolute_url())
     else:
