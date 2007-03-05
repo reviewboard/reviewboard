@@ -1,0 +1,30 @@
+{% load reviewtags %}
+{% load htmlutils %}
+Review request for {% reviewer_list review_request %}.
+
+
+Summary
+-------
+
+{{ review_request.description }}
+
+{% ifnotequal review_request.bugs_closed "" %}This closes bugs {{ review_request.get_bug_list|humanize_list }}.{% endifnotequal %}
+
+
+Diffs
+-----
+{% for filediff in review_request.diffset_history.diffset_set.latest.files.all %}
+  {{ filediff.source_file }}{% endfor %}
+
+Diff: http://{{domain}}{{ review_request.get_absolute_url }}diff
+
+
+Testing
+-------
+
+{{ review_request.testing_done }}
+
+
+Thanks,
+
+{{ user.first_name }}

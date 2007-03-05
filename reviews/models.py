@@ -52,6 +52,8 @@ class ReviewRequest(models.Model):
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
     status = models.CharField(maxlength=1, choices=STATUSES)
     public = models.BooleanField("Public", default=False)
+    email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
+
     summary = models.CharField("Summary", maxlength=300, core=True)
     description = models.TextField("Description")
     testing_done = models.TextField("Testing Done")
@@ -174,6 +176,8 @@ class Review(models.Model):
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
     public = models.BooleanField("Public", default=False)
     ship_it = models.BooleanField("Ship It", default=False)
+    email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
+
     body = models.TextField("Body")
     comments = models.ManyToManyField(Comment, verbose_name="Comments",
                                       core=False, blank=True)

@@ -164,3 +164,24 @@ def ageid(parser, token):
 @register.filter
 def escapespaces(value):
     return value.replace('  ', '&nbsp; ').replace('\n', '<br />')
+
+
+@register.filter
+def humanize_list(value):
+    if len(value) == 0:
+        return ""
+    elif len(value) == 1:
+        return value[0]
+
+    s = ", ".join(value[:-1])
+
+    if len(value) > 3:
+        s += ","
+
+    return s + " and " + value[-1]
+
+
+@register.filter
+def indent(value, numspaces=4):
+    indent_str = " " * numspaces
+    return indent_str + value.replace("\n", "\n" + indent_str)

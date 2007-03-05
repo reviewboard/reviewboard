@@ -3,6 +3,7 @@ from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.utils import simplejson
 from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.utils.templatetags.htmlutils import humanize_list
 import re
 
 register = template.Library()
@@ -184,3 +185,10 @@ def embedcomments(value, review):
 
     s = loader.render_to_string('reviews/comment.html', {'review': review})
     return re.sub("(\n\n)?{{comments}}(\n\n)?", s, value)
+
+
+@register.simple_tag
+def reviewer_list(review_request):
+    names  = [group.name    for group in review_request.target_groups.all()]
+    names += [user.username for user  in review_request.target_people.all()]
+    return humanize_list(names)

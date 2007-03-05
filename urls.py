@@ -98,6 +98,12 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/$',
      'reviewboard.reviews.views.review_request_field'),
 
+    # E-mail previews
+    (r'^reviews/(?P<review_request_id>[0-9]+)/preview-email/$',
+     'reviewboard.reviews.views.preview_review_request_email'),
+    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/preview-email/(?P<review_id>[0-9]+)/$',
+     'reviewboard.reviews.views.preview_reply_email'),
+
     # Comments
     (r'^reviews/(?P<review_request_id>[0-9]+)/diff/comments/(?P<filediff_id>[0-9]+)/(?P<line>[0-9]+)/$',
      'reviewboard.reviews.views.comments'),

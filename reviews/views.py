@@ -2,12 +2,15 @@ from datetime import datetime
 import re
 
 from django import newforms as forms
-from django.contrib.auth.models import User, Group
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 from django.core.serializers import serialize
 from django.db.models import Q, ManyToManyField
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
@@ -16,8 +19,9 @@ from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
-from reviewboard.reviews.models import Review, Comment
+from reviewboard.reviews.models import Review, Comment, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
+from reviewboard.reviews.email import mail_review_request, mail_review
 from reviewboard import scmtools
 
 
@@ -302,10 +306,15 @@ def publish(request, review_request_id):
     if review_request.submitter == request.user:
         review_request.public = True
 
-        if not reviews.target_groups and not reviews.target_people:
+        if not review_request.target_groups and \
+           not review_request.target_people:
             pass # FIXME show an error
 
         review_request.save()
+
+        if settings.SEND_REVIEW_MAIL:
+            mail_review_request(request.user, review_request)
+
         return HttpResponseRedirect(review_request.get_absolute_url())
     else:
         raise Http403() # XXX Error out
@@ -526,6 +535,8 @@ def reply_save(request, review_request_id, revision, publish=False):
         review.save()
 
         if publish:
+            if settings.SEND_REVIEW_MAIL:
+                mail_review(request.user, review)
             return HttpResponse("Published")
         else:
             return HttpResponse("Saved")
@@ -585,3 +596,37 @@ def reply_comments(request, review_request_id, revision,
     return render_to_response(template_name, RequestContext(request, {
         'comments': comments,
     }))
+
+
+@login_required
+def preview_review_request_email(
+        request, review_request_id,
+        template_name='reviews/review_request_email.html'):
+
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    return HttpResponse(render_to_string(template_name,
+        RequestContext(request, {
+            'review_request': review_request,
+            'user': request.user,
+            'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+        }),
+    ), mimetype='text/plain')
+    return response
+
+
+@login_required
+def preview_reply_email(request, review_request_id, review_id,
+                        template_name='reviews/review_email.html'):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = get_object_or_404(Review, pk=review_id)
+
+    return HttpResponse(render_to_string(template_name,
+        RequestContext(request, {
+            'review_request': review_request,
+            'review': review,
+            'user': request.user,
+            'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+        }),
+    ), mimetype='text/plain')
+    return response
