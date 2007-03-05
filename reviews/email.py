@@ -63,7 +63,7 @@ def mail_review_request(user, review_request):
     review_request.email_message_id = \
         send_review_mail(user, review_request,
                          "Review Request: %s" % review_request.summary, None,
-                         'reviews/review_request_email.html')
+                         'reviews/review_request_email.txt')
     review_request.save()
 
 
@@ -77,6 +77,6 @@ def mail_review(user, review):
                          "Re: Review Request: %s" %
                          review.review_request.summary,
                          review.review_request.email_message_id, # XXX
-                         'reviews/review_email.html',
+                         'reviews/review_email.txt',
                          {'review': review});
     review.save()
