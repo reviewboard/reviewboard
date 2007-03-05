@@ -19,8 +19,10 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     being added to the template context. Returns the resulting message ID.
     """
     current_site = Site.objects.get(pk=settings.SITE_ID)
-    from_email = 'chipx86@chipx86.com' # XXX
-    recipient_list = ['chipx86@chipx86.com'] # XXX
+    from_email = user.email
+    recipient_list =
+        [user.email for user in review_request.target_users.all()] +
+        [group.mailing_list for group in review_request.target_groups.all()]
 
     context['domain'] = current_site.domain
     context['review_request'] = review_request
