@@ -20,8 +20,8 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     """
     current_site = Site.objects.get(pk=settings.SITE_ID)
     from_email = user.email
-    recipient_list =
-        [user.email for user in review_request.target_users.all()] +
+    recipient_list = \
+        [user.email for user in review_request.target_users.all()] + \
         [group.mailing_list for group in review_request.target_groups.all()]
 
     context['domain'] = current_site.domain
