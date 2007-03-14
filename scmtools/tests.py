@@ -139,7 +139,7 @@ class PerforceTests(unittest.TestCase):
         """Testing PerforceTool.get_file"""
 
         file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py',
-                                  157)
+                                  1)
         self.assertEqual(hash(file), 1241177531)
 
 

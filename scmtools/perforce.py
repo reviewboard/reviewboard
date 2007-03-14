@@ -39,6 +39,9 @@ class PerforceTool(SCMTool):
             self.p4.run_describe('-s', str(changesetid)),
             changesetid)
 
+    def get_diffs_use_absolute_paths(self):
+        return True
+
     def get_file(self, path, revision=HEAD):
         self._connect()
 
@@ -48,9 +51,13 @@ class PerforceTool(SCMTool):
         if revision == HEAD:
             file = path
         else:
-            file = '%s@%s' % (path, revision)
+            file = '%s#%s' % (path, revision)
 
         return '\n'.join(self.p4.run_print(file))
+
+    def parse_diff_revision(self, revision_str):
+        # FIXME: perforce gives us wacky diff formats.
+        return revision_str
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):

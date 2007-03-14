@@ -7,7 +7,8 @@ import reviewboard.scmtools as scmtools
 from scmtools import PRE_CREATION
 
 class UploadDiffForm(forms.Form):
-    basedir = forms.CharField()
+    # XXX: it'd be really nice to have "required" dependent on scmtool
+    basedir = forms.CharField(required=False)
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, file, diffset_history=None):
