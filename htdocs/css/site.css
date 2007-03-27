@@ -635,6 +635,11 @@ table.sidebyside .commentflag.draft {
   color: #575012;
 }
 
+.inline-editor-form.summary-editor {
+  margin-top: -2px;
+  margin-left: -3px;
+}
+
 .review-request #summary {
   display: inline;
   font-size: 130%;
@@ -791,6 +796,12 @@ span.draftlabel {
   background-color: #FAFAFA;
   margin: 5px;
 }
+
+.review .body .body_top,
+.review .body .body_bottom {
+  margin: 0px;
+}
+
 
 .review ul.controls {
   padding: 0px 8px 4px 8px;

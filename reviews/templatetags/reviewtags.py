@@ -176,15 +176,9 @@ def commentcounts(parser, token):
     return CommentCounts(filediff)
 
 
-@register.filter
-def embedcomments(value, review):
-    value = re.sub("{#.*?#}", "", value)
-
-    if value.find("{{comments}}") == -1:
-        return value
-
-    s = loader.render_to_string('reviews/comment.html', {'review': review})
-    return re.sub("(\n\n)?{{comments}}(\n\n)?", s, value)
+@register.simple_tag
+def comments(review):
+    return loader.render_to_string('reviews/comment.html', {'review': review})
 
 
 @register.simple_tag

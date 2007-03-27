@@ -485,8 +485,8 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
             except Comment.DoesNotExist:
                 pass
 
-            stripped_body = review.body.strip()
-            if (stripped_body == "{{comments}}" or stripped_body == "") and \
+            if review.body_top.strip() == "" and \
+               review.body_bottom.strip() == "" and \
                review.comments.count() == 0:
                 review.delete()
         else:
@@ -530,8 +530,8 @@ def reply_save(request, review_request_id, revision, publish=False):
             reviewed_diffset=diffset)
         review.public = publish
         review.ship_it = request.POST.has_key('shipit')
-        review.body = request.POST['body_top'] + "\n\n{{comments}}\n\n" + \
-                      request.POST['body_bottom']
+        review.body_top = request.POST['body_top']
+        review.body_bottom = request.POST['body_bottom']
         review.save()
 
         if publish:

@@ -1,5 +1,4 @@
 {% load difftags %}
-</pre>
 {% for comment in review.comments.all %}
 <dl class="comments">
  <dt>
@@ -37,4 +36,3 @@ lines <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">
  <dd><pre>{{comment.text|escape}}</pre></dd>
 </dl>
 {% endfor %}
-<pre>

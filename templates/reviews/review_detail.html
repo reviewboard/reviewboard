@@ -123,7 +123,11 @@
   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
   <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
  </div>
- <div class="body"><pre>{{review.body|embedcomments:review}}</pre></div>
+ <div class="body">
+  <pre class="body_top">{{review.body_top}}</pre>
+  {% comments review %}
+  <pre class="body_bottom">{{review.body_bottom}}</pre>
+ </div>
 </div>
 <ul class="controls">
  <li>Reply</li>

@@ -178,7 +178,8 @@ class Review(models.Model):
     ship_it = models.BooleanField("Ship It", default=False)
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
 
-    body = models.TextField("Body")
+    body_top = models.TextField("Body (Top)")
+    body_bottom = models.TextField("Body (Bottom)")
     comments = models.ManyToManyField(Comment, verbose_name="Comments",
                                       core=False, blank=True)
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
@@ -189,29 +190,29 @@ class Review(models.Model):
     def __str__(self):
         return "Review of '%s'" % self.review_request
 
-    def body_top(self):
-        i = self.body.find("\n\n{{comments}}")
-
-        if i == -1:
-            i = self.body.find("{{comments}}")
-            if i == -1:
-                return self.body
-
-        return self.body[0:i]
-
-
-    def body_bottom(self):
-        i = self.body.find("{{comments}}")
-
-        if i == -1:
-            return ""
-
-        i += len("{{comments}}")
-
-        if self.body[i:i + 2] == "\n\n":
-            i += 2
-
-        return self.body[i:]
+#    def body_top(self):
+#        i = self.body.find("\n\n{{comments}}")
+#
+#        if i == -1:
+#            i = self.body.find("{{comments}}")
+#            if i == -1:
+#                return self.body
+#
+#        return self.body[0:i]
+#
+#
+#    def body_bottom(self):
+#        i = self.body.find("{{comments}}")
+#
+#        if i == -1:
+#            return ""
+#
+#        i += len("{{comments}}")
+#
+#        if self.body[i:i + 2] == "\n\n":
+#            i += 2
+#
+#        return self.body[i:]
 
     class Admin:
         list_display = ('review_request', 'user', 'public', 'ship_it',
