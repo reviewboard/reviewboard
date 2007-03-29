@@ -129,9 +129,6 @@
   <pre class="body_bottom">{{review.body_bottom}}</pre>
  </div>
 </div>
-<ul class="controls">
- <li>Reply</li>
-</ul>
 {% endbox %}
 {% endfor %}
 
@@ -257,7 +254,7 @@
 		if (getEl('draft') == null) {
 			dh.append(getEl('banner').dom, {
 				tag: 'div', id: 'draft', children: [
-					{tag: 'h1', html: 'This is a draft.'},
+					{tag: 'h1', html: 'This review request is a draft.'},
 					{html: ' Be sure to save when finished.'},
 					{tag: 'input', type: 'submit', id: 'btn-draft-save',
 					 value: 'Save', onClick: 'submitDraft();'},

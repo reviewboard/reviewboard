@@ -79,16 +79,16 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.setstatus'),
 
     # Review request replies
-    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/(?P<revision>[0-9]+)/comments/$',
+    (r'^reviews/(?P<review_request_id>[0-9]+)/replies/(?P<revision>[0-9]+)/comments/$',
      'reviewboard.reviews.views.reply_comments'),
 
-    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/(?P<revision>[0-9]+)/save/$',
+    (r'^reviews/(?P<review_request_id>[0-9]+)/replies/(?P<revision>[0-9]+)/save/$',
      'reviewboard.reviews.views.reply_save'),
 
-    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/(?P<revision>[0-9]+)/delete/$',
+    (r'^reviews/(?P<review_request_id>[0-9]+)/replies/(?P<revision>[0-9]+)/delete/$',
      'reviewboard.reviews.views.reply_delete'),
 
-    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/(?P<revision>[0-9]+)/publish/$',
+    (r'^reviews/(?P<review_request_id>[0-9]+)/replies/(?P<revision>[0-9]+)/publish/$',
      'reviewboard.reviews.views.reply_publish'),
 
     # Review request JSON/XML handlers
@@ -101,7 +101,7 @@ urlpatterns = patterns('',
     # E-mail previews
     (r'^reviews/(?P<review_request_id>[0-9]+)/preview-email/$',
      'reviewboard.reviews.views.preview_review_request_email'),
-    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/preview-email/(?P<review_id>[0-9]+)/$',
+    (r'^reviews/(?P<review_request_id>[0-9]+)/replies/preview-email/(?P<review_id>[0-9]+)/$',
      'reviewboard.reviews.views.preview_reply_email'),
 
     # Comments

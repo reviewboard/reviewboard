@@ -356,7 +356,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 	},
 
 	getReviewActionURL: function() {
-		return gReviewRequestPath + "reply/" + gRevision + "/";
+		return gReviewRequestPath + "replies/" + gRevision + "/";
 	},
 
 	commentAction: function(action, onSuccess) {
