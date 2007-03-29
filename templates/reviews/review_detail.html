@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{% load reviewtags %}
+{% load difftags %}
 {% load htmlutils %}
+{% load reviewtags %}
 
 {% block title %}Review Request | {{details}}{% endblock %}
 {% block extrahead %}
@@ -125,7 +126,45 @@
  </div>
  <div class="body">
   <pre class="body_top">{{review.body_top}}</pre>
-  {% comments review %}
+{% if review.comments.all %}
+   <dl class="comments">
+{% for comment in review.comments.all %}
+    <dt>
+     <table class="sidebyside">
+      <colgroup>
+       <col class="line" />
+       <col class="left" />
+       <col class="right" />
+      </colgroup>
+      <thead>
+       <tr>
+        <th colspan="3" class="filename">
+         <a href="diff/{{review.reviewed_diffset.id}}">{{comment.filediff.dest_file}}</a>
+{% ifequal comment.first_line comment.last_line %}
+         line <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a>
+{% else %}
+         lines <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a> - <b>{{comment.last_line}}</b>
+{% endifequal %}
+        </th>
+       </tr>
+      </thead>
+{% forchunkswithlines comment.filediff comment.first_line comment.num_lines %}
+      <tbody class="{{chunk.change}}">
+{% for line in chunk.lines %}
+       <tr>
+        <th>{{line.0}}</td>
+        <td><pre>{{ line.1|highlightregion:line.2 }}</pre></td>
+        <td><pre>{{ line.3|highlightregion:line.4 }}</pre></td>
+       </tr>
+{% endfor %}
+      </tbody>
+{% endforchunkswithlines %}
+     </table>
+    </dt>
+    <dd><pre>{{comment.text|escape}}</pre></dd>
+{% endfor %}
+   </dl>
+{% endif %}
   <pre class="body_bottom">{{review.body_bottom}}</pre>
  </div>
 </div>
