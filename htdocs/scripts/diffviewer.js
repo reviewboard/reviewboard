@@ -10,7 +10,7 @@ CommentDialog = function(el) {
 		autoTabs: true,
 		proxyDrag: true,
 		constraintoviewport: false,
-		fixedcenter: true,
+		fixedcenter: true
 	});
 
 	var tabs = this.getTabs();
@@ -52,7 +52,7 @@ CommentDialog = function(el) {
 
 	this.commentButtons = [
 		this.addButton("Save Comment", this.postComment, this),
-		this.addButton("Delete Comment", this.deleteComment, this),
+		this.addButton("Delete Comment", this.deleteComment, this)
 	];
 
 
@@ -66,14 +66,14 @@ CommentDialog = function(el) {
 	this.reviewButtons = [
 		this.addButton("Save Draft", this.saveReview, this),
 		this.addButton("Delete Draft", this.deleteReview, this),
-		this.addButton("Publish", this.publishReview, this),
+		this.addButton("Publish", this.publishReview, this)
 	];
 
 	this.bodyTop = new RB.widgets.AutosizeTextArea('id_body_top', {
 		autoGrowVertical: true
 	});
 	this.bodyBottom = new RB.widgets.AutosizeTextArea('id_body_bottom', {
-		autoGrowVertical: true,
+		autoGrowVertical: true
 	});
 
 
@@ -201,7 +201,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 
 			failure: function(res) {
 				this.showError(res.statusText);
-			}.createDelegate(this),
+			}.createDelegate(this)
 		});
 	},
 
@@ -217,7 +217,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 				getEl('all-review-comments').dom.innerHTML =
 					"<b>Error:</b> Unable to retrieve list of comments: " +
 					res.statusText;
-			}.createDelegate(this),
+			}.createDelegate(this)
 		});
 	},
 
@@ -237,7 +237,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 				cls: 'inline-comment-editor',
 				showEditIcon: true,
 				stripTags: true,
-				hideButtons: true,
+				hideButtons: true
 			});
 
 			this.inlineEditor.on('beginedit', function(editor) {
@@ -372,7 +372,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 
 			failure: function(res) {
 				this.showError(res.statusText);
-			}.createDelegate(this),
+			}.createDelegate(this)
 		});
 	},
 
@@ -387,7 +387,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 
 			failure: function(res) {
 				this.showError(res.statusText);
-			}.createDelegate(this),
+			}.createDelegate(this)
 		});
 	},
 
@@ -404,7 +404,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 	hideMessage: function() {
 		this.messageDiv.dom.className = "";
 		this.messageDiv.hide();
-	},
+	}
 });
 
 
@@ -515,7 +515,7 @@ var gActions = [
 	{ // Go to footer
 		keys: "GU:",
 		onPress: function() {}
-	},
+	}
 ];
 
 // State variables
@@ -531,7 +531,7 @@ var gSelection = {
 	beginNum: 0,
 	end: null,
 	endNum: 0,
-	lastSeenIndex: 0,
+	lastSeenIndex: 0
 };
 
 YAHOO.util.Event.on(window, "load", onPageLoaded);

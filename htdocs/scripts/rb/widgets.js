@@ -14,7 +14,7 @@ RB.widgets.InlineEditor = function(config) {
 
 	this.form = dh.insertBefore(this.el.dom, {
 		tag: 'form',
-		cls: 'inline-editor-form ' + (this.cls || ''),
+		cls: 'inline-editor-form ' + (this.cls || '')
 	}, true);
 	this.form.enableDisplayMode();
 
@@ -22,14 +22,14 @@ RB.widgets.InlineEditor = function(config) {
 		tag: 'input',
 		type: 'submit',
 		value: 'Save',
-		cls: 'save',
+		cls: 'save'
 	};
 
 	var cancelButton = {
 		tag: 'input',
 		type: 'submit',
 		value: 'Cancel',
-		cls: 'cancel',
+		cls: 'cancel'
 	};
 
 	if (this.multiline) {
@@ -38,7 +38,7 @@ RB.widgets.InlineEditor = function(config) {
 			html: this.value || '',
 			wrap: 'none',
 			rows: 10,
-			cols: 80,
+			cols: 80
 		});
 
 		block = this.form.createChild({tag: 'div'});
@@ -47,7 +47,7 @@ RB.widgets.InlineEditor = function(config) {
 	} else {
 		this.field = this.form.createChild({
 			tag: 'input',
-			type: 'text',
+			type: 'text'
 		});
 
 		this.saveButton = this.form.createChild(saveButton);
@@ -63,7 +63,7 @@ RB.widgets.InlineEditor = function(config) {
 			cls: 'editicon',
 			src: '/images/edit.png',
 			width: 20,
-			height: 14,
+			height: 14
 		};
 
 		if (this.multiline) {
@@ -84,7 +84,7 @@ RB.widgets.InlineEditor = function(config) {
 
 	this.events = {
 		'complete': true,
-		'beginedit': true,
+		'beginedit': true
 	};
 
 	if (!this.useEditIconOnly) {
@@ -98,12 +98,12 @@ RB.widgets.InlineEditor = function(config) {
 		{
 			key: [10, 13],
 			fn: this.onEnter,
-			scope: this,
+			scope: this
 		},
 		{
 			key: 27,
 			fn: this.onEscape,
-			scope: this,
+			scope: this
 		}
 	]);
 
@@ -181,7 +181,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
 	save: function(e) {
 		if (e) {
-			e.preventDefault();
+			YAHOO.util.Event.preventDefault(e);
 		}
 
 		this.completeEdit();
@@ -189,7 +189,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
 	cancel: function(e) {
 		if (e) {
-			e.preventDefault();
+			YAHOO.util.Event.preventDefault(e);
 		}
 		this.el.dom.innerHTML = this.initialValue;
 		this.hide();
@@ -303,7 +303,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 		};
 
 		return YAHOO.util.Dom.getElementsBy(method, 'label', document);
-	},
+	}
 });
 
 
@@ -320,7 +320,7 @@ RB.widgets.InlineCommaListEditor = function(config) {
 YAHOO.extendX(RB.widgets.InlineCommaListEditor, RB.widgets.InlineEditor, {
 	getList: function() {
 		return this.getValue().split(/,\s*/);
-	},
+	}
 });
 
 
@@ -335,7 +335,7 @@ RB.widgets.AutosizeTextArea = function(el, config) {
 	this.minHeight = this.minHeight || this.size;
 
 	this.events = {
-		'resize': true,
+		'resize': true
 	};
 
 	if (this.autoGrowVertical) {
@@ -373,5 +373,5 @@ YAHOO.extendX(RB.widgets.AutosizeTextArea, YAHOO.ext.util.Observable, {
 
 	getHeight: function() {
 		return this.size + this.resizeStep;
-	},
+	}
 });

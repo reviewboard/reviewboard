@@ -8,7 +8,7 @@ RB.utils.String.prototype = {
 
 	stripTags: function() {
 		return this.replace(/<\/?[^>]+>/gi, '');
-	},
+	}
 };
 
 YAHOO.augment(String, RB.utils.String);
