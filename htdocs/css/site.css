@@ -34,6 +34,10 @@ form th {
   vertical-align: top;
 }
 
+img {
+  behavior: url("/scripts/pngfix.htc");
+}
+
 /*
  * Inline editor forms
  */
@@ -808,6 +812,15 @@ span.draftlabel {
   text-align: right;
   list-style: none;
   margin: 0;
+}
+
+.review .body .controls {
+  //border-top: 1px #E6E6E6 solid;
+  border-bottom: 1px #E9E9E9 solid;
+}
+
+.review .body .controls a {
+  text-decoration: none;
 }
 
 .review .comments dt thead th {

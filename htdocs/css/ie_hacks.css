@@ -1,0 +1,11 @@
+.box,
+.box-inner,
+.box h1.title {
+  background-image: none;
+}
+
+.review-request .controls {
+  border-top: 1px #999999 solid;
+  padding-top: 3px;
+  background-color: #ECECEC;
+}
