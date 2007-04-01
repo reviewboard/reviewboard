@@ -1,3 +1,63 @@
+// Constants
+var BACKWARD = -1;
+var FORWARD  = 1;
+var INVALID  = -1;
+var DIFF_SCROLLDOWN_AMOUNT = 100;
+var VISIBLE_CONTEXT_SIZE = 5;
+
+var gActions = [
+	{ // Previous file
+		keys: "aAKP<m",
+		onPress: function() { scrollToAnchor(GetNextFileAnchor(BACKWARD)); }
+	},
+
+	{ // Next file
+		keys: "fFJN>/",
+		onPress: function() { scrollToAnchor(GetNextFileAnchor(FORWARD)); }
+	},
+
+	{ // Previous diff
+		keys: "sSkp,,",
+		onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
+	},
+
+	{ // Next diff
+		keys: "dDjn..",
+		onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
+	},
+
+	{ // Recenter
+		keys: unescape("%0D"),
+		onPress: function() { scrollToAnchor(gSelectedAnchor); }
+	},
+
+	{ // Go to header
+		keys: "gu;",
+		onPress: function() {}
+	},
+
+	{ // Go to footer
+		keys: "GU:",
+		onPress: function() {}
+	}
+];
+
+// State variables
+var gSelectedAnchor = INVALID;
+var gCurrentAnchor = 0;
+var gFileAnchorToId = {};
+var gCommentDlg = null;
+var gCommentBlocks = {};
+var gGhostCommentFlag = null;
+var gSelection = {
+	table: null,
+	begin: null,
+	beginNum: 0,
+	end: null,
+	endNum: 0,
+	lastSeenIndex: 0
+};
+
 var dh = YAHOO.ext.DomHelper;
 
 CommentDialog = function(el) {
@@ -84,7 +144,7 @@ CommentDialog = function(el) {
 	this.reviewBody = getEl('review-body');
 	this.reviewBody.setStyle('overflow', 'auto');
 	this.reviewBody.on('click', function(e) {
-		if (e.target == this.reviewBody.dom) {
+		if ((e.target || e.srcElement) == this.reviewBody.dom) {
 			this.bodyBottom.el.focus()
 		}
 	}, this, true);
@@ -154,17 +214,22 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 		var container = getEl(tab.bodyEl.dom.parentNode);
 		var newHeight;
 
+		container.beginMeasure();
+
 		if (forcedHeight) {
 			newHeight = forcedHeight;
 		} else {
-			newHeight = container.dom.clientHeight -
-			            (el.getY() - container.getY()) -
-		                tab.bodyEl.getPadding("b");
+			newHeight = container.getHeight() -
+			            el.dom.offsetTop -
+		                tab.bodyEl.getPadding("tb") -
+		                tab.bodyEl.getBorderWidth("tb");
 		}
 
 		el.setSize(container.dom.clientWidth -
-		           (el.getX() - container.getX()) - tab.bodyEl.getPadding("r"),
+				   tab.bodyEl.getPadding("lr") -
+				   tab.bodyEl.getBorderWidth("lr"),
 			       newHeight);
+		container.endMeasure();
 	},
 
 
@@ -451,7 +516,7 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 
 	this.el = dh.append(lineNumCell, {
 		tag: 'span',
-		cls: 'commentflag',
+		cls: 'commentflag'
 	}, true);
 
 	for (comment in comments) {
@@ -472,69 +537,6 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 
 	gCommentBlocks[this.el.id] = this;
 };
-
-
-// Constants
-var BACKWARD = -1;
-var FORWARD  = 1;
-var INVALID  = -1;
-var DIFF_SCROLLDOWN_AMOUNT = 100;
-var VISIBLE_CONTEXT_SIZE = 5;
-
-var gActions = [
-	{ // Previous file
-		keys: "aAKP<m",
-		onPress: function() { scrollToAnchor(GetNextFileAnchor(BACKWARD)); }
-	},
-
-	{ // Next file
-		keys: "fFJN>/",
-		onPress: function() { scrollToAnchor(GetNextFileAnchor(FORWARD)); }
-	},
-
-	{ // Previous diff
-		keys: "sSkp,,",
-		onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
-	},
-
-	{ // Next diff
-		keys: "dDjn..",
-		onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
-	},
-
-	{ // Recenter
-		keys: unescape("%0D"),
-		onPress: function() { scrollToAnchor(gSelectedAnchor); }
-	},
-
-	{ // Go to header
-		keys: "gu;",
-		onPress: function() {}
-	},
-
-	{ // Go to footer
-		keys: "GU:",
-		onPress: function() {}
-	}
-];
-
-// State variables
-var gSelectedAnchor = INVALID;
-var gCurrentAnchor = 0;
-var gFileAnchorToId = {};
-var gCommentDlg = null;
-var gCommentBlocks = {};
-var gGhostCommentFlag = null;
-var gSelection = {
-	table: null,
-	begin: null,
-	beginNum: 0,
-	end: null,
-	endNum: 0,
-	lastSeenIndex: 0
-};
-
-YAHOO.util.Event.on(window, "load", onPageLoaded);
 
 function onKeyPress(evt) {
 	var keyChar = String.fromCharCode(YAHOO.util.Event.getCharCode(evt));
@@ -639,7 +641,7 @@ function addComments(fileid, lines) {
 	var table = getEl(fileid);
 
 	table.on('mousedown', function(e) {
-		var node = e.target;
+		var node = e.target || e.srcElement;
 
 		if (isLineNumCell(node)) {
 			YAHOO.util.Event.stopEvent(e);
@@ -655,7 +657,7 @@ function addComments(fileid, lines) {
 	});
 
 	table.on('mouseup', function(e) {
-		var node = e.target;
+		var node = e.target || e.srcElement;
 
 		if (isLineNumCell(node)) {
 			YAHOO.util.Event.stopEvent(e);
@@ -698,7 +700,8 @@ function addComments(fileid, lines) {
 	});
 
 	table.on('mouseover', function(e) {
-		var node = getEl(e.target);
+		var node = getEl(e.target || e.srcElement);
+
 		if (node.hasClass("commentflag")) {
 			node = getEl(node.dom.parentNode);
 		}
@@ -726,7 +729,7 @@ function addComments(fileid, lines) {
 				if (!gGhostCommentFlag) {
 					gGhostCommentFlag = dh.append(document.body, {
 						tag: 'img',
-						src: '/images/comment-ghost.png',
+						src: '/images/comment-ghost.png'
 					}, true);
 					gGhostCommentFlag.enableDisplayMode();
 					gGhostCommentFlag.setAbsolutePositioned();
@@ -826,3 +829,9 @@ function SetHighlighted(anchor, highlighted) {
 
 	controlsNode.textContent = (highlighted ? "▶" : "");
 }
+
+function addAnchorMapping(name, id) {
+	gFileAnchorToId[name] = id;
+}
+
+YAHOO.util.Event.on(window, "load", onPageLoaded);

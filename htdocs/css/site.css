@@ -597,8 +597,8 @@ table.sidebyside .commentflag.draft {
 #comment-dlg #review-body textarea {
   margin: 0px;
   height: 1.5em;
-  border: 0;
   overflow: hidden;
+  border: 0;
 }
 
 #comment-dlg #review-body #all-review-comments {
