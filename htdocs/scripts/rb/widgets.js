@@ -280,12 +280,9 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 				this.form.setWidth(getEl(this.form.dom.parentNode).getWidth());
 				this.field.setWidth(this.form.getWidth());
 			} else {
-				var parentWidth = getEl(this.el.dom.parentNode).getWidth();
-				var elWidth = this.el.getWidth();
-
-				this.form.setWidth(
-					Math.min(elWidth + (parentWidth - elWidth) / 2,
-							 parentWidth));
+				this.el.beginMeasure();
+				this.form.setWidth(this.el.getWidth());
+				this.el.endMeasure();
 
 				var saveButtonX = this.saveButton.getX();
 				var buttonsWidth =
