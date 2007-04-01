@@ -522,6 +522,11 @@ table.sidebyside .commentflag.draft {
   background: url('/images/comment-draft.png') no-repeat;
 }
 
+#comment-dlg #commentform {
+  padding: 0;
+  margin: 0;
+}
+
 #comment-dlg #commentform .label {
   display: block;
   font-weight: bold;
@@ -584,6 +589,11 @@ table.sidebyside .commentflag.draft {
 #comment-dlg #tab-review label {
   display: block;
   padding-top: 10px;
+}
+
+#comment-dlg #reviewform {
+  padding: 0;
+  margin: 0;
 }
 
 #comment-dlg #review-body {
