@@ -131,7 +131,8 @@ def review_detail(request, object_id, template_name):
         'draft': draft,
         'object': review_request,
         'details': draft or review_request,
-        'reviews': review_request.review_set.filter(public=True),
+        'reviews': review_request.review_set.filter(public=True,
+                                                    is_reply=False),
         'request': request,
     }))
 

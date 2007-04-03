@@ -826,25 +826,55 @@ span.draftlabel {
 
 .review .body .controls {
   //border-top: 1px #E6E6E6 solid;
-  border-bottom: 1px #E9E9E9 solid;
 }
 
 .review .body .controls a {
   text-decoration: none;
 }
 
-.review .comments dt thead th {
+.review .diff-comments dt thead th {
   font-weight: normal;
 }
 
-.review .comments .filename a {
+.review .diff-comments .filename a {
   font-weight: bold;
   color: black;
   text-decoration: underline;
 }
 
-.review .comments dd {
+.review .diff-comments dd {
   margin-bottom: 20px;
+}
+
+.review ol.reply-comments {
+  margin: 20px 0px 0px 0px;
+  padding: 0px;
+}
+
+.review li.reply-comment {
+  display: inline;
+}
+
+.review li.reply-comment dl {
+  border-left: 2px #D0D0D0 solid;
+  margin: 0px;
+  padding: 5px;
+}
+
+.review li.reply-comment dt a {
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: none;
+  color: #AB5603;
+}
+
+.review li.reply-comment dt span {
+  color: #487858;
+  font-weight: normal;
+}
+
+.review li.reply-comment dd {
+  margin-left: 10px;
 }
 
 

@@ -13,6 +13,7 @@
 <script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
 <script type="text/javascript" src="/scripts/rb/core.js"></script>
 <script type="text/javascript" src="/scripts/rb/widgets.js"></script>
+<script type="text/javascript" src="/scripts/reviews.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -126,8 +127,34 @@
  </div>
  <div class="body">
   <pre class="body_top">{{review.body_top}}</pre>
+  <ol class="reply-comments" id="rcbt-{{review.id}}">
+{% for reply in review.body_top_replies.all %}
+   <li class="reply-comment">
+    <dl>
+     <dt>
+      {% if not reply.public %}<label for="yourcomment_rcbt-{{reply.id}}">{% endif %}
+      <a href="{{reply.user.get_absolute_url}}">{% firstof reply.user.get_full_name reply.user.username %}</a>
+      <span class="timestamp">{{reply.timestamp|timesince}} ago.</span>
+      {% if not reply.public %}</label>{% endif %}
+     </dt>
+     <dd{% if not reply.public %} id="yourcomment_rcbt-{{reply.id}}"{% endif %}><pre>{{reply.body_top|escape}}</pre></dd>
+    </dl>
+   </li>
+{% if not reply_comment.review_set.get.public %}
+   <script language="javascript">
+   registerCommentEditor("yourcomment_rcbt-{{reply.id}}");
+   </script>
+{% endif %}
+{% endfor %}
+  </ol>
+  <ul class="controls">
+   <li><a href="#" onclick="showCommentForm('rcbt-{{review.id}}');">Add comment</a></li>
+  </ul>
+  <script language="javascript">
+  registerCommentSection("{{review.id}}", "rcbt-{{reply.id}}");
+  </script>
 {% if review.comments.all %}
-   <dl class="comments">
+   <dl class="diff-comments">
 {% for comment in review.comments.all %}
     <dt>
      <table class="sidebyside">
@@ -161,11 +188,65 @@
 {% endforchunkswithlines %}
      </table>
     </dt>
-    <dd><pre>{{comment.text|escape}}</pre></dd>
+    <dd>
+     <pre>{{comment.text|escape}}</pre>
+     <ol class="reply-comments" id="rc-{{comment.id}}">
+   {% for reply_comment in comment.comment_set.all %}
+      <li class="reply-comment">
+       <dl>
+        <dt>
+         {% if not reply_comment.review_set.get.public %}<label for="yourcomment_rc-{{reply_comment.id}}">{% endif %}
+         <a href="{{reply_comment.review_set.get.user.get_absolute_url}}">{% firstof reply_comment.review_set.get.user.get_full_name reply_comment.review_set.get.user.username %}</a>
+         <span class="timestamp">{{reply_comment.timestamp|timesince}} ago.</span>
+         {% if not reply_comment.review_set.get.public %}</label>{% endif %}
+        </dt>
+        <dd{% if not reply_comment.review_set.get.public %} id="yourcomment_rc-{{reply_comment.id}}"{% endif %}><pre>{{reply_comment.text|escape}}</pre></dd>
+       </dl>
+      </li>
+{% if not reply_comment.review_set.get.public %}
+      <script language="javascript">
+      registerCommentEditor("yourcomment_rc-{{reply_comment.id}}");
+      </script>
+{% endif %}
+   {% endfor %}
+     </ol>
+     <ul class="controls">
+      <li><a href="#" onclick="showCommentForm('rc-{{comment.id}}');">Add comment</a></li>
+     </ul>
+     <script language="javascript">
+     registerCommentSection("{{review.id}}", "rc-{{comment.id}}");
+     </script>
+    </dd>
 {% endfor %}
    </dl>
 {% endif %}
   <pre class="body_bottom">{{review.body_bottom}}</pre>
+  <ol class="reply-comments" id="rcbb-{{review.id}}">
+{% for reply in review.body_bottom_replies.all %}
+   <li class="reply-comment">
+    <dl>
+     <dt>
+      {% if not reply.public %}<label for="yourcomment_rcbb-{{reply.id}}">{% endif %}
+      <a href="{{reply.user.get_absolute_url}}">{% firstof reply.user.get_full_name reply.user.username %}</a>
+      <span class="timestamp">{{reply.timestamp|timesince}} ago.</span>
+      {% if not reply.public %}</label>{% endif %}
+     </dt>
+     <dd{% if not reply.public %} id="yourcomment_rcbb-{{reply.id}}"{% endif %}><pre>{{reply.body_bottom|escape}}</pre></dd>
+    </dl>
+   </li>
+{% if not reply_comment.review_set.get.public %}
+   <script language="javascript">
+   registerCommentEditor("yourcomment_rcbb-{{reply.id}}");
+   </script>
+{% endif %}
+{% endfor %}
+  </ol>
+  <ul class="controls">
+   <li><a href="#" onclick="showCommentForm('rcbb-{{review.id}}');">Add comment</a></li>
+  </ul>
+  <script language="javascript">
+  registerCommentSection("{{review.id}}", "rcbb-{{review.id}}");
+  </script>
  </div>
 </div>
 {% endbox %}
@@ -173,179 +254,18 @@
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">
-	var dh = YAHOO.ext.DomHelper;
-
-	function onEditComplete(field, value, callback) {
-		var updateManager = getEl(field).getUpdateManager();
-		updateManager.showLoadIndicator = false;
-		getEl(field).load('json/' + field + '/', {value: value}, callback);
-		showDraftBanner();
-	}
-
-	function registerEditor(field, multiline) {
-		var editor = new RB.widgets.InlineEditor({
-			el: field,
-			multiline: multiline,
-			cls: field + '-editor',
-			showEditIcon: true
-		});
-
-		editor.on('complete',
-			function(editor, value) { onEditComplete(field, value); },
-			this, true);
-	}
-
-	function registerCommaListEditor(path_prefix, field) {
-		var editor = new RB.widgets.InlineCommaListEditor({
-			el: field,
-			cls: field + '-editor',
-			showEditIcon: true,
-			useEditIconOnly: true,
-			notifyUnchangedCompletion: true
-		});
-
-		editor.on('complete',
-			function(editor, value) {
-				onEditComplete(field, value,
-					function(el, success) {
-						var list = editor.getList();
-						var str = "";
-
-						for (var i = 0; i < list.length; i++) {
-							list[i] = list[i].stripTags().strip();
-							str += "<a href=\"" + path_prefix + list[i] + "\">";
-							str += list[i] + "</a>";
-
-							if (i < list.length - 1) {
-								str += ", ";
-							}
-						}
-
-						getEl(field).dom.innerHTML = str;
-					}
-				)
-			}
-		);
-	}
-
-	function disableDraftButtons() {
-		getEl('btn-draft-save').dom.setAttribute('disabled', 'true');
-		getEl('btn-draft-revert').dom.setAttribute('disabled', 'true');
-	}
-
-	function enableDraftButtons() {
-		getEl('btn-draft-save').dom.removeAttribute('disabled');
-		getEl('btn-draft-revert').dom.removeAttribute('disabled');
-	}
-
-	var errorID = 0;
-	function showError(text) {
-		var id = 'error' + errorID;
-		var closeHandler = "hideError('" + id + "');";
-
-		dh.append(getEl('error').dom, {
-			tag: 'div', id: id, children: [
-				{tag: 'h1', html: 'Error:'},
-				{html: text},
-				{tag: 'input', type: 'submit',
-				 value: 'Dismiss', onClick: closeHandler}
-			]
-		});
-		errorID += 1;
-	}
-
-	function showServerError(specific) {
-		showError(specific +
-		          " Please try again later. If this continues to" +
-		          " happen, please report it to your administrator");
-	}
-
-	function hideError(error) {
-		var node = getEl(error);
-		if (node != null) {
-			node.remove();
-		}
-	}
-
-	function submitDraft() {
-		disableDraftButtons();
-		YAHOO.util.Connect.asyncRequest('GET', 'draft/save/', {
-			success: hideDraftBanner,
-			failure: function(response) {
-				showServerError('Saving the draft has failed due to a server error.');
-				enableDraftButtons();
-			}
-		});
-	}
-
-	function revertDraft() {
-		disableDraftButtons();
-		YAHOO.util.Connect.asyncRequest('GET', 'draft/revert/', {
-			success: function() { window.location.reload(); },
-			failure: function(response) {
-				showServerError('Reverting the draft has failed due to a server error.');
-				enableDraftButtons();
-			}
-		});
-	}
-
-	function showDraftBanner() {
-		if (getEl('draft') == null) {
-			dh.append(getEl('banner').dom, {
-				tag: 'div', id: 'draft', children: [
-					{tag: 'h1', html: 'This review request is a draft.'},
-					{html: ' Be sure to save when finished.'},
-					{tag: 'input', type: 'submit', id: 'btn-draft-save',
-					 value: 'Save', onClick: 'submitDraft();'},
-					{tag: 'input', type: 'submit', id: 'btn-draft-revert',
-					 value: 'Revert', onClick: 'revertDraft();'}
-				]
-			});
-		}
-	}
-
-	function hideDraftBanner() {
-		var node = getEl('draft') || getEl('discard');
-
-		if (node != null) {
-			node.remove();
-		}
-	}
-
-	function showDiscardBanner() {
-		dh.append(getEl('banner').dom, {
-			tag: 'div', id: 'discard', children: [
-				{tag: 'h1', html: 'Confirm Discard?'},
-				{html:' This cannot be undone.'},
-				{tag: 'input', type: 'submit', value: 'Confirm',
-				 onClick: 'discardReview();'},
-				{tag: 'input', type: 'submit', value: 'Cancel',
-				 onClick: 'hideDraftBanner();'}
-			]
-		});
-	}
-
-	function discardReview() {
-		/*
-		 * The link that can get us here adds a '#', so it has to be
-		 * stripped off.
-		 */
-		loc = String(window.location);
-		window.location = loc.substring(0, loc.length - 1) + 'discard/';
-	}
-
-	registerEditor('summary', false);
-	registerEditor('branch', false);
-	registerEditor('description', true);
-	registerEditor('testing_done', true);
-	registerCommaListEditor('http://bugzilla/show_bug.cgi?id=', 'bugs_closed');
-	registerCommaListEditor('/groups/', 'target_groups');
-	registerCommaListEditor('/users/', 'target_people');
+  registerEditor('summary', false);
+  registerEditor('branch', false);
+  registerEditor('description', true);
+  registerEditor('testing_done', true);
+  registerCommaListEditor('http://bugzilla/show_bug.cgi?id=', 'bugs_closed');
+  registerCommaListEditor('/groups/', 'target_groups');
+  registerCommaListEditor('/users/', 'target_people');
 
 {% if draft %}
-	showDraftBanner();
+  showDraftBanner();
 {% else %}
-	hideDraftBanner();
+  hideDraftBanner();
 {% endif %}
 </script>
 {% endifequal %}

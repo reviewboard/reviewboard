@@ -146,6 +146,8 @@ class ReviewRequestDraft(models.Model):
 
 class Comment(models.Model):
     filediff = models.ForeignKey(FileDiff, verbose_name='File')
+    reply_to = models.ForeignKey("self", blank=True, null=True)
+#                                 related_name="replies")
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
     text = models.TextField("Comment Text");
 
@@ -167,7 +169,7 @@ class Comment(models.Model):
                         'timestamp')
 
     class Meta:
-        ordering = ['filediff', 'first_line', 'timestamp']
+        ordering = ['timestamp']
 
 
 class Review(models.Model):
@@ -176,43 +178,25 @@ class Review(models.Model):
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
     public = models.BooleanField("Public", default=False)
     ship_it = models.BooleanField("Ship It", default=False)
-    email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
+    is_reply = models.BooleanField("Is Reply", default=False)
+    email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
+                                        blank=True)
 
     body_top = models.TextField("Body (Top)")
     body_bottom = models.TextField("Body (Bottom)")
+
+    body_top_reply_to = models.ForeignKey("self", blank=True, null=True,
+                                          related_name="body_top_replies")
+    body_bottom_reply_to = models.ForeignKey("self", blank=True, null=True,
+                                             related_name="body_bottom_replies")
+
     comments = models.ManyToManyField(Comment, verbose_name="Comments",
                                       core=False, blank=True)
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
                                          blank=True, null=True)
-    replies = models.ManyToManyField("self", verbose_name='Replies',
-                                     core=False, symmetrical=False, blank=True)
 
     def __str__(self):
         return "Review of '%s'" % self.review_request
-
-#    def body_top(self):
-#        i = self.body.find("\n\n{{comments}}")
-#
-#        if i == -1:
-#            i = self.body.find("{{comments}}")
-#            if i == -1:
-#                return self.body
-#
-#        return self.body[0:i]
-#
-#
-#    def body_bottom(self):
-#        i = self.body.find("{{comments}}")
-#
-#        if i == -1:
-#            return ""
-#
-#        i += len("{{comments}}")
-#
-#        if self.body[i:i + 2] == "\n\n":
-#            i += 2
-#
-#        return self.body[i:]
 
     class Admin:
         list_display = ('review_request', 'user', 'public', 'ship_it',
