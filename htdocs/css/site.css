@@ -234,6 +234,7 @@ table.list {
 table.list th {
   padding: 4px;
   text-align: left;
+  white-space: nowrap;
 }
 
 table.list tr {
@@ -260,6 +261,7 @@ table.list .age1 {
   border-right: 1px #8bbd5c solid;
   border-top: 1px #707070 solid;
   border-bottom: 1px #707070 solid;
+  white-space: nowrap;
 }
 
 table.list tr:hover .age1 {
@@ -272,6 +274,7 @@ table.list .age2 {
   border-right: 1px #a3e266 solid;
   border-top: 1px #707070 solid;
   border-bottom: 1px #707070 solid;
+  white-space: nowrap;
 }
 
 table.list tr:hover .age2 {
@@ -284,6 +287,7 @@ table.list .age3 {
   border-right: 1px #d8c158 solid;
   border-top: 1px #707070 solid;
   border-bottom: 1px #707070 solid;
+  white-space: nowrap;
 }
 
 table.list tr:hover .age3 {
@@ -296,6 +300,7 @@ table.list .age4 {
   border-right: 1px #d49659 solid;
   border-top: 1px #707070 solid;
   border-bottom: 1px #707070 solid;
+  white-space: nowrap;
 }
 
 table.list tr:hover .age4 {
@@ -308,6 +313,7 @@ table.list .age5 {
   border-right: 1px #f56363 solid;
   border-top: 1px #707070 solid;
   border-bottom: 1px #707070 solid;
+  white-space: nowrap;
 }
 
 table.list tr:hover .age5 {
