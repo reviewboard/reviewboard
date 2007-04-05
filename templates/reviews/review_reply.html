@@ -6,7 +6,7 @@
       <span class="timestamp">{{timestamp|timesince}} ago.</span>
       {% if draft %}</label>{% endif %}
      </dt>
-     <dd{% if draft %} id="yourcomment_{{context_id}}-{{id}}"{% endif %}><pre>{{text|escape}}</pre></dd>
+     <dd><pre{% if draft %} id="yourcomment_{{context_id}}-{{id}}"{% endif %}>{{text|escape}}</pre></dd>
     </dl>
    </li>
 {% if draft %}

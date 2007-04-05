@@ -170,7 +170,7 @@ var gUserFullName = "{% firstof user.get_full_name user.username %}";
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
-	 {% reply_section "" comment "comment" "rc" %}
+	 {% reply_section review comment "comment" "rc" %}
     </dd>
 {% endfor %}
    </dl>

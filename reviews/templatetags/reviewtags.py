@@ -218,6 +218,7 @@ def reply_section(review, comment, context_type, context_id):
         'context_id': context_id
     })
 
+
 @register.simple_tag
 def reviewer_list(review_request):
     names  = [group.name    for group in review_request.target_groups.all()]

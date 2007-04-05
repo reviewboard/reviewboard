@@ -184,9 +184,9 @@ function showCommentForm(section_id) {
 						}]
 					}, {
 						tag: 'dd',
-						id: '{id}',
 						children: [{
-							tag: 'pre'
+							tag: 'pre',
+              id: '{id}'
 						}]
 					}]
 				}]
