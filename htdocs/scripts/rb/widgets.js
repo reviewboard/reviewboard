@@ -84,7 +84,8 @@ RB.widgets.InlineEditor = function(config) {
 
 	this.events = {
 		'complete': true,
-		'beginedit': true
+		'beginedit': true,
+		'cancel': true
 	};
 
 	if (!this.useEditIconOnly) {
@@ -194,6 +195,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 		this.el.dom.innerHTML = this.initialValue;
 		this.hide();
 		this.editing = false;
+		this.fireEvent('cancel', this, this.initialValue);
 	},
 
 	show: function() {

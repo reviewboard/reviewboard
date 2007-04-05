@@ -91,6 +91,14 @@ urlpatterns = patterns('',
     (r'^reviews/(?P<review_request_id>[0-9]+)/replies/(?P<revision>[0-9]+)/publish/$',
      'reviewboard.reviews.views.reply_publish'),
 
+    # Review replies
+    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/$',
+     'reviewboard.reviews.views.review_reply'),
+    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/(?P<review_id>[0-9]+)/save/$',
+     'reviewboard.reviews.views.review_reply_save'),
+    (r'^reviews/(?P<review_request_id>[0-9]+)/reply/(?P<review_id>[0-9]+)/discard/$',
+     'reviewboard.reviews.views.review_reply_discard'),
+
     # Review request JSON/XML handlers
     (r'^reviews/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/(?P<field_name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.views.review_request_field'),

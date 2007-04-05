@@ -14,11 +14,15 @@
 <script type="text/javascript" src="/scripts/rb/core.js"></script>
 <script type="text/javascript" src="/scripts/rb/widgets.js"></script>
 <script type="text/javascript" src="/scripts/reviews.js"></script>
+<script type="text/javascript">
+var gUserURL = "{{user.get_absolute_url}}";
+var gUserFullName = "{% firstof user.get_full_name user.username %}";
+</script>
 {% endblock %}
 
 {% block content %}
-<div id="error"></div>
-<div id="banner"></div>
+<div class="banner" id="error"></div>
+<div class="banner" id="main-banner"></div>
 
 {% box review-request %}
 <div class="main">
@@ -120,6 +124,7 @@
 <a name="review{{forloop.counter}}"></a>
 {% box review %}
 <div class="main">
+ <div class="banner" id="{{review.id}}-banner"></div>
  <div class="header">
   {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
@@ -129,7 +134,7 @@
   <pre class="body_top">{{review.body_top}}</pre>
   <ol class="reply-comments" id="rcbt-{{review.id}}">
 {% for reply in review.body_top_replies.all %}
-   <li class="reply-comment">
+   <li class="reply-comment"{% if not reply.public %} id="yourcomment_rcbt-{{reply.id}}-item"{% endif %}>
     <dl>
      <dt>
       {% if not reply.public %}<label for="yourcomment_rcbt-{{reply.id}}">{% endif %}
@@ -142,16 +147,16 @@
    </li>
 {% if not reply_comment.review_set.get.public %}
    <script language="javascript">
-   registerCommentEditor("yourcomment_rcbt-{{reply.id}}");
+   registerCommentEditor("rcbt-{{review.id}}", "yourcomment_rcbt-{{reply.id}}");
    </script>
 {% endif %}
 {% endfor %}
   </ol>
   <ul class="controls">
-   <li><a href="#" onclick="showCommentForm('rcbt-{{review.id}}');">Add comment</a></li>
+   <li><a href="#" id="add_comment_rcbt-{{review.id}}" onclick="showCommentForm('rcbt-{{review.id}}'); return false;">Add comment</a></li>
   </ul>
   <script language="javascript">
-  registerCommentSection("{{review.id}}", "rcbt-{{reply.id}}");
+  registerCommentSection("{{review.id}}", "rcbt-{{review.id}}", "{{review.id}}", "body_top");
   </script>
 {% if review.comments.all %}
    <dl class="diff-comments">
@@ -191,8 +196,8 @@
     <dd>
      <pre>{{comment.text|escape}}</pre>
      <ol class="reply-comments" id="rc-{{comment.id}}">
-   {% for reply_comment in comment.comment_set.all %}
-      <li class="reply-comment">
+   {% for reply_comment in comment.replies.all %}
+      <li class="reply-comment"{% if not reply_comment.review_set.get.public %} id="yourcomment_rc-{{reply_comment.id}}-item"{% endif %}>
        <dl>
         <dt>
          {% if not reply_comment.review_set.get.public %}<label for="yourcomment_rc-{{reply_comment.id}}">{% endif %}
@@ -205,16 +210,16 @@
       </li>
 {% if not reply_comment.review_set.get.public %}
       <script language="javascript">
-      registerCommentEditor("yourcomment_rc-{{reply_comment.id}}");
+	  registerCommentEditor("rc-{{comment.id}}", "yourcomment_rc-{{reply_comment.id}}");
       </script>
 {% endif %}
    {% endfor %}
      </ol>
      <ul class="controls">
-      <li><a href="#" onclick="showCommentForm('rc-{{comment.id}}');">Add comment</a></li>
+      <li><a href="#" id="add_comment_rc-{{comment.id}}" onclick="showCommentForm('rc-{{comment.id}}'); return false;">Add comment</a></li>
      </ul>
      <script language="javascript">
-     registerCommentSection("{{review.id}}", "rc-{{comment.id}}");
+     registerCommentSection("{{review.id}}", "rc-{{comment.id}}", "{{comment.id}}", "comment");
      </script>
     </dd>
 {% endfor %}
@@ -223,7 +228,7 @@
   <pre class="body_bottom">{{review.body_bottom}}</pre>
   <ol class="reply-comments" id="rcbb-{{review.id}}">
 {% for reply in review.body_bottom_replies.all %}
-   <li class="reply-comment">
+   <li class="reply-comment"{% if not reply.public %} id="yourcomment_rcbb-{{reply.id}}-item"{% endif %}>
     <dl>
      <dt>
       {% if not reply.public %}<label for="yourcomment_rcbb-{{reply.id}}">{% endif %}
@@ -236,16 +241,16 @@
    </li>
 {% if not reply_comment.review_set.get.public %}
    <script language="javascript">
-   registerCommentEditor("yourcomment_rcbb-{{reply.id}}");
+   registerCommentEditor("rcbb-{{review.id}}", "yourcomment_rcbb-{{reply.id}}");
    </script>
 {% endif %}
 {% endfor %}
   </ol>
   <ul class="controls">
-   <li><a href="#" onclick="showCommentForm('rcbb-{{review.id}}');">Add comment</a></li>
+   <li><a href="#" id="add_comment_rcbb-{{review.id}}" onclick="showCommentForm('rcbb-{{review.id}}'); return false;">Add comment</a></li>
   </ul>
   <script language="javascript">
-  registerCommentSection("{{review.id}}", "rcbb-{{review.id}}");
+  registerCommentSection("{{review.id}}", "rcbb-{{review.id}}", "{{review.id}}", "body_bottom");
   </script>
  </div>
 </div>

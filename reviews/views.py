@@ -132,7 +132,7 @@ def review_detail(request, object_id, template_name):
         'object': review_request,
         'details': draft or review_request,
         'reviews': review_request.review_set.filter(public=True,
-                                                    is_reply=False),
+                                                    base_reply_to__isnull=True),
         'request': request,
     }))
 
@@ -470,8 +470,9 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
             comment.timestamp = datetime.now()
             comment.save()
 
-            review.comments.add(comment)
-            review.save()
+            if comment_is_new:
+                review.comments.add(comment)
+                review.save()
         elif request.POST['action'] == "delete":
             review = get_object_or_404(Review,
                 review_request=review_request,
@@ -566,6 +567,10 @@ def reply_delete(request, review_request_id, revision):
                                         review_request=review_request,
                                         public=False,
                                         reviewed_diffset=diffset)
+
+            for comment in review.comments.all():
+                comment.delete()
+
             review.delete()
             return HttpResponse("Deleted")
         except Review.DoesNotExist:
@@ -597,6 +602,120 @@ def reply_comments(request, review_request_id, revision,
     return render_to_response(template_name, RequestContext(request, {
         'comments': comments,
     }))
+
+
+@login_required
+def review_reply(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.POST:
+        context_type = request.POST['type']
+        context_id = request.POST['id']
+        value = request.POST['value']
+        review_id = request.POST['review_id']
+
+        try:
+            source_review = Review.objects.get(pk=review_id)
+        except Review.DoesNotExist:
+            return Http403() # XXX
+
+        reply, reply_is_new = Review.objects.get_or_create(
+            review_request=review_request,
+            user=request.user,
+            public=False,
+            base_reply_to=source_review,
+            reviewed_diffset=source_review.reviewed_diffset)
+
+        if reply_is_new:
+            reply.save()
+
+        if context_type == "comment":
+            context_comment = Comment.objects.get(pk=context_id)
+
+            try:
+                comment = Comment.objects.get(review=reply,
+                                              reply_to=context_comment)
+                comment_is_new = False
+            except Comment.DoesNotExist:
+                comment = Comment(reply_to=context_comment,
+                                  filediff=context_comment.filediff,
+                                  first_line=context_comment.first_line,
+                                  num_lines=context_comment.num_lines)
+                comment_is_new = True
+
+            comment.text = value
+            comment.timestamp = datetime.now()
+
+            if value == "" and not comment_is_new:
+                comment.delete()
+            else:
+                comment.save()
+
+                if comment_is_new:
+                    reply.comments.add(comment)
+
+        elif context_type == "body_top":
+            reply.body_top = value
+
+            if value == "":
+                reply.body_top_reply_to = None
+            else:
+                reply.body_top_reply_to = source_review
+
+        elif context_type == "body_bottom":
+            reply.body_bottom = value
+
+            if value == "":
+                reply.body_bottom_reply_to = None
+            else:
+                reply.body_bottom_reply_to = source_review
+        else:
+            raise Http403()
+
+        if reply.body_top == "" and reply.body_bottom == "" and \
+           reply.comments.count() == 0:
+            reply.delete()
+        else:
+            reply.save()
+
+        return HttpResponse(value)
+
+    raise Http403()
+
+
+@login_required
+def review_reply_save(request, review_request_id, review_id):
+    if request.method == 'POST':
+        review = get_object_or_404(Review, pk=review_id)
+
+        # XXX
+        reply = get_object_or_404(Review, base_reply_to=review, public=False,
+                                  user=request.user)
+        reply.public = True
+        reply.save()
+        return HttpResponse("Success")
+
+    return Http403()
+
+
+@login_required
+def review_reply_discard(request, review_request_id, review_id):
+    if request.method == 'POST':
+        review = get_object_or_404(Review, pk=review_id)
+
+        # XXX
+        reply = get_object_or_404(Review, base_reply_to=review, public=False,
+                                  user=request.user)
+
+        for comment in reply.comments.all():
+            comment.delete()
+
+        reply.delete()
+
+        # XXX Do we need to delete comments individually?
+        return HttpResponse("Success")
+
+    return Http403()
 
 
 @login_required

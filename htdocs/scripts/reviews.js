@@ -1,4 +1,5 @@
 var dh = YAHOO.ext.DomHelper;
+var commentTemplate = null;
 
 // State variables
 var gCommentSections = {};
@@ -120,7 +121,7 @@ function revertDraft() {
 
 function showDraftBanner() {
 	if (getEl('draft') == null) {
-		dh.append(getEl('banner').dom, {
+		dh.append(getEl('main-banner').dom, {
 			tag: 'div', id: 'draft', children: [
 				{tag: 'h1', html: 'This review request is a draft.'},
 				{html: ' Be sure to save when finished.'},
@@ -142,7 +143,7 @@ function hideDraftBanner() {
 }
 
 function showDiscardBanner() {
-	dh.append(getEl('banner').dom, {
+	dh.append(getEl('main-banner').dom, {
 		tag: 'div', id: 'discard', children: [
 			{tag: 'h1', html: 'Confirm Discard?'},
 			{html:' This cannot be undone.'},
@@ -163,46 +164,186 @@ function discardReview() {
 	window.location = loc.substring(0, loc.length - 1) + 'discard/';
 }
 
-function showCommentForm(listid) {
-/*
-	var list = getEl(listid);
-	var item = dh.append(list.dom, {
-		tag: "li",
-		children: [
-			{tag: 'div', 
-	var editor = new RB.widgets.InlineEditor({
-		el: field,
-		multiline: true,
-		cls: 'inline-comment-editor',
-		showEditIcon: true,
-		stripTags: true
-	});
-*/
+function showCommentForm(section_id) {
+	if (commentTemplate == null) {
+		commentTemplate = new YAHOO.ext.DomHelper.createTemplate({
+			tag: 'li',
+			cls: 'reply-comment',
+			id: "{id}-item",
+			children: [{
+				tag: 'dl',
+				children: [{
+					tag: 'dt',
+					children: [{
+						tag: 'label',
+						htmlFor: '{id}',
+						children: [{
+							tag: 'a',
+							href: gUserURL,
+							html: gUserFullName
+						}]
+					}, {
+						tag: 'dd',
+						id: '{id}',
+						children: [{
+							tag: 'pre'
+						}]
+					}]
+				}]
+			}]
+		});
+	}
+
+	var list = getEl(section_id);
+	var yourcomment_id = "yourcomment_" + section_id + "-draft";
+	gYourComments[section_id] = yourcomment_id;
+
+	commentTemplate.append(list.dom, {id: yourcomment_id});
+	gCommentSections[section_id].yourcomment = getEl(yourcomment_id);
+
+	var editor = registerCommentEditor(section_id, yourcomment_id);
+	autosetAddCommentVisibility(section_id);
+
+	editor.startEdit();
 }
 
-function registerCommentEditor(id) {
+function removeCommentForm(section_id, yourcomment_id) {
+	var item = getEl(yourcomment_id + "-item");
+	item.remove();
+
+	gYourComments[section_id] = null;
+	gCommentSections[section_id].yourcomment = null;
+	autosetAddCommentVisibility(section_id);
+}
+
+function registerCommentEditor(section_id, yourcomment_id) {
+	gYourComments[section_id] = yourcomment_id;
+
 	var editor = new RB.widgets.InlineEditor({
-		el: getEl(id),
+		el: getEl(yourcomment_id),
 		multiline: true,
 		cls: 'inline-comment-editor',
 		stripTags: true,
-		showEditIcon: true
+		showEditIcon: true,
+		notifyUnchangedCompletion: true
+	});
+
+	var cb = function(editor, value) {
+		onReplyEditComplete(value, section_id, yourcomment_id);
+	};
+
+	editor.on('complete', cb, this, true);
+	editor.on('cancel', cb, this, true);
+
+	return editor;
+}
+
+function onReplyEditComplete(value, section_id, yourcomment_id) {
+	var postData =
+		"value="     + encodeURIComponent(value) + "&" +
+		"id="        + gCommentSections[section_id].id + "&" +
+		"type="      + gCommentSections[section_id].type + "&" +
+		"review_id=" + gCommentSections[section_id].review_id
+
+	YAHOO.util.Connect.asyncRequest("POST", "reply/", {
+		success: function(res) {
+			if (value.stripTags().strip() == "") {
+				removeCommentForm(section_id, yourcomment_id);
+			}
+		}.createDelegate(this),
+
+		failure: function(res) {
+			// TODO: Show an error
+		}.createDelegate(this)
+	}, postData);
+
+	showReplyDraftBanner(gCommentSections[section_id].review_id);
+}
+
+function registerCommentSection(reviewid, section_id, context_id, context_type) {
+	gCommentSections[section_id] = {
+		comments_list: getEl(section_id),
+		add_comment: getEl('add_comment_' + section_id),
+		review_id: reviewid,
+		id: context_id,
+		type: context_type
+	};
+
+	if (gYourComments[section_id]) {
+		gCommentSections[section_id].yourcomment =
+			getEl(gYourComments[section_id]);
+		showReplyDraftBanner(reviewid);
+	}
+
+	autosetAddCommentVisibility(section_id);
+}
+
+function showReplyDraftBanner(review_id) {
+	if (getEl(review_id + '-draft') == null) {
+		dh.append(getEl(review_id + '-banner').dom, {
+			tag: 'div', id: review_id + '-draft', children: [
+				{tag: 'h1', html: 'This reply is a draft.'},
+				{html: ' Be sure to save when finished.'},
+				{tag: 'input', type: 'submit',
+				 id: review_id + '-btn-draft-save',
+				 value: 'Save',
+				 onClick: "submitReplyDraft('" + review_id + "');"},
+				{tag: 'input', type: 'submit',
+				 id: review_id + '-btn-draft-discard',
+				 value: 'Discard',
+				 onClick: "discardReplyDraft('" + review_id + "');"}
+			]
+		});
+	}
+}
+
+function submitReplyDraft(review_id) {
+	disableReplyDraftButtons(review_id);
+
+	var url = 'reply/' + review_id + '/save/';
+	YAHOO.util.Connect.asyncRequest('POST', url, {
+		success: function() { window.location.reload(); },
+		failure: function(response) {
+			showServerError('Saving the reply draft has failed due to a server error.');
+			enableReplyDraftButtons(review_id);
+		}
 	});
 }
 
-function registerCommentSection(reviewid, sectionid) {
-	if (!gCommentSections[reviewid]) {
-		gCommentSections[reviewid] = {};
+function discardReplyDraft(review_id) {
+	disableReplyDraftButtons(review_id);
+	var url = 'reply/' + review_id + '/discard/';
+	YAHOO.util.Connect.asyncRequest('POST', url, {
+		success: function() { window.location.reload(); },
+		failure: function(response) {
+			showServerError('Discarding the reply draft has failed due to a server error.');
+			enableReplyDraftButtons(review_id);
+		}
+	});
+}
+
+function disableReplyDraftButtons(review_id) {
+	getEl(review_id + '-btn-draft-save').dom.setAttribute('disabled', 'true');
+	getEl(review_id + '-btn-draft-discard').dom.setAttribute('disabled', 'true');
+}
+
+function enableReplyDraftButtons(review_id) {
+	getEl(review_id + '-btn-draft-save').dom.removeAttribute('disabled');
+	getEl(review_id + '-btn-draft-discard').dom.removeAttribute('disabled');
+}
+
+function hideReplyDraftBanner(review_id) {
+	var node = getEl(review_id + '-draft') || getEl(review_id + '-discard');
+
+	if (node != null) {
+		node.remove();
 	}
+}
 
-	gCommentSections[reviewid][sectionid] = {
-		comments_list: getEl(sectionid),
-		add_comment_button: getEl('add_comment_' + sectionid),
-		yourcomment: getEl('yourcomment_' + sectionid)
-	};
-
-	console.debug(gCommentSections[reviewid][sectionid].yourcomment)
-	if (gCommentSections[reviewid][sectionid].yourcomment) {
-		gCommentSections[reviewid][sectionid].add_comment_button.hide();
+function autosetAddCommentVisibility(section_id) {
+	if (gYourComments[section_id]) {
+		gCommentSections[section_id].add_comment.hide();
+	} else {
+		gCommentSections[section_id].add_comment.show();
 	}
 }

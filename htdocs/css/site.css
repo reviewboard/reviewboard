@@ -173,20 +173,20 @@ ul#accountnav {
   margin-left: 10px;
 }
 
-#banner div {
+.banner div {
   background: #cdff9c;
   padding: 8px 10px;
   border: 1px #4e9a06 solid;
   margin-bottom: 10px;
 }
 
-#banner h1 {
+.banner h1 {
   padding: 0;
   margin: 0;
   display: inline;
 }
 
-#banner input[type='submit'] {
+.banner input[type='submit'] {
   margin-left: 10px;
 }
 

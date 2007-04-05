@@ -52,6 +52,8 @@ class ReviewRequest(models.Model):
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
     status = models.CharField(maxlength=1, choices=STATUSES)
     public = models.BooleanField("Public", default=False)
+    changenum = models.PositiveIntegerField("Change Number", blank=True,
+                                            null=True)
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
 
     summary = models.CharField("Summary", maxlength=300, core=True)
@@ -146,8 +148,8 @@ class ReviewRequestDraft(models.Model):
 
 class Comment(models.Model):
     filediff = models.ForeignKey(FileDiff, verbose_name='File')
-    reply_to = models.ForeignKey("self", blank=True, null=True)
-#                                 related_name="replies")
+    reply_to = models.ForeignKey("self", blank=True, null=True,
+                                 related_name="replies")
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
     text = models.TextField("Comment Text");
 
@@ -178,12 +180,13 @@ class Review(models.Model):
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
     public = models.BooleanField("Public", default=False)
     ship_it = models.BooleanField("Ship It", default=False)
-    is_reply = models.BooleanField("Is Reply", default=False)
+    base_reply_to = models.ForeignKey("self", blank=True, null=True,
+                                      related_name="replies")
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
                                         blank=True)
 
-    body_top = models.TextField("Body (Top)")
-    body_bottom = models.TextField("Body (Bottom)")
+    body_top = models.TextField("Body (Top)", blank=True)
+    body_bottom = models.TextField("Body (Bottom)", blank=True)
 
     body_top_reply_to = models.ForeignKey("self", blank=True, null=True,
                                           related_name="body_top_replies")
@@ -198,9 +201,12 @@ class Review(models.Model):
     def __str__(self):
         return "Review of '%s'" % self.review_request
 
+    def is_reply(self):
+        return self.base_reply_to != None
+
     class Admin:
         list_display = ('review_request', 'user', 'public', 'ship_it',
-                        'timestamp')
+                        'is_reply', 'timestamp')
 
     class Meta:
         ordering = ['timestamp']
