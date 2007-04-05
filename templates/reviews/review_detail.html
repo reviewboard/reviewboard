@@ -132,15 +132,7 @@ var gUserFullName = "{% firstof user.get_full_name user.username %}";
  </div>
  <div class="body">
   <pre class="body_top">{{review.body_top}}</pre>
-  <ol class="reply-comments" id="rcbt-{{review.id}}">
-   {% reply_list review "" "body_top" "rcbt" %}
-  </ol>
-  <ul class="controls">
-   <li><a href="#" id="add_comment_rcbt-{{review.id}}" onclick="showCommentForm('rcbt-{{review.id}}'); return false;">Add comment</a></li>
-  </ul>
-  <script language="javascript">
-  registerCommentSection("{{review.id}}", "rcbt-{{review.id}}", "{{review.id}}", "body_top");
-  </script>
+  {% reply_section review "" "body_top" "rcbt" %}
 {% if review.comments.all %}
    <dl class="diff-comments">
 {% for comment in review.comments.all %}
@@ -178,29 +170,13 @@ var gUserFullName = "{% firstof user.get_full_name user.username %}";
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
-     <ol class="reply-comments" id="rc-{{comment.id}}">
-      {% reply_list "" comment "comment" "rc" %}
-     </ol>
-     <ul class="controls">
-      <li><a href="#" id="add_comment_rc-{{comment.id}}" onclick="showCommentForm('rc-{{comment.id}}'); return false;">Add comment</a></li>
-     </ul>
-     <script language="javascript">
-     registerCommentSection("{{review.id}}", "rc-{{comment.id}}", "{{comment.id}}", "comment");
-     </script>
+	 {% reply_section "" comment "comment" "rc" %}
     </dd>
 {% endfor %}
    </dl>
 {% endif %}
   <pre class="body_bottom">{{review.body_bottom}}</pre>
-  <ol class="reply-comments" id="rcbb-{{review.id}}">
-   {% reply_list review "" "body_bottom" "rcbb" %}
-  </ol>
-  <ul class="controls">
-   <li><a href="#" id="add_comment_rcbb-{{review.id}}" onclick="showCommentForm('rcbb-{{review.id}}'); return false;">Add comment</a></li>
-  </ul>
-  <script language="javascript">
-  registerCommentSection("{{review.id}}", "rcbb-{{review.id}}", "{{review.id}}", "body_bottom");
-  </script>
+  {% reply_section review "" "body_bottom" "rcbb" %}
  </div>
 </div>
 {% endbox %}
