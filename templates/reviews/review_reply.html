@@ -1,4 +1,4 @@
-   <li class="reply-comment"{% if draft %} id="yourcomment_{{context_id}}-{{id}}-item"{% endif %}>
+   <li class="reply-comment{% if draft %} draft" id="yourcomment_{{context_id}}-{{id}}-item{% endif %}">
     <dl>
      <dt>
       {% if draft %}<label for="yourcomment_{{context_id}}-{{id}}">{% endif %}

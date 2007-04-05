@@ -168,7 +168,7 @@ function showCommentForm(section_id) {
 	if (commentTemplate == null) {
 		commentTemplate = new YAHOO.ext.DomHelper.createTemplate({
 			tag: 'li',
-			cls: 'reply-comment',
+			cls: 'reply-comment draft',
 			id: "{id}-item",
 			children: [{
 				tag: 'dl',
@@ -209,7 +209,7 @@ function showCommentForm(section_id) {
 
 function removeCommentForm(section_id, yourcomment_id) {
 	var item = getEl(yourcomment_id + "-item");
-	item.remove();
+	item.hide(true, .35, item.remove.createDelegate(item))
 
 	gYourComments[section_id] = null;
 	gCommentSections[section_id].yourcomment = null;
@@ -342,8 +342,8 @@ function hideReplyDraftBanner(review_id) {
 
 function autosetAddCommentVisibility(section_id) {
 	if (gYourComments[section_id]) {
-		gCommentSections[section_id].add_comment.hide();
+		gCommentSections[section_id].add_comment.hide(true);
 	} else {
-		gCommentSections[section_id].add_comment.show();
+		gCommentSections[section_id].add_comment.show(true);
 	}
 }
