@@ -133,24 +133,7 @@ var gUserFullName = "{% firstof user.get_full_name user.username %}";
  <div class="body">
   <pre class="body_top">{{review.body_top}}</pre>
   <ol class="reply-comments" id="rcbt-{{review.id}}">
-{% for reply in review.body_top_replies.all %}
-   <li class="reply-comment"{% if not reply.public %} id="yourcomment_rcbt-{{reply.id}}-item"{% endif %}>
-    <dl>
-     <dt>
-      {% if not reply.public %}<label for="yourcomment_rcbt-{{reply.id}}">{% endif %}
-      <a href="{{reply.user.get_absolute_url}}">{% firstof reply.user.get_full_name reply.user.username %}</a>
-      <span class="timestamp">{{reply.timestamp|timesince}} ago.</span>
-      {% if not reply.public %}</label>{% endif %}
-     </dt>
-     <dd{% if not reply.public %} id="yourcomment_rcbt-{{reply.id}}"{% endif %}><pre>{{reply.body_top|escape}}</pre></dd>
-    </dl>
-   </li>
-{% if not reply_comment.review_set.get.public %}
-   <script language="javascript">
-   registerCommentEditor("rcbt-{{review.id}}", "yourcomment_rcbt-{{reply.id}}");
-   </script>
-{% endif %}
-{% endfor %}
+   {% reply_list review "" "body_top" "rcbt" %}
   </ol>
   <ul class="controls">
    <li><a href="#" id="add_comment_rcbt-{{review.id}}" onclick="showCommentForm('rcbt-{{review.id}}'); return false;">Add comment</a></li>
@@ -196,24 +179,7 @@ var gUserFullName = "{% firstof user.get_full_name user.username %}";
     <dd>
      <pre>{{comment.text|escape}}</pre>
      <ol class="reply-comments" id="rc-{{comment.id}}">
-   {% for reply_comment in comment.replies.all %}
-      <li class="reply-comment"{% if not reply_comment.review_set.get.public %} id="yourcomment_rc-{{reply_comment.id}}-item"{% endif %}>
-       <dl>
-        <dt>
-         {% if not reply_comment.review_set.get.public %}<label for="yourcomment_rc-{{reply_comment.id}}">{% endif %}
-         <a href="{{reply_comment.review_set.get.user.get_absolute_url}}">{% firstof reply_comment.review_set.get.user.get_full_name reply_comment.review_set.get.user.username %}</a>
-         <span class="timestamp">{{reply_comment.timestamp|timesince}} ago.</span>
-         {% if not reply_comment.review_set.get.public %}</label>{% endif %}
-        </dt>
-        <dd{% if not reply_comment.review_set.get.public %} id="yourcomment_rc-{{reply_comment.id}}"{% endif %}><pre>{{reply_comment.text|escape}}</pre></dd>
-       </dl>
-      </li>
-{% if not reply_comment.review_set.get.public %}
-      <script language="javascript">
-	  registerCommentEditor("rc-{{comment.id}}", "yourcomment_rc-{{reply_comment.id}}");
-      </script>
-{% endif %}
-   {% endfor %}
+      {% reply_list "" comment "comment" "rc" %}
      </ol>
      <ul class="controls">
       <li><a href="#" id="add_comment_rc-{{comment.id}}" onclick="showCommentForm('rc-{{comment.id}}'); return false;">Add comment</a></li>
@@ -227,24 +193,7 @@ var gUserFullName = "{% firstof user.get_full_name user.username %}";
 {% endif %}
   <pre class="body_bottom">{{review.body_bottom}}</pre>
   <ol class="reply-comments" id="rcbb-{{review.id}}">
-{% for reply in review.body_bottom_replies.all %}
-   <li class="reply-comment"{% if not reply.public %} id="yourcomment_rcbb-{{reply.id}}-item"{% endif %}>
-    <dl>
-     <dt>
-      {% if not reply.public %}<label for="yourcomment_rcbb-{{reply.id}}">{% endif %}
-      <a href="{{reply.user.get_absolute_url}}">{% firstof reply.user.get_full_name reply.user.username %}</a>
-      <span class="timestamp">{{reply.timestamp|timesince}} ago.</span>
-      {% if not reply.public %}</label>{% endif %}
-     </dt>
-     <dd{% if not reply.public %} id="yourcomment_rcbb-{{reply.id}}"{% endif %}><pre>{{reply.body_bottom|escape}}</pre></dd>
-    </dl>
-   </li>
-{% if not reply_comment.review_set.get.public %}
-   <script language="javascript">
-   registerCommentEditor("rcbb-{{review.id}}", "yourcomment_rcbb-{{reply.id}}");
-   </script>
-{% endif %}
-{% endfor %}
+   {% reply_list review "" "body_bottom" "rcbb" %}
   </ol>
   <ul class="controls">
    <li><a href="#" id="add_comment_rcbb-{{review.id}}" onclick="showCommentForm('rcbb-{{review.id}}'); return false;">Add comment</a></li>

@@ -1,6 +1,7 @@
 from django import template
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
+from django.template.loader import render_to_string
 from django.utils import simplejson
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.utils.templatetags.htmlutils import humanize_list
@@ -175,6 +176,37 @@ def commentcounts(parser, token):
 
     return CommentCounts(filediff)
 
+
+@register.simple_tag
+def reply_list(review, comment, context_type, context_id):
+    def generate_reply_html(reply, timestamp, text):
+        return render_to_string('reviews/review_reply.html', {
+            'context_id': context_id,
+            'id': reply.id,
+            'review': review,
+            'timestamp': timestamp,
+            'text': text,
+            'reply_user': reply.user,
+            'draft': not reply.public
+        })
+
+    s = ""
+
+    if context_type == "comment":
+        for reply_comment in comment.replies.all():
+            s += generate_reply_html(reply_comment.review_set.get(),
+                                     reply_comment.timestamp,
+                                     reply_comment.text)
+    elif context_type == "body_top":
+        for reply in review.body_top_replies.all():
+            s += generate_reply_html(reply, reply.timestamp, reply.body_top)
+    elif context_type == "body_bottom":
+        for reply in review.body_bottom_replies.all():
+            s += generate_reply_html(reply, reply.timestamp, reply.body_bottom)
+    else:
+        return None
+
+    return s
 
 @register.simple_tag
 def reviewer_list(review_request):
