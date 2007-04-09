@@ -4,6 +4,7 @@ var commentTemplate = null;
 // State variables
 var gCommentSections = {};
 var gYourComments = {};
+var gReviews = {};
 
 function onEditComplete(field, value, callback) {
 	var updateManager = getEl(field).getUpdateManager();
@@ -164,7 +165,7 @@ function discardReview() {
 	window.location = loc.substring(0, loc.length - 1) + 'discard/';
 }
 
-function showCommentForm(section_id) {
+function showCommentForm(review_id, section_id) {
 	if (commentTemplate == null) {
 		commentTemplate = new YAHOO.ext.DomHelper.createTemplate({
 			tag: 'li',
@@ -186,7 +187,7 @@ function showCommentForm(section_id) {
 						tag: 'dd',
 						children: [{
 							tag: 'pre',
-              id: '{id}'
+							id: '{id}'
 						}]
 					}]
 				}]
@@ -201,23 +202,35 @@ function showCommentForm(section_id) {
 	commentTemplate.append(list.dom, {id: yourcomment_id});
 	gCommentSections[section_id].yourcomment = getEl(yourcomment_id);
 
-	var editor = registerCommentEditor(section_id, yourcomment_id);
+	var editor = registerCommentEditor(review_id, section_id, yourcomment_id);
 	autosetAddCommentVisibility(section_id);
 
 	editor.startEdit();
 }
 
-function removeCommentForm(section_id, yourcomment_id) {
+function removeCommentForm(review_id, section_id, yourcomment_id) {
 	var item = getEl(yourcomment_id + "-item");
 	item.hide(true, .35, item.remove.createDelegate(item))
 
 	gYourComments[section_id] = null;
 	gCommentSections[section_id].yourcomment = null;
 	autosetAddCommentVisibility(section_id);
+
+	gReviews[review_id].yourCommentCount--;
+
+	if (gReviews[review_id].yourCommentCount == 0) {
+		hideReplyDraftBanner(review_id);
+	}
 }
 
-function registerCommentEditor(section_id, yourcomment_id) {
+function registerCommentEditor(review_id, section_id, yourcomment_id) {
 	gYourComments[section_id] = yourcomment_id;
+
+	if (!gReviews[review_id]) {
+		gReviews[review_id] = { yourCommentCount: 0 };
+	}
+
+	gReviews[review_id].yourCommentCount++;
 
 	var editor = new RB.widgets.InlineEditor({
 		el: getEl(yourcomment_id),
@@ -239,16 +252,18 @@ function registerCommentEditor(section_id, yourcomment_id) {
 }
 
 function onReplyEditComplete(value, section_id, yourcomment_id) {
+	var review_id = gCommentSections[section_id].review_id;
+
 	var postData =
 		"value="     + encodeURIComponent(value) + "&" +
 		"id="        + gCommentSections[section_id].id + "&" +
 		"type="      + gCommentSections[section_id].type + "&" +
-		"review_id=" + gCommentSections[section_id].review_id
+		"review_id=" + review_id
 
 	YAHOO.util.Connect.asyncRequest("POST", "reply/", {
 		success: function(res) {
 			if (value.stripTags().strip() == "") {
-				removeCommentForm(section_id, yourcomment_id);
+				removeCommentForm(review_id, section_id, yourcomment_id);
 			}
 		}.createDelegate(this),
 

@@ -11,6 +11,6 @@
    </li>
 {% if draft %}
    <script language="javascript">
-   registerCommentEditor("{{context_id}}-{{review.id}}", "yourcomment_{{context_id}}-{{id}}");
+   registerCommentEditor("{{review.id}}", "{{context_id}}-{{review.id}}", "yourcomment_{{context_id}}-{{id}}");
    </script>
 {% endif %}

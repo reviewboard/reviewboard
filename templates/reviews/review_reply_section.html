@@ -1,0 +1,10 @@
+{% load reviewtags %}
+  <ol class="reply-comments" id="{{context_id}}-{{review.id}}">
+   {% reply_list review comment context_type context_id %}
+  </ol>
+  <ul class="controls">
+   <li><a href="#" id="add_comment_{{context_id}}-{{review.id}}" onclick="showCommentForm('{{review.id}}', '{{context_id}}-{{review.id}}'); return false;">Add comment</a></li>
+  </ul>
+  <script language="javascript">
+  registerCommentSection("{{review.id}}", "{{context_id}}-{{review.id}}", "{{review.id}}", "{{context_type}}");
+  </script>
