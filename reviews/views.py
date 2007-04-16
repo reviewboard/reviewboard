@@ -13,6 +13,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.views.generic.list_detail import object_list
+from django.views.decorators.http import require_GET, require_POST
 from djblets.auth.util import login_required
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
@@ -515,35 +516,33 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
 
 
 @login_required
+@require_POST
 def reply_save(request, review_request_id, revision, publish=False):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if request.POST:
-        try:
-            diffset = review_request.diffset_history.diffset_set.get(
-                revision=revision)
-        except DiffSet.DoesNotExist:
-            raise Http404()
+    try:
+        diffset = review_request.diffset_history.diffset_set.get(
+            revision=revision)
+    except DiffSet.DoesNotExist:
+        raise Http404()
 
-        review, review_is_new = Review.objects.get_or_create(
-            user=request.user,
-            review_request=review_request,
-            public=False,
-            reviewed_diffset=diffset)
-        review.public = publish
-        review.ship_it = request.POST.has_key('shipit')
-        review.body_top = request.POST['body_top']
-        review.body_bottom = request.POST['body_bottom']
-        review.save()
+    review, review_is_new = Review.objects.get_or_create(
+        user=request.user,
+        review_request=review_request,
+        public=False,
+        reviewed_diffset=diffset)
+    review.public = publish
+    review.ship_it = request.POST.has_key('shipit')
+    review.body_top = request.POST['body_top']
+    review.body_bottom = request.POST['body_bottom']
+    review.save()
 
-        if publish:
-            if settings.SEND_REVIEW_MAIL:
-                mail_review(request.user, review)
-            return HttpResponse("Published")
-        else:
-            return HttpResponse("Saved")
-
-    raise Http403()
+    if publish:
+        if settings.SEND_REVIEW_MAIL:
+            mail_review(request.user, review)
+        return HttpResponse("Published")
+    else:
+        return HttpResponse("Saved")
 
 
 @login_required
@@ -552,31 +551,29 @@ def reply_publish(request, review_request_id, revision):
 
 
 @login_required
+@require_POST
 def reply_delete(request, review_request_id, revision):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if request.POST:
-        try:
-            diffset = review_request.diffset_history.diffset_set.get(
-                revision=revision)
-        except DiffSet.DoesNotExist:
-            raise Http404()
+    try:
+        diffset = review_request.diffset_history.diffset_set.get(
+            revision=revision)
+    except DiffSet.DoesNotExist:
+        raise Http404()
 
-        try:
-            review = Review.objects.get(user=request.user,
-                                        review_request=review_request,
-                                        public=False,
-                                        reviewed_diffset=diffset)
+    try:
+        review = Review.objects.get(user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    reviewed_diffset=diffset)
 
-            for comment in review.comments.all():
-                comment.delete()
+        for comment in review.comments.all():
+            comment.delete()
 
-            review.delete()
-            return HttpResponse("Deleted")
-        except Review.DoesNotExist:
-            return HttpResponse("Not found")
-
-    raise Http403()
+        review.delete()
+        return HttpResponse("Deleted")
+    except Review.DoesNotExist:
+        return HttpResponse("Not found")
 
 
 @login_required
@@ -605,117 +602,111 @@ def reply_comments(request, review_request_id, revision,
 
 
 @login_required
+@require_POST
 def review_reply(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if request.POST:
-        context_type = request.POST['type']
-        context_id = request.POST['id']
-        value = request.POST['value']
-        review_id = request.POST['review_id']
+    context_type = request.POST['type']
+    context_id = request.POST['id']
+    value = request.POST['value']
+    review_id = request.POST['review_id']
+
+    try:
+        source_review = Review.objects.get(pk=review_id)
+    except Review.DoesNotExist:
+        return Http403() # XXX
+
+    reply, reply_is_new = Review.objects.get_or_create(
+        review_request=review_request,
+        user=request.user,
+        public=False,
+        base_reply_to=source_review,
+        reviewed_diffset=source_review.reviewed_diffset)
+
+    if reply_is_new:
+        reply.save()
+
+    if context_type == "comment":
+        context_comment = Comment.objects.get(pk=context_id)
 
         try:
-            source_review = Review.objects.get(pk=review_id)
-        except Review.DoesNotExist:
-            return Http403() # XXX
+            comment = Comment.objects.get(review=reply,
+                                          reply_to=context_comment)
+            comment_is_new = False
+        except Comment.DoesNotExist:
+            comment = Comment(reply_to=context_comment,
+                              filediff=context_comment.filediff,
+                              first_line=context_comment.first_line,
+                              num_lines=context_comment.num_lines)
+            comment_is_new = True
 
-        reply, reply_is_new = Review.objects.get_or_create(
-            review_request=review_request,
-            user=request.user,
-            public=False,
-            base_reply_to=source_review,
-            reviewed_diffset=source_review.reviewed_diffset)
+        comment.text = value
+        comment.timestamp = datetime.now()
 
-        if reply_is_new:
-            reply.save()
-
-        if context_type == "comment":
-            context_comment = Comment.objects.get(pk=context_id)
-
-            try:
-                comment = Comment.objects.get(review=reply,
-                                              reply_to=context_comment)
-                comment_is_new = False
-            except Comment.DoesNotExist:
-                comment = Comment(reply_to=context_comment,
-                                  filediff=context_comment.filediff,
-                                  first_line=context_comment.first_line,
-                                  num_lines=context_comment.num_lines)
-                comment_is_new = True
-
-            comment.text = value
-            comment.timestamp = datetime.now()
-
-            if value == "" and not comment_is_new:
-                comment.delete()
-            else:
-                comment.save()
-
-                if comment_is_new:
-                    reply.comments.add(comment)
-
-        elif context_type == "body_top":
-            reply.body_top = value
-
-            if value == "":
-                reply.body_top_reply_to = None
-            else:
-                reply.body_top_reply_to = source_review
-
-        elif context_type == "body_bottom":
-            reply.body_bottom = value
-
-            if value == "":
-                reply.body_bottom_reply_to = None
-            else:
-                reply.body_bottom_reply_to = source_review
-        else:
-            raise Http403()
-
-        if reply.body_top == "" and reply.body_bottom == "" and \
-           reply.comments.count() == 0:
-            reply.delete()
-        else:
-            reply.save()
-
-        return HttpResponse(value)
-
-    raise Http403()
-
-
-@login_required
-def review_reply_save(request, review_request_id, review_id):
-    if request.method == 'POST':
-        review = get_object_or_404(Review, pk=review_id)
-
-        # XXX
-        reply = get_object_or_404(Review, base_reply_to=review, public=False,
-                                  user=request.user)
-        reply.public = True
-        reply.save()
-        return HttpResponse("Success")
-
-    return Http403()
-
-
-@login_required
-def review_reply_discard(request, review_request_id, review_id):
-    if request.method == 'POST':
-        review = get_object_or_404(Review, pk=review_id)
-
-        # XXX
-        reply = get_object_or_404(Review, base_reply_to=review, public=False,
-                                  user=request.user)
-
-        for comment in reply.comments.all():
+        if value == "" and not comment_is_new:
             comment.delete()
+        else:
+            comment.save()
 
+            if comment_is_new:
+                reply.comments.add(comment)
+
+    elif context_type == "body_top":
+        reply.body_top = value
+
+        if value == "":
+            reply.body_top_reply_to = None
+        else:
+            reply.body_top_reply_to = source_review
+
+    elif context_type == "body_bottom":
+        reply.body_bottom = value
+
+        if value == "":
+            reply.body_bottom_reply_to = None
+        else:
+            reply.body_bottom_reply_to = source_review
+    else:
+        raise Http403()
+
+    if reply.body_top == "" and reply.body_bottom == "" and \
+       reply.comments.count() == 0:
         reply.delete()
+    else:
+        reply.save()
 
-        # XXX Do we need to delete comments individually?
-        return HttpResponse("Success")
+    return HttpResponse(value)
 
-    return Http403()
+
+@login_required
+@require_POST
+def review_reply_save(request, review_request_id, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+
+    # XXX
+    reply = get_object_or_404(Review, base_reply_to=review, public=False,
+                              user=request.user)
+    reply.public = True
+    reply.save()
+    return HttpResponse("Success")
+
+
+@login_required
+@require_POST
+def review_reply_discard(request, review_request_id, review_id):
+    review = get_object_or_404(Review, pk=review_id)
+
+    # XXX
+    reply = get_object_or_404(Review, base_reply_to=review, public=False,
+                              user=request.user)
+
+    for comment in reply.comments.all():
+        comment.delete()
+
+    reply.delete()
+
+    # XXX Do we need to delete comments individually?
+    return HttpResponse("Success")
 
 
 @login_required
