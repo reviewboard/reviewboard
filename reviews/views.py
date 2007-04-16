@@ -237,12 +237,12 @@ def diff(request, object_id, revision=None):
 
     try:
         draft = review_request.reviewrequestdraft_set.get()
-        query = query | Q(reviewrequestdraft=draft)
+        query = query & Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
         pass
 
     if revision != None:
-        query = query | Q(revision=revision)
+        query = query & Q(revision=revision)
 
     try:
         diffset = DiffSet.objects.filter(query).latest()
