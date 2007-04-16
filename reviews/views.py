@@ -265,11 +265,11 @@ def diff_fragment(request, object_id, revision, filediff_id,
                   template_name='diffviewer/diff_file_fragment.html'):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
-    query = Q(history=review_request.diffset_history) | Q(revision=revision)
+    query = Q(history=review_request.diffset_history) & Q(revision=revision)
 
     try:
         draft = review_request.reviewrequestdraft_set.get()
-        query = query | Q(reviewrequestdraft=draft)
+        query = query & Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
         pass
 
