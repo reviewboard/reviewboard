@@ -24,10 +24,10 @@ urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
-     {'url': '/reviews/'}),
+     {'url': '/dashboard/'}),
 
     # Review request browsing
-    (r'^reviews/$', 'reviewboard.reviews.views.dashboard',
+    (r'^dashboard/$', 'reviewboard.reviews.views.dashboard',
      {'template_name': 'reviews/dashboard.html'}),
 
     (r'^reviews/all/$', 'reviewboard.reviews.views.review_list',
@@ -139,6 +139,27 @@ urlpatterns = patterns('',
      {'feed_dict': rss_feeds}),
     (r'^feeds/atom/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
      {'feed_dict': atom_feeds}),
+
+    # JSON
+    (r'^json/reviewrequests/all/$',
+     'reviewboard.reviews.json.all_review_requests'),
+    (r'^json/reviewrequests/all/(?P<status>(pending|submitted))/$',
+     'reviewboard.reviews.json.all_review_requests'),
+
+    (r'^json/reviewrequests/to/group/(?P<name>[A-Za-z0-9_-]+)/$',
+     'reviewboard.reviews.json.review_requests_to_group'),
+    (r'^json/reviewrequests/to/group/(?P<name>[A-Za-z0-9_-]+)/(?P<status>(pending|submitted))/$',
+     'reviewboard.reviews.json.review_requests_to_group'),
+
+    (r'^json/reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/$',
+     'reviewboard.reviews.json.review_requests_to_user'),
+    (r'^json/reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/(?P<status>(pending|submitted))/$',
+     'reviewboard.reviews.json.review_requests_to_user'),
+
+    (r'^json/reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/$',
+     'reviewboard.reviews.json.review_requests_from_user'),
+    (r'^json/reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/(?P<status>(pending|submitted))/$',
+     'reviewboard.reviews.json.review_requests_from_user'),
 
     # Authentication and accounts
     (r'^account/login/$', 'djblets.auth.views.login',

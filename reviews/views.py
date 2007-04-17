@@ -176,34 +176,64 @@ def group_list(request, template_name):
 
 
 @login_required
-def dashboard(request, template_name):
-    direct_list = ReviewRequest.objects.filter(
-        public=True,
-        target_people=request.user,
-        status='P')[:50]
+def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
+    view = request.GET.get('view', 'incoming')
 
-    group_list = ReviewRequest.objects.filter(
-        public=True,
-        status='P',
-        target_groups__in=request.user.groups.all()).exclude(
-            id__in=[x.id for x in direct_list]
-        )[:50 - len(direct_list)]
+    if view == 'outgoing':
+        review_requests = ReviewRequest.objects.filter(
+            submitter=request.user,
+            status='P')
+    elif view == 'to-me':
+        review_requests = ReviewRequest.objects.filter(
+            target_people=request.user,
+            public=True,
+            status='P')
+    elif view == 'to-group':
+        group = request.GET.get('group', None)
 
-    your_list = ReviewRequest.objects.filter(
-        status='P',
-        submitter=request.user)[:50]
+        if group != None:
+            review_requests = ReviewRequest.objects.filter(
+                target_groups__name=group,
+                public=True,
+                status='P')
+        else:
+            review_requests = ReviewRequest.objects.filter(
+                target_groups__users=request.user,
+                public=True,
+                status='P')
+    else: # "incoming" or invalid
+        review_requests = ReviewRequest.objects.filter(
+            Q(target_people=request.user) |
+            Q(target_groups__users=request.user),
+            public=True,
+            status='P')
 
-    # The most important part
-    quips = {}
-    for variable, place_id in zip(['direct', 'group', 'empty', 'mine'],
-                                  ['dn',     'dg',    'de',    'dm']):
-        quips[variable] = Quip.objects.filter(place=place_id).order_by('?')[:1]
+    review_requests = review_requests.distinct()[:limit]
+
+#    direct_list = ReviewRequest.objects.filter(
+#        public=True,
+#        target_people=request.user,
+#        status='P')[:50]
+#
+#    group_list = ReviewRequest.objects.filter(
+#        public=True,
+#        status='P',
+#        target_groups__in=request.user.groups.all()).exclude(
+#            id__in=[x.id for x in direct_list]
+#        )[:50 - len(direct_list)]
+#
+#    your_list = ReviewRequest.objects.filter(
+#        status='P',
+#        submitter=request.user)[:50]
+
+#    # The most important part
+#    quips = {}
+#    for variable, place_id in zip(['direct', 'group', 'empty', 'mine'],
+#                                  ['dn',     'dg',    'de',    'dm']):
+#        quips[variable] = Quip.objects.filter(place=place_id).order_by('?')[:1]
 
     return render_to_response(template_name, RequestContext(request, {
-        'direct_list': direct_list,
-        'group_list': group_list,
-        'your_list': your_list,
-        'quips': quips,
+        'review_requests': review_requests,
     }))
 
 

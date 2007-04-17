@@ -3,114 +3,73 @@
 {% load reviewtags %}
 {% block title %}My Dashboard{% endblock %}
 
+{% block extrahead %}
+<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="/scripts/rb/core.js"></script>
+<script type="text/javascript" src="/scripts/dashboard.js"></script>
+{% endblock %}
+
 {% block content %}
+<div id="sidebar-wrapper">
+{% box sidebar %}
+ <div class="main">
+  <table class="list" id="dashboard-navbar">
+   <colgroup>
+    <col class="summary" />
+    <col class="count" />
+   </colgroup>
+   <tbody>
+   </tbody>
+  </table>
+ </div>
+{% endbox %}
+</div>
 
-{% if direct_list or group_list %}
- {% if direct_list %}
-  {% box dashboard %}
-  <h1 class="title">Direct Reviews</h1>
-  <div class="main">
-   {% if quips.direct %}
-   <p>{{ quips.direct.0.text }}</p>
-   {% endif %}
-
-   <table class="list">
-    <colgroup>
-     <col class="summary" width="100%" />
-     <col class="submitter" width="0%" />
-     <col class="updated" width="0%" />
-    </colgroup>
-    <thead>
-     <tr class="headers">
-      <th>Summary</th>
-      <th>Submitter</th>
-      <th>Last Updated</th>
-     </tr>
-    </thead>
-    <tbody>
-{%  for review in direct_list %}
-     <tr>
-      <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
-      <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
-      <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
-     </tr>
-{%  endfor %}
-    </tbody>
-   </table>
-  </div>
-  {% endbox %}
- {% endif %}
-
- {% if group_list %}
+<div id="dashboard_main">
  {% box dashboard %}
-  <h1 class="title">Group Reviews</h1>
-  <div class="main">
-   {% if quips.group %}
-   <p>{{ quips.group.0.text }}</p>
-   {% endif %}
-
-   <table class="list">
-    <colgroup>
-     <col class="summary" width="100%" />
-     <col class="submitter" width="0%" />
-     <col class="updated" width="0%" />
-    </colgroup>
-    <thead>
-     <tr class="headers">
-      <th>Summary</th>
-      <th>Submitter</th>
-      <th>Last Updated</th>
-     </tr>
-    </thead>
-    <tbody>
-{%  for review in group_list %}
-     <tr>
-      <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{{review}}</a></td>
-      <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
-      <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
-     </tr>
-{%  endfor %}
-    </tbody>
-   </table>
-  </div>
+ <h1 class="title">Review Requests</h1>
+ <div class="main">
+  <table class="list" id="dashboard-list">
+   <colgroup>
+    <col class="summary" width="100%" />
+    <col class="submitter" width="0%" />
+    <col class="updated" width="0%" />
+   </colgroup>
+   <thead>
+    <tr class="headers">
+     <th>Summary</th>
+     <th>Submitter</th>
+     <th>Last Updated</th>
+    </tr>
+   </thead>
+   <tbody>
+{% for review_request in review_requests %}
+    <tr>
+     <td class="summary" onclick="javascript:window.location='{{review_request.get_absolute_url}}'; return false;"><a href="{{review_request.get_absolute_url}}">{% reviewsummary review_request %}</a></td>
+     <td><a href="{{review_request.submitter.get_absolute_url}}">{{review_request.submitter}}</a></td>
+     <td class="{% ageid review_request.last_updated %}">{{review_request.last_updated|timesince}} ago</td>
+    </tr>
+{% endfor %}
+   </tbody>
+  </table>
+ </div>
  {% endbox %}
- {% endif %}
-{% else %}
- {% if quips.empty %}
-  <p>{{ quips.empty.0.text }}</p>
- {% endif %}
-{% endif %}
+</div>
 
-{% if your_list %}
- {% box dashboard %}
-  <h1 class="title">Your Pending Reviews</h1>
-  <div class="main">
-   {% if quips.mine %}
-   <p>{{ quips.mine.0.text }}</p>
-   {% endif %}
+<script language="javascript">
+function onPageLoaded(evt) {
+    addNavItem("Outgoing Reviews", "view=outgoing", 0);
+    addNavItem("Incoming Reviews", "view=incoming", 0);
+    addNavItem("To Me", "view=to-me", 1);
+{% for group in user.group_set.all %}
+	addNavItem("{{group.name}}", "view=to-group&group={{group.name}}", 1);
+{% endfor %}
+}
 
-   <table class="list">
-    <colgroup>
-     <col class="summary" width="100%" />
-     <col class="updated" width="0%" />
-    </colgroup>
-    <thead>
-     <tr class="headers">
-      <th>Summary</th>
-      <th>Last Updated</th>
-     </tr>
-    </thead>
-    <tbody>
-{%  for review in your_list %}
-     <tr>
-      <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{% reviewsummary review %}</a></td>
-      <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
-     </tr>
-{%  endfor %}
-    </tbody>
-   </table>
-  </div>
- {% endbox %}
-{% endif %}
-
+YAHOO.util.Event.on(window, "load", onPageLoaded);
+</script>
 {% endblock %}

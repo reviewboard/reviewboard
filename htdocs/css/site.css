@@ -215,7 +215,6 @@ ul#accountnav {
   padding: 5px 10px;
 }
 
-.dashboard .main,
 .reviewlist .main,
 .grouplist .main,
 .submitterlist .main {
@@ -957,3 +956,42 @@ span.draftlabel {
 #new-review .controls a:hover {
   color: #0000C0;
 }
+
+
+/*****************************************************************
+ * Dashboard
+ *****************************************************************/
+#sidebar-wrapper {
+  float: left;
+  width: 20em;
+}
+
+.sidebar {
+  background-color: #E9E9E9;
+}
+
+.sidebar .main {
+  padding: 4px;
+}
+
+.sidebar .main-item {
+  font-weight: bold;
+}
+
+.sidebar .sub-item {
+  padding-left: 20px;
+}
+
+.sidebar .sub-sub-item {
+  padding-left: 40px;
+}
+
+#dashboard_main {
+  margin-left: 21em;
+  vertical-align: top;
+}
+
+.dashboard .main {
+  padding: 4px;
+}
+
