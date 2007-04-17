@@ -37,13 +37,13 @@
 {%     if user.is_authenticated %}
        <li><a href="/dashboard/">My Dashboard</a></li>
 {%     endif %}
-       <li><a href="/reviews/all/">All review requests</a></li>
+       <li><a href="/r/all/">All review requests</a></li>
        <li><a href="/groups/">Groups</a></li>
        <li><a href="/users/">Submitters</a></li>
       </ul>
      </td>
      <td id="addchangenum">
-      <form id="changenumform" method="post" action="/reviews/new/changenum/">
+      <form id="changenumform" method="post" action="/r/new/changenum/">
        <label for="changenum">Change #</label>
        <input type="text" id="changenum" name="changenum" size="8" />
        <input type="submit" value="Add" />

@@ -50,7 +50,7 @@ def new_review_request(request, template_name='reviews/review_detail.html'):
 def new_from_changenum(request):
     if not request.POST or 'changenum' not in request.POST:
         # XXX Display an error page
-        return HttpResponseRedirect('/reviews/new/')
+        return HttpResponseRedirect('/r/new/')
 
     changenum = request.POST['changenum']
 
@@ -76,7 +76,7 @@ def new_from_changenum(request):
 
     diffset_history.delete()
     # XXX Display an error page
-    return HttpResponseRedirect('/reviews/new/')
+    return HttpResponseRedirect('/r/new/')
 
 
 
@@ -371,7 +371,7 @@ def setstatus(request, review_request_id, action):
 
     review_request.save()
     if action == 'discard':
-        return HttpResponseRedirect('/reviews/')
+        return HttpResponseRedirect('/dashboard/')
     else:
         return HttpResponseRedirect(review_request.get_absolute_url())
 

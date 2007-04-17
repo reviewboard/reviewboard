@@ -77,7 +77,7 @@ class ReviewRequest(models.Model):
         return bugs
 
     def get_absolute_url(self):
-        return "/reviews/%s/" % self.id
+        return "/r/%s/" % self.id
 
     def __str__(self):
         return self.summary

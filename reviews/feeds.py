@@ -23,7 +23,7 @@ class BaseReviewFeed(Feed):
 # RSS Feeds
 class RssReviewsFeed(BaseReviewFeed):
     title = "Review Requests"
-    link = "/reviews/"
+    link = "/r/all/"
     description = "All pending review requests."
 
     def items(self):
