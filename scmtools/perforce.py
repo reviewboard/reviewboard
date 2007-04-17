@@ -55,9 +55,8 @@ class PerforceTool(SCMTool):
 
         return '\n'.join(self.p4.run_print(file))
 
-    def parse_diff_revision(self, revision_str):
-        # FIXME: perforce gives us wacky diff formats.
-        return revision_str
+    def parse_diff_revision(self, file_str, revision_str):
+        return revision_str.rsplit('#', 1)
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):

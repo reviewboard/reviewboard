@@ -29,7 +29,7 @@ class SVNTool(SCMTool):
             raise FileNotFoundException(path, revision, str(e))
 
 
-    def parse_diff_revision(self, revision_str):
+    def parse_diff_revision(self, file_str, revision_str):
         if revision_str == "(working copy)":
             return HEAD
         elif revision_str.startswith("(revision "):
@@ -38,7 +38,7 @@ class SVNTool(SCMTool):
             if revision == "0":
                 revision = PRE_CREATION
 
-            return revision
+            return file_str, revision
         else:
             raise SCMException("Unable to parse diff revision header '%s'" %
                                revision_str)

@@ -51,13 +51,14 @@ def get_diff_files(diffset):
             chunks.append(new_chunk(lines[start:end], end - start, 'equal',
                           collapsable))
 
-        revision = \
-            scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+        file, revision = \
+            scmtools.get_tool().parse_diff_revision(filediff.source_file,
+                                                    filediff.source_detail)
 
         if revision == scmtools.PRE_CREATION:
             old = ""
         else:
-            old = get_original_file(filediff.source_file, revision)
+            old = get_original_file(file, revision)
 
         try:
             new = diffutils.patch(filediff.diff, old, filediff.dest_file)
@@ -132,7 +133,7 @@ def get_diff_files(diffset):
 
     files = []
     for filediff in diffset.files.all():
-        revision = \
+        file, revision = \
             scmtools.get_tool().parse_diff_revision(filediff.source_detail)
         chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                lambda: get_chunks(filediff))
@@ -145,7 +146,7 @@ def get_diff_files(diffset):
             revision = "Revision %s" % revision
 
         files.append({
-            'depot_filename': filediff.source_file,
+            'depot_filename': file,
             'user_filename': filediff.dest_file,
             'revision': revision,
             'chunks': chunks,

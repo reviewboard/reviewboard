@@ -67,7 +67,7 @@ class SCMTool:
         except FileNotFoundException, e:
             return False
 
-    def parse_diff_revision(self, revision_str):
+    def parse_diff_revision(self, file_str, revision_str):
         raise NotImplementedError
 
     def get_diffs_use_absolute_paths(self):
