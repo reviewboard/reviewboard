@@ -71,7 +71,9 @@ def serialize_review_request(review_request):
     }
 
 
-def json_review_request_list(request, status, extra_query=None):
+def json_review_request_list(request, extra_query=None):
+    status = request.GET.get('status', 'pending')
+
     query = Q(public=True) | Q(submitter=request.user)
 
     if status != "all":
@@ -87,20 +89,20 @@ def json_review_request_list(request, status, extra_query=None):
     })
 
 
-def all_review_requests(request, status="pending"):
-    return json_review_request_list(request, status)
+def all_review_requests(request):
+    return json_review_request_list(request)
 
 
-def review_requests_to_group(request, name, status="pending"):
-    return json_review_request_list(request, status,
+def review_requests_to_group(request, name):
+    return json_review_request_list(request,
                                     Q(target_groups__name=name))
 
 
-def review_requests_to_user(request, username, status="pending"):
-    return json_review_request_list(request, status,
+def review_requests_to_user(request, username):
+    return json_review_request_list(request,
                                     Q(target_people__username=username))
 
 
-def review_requests_from_user(request, username, status="pending"):
-    return json_review_request_list(request, status,
+def review_requests_from_user(request, username):
+    return json_review_request_list(request,
                                     Q(submitter__username=username))

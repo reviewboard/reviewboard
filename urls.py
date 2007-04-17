@@ -143,22 +143,11 @@ urlpatterns = patterns('',
     # JSON
     (r'^json/reviewrequests/all/$',
      'reviewboard.reviews.json.all_review_requests'),
-    (r'^json/reviewrequests/all/(?P<status>(pending|submitted))/$',
-     'reviewboard.reviews.json.all_review_requests'),
-
     (r'^json/reviewrequests/to/group/(?P<name>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.json.review_requests_to_group'),
-    (r'^json/reviewrequests/to/group/(?P<name>[A-Za-z0-9_-]+)/(?P<status>(pending|submitted))/$',
-     'reviewboard.reviews.json.review_requests_to_group'),
-
     (r'^json/reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/$',
      'reviewboard.reviews.json.review_requests_to_user'),
-    (r'^json/reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/(?P<status>(pending|submitted))/$',
-     'reviewboard.reviews.json.review_requests_to_user'),
-
     (r'^json/reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/$',
-     'reviewboard.reviews.json.review_requests_from_user'),
-    (r'^json/reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/(?P<status>(pending|submitted))/$',
      'reviewboard.reviews.json.review_requests_from_user'),
 
     # Authentication and accounts
