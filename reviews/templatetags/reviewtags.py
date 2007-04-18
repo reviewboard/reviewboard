@@ -272,6 +272,9 @@ def reply_list(review, comment, context_type, context_id):
 
 @register.simple_tag
 def reply_section(review, comment, context_type, context_id):
+    if comment != "":
+        context_id += str(comment.id)
+
     return render_to_string('reviews/review_reply_section.html', {
         'review': review,
         'comment': comment,
