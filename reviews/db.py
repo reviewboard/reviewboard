@@ -8,21 +8,30 @@ def _review_request_list(user, status, extra_query=None):
         query = query & Q(status=status)
 
     if extra_query != None:
-        query = query & extra_query
+        query = extra_query & query
 
-    return ReviewRequest.objects.filter(query)
+    return ReviewRequest.objects.filter(query).distinct()
 
 
-def all_review_requests(user, status=None):
+def all_review_requests(user, status='P'):
     return _review_request_list(user, status)
 
-def review_requests_to_group(user, group_name, status=None):
+def review_requests_to_group(user, group_name, status='P'):
     return _review_request_list(user, status,
                                 Q(target_groups__name=group_name))
 
-def review_requests_to_user(user, username, status=None):
+def review_requests_to_user_groups(user, username, status='P'):
+    return _review_request_list(user, status,
+                                Q(target_groups__users__username=username))
+
+def review_requests_to_user_directly(user, username, status='P'):
     return _review_request_list(user, status,
                                 Q(target_people__username=username))
 
-def review_requests_from_user(user, username, status=None):
+def review_requests_to_user(user, username, status='P'):
+    return _review_request_list(user, status,
+                                Q(target_people__username=username) |
+                                Q(target_groups__users__username=username))
+
+def review_requests_from_user(user, username, status='P'):
     return _review_request_list(user, status, Q(submitter__username=username))

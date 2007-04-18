@@ -19,6 +19,10 @@ from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
+from reviewboard.reviews.db import \
+    all_review_requests, review_requests_to_group, \
+    review_requests_to_user_directly, review_requests_to_user, \
+    review_requests_from_user
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.models import Review, Comment, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
@@ -180,57 +184,26 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
     view = request.GET.get('view', 'incoming')
 
     if view == 'outgoing':
-        review_requests = ReviewRequest.objects.filter(
-            submitter=request.user,
-            status='P')
+        review_requests = \
+            review_requests_from_user(request.user, request.user.username)
     elif view == 'to-me':
-        review_requests = ReviewRequest.objects.filter(
-            target_people=request.user,
-            public=True,
-            status='P')
+        review_requests = \
+            review_requests_to_user_directly(request.user,
+                                             request.user.username)
     elif view == 'to-group':
         group = request.GET.get('group', None)
 
         if group != None:
-            review_requests = ReviewRequest.objects.filter(
-                target_groups__name=group,
-                public=True,
-                status='P')
+            review_requests = review_requests_to_group(request.user, group)
         else:
-            review_requests = ReviewRequest.objects.filter(
-                target_groups__users=request.user,
-                public=True,
-                status='P')
+            review_requests = \
+                review_requests_to_user_groups(request.user,
+                                               request.user.username)
     else: # "incoming" or invalid
-        review_requests = ReviewRequest.objects.filter(
-            Q(target_people=request.user) |
-            Q(target_groups__users=request.user),
-            public=True,
-            status='P')
+        review_requests = review_requests_to_user(request.user,
+                                                  request.user.username)
 
-    review_requests = review_requests.distinct()[:limit]
-
-#    direct_list = ReviewRequest.objects.filter(
-#        public=True,
-#        target_people=request.user,
-#        status='P')[:50]
-#
-#    group_list = ReviewRequest.objects.filter(
-#        public=True,
-#        status='P',
-#        target_groups__in=request.user.groups.all()).exclude(
-#            id__in=[x.id for x in direct_list]
-#        )[:50 - len(direct_list)]
-#
-#    your_list = ReviewRequest.objects.filter(
-#        status='P',
-#        submitter=request.user)[:50]
-
-#    # The most important part
-#    quips = {}
-#    for variable, place_id in zip(['direct', 'group', 'empty', 'mine'],
-#                                  ['dn',     'dg',    'de',    'dm']):
-#        quips[variable] = Quip.objects.filter(place=place_id).order_by('?')[:1]
+    review_requests = review_requests[:limit]
 
     return render_to_response(template_name, RequestContext(request, {
         'review_requests': review_requests,

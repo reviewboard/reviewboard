@@ -8,7 +8,7 @@ var reviewRequestTemplate = new YAHOO.ext.Template(
 	'</tr>'
 );
 
-function addNavItem(name, params, level) {
+function addNavItem(name, count, level, params, jsonpath) {
 	if (level == 0) {
 		levelClass = "main-item";
 	} else if (level == 1) {
@@ -32,7 +32,7 @@ function addNavItem(name, params, level) {
 			}]
 		}, {
 			tag: 'td',
-			html: "0"
+			html: count
 		}]
 	}, true);
 }

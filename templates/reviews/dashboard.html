@@ -62,11 +62,13 @@
 
 <script language="javascript">
 function onPageLoaded(evt) {
-    addNavItem("Outgoing Reviews", "view=outgoing", 0);
-    addNavItem("Incoming Reviews", "view=incoming", 0);
-    addNavItem("To Me", "view=to-me", 1);
+    addNavItem("Outgoing Reviews", {% reviewrequestcount outgoing %}, 0, "view=outgoing", "from/user/{{user.username}}");
+    addNavItem("Incoming Reviews", {% reviewrequestcount incoming %}, 0, "view=incoming", "to/user/{{user.username}}");
+    addNavItem("To Me", {% reviewrequestcount incoming-directly %}, 1, "view=to-me", "to/user/{{user.username}}");
 {% for group in user.group_set.all %}
-	addNavItem("{{group.name}}", "view=to-group&group={{group.name}}", 1);
+    addNavItem("{{group.name}}", {% reviewrequestcount to-group group.name %}, 1,
+               "view=to-group&group={{group.name}}",
+               "to/group/{{group.name}}");
 {% endfor %}
 }
 

@@ -1,11 +1,18 @@
+import re
+
 from django import template
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
 from django.utils import simplejson
+
+from reviewboard.reviews.db import all_review_requests, \
+                                   review_requests_from_user, \
+                                   review_requests_to_user, \
+                                   review_requests_to_user_directly, \
+                                   review_requests_to_group
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.utils.templatetags.htmlutils import humanize_list
-import re
 
 register = template.Library()
 
@@ -68,6 +75,59 @@ def pendingreviewcount(parser, token):
             "%r tag requires a user or group object"
 
     return PendingReviewCount(obj)
+
+
+class ReviewRequestCount(template.Node):
+    def __init__(self, listtype, param):
+        self.listtype = listtype
+        self.param = param
+
+    def render(self, context):
+        if self.param != None:
+            try:
+                param = resolve_variable(self.param, context)
+            except VariableDoesNotExist:
+                raise template.TemplateSyntaxError, \
+                    "Invalid variable %s passed to 'reviewrequestcount' tag." \
+                    % self.param
+
+        user = context.get('user', None)
+
+        if self.listtype == 'all':
+            review_requests = all_review_requests(user)
+        elif self.listtype == 'outgoing':
+            review_requests = review_requests_from_user(user, user.username)
+        elif self.listtype == 'incoming':
+            review_requests = review_requests_to_user(user, user.username)
+        elif self.listtype == 'incoming-directly':
+            review_requests = review_requests_to_user_directly(user, user.username)
+        elif self.listtype == 'to-group':
+            review_requests = review_requests_to_group(user, param)
+        else:
+            raise template.TemplateSyntaxError, \
+                "Invalid list type '%s' passed to 'reviewrequestcount' tag." \
+                % self.listtype
+
+        return str(review_requests.count())
+
+
+@register.tag
+def reviewrequestcount(parser, token):
+    bits = token.contents.split()
+    del(bits[0])
+
+    if len(bits) == 0 or len(bits) > 2:
+        raise TemplateSyntaxError, "incorrect number of arguments passed " + \
+                                   "'reviewrequestcount'"
+
+    listtype = bits[0]
+
+    if len(bits) == 2:
+        param = bits[1]
+    else:
+        param = None
+
+    return ReviewRequestCount(listtype, param)
 
 
 class ForComment(template.Node):
