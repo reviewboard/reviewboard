@@ -213,8 +213,7 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
 @login_required
 def group(request, name, template_name):
     return review_list(request,
-        queryset=ReviewRequest.objects.filter(
-            target_groups__name__exact=name, public=True, status='P'),
+        queryset=get_review_requests_to_group(name),
         template_name=template_name,
         extra_context={
             'source': name,
@@ -224,8 +223,7 @@ def group(request, name, template_name):
 @login_required
 def submitter(request, username, template_name):
     return review_list(request,
-        queryset=ReviewRequest.objects.filter(
-            submitter__username__exact=username, public=True, status='P'),
+        queryset=get_review_requests_to_user_directly(username),
         template_name=template_name,
         extra_context={
             'source': username + "'s",
