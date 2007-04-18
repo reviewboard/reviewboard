@@ -9,13 +9,13 @@ from reviewboard.reviews.feeds import AtomGroupReviewsFeed
 import os.path
 
 rss_feeds = {
-    'reviews': RssReviewsFeed,
+    'r': RssReviewsFeed,
     'users': RssSubmitterReviewsFeed,
     'groups': RssGroupReviewsFeed,
 }
 
 atom_feeds = {
-    'reviews': AtomReviewsFeed,
+    'r': AtomReviewsFeed,
     'users': AtomSubmitterReviewsFeed,
     'groups': AtomGroupReviewsFeed,
 }
@@ -31,7 +31,7 @@ urlpatterns = patterns('',
     (r'^dashboard/$', 'reviewboard.reviews.views.dashboard',
      {'template_name': 'reviews/dashboard.html'}),
 
-    (r'^r/all/$', 'reviewboard.reviews.views.review_list',
+    (r'^r/$', 'reviewboard.reviews.views.review_list',
      {'queryset': ReviewRequest.objects.filter(public=True, status='P'),
       'template_name': 'reviews/review_list.html'}),
 

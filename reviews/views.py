@@ -20,9 +20,9 @@ from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.reviews.db import \
-    all_review_requests, review_requests_to_group, \
-    review_requests_to_user_directly, review_requests_to_user, \
-    review_requests_from_user
+    get_all_review_requests, get_review_requests_to_group, \
+    get_review_requests_to_user_directly, get_review_requests_to_user, \
+    get_review_requests_from_user
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.models import Review, Comment, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
@@ -185,23 +185,23 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
 
     if view == 'outgoing':
         review_requests = \
-            review_requests_from_user(request.user, request.user.username)
+            get_review_requests_from_user(request.user, request.user.username)
     elif view == 'to-me':
         review_requests = \
-            review_requests_to_user_directly(request.user,
-                                             request.user.username)
+            get_review_requests_to_user_directly(request.user,
+                                                 request.user.username)
     elif view == 'to-group':
         group = request.GET.get('group', None)
 
         if group != None:
-            review_requests = review_requests_to_group(request.user, group)
+            review_requests = get_review_requests_to_group(request.user, group)
         else:
             review_requests = \
-                review_requests_to_user_groups(request.user,
-                                               request.user.username)
+                get_review_requests_to_user_groups(request.user,
+                                                   request.user.username)
     else: # "incoming" or invalid
-        review_requests = review_requests_to_user(request.user,
-                                                  request.user.username)
+        review_requests = get_review_requests_to_user(request.user,
+                                                      request.user.username)
 
     review_requests = review_requests[:limit]
 

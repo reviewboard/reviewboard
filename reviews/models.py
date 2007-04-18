@@ -36,6 +36,9 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return "/groups/%s/" + self.name
+
     class Admin:
         pass
 

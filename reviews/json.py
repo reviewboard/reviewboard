@@ -77,7 +77,7 @@ def serialize_review_request(review_request):
 
 def review_request_list(request, func, **kwargs):
     status = deserialize_status(request.GET.get('status', 'pending'))
-    review_requests = func(request.user, status=status, **kwargs)
+    review_requests = func(user=request.user, status=status, **kwargs)
     return JsonResponse(request, {
         'review_requests': [serialize_review_request(r)
                             for r in review_requests]
@@ -86,7 +86,7 @@ def review_request_list(request, func, **kwargs):
 
 def count_review_requests(request, func, **kwargs):
     status = deserialize_status(request.GET.get('status', 'pending'))
-    review_requests = func(request.user, status=status, **kwargs)
+    review_requests = func(user=request.user, status=status, **kwargs)
     return JsonResponse(request, {
         'count': review_requests.count()
     })

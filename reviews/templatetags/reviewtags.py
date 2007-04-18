@@ -6,11 +6,11 @@ from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
 from django.utils import simplejson
 
-from reviewboard.reviews.db import all_review_requests, \
-                                   review_requests_from_user, \
-                                   review_requests_to_user, \
-                                   review_requests_to_user_directly, \
-                                   review_requests_to_group
+from reviewboard.reviews.db import get_all_review_requests, \
+                                   get_review_requests_from_user, \
+                                   get_review_requests_to_user, \
+                                   get_review_requests_to_user_directly, \
+                                   get_review_requests_to_group
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.utils.templatetags.htmlutils import humanize_list
 
@@ -94,15 +94,16 @@ class ReviewRequestCount(template.Node):
         user = context.get('user', None)
 
         if self.listtype == 'all':
-            review_requests = all_review_requests(user)
+            review_requests = get_all_review_requests(user)
         elif self.listtype == 'outgoing':
-            review_requests = review_requests_from_user(user, user.username)
+            review_requests = get_review_requests_from_user(user.username, user)
         elif self.listtype == 'incoming':
-            review_requests = review_requests_to_user(user, user.username)
+            review_requests = get_review_requests_to_user(user.username, user)
         elif self.listtype == 'incoming-directly':
-            review_requests = review_requests_to_user_directly(user, user.username)
+            review_requests = \
+                get_review_requests_to_user_directly(user.username, user)
         elif self.listtype == 'to-group':
-            review_requests = review_requests_to_group(user, param)
+            review_requests = get_review_requests_to_group(param, user)
         else:
             raise template.TemplateSyntaxError, \
                 "Invalid list type '%s' passed to 'reviewrequestcount' tag." \
