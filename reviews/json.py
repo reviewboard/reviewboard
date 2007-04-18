@@ -14,6 +14,8 @@ def serialize_status(status):
         return "submitted"
     elif status == "D":
         return "discarded"
+    elif status == None:
+        return "all"
     else:
         raise "Invalid status '%s'" % status
 
@@ -25,6 +27,8 @@ def deserialize_status(status):
         return "S"
     elif status == "discarded":
         return "D"
+    elif status == "all":
+        return None
     else:
         raise "Invalid status '%s'" % status
 
@@ -71,38 +75,18 @@ def serialize_review_request(review_request):
     }
 
 
-def json_review_request_list(request, extra_query=None):
-    status = request.GET.get('status', 'pending')
-
-    query = Q(public=True) | Q(submitter=request.user)
-
-    if status != "all":
-        query = query & Q(status=deserialize_status(status))
-
-    if extra_query != None:
-        query = query & extra_query
-
-    review_requests = ReviewRequest.objects.filter(query)
-    return JsonResponse({
+def review_request_list(request, func, **kwargs):
+    status = deserialize_status(request.GET.get('status', 'pending'))
+    review_requests = func(request.user, status=status, **kwargs)
+    return JsonResponse(request, {
         'review_requests': [serialize_review_request(r)
                             for r in review_requests]
     })
 
 
-def all_review_requests(request):
-    return json_review_request_list(request)
-
-
-def review_requests_to_group(request, name):
-    return json_review_request_list(request,
-                                    Q(target_groups__name=name))
-
-
-def review_requests_to_user(request, username):
-    return json_review_request_list(request,
-                                    Q(target_people__username=username))
-
-
-def review_requests_from_user(request, username):
-    return json_review_request_list(request,
-                                    Q(submitter__username=username))
+def count_review_requests(request, func, **kwargs):
+    status = deserialize_status(request.GET.get('status', 'pending'))
+    review_requests = func(request.user, status=status, **kwargs)
+    return JsonResponse(request, {
+        'count': review_requests.count()
+    })
