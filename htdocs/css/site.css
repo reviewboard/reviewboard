@@ -217,12 +217,9 @@ ul#accountnav {
 
 .reviewlist .main,
 .grouplist .main,
-.submitterlist .main {
-  padding: 10px;
-}
-
+.submitterlist .main,
 .reviewlist .main {
-  padding: 10px;
+  padding: 4px;
 }
 
 table.list {
