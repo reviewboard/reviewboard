@@ -185,23 +185,23 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
 
     if view == 'outgoing':
         review_requests = \
-            get_review_requests_from_user(request.user, request.user.username)
+            get_review_requests_from_user(request.user.username, request.user)
     elif view == 'to-me':
         review_requests = \
-            get_review_requests_to_user_directly(request.user,
-                                                 request.user.username)
+            get_review_requests_to_user_directly(request.user.username,
+                                                 request.user)
     elif view == 'to-group':
         group = request.GET.get('group', None)
 
         if group != None:
-            review_requests = get_review_requests_to_group(request.user, group)
+            review_requests = get_review_requests_to_group(group, request.user)
         else:
             review_requests = \
-                get_review_requests_to_user_groups(request.user,
-                                                   request.user.username)
+                get_review_requests_to_user_groups(request.user.username,
+                                                   request.user)
     else: # "incoming" or invalid
-        review_requests = get_review_requests_to_user(request.user,
-                                                      request.user.username)
+        review_requests = get_review_requests_to_user(request.user.username,
+                                                      request.user)
 
     review_requests = review_requests[:limit]
 
