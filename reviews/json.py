@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -14,6 +16,7 @@ from django.views.decorators.http import require_GET, require_POST
 from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
+from reviewboard.reviews.models import ReviewRequestDraft
 
 
 class JsonError:
@@ -23,6 +26,9 @@ class JsonError:
 
 
 DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
+PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
+                                           "to access this")
+INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
 
@@ -167,6 +173,76 @@ def serialized_object(request, object_id, varname, queryset):
     except ObjectDoesNotExist:
         return JsonResponseError(request, DOES_NOT_EXIST,
                                  {'object_id': object_id})
+
+
+
+@login_required
+@require_POST
+def review_request_draft_set(request, review_request_id, field_name):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if request.user != review_request.submitter:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    form_data = request.POST.copy()
+
+    if not hasattr(review_request, field_name):
+        return JsonResponseError(request, INVALID_ATTRIBUTE,
+                                 {'attribute': field_name})
+
+    draft, draft_is_new = \
+        ReviewRequestDraft.objects.get_or_create(
+            review_request=review_request,
+            defaults={
+                'summary': review_request.summary,
+                'description': review_request.description,
+                'testing_done': review_request.testing_done,
+                'bugs_closed': review_request.bugs_closed,
+                'branch': review_request.branch,
+            })
+
+    if draft_is_new:
+        map(draft.target_groups.add, review_request.target_groups.all())
+        map(draft.target_people.add, review_request.target_people.all())
+
+        if review_request.diffset_history.diffset_set.count() > 0:
+            draft.diffset = \
+                review_request.diffset_history.diffset_set.latest()
+
+    result = {}
+
+    if field_name == "target_groups" or field_name == "target_people":
+        values = re.split(r"[, ]+", form_data['value'])
+        target = getattr(draft, field_name)
+        target.clear()
+
+        invalid_entries = []
+
+        for value in values:
+            try:
+                if field_name == "target_groups":
+                    obj = Group.objects.get(name=value)
+                elif field_name == "target_people":
+                    obj = User.objects.get(username=value)
+
+                target.add(obj)
+            except:
+                invalid_entries.append(value)
+
+        result[field_name] = target.all()
+        result['invalid_entries'] = invalid_entries
+    else:
+        setattr(draft, field_name, form_data['value'])
+
+        if field_name == 'bugs_closed':
+            result[field_name] = \
+                [int(bug) for bug in form_data['value'].split(",")]
+        else:
+            result[field_name] = form_data['value']
+
+    draft.save()
+
+    return JsonResponse(request, result)
 
 
 @login_required

@@ -87,13 +87,6 @@ urlpatterns = patterns('',
     (r'^r/(?P<review_request_id>[0-9]+)/reply/(?P<review_id>[0-9]+)/discard/$',
      'reviewboard.reviews.views.review_reply_discard'),
 
-    # Review request JSON/XML handlers
-    (r'^r/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/(?P<field_name>[A-Za-z0-9_-]+)/$',
-     'reviewboard.reviews.views.review_request_field'),
-
-    (r'^r/(?P<review_request_id>[0-9]+)/(?P<method>(json|xml))/$',
-     'reviewboard.reviews.views.review_request_field'),
-
     # E-mail previews
     (r'^r/(?P<review_request_id>[0-9]+)/preview-email/$',
      'reviewboard.reviews.views.preview_review_request_email'),

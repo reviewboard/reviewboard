@@ -7,10 +7,20 @@ var gYourComments = {};
 var gReviews = {};
 
 function onEditComplete(field, value, callback) {
-	var updateManager = getEl(field).getUpdateManager();
-	updateManager.showLoadIndicator = false;
-	getEl(field).load('json/' + field + '/', {value: value}, callback);
-	showDraftBanner();
+    asyncJsonRequest(
+        "POST",
+        '/api/json/reviewrequests/' + gReviewRequestId +
+        '/draft/set/' + field + '/', {
+            success: function(rsp) {
+                if (callback) {
+                    callback(getEl(field), rsp[field]);
+                }
+                showDraftBanner();
+            }.createDelegate(this)
+            // TODO: Handle errors
+        },
+        "value=" + encodeURIComponent(value)
+    );
 }
 
 function registerEditor(field, multiline) {
@@ -38,12 +48,10 @@ function registerCommaListEditor(path_prefix, field) {
 	editor.on('complete',
 		function(editor, value) {
 			onEditComplete(field, value,
-				function(el, success) {
-					var list = editor.getList();
+				function(el, list) {
 					var str = "";
 
 					for (var i = 0; i < list.length; i++) {
-						list[i] = list[i].stripTags().strip();
 						str += "<a href=\"" + path_prefix + list[i] + "\">";
 						str += list[i] + "</a>";
 

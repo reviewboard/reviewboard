@@ -17,6 +17,7 @@
 <script type="text/javascript">
 var gUserURL = "{{user.get_absolute_url}}";
 var gUserFullName = "{% firstof user.get_full_name user.username %}";
+var gReviewRequestId = "{{object.id}}";
 </script>
 {% endblock %}
 

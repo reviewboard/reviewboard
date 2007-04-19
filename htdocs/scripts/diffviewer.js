@@ -305,7 +305,6 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
             var ol = dh.overwrite(el, {tag: 'ol'}, true);
             for (var commentnum in rsp.comments) {
                 var comment = rsp.comments[commentnum];
-                console.dir(comment);
                 if (comment.num_lines == 1) {
                     lines = "line " + comment.first_line;
                 } else {

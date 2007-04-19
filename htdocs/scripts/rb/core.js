@@ -84,7 +84,7 @@ var getViewportInfo = function() {
 };
 
 
-var asyncJsonRequest = function(method, url, callbacks) {
+var asyncJsonRequest = function(method, url, callbacks, postData) {
   YAHOO.util.Connect.asyncRequest(method, url, {
     success: function(res) {
       rsp = YAHOO.ext.util.JSON.decode(res.responseText);
@@ -105,5 +105,5 @@ var asyncJsonRequest = function(method, url, callbacks) {
         callbacks.failure(res.statusText);
       }
     }
-  });
+  }, postData);
 };

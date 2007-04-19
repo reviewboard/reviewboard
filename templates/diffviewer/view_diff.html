@@ -78,7 +78,7 @@
    </form>
  </div>
  <div id="tab-review" class="ydlg-tab" title="Review">
-  <form id="reviewform" method="post" action="{{diffset.history.reviewrequest_set.get.get_absolute_url}}/reply">
+  <form id="reviewform" method="post">
    <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
    <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review.shipit %}checked="checked" {% endif %}/>Ship It!<br />
    <label for="id_body_top">Review Body:</label>

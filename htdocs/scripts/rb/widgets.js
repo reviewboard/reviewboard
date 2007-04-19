@@ -134,7 +134,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 	},
 
 	completeEdit: function() {
-		var value = his.getValue().htmlEncode();
+		var value = this.getValue().htmlEncode();
 		this.el.dom.innerHTML = value;
 
 		this.hide();
