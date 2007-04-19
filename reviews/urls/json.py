@@ -30,9 +30,7 @@ urlpatterns = patterns('reviewboard.reviews.json',
      {'func': get_review_requests_from_user}),
 
     # Review requests
-    (r'^reviewrequests/(?P<object_id>[0-9]+)/$', 'serialized_object',
-     {'queryset': ReviewRequest.objects.all(),
-      'varname': 'review_request'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', 'review_request'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',
      'review_request_draft_set'),
 
@@ -47,5 +45,21 @@ urlpatterns = patterns('reviewboard.reviews.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/$',
      'review_draft_comments'),
 
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/$',
+     'review_list'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/count/$',
+     'count_review_list'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/$',
+     'review'),
+
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/$',
+     'review_comments_list'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/count/$',
+     'count_review_comments'),
+
     # Replies
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/$',
+     'review_replies_list'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/count/$',
+     'count_review_replies'),
 )

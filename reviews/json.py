@@ -25,6 +25,8 @@ class JsonError:
         self.msg = msg
 
 
+NO_ERROR                  = JsonError(0,   "If you see this, yell at " +
+                                           "the developers")
 DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
 PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
                                            "to access this")
@@ -68,8 +70,21 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'target_groups': o.target_groups.all(),
                 'target_people': o.target_people.all(),
             }
+        elif isinstance(o, Review):
+            return {
+                'id': o.id,
+                'user': o.user,
+                'timestamp': o.timestamp,
+                'public': o.public,
+                'ship_it': o.ship_it,
+                'body_top': o.body_top,
+                'body_bottom': o.body_bottom,
+                'comments': o.comments.all(),
+                'reviewed_diffset': o.reviewed_diffset,
+            }
         elif isinstance(o, Comment):
             return {
+                'id': o.id,
                 'filediff': o.filediff,
                 'text': o.text,
                 'timestamp': o.timestamp,
@@ -78,6 +93,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
             }
         elif isinstance(o, FileDiff):
             return {
+                'id': o.id,
                 'diffset': o.diffset,
                 'source_file': o.source_file,
                 'dest_file': o.dest_file,
@@ -86,6 +102,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
             }
         elif isinstance(o, DiffSet):
             return {
+                'id': o.id,
                 'name': o.name,
                 'revision': o.revision,
                 'timestamp': o.timestamp
@@ -149,6 +166,16 @@ def string_to_status(status):
 
 
 @login_required
+def review_request(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.public and review_request.submitter != request.user:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    return JsonResponse(request, {'review_request': review_request})
+
+
+@login_required
 def review_request_list(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return JsonResponse(request, {
@@ -164,16 +191,68 @@ def count_review_requests(request, func, **kwargs):
     })
 
 
-@login_required
-def serialized_object(request, object_id, varname, queryset):
-    try:
-        return JsonResponse(request, {
-            varname: queryset.get(pk=object_id)
-        })
-    except ObjectDoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST,
-                                 {'object_id': object_id})
+def _get_and_validate_review(review_request_id, review_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = get_object_or_404(Review, pk=review_id)
 
+    if review.review_request != review_request or review.base_reply_to != None:
+        raise Http404()
+
+    if not review.public and review.user != request.user:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    return review
+
+
+@login_required
+def review(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+
+    if isinstance(review, JsonResponseError):
+        return review
+
+    return JsonResponse(request, {'review': review})
+
+
+def _get_reviews(review_request):
+    return review_request.review_set.filter(public=True,
+                                            base_reply_to__isnull=True)
+
+
+@login_required
+def review_list(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    return JsonResponse(request, {
+        'reviews': _get_reviews(review_request)
+    })
+
+
+@login_required
+def count_review_list(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    return JsonResponse(request, {
+        'reviews': _get_reviews(review_request).count()
+    })
+
+
+@login_required
+def review_comments_list(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+
+    if isinstance(review, JsonResponseError):
+        return review
+
+    return JsonResponse(request, {'comments': review.comments.all()})
+
+
+@login_required
+def count_review_comments(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+
+    if isinstance(review, JsonResponseError):
+        return review
+
+    return JsonResponse(request, {'count': review.comments.count()})
 
 
 @login_required
@@ -339,3 +418,23 @@ def review_draft_comments(request, review_request_id):
     return JsonResponse(request, {
         'comments': comments,
     })
+
+
+def review_replies_list(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+
+    if isinstance(review, JsonResponseError):
+        return review
+
+    return JsonResponse(request,
+        {'replies': review.replies.filter(public=True)})
+
+
+def count_review_replies(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+
+    if isinstance(review, JsonResponseError):
+        return review
+
+    return JsonResponse(request,
+        {'count': review.replies.filter(public=True).count()})
