@@ -134,7 +134,8 @@ def get_diff_files(diffset):
     files = []
     for filediff in diffset.files.all():
         file, revision = \
-            scmtools.get_tool().parse_diff_revision(filediff.source_detail)
+            scmtools.get_tool().parse_diff_revision(filediff.source_file,
+                                                    filediff.source_detail)
         chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                lambda: get_chunks(filediff))
 

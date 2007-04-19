@@ -31,7 +31,7 @@ class SVNTool(SCMTool):
 
     def parse_diff_revision(self, file_str, revision_str):
         if revision_str == "(working copy)":
-            return HEAD
+            return file_str, HEAD
         elif revision_str.startswith("(revision "):
             revision = revision_str.split()[1][:-1]
 

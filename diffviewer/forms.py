@@ -27,8 +27,8 @@ class UploadDiffForm(forms.Form):
             basedir = str(self.clean_data['basedir']) + '/'
 
         for f in files:
-            file, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
-            filename = basedir + file
+            f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
+            filename = basedir + f2
 
             if revision != PRE_CREATION and \
                not tool.file_exists(filename, revision):
