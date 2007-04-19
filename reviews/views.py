@@ -65,6 +65,7 @@ def new_from_changenum(request):
     changeset = scmtools.get_tool().get_changeset(changenum)
 
     if changeset:
+        review_request.changenum = changenum
         review_request.summary = changeset.summary
         review_request.description = changeset.description
         review_request.testing_done = changeset.testing_done
