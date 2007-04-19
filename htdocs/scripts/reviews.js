@@ -6,11 +6,12 @@ var gCommentSections = {};
 var gYourComments = {};
 var gReviews = {};
 
+function getApiPath() {
+    return '/api/json/reviewrequests/' + gReviewRequestId;
+}
+
 function onEditComplete(field, value, callback) {
-    asyncJsonRequest(
-        "POST",
-        '/api/json/reviewrequests/' + gReviewRequestId +
-        '/draft/set/' + field + '/', {
+    asyncJsonRequest("POST", getApiPath() + '/draft/set/' + field + '/', {
             success: function(rsp) {
                 if (callback) {
                     callback(getEl(field), rsp[field]);
@@ -108,10 +109,10 @@ function hideError(error) {
 
 function submitDraft() {
 	disableDraftButtons();
-	YAHOO.util.Connect.asyncRequest('GET', 'draft/save/', {
+	asyncJsonRequest('POST', getApiPath() + '/draft/save/', {
 		success: hideDraftBanner,
-		failure: function(response) {
-			showServerError('Saving the draft has failed due to a server error.');
+		failure: function(errmsg) {
+			showServerError('Saving the draft has failed due to a server error:' + errmsg);
 			enableDraftButtons();
 		}
 	});
@@ -119,10 +120,10 @@ function submitDraft() {
 
 function revertDraft() {
 	disableDraftButtons();
-	YAHOO.util.Connect.asyncRequest('GET', 'draft/revert/', {
+	asyncJsonRequest('POST', getApiPath() + '/draft/discard/', {
 		success: function() { window.location.reload(); },
-		failure: function(response) {
-			showServerError('Reverting the draft has failed due to a server error.');
+		failure: function(errmsg) {
+			showServerError('Reverting the draft has failed due to a server error:' + errmsg);
 			enableDraftButtons();
 		}
 	});
@@ -268,8 +269,8 @@ function onReplyEditComplete(value, section_id, yourcomment_id) {
 		"type="      + gCommentSections[section_id].type + "&" +
 		"review_id=" + review_id
 
-    asyncJsonRequest("POST", "/api/json/reviewrequests/" + gReviewRequestId +
-                     "/reviews/" + review_id + "/replies/draft/", {
+    asyncJsonRequest(
+        "POST", getApiPath() + "/reviews/" + review_id + "/replies/draft/", {
 		success: function(rsp) {
 			if (value.stripTags().strip() == "") {
 				removeCommentForm(review_id, section_id, yourcomment_id);
@@ -323,8 +324,7 @@ function showReplyDraftBanner(review_id) {
 
 function submitReplyDraft(review_id) {
 	disableReplyDraftButtons(review_id);
-	var url = '/api/json/reviewrequests/' + gReviewRequestId + '/reviews/' +
-              review_id + '/replies/draft/save/';
+	var url = getApiPath() + '/reviews/' + review_id + '/replies/draft/save/';
     asyncJsonRequest("POST", url, {
 		success: function() { window.location.reload(); },
 		failure: function(rsp) {
@@ -336,8 +336,7 @@ function submitReplyDraft(review_id) {
 
 function discardReplyDraft(review_id) {
 	disableReplyDraftButtons(review_id);
-	var url = '/api/json/reviewrequests/' + gReviewRequestId + '/reviews/' +
-              review_id + '/replies/draft/discard/';
+	var url = getApiPath() + '/reviews/' + review_id + '/replies/draft/discard/';
     asyncJsonRequest("POST", url, {
 		success: function() { window.location.reload(); },
 		failure: function(rsp) {

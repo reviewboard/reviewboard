@@ -260,6 +260,59 @@ def count_review_comments(request, review_request_id, review_id):
 
 @login_required
 @require_POST
+def review_request_draft_discard(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+    except ReviewRequestDraft.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    if review_request.submitter != request.user:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    draft.delete()
+
+    return JsonResponse(request)
+
+
+@login_required
+@require_POST
+def review_request_draft_save(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+    except ReviewRequestDraft.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    if review_request.submitter != request.user:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    review_request.summary = draft.summary
+    review_request.description = draft.description
+    review_request.testing_done = draft.testing_done
+    review_request.bugs_closed = draft.bugs_closed
+    review_request.branch = draft.branch
+
+    review_request.target_groups.clear()
+    map(review_request.target_groups.add, draft.target_groups.all())
+
+    review_request.target_people.clear()
+    map(review_request.target_people.add, draft.target_people.all())
+
+    if draft.diffset:
+        draft.diffset.history = review_request.diffset_history
+        draft.diffset.save()
+
+    review_request.save()
+    draft.delete()
+
+    return JsonResponse(request)
+
+
+@login_required
+@require_POST
 def review_request_draft_set(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 

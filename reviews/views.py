@@ -427,37 +427,6 @@ def comments(request, review_request_id, filediff_id, line, revision=None,
 
 
 @login_required
-@require_POST
-def review_reply_save(request, review_request_id, review_id):
-    review = get_object_or_404(Review, pk=review_id)
-
-    # XXX
-    reply = get_object_or_404(Review, base_reply_to=review, public=False,
-                              user=request.user)
-    reply.public = True
-    reply.save()
-    return HttpResponse("Success")
-
-
-@login_required
-@require_POST
-def review_reply_discard(request, review_request_id, review_id):
-    review = get_object_or_404(Review, pk=review_id)
-
-    # XXX
-    reply = get_object_or_404(Review, base_reply_to=review, public=False,
-                              user=request.user)
-
-    for comment in reply.comments.all():
-        comment.delete()
-
-    reply.delete()
-
-    # XXX Do we need to delete comments individually?
-    return HttpResponse("Success")
-
-
-@login_required
 def preview_review_request_email(
         request, review_request_id,
         template_name='reviews/review_request_email.html'):
