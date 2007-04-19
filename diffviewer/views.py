@@ -243,11 +243,11 @@ def upload(request, donepath, diffset_history_id=None,
             else:
                 diffset_history = None
 
-            #try:
-            diffset = form.create(request.FILES['path'], diffset_history)
-            return HttpResponseRedirect(donepath % diffset.id)
-            #except scmtools.FileNotFoundException, e:
-            #    differror = str(e)
+            try:
+                diffset = form.create(request.FILES['path'], diffset_history)
+                return HttpResponseRedirect(donepath % diffset.id)
+            except scmtools.FileNotFoundException, e:
+                differror = str(e)
     else:
         form = UploadDiffForm()
 
