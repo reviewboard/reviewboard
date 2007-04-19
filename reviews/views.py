@@ -83,46 +83,6 @@ def new_from_changenum(request):
     return HttpResponseRedirect('/r/new/')
 
 
-
-@login_required
-def revert_draft(request, object_id):
-    review_request = get_object_or_404(ReviewRequest, pk=object_id)
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
-        draft.delete()
-    except ReviewRequestDraft.DoesNotExist:
-        pass
-
-    return HttpResponse("Draft reverted.")
-
-
-@login_required
-def save_draft(request, object_id):
-    review_request = get_object_or_404(ReviewRequest, pk=object_id)
-    draft = get_object_or_404(ReviewRequestDraft, review_request=review_request)
-
-    review_request.summary = draft.summary
-    review_request.description = draft.description
-    review_request.testing_done = draft.testing_done
-    review_request.bugs_closed = draft.bugs_closed
-    review_request.branch = draft.branch
-
-    review_request.target_groups.clear()
-    map(review_request.target_groups.add, draft.target_groups.all())
-
-    review_request.target_people.clear()
-    map(review_request.target_people.add, draft.target_people.all())
-
-    if draft.diffset:
-        draft.diffset.history = review_request.diffset_history
-        draft.diffset.save()
-
-    review_request.save()
-    draft.delete()
-
-    return HttpResponse("Draft saved.")
-
-
 @login_required
 def review_detail(request, object_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
