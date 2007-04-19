@@ -58,6 +58,13 @@ urlpatterns = patterns('reviewboard.reviews.json',
      'count_review_comments'),
 
     # Replies
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/draft/$',
+     'review_reply_draft'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/draft/save/$',
+     'review_reply_draft_save'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/draft/discard/$',
+     'review_reply_draft_discard'),
+
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/$',
      'review_replies_list'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/count/$',

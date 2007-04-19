@@ -268,19 +268,20 @@ function onReplyEditComplete(value, section_id, yourcomment_id) {
 		"type="      + gCommentSections[section_id].type + "&" +
 		"review_id=" + review_id
 
-	YAHOO.util.Connect.asyncRequest("POST", "reply/", {
-		success: function(res) {
+    asyncJsonRequest("POST", "/api/json/reviewrequests/" + gReviewRequestId +
+                     "/reviews/" + review_id + "/replies/draft/", {
+		success: function(rsp) {
 			if (value.stripTags().strip() == "") {
 				removeCommentForm(review_id, section_id, yourcomment_id);
 			}
 		}.createDelegate(this),
 
-		failure: function(res) {
+		failure: function(errmsg, rsp) {
 			// TODO: Show an error
 		}.createDelegate(this)
 	}, postData);
 
-	showReplyDraftBanner(gCommentSections[section_id].review_id);
+	showReplyDraftBanner(review_id);
 }
 
 function registerCommentSection(reviewid, section_id, context_id, context_type) {
@@ -322,11 +323,11 @@ function showReplyDraftBanner(review_id) {
 
 function submitReplyDraft(review_id) {
 	disableReplyDraftButtons(review_id);
-
-	var url = 'reply/' + review_id + '/save/';
-	YAHOO.util.Connect.asyncRequest('POST', url, {
+	var url = '/api/json/reviewrequests/' + gReviewRequestId + '/reviews/' +
+              review_id + '/replies/draft/save/';
+    asyncJsonRequest("POST", url, {
 		success: function() { window.location.reload(); },
-		failure: function(response) {
+		failure: function(rsp) {
 			showServerError('Saving the reply draft has failed due to a server error.');
 			enableReplyDraftButtons(review_id);
 		}
@@ -335,10 +336,11 @@ function submitReplyDraft(review_id) {
 
 function discardReplyDraft(review_id) {
 	disableReplyDraftButtons(review_id);
-	var url = 'reply/' + review_id + '/discard/';
-	YAHOO.util.Connect.asyncRequest('POST', url, {
+	var url = '/api/json/reviewrequests/' + gReviewRequestId + '/reviews/' +
+              review_id + '/replies/draft/discard/';
+    asyncJsonRequest("POST", url, {
 		success: function() { window.location.reload(); },
-		failure: function(response) {
+		failure: function(rsp) {
 			showServerError('Discarding the reply draft has failed due to a server error.');
 			enableReplyDraftButtons(review_id);
 		}

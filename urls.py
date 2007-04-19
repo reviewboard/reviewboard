@@ -79,14 +79,6 @@ urlpatterns = patterns('',
     (r'^r/(?P<review_request_id>[0-9]+)/(?P<action>(discard|submitted|reopen))/$',
      'reviewboard.reviews.views.setstatus'),
 
-    # Review replies
-    (r'^r/(?P<review_request_id>[0-9]+)/reply/$',
-     'reviewboard.reviews.views.review_reply'),
-    (r'^r/(?P<review_request_id>[0-9]+)/reply/(?P<review_id>[0-9]+)/save/$',
-     'reviewboard.reviews.views.review_reply_save'),
-    (r'^r/(?P<review_request_id>[0-9]+)/reply/(?P<review_id>[0-9]+)/discard/$',
-     'reviewboard.reviews.views.review_reply_discard'),
-
     # E-mail previews
     (r'^r/(?P<review_request_id>[0-9]+)/preview-email/$',
      'reviewboard.reviews.views.preview_review_request_email'),

@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 
 from django.conf import settings
@@ -27,10 +28,12 @@ class JsonError:
 
 NO_ERROR                  = JsonError(0,   "If you see this, yell at " +
                                            "the developers")
+
 DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
 PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
                                            "to access this")
 INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
+
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
 
@@ -420,9 +423,117 @@ def review_draft_comments(request, review_request_id):
     })
 
 
+@login_required
+@require_POST
+def review_reply_draft(request, review_request_id, review_id):
+    source_review = _get_and_validate_review(review_request_id, review_id)
+    if isinstance(source_review, JsonResponseError):
+        return source_review
+
+    context_type = request.POST['type']
+    context_id = request.POST['id']
+    value = request.POST['value']
+
+    reply, reply_is_new = Review.objects.get_or_create(
+        review_request=source_review.review_request,
+        user=request.user,
+        public=False,
+        base_reply_to=source_review,
+        reviewed_diffset=source_review.reviewed_diffset)
+
+    if reply_is_new:
+        reply.save()
+
+    if context_type == "comment":
+        context_comment = Comment.objects.get(pk=context_id)
+
+        try:
+            comment = Comment.objects.get(review=reply,
+                                          reply_to=context_comment)
+            comment_is_new = False
+        except Comment.DoesNotExist:
+            comment = Comment(reply_to=context_comment,
+                              filediff=context_comment.filediff,
+                              first_line=context_comment.first_line,
+                              num_lines=context_comment.num_lines)
+            comment_is_new = True
+
+        comment.text = value
+        comment.timestamp = datetime.now()
+
+        if value == "" and not comment_is_new:
+            comment.delete()
+        else:
+            comment.save()
+
+            if comment_is_new:
+                reply.comments.add(comment)
+
+    elif context_type == "body_top":
+        reply.body_top = value
+
+        if value == "":
+            reply.body_top_reply_to = None
+        else:
+            reply.body_top_reply_to = source_review
+
+    elif context_type == "body_bottom":
+        reply.body_bottom = value
+
+        if value == "":
+            reply.body_bottom_reply_to = None
+        else:
+            reply.body_bottom_reply_to = source_review
+    else:
+        raise Http403()
+
+    if reply.body_top == "" and reply.body_bottom == "" and \
+       reply.comments.count() == 0:
+        reply.delete()
+    else:
+        reply.save()
+
+    return JsonResponse(request)
+
+
+@login_required
+@require_POST
+def review_reply_draft_save(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+    if isinstance(review, JsonResponseError):
+        return review
+
+    try:
+        reply = Review.objects.get(base_reply_to=review, public=False,
+                                   user=request.user)
+        reply.public = True
+        reply.save()
+        return JsonResponse(request)
+    except Review.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+
+@login_required
+@require_POST
+def review_reply_draft_discard(request, review_request_id, review_id):
+    review = _get_and_validate_review(review_request_id, review_id)
+    if isinstance(review, JsonResponseError):
+        return review
+
+    try:
+        reply = Review.objects.get(base_reply_to=review, public=False,
+                                   user=request.user)
+        for comment in reply.comments.all():
+            comment.delete()
+        reply.delete()
+        return JsonResponse(request)
+    except Review.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+
+@login_required
 def review_replies_list(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
-
     if isinstance(review, JsonResponseError):
         return review
 
@@ -430,9 +541,9 @@ def review_replies_list(request, review_request_id, review_id):
         {'replies': review.replies.filter(public=True)})
 
 
+@login_required
 def count_review_replies(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
-
     if isinstance(review, JsonResponseError):
         return review
 
