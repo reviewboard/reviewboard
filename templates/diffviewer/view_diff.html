@@ -12,6 +12,7 @@
 <link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
 <script language="javascript">
   var gReviewRequestPath = '{{diffset.history.reviewrequest_set.get.get_absolute_url}}';
+  var gReviewRequestId = '{{diffset.history.reviewrequest_set.get.id}}';
   var gRevision = '{{diffset.revision}}';
 </script>
 {% endblock %}
@@ -78,7 +79,7 @@
  </div>
  <div id="tab-review" class="ydlg-tab" title="Review">
   <form id="reviewform" method="post" action="{{diffset.history.reviewrequest_set.get.get_absolute_url}}/reply">
-   <input type="hidden" name="diffset" value="{{diffset.id}}" />
+   <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
    <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review.shipit %}checked="checked" {% endif %}/>Ship It!<br />
    <label for="id_body_top">Review Body:</label>
    <div id="review-body">

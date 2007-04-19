@@ -1,13 +1,29 @@
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers import serialize
 from django.core.serializers.json import DateTimeAwareJSONEncoder
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.utils import simplejson
+from django.views.decorators.http import require_GET, require_POST
 
-from reviewboard.reviews.models import ReviewRequest, Review, Group
+from djblets.auth.util import login_required
+from reviewboard.diffviewer.models import FileDiff, DiffSet
+from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
+
+
+class JsonError:
+    def __init__(self, code, msg):
+        self.code = code
+        self.msg = msg
+
+
+DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
+UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
+INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
 
 
 class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
@@ -45,14 +61,36 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'target_groups': o.target_groups.all(),
                 'target_people': o.target_people.all(),
             }
+        elif isinstance(o, Comment):
+            return {
+                'filediff': o.filediff,
+                'text': o.text,
+                'timestamp': o.timestamp,
+                'first_line': o.first_line,
+                'num_lines': o.num_lines,
+            }
+        elif isinstance(o, FileDiff):
+            return {
+                'diffset': o.diffset,
+                'source_file': o.source_file,
+                'dest_file': o.dest_file,
+                'source_detail': o.source_detail,
+                'dest_detail': o.dest_detail,
+            }
+        elif isinstance(o, DiffSet):
+            return {
+                'name': o.name,
+                'revision': o.revision,
+                'timestamp': o.timestamp
+            }
         else:
             return super(ReviewBoardJSONEncoder, self).default(o)
 
 
 class JsonResponse(HttpResponse):
-    def __init__(self, request, obj):
-        json = obj
-        json['stat'] = 'ok'
+    def __init__(self, request, obj={}, stat='ok'):
+        json = {'stat': stat}
+        json.update(obj)
         content = simplejson.dumps(json, cls=ReviewBoardJSONEncoder)
 
         callback = request.GET.get('callback', None)
@@ -62,6 +100,20 @@ class JsonResponse(HttpResponse):
 
         super(JsonResponse, self).__init__(content, mimetype='text/plain')
         #super(JsonResponse, self).__init__(content, mimetype='application/json')
+
+
+class JsonResponseError(JsonResponse):
+    def __init__(self, request, err, extra_params={}):
+        errdata = {
+            'err': {
+                'code': err.code,
+                'msg': err.msg
+            }
+        }
+        errdata.update(extra_params)
+
+        JsonResponse.__init__(self, request, errdata, "fail")
+
 
 def status_to_string(status):
     if status == "P":
@@ -89,6 +141,7 @@ def string_to_status(status):
         raise "Invalid status '%s'" % status
 
 
+@login_required
 def review_request_list(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return JsonResponse(request, {
@@ -96,13 +149,116 @@ def review_request_list(request, func, **kwargs):
     })
 
 
+@login_required
 def count_review_requests(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return JsonResponse(request, {
         'count': func(user=request.user, status=status, **kwargs).count()
     })
 
+
+@login_required
 def serialized_object(request, object_id, varname, queryset):
+    try:
+        return JsonResponse(request, {
+            varname: queryset.get(pk=object_id)
+        })
+    except ObjectDoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST,
+                                 {'object_id': object_id})
+
+
+@login_required
+@require_POST
+def review_draft_save(request, review_request_id, publish=False):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not request.POST.has_key('diff_revision'):
+        return JsonResponseError(request, UNSPECIFIED_DIFF_REVISION)
+
+    diff_revision = request.POST['diff_revision']
+
+    try:
+        diffset = review_request.diffset_history.diffset_set.get(
+            revision=diff_revision)
+    except DiffSet.DoesNotExist:
+        return JsonResponseError(request, INVALID_DIFF_REVISION,
+                                 {'diff_revision': diff_revision})
+
+    review, review_is_new = Review.objects.get_or_create(
+        user=request.user,
+        review_request=review_request,
+        public=False,
+        reviewed_diffset=diffset)
+    review.public      = publish
+    review.ship_it     = request.POST.has_key('shipit')
+    review.body_top    = request.POST['body_top']
+    review.body_bottom = request.POST['body_bottom']
+    review.save()
+
+    if publish and settings.SEND_REVIEW_MAIL:
+        mail_review(request.user, review)
+
+    return JsonResponse(request)
+
+
+@login_required
+@require_POST
+def review_draft_delete(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not request.POST.has_key('diff_revision'):
+        return JsonResponseError(request, UNSPECIFIED_DIFF_REVISION)
+
+    diff_revision = request.POST['diff_revision']
+
+    try:
+        diffset = review_request.diffset_history.diffset_set.get(
+            revision=diff_revision)
+    except DiffSet.DoesNotExist:
+        return JsonResponseError(request, INVALID_DIFF_REVISION,
+                                 {'diff_revision': diff_revision})
+
+    try:
+        review = Review.objects.get(user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    reviewed_diffset=diffset)
+
+        for comment in review.comments.all():
+            comment.delete()
+
+        review.delete()
+        return JsonResponse(request)
+    except Review.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+
+@login_required
+def review_draft_comments(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    diff_revision = request.GET.get('diff_revision', None)
+
+    if diff_revision == None:
+        return JsonResponseError(request, UNSPECIFIED_DIFF_REVISION)
+
+    try:
+        diffset = review_request.diffset_history.diffset_set.get(
+            revision=diff_revision)
+    except DiffSet.DoesNotExist:
+        return JsonResponseError(request, INVALID_DIFF_REVISION,
+                                 {'diff_revision': diff_revision})
+
+    try:
+        review = Review.objects.get(user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    reviewed_diffset=diffset)
+        comments = review.comments.all()
+    except Review.DoesNotExist:
+        comments = []
+
     return JsonResponse(request, {
-        varname: queryset.get(pk=object_id)
+        'comments': comments,
     })

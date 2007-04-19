@@ -126,7 +126,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
 	startEdit: function() {
 		this.initialValue = this.el.dom.innerHTML;
-		var value = this.normalizeText(this.htmldecode(this.el.dom.innerHTML));
+		var value = this.normalizeText(this.el.dom.innerHTML.htmlDecode());
 		this.setValue(value);
 		this.editing = true;
 		this.show();
@@ -134,38 +134,16 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 	},
 
 	completeEdit: function() {
-		var value = this.htmlencode(this.getValue());
+		var value = his.getValue().htmlEncode();
 		this.el.dom.innerHTML = value;
 
 		this.hide();
 		this.editing = false;
 
-		if (this.normalizeText(this.htmldecode(this.initialValue)) != value ||
+		if (this.normalizeText(this.initialValue.htmlDecode()) != value ||
 		    this.notifyUnchangedCompletion) {
 			this.fireEvent('complete', this, value, this.initialValue);
 		}
-	},
-
-	htmldecode: function(str) {
-		if (str == "") {
-			return str;
-		}
-
-		str = str.replace(/&amp;/g, "&");
-		str = str.replace(/&lt;/g, "<");
-		str = str.replace(/&gt;/g, ">");
-		return str;
-	},
-
-	htmlencode: function(str) {
-		if (str == "") {
-			return str;
-		}
-
-		str = str.replace(/&/g, "&amp;");
-		str = str.replace(/</g, "&lt;");
-		str = str.replace(/>/g, "&gt;");
-		return str;
 	},
 
 	normalizeText: function(str) {

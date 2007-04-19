@@ -33,4 +33,15 @@ urlpatterns = patterns('reviewboard.reviews.json',
     (r'^reviewrequests/(?P<object_id>[0-9]+)/$', 'serialized_object',
      {'queryset': ReviewRequest.objects.all(),
       'varname': 'review_request'}),
+
+    # Reviews
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/save/$',
+     'review_draft_save'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/publish/$',
+     'review_draft_save',
+     {'publish': True}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/delete/$',
+     'review_draft_delete'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/$',
+     'review_draft_comments'),
 )

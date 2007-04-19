@@ -4,6 +4,17 @@ var FORWARD  = 1;
 var INVALID  = -1;
 var DIFF_SCROLLDOWN_AMOUNT = 100;
 var VISIBLE_CONTEXT_SIZE = 5;
+var gReviewCommentTmpl = new YAHOO.ext.DomHelper.Template(
+    "<li class=\"comment\">" +
+      "<dl>" +
+        "<dt>" +
+          "<span class=\"filename\">{filename}</span> " +
+          "<span class=\"lines\">{lines}</span>" +
+        "</dt>" +
+        "<dd>{text}</dd>" +
+      "</dl>" +
+    "</li>");
+gReviewCommentTmpl.compile();
 
 var gActions = [
 	{ // Previous file
@@ -271,20 +282,44 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 	},
 
 	updateReviewCommentsList: function() {
-		YAHOO.util.Connect.asyncRequest(
-			"GET", this.getReviewActionURL() + "comments/", {
-
-			success: function(res) {
-				getEl('all-review-comments').dom.innerHTML = res.responseText;
-			}.createDelegate(this),
-
-			failure: function(res) {
+        asyncJsonRequest("GET", this.getReviewActionURL() +
+                         "comments/?diff_revision=" + gRevision, {
+			success: this.fillReviewCommentsList.createDelegate(this),
+			failure: function(errmsg, rsp) {
 				getEl('all-review-comments').dom.innerHTML =
 					"<b>Error:</b> Unable to retrieve list of comments: " +
-					res.statusText;
+					errmsg;
 			}.createDelegate(this)
 		});
 	},
+
+    fillReviewCommentsList: function(rsp) {
+        var el = document.getElementById('all-review-comments');
+
+        if (rsp.comments.length == 0) {
+            dh.overwrite(el, {
+                tag: 'i',
+                html: 'All Comments, if any, will be displayed here once added.'
+            });
+        } else {
+            var ol = dh.overwrite(el, {tag: 'ol'}, true);
+            for (var commentnum in rsp.comments) {
+                var comment = rsp.comments[commentnum];
+                console.dir(comment);
+                if (comment.num_lines == 1) {
+                    lines = "line " + comment.first_line;
+                } else {
+                    lines = "lines " + comment.first_line + " - " +
+                            (comment.num_lines + comment.first_line - 1);
+                }
+                gReviewCommentTmpl.append(ol.dom, {
+                    'filename': comment.filediff.source_file,
+                    'lines': lines,
+                    'text': comment.text.htmlEncode().replace(/\n/g, "<br />")
+                });
+            }
+        }
+    },
 
 	populateComments: function(html) {
 		this.existingComments.dom.innerHTML = html;
@@ -421,7 +456,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 	},
 
 	getReviewActionURL: function() {
-		return gReviewRequestPath + "replies/" + gRevision + "/";
+        return '/api/json/reviewrequests/' + gReviewRequestId + '/reviews/draft/';
 	},
 
 	commentAction: function(action, onSuccess) {

@@ -8,7 +8,31 @@ RB.utils.String.prototype = {
 
 	stripTags: function() {
 		return this.replace(/<\/?[^>]+>/gi, '');
-	}
+	},
+
+  htmlEncode: function() {
+    if (this == "") {
+      return "";
+    }
+
+    str = this.replace(/&/g, "&amp;");
+    str = str.replace(/</g, "&lt;");
+    str = str.replace(/>/g, "&gt;");
+
+    return str;
+  },
+
+  htmlDecode: function() {
+    if (this == "") {
+      return "";
+    }
+
+    str = this.replace(/&amp;/g, "&");
+    str = str.replace(/&lt;/g, "<");
+    str = str.replace(/&gt;/g, ">");
+
+    return str;
+  }
 };
 
 YAHOO.augment(String, RB.utils.String);
@@ -57,4 +81,29 @@ var getViewportInfo = function() {
 	    pageWidth: pageWidth,
 	    pageHeight: pageHeight
 	};
+};
+
+
+var asyncJsonRequest = function(method, url, callbacks) {
+  YAHOO.util.Connect.asyncRequest(method, url, {
+    success: function(res) {
+      rsp = YAHOO.ext.util.JSON.decode(res.responseText);
+
+      if (rsp.stat == 'fail') {
+        if (callbacks.failure) {
+          callbacks.failure(rsp.err.msg, rsp);
+        }
+      } else {
+        if (callbacks.success) {
+          callbacks.success(rsp);
+        }
+      }
+    }.createDelegate(this),
+
+    failure: function(res) {
+      if (callbacks.failure) {
+        callbacks.failure(res.statusText);
+      }
+    }
+  });
 };
