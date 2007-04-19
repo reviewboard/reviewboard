@@ -55,11 +55,6 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.diff_fragment'),
 
     # Review request modification
-    (r'^r/(?P<object_id>[0-9]+)/edit/$',
-      'django.views.generic.create_update.update_object',
-     {'model': ReviewRequest,
-      'template_name': 'reviews/edit_details.html'}),
-
     (r'^r/[0-9]+/diff/upload/$',
      'reviewboard.diffviewer.views.upload',
       {'donepath': 'done/%s/'}),
