@@ -2,6 +2,7 @@ from django.conf.urls.defaults import *
 from reviewboard.reviews.db import *
 
 urlpatterns = patterns('reviewboard.reviews.json',
+    # Review request lists
     (r'^reviewrequests/all/$', 'review_request_list',
      {'func': get_all_review_requests}),
     (r'^reviewrequests/all/count/$', 'count_review_requests',
@@ -27,4 +28,9 @@ urlpatterns = patterns('reviewboard.reviews.json',
     (r'^reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
      {'func': get_review_requests_from_user}),
+
+    # Review requests
+    (r'^reviewrequests/(?P<object_id>[0-9]+)/$', 'serialized_object',
+     {'queryset': ReviewRequest.objects.all(),
+      'varname': 'review_request'}),
 )
