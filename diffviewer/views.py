@@ -26,7 +26,7 @@ def get_diff_files(diffset):
             if revision == scmtools.HEAD:
                 return scmtools.get_tool().get_file(file, revision)
             else:
-                return cache_memoize(file,
+                return cache_memoize("%s-%s" % (file, revision),
                     lambda: scmtools.get_tool().get_file(file, revision))
         except Exception, e:
             raise UserVisibleError(str(e))
