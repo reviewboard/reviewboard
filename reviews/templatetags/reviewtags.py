@@ -36,6 +36,11 @@ class ReviewSummary(template.Node):
             except ReviewRequestDraft.DoesNotExist:
                 pass
 
+            if not review_request.public:
+                # XXX Do we want to say "Draft?"
+                return "<span class=\"draftlabel\">[Draft]</span> " + \
+                       review_request.summary
+
         return review_request.summary
 
 
