@@ -30,7 +30,10 @@ urlpatterns = patterns('reviewboard.reviews.json',
      {'func': get_review_requests_from_user}),
 
     # Review requests
+    (r'^reviewrequests/new/$', 'new_review_request'),
+
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', 'review_request'),
+
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
      'review_request_draft_save'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
@@ -73,6 +76,10 @@ urlpatterns = patterns('reviewboard.reviews.json',
      'review_replies_list'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/count/$',
      'count_review_replies'),
+
+    # Diffs
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
+     'new_diff'),
 
     # Comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',

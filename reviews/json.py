@@ -14,10 +14,13 @@ from django.template.defaultfilters import timesince
 from django.utils import simplejson
 from django.views.decorators.http import require_GET, require_POST
 
-from djblets.auth.util import login_required
-from reviewboard.diffviewer.models import FileDiff, DiffSet
+from djblets.util.decorators import simple_decorator
+from reviewboard.diffviewer.forms import UploadDiffForm
+from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
 from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.reviews.db import create_review_request, \
+                                   InvalidChangeNumberException
 
 
 class JsonError:
@@ -33,11 +36,22 @@ DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
 PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
                                            "to access this")
 INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
+NOT_LOGGED_IN             = JsonError(103, "You are not logged in")
 
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
 INVALID_ACTION            = JsonError(202, "Invalid action specified")
+INVALID_CHANGE_NUMBER     = JsonError(203, "Invalid change number")
 
+
+@simple_decorator
+def json_login_required(view_func):
+    def _checklogin(request, *args, **kwargs):
+        if request.user.is_authenticated():
+            return view_func(request, *args, **kwargs)
+        else:
+            return JsonResponseError(request, NOT_LOGGED_IN)
+    return _checklogin
 
 class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
     def default(self, o):
@@ -173,7 +187,19 @@ def string_to_status(status):
         raise "Invalid status '%s'" % status
 
 
-@login_required
+@json_login_required
+@require_POST
+def new_review_request(request):
+    try:
+        review_request = \
+            create_review_request(request.user,
+                                  request.POST.get('changenum', None))
+        return JsonResponse(request, {'review_request': review_request})
+    except InvalidChangeNumberException:
+        return JsonResponseError(request, INVALID_CHANGE_NUMBER)
+
+
+@json_login_required
 def review_request(request, review_request_id):
     """
     Returns the review request with the specified ID.
@@ -186,7 +212,7 @@ def review_request(request, review_request_id):
     return JsonResponse(request, {'review_request': review_request})
 
 
-@login_required
+@json_login_required
 def review_request_list(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return JsonResponse(request, {
@@ -194,7 +220,7 @@ def review_request_list(request, func, **kwargs):
     })
 
 
-@login_required
+@json_login_required
 def count_review_requests(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return JsonResponse(request, {
@@ -215,7 +241,7 @@ def _get_and_validate_review(review_request_id, review_id):
     return review
 
 
-@login_required
+@json_login_required
 def review(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
 
@@ -230,7 +256,7 @@ def _get_reviews(review_request):
                                             base_reply_to__isnull=True)
 
 
-@login_required
+@json_login_required
 def review_list(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return JsonResponse(request, {
@@ -238,7 +264,7 @@ def review_list(request, review_request_id):
     })
 
 
-@login_required
+@json_login_required
 def count_review_list(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return JsonResponse(request, {
@@ -246,7 +272,7 @@ def count_review_list(request, review_request_id):
     })
 
 
-@login_required
+@json_login_required
 def review_comments_list(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
 
@@ -256,7 +282,7 @@ def review_comments_list(request, review_request_id, review_id):
     return JsonResponse(request, {'comments': review.comments.all()})
 
 
-@login_required
+@json_login_required
 def count_review_comments(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
 
@@ -266,7 +292,7 @@ def count_review_comments(request, review_request_id, review_id):
     return JsonResponse(request, {'count': review.comments.count()})
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_request_draft_discard(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -284,7 +310,7 @@ def review_request_draft_discard(request, review_request_id):
     return JsonResponse(request)
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_request_draft_save(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -319,7 +345,7 @@ def review_request_draft_save(request, review_request_id):
     return JsonResponse(request)
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_request_draft_set(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -387,7 +413,7 @@ def review_request_draft_set(request, review_request_id, field_name):
     return JsonResponse(request, result)
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_draft_save(request, review_request_id, publish=False):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -421,7 +447,7 @@ def review_draft_save(request, review_request_id, publish=False):
     return JsonResponse(request)
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_draft_delete(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -453,7 +479,7 @@ def review_draft_delete(request, review_request_id):
         return JsonResponseError(request, DOES_NOT_EXIST)
 
 
-@login_required
+@json_login_required
 def review_draft_comments(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
@@ -483,7 +509,7 @@ def review_draft_comments(request, review_request_id):
     })
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_reply_draft(request, review_request_id, review_id):
     source_review = _get_and_validate_review(review_request_id, review_id)
@@ -556,7 +582,7 @@ def review_reply_draft(request, review_request_id, review_id):
     return JsonResponse(request)
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_reply_draft_save(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
@@ -573,7 +599,7 @@ def review_reply_draft_save(request, review_request_id, review_id):
         return JsonResponseError(request, DOES_NOT_EXIST)
 
 
-@login_required
+@json_login_required
 @require_POST
 def review_reply_draft_discard(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
@@ -591,7 +617,7 @@ def review_reply_draft_discard(request, review_request_id, review_id):
         return JsonResponseError(request, DOES_NOT_EXIST)
 
 
-@login_required
+@json_login_required
 def review_replies_list(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
     if isinstance(review, JsonResponseError):
@@ -601,7 +627,7 @@ def review_replies_list(request, review_request_id, review_id):
         {'replies': review.replies.filter(public=True)})
 
 
-@login_required
+@json_login_required
 def count_review_replies(request, review_request_id, review_id):
     review = _get_and_validate_review(review_request_id, review_id)
     if isinstance(review, JsonResponseError):
@@ -611,7 +637,39 @@ def count_review_replies(request, review_request_id, review_id):
         {'count': review.replies.filter(public=True).count()})
 
 
-@login_required
+@json_login_required
+@require_POST
+def new_diff(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if review_request.submitter != request.user:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    form_data = request.POST.copy()
+    form_data.update(request.FILES)
+    form = UploadDiffForm(form_data)
+
+    if not form.is_valid():
+        return JsonResponseError(request, INVALID_ATTRIBUTE)
+
+    diffset = form.create(request.FILES['path'], review_request.diffset_history)
+
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+
+        if draft.diffset and draft.diffset != diffset:
+            draft.diffset.delete()
+
+        draft.diffset = diffset
+        draft.save()
+    except ReviewRequestDraft.DoesNotExist:
+        diffset.history = review_request.diffset_history
+        diffset.save()
+
+    return JsonResponse(request, {'diffset_id': diffset.id})
+
+
+@json_login_required
 def diff_line_comments(request, review_request_id, diff_revision,
                        filediff_id, line):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)

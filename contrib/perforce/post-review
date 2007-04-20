@@ -1,0 +1,217 @@
+#!/usr/bin/env python
+
+###########################################################################
+# Configuration
+###########################################################################
+
+# Server host
+# REVIEWBOARD_HOST = 'http://reviews.mydomain.com'
+REVIEWBOARD_HOST = None
+
+
+###########################################################################
+# Don't touch beyond this line!
+###########################################################################
+
+import httplib, mimetypes, mimetools, urllib2, cookielib, os, sys, getpass
+import simplejson
+from optparse import OptionParser
+
+
+VERSION = "0.5"
+
+# Who stole the cookies from the cookie jar?
+# Was it you?
+# >:(
+cj = cookielib.MozillaCookieJar()
+cookiefile = os.path.join(os.environ["HOME"], ".post-review-cookies.txt")
+
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.addheaders = [('User-agent', 'post-review/' + VERSION)]
+urllib2.install_opener(opener)
+
+
+class APIError(Exception):
+    pass
+
+
+def encode_multipart_formdata(fields, files):
+    BOUNDARY = mimetools.choose_boundary()
+    content = ""
+
+    for key in fields:
+        content += "--" + BOUNDARY + "\r\n"
+        content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
+        content += "\r\n"
+        content += fields[key] + "\r\n"
+
+    for key in files:
+        filename = files[key]['filename']
+        value = files[key]['content']
+        content += "--" + BOUNDARY + "\r\n"
+        content += "Content-Disposition: form-data; name=\"%s\"; " % key
+        content += "filename=\"%s\"\r\n" % filename
+        content += "\r\n"
+        content += value + "\r\n"
+
+    content += "--" + BOUNDARY + "--\r\n"
+    content += "\r\n"
+
+    content_type = "multipart/form-data; boundary=%s" % BOUNDARY
+
+    return content_type, content
+
+
+def process_json(data):
+    rsp = simplejson.loads(data)
+
+    if rsp['stat'] == 'fail':
+        raise APIError, rsp['err']
+
+    return rsp
+
+
+def api_get(path):
+    url = REVIEWBOARD_HOST + path
+
+    try:
+        rsp = process_json(urllib2.urlopen(url).read())
+        cj.save(cookiefile)
+        return rsp
+    except urllib2.HTTPError, e:
+        print "Unable to access %s (%s). The host path may be invalid" % \
+            (url, e.code)
+        sys.exit(1)
+
+
+def http_post(path, fields, files={}):
+    url = REVIEWBOARD_HOST + path
+    content_type, body = encode_multipart_formdata(fields, files)
+    headers = {
+        'Content-Type': content_type,
+        'Content-Length': str(len(body))
+    }
+
+    try:
+        r = urllib2.Request(REVIEWBOARD_HOST + path, body, headers)
+        data = urllib2.urlopen(r).read()
+        cj.save(cookiefile)
+        return data
+    except urllib2.HTTPError, e:
+        print "Unable to access %s (%s). The host path may be invalid" % \
+            (url, e.code)
+        #print e.read()
+        sys.exit(1)
+
+
+def api_post(path, fields, files={}):
+    return process_json(http_post(path, fields, files))
+
+
+def get_content_type(filename):
+    return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+
+def login():
+    print "You must log in the first time."
+    username = raw_input('Username: ')
+    password = getpass.getpass('Password: ')
+
+    result = http_post("/account/login/", {
+        'username': username,
+        'password': password
+    })
+
+    # Yeah, we're doing this twice.. There's a bug where the first time,
+    # the server thinks we don't have cookie support. A second attempt works.
+    # I'm sure there's a better fix, so please let me know what it is ;)
+    result = http_post("/account/login/", {
+        'username': username,
+        'password': password
+    })
+
+
+def create_review_request(changenum):
+    rsp = api_post('/api/json/reviewrequests/new/', {
+        'changenum': changenum
+    })
+
+    return rsp['review_request']
+
+
+def upload_diff(review_request, changenum):
+    #f = os.popen('svn diff', 'r')
+    f = os.popen('p4 diff -du -c ' + changenum, 'r')
+    diff_content = f.read()
+    f.close()
+
+    rsp = api_post('/api/json/reviewrequests/%s/diff/new/' %
+                   review_request['id'],
+                   {}, #{'basedir': '/trunk/reviewboard'},
+                   {'path': {'filename': 'diff', 'content': diff_content}})
+
+
+
+def tempt_fate(changenum):
+    try:
+        review_request = create_review_request(changenum)
+    except APIError, e:
+        rsp, = e.args
+        if rsp['code'] == 103: # Not logged in
+            login()
+            tempt_fate(changenum)
+            return
+        else:
+            print "Error creating review request: %s (%s)" % \
+                (rsp['msg'], rsp['code'])
+            sys.exit(1)
+
+
+    try:
+        upload_diff(review_request, changenum)
+    except APIError, e:
+        rsp, = e.args
+        print "Error uploading diff: %s (%s)" % (rsp['msg'], rsp['code'])
+        print "Your review request still exists, but the diff is not attached."
+        sys.exit(1)
+
+    print 'Review request posted.'
+    print
+    print 'URL: %s/r/%s/' % (REVIEWBOARD_HOST, review_request['id'])
+    sys.exit(0)
+
+
+def main():
+    if REVIEWBOARD_HOST == None:
+        print "post-review has not been configured. Please edit post-review"
+        print "and modify the Configuration section at the top of the script."
+        sys.exit(1)
+
+    parser = OptionParser(usage="%prog [-p] [-o] changenum",
+                          version="%prog " + VERSION)
+    parser.add_option("-p", "--publish",
+                      action="store_true", dest="publish", default=False,
+                      help="publish the review request immediately after submitting")
+    parser.add_option("-o", "--open",
+                      action="store_true", dest="open_browser", default=False,
+                      help="open a web browser to the review request page")
+
+    (options, args) = parser.parse_args()
+
+    if len(args) != 1:
+        parser.error("specify the change number of a pending changeset")
+
+    changenum = args[0]
+
+
+    # Let's begin.
+    try:
+        cj.load(cookiefile)
+    except IOError:
+        login()
+
+    tempt_fate(changenum)
+
+
+if __name__ == "__main__":
+    main()

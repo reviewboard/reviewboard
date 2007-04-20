@@ -22,7 +22,8 @@ from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.reviews.db import \
     get_all_review_requests, get_review_requests_to_group, \
     get_review_requests_to_user_directly, get_review_requests_to_user, \
-    get_review_requests_from_user
+    get_review_requests_from_user, create_review_request, \
+    InvalidChangeNumberException
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.models import Review, Comment, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
@@ -31,57 +32,16 @@ from reviewboard import scmtools
 
 
 @login_required
-def new_review_request(request, template_name='reviews/review_detail.html'):
-    if request.POST:
-        form = NewReviewRequestForm(request.POST.copy())
-
-        if form.is_valid():
-            form.clean_data['submitter'] = request.user
-            form.clean_data['status'] = 'P'
-            form.clean_data['public'] = True
-            new_reviewreq = form.create()
-
-            return HttpResponseRedirect(new_reviewreq.get_absolute_url())
-    else:
-        form = NewReviewRequestForm(initial={'submitter': request.user})
-
-    return render_to_response(template_name, RequestContext(request, {
-        'form': form,
-    }))
-
-
-@login_required
+@require_POST
 def new_from_changenum(request):
-    if not request.POST or 'changenum' not in request.POST:
-        # XXX Display an error page
-        return HttpResponseRedirect('/r/new/')
-
-    changenum = request.POST['changenum']
-
-    diffset_history = DiffSetHistory()
-    diffset_history.save()
-
-    review_request = ReviewRequest()
-    changeset = scmtools.get_tool().get_changeset(changenum)
-
-    if changeset:
-        review_request.changenum = changenum
-        review_request.summary = changeset.summary
-        review_request.description = changeset.description
-        review_request.testing_done = changeset.testing_done
-        review_request.branch = changeset.branch
-        review_request.bugs_closed = ','.join(changeset.bugs_closed)
-        review_request.diffset_history = diffset_history
-        review_request.submitter = request.user
-        review_request.status = 'P'
-        review_request.public = False
-        review_request.save()
-
+    try:
+        review_request = \
+            create_review_request(request.user,
+                                  request.POST.get('changenum', None))
         return HttpResponseRedirect(review_request.get_absolute_url())
-
-    diffset_history.delete()
-    # XXX Display an error page
-    return HttpResponseRedirect('/r/new/')
+    except InvalidChangeNumberException:
+        # TODO Display an error page
+        return HttpResponseRedirect('/r/')
 
 
 @login_required

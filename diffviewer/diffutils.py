@@ -23,7 +23,7 @@ def patch(diff, file, filename):
         os.unlink(newfile)
 
         try:
-            os.unlink(newfile + ".rej")
+            pass #os.unlink(newfile + ".rej")
         except:
             pass
 
