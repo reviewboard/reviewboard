@@ -23,8 +23,11 @@ def get_diff_files(diffset):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
         try:
-            return cache_memoize(file,
-                lambda: scmtools.get_tool().get_file(file, revision))
+            if revision == scmtools.HEAD:
+                return scmtools.get_tool().get_file(file, revision)
+            else:
+                return cache_memoize(file,
+                    lambda: scmtools.get_tool().get_file(file, revision))
         except Exception, e:
             raise UserVisibleError(str(e))
 
