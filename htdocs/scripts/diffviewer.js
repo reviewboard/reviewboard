@@ -16,6 +16,34 @@ var gReviewCommentTmpl = new YAHOO.ext.DomHelper.Template(
     "</li>");
 gReviewCommentTmpl.compile();
 
+var gLineCommentTmpl = new YAHOO.ext.DomHelper.Template(
+    "<li class=\"comment\">" +
+      "<dl>" +
+        "<dt>" +
+          "<a href=\"{user_url}\">{user_fullname}</a> " +
+          "<span class=\"timestamp\">{timesince} ago.</span> " +
+          "<span class=\"lines\">{lines}</span>" +
+        "</dt>" +
+        "<dd>{text}</dd>" +
+      "</dl>" +
+    "</li>");
+gLineCommentTmpl.compile();
+
+var gLineCommentDraftTmpl = new YAHOO.ext.DomHelper.Template(
+    "<li class=\"comment draft\">" +
+      "<dl>" +
+        "<dt>" +
+          "<label for=\"id_yourcomment\">" +
+            "<a href=\"{user_url}\">{user_fullname}</a> " +
+            "<span class=\"timestamp\">{timesince} ago.</span> " +
+            "<span class=\"lines\">{lines}</span>" +
+          "</label>" +
+        "</dt>" +
+        "<dd id=\"id_yourcomment\">{text}</dd>" +
+      "</dl>" +
+    "</li>");
+gLineCommentDraftTmpl.compile();
+
 var gActions = [
 	{ // Previous file
 		keys: "aAKP<m",
@@ -269,14 +297,14 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 	},
 
 	updateCommentsList: function() {
-		YAHOO.util.Connect.asyncRequest("GET", this.getCommentActionURL(), {
-			success: function(res) {
+        asyncJsonRequest("GET", this.getCommentActionURL(), {
+			success: function(rsp) {
 				this.hideMessage();
-				this.populateComments(res.responseText);
+				this.populateComments(rsp);
 			}.createDelegate(this),
 
-			failure: function(res) {
-				this.showError(res.statusText);
+			failure: function(errmsg) {
+				this.showError(errmsg);
 			}.createDelegate(this)
 		});
 	},
@@ -320,8 +348,36 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
         }
     },
 
-	populateComments: function(html) {
-		this.existingComments.dom.innerHTML = html;
+	populateComments: function(rsp) {
+        var ol = dh.overwrite(this.existingComments.dom, {
+            tag: 'ol',
+            id: 'comments-list'
+        }, true);
+        for (var commentnum in rsp.comments) {
+            var comment = rsp.comments[commentnum];
+            if (comment.num_lines == 1) {
+                lines = "line " + comment.first_line;
+            } else {
+                lines = "lines " + comment.first_line + " - " +
+                        (comment.num_lines + comment.first_line - 1);
+            }
+
+            var tmplData = {
+                'user_url': comment.user.url,
+                'lines': lines,
+                'timesince': comment.timesince,
+                'text': comment.text.htmlEncode().replace(/\n/g, "<br />"),
+                'user_fullname': (comment.user.fullname != ""
+                                  ? comment.user.fullname
+                                  : comment.user.username)
+            };
+
+            if (comment.public) {
+                gLineCommentTmpl.append(ol.dom, tmplData);
+            } else {
+                gLineCommentDraftTmpl.append(ol.dom, tmplData);
+            }
+        }
 		this.updateCommentCount();
 
 		var inlineCommentField = document.getElementById('id_yourcomment');
@@ -386,20 +442,20 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 			return;
 		}
 
-		this.commentAction("set", function(res) {
+		this.commentAction("set", function(rsp) {
 			this.commentBlock.setHasDraft(true);
-			this.populateComments(res.responseText);
+			this.populateComments(rsp);
 			this.updateReviewCommentsList();
 		}.createDelegate(this));
 	},
 
 	deleteComment: function() {
-		this.commentAction("delete", function(res) {
+		this.commentAction("delete", function(rsp) {
 			this.commentBlock.setHasDraft(false);
 			this.newCommentField.dom.value = "";
-			this.existingComments.dom.innerHTML = res.responseText;
+            this.populateComments(rsp);
 			this.updateCommentCount();
-                        this.closeDlg();
+            this.closeDlg();
 		}.createDelegate(this));
 	},
 
@@ -449,28 +505,33 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
 		this.showMessage(text, "error");
 	},
 
+    getBaseURL: function() {
+        return '/api/json/reviewrequests/' + gReviewRequestId;
+    },
+
 	getCommentActionURL: function() {
-		return "comments/" + this.commentBlock.filediffid + "/" +
-		       this.commentBlock.linenum + "/";
+        return this.getBaseURL() + '/diff/' + gRevision + '/file/' +
+               this.commentBlock.filediffid + '/line/' +
+               this.commentBlock.linenum + '/comments/';
 	},
 
 	getReviewActionURL: function() {
-        return '/api/json/reviewrequests/' + gReviewRequestId + '/reviews/draft/';
+        return this.getBaseURL() + '/reviews/draft/';
 	},
 
 	commentAction: function(action, onSuccess) {
 		this.commentActionField.dom.value = action;
 
 		YAHOO.util.Connect.setForm(this.commentForm.dom);
-		YAHOO.util.Connect.asyncRequest("POST", this.getCommentActionURL(), {
-			success: function(res) {
+        asyncJsonRequest("POST", this.getCommentActionURL(), {
+			success: function(rsp) {
 				this.hideMessage();
 				this.commentBlock.localComment = "";
-				onSuccess(res);
+				onSuccess(rsp);
 			}.createDelegate(this),
 
-			failure: function(res) {
-				this.showError(res.statusText);
+			failure: function(errmsg, rsp) {
+				this.showError(errmsg);
 			}.createDelegate(this)
 		});
 	},

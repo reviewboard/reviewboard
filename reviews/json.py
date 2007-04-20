@@ -36,6 +36,7 @@ INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
 
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
+INVALID_ACTION            = JsonError(202, "Invalid action specified")
 
 
 class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
@@ -46,9 +47,9 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
             return {
                 'id': o.id,
                 'username': o.username,
-                'first_name': o.first_name,
-                'last_name': o.last_name,
+                'fullname': o.get_full_name(),
                 'email': o.email,
+                'url': o.get_absolute_url(),
             }
         elif isinstance(o, Group):
             return {
@@ -86,13 +87,17 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'reviewed_diffset': o.reviewed_diffset,
             }
         elif isinstance(o, Comment):
+            review = o.review_set.get()
             return {
                 'id': o.id,
                 'filediff': o.filediff,
                 'text': o.text,
                 'timestamp': o.timestamp,
+                'timesince': timesince(o.timestamp),
                 'first_line': o.first_line,
                 'num_lines': o.num_lines,
+                'public': review.public,
+                'user': review.user,
             }
         elif isinstance(o, FileDiff):
             return {
@@ -170,6 +175,9 @@ def string_to_status(status):
 
 @login_required
 def review_request(request, review_request_id):
+    """
+    Returns the review request with the specified ID.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not review_request.public and review_request.submitter != request.user:
@@ -602,3 +610,69 @@ def count_review_replies(request, review_request_id, review_id):
 
     return JsonResponse(request,
         {'count': review.replies.filter(public=True).count()})
+
+
+@login_required
+def diff_line_comments(request, review_request_id, diff_revision,
+                       filediff_id, line):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    filediff = get_object_or_404(FileDiff,
+        pk=filediff_id, diffset__history=review_request.diffset_history,
+        diffset__revision=diff_revision)
+
+    if request.POST:
+        text = request.POST['text']
+        num_lines = request.POST['num_lines']
+        action = request.POST['action']
+
+        # TODO: Sanity check the fields
+
+        if action == "set":
+            review, review_is_new = Review.objects.get_or_create(
+                review_request=review_request,
+                user=request.user,
+                public=False,
+                reviewed_diffset=filediff.diffset)
+
+            if review_is_new:
+                review.save()
+
+            comment, comment_is_new = review.comments.get_or_create(
+                filediff=filediff,
+                first_line=line)
+
+            comment.text = text
+            comment.num_lines = num_lines
+            comment.timestamp = datetime.now()
+            comment.save()
+
+            if comment_is_new:
+                review.comments.add(comment)
+                review.save()
+        elif action == "delete":
+            review = get_object_or_404(Review,
+                review_request=review_request,
+                user=request.user,
+                public=False,
+                reviewed_diffset=filediff.diffset)
+
+            try:
+                comment = review.comments.get(filediff=filediff,
+                                              first_line=line)
+                comment.delete()
+            except Comment.DoesNotExist:
+                pass
+
+            if review.body_top.strip() == "" and \
+               review.body_bottom.strip() == "" and \
+               review.comments.count() == 0:
+                review.delete()
+        else:
+            return JsonResponseError(request, INVALID_ACTION,
+                                     {'action': action})
+
+    return JsonResponse(request, {
+        'comments': filediff.comment_set.filter(
+            Q(review__public=True) | Q(review__user=request.user),
+            first_line=line)
+    })

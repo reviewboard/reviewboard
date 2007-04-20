@@ -74,12 +74,6 @@ urlpatterns = patterns('',
     (r'^r/(?P<review_request_id>[0-9]+)/replies/preview-email/(?P<review_id>[0-9]+)/$',
      'reviewboard.reviews.views.preview_reply_email'),
 
-    # Comments
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/comments/(?P<filediff_id>[0-9]+)/(?P<line>[0-9]+)/$',
-     'reviewboard.reviews.views.comments'),
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/comments/(?P<filediff_id>[0-9]+)/(?P<line>[0-9]+)/$',
-     'reviewboard.reviews.views.comments'),
-
     # Users
     (r'^users/$', 'reviewboard.reviews.views.submitter_list',
      {'template_name': 'reviews/submitter_list.html'}),

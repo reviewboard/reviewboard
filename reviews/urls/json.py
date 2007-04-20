@@ -73,4 +73,8 @@ urlpatterns = patterns('reviewboard.reviews.json',
      'review_replies_list'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/count/$',
      'count_review_replies'),
+
+    # Comments
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',
+     'diff_line_comments'),
 )
