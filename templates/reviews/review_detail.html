@@ -109,8 +109,6 @@ var gReviewRequestId = "{{object.id}}";
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
  <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
-{% else %}
- <li><a href="scrutinize/">Review</a></li>
 {% endifequal %}
 {% ifnotequal details.diffset_history.diffset_set.count 0 %}
  <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
