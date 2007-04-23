@@ -71,17 +71,21 @@ def process_json(data):
     return rsp
 
 
-def api_get(path):
+def http_get(path):
     url = REVIEWBOARD_HOST + path
 
     try:
-        rsp = process_json(urllib2.urlopen(url).read())
+        rsp = urllib2.urlopen(url).read()
         cj.save(cookiefile)
         return rsp
     except urllib2.HTTPError, e:
         print "Unable to access %s (%s). The host path may be invalid" % \
             (url, e.code)
         sys.exit(1)
+
+
+def api_get(path):
+    return process_json(http_get(path))
 
 
 def http_post(path, fields, files={}):
@@ -117,14 +121,10 @@ def login():
     username = raw_input('Username: ')
     password = getpass.getpass('Password: ')
 
-    result = http_post("/account/login/", {
-        'username': username,
-        'password': password
-    })
+    # We do an initial login so a test cookie can be populated.
+    # We then perform the login.
+    http_get("/account/login/")
 
-    # Yeah, we're doing this twice.. There's a bug where the first time,
-    # the server thinks we don't have cookie support. A second attempt works.
-    # I'm sure there's a better fix, so please let me know what it is ;)
     result = http_post("/account/login/", {
         'username': username,
         'password': password
