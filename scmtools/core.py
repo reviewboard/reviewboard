@@ -56,6 +56,7 @@ PRE_CREATION = Revision("PRE-CREATION")
 class SCMTool:
     def __init__(self, repopath):
         self.repopath = repopath
+        self.uses_atomic_revisions = False
 
     def get_file(self, path, revision=None):
         raise NotImplementedError
@@ -77,6 +78,9 @@ class SCMTool:
         raise NotImplementedError
 
     def get_pending_changesets(self, userid):
+        raise NotImplementedError
+
+    def get_filenames_in_revision(self, revision):
         raise NotImplementedError
 
 

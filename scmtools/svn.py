@@ -11,20 +11,16 @@ class SVNTool(SCMTool):
         SCMTool.__init__(self, repopath)
         self.client = pysvn.Client()
 
+        self.uses_atomic_revisions = True
+
 
     def get_file(self, path, revision=HEAD):
         if not path:
             raise FileNotFoundException(path, revision)
 
-        if revision == HEAD:
-            r = pysvn.Revision(pysvn.opt_revision_kind.head)
-        elif revision == PRE_CREATION:
-            raise FileNotFoundException(path, revision)
-        else:
-            r = pysvn.Revision(pysvn.opt_revision_kind.number, str(revision))
-
         try:
-            return self.client.cat(self.__normalize_path(path), r)
+            return self.client.cat(self.__normalize_path(path),
+                                   self.__normalize_revision(revision))
         except pysvn.ClientError, e:
             raise FileNotFoundException(path, revision, str(e))
 
@@ -43,6 +39,27 @@ class SVNTool(SCMTool):
             raise SCMException("Unable to parse diff revision header '%s'" %
                                revision_str)
 
+
+    def get_filenames_in_revision(self, revision):
+        r = self.__normalize_revision(revision)
+        logs = self.client.log(self.repopath, r, r, True)
+
+        if len(logs) == 0:
+            return []
+        elif len(logs) == 1:
+            return [f['path'] for f in logs[0]['changed_paths']]
+        else:
+            assert False
+
+    def __normalize_revision(self, revision):
+        if revision == HEAD:
+            r = pysvn.Revision(pysvn.opt_revision_kind.head)
+        elif revision == PRE_CREATION:
+            raise FileNotFoundException(path, revision)
+        else:
+            r = pysvn.Revision(pysvn.opt_revision_kind.number, str(revision))
+
+        return r
 
     def __normalize_path(self, path):
         if path.startswith(self.repopath):

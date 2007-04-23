@@ -22,6 +22,8 @@ class PerforceTool(SCMTool):
         # connection is then left open as long as possible.
         self.connected = False
 
+        self.uses_atomic_revisions = True
+
     def _connect(self):
         if not self.connected or self.p4.dropped():
             self.p4.connect()
@@ -57,6 +59,9 @@ class PerforceTool(SCMTool):
 
     def parse_diff_revision(self, file_str, revision_str):
         return revision_str.rsplit('#', 1)
+
+    def get_filenames_in_revision(self, revision):
+        return self.get_changeset(revision).files
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):
