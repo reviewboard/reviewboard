@@ -56,7 +56,8 @@ class ReviewRequest(models.Model):
     status = models.CharField(maxlength=1, choices=STATUSES)
     public = models.BooleanField("Public", default=False)
     changenum = models.PositiveIntegerField("Change Number", blank=True,
-                                            null=True)
+                                            null=True, unique=True,
+                                            db_index=True)
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
 
     summary = models.CharField("Summary", maxlength=300, core=True)
