@@ -21,8 +21,11 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     current_site = Site.objects.get(pk=settings.SITE_ID)
     from_email = user.email
     recipient_list = \
-        [user.email for user in review_request.target_users.all()] + \
+        [user.email for user in review_request.target_people.all()] + \
         [group.mailing_list for group in review_request.target_groups.all()]
+
+    if recipient_list == []:
+        return None
 
     context['domain'] = current_site.domain
     context['review_request'] = review_request
@@ -35,7 +38,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
                      settings.EMAIL_HOST_PASSWORD)
 
     msg = SafeMIMEText(body, 'plain', settings.DEFAULT_CHARSET)
-    msg['Subject'] = subject
+    msg['Subject'] = subject.strip()
     msg['From'] = from_email
     msg['To'] = ', '.join(recipient_list)
     msg['Date'] = rfc822.formatdate()
