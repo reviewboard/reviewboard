@@ -93,7 +93,6 @@ function onTargetGroupsChanged(el, list) {
 		}
 	}
 
-	console.debug("str = '" + str + "'");
 	el.dom.innerHTML = str;
 }
 
