@@ -79,7 +79,7 @@ def http_get(path):
         cj.save(cookiefile)
         return rsp
     except urllib2.HTTPError, e:
-        print "Unable to access %s (%s). The host path may be invalid" % \
+        print "Unable to access %s (code %s). The host path may be invalid" % \
             (url, e.code)
         sys.exit(1)
 
@@ -102,7 +102,7 @@ def http_post(path, fields, files={}):
         cj.save(cookiefile)
         return data
     except urllib2.HTTPError, e:
-        print "Unable to access %s (%s). The host path may be invalid" % \
+        print "Unable to access %s (code %s). The host path may be invalid" % \
             (url, e.code)
         #print e.read()
         sys.exit(1)
@@ -162,7 +162,7 @@ def tempt_fate(changenum):
             tempt_fate(changenum)
             return
         else:
-            print "Error creating review request: %s (%s)" % \
+            print "Error creating review request: %s (code %s)" % \
                 (rsp['msg'], rsp['code'])
             sys.exit(1)
 
@@ -171,7 +171,7 @@ def tempt_fate(changenum):
         upload_diff(review_request, changenum)
     except APIError, e:
         rsp, = e.args
-        print "Error uploading diff: %s (%s)" % (rsp['msg'], rsp['code'])
+        print "Error uploading diff: %s (code %s)" % (rsp['msg'], rsp['code'])
         print "Your review request still exists, but the diff is not attached."
         sys.exit(1)
 
