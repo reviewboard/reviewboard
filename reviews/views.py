@@ -271,7 +271,7 @@ def setstatus(request, review_request_id, action):
 @login_required
 def preview_review_request_email(
         request, review_request_id,
-        template_name='reviews/review_request_email.html'):
+        template_name='reviews/review_request_email.txt'):
 
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
@@ -287,7 +287,7 @@ def preview_review_request_email(
 
 @login_required
 def preview_reply_email(request, review_request_id, review_id,
-                        template_name='reviews/review_email.html'):
+                        template_name='reviews/review_email.txt'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = get_object_or_404(Review, pk=review_id)
 

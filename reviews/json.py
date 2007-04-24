@@ -17,10 +17,11 @@ from django.views.decorators.http import require_GET, require_POST
 from djblets.util.decorators import simple_decorator
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
-from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
-from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.reviews.db import create_review_request, \
                                    InvalidChangeNumberException
+from reviewboard.reviews.email import mail_review, mail_review_request
+from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
+from reviewboard.reviews.models import ReviewRequestDraft
 
 
 class JsonError:
