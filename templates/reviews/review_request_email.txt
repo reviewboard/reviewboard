@@ -1,5 +1,9 @@
-{% load reviewtags %}
-{% load htmlutils %}
+{% load reviewtags %}{% load htmlutils %}
+-----------------------------------------------------------
+This is an automatically generated e-mail. To reply, visit:
+http://{{domain}}{{review_request.get_absolute_url}}
+-----------------------------------------------------------
+
 Review request for {% reviewer_list review_request %}.
 
 
@@ -27,4 +31,4 @@ Testing
 
 Thanks,
 
-{{ user.first_name }}
+{% ifnotequal review_request.submitter.first_name "" %}{{review_request.submitter.first_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %}

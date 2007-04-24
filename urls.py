@@ -71,7 +71,7 @@ urlpatterns = patterns('',
     # E-mail previews
     (r'^r/(?P<review_request_id>[0-9]+)/preview-email/$',
      'reviewboard.reviews.views.preview_review_request_email'),
-    (r'^r/(?P<review_request_id>[0-9]+)/replies/preview-email/(?P<review_id>[0-9]+)/$',
+    (r'^r/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/preview-email/$',
      'reviewboard.reviews.views.preview_reply_email'),
 
     # Users

@@ -30,6 +30,7 @@ class Quip(models.Model):
 
 class Group(models.Model):
     name = models.CharField(maxlength=64)
+    display_name = models.CharField(maxlength=64)
     mailing_list = models.EmailField()
     users = models.ManyToManyField(User, core=False, blank=True)
 
@@ -59,6 +60,8 @@ class ReviewRequest(models.Model):
                                             null=True, unique=True,
                                             db_index=True)
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
+    time_emailed = models.DateTimeField("Time E-Mailed", null=True,
+                                        default=None)
 
     summary = models.CharField("Summary", maxlength=300, core=True)
     description = models.TextField("Description")
@@ -188,6 +191,8 @@ class Review(models.Model):
                                       related_name="replies")
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
                                         blank=True)
+    time_emailed = models.DateTimeField("Time E-Mailed", null=True,
+                                        default=None)
 
     body_top = models.TextField("Body (Top)", blank=True)
     body_bottom = models.TextField("Body (Bottom)", blank=True)
@@ -207,6 +212,10 @@ class Review(models.Model):
 
     def is_reply(self):
         return self.base_reply_to != None
+
+    def get_absolute_url(self):
+        return "%s#review%s" % (self.review_request.get_absolute_url(),
+                                self.id)
 
     class Admin:
         list_display = ('review_request', 'user', 'public', 'ship_it',

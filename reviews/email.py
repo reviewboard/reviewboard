@@ -2,6 +2,7 @@ import time
 import smtplib, rfc822
 import socket
 import random
+from datetime import datetime
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -29,7 +30,6 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     context['domain'] = current_site.domain
     context['review_request'] = review_request
-    context['user'] = user
     body = render_to_string(template_name, context)
 
     server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
@@ -67,6 +67,7 @@ def mail_review_request(user, review_request):
         send_review_mail(user, review_request,
                          "Review Request: %s" % review_request.summary, None,
                          'reviews/review_request_email.txt')
+    review_request.time_emailed = datetime.now()
     review_request.save()
 
 
@@ -82,4 +83,5 @@ def mail_review(user, review):
                          review.review_request.email_message_id, # XXX
                          'reviews/review_email.txt',
                          {'review': review});
+    review.time_emailed = datetime.now()
     review.save()
