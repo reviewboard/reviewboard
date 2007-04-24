@@ -2,6 +2,7 @@ from datetime import datetime
 import re
 
 from django.conf import settings
+from django.contrib import auth
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers import serialize
@@ -348,6 +349,20 @@ def review_request_draft_save(request, review_request_id):
     return JsonResponse(request)
 
 
+def find_user(username):
+    try:
+        return User.objects.get(username=username)
+    except User.DoesNotExist:
+        for backend in auth.get_backends():
+            try:
+                user = backend.get_or_create_user(username)
+            except:
+                pass
+            if user:
+                return user
+    return None
+
+
 @json_login_required
 @require_POST
 def review_request_draft_set(request, review_request_id, field_name):
@@ -395,7 +410,7 @@ def review_request_draft_set(request, review_request_id, field_name):
                 if field_name == "target_groups":
                     obj = Group.objects.get(name=value)
                 elif field_name == "target_people":
-                    obj = User.objects.get(username=value)
+                    obj = find_user(username=value)
 
                 target.add(obj)
             except:

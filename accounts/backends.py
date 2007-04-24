@@ -38,10 +38,11 @@ class NISBackend:
 
         return user
 
-    def get_or_create_user(self, user_id):
+    def get_or_create_user(self, username):
         # FIXME: remove duplication with authenticate()
-        user = self.get_user(user_id)
-        if not user:
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
             try:
                 passwd = nis.match(username, 'passwd').split(':')
                 first_name, last_name = passwd[4].split(' ', 2)
