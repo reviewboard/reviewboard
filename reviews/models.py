@@ -37,7 +37,7 @@ class Group(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return "/groups/%s/" + self.name
+        return "/groups/%s/" % self.name
 
     class Admin:
         pass

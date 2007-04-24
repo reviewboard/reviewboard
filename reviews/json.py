@@ -70,6 +70,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'id': o.id,
                 'name': o.name,
                 'mailing_list': o.mailing_list,
+                'url': o.get_absolute_url(),
             }
         elif isinstance(o, ReviewRequest):
             return {

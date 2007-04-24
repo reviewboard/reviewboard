@@ -37,7 +37,7 @@ function registerEditor(field, multiline) {
 		this, true);
 }
 
-function registerCommaListEditor(path_prefix, field) {
+function registerCommaListEditor(field, onComplete) {
 	var editor = new RB.widgets.InlineCommaListEditor({
 		el: field,
 		cls: field + '-editor',
@@ -46,26 +46,55 @@ function registerCommaListEditor(path_prefix, field) {
 		notifyUnchangedCompletion: true
 	});
 
-	editor.on('complete',
-		function(editor, value) {
-			onEditComplete(field, value,
-				function(el, list) {
-					var str = "";
+	editor.on('complete', function(editor, value) {
+		onEditComplete(field, value, onComplete);
+	});
+}
 
-					for (var i = 0; i < list.length; i++) {
-						str += "<a href=\"" + path_prefix + list[i] + "\">";
-						str += list[i] + "</a>";
+function onBugsChanged(el, list) {
+	var str = "";
 
-						if (i < list.length - 1) {
-							str += ", ";
-						}
-					}
+	for (var i = 0; i < list.length; i++) {
+		str += "<a href=\"http://bugzilla/show_bug.cgi?id=" + list[i] + "\">";
+		str += list[i] + "</a>";
 
-					getEl(field).dom.innerHTML = str;
-				}
-			)
+		if (i < list.length - 1) {
+			str += ", ";
 		}
-	);
+	}
+
+	el.dom.innerHTML = str;
+}
+
+function onTargetPeopleChanged(el, list) {
+	var str = "";
+
+	for (var i = 0; i < list.length; i++) {
+		str += "<a href=\"" + list[i].url + "\">";
+		str += list[i].username + "</a>";
+
+		if (i < list.length - 1) {
+			str += ", ";
+		}
+	}
+
+	el.dom.innerHTML = str;
+}
+
+function onTargetGroupsChanged(el, list) {
+	var str = "";
+
+	for (var i = 0; i < list.length; i++) {
+		str += "<a href=\"" + list[i].url + "\">";
+		str += list[i].name + "</a>";
+
+		if (i < list.length - 1) {
+			str += ", ";
+		}
+	}
+
+	console.debug("str = '" + str + "'");
+	el.dom.innerHTML = str;
 }
 
 function disableDraftButtons() {

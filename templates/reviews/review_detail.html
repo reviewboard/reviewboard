@@ -187,9 +187,9 @@ var gReviewRequestId = "{{object.id}}";
   registerEditor('branch', false);
   registerEditor('description', true);
   registerEditor('testing_done', true);
-  registerCommaListEditor('http://bugzilla/show_bug.cgi?id=', 'bugs_closed');
-  registerCommaListEditor('/groups/', 'target_groups');
-  registerCommaListEditor('/users/', 'target_people');
+  registerCommaListEditor('bugs_closed', onBugsChanged);
+  registerCommaListEditor('target_groups', onTargetGroupsChanged);
+  registerCommaListEditor('target_people', onTargetPeopleChanged);
 
 {% if draft %}
   showDraftBanner();
