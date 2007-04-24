@@ -19,7 +19,8 @@ from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 from reviewboard.reviews.db import create_review_request, \
                                    InvalidChangeNumberException
-from reviewboard.reviews.email import mail_review, mail_review_request
+from reviewboard.reviews.email import mail_review, mail_review_request, \
+                                      mail_reply
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
 from reviewboard.reviews.models import ReviewRequestDraft
 
@@ -596,6 +597,10 @@ def review_reply_draft_save(request, review_request_id, review_id):
                                    user=request.user)
         reply.public = True
         reply.save()
+
+        if settings.SEND_REVIEW_MAIL:
+            mail_reply(request.user, reply)
+
         return JsonResponse(request)
     except Review.DoesNotExist:
         return JsonResponseError(request, DOES_NOT_EXIST)

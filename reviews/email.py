@@ -73,15 +73,34 @@ def mail_review_request(user, review_request):
 
 def mail_review(user, review):
     """
-    Sends an e-mail representing the supplied review or reply to a review.
+    Sends an e-mail representing the supplied review.
     """
     review.email_message_id = \
         send_review_mail(user,
                          review.review_request,
                          "Re: Review Request: %s" %
                          review.review_request.summary,
-                         review.review_request.email_message_id, # XXX
+                         review.review_request.email_message_id,
                          'reviews/review_email.txt',
-                         {'review': review});
+                         {'review': review})
     review.time_emailed = datetime.now()
     review.save()
+
+
+def mail_reply(user, reply):
+    """
+    Sends an e-mail representing the supplied reply to a review.
+    """
+    review = reply.base_reply_to
+
+    reply.email_message_id = \
+        send_review_mail(user,
+                         review.review_request,
+                         "Re: Review Request: %s" %
+                         review.review_request.summary,
+                         review.email_message_id,
+                         'reviews/reply_email.txt',
+                         {'review': review,
+                          'reply': reply})
+    reply.time_emailed = datetime.now()
+    reply.save()

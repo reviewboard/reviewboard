@@ -286,15 +286,36 @@ def preview_review_request_email(
 
 
 @login_required
-def preview_reply_email(request, review_request_id, review_id,
-                        template_name='reviews/review_email.txt'):
+def preview_review_email(request, review_request_id, review_id,
+                         template_name='reviews/review_email.txt'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    review = get_object_or_404(Review, pk=review_id)
+    review = get_object_or_404(Review, pk=review_id,
+                               review_request=review_request)
 
     return HttpResponse(render_to_string(template_name,
         RequestContext(request, {
             'review_request': review_request,
             'review': review,
+            'user': request.user,
+            'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+        }),
+    ), mimetype='text/plain')
+    return response
+
+
+@login_required
+def preview_reply_email(request, review_request_id, review_id, reply_id,
+                        template_name='reviews/reply_email.txt'):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = get_object_or_404(Review, pk=review_id,
+                               review_request=review_request)
+    reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
+
+    return HttpResponse(render_to_string(template_name,
+        RequestContext(request, {
+            'review_request': review_request,
+            'review': review,
+            'reply': reply,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
         }),

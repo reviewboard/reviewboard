@@ -170,6 +170,9 @@ class Comment(models.Model):
     def last_line(self):
         return self.first_line + self.num_lines - 1
 
+    def public_replies(self):
+        return self.replies.filter(review__public=True)
+
     def __str__(self):
         return self.text
 
@@ -212,6 +215,9 @@ class Review(models.Model):
 
     def is_reply(self):
         return self.base_reply_to != None
+
+    def public_replies(self):
+        return self.replies.filter(public=True)
 
     def get_absolute_url(self):
         return "%s#review%s" % (self.review_request.get_absolute_url(),
