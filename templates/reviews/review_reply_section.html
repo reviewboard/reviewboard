@@ -6,5 +6,5 @@
    <li><a href="#" id="add_comment_{{context_id}}-{{review.id}}" onclick="showCommentForm('{{review.id}}', '{{context_id}}-{{review.id}}'); return false;">Add comment</a></li>
   </ul>
   <script language="javascript">
-  registerCommentSection("{{review.id}}", "{{context_id}}-{{review.id}}", "{{review.id}}", "{{context_type}}");
+  registerCommentSection("{{review.id}}", "{{context_id}}-{{review.id}}", "{% ifequal comment "" %}{{review.id}}{% else %}{{comment.id}}{% endifequal %}", "{{context_type}}");
   </script>
