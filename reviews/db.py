@@ -42,18 +42,28 @@ def get_review_requests_from_user(username, user=None, status='P'):
 
 
 class InvalidChangeNumberException(Exception):
-    def __init__(self, msg=None):
+    def __init__(self, msg=None, review_request=None):
         Exception.__init__(self, msg)
+        self.review_request = review_request
 
 
 def create_review_request(user, changenum=None):
+    try:
+        review_request = ReviewRequest.objects.get(changenum=changenum)
+        raise InvalidChangeNumberException(
+            "A changeset with this change number already exists.",
+            review_request)
+    except ReviewRequest.DoesNotExist:
+        pass
+
     review_request = ReviewRequest()
 
     if changenum:
         changeset = scmtools.get_tool().get_changeset(changenum)
 
         if not changeset:
-            raise InvalidChangeNumberException()
+            raise InvalidChangeNumberException(
+                "No changeset exists with this change number.")
 
         review_request.changenum = changenum
         review_request.summary = changeset.summary
