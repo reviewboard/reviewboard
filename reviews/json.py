@@ -205,7 +205,7 @@ def new_review_request(request):
         return JsonResponse(request, {'review_request': review_request})
     except ChangeNumberInUseException, e:
         return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
-                                 {'review_request': e.review_request}))
+                                 {'review_request': e.review_request})
     except InvalidChangeNumberException:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
 
