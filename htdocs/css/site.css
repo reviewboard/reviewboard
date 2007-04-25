@@ -572,6 +572,10 @@ table.sidebyside .commentflag.draft {
   margin-top: 0.5em;
 }
 
+#comment-dlg #comments-list dd {
+  padding: 1em 0 1em 0;
+}
+
 #comment-dlg #comments-list dt a {
   font-size: 1.1em;
   font-weight: bold;
@@ -624,6 +628,14 @@ table.sidebyside .commentflag.draft {
   margin: 0px;
   padding: 5px 0px 0px 0px;
   list-style: none;
+}
+
+#comment-dlg #review-body #all-review-comments dl {
+  padding: 0.5em 0 0.5em 0;
+}
+
+#comment-dlg #review-body #all-review-comments dd {
+  padding: 1em 0 1em 0;
 }
 
 #comment-dlg #review-body #all-review-comments dt .filename {
