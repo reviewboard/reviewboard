@@ -80,6 +80,11 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'url': o.get_absolute_url(),
             }
         elif isinstance(o, ReviewRequest):
+            if o.bugs_closed == '':
+                bugs_closed = []
+            else:
+                bugs_closed = map(int, o.bugs_closed.split(","))
+
             return {
                 'id': o.id,
                 'submitter': o.submitter,
@@ -91,7 +96,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'summary': o.summary,
                 'description': o.description,
                 'testing_done': o.testing_done,
-                'bugs_closed': map(int, o.bugs_closed.split(",")),
+                'bugs_closed': bugs_closed,
                 'branch': o.branch,
                 'target_groups': o.target_groups.all(),
                 'target_people': o.target_people.all(),
@@ -429,7 +434,10 @@ def review_request_draft_set(request, review_request_id, field_name):
         setattr(draft, field_name, form_data['value'])
 
         if field_name == 'bugs_closed':
-            result[field_name] = map(int, form_data['value'].split(","))
+            if form_data['value'] == '':
+                result[field_name] = []
+            else:
+                result[field_name] = map(int, form_data['value'].split(","))
         else:
             result[field_name] = form_data['value']
 
