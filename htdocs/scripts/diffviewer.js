@@ -109,7 +109,7 @@ CommentDialog = function(el) {
 		autoTabs: true,
 		proxyDrag: true,
 		constraintoviewport: false,
-		fixedcenter: true
+		fixedcenter: false
 	});
 
 	var tabs = this.getTabs();
@@ -133,6 +133,15 @@ CommentDialog = function(el) {
 	this.on('show', function() {
 		if (this.commentForm.isVisible()) {
 			this.newCommentField.focus();
+		}
+	}, this, true);
+
+	this.on('beforeshow', function() {
+		this.xy = this.el.getCenterXY(true);
+		this.xy[0] -= Math.round(this.size.width / 2);
+
+		if (this.xy[0] < 60) {
+			this.xy[0] = 60;
 		}
 	}, this, true);
 
