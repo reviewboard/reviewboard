@@ -110,9 +110,13 @@ var gReviewRequestId = "{{object.id}}";
 {%  endif %}
  <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
 {% endifequal %}
-{% ifnotequal details.diffset_history.diffset_set.count 0 %}
- <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
-{% endifnotequal %}
+{% if details.diffset %}
+  <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+{% else %}
+ {% ifnotequal object.diffset_history.diffset_set.count 0 %}
+  <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+ {% endifnotequal %}
+{% endif %}
 {% ifequal request.user object.submitter %}
  <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
 {% endifequal %}
