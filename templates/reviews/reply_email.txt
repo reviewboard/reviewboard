@@ -41,9 +41,9 @@ On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name
 {{reply.body_bottom}}
 {% endifnotequal %}
 
-- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}
+- {% ifnotequal reply.user.first_name "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endifnotequal %}
 {% endcondense %}
 
 
-On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
 {% quoted_email reviews/review_request_email.txt %}
