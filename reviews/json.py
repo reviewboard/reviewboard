@@ -19,7 +19,8 @@ from djblets.util.decorators import simple_decorator
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 from reviewboard.reviews.db import create_review_request, \
-                                   InvalidChangeNumberException
+                                   InvalidChangeNumberException, \
+                                   ChangeNumberInUseException
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
@@ -44,7 +45,10 @@ NOT_LOGGED_IN             = JsonError(103, "You are not logged in")
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
 INVALID_ACTION            = JsonError(202, "Invalid action specified")
-INVALID_CHANGE_NUMBER     = JsonError(203, "Invalid change number")
+INVALID_CHANGE_NUMBER     = JsonError(203, "The change number specified " +
+                                           "could not be found")
+CHANGE_NUMBER_IN_USE      = JsonError(204, "The change number specified " +
+                                           "has already been used")
 
 
 @simple_decorator
@@ -199,6 +203,9 @@ def new_review_request(request):
             create_review_request(request.user,
                                   request.POST.get('changenum', None))
         return JsonResponse(request, {'review_request': review_request})
+    except ChangeNumberInUseException, e::
+        return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
+                                 {'review_request': e.review_request}))
     except InvalidChangeNumberException:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
 
