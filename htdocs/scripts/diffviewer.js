@@ -623,6 +623,11 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 		cls: 'commentflag'
 	}, true);
 
+    dh.append(lineNumCell, {
+        tag: 'a',
+        name: 'file' + this.filediffid + 'line' + this.linenum
+    });
+
 	for (comment in comments) {
 		if (comments[comment].localdraft) {
 			this.localComment = comments[comment].text;

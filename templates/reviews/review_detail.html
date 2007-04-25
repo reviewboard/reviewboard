@@ -149,11 +149,11 @@ var gReviewRequestId = "{{object.id}}";
       <thead>
        <tr>
         <th colspan="3" class="filename">
-         <a href="diff/{{review.reviewed_diffset.id}}">{{comment.filediff.dest_file}}</a>
+         <a href="diff/{{review.reviewed_diffset.revision}}">{{comment.filediff.dest_file}}</a>
 {% ifequal comment.first_line comment.last_line %}
-         line <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a>
+         line <a href="diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}">{{comment.first_line}}</a>
 {% else %}
-         lines <a href="diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}">{{comment.first_line}}</a> - <b>{{comment.last_line}}</b>
+         lines <a href="diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}">{{comment.first_line}}</a> - <b>{{comment.last_line}}</b>
 {% endifequal %}
         </th>
        </tr>
