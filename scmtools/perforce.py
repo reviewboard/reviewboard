@@ -1,4 +1,5 @@
 import re
+import popen2
 
 from django.conf import settings
 
@@ -55,7 +56,16 @@ class PerforceTool(SCMTool):
         else:
             file = '%s#%s' % (path, revision)
 
-        return '\n'.join(self.p4.run_print(file))
+        f = popen2.Popen3('p4 -u %s print -q %s' % (settings.P4_USER, file))
+        failure = f.wait()
+
+        if failure:
+            raise Exception('unable to fetch %s from perforce' % file)
+
+        data = f.fromchild.read()
+        return data
+
+        return '\n'.join(self.p4.run_print(file)[1:])
 
     def parse_diff_revision(self, file_str, revision_str):
         return revision_str.rsplit('#', 1)
