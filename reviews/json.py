@@ -389,6 +389,31 @@ def find_user(username):
     return None
 
 
+def _prepare_draft(request, review_request):
+    if request.user != review_request.submitter:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    draft, draft_is_new = \
+        ReviewRequestDraft.objects.get_or_create(
+            review_request=review_request,
+            defaults={
+                'summary': review_request.summary,
+                'description': review_request.description,
+                'testing_done': review_request.testing_done,
+                'bugs_closed': review_request.bugs_closed,
+                'branch': review_request.branch,
+            })
+
+    if draft_is_new:
+        map(draft.target_groups.add, review_request.target_groups.all())
+        map(draft.target_people.add, review_request.target_people.all())
+
+        if review_request.diffset_history.diffset_set.count() > 0:
+            draft.diffset = review_request.diffset_history.diffset_set.latest()
+
+    return draft
+
+
 def _set_draft_field_data(draft, field_name, data):
     if field_name == "target_groups" or field_name == "target_people":
         values = re.split(r"[, ]+", data)
@@ -426,40 +451,41 @@ def _set_draft_field_data(draft, field_name, data):
 def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if request.user != review_request.submitter:
-        return JsonResponseError(request, PERMISSION_DENIED)
-
-    form_data = request.POST.copy()
-
     if not hasattr(review_request, field_name):
         return JsonResponseError(request, INVALID_ATTRIBUTE,
                                  {'attribute': field_name})
 
-    draft, draft_is_new = \
-        ReviewRequestDraft.objects.get_or_create(
-            review_request=review_request,
-            defaults={
-                'summary': review_request.summary,
-                'description': review_request.description,
-                'testing_done': review_request.testing_done,
-                'bugs_closed': review_request.bugs_closed,
-                'branch': review_request.branch,
-            })
-
-    if draft_is_new:
-        map(draft.target_groups.add, review_request.target_groups.all())
-        map(draft.target_people.add, review_request.target_people.all())
-
-        if review_request.diffset_history.diffset_set.count() > 0:
-            draft.diffset = \
-                review_request.diffset_history.diffset_set.latest()
-
+    draft = _prepare_draft(request, review_request)
     result = {}
 
     result[field_name], result['invalid_' + field_name] = \
-        _set_draft_field_data(draft, field_name, form_data['value'])
+        _set_draft_field_data(draft, field_name, request.POST['value'])
 
     draft.save()
+
+    return JsonResponse(request, result)
+
+
+mutable_review_request_fields = [
+    'status', 'public', 'summary', 'description', 'testing_done',
+    'bugs_closed', 'branch', 'target_groups', 'target_people'
+]
+
+@json_login_required
+@require_POST
+def review_request_draft_set(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    draft = _prepare_draft(request, review_request)
+
+    result = {}
+
+    for field_name in mutable_review_request_fields:
+        if request.POST.has_key(field_name):
+            value, result['invalid_' + field_entries] = \
+                _set_draft_field_data(draft, field_name,
+                                      request.POST[field_name])
+
+    result['review_request'] = review_request
 
     return JsonResponse(request, result)
 
