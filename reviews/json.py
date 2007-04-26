@@ -229,6 +229,20 @@ def review_request(request, review_request_id):
 
 
 @json_login_required
+def review_request_by_changenum(request, changenum):
+    try:
+        review_request = ReviewRequest.objects.get(changenum=changenum)
+
+        if not review_request.public and \
+           review_request.submitter != request.user:
+            return JsonResponseError(request, PERMISSION_DENIED)
+
+        return JsonResponse(request, {'review_request': review_request})
+    except ReviewRequest.DoesNotExist:
+        return JsonResponseError(request, INVALID_CHANGE_NUMBER)
+
+
+@json_login_required
 def review_request_list(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return JsonResponse(request, {
@@ -375,9 +389,41 @@ def find_user(username):
     return None
 
 
+def _set_draft_field_data(draft, field_name, data):
+    if field_name == "target_groups" or field_name == "target_people":
+        values = re.split(r"[, ]+", data)
+        target = getattr(draft, field_name)
+        target.clear()
+
+        invalid_entries = []
+
+        for value in values:
+            try:
+                if field_name == "target_groups":
+                    obj = Group.objects.get(name=value)
+                elif field_name == "target_people":
+                    obj = find_user(username=value)
+
+                target.add(obj)
+            except:
+                invalid_entries.append(value)
+
+        return target.all(), invalid_entries
+    else:
+        setattr(draft, field_name, data)
+
+        if field_name == 'bugs_closed':
+            if data == '':
+                data = []
+            else:
+                data = map(int, data.split(","))
+
+        return data, None
+
+
 @json_login_required
 @require_POST
-def review_request_draft_set(request, review_request_id, field_name):
+def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if request.user != review_request.submitter:
@@ -410,36 +456,8 @@ def review_request_draft_set(request, review_request_id, field_name):
 
     result = {}
 
-    if field_name == "target_groups" or field_name == "target_people":
-        values = re.split(r"[, ]+", form_data['value'])
-        target = getattr(draft, field_name)
-        target.clear()
-
-        invalid_entries = []
-
-        for value in values:
-            try:
-                if field_name == "target_groups":
-                    obj = Group.objects.get(name=value)
-                elif field_name == "target_people":
-                    obj = find_user(username=value)
-
-                target.add(obj)
-            except:
-                invalid_entries.append(value)
-
-        result[field_name] = target.all()
-        result['invalid_entries'] = invalid_entries
-    else:
-        setattr(draft, field_name, form_data['value'])
-
-        if field_name == 'bugs_closed':
-            if form_data['value'] == '':
-                result[field_name] = []
-            else:
-                result[field_name] = map(int, form_data['value'].split(","))
-        else:
-            result[field_name] = form_data['value']
+    result[field_name], result['invalid_' + field_name] = \
+        _set_draft_field_data(draft, field_name, form_data['value'])
 
     draft.save()
 

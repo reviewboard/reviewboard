@@ -34,11 +34,16 @@ urlpatterns = patterns('reviewboard.reviews.json',
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', 'review_request'),
 
+    (r'^reviewrequests/changenum/(?P<changenum>[0-9]+)/$',
+     'review_request_by_changenum'),
+
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
      'review_request_draft_save'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
      'review_request_draft_discard'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',
+     'review_request_draft_set_field'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/$',
      'review_request_draft_set'),
 
     # Reviews
