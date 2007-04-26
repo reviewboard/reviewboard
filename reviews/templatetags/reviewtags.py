@@ -1,6 +1,7 @@
 import re
 
 from django import template
+from django.db.models import Q
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
@@ -243,49 +244,84 @@ def commentcounts(parser, token):
     return CommentCounts(filediff)
 
 
-@register.simple_tag
-def reply_list(review, comment, context_type, context_id):
-    def generate_reply_html(reply, timestamp, text):
-        return render_to_string('reviews/review_reply.html', {
-            'context_id': context_id,
-            'id': reply.id,
-            'review': review,
-            'timestamp': timestamp,
-            'text': text,
-            'reply_user': reply.user,
-            'draft': not reply.public
-        })
+class ReplyList(template.Node):
+    def __init__(self, review, comment, context_type, context_id):
+        self.review = review
+        self.comment = comment
+        self.context_type = context_type
+        self.context_id = context_id
 
-    s = ""
+    def render(self, context):
+        def generate_reply_html(reply, timestamp, text):
+            return render_to_string('reviews/review_reply.html', {
+                'context_id': context_id,
+                'id': reply.id,
+                'review': review,
+                'timestamp': timestamp,
+                'text': text,
+                'reply_user': reply.user,
+                'draft': not reply.public
+            })
 
-    if context_type == "comment":
-        for reply_comment in comment.replies.all():
-            s += generate_reply_html(reply_comment.review_set.get(),
-                                     reply_comment.timestamp,
-                                     reply_comment.text)
-    elif context_type == "body_top":
-        for reply in review.body_top_replies.all():
-            s += generate_reply_html(reply, reply.timestamp, reply.body_top)
-    elif context_type == "body_bottom":
-        for reply in review.body_bottom_replies.all():
-            s += generate_reply_html(reply, reply.timestamp, reply.body_bottom)
-    else:
-        return None
+        if self.review != "":
+            review = resolve_variable(self.review, context)
 
-    return s
+        if self.comment != "":
+            comment = resolve_variable(self.comment, context)
+
+        context_type = resolve_variable(self.context_type, context)
+        context_id = resolve_variable(self.context_id, context)
+
+        user = context.get('user', None)
+
+        s = ""
+
+        if context_type == "comment":
+            for reply_comment in comment.public_replies(user):
+                s += generate_reply_html(reply_comment.review_set.get(),
+                                         reply_comment.timestamp,
+                                         reply_comment.text)
+        elif context_type == "body_top":
+            for reply in review.body_top_replies.filter(Q(public=True) |
+                                                        Q(user=user)):
+                s += generate_reply_html(reply, reply.timestamp,
+                                         reply.body_top)
+        elif context_type == "body_bottom":
+            for reply in review.body_bottom_replies.filter(Q(public=True) |
+                                                           Q(user=user)):
+                s += generate_reply_html(reply, reply.timestamp,
+                                         reply.body_bottom)
+        else:
+            raise TemplateSyntaxError, "Invalid context type passed"
+
+        return s
 
 
-@register.simple_tag
-def reply_section(review, comment, context_type, context_id):
+@register.tag
+def reply_list(parser, token):
+    try:
+        tag_name, review, comment, context_type, context_id = \
+            token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag is missing one or more parameters"
+
+    return ReplyList(review, comment, context_type, context_id)
+
+
+@register.inclusion_tag('reviews/review_reply_section.html',
+                        takes_context=True)
+def reply_section(context, review, comment, context_type, context_id):
     if comment != "":
         context_id += str(comment.id)
 
-    return render_to_string('reviews/review_reply_section.html', {
+    return {
         'review': review,
         'comment': comment,
         'context_type': context_type,
-        'context_id': context_id
-    })
+        'context_id': context_id,
+        'user': context.get('user', None)
+    }
 
 
 @register.simple_tag

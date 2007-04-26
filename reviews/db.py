@@ -5,15 +5,18 @@ from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard import scmtools
 
 def _get_review_request_list(user, status, extra_query=None):
-    query = (Q(public=True) | Q(submitter=user))
+    if user:
+        query = Q(public=True) | Q(submitter=user)
+    else:
+        query = Q(public=True)
 
     if status != None:
         query = query & Q(status=status)
 
-    if extra_query != None:
-        query = extra_query & query
+    review_requests = \
+        ReviewRequest.objects.filter(query, extra_query).distinct()
 
-    return ReviewRequest.objects.filter(query).distinct()
+    return review_requests
 
 
 def get_all_review_requests(user=None, status='P'):

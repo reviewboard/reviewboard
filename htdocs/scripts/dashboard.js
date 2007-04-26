@@ -32,7 +32,7 @@ function addNavItem(name, count, level, params, jsonpath) {
 			}]
 		}, {
 			tag: 'td',
-			html: count
+			html: '' + count
 		}]
 	}, true);
 }

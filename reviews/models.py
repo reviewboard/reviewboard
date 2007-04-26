@@ -4,6 +4,7 @@ import re
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 
@@ -170,8 +171,12 @@ class Comment(models.Model):
     def last_line(self):
         return self.first_line + self.num_lines - 1
 
-    def public_replies(self):
-        return self.replies.filter(review__public=True)
+    def public_replies(self, user=None):
+        if user:
+            return self.replies.filter(Q(review__public=True) |
+                                       Q(review__user=user))
+        else:
+            return self.replies.filter(review__public=True)
 
     def __str__(self):
         return self.text
