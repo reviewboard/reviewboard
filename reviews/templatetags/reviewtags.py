@@ -42,9 +42,9 @@ class ReviewSummary(template.Node):
                 return "<span class=\"draftlabel\">[Draft]</span> " + \
                        review_request.summary
 
-            if review_request.status == 'S':
-                return "<span class=\"draftlabel\">[Submitted]</span> " + \
-                       review_request.summary
+        if review_request.status == 'S':
+            return "<span class=\"draftlabel\">[Submitted]</span> " + \
+                   review_request.summary
 
         return review_request.summary
 
