@@ -63,10 +63,10 @@ def review_detail(request, object_id, template_name):
     }))
 
 
-@login_required
 def review_list(request, queryset, template_name, extra_context={}):
     return object_list(request,
-        queryset=queryset.order_by('-last_updated'),
+        queryset=queryset.filter(Q(status='P') |
+                                 Q(status='S')).order_by('-last_updated'),
         paginate_by=50,
         allow_empty=True,
         template_name=template_name,
@@ -74,6 +74,13 @@ def review_list(request, queryset, template_name, extra_context={}):
             {'app_path': request.path},
             **extra_context
         ))
+
+
+@login_required
+def all_review_requests(request, template_name):
+    return review_list(request,
+        queryset=get_all_review_requests(request.user, status=None),
+        template_name=template_name)
 
 
 @login_required
@@ -134,7 +141,7 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
 @login_required
 def group(request, name, template_name):
     return review_list(request,
-        queryset=get_review_requests_to_group(name),
+        queryset=get_review_requests_to_group(name, status=None),
         template_name=template_name,
         extra_context={
             'source': name,
@@ -144,7 +151,7 @@ def group(request, name, template_name):
 @login_required
 def submitter(request, username, template_name):
     return review_list(request,
-        queryset=get_review_requests_to_user_directly(username),
+        queryset=get_review_requests_to_user_directly(username, status=None),
         template_name=template_name,
         extra_context={
             'source': username + "'s",

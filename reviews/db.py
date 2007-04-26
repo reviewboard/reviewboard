@@ -13,8 +13,10 @@ def _get_review_request_list(user, status, extra_query=None):
     if status != None:
         query = query & Q(status=status)
 
-    review_requests = \
-        ReviewRequest.objects.filter(query, extra_query).distinct()
+    if extra_query:
+        query = query & extra_query
+
+    review_requests = ReviewRequest.objects.filter(query).distinct()
 
     return review_requests
 

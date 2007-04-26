@@ -31,9 +31,8 @@ urlpatterns = patterns('',
     (r'^dashboard/$', 'reviewboard.reviews.views.dashboard',
      {'template_name': 'reviews/dashboard.html'}),
 
-    (r'^r/$', 'reviewboard.reviews.views.review_list',
-     {'queryset': ReviewRequest.objects.filter(public=True, status='P'),
-      'template_name': 'reviews/review_list.html'}),
+    (r'^r/$', 'reviewboard.reviews.views.all_review_requests',
+     {'template_name': 'reviews/review_list.html'}),
 
     # Review request creation
     (r'^r/new/changenum/$',
