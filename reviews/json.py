@@ -18,9 +18,7 @@ from django.views.decorators.http import require_GET, require_POST
 from djblets.util.decorators import simple_decorator
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
-from reviewboard.reviews.db import create_review_request, \
-                                   InvalidChangeNumberException, \
-                                   ChangeNumberInUseException
+import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
@@ -204,14 +202,13 @@ def string_to_status(status):
 @require_POST
 def new_review_request(request):
     try:
-        review_request = \
-            create_review_request(request.user,
-                                  request.POST.get('changenum', None))
+        review_request = reviews_db.create_review_request(
+            request.user, request.POST.get('changenum', None))
         return JsonResponse(request, {'review_request': review_request})
-    except ChangeNumberInUseException, e:
+    except reviews_db.ChangeNumberInUseException, e:
         return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
                                  {'review_request': e.review_request})
-    except InvalidChangeNumberException:
+    except reviews_db.InvalidChangeNumberException:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
 
 
@@ -485,9 +482,31 @@ def review_request_draft_set(request, review_request_id):
                 _set_draft_field_data(draft, field_name,
                                       request.POST[field_name])
 
-    result['review_request'] = review_request
+    draft.save()
+
+    result['draft'] = draft
 
     return JsonResponse(request, result)
+
+
+@json_login_required
+@require_POST
+def review_request_draft_update_from_changenum(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    draft = _prepare_draft(request, review_request)
+
+    changeset = scmtools.get_tool().get_changeset(review_request.changenum)
+
+    try:
+        reviews_db.update_review_request_from_changenum(review_request,
+                                                        changenum)
+    except reviews_db.InvalidChangeNumberException:
+        return JsonResponseError(request, INVALID_CHANGE_NUMBER,
+                                 {'changenum': review_request.changenum})
+
+    review_request.save()
+
+    return JsonResponse(request, {'review_request': review_request})
 
 
 @json_login_required

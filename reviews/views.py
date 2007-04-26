@@ -19,11 +19,7 @@ from djblets.auth.util import login_required
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
-from reviewboard.reviews.db import \
-    get_all_review_requests, get_review_requests_to_group, \
-    get_review_requests_to_user_directly, get_review_requests_to_user, \
-    get_review_requests_from_user, create_review_request, \
-    InvalidChangeNumberException
+import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.models import Review, Comment, Group
 from reviewboard.reviews.forms import NewReviewRequestForm
@@ -35,11 +31,10 @@ from reviewboard import scmtools
 @require_POST
 def new_from_changenum(request):
     try:
-        review_request = \
-            create_review_request(request.user,
-                                  request.POST.get('changenum', None))
+        review_request = reviews_db.create_review_request(
+            request.user, request.POST.get('changenum', None))
         return HttpResponseRedirect(review_request.get_absolute_url())
-    except InvalidChangeNumberException:
+    except reviews_db.InvalidChangeNumberException:
         # TODO Display an error page
         return HttpResponseRedirect('/r/')
 
@@ -79,7 +74,7 @@ def review_list(request, queryset, template_name, extra_context={}):
 @login_required
 def all_review_requests(request, template_name):
     return review_list(request,
-        queryset=get_all_review_requests(request.user, status=None),
+        queryset=reviews_db.get_all_review_requests(request.user, status=None),
         template_name=template_name)
 
 
@@ -113,23 +108,23 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
 
     if view == 'outgoing':
         review_requests = \
-            get_review_requests_from_user(request.user.username, request.user)
+            reviews_db.get_review_requests_from_user(request.user.username,
+                                                     request.user)
     elif view == 'to-me':
-        review_requests = \
-            get_review_requests_to_user_directly(request.user.username,
-                                                 request.user)
+        review_requests = reviews_db.get_review_requests_to_user_directly(
+            request.user.username, request.user)
     elif view == 'to-group':
         group = request.GET.get('group', None)
 
         if group != None:
-            review_requests = get_review_requests_to_group(group, request.user)
+            review_requests = reviews_db.get_review_requests_to_group(
+                group, request.user)
         else:
-            review_requests = \
-                get_review_requests_to_user_groups(request.user.username,
-                                                   request.user)
+            review_requests = reviews_db.get_review_requests_to_user_groups(
+                request.user.username, request.user)
     else: # "incoming" or invalid
-        review_requests = get_review_requests_to_user(request.user.username,
-                                                      request.user)
+        review_requests = reviews_db.get_review_requests_to_user(
+            request.user.username, request.user)
 
     review_requests = review_requests[:limit]
 
@@ -141,7 +136,7 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
 @login_required
 def group(request, name, template_name):
     return review_list(request,
-        queryset=get_review_requests_to_group(name, status=None),
+        queryset=reviews_db.get_review_requests_to_group(name, status=None),
         template_name=template_name,
         extra_context={
             'source': name,
@@ -151,7 +146,8 @@ def group(request, name, template_name):
 @login_required
 def submitter(request, username, template_name):
     return review_list(request,
-        queryset=get_review_requests_to_user_directly(username, status=None),
+        queryset=reviews_db.get_review_requests_to_user_directly(username,
+                                                                 status=None),
         template_name=template_name,
         extra_context={
             'source': username + "'s",

@@ -58,6 +58,20 @@ class ChangeNumberInUseException(Exception):
         self.review_request = review_request
 
 
+def update_review_request_from_changenum(review_request, changenum):
+    changeset = scmtools.get_tool().get_changeset(changenum)
+
+    if not changeset:
+        raise InvalidChangeNumberException()
+
+    review_request.changenum = changenum
+    review_request.summary = changeset.summary
+    review_request.description = changeset.description
+    review_request.testing_done = changeset.testing_done
+    review_request.branch = changeset.branch
+    review_request.bugs_closed = ','.join(changeset.bugs_closed)
+
+
 def create_review_request(user, changenum=None):
     try:
         review_request = ReviewRequest.objects.get(changenum=changenum)
@@ -68,17 +82,7 @@ def create_review_request(user, changenum=None):
     review_request = ReviewRequest()
 
     if changenum:
-        changeset = scmtools.get_tool().get_changeset(changenum)
-
-        if not changeset:
-            raise InvalidChangeNumberException()
-
-        review_request.changenum = changenum
-        review_request.summary = changeset.summary
-        review_request.description = changeset.description
-        review_request.testing_done = changeset.testing_done
-        review_request.branch = changeset.branch
-        review_request.bugs_closed = ','.join(changeset.bugs_closed)
+        update_review_request_from_changenum(review_request, changenum)
 
     diffset_history = DiffSetHistory()
     diffset_history.save()
