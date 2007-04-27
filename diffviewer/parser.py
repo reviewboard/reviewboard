@@ -25,7 +25,7 @@ def parseFile(lines, linenum, lastline, filename):
 
     file.data = ""
 
-    for i in range(linenum, lastline):
+    for i in range(linenum, lastline + 1):
         line = lines[i]
         if line.startswith("diff ") or \
            (line.startswith("Index: ") and \
