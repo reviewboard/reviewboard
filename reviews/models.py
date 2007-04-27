@@ -60,9 +60,10 @@ class ReviewRequest(models.Model):
     changenum = models.PositiveIntegerField("Change Number", blank=True,
                                             null=True, unique=True,
                                             db_index=True)
-    email_message_id = models.CharField("E-Mail Message ID", maxlength=255)
+    email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
+                                        blank=True, null=True)
     time_emailed = models.DateTimeField("Time E-Mailed", null=True,
-                                        default=None)
+                                        default=None, blank=True)
 
     summary = models.CharField("Summary", maxlength=300, core=True)
     description = models.TextField("Description")
@@ -72,11 +73,11 @@ class ReviewRequest(models.Model):
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         verbose_name='diff set history',
                                         blank=True)
-    branch = models.CharField("Branch", maxlength=30)
+    branch = models.CharField("Branch", maxlength=30, blank=True)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
     target_people = models.ManyToManyField(User, verbose_name="Target People",
-                                           related_name="target_people",
+                                           related_name="directed_review_requests",
                                            core=False, blank=True)
 
     def get_bug_list(self):
@@ -123,11 +124,11 @@ class ReviewRequestDraft(models.Model):
                                                     maxlength=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name='diff set', blank=True,
                                 null=True, core=False)
-    branch = models.CharField("Branch", maxlength=30)
+    branch = models.CharField("Branch", maxlength=30, blank=True)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
     target_people = models.ManyToManyField(User, verbose_name="Target People",
-                                           related_name="draft_target_people",
+                                           related_name="directed_drafts",
                                            core=False, blank=True)
     screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
                                          core=False, blank=True)
@@ -198,9 +199,9 @@ class Review(models.Model):
     base_reply_to = models.ForeignKey("self", blank=True, null=True,
                                       related_name="replies")
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
-                                        blank=True)
+                                        blank=True, null=True)
     time_emailed = models.DateTimeField("Time E-Mailed", null=True,
-                                        default=None)
+                                        default=None, blank=True)
 
     body_top = models.TextField("Body (Top)", blank=True)
     body_bottom = models.TextField("Body (Bottom)", blank=True)
