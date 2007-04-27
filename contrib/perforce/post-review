@@ -8,12 +8,12 @@
 # REVIEWBOARD_HOST = 'http://reviews.mydomain.com'
 REVIEWBOARD_HOST = None
 
-
 ###########################################################################
 # Don't touch beyond this line!
 ###########################################################################
 
 import httplib, mimetypes, mimetools, urllib2, cookielib, os, sys, getpass
+import re
 import simplejson
 from optparse import OptionParser
 
@@ -104,7 +104,7 @@ def http_post(path, fields, files={}):
     except urllib2.HTTPError, e:
         print "Unable to access %s (code %s). The host path may be invalid" % \
             (url, e.code)
-        #print e.read()
+        print e.read()
         sys.exit(1)
 
 
@@ -139,11 +139,55 @@ def create_review_request(changenum):
     return rsp['review_request']
 
 
-def upload_diff(review_request, changenum):
-    #f = os.popen('svn diff', 'r')
-    f = os.popen('p4 diff -du -c ' + changenum, 'r')
+def generate_diff(changenum):
+    f = os.popen('p4 change -o %s' % changenum, 'r')
+    data = f.read()
+    f.close()
+
+    client = None
+
+    # Get the status and client of the change list.
+    m = re.search(r'^Client:\t(.+)$', data, re.M)
+    if m == None:
+        print "Unable to get the client for this change list."
+        sys.exit(1)
+    else:
+        client = m.group(1)
+
+    m = re.search(r'^Status:\t(.+)$', data, re.M)
+    if m == None:
+        print "Unable to get the status of this change list."
+        sys.exit(1)
+    else:
+        if m.group(1) != "pending":
+            print "The change number %s is not pending." % changenum
+            sys.exit(1)
+
+    # Get the file list
+    f = os.popen('p4 -c %s change -o %s' % (client, changenum), 'r')
+    lines = f.readlines()
+    f.close()
+
+    files = ""
+    in_files = False
+
+    for line in lines:
+        line = line.split("#")[0]
+        if line == "Files:\n":
+            in_files = True
+        elif in_files:
+            if line.startswith("\t"):
+                files += '"%s" ' % line.strip()
+
+    f = os.popen('p4 -c %s diff -du %s' % (client, files))
     diff_content = f.read()
     f.close()
+
+    return diff_content
+
+
+def upload_diff(review_request, changenum):
+    diff_content = generate_diff(changenum)
 
     rsp = api_post('/api/json/reviewrequests/%s/diff/new/' %
                    review_request['id'],
