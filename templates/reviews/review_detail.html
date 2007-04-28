@@ -90,7 +90,7 @@ var gReviewRequestId = "{{object.id}}";
  </div>
  {% if details.screenshot_set.count %}
  <div class="content">
-  <label for="images">Images:</label>
+  <label for="images">Screenshots:</label>
   {% for image in details.screenshot_set.all %}
    <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a>
   {% endfor %}
@@ -111,6 +111,7 @@ var gReviewRequestId = "{{object.id}}";
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
  <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+ <li><a href="screenshots/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
 {% endifequal %}
 {% if details.diffset %}
   <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>

@@ -27,7 +27,15 @@ Testing
 -------
 
 {{ review_request.testing_done }}
+{% if review_request.screenshot_set.count %}
 
+Screenshots
+-----------
+{% for screenshot in review_request.screenshot_set.all %}
+{{ screenshot.caption }}
+  http://{{domain}}{{ screenshot.get_absolute_url }}{% endfor %}
+
+{% endif %}
 
 Thanks,
 
