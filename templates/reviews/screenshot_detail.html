@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+
+{% block title %}Screenshot{%if object.caption %}: {{object.caption}}{% endif %}{% endblock %}
+{% block content %}
+{% box review-request %}
+ <div class="main">
+  <h1 id="summary"><a href="{{object.review.get_absolute_url}}">{{object.review.summary}}</a></h1>
+  <div class="content">
+   <br />
+   <br />
+   {{ object.caption }}
+   <br />
+   <br />
+   <br />
+   <img src="{{object.get_image_url}}" alt="{{object.caption}}" />
+  </div>
+ </div>
+{% endbox %}
+{% endblock %}

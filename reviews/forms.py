@@ -4,7 +4,7 @@ from django import newforms as forms
 from django.contrib.auth.models import User, Group
 
 from reviewboard.diffviewer.models import DiffSetHistory
-from reviewboard.reviews.models import Review, ReviewRequest
+from reviewboard.reviews.models import Review, ReviewRequest, Screenshot
 
 class NewReviewRequestForm(forms.Form):
     summary = forms.CharField(max_length=300)
@@ -33,3 +33,14 @@ class NewReviewRequestForm(forms.Form):
         review_request.diffset_history = diffset_history
         review_request.save()
         return review_request
+
+class UploadScreenshotForm(forms.Form):
+    caption = forms.CharField(required=False)
+    path = forms.CharField(widget=forms.FileInput())
+
+    def create(self, data, review):
+        screenshot = Screenshot(review=review,
+                                caption=self.clean_data['caption'])
+        screenshot.save_image_file(data["filename"], data["content"])
+
+        return screenshot

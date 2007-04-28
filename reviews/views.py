@@ -22,7 +22,7 @@ from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.models import Review, Comment, Group
-from reviewboard.reviews.forms import NewReviewRequestForm
+from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, mail_review
 from reviewboard import scmtools
 
@@ -324,3 +324,29 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
         }),
     ), mimetype='text/plain')
     return response
+
+@login_required
+def upload_screenshot(request, review_request_id,
+                      template_name='reviews/upload_screenshot.html'):
+    error = None
+
+    if request.method == 'POST':
+        form_data = request.POST.copy()
+        form_data.update(request.FILES)
+        form = UploadScreenshotForm(form_data)
+
+        if form.is_valid():
+            r = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+            try:
+                screenshot = form.create(request.FILES['path'], r)
+                return HttpResponseRedirect(r.get_absolute_url())
+            except Exception, e:
+                error = str(e)
+    else:
+        form = UploadScreenshotForm()
+
+    return render_to_response(template_name, RequestContext(request, {
+        'error': error,
+        'form': form,
+    }))

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}Upload screenshot{% endblock %}
+
+{% block content %}
+<div class="section">
+ <div class="title">Upload screenshot</div>
+ <div class="body">
+  {% if error %}
+  {%  errorbox %}
+  <p>There was an error uploading the image.  {{error}}</p>
+  {%  enderrorbox %}
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" action=".">
+   <table id="upload_screenshot_form">
+    <tr>
+     <td><label for="id_path">Filename:</label></td>
+     <td>{{form.path}} {{form.path.errors}}</td>
+    </tr>
+    <tr>
+     <td><label for="id_caption">Caption:</label></td>
+     <td>{{form.caption}} {{form.caption.errors}}</td>
+    </tr>
+    <tr>
+     <td>&nbsp;</td>
+     <td class="field"><input type="submit" value="Upload" /></td>
+    </tr>
+   </table>
+  </form>
+ </div>
+</div>
+{% endblock %}

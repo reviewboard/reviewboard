@@ -1,8 +1,13 @@
+import datetime
+import Image
+import os
+import time
+
+from django.conf import settings
 from django import template
 from django.template import resolve_variable
 from django.template import TemplateSyntaxError, VariableDoesNotExist
 from django.template.defaultfilters import capfirst
-import datetime, time
 
 register = template.Library()
 
@@ -185,3 +190,18 @@ def humanize_list(value):
 def indent(value, numspaces=4):
     indent_str = " " * numspaces
     return indent_str + value.replace("\n", "\n" + indent_str)
+
+# From http://www.djangosnippets.com/snippets/192
+@register.filter
+def thumbnail(file, size='400x100'):
+    x, y = [int(x) for x in size.split('x')]
+    basename, format = file.rsplit('.', 1)
+    miniature = '%s_%s.%s' % (basename, size, format)
+    miniature_filename = os.path.join(settings.MEDIA_ROOT, miniature)
+    miniature_url = os.path.join(settings.MEDIA_URL, miniature)
+
+    if not os.path.exists(miniature_filename):
+        image = Image.open(os.path.join(settings.MEDIA_ROOT, file))
+        image.thumbnail([x, y], Image.ANTIALIAS)
+        image.save(miniature_filename, image.format)
+    return miniature_url

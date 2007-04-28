@@ -109,6 +109,9 @@ class Screenshot(models.Model):
     review = models.ForeignKey(ReviewRequest,
                                verbose_name='Review Request')
 
+    def get_absolute_url(self):
+        return "/s/%s/" % self.id
+
     class Admin:
         pass
 

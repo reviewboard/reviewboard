@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
-from reviewboard.reviews.models import ReviewRequest, Group
+from reviewboard.reviews.models import ReviewRequest, Group, Screenshot
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed
 from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
 from reviewboard.reviews.feeds import AtomSubmitterReviewsFeed
@@ -66,6 +66,14 @@ urlpatterns = patterns('',
 
     (r'^r/(?P<review_request_id>[0-9]+)/(?P<action>(discard|submitted|reopen))/$',
      'reviewboard.reviews.views.setstatus'),
+
+    # Screenshots
+    (r'^s/(?P<object_id>[0-9]+)/$',
+     'django.views.generic.list_detail.object_detail',
+     {'queryset': Screenshot.objects.all(),}),
+
+    (r'^r/(?P<review_request_id>[0-9]+)/screenshots/upload/$',
+     'reviewboard.reviews.views.upload_screenshot'),
 
     # E-mail previews
     (r'^r/(?P<review_request_id>[0-9]+)/preview-email/$',

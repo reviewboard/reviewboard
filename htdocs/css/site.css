@@ -740,6 +740,10 @@ table.sidebyside .commentflag.draft {
   background-color: #FFFFFF;
 }
 
+.review-request .content img {
+  border: none;
+}
+
 .review-request textarea {
   border: 1px #b8b5a0 solid;
 }
