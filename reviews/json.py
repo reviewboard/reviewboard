@@ -362,6 +362,11 @@ def review_request_draft_save(request, review_request_id):
     review_request.target_people.clear()
     map(review_request.target_people.add, draft.target_people.all())
 
+    screenshots = list(draft.screenshots.all())
+    for screenshot in review_request.screenshot_set.all():
+        if screenshot not in screenshots:
+            screenshot.delete()
+
     if draft.diffset:
         draft.diffset.history = review_request.diffset_history
         draft.diffset.save()
@@ -404,6 +409,7 @@ def _prepare_draft(request, review_request):
     if draft_is_new:
         map(draft.target_groups.add, review_request.target_groups.all())
         map(draft.target_people.add, review_request.target_people.all())
+        map(draft.screenshots.add, review_request.screenshot_set.all())
 
         if review_request.diffset_history.diffset_set.count() > 0:
             draft.diffset = review_request.diffset_history.diffset_set.latest()
