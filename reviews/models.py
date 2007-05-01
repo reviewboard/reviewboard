@@ -152,6 +152,53 @@ class ReviewRequestDraft(models.Model):
         self.bugs_closed = self.bugs_closed.strip()
         super(ReviewRequestDraft, self).save()
 
+    @staticmethod
+    def create(review_request):
+        draft, draft_is_new = \
+            ReviewRequestDraft.objects.get_or_create(
+                review_request=review_request,
+                defaults={
+                    'summary': review_request.summary,
+                    'description': review_request.description,
+                    'testing_done': review_request.testing_done,
+                    'bugs_closed': review_request.bugs_closed,
+                    'branch': review_request.branch,
+                })
+
+        if draft_is_new:
+            map(draft.target_groups.add, review_request.target_groups.all())
+            map(draft.target_people.add, review_request.target_people.all())
+            map(draft.screenshots.add, review_request.screenshots.all())
+
+            if review_request.diffset_history.diffset_set.count() > 0:
+                draft.diffset = review_request.diffset_history.diffset_set.latest()
+
+        return draft
+
+    def save_draft(self):
+        request = self.review_request
+
+        request.summary = self.summary
+        request.description = self.description
+        request.testing_done = self.testing_done
+        request.bugs_closed = self.bugs_closed
+        request.branch = self.branch
+
+        request.target_groups.clear()
+        map(request.target_groups.add, self.target_groups.all())
+
+        request.target_people.clear()
+        map(request.target_people.add, self.target_people.all())
+
+        request.screenshots.clear()
+        map(request.screenshots.add, self.screenshots.all())
+
+        if self.diffset:
+            self.diffset.history = request.diffset_history
+            self.diffset.save()
+
+        request.save()
+
     class Admin:
         list_display = ('summary', '_submitter', 'last_updated')
 

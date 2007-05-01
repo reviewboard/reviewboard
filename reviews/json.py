@@ -350,26 +350,7 @@ def review_request_draft_save(request, review_request_id):
     if review_request.submitter != request.user:
         return JsonResponseError(request, PERMISSION_DENIED)
 
-    review_request.summary = draft.summary
-    review_request.description = draft.description
-    review_request.testing_done = draft.testing_done
-    review_request.bugs_closed = draft.bugs_closed
-    review_request.branch = draft.branch
-
-    review_request.target_groups.clear()
-    map(review_request.target_groups.add, draft.target_groups.all())
-
-    review_request.target_people.clear()
-    map(review_request.target_people.add, draft.target_people.all())
-
-    review_request.screenshots.clear()
-    map(review_request.screenshots.add, draft.screenshots.all())
-
-    if draft.diffset:
-        draft.diffset.history = review_request.diffset_history
-        draft.diffset.save()
-
-    review_request.save()
+    draft.save_draft()
     draft.delete()
 
     return JsonResponse(request)
@@ -392,27 +373,7 @@ def find_user(username):
 def _prepare_draft(request, review_request):
     if request.user != review_request.submitter:
         return JsonResponseError(request, PERMISSION_DENIED)
-
-    draft, draft_is_new = \
-        ReviewRequestDraft.objects.get_or_create(
-            review_request=review_request,
-            defaults={
-                'summary': review_request.summary,
-                'description': review_request.description,
-                'testing_done': review_request.testing_done,
-                'bugs_closed': review_request.bugs_closed,
-                'branch': review_request.branch,
-            })
-
-    if draft_is_new:
-        map(draft.target_groups.add, review_request.target_groups.all())
-        map(draft.target_people.add, review_request.target_people.all())
-        map(draft.screenshots.add, review_request.screenshots.all())
-
-        if review_request.diffset_history.diffset_set.count() > 0:
-            draft.diffset = review_request.diffset_history.diffset_set.latest()
-
-    return draft
+    return ReviewRequestDraft.create(review_request)
 
 
 def _set_draft_field_data(draft, field_name, data):
