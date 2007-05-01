@@ -45,6 +45,17 @@ class Group(models.Model):
         pass
 
 
+class Screenshot(models.Model):
+    caption = models.CharField(maxlength=256, blank=True)
+    image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
+
+    def get_absolute_url(self):
+        return "/s/%s/" % self.id
+
+    class Admin:
+        pass
+
+
 class ReviewRequest(models.Model):
     STATUSES = (
         ('P', 'Pending Review'),
@@ -79,6 +90,9 @@ class ReviewRequest(models.Model):
     target_people = models.ManyToManyField(User, verbose_name="Target People",
                                            related_name="directed_review_requests",
                                            core=False, blank=True)
+    screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
+                                         related_name="review_request",
+                                         core=False, blank=True)
 
     def get_bug_list(self):
         bugs = re.split(r"[, ]+", self.bugs_closed)
@@ -101,19 +115,6 @@ class ReviewRequest(models.Model):
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
-
-
-class Screenshot(models.Model):
-    caption = models.CharField(maxlength=256, blank=True)
-    image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
-    review = models.ForeignKey(ReviewRequest,
-                               verbose_name='Review Request')
-
-    def get_absolute_url(self):
-        return "/s/%s/" % self.id
-
-    class Admin:
-        pass
 
 
 class ReviewRequestDraft(models.Model):

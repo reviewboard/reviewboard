@@ -88,10 +88,10 @@ var gReviewRequestId = "{{object.id}}";
   <label for="testing_done">Testing Done:</label>
   <pre id="testing_done">{{details.testing_done|escape}}</pre>
  </div>
- {% if details.screenshot_set.count %}
+ {% if details.screenshots.count %}
  <div class="content">
   <label for="images">Screenshots:</label>
-  {% for image in details.screenshot_set.all %}
+  {% for image in details.screenshots.all %}
    <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a>
   {% endfor %}
  </div>

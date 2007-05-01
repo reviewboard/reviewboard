@@ -39,8 +39,10 @@ class UploadScreenshotForm(forms.Form):
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, data, review):
-        screenshot = Screenshot(review=review,
-                                caption=self.clean_data['caption'])
+        screenshot = Screenshot(caption=self.clean_data['caption'])
+        screenshot.save()
         screenshot.save_image_file(data["filename"], data["content"])
+
+        review.screenshots.add(screenshot)
 
         return screenshot
