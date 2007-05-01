@@ -71,6 +71,7 @@ class PerforceTool(SCMTool):
     def parse_diff_revision(self, file_str, revision_str):
         # Perforce has this lovely idiosyncracy that diffs show revision #1 both
         # for pre-creation and when there's an actual revision.
+        self._connect()
         files = self.p4.run_files(revision_str)
         if len(files):
             return revision_str.rsplit('#', 1)

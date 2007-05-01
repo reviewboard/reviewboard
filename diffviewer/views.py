@@ -1,3 +1,4 @@
+import base64
 import sys
 import traceback
 from difflib import SequenceMatcher
@@ -64,7 +65,8 @@ def get_diff_files(diffset):
             old = get_original_file(file, revision)
 
         try:
-            new = diffutils.patch(filediff.diff, old, filediff.dest_file)
+            new = diffutils.patch(base64.decodestring(filediff.diff), old,
+                                  filediff.dest_file)
         except Exception, e:
             raise UserVisibleError(str(e))
 

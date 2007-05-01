@@ -1,4 +1,7 @@
+import base64
+
 from django import newforms as forms
+from django.conf import settings
 from django.core import validators
 from django.core.validators import ValidationError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -44,7 +47,7 @@ class UploadDiffForm(forms.Form):
                                 dest_file=basedir + file.newFile,
                                 source_detail=file.origInfo,
                                 dest_detail=file.newInfo,
-                                diff=file.data)
+                                diff=base64.encodestring(file.data))
             filediff.save()
 
         return diffset
