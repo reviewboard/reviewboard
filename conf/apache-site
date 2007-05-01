@@ -1,0 +1,22 @@
+AddHandler fastcgi-script .fcgi
+# FastCGIExternalServer /root/reviewboard/reviewboard.fcgi -socket /var/run/reviewboard/django.sock
+FastCGIExternalServer /root/reviewboard/htdocs/reviewboard.fcgi -host 127.0.0.1:3033
+
+<VirtualHost 10.18.66.1:80>
+	ServerName reviewboard.eng.vmware.com
+	DocumentRoot /root/reviewboard/htdocs/
+
+	Alias /media /root/reviewboard/htdocs/media
+	Alias /css /root/reviewboard/htdocs/images
+	Alias /images /root/reviewboard/htdocs/images
+	Alias /scripts /root/reviewboard/htdocs/scripts
+
+	RewriteEngine on
+	RewriteRule ^/(media.*)$ /root/reviewboard/htdocs/$1 [QSA,L]
+	#RewriteRule ^/(css.*)$ /$1 [QSA,L]
+	#RewriteRule ^/(images.*)$ /$1 [QSA,L]
+	#RewriteRule ^/(scripts.*)$ /$1 [QSA,L]
+
+	RewriteCond %{REQUEST_FILENAME} !-f
+	RewriteRule ^/(.*)$ /reviewboard.fcgi/$1 [QSA,L]
+</VirtualHost>
