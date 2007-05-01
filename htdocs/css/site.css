@@ -731,6 +731,11 @@ table.sidebyside .commentflag.draft {
 .review-request .content label {
   display: block;
   margin-top: 20px;
+  min-height: 14px;
+}
+
+.review-request .content label img {
+  vertical-align: middle;
 }
 
 .review-request .content pre {
