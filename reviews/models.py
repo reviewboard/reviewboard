@@ -190,6 +190,10 @@ class ReviewRequestDraft(models.Model):
         request.target_people.clear()
         map(request.target_people.add, self.target_people.all())
 
+        screenshots = self.screenshots.all()
+        for s in request.screenshots.all():
+            if s not in screenshots:
+                s.delete()
         request.screenshots.clear()
         map(request.screenshots.add, self.screenshots.all())
 

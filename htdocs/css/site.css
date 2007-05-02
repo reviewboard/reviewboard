@@ -788,6 +788,43 @@ span.draftlabel {
   font-size: x-small;
 }
 
+.screenshot-container {
+  vertical-align: top;
+  max-width: 400px;
+  margin: 1px;
+  float: left;
+  text-align: center;
+}
+
+.screenshot-caption {
+  margin-top: 2px;
+}
+
+.screenshot-caption img {
+  vertical-align: bottom;
+}
+
+.screenshot-container img {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+.clearfix:after {
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+.clearfix {display: inline-block;}
+
+/* Hides from IE-mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hide from IE-mac */
+
 
 /*****************************************************************
  * Reviews

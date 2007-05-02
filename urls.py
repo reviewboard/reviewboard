@@ -72,8 +72,11 @@ urlpatterns = patterns('',
      'django.views.generic.list_detail.object_detail',
      {'queryset': Screenshot.objects.all(),}),
 
-    (r'^r/(?P<review_request_id>[0-9]+)/screenshots/upload/$',
+    (r'^r/(?P<review_request_id>[0-9]+)/s/upload/$',
      'reviewboard.reviews.views.upload_screenshot'),
+
+    (r'^r/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/delete/$',
+     'reviewboard.reviews.views.delete_screenshot'),
 
     # E-mail previews
     (r'^r/(?P<review_request_id>[0-9]+)/preview-email/$',

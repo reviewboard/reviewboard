@@ -21,8 +21,8 @@ from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
-from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment
-from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
+                                       ReviewRequestDraft, Screenshot
 
 
 class JsonError:
@@ -413,9 +413,29 @@ def _set_draft_field_data(draft, field_name, data):
 def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
+    m = re.match(r'screenshot_(?P<id>[0-9]+)_caption', field_name)
+    if m:
+        try:
+            screenshot = Screenshot.objects.get(id=int(m.group('id')))
+        except:
+            return JsonResponseError(request, INVALID_ATTRIBUTE,
+                                     {'attribute': field_name})
+
+        data = request.POST['value']
+        screenshot.caption = data
+        screenshot.save()
+
+        # FIXME: creating a draft here is idiotic, but the JSON stuff all
+        # assumes that we'll do it.
+        draft = _prepare_draft(request, review_request)
+        draft.save()
+
+        return JsonResponse(request, {field_name: data})
+
     if not hasattr(review_request, field_name):
         return JsonResponseError(request, INVALID_ATTRIBUTE,
                                  {'attribute': field_name})
+
 
     draft = _prepare_draft(request, review_request)
     result = {}

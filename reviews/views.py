@@ -21,7 +21,7 @@ from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
-from reviewboard.reviews.models import Review, Comment, Group
+from reviewboard.reviews.models import Review, Comment, Group, Screenshot
 from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, mail_review
 from reviewboard import scmtools
@@ -350,3 +350,13 @@ def upload_screenshot(request, review_request_id,
         'error': error,
         'form': form,
     }))
+
+@login_required
+def delete_screenshot(request, review_request_id, screenshot_id):
+    request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    draft = ReviewRequestDraft.create(request)
+    draft.screenshots.remove(Screenshot.objects.get(id=screenshot_id))
+    draft.save()
+
+    return HttpResponseRedirect(request.get_absolute_url())

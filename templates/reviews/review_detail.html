@@ -89,10 +89,18 @@ var gReviewRequestId = "{{object.id}}";
   <pre id="testing_done">{{details.testing_done|escape}}</pre>
  </div>
  {% if details.screenshots.count %}
- <div class="content">
+ <div class="content clearfix">
   <label for="images">Screenshots:</label>
   {% for image in details.screenshots.all %}
-   <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a>
+   <div class="screenshot-container">
+    <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a><br />
+    <div class="screenshot-caption">
+     <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
+     {% ifequal request.user object.submitter %}
+      <a href="s/{{image.id}}/delete/"><img src="/images/delete.png" alt="Delete Screenshot" /></a>
+     {% endifequal %}
+    </div>
+   </div>
   {% endfor %}
  </div>
  {% endif %}
@@ -111,7 +119,7 @@ var gReviewRequestId = "{{object.id}}";
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
  <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
- <li><a href="screenshots/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
+ <li><a href="s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
 {% endifequal %}
 {% if details.diffset %}
   <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
@@ -190,13 +198,17 @@ var gReviewRequestId = "{{object.id}}";
 
 {% ifequal request.user object.submitter %}
 <script type="text/javascript">
-  registerEditor('summary', false);
-  registerEditor('branch', false);
-  registerEditor('description', true);
-  registerEditor('testing_done', true);
+  registerEditor('summary', false, false);
+  registerEditor('branch', false, false);
+  registerEditor('description', true, false);
+  registerEditor('testing_done', true, false);
   registerCommaListEditor('bugs_closed', onBugsChanged);
   registerCommaListEditor('target_groups', onTargetGroupsChanged);
   registerCommaListEditor('target_people', onTargetPeopleChanged);
+
+{% for image in details.screenshots.all %}
+  registerEditor('screenshot_{{image.id}}_caption', false);
+{% endfor %}
 
 {% if draft %}
   showDraftBanner();
