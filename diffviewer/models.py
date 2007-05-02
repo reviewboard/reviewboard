@@ -1,5 +1,8 @@
+import base64
+
 from django.db import models
 from django.contrib.auth.models import User
+from reviewboard.scmtools import PRE_CREATION, HEAD
 
 class FileDiff(models.Model):
     diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
@@ -7,17 +10,33 @@ class FileDiff(models.Model):
 
     source_file = models.CharField("Source File", maxlength=256, core=True)
     dest_file = models.CharField("Destination File", maxlength=256, core=True)
-    source_detail = models.CharField("Source File Details", maxlength=512)
+    source_revision = models.CharField("Source File Revision", maxlength=512)
     dest_detail = models.CharField("Destination File Details", maxlength=512)
-    diff = models.TextField("Diff")
+    diff_base64 = models.TextField("Diff (Base64)")
+
+    def _set_diff(self, data):
+        self.diff_base64 = base64.encodestring(data)
+
+    def _get_diff(self):
+        return base64.decodestring(self.diff_base64)
+
+    diff = property(fget=lambda self: self._get_diff(),
+                    fset=lambda self, v: self._set_diff(v))
 
     def __str__(self):
-        return "%s %s -> %s %s" % (self.source_file, self.source_detail,
-                                  self.dest_file, self.dest_detail)
+        return "%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
+                                       self.dest_file, self.dest_detail)
 
     class Admin:
-        list_display = ('source_file', 'source_detail',
+        list_display = ('source_file', 'source_revision',
                         'dest_file', 'dest_detail')
+        fields = (
+            (None, {
+                'fields': ('diffset', ('source_file', 'source_revision'),
+                           ('dest_file', 'dest_detail'),
+                           'diff_base64')
+            }),
+        )
 
 
 class DiffSet(models.Model):

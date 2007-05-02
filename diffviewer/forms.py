@@ -1,5 +1,3 @@
-import base64
-
 from django import newforms as forms
 from django.conf import settings
 from django.core import validators
@@ -37,17 +35,20 @@ class UploadDiffForm(forms.Form):
                not tool.file_exists(filename, revision):
                 raise scmtools.FileNotFoundException(filename, revision)
 
+            f.origFile = filename
+            f.origInfo = revision
+
         diffset = DiffSet(name=file["filename"], revision=0,
                           history=diffset_history)
         diffset.save()
 
-        for file in files:
+        for f in files:
             filediff = FileDiff(diffset=diffset,
-                                source_file=basedir + file.origFile,
-                                dest_file=basedir + file.newFile,
-                                source_detail=file.origInfo,
-                                dest_detail=file.newInfo,
-                                diff=base64.encodestring(file.data))
+                                source_file=f.origFile,
+                                dest_file=basedir + f.newFile,
+                                source_revision=f.origInfo,
+                                dest_detail=f.newInfo,
+                                diff=f.data)
             filediff.save()
 
         return diffset

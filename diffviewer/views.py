@@ -1,4 +1,3 @@
-import base64
 import sys
 import traceback
 from difflib import SequenceMatcher
@@ -55,9 +54,8 @@ def get_diff_files(diffset):
             chunks.append(new_chunk(lines[start:end], end - start, 'equal',
                           collapsable))
 
-        file, revision = \
-            scmtools.get_tool().parse_diff_revision(filediff.source_file,
-                                                    filediff.source_detail)
+        file = filediff.source_file
+        revision = filediff.source_revision
 
         if revision == scmtools.PRE_CREATION:
             old = ""
@@ -65,8 +63,7 @@ def get_diff_files(diffset):
             old = get_original_file(file, revision)
 
         try:
-            new = diffutils.patch(base64.decodestring(filediff.diff), old,
-                                  filediff.dest_file)
+            new = diffutils.patch(filediff.diff, old, filediff.dest_file)
         except Exception, e:
             raise UserVisibleError(str(e))
 
@@ -138,11 +135,10 @@ def get_diff_files(diffset):
 
     files = []
     for filediff in diffset.files.all():
-        file, revision = \
-            scmtools.get_tool().parse_diff_revision(filediff.source_file,
-                                                    filediff.source_detail)
         chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                lambda: get_chunks(filediff))
+
+        revision = filediff.source_revision
 
         if revision == scmtools.HEAD:
             revision = "HEAD"
@@ -152,7 +148,7 @@ def get_diff_files(diffset):
             revision = "Revision %s" % revision
 
         files.append({
-            'depot_filename': file,
+            'depot_filename': filediff.source_file,
             'user_filename': filediff.dest_file,
             'revision': revision,
             'chunks': chunks,

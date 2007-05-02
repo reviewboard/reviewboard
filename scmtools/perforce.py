@@ -72,11 +72,14 @@ class PerforceTool(SCMTool):
         # Perforce has this lovely idiosyncracy that diffs show revision #1 both
         # for pre-creation and when there's an actual revision.
         self._connect()
+
+        filename, revision = revision_str.rsplit('#', 1)
         files = self.p4.run_files(revision_str)
-        if len(files):
-            return revision_str.rsplit('#', 1)
-        else:
-            return PRE_CREATION
+
+        if len(files) == 0:
+            revision = PRE_CREATION
+
+        return filename, revision
 
     def get_filenames_in_revision(self, revision):
         return self.get_changeset(revision).files
