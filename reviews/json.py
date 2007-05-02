@@ -130,7 +130,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'diffset': o.diffset,
                 'source_file': o.source_file,
                 'dest_file': o.dest_file,
-                'source_detail': o.source_detail,
+                'source_revision': o.source_revision,
                 'dest_detail': o.dest_detail,
             }
         elif isinstance(o, DiffSet):
