@@ -26,21 +26,19 @@ var gReviewRequestId = "{{object.id}}";
 <div class="banner" id="main-banner"></div>
 
 {% box review-request %}
+<ul id="topcontrols">
+{% if details.diffset or object.diffset_history.diffset_set.count %}
+ <li onclick="javascript:window.location='diff/';"><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+{% endif %}
+</ul>
 <div class="main">
- <table class="header">
-  <colgroup>
-   <col width="100%" />
-   <col />
-  </colgroup>
-  <tr>
-   <td id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></td>
-   <td id="created_time" nowrap="nowrap">Created {{object.time_added|timesince}} ago</td>
-  </tr>
-  <tr>
-   <td id="status">{{object.get_status_display}}</td>
-   <td id="updated_time" nowrap="nowrap">Last updated {{details.last_updated|timesince}} ago</td>
-  </tr>
- </table>
+ <div class="header">
+  <div id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></div>
+  <p id="status">
+   {{object.get_status_display}}<br />
+   Updated {{details.last_updated|timesince}} ago
+  </p>
+ </div>
  <table id="details">
   <colgroup>
    <col width="0%" />
@@ -121,13 +119,6 @@ var gReviewRequestId = "{{object.id}}";
  <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
  <li><a href="s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
 {% endifequal %}
-{% if details.diffset %}
-  <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
-{% else %}
- {% ifnotequal object.diffset_history.diffset_set.count 0 %}
-  <li><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
- {% endifnotequal %}
-{% endif %}
 {% ifequal request.user object.submitter %}
  <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
 {% endifequal %}

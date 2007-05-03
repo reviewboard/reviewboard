@@ -673,6 +673,20 @@ table.sidebyside .commentflag.draft {
   font-size: 130%;
 }
 
+.review-request #summary_wrapper {
+  margin-right: 10em;
+  padding: 0px;
+}
+
+.review-request #header {
+  margin: 5px;
+}
+
+.review-request p#status {
+  color: #39350b;
+  margin: 5px 0;
+}
+
 .review-request #summary a {
   color: black;
 }
@@ -683,14 +697,36 @@ table.sidebyside .commentflag.draft {
   vertical-align: bottom;
 }
 
+.review-request #topcontrols {
+  float: right;
+  width: 10em;
+  margin-top: -1px;
+  margin-right: -1px;
+  list-style: none;
+  padding: 0px;
+}
+
+.review-request #topcontrols li {
+  padding: 5px 10px;
+  background-color: #B6CCE3;
+  border: 1px #3465A4 solid;
+  font-size: 120%;
+  cursor: pointer;
+}
+
+.review-request #topcontrols a {
+  text-decoration: none;
+  color: black;
+}
+
+.review-request #topcontrols img {
+  vertical-align: middle;
+}
+
 .review-request #diff_revision {
   text-align: right;
   vertical-align: bottom;
   font-weight: bold;
-}
-
-.review-request #status {
-  color: #39350b;
 }
 
 .review-request #details {
