@@ -46,7 +46,7 @@ class UploadDiffForm(forms.Form):
             filediff = FileDiff(diffset=diffset,
                                 source_file=f.origFile,
                                 dest_file=basedir + f.newFile,
-                                source_revision=f.origInfo,
+                                source_revision=str(f.origInfo),
                                 dest_detail=f.newInfo,
                                 diff=f.data)
             filediff.save()
