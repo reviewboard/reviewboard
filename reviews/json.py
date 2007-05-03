@@ -23,6 +23,7 @@ from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot
+import reviewboard.scmtools as scmtools
 
 
 class JsonError:
@@ -478,13 +479,13 @@ def review_request_draft_set(request, review_request_id):
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    draft = _prepare_draft(request, review_request)
+    #draft = _prepare_draft(request, review_request)
 
     changeset = scmtools.get_tool().get_changeset(review_request.changenum)
 
     try:
-        reviews_db.update_review_request_from_changenum(review_request,
-                                                        changenum)
+        reviews_db.update_review_request_from_changenum(
+            review_request, review_request.changenum)
     except reviews_db.InvalidChangeNumberException:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER,
                                  {'changenum': review_request.changenum})
