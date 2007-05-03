@@ -54,6 +54,30 @@ def get_diff_files(diffset):
             chunks.append(new_chunk(lines[start:end], end - start, 'equal',
                           collapsable))
 
+        def process_chunk(tag, lines, numlines):
+            if tag == 'equal' and \
+               numlines >= settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
+                last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
+
+                if len(chunks) == 0:
+                    add_ranged_chunks(lines, 0, last_range_start, True)
+                    add_ranged_chunks(lines, last_range_start, numlines)
+                else:
+                    add_ranged_chunks(lines, 0, settings.DIFF_CONTEXT_NUM_LINES)
+
+                    if i2 == a_num_lines and j2 == b_num_lines:
+                        add_ranged_chunks(lines,
+                                          settings.DIFF_CONTEXT_NUM_LINES,
+                                          numlines, True)
+                    else:
+                        add_ranged_chunks(lines,
+                                          settings.DIFF_CONTEXT_NUM_LINES,
+                                          last_range_start, True)
+                        add_ranged_chunks(lines, last_range_start, numlines)
+            else:
+                chunks.append(new_chunk(lines, numlines, tag))
+
+
         file = filediff.source_file
         revision = filediff.source_revision
 
@@ -82,27 +106,34 @@ def get_diff_files(diffset):
                         range(linenum, linenum + numlines), oldlines, newlines)
             linenum += numlines
 
-            if tag == 'equal' and \
-               numlines >= settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
-                last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
+            if tag == 'replace':
+                start_range = 0
 
-                if len(chunks) == 0:
-                    add_ranged_chunks(lines, 0, last_range_start, True)
-                    add_ranged_chunks(lines, last_range_start, numlines)
-                else:
-                    add_ranged_chunks(lines, 0, settings.DIFF_CONTEXT_NUM_LINES)
+                for i in range(min(len(oldlines), len(newlines))):
+                    new_tag = None
+                    if oldlines[i] == "":
+                        new_tag = "delete"
+                    elif newlines[i] == "":
+                        new_tag = "insert"
+                    elif oldlines[i] != "" and newlines[i] != "":
+                        new_tag = "replace"
 
-                    if i2 == a_num_lines and j2 == b_num_lines:
-                        add_ranged_chunks(lines,
-                                          settings.DIFF_CONTEXT_NUM_LINES,
-                                          numlines, True)
-                    else:
-                        add_ranged_chunks(lines,
-                                          settings.DIFF_CONTEXT_NUM_LINES,
-                                          last_range_start, True)
-                        add_ranged_chunks(lines, last_range_start, numlines)
+                    if new_tag != tag:
+                        process_chunk(tag, lines[start_range:i],
+                                      i - start_range)
+                        tag = new_tag
+                        start_range = i
+
+                process_chunk(tag, lines[start_range:i+1], start_range - i + 1)
+                start_range = i + 1
+
+                if len(oldlines) > len(newlines):
+                    process_chunk("delete", lines[start_range:], numlines - i)
+                elif len(oldlines) < len(newlines):
+                    process_chunk("insert", lines[start_range:], numlines - i)
             else:
-                chunks.append(new_chunk(lines, numlines, tag))
+                process_chunk(tag, lines, numlines)
+
 
         return chunks
 
