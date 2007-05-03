@@ -791,7 +791,7 @@ span.draftlabel {
 .screenshot-container {
   vertical-align: top;
   max-width: 400px;
-  margin: 1px;
+  margin-right: 10px;
   float: left;
   text-align: center;
 }
