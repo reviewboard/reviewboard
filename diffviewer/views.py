@@ -1,6 +1,5 @@
 import sys
 import traceback
-from difflib import SequenceMatcher
 
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
@@ -54,7 +53,34 @@ def get_diff_files(diffset):
             chunks.append(new_chunk(lines[start:end], end - start, 'equal',
                           collapsable))
 
-        def process_chunk(tag, lines, numlines):
+        file = filediff.source_file
+        revision = filediff.source_revision
+
+        if revision == scmtools.PRE_CREATION:
+            old = ""
+        else:
+            old = get_original_file(file, revision)
+
+        try:
+            new = diffutils.patch(filediff.diff, old, filediff.dest_file)
+        except Exception, e:
+            raise UserVisibleError(str(e))
+
+        a = (old or '').splitlines()
+        b = (new or '').splitlines()
+        a_num_lines = len(a)
+        b_num_lines = len(b)
+
+        chunks = []
+        linenum = 1
+        for tag, i1, i2, j1, j2 in diffutils.diff(a, b):
+            oldlines = a[i1:i2]
+            newlines = b[j1:j2]
+            numlines = max(len(oldlines), len(newlines))
+            lines = map(diff_line,
+                        range(linenum, linenum + numlines), oldlines, newlines)
+            linenum += numlines
+
             if tag == 'equal' and \
                numlines >= settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
                 last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
@@ -76,67 +102,6 @@ def get_diff_files(diffset):
                         add_ranged_chunks(lines, last_range_start, numlines)
             else:
                 chunks.append(new_chunk(lines, numlines, tag))
-
-
-        file = filediff.source_file
-        revision = filediff.source_revision
-
-        if revision == scmtools.PRE_CREATION:
-            old = ""
-        else:
-            old = get_original_file(file, revision)
-
-        try:
-            new = diffutils.patch(filediff.diff, old, filediff.dest_file)
-        except Exception, e:
-            raise UserVisibleError(str(e))
-
-        a = (old or '').splitlines()
-        b = (new or '').splitlines()
-        a_num_lines = len(a)
-        b_num_lines = len(b)
-
-        chunks = []
-        linenum = 1
-        for tag, i1, i2, j1, j2 in SequenceMatcher(None, a, b).get_opcodes():
-            oldlines = a[i1:i2]
-            newlines = b[j1:j2]
-            numlines = max(len(oldlines), len(newlines))
-            lines = map(diff_line,
-                        range(linenum, linenum + numlines), oldlines, newlines)
-            linenum += numlines
-
-            if tag == 'replace':
-                start_range = 0
-
-                for i in range(min(len(oldlines), len(newlines))):
-                    new_tag = None
-                    if oldlines[i] == "" and newlines[i] == "":
-                        new_tag = "equal"
-                    elif oldlines[i] == "":
-                        new_tag = "insert"
-                    elif newlines[i] == "":
-                        new_tag = "replace"
-                    else:
-                        new_tag = "replace"
-
-                    if new_tag != tag:
-                        if i > 0:
-                            process_chunk(tag, lines[start_range:i],
-                                          i - start_range)
-                        tag = new_tag
-                        start_range = i
-
-                i += 1
-                process_chunk(tag, lines[start_range:i], i - start_range)
-                start_range = i
-
-                if len(oldlines) > len(newlines):
-                    process_chunk("delete", lines[start_range:], numlines - i)
-                elif len(oldlines) < len(newlines):
-                    process_chunk("insert", lines[start_range:], numlines - i)
-            else:
-                process_chunk(tag, lines, numlines)
 
 
         return chunks

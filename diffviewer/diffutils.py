@@ -4,6 +4,72 @@ import os
 import popen2
 import tempfile
 
+def diff(a, b):
+    """
+    Wrapper around SequenceMatcher that works around bugs in how it does
+    its matching.
+    """
+    matcher = difflib.SequenceMatcher(None, a, b).get_opcodes()
+
+    for tag, i1, i2, j1, j2 in matcher:
+        if tag == 'replace':
+            oldlines = a[i1:i2]
+            newlines = b[j1:j2]
+
+            i = 0
+            j = 0
+            i_start = 0
+            j_start = 0
+
+            while i < len(oldlines) and j < len(newlines):
+                new_tag = None
+                new_i = i
+                new_j = j
+
+                if oldlines[i] == "" and newlines[j] == "":
+                    new_tag = "equal"
+                    new_i += 1
+                    new_j += 1
+                elif oldlines[i] == "":
+                    new_tag = "insert"
+                    new_j += 1
+                elif newlines[j] == "":
+                    new_tag = "delete"
+                    new_i += 1
+                else:
+                    new_tag = "replace"
+                    new_i += 1
+                    new_j += 1
+
+                if new_tag != tag:
+                    if i > i_start or j > j_start:
+                        yield tag, i1 + i_start, i1 + i, j1 + j_start, j1 + j
+
+                    tag = new_tag
+                    i_start = i
+                    j_start = j
+
+                i = new_i
+                j = new_j
+
+            yield tag, i1 + i_start, i1 + i, j1 + j_start, j1 + j
+            i_start = i
+            j_start = j
+
+            if i2 > i1 + i_start or j2 > j1 + j_start:
+                tag = None
+
+                if len(oldlines) > len(newlines):
+                    tag = "delete"
+                elif len(oldlines) < len(newlines):
+                    tag = "insert"
+
+                if tag != None:
+                    yield tag, i1 + i_start, i2, j1 + j_start, j2
+        else:
+            yield tag, i1, i2, j1, j2
+
+
 def patch(diff, file, filename):
     """Apply a diff to a file.  Delegates out to `patch` because noone
        except Larry Wall knows how to patch."""
