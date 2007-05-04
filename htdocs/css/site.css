@@ -678,7 +678,7 @@ table.sidebyside .commentflag.draft {
   padding: 0px;
 }
 
-.review-request #header {
+.review-request .header {
   margin: 5px;
 }
 
