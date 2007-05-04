@@ -779,6 +779,11 @@ table.sidebyside .commentflag.draft {
   border: 1px #b8b5a0 solid;
   padding: 10px;
   background-color: #FFFFFF;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
 }
 
 .review-request .content img {
@@ -905,6 +910,14 @@ span.draftlabel {
   padding: 10px;
   background-color: #FAFAFA;
   margin: 5px;
+}
+
+.review .body pre {
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
 }
 
 .review .body .body_top,
