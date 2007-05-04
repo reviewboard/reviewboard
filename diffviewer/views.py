@@ -111,11 +111,13 @@ def get_diff_files(diffset):
 
                 for i in range(min(len(oldlines), len(newlines))):
                     new_tag = None
-                    if oldlines[i] == "":
+                    if oldlines[i] == "" and newlines[i] == "":
+                        new_tag = "equal"
+                    elif oldlines[i] == "":
                         new_tag = "insert"
                     elif newlines[i] == "":
-                        new_tag = "delete"
-                    elif oldlines[i] != "" and newlines[i] != "":
+                        new_tag = "replace"
+                    else:
                         new_tag = "replace"
 
                     if new_tag != tag:
@@ -125,8 +127,9 @@ def get_diff_files(diffset):
                         tag = new_tag
                         start_range = i
 
-                process_chunk(tag, lines[start_range:i+1], start_range - i + 1)
-                start_range = i + 1
+                i += 1
+                process_chunk(tag, lines[start_range:i], i - start_range)
+                start_range = i
 
                 if len(oldlines) > len(newlines):
                     process_chunk("delete", lines[start_range:], numlines - i)
