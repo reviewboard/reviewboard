@@ -586,6 +586,10 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 		}.createDelegate(this));
 	};
 
+	this.updatePosition = function() {
+		this.el.setTop(getEl(this.lineNumCell).getY());
+	};
+
 	this.setCount = function(count) {
 		this.count = count;
 		this.el.dom.innerHTML = this.count;
@@ -614,6 +618,7 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 	this.filediffid = gFileAnchorToId[fileid];
 	this.comments = comments;
 	this.linenum = linenum;
+	this.lineNumCell = lineNumCell;
 	this.localComment = "";
 	this.localNumLines = 1;
 	this.hasDraft = false;
@@ -636,7 +641,7 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 		}
 	}
 
-	this.el.setTop(getEl(lineNumCell).getY());
+	this.updatePosition();
 	this.el.on('click', function(e) {
 		YAHOO.util.Event.stopEvent(e);
 		this.showCommentDlg();
@@ -678,6 +683,15 @@ function onPageLoaded(evt) {
 	SetHighlighted(gSelectedAnchor, true)
 
 	YAHOO.util.Event.on(window, "keypress", onKeyPress);
+	YAHOO.util.Event.on(window, "resize", onPageResize);
+}
+
+function onPageResize(evt) {
+	console.debug("Resizing");
+
+	for (var id in gCommentBlocks) {
+		gCommentBlocks[id].updatePosition();
+	}
 }
 
 function findLineNumCell(table, linenum) {
