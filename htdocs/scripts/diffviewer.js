@@ -652,6 +652,7 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 	gCommentBlocks[this.el.id] = this;
 };
 
+
 function onKeyPress(evt) {
 	var keyChar = String.fromCharCode(YAHOO.util.Event.getCharCode(evt));
 
