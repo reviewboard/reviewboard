@@ -8,7 +8,11 @@ var reviewRequestTemplate = new YAHOO.ext.Template(
 	'</tr>'
 );
 
-function addNavItem(name, count, level, params, jsonpath) {
+function addNavItem(name, count, level, jsonpath, view, group) {
+    if (!group) {
+        group = "";
+    }
+
 	if (level == 0) {
 		levelClass = "main-item";
 	} else if (level == 1) {
@@ -17,7 +21,11 @@ function addNavItem(name, count, level, params, jsonpath) {
 		levelClass = "sub-sub-item";
 	}
 
-	var url = '/dashboard?' + params;
+	var url = '/dashboard?view=' + view;
+
+    if (group) {
+        url += "&group=" + group
+    }
 
 	el = dh.append(getEl("dashboard-navbar").dom.tBodies[0], {
 		tag: 'tr',
@@ -35,4 +43,8 @@ function addNavItem(name, count, level, params, jsonpath) {
 			html: '' + count
 		}]
 	}, true);
+
+    if (gCurView == view && gCurGroup == group) {
+        el.addClass("selected");
+    }
 }

@@ -105,31 +105,38 @@ def group_list(request, template_name):
 @login_required
 def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
     view = request.GET.get('view', 'incoming')
+    group = request.GET.get('group', "")
 
     if view == 'outgoing':
         review_requests = \
             reviews_db.get_review_requests_from_user(request.user.username,
                                                      request.user)
+        title = "All Outgoing Review Requests";
     elif view == 'to-me':
         review_requests = reviews_db.get_review_requests_to_user_directly(
             request.user.username, request.user)
+        title = "Incoming Review Requests to Me";
     elif view == 'to-group':
-        group = request.GET.get('group', None)
-
-        if group != None:
+        if group != "":
             review_requests = reviews_db.get_review_requests_to_group(
                 group, request.user)
+            title = "Incoming Review Requests to %s" % group;
         else:
             review_requests = reviews_db.get_review_requests_to_user_groups(
                 request.user.username, request.user)
+            title = "All Incoming Review Requests to My Groups"
     else: # "incoming" or invalid
         review_requests = reviews_db.get_review_requests_to_user(
             request.user.username, request.user)
+        title = "All Incoming Review Requests"
 
     review_requests = review_requests[:limit]
 
     return render_to_response(template_name, RequestContext(request, {
         'review_requests': review_requests,
+        'title': title,
+        'view': view,
+        'group': group
     }))
 
 

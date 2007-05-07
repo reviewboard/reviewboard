@@ -1090,6 +1090,10 @@ span.draftlabel {
   padding-left: 40px;
 }
 
+#dashboard-navbar tr.selected {
+  background: #b2ceec;
+}
+
 #dashboard_main {
   margin-left: 21em;
   vertical-align: top;

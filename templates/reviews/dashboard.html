@@ -32,7 +32,7 @@
 
 <div id="dashboard_main">
  {% box dashboard %}
- <h1 class="title">Review Requests</h1>
+ <h1 class="title">{{title}}</h1>
  <div class="main">
   <table class="list" id="dashboard-list">
    <colgroup>
@@ -62,14 +62,18 @@
 </div>
 
 <script language="javascript">
+var gCurView = "{{view}}";
+var gCurGroup = "{{group}}";
+
 function onPageLoaded(evt) {
-    addNavItem("Outgoing Reviews", {% reviewrequestcount outgoing %}, 0, "view=outgoing", "from/user/{{user.username}}");
-    addNavItem("Incoming Reviews", {% reviewrequestcount incoming %}, 0, "view=incoming", "to/user/{{user.username}}");
-    addNavItem("To Me", {% reviewrequestcount incoming-directly %}, 1, "view=to-me", "to/user/{{user.username}}");
+    addNavItem("Outgoing Reviews", {% reviewrequestcount outgoing %}, 0, "from/user/{{user.username}}", "outgoing");
+    addNavItem("Incoming Reviews", {% reviewrequestcount incoming %}, 0, "to/user/{{user.username}}", "incoming");
+    addNavItem("To Me", {% reviewrequestcount incoming-directly %}, 1, "to/user/{{user.username}}", "to-me");
 {% for group in user.group_set.all %}
     addNavItem("{{group.name}}", {% reviewrequestcount to-group group.name %}, 1,
-               "view=to-group&group={{group.name}}",
-               "to/group/{{group.name}}");
+               "to/group/{{group.name}}",
+			   "to-group",
+			   "{{group.name}}");
 {% endfor %}
 }
 
