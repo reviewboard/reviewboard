@@ -126,21 +126,22 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
 	startEdit: function() {
 		this.initialValue = this.el.dom.innerHTML;
-		var value = this.normalizeText(this.el.dom.innerHTML.htmlDecode());
-		this.setValue(value);
+		this.setValue(this.normalizeText(this.initialValue.htmlDecode()));
+		//this.setValue(this.normalizeText(this.initialvalue.htmlDecode()));
 		this.editing = true;
 		this.show();
 		this.fireEvent('beginedit', this);
 	},
 
 	completeEdit: function() {
-		var value = this.getValue().htmlEncode();
-		this.el.dom.innerHTML = value;
+		var value = this.getValue();
+		var encodedValue = value.htmlEncode();
+		this.el.dom.innerHTML = encodedValue;
 
 		this.hide();
 		this.editing = false;
 
-		if (this.normalizeText(this.initialValue.htmlDecode()) != value ||
+		if (this.normalizeText(this.initialValue) != encodedValue ||
 		    this.notifyUnchangedCompletion) {
 			this.fireEvent('complete', this, value, this.initialValue);
 		}
