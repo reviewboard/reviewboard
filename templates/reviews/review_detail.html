@@ -126,7 +126,7 @@ var gReviewRequestId = "{{object.id}}";
 {% endbox %}
 
 {% for review in reviews %}
-<a name="review{{forloop.counter}}"></a>
+<a name="review{{review.id}}"></a>
 {% box review %}
 <div class="main">
  <div class="banner" id="{{review.id}}-banner"></div>
