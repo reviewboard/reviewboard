@@ -21,7 +21,7 @@ class NISBackend:
                     user = User.objects.get(username=username)
                 except User.DoesNotExist:
                     # Create a new user.
-                    first_name, last_name = passwd[4].split(' ', 2)
+                    first_name, last_name = passwd[4].split(' ', 1)
                     email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
                     user = User(username=username,
@@ -45,7 +45,7 @@ class NISBackend:
         except User.DoesNotExist:
             try:
                 passwd = nis.match(username, 'passwd').split(':')
-                first_name, last_name = passwd[4].split(' ', 2)
+                first_name, last_name = passwd[4].split(' ', 1)
                 email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
                 user = User(username=username,
