@@ -18,8 +18,11 @@ def parseFile(lines, linenum, lastline, filename):
         lines[linenum + 1].startswith('--- ')):
 
         # Unified or Context diff
-        file.origFile, file.origInfo = lines[linenum].split(None, 2)[1:]
-        file.newFile,  file.newInfo  = lines[linenum + 1].split(None, 2)[1:]
+        try:
+            file.origFile, file.origInfo = lines[linenum].split(None, 2)[1:]
+            file.newFile,  file.newInfo  = lines[linenum + 1].split(None, 2)[1:]
+        except ValueError:
+            raise Exception("The diff file is missing revision information")
     else:
         raise Exception('Unable to recognize diff format')
 
