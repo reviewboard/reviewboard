@@ -379,7 +379,7 @@ def _prepare_draft(request, review_request):
 
 def _set_draft_field_data(draft, field_name, data):
     if field_name == "target_groups" or field_name == "target_people":
-        values = re.split(r"[, ]+", data)
+        values = re.split(r",\s*", data)
         target = getattr(draft, field_name)
         target.clear()
 
@@ -388,7 +388,8 @@ def _set_draft_field_data(draft, field_name, data):
         for value in values:
             try:
                 if field_name == "target_groups":
-                    obj = Group.objects.get(name=value)
+                    obj = Group.objects.get(Q(name__iexact=value) |
+                                            Q(display_name__iexact=value))
                 elif field_name == "target_people":
                     obj = find_user(username=value)
 
