@@ -11,9 +11,12 @@ from reviewboard.reviews.models import Group
 
 class PreferencesForm(forms.Form):
     redirect_to = forms.CharField(required=False, widget=forms.HiddenInput)
-    groups = forms.MultipleChoiceField(
-        choices=[(g.id, g.display_name) for g in Group.objects.all()],
-        widget=forms.CheckboxSelectMultiple)
+    groups = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple)
+
+    def __init__(self, *args, **kwargs):
+        forms.Form.__init__(self, *args, **kwargs)
+        self.fields['groups'].choices = \
+            [(g.id, g.display_name) for g in Group.objects.all()]
 
 
 @login_required
