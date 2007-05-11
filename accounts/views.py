@@ -19,7 +19,6 @@ class PreferencesForm(forms.Form):
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/')
-    print redirect_to
 
     if request.POST:
         form = PreferencesForm(request.POST)
