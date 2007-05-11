@@ -13,6 +13,7 @@
   {% endif %}
   <form method="post" enctype="multipart/form-data" action=".">
    <table id="upload_diff_form">
+    {{form.repositoryid}}
     {% if not diffs_use_absolute_paths %}
     <tr>
      <td><label for="id_basedir">Base directory:</label></td>

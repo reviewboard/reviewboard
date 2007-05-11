@@ -77,6 +77,12 @@ var gReviewRequestId = "{{object.id}}";
 {%  endfor %}
   </span></td>
   </tr>
+  <tr>
+   <td class="label"><label for="changenum">Change Number:</label></td>
+   <td class="value"><span id="changenum">{{object.changenum}}</span></td>
+   <td class="label"><label for="repository">Repository:</label></td>
+   <td class="value"><span id="repository">{{object.repository}}</span></td>
+  </tr>
  </table>
  <div class="content">
   <label for="description">Description:</label>
@@ -116,7 +122,7 @@ var gReviewRequestId = "{{object.id}}";
  <li><a href="publish/">Publish</a></li>
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
- <li><a href="diff/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+ <li><a href="diff/upload/?repositoryid={{object.repository.id}}"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
  <li><a href="s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
 {% endifequal %}
 {% ifequal request.user object.submitter %}

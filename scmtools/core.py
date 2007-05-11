@@ -54,8 +54,8 @@ PRE_CREATION = Revision("PRE-CREATION")
 
 
 class SCMTool:
-    def __init__(self, repopath):
-        self.repopath = repopath
+    def __init__(self, repository):
+        self.repository = repository
         self.uses_atomic_revisions = False
 
     def get_file(self, path, revision=None):
@@ -82,22 +82,3 @@ class SCMTool:
 
     def get_filenames_in_revision(self, revision):
         raise NotImplementedError
-
-
-def get_tool(path = settings.SCMTOOL_BACKEND):
-    i = path.rfind('.')
-    module, attr = path[:i], path[i+1:]
-
-    try:
-        mod = __import__(module, {}, {}, [attr])
-    except ImportError, e:
-        raise ImproperlyConfigured, \
-            'Error importing SCM Tool %s: "%s"' % (module, e)
-
-    try:
-        cls = getattr(mod, attr)
-    except AttributeError:
-        raise ImproperlyConfigured, \
-            'Module "%s" does not define a "%s" SCM Tool' % (module, attr)
-
-    return cls(settings.SCMTOOL_REPOPATH)

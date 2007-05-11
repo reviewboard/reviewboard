@@ -3,6 +3,7 @@ import base64
 from django.db import models
 from django.contrib.auth.models import User
 from reviewboard.scmtools import PRE_CREATION, HEAD
+from reviewboard.scmtools.models import Repository
 
 class FileDiff(models.Model):
     diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
@@ -45,6 +46,7 @@ class DiffSet(models.Model):
     timestamp = models.DateTimeField("Timestamp", auto_now_add=True)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
                                 edit_inline=models.STACKED)
+    repository = models.ForeignKey(Repository)
 
     def save(self):
         if self.revision == 0 and self.history != None:

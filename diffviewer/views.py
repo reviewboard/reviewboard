@@ -9,6 +9,7 @@ from djblets.util import cache_memoize
 
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.scmtools.models import Repository
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.scmtools as scmtools
 
@@ -21,12 +22,14 @@ def get_diff_files(diffset):
     def get_original_file(file, revision):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
+        tool = diffset.repository.get_scmtool()
+
         try:
             if revision == scmtools.HEAD:
-                return scmtools.get_tool().get_file(file, revision)
+                return tool.get_file(file, revision)
             else:
                 return cache_memoize("%s-%s" % (file, revision),
-                    lambda: scmtools.get_tool().get_file(file, revision))
+                    lambda: tool.get_file(file, revision))
         except Exception, e:
             raise UserVisibleError(str(e))
 
@@ -231,6 +234,15 @@ def view_diff_fragment(request, diffset_id, filediff_id,
 def upload(request, donepath, diffset_history_id=None,
            template_name='diffviewer/upload.html'):
     differror = None
+    repository_id = request.REQUEST.get('repositoryid', None)
+
+    if repository_id == None:
+        return HttpResponse("A repository ID was not specified")
+
+    try:
+        repository = Repository.objects.get(pk=repository_id)
+    except Repository.DoesNotExist:
+        return HttpResponse("Repository ID %s was invalid" % repository_id)
 
     if request.method == 'POST':
         form_data = request.POST.copy()
@@ -250,11 +262,11 @@ def upload(request, donepath, diffset_history_id=None,
             except scmtools.FileNotFoundException, e:
                 differror = str(e)
     else:
-        form = UploadDiffForm()
+        form = UploadDiffForm(initial={'repositoryid': repository_id})
 
     return render_to_response(template_name, RequestContext(request, {
         'differror': differror,
         'form': form,
         'diffs_use_absolute_paths':
-            scmtools.get_tool().get_diffs_use_absolute_paths(),
+            repository.get_scmtool().get_diffs_use_absolute_paths(),
     }))

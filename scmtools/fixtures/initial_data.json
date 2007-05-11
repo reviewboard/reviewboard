@@ -1,0 +1,1 @@
+[{"pk": "1", "model": "scmtools.tool", "fields": {"name": "Subversion", "class_name": "reviewboard.scmtools.svn.SVNTool"}}, {"pk": "2", "model": "scmtools.tool", "fields": {"name": "Perforce", "class_name": "reviewboard.scmtools.perforce.PerforceTool"}}]

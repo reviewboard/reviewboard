@@ -2,11 +2,13 @@ from scmtools.core import SCMException, FileNotFoundException, SCMTool
 from scmtools.core import HEAD, PRE_CREATION
 
 class LocalFileTool(SCMTool):
-    def __init__(self, repopath):
-        if repopath[-1] == '/':
-            repopath = repopath[:-1]
+    def __init__(self, repository):
+        self.repopath = repository.path
 
-        SCMTool.__init__(self, repopath)
+        if self.repopath[-1] == '/':
+            self.repopath = self.repopath[:-1]
+
+        SCMTool.__init__(self, repository)
 
 
     def get_file(self, path, revision=HEAD):

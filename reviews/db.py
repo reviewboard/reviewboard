@@ -59,7 +59,8 @@ class ChangeNumberInUseException(Exception):
 
 
 def update_review_request_from_changenum(review_request, changenum):
-    changeset = scmtools.get_tool().get_changeset(changenum)
+    changeset = \
+        review_request.repository.get_scmtool().get_changeset(changenum)
 
     if not changeset:
         raise InvalidChangeNumberException()
@@ -72,14 +73,15 @@ def update_review_request_from_changenum(review_request, changenum):
     review_request.bugs_closed = ','.join(changeset.bugs_closed)
 
 
-def create_review_request(user, changenum=None):
+def create_review_request(user, repository, changenum=None):
     try:
-        review_request = ReviewRequest.objects.get(changenum=changenum)
+        review_request = ReviewRequest.objects.get(changenum=changenum,
+                                                   repository=repository)
         raise ChangeNumberInUseException(review_request)
     except ReviewRequest.DoesNotExist:
         pass
 
-    review_request = ReviewRequest()
+    review_request = ReviewRequest(repository=repository)
 
     if changenum:
         update_review_request_from_changenum(review_request, changenum)

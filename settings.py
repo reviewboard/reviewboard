@@ -69,6 +69,7 @@ INSTALLED_APPS = (
     'reviewboard.accounts',
     'reviewboard.diffviewer',
     'reviewboard.reviews',
+    'reviewboard.scmtools',
     'reviewboard.utils',
 )
 
@@ -80,15 +81,12 @@ BUILTIN_AUTH = True
 LOGIN_URL = '/account/login'
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
+# Default repository path to use for the source code.
+DEFAULT_REPOSITORY_PATH = None
+
 # Default expiration time for the cache.  Note that this has no effect unless
 # CACHE_BACKEND is specified in settings_local.py
 CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
-
-# Default values for the perforce SCMTool.  These should be overridden in
-# settings_local.py, but exist here so you can import scmtools.perforce
-P4_PORT = ''
-P4_USER = ''
-P4_PASSWORD = ''
 
 # Custom test runner, which uses nose to find tests and execute them.  This
 # gives us a somewhat more comprehensive test execution than django's built-in

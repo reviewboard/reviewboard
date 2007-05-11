@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import Q
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.scmtools.models import Repository
 
 
 class Quip(models.Model):
@@ -70,8 +71,8 @@ class ReviewRequest(models.Model):
     status = models.CharField(maxlength=1, choices=STATUSES)
     public = models.BooleanField("Public", default=False)
     changenum = models.PositiveIntegerField("Change Number", blank=True,
-                                            null=True, unique=True,
-                                            db_index=True)
+                                            null=True, db_index=True)
+    repository = models.ForeignKey(Repository)
     email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField("Time E-Mailed", null=True,
@@ -116,6 +117,7 @@ class ReviewRequest(models.Model):
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
+        unique_together = (('changenum', 'repository'),)
 
 
 class ReviewRequestDraft(models.Model):

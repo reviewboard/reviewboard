@@ -4,11 +4,12 @@ from reviewboard.scmtools.core import SCMException, FileNotFoundException, SCMTo
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
 
 class SVNTool(SCMTool):
-    def __init__(self, repopath):
-        if repopath[-1] == '/':
-            repopath = repopath[:-1]
+    def __init__(self, repository):
+        self.repopath = repository.path
+        if self.repopath[-1] == '/':
+            self.repopath = self.repopath[:-1]
 
-        SCMTool.__init__(self, repopath)
+        SCMTool.__init__(self, repository)
         self.client = pysvn.Client()
 
         self.uses_atomic_revisions = True

@@ -61,6 +61,25 @@ def new_from_changenum(request):
 
 
 @login_required
+def new_review_request(request,
+                       template_name='reviews/new_review_request.html'):
+    if request.method == 'POST':
+        form_data = request.POST.copy()
+        form_data.update(request.FILES)
+        form = NewReviewRequestForm(form_data)
+
+        if form.is_valid():
+            review_request = form.create(request.user,
+                                         request.FILES['diff_path'])
+            return HttpResponseRedirect(review_request.get_absolute_url())
+    else:
+        form = NewReviewRequestForm()
+
+    return render_to_response(template_name, RequestContext(request, {
+        'form': form,
+    }))
+
+@login_required
 def review_detail(request, object_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 

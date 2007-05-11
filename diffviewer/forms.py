@@ -3,24 +3,28 @@ from django.conf import settings
 from django.core import validators
 from django.core.validators import ValidationError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.scmtools.models import Repository
 import reviewboard.diffviewer.parser as diffparser
 import reviewboard.scmtools as scmtools
 from scmtools import PRE_CREATION
 
 class UploadDiffForm(forms.Form):
     # XXX: it'd be really nice to have "required" dependent on scmtool
+    repositoryid = forms.IntegerField(required=True, widget=forms.HiddenInput)
     basedir = forms.CharField(required=False)
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, file, diffset_history=None):
         # Parse the diff
+        repository = Repository.objects.get(pk=self.clean_data['repositoryid'])
+
         files = diffparser.parse(file["content"])
 
         if len(files) == 0:
             raise Exception("Empty diff") # XXX
 
         # Check that we can actually get all these files.
-        tool = scmtools.get_tool()
+        tool = repository.get_scmtool()
 
         if tool.get_diffs_use_absolute_paths():
             basedir = ''
@@ -40,6 +44,7 @@ class UploadDiffForm(forms.Form):
 
         diffset = DiffSet(name=file["filename"], revision=0,
                           history=diffset_history)
+        diffset.repository = repository
         diffset.save()
 
         for f in files:

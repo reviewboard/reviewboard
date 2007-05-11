@@ -8,8 +8,8 @@ class FooVersionTool(SVNTool):
     Hacky testing version control tool that subclasses the SVN tool in
     order to get files and fills the rest with rubbish.
     """
-    def __init__(self, repopath):
-        SVNTool.__init__(self, repopath)
+    def __init__(self, repository):
+        SVNTool.__init__(self, repository)
 
     def get_changeset(self, changesetid):
         changedesc = ChangeSet()

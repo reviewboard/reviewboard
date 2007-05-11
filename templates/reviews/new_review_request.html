@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}New Review Request{% endblock %}
+
+{% block content %}
+<form method="post" action="." enctype="multipart/form-data">
+{% box new-review-request %}
+ <h1 class="title">New Review Request</h1>
+ <div class="main">
+  <table>
+   <tr>
+    <td><label for="id_repository">Repository:</label></td>
+    <td>{{form.repository}}</td>
+   </tr>
+   <tr>
+    <td><label for="id_changenum">Change Number:</label></td>
+    <td>{{form.changenum}}</td>
+   </tr>
+   <tr>
+    <td><label for="id_basepath">Base Diff Path:</label></td>
+    <td>{{form.basedir}} (Subversion only)</td>
+   </tr>
+   <tr>
+    <td><label for="id_diff_path">Diff:</label></td>
+    <td>{{form.diff_path}}</td>
+   </tr>
+  </table>
+ </div>
+{% endbox %}
+ <div class="prefsbuttons">
+  <input type="submit" value="Create Review Request" />
+ </div>
+</form>
+
+{% endblock %}
+

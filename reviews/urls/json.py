@@ -2,6 +2,9 @@ from django.conf.urls.defaults import *
 from reviewboard.reviews.db import *
 
 urlpatterns = patterns('reviewboard.reviews.json',
+    # Repositories
+    (r'^repositories/$', 'repository_list'),
+
     # Review request lists
     (r'^reviewrequests/all/$', 'review_request_list',
      {'func': get_all_review_requests}),
@@ -34,7 +37,7 @@ urlpatterns = patterns('reviewboard.reviews.json',
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', 'review_request'),
 
-    (r'^reviewrequests/changenum/(?P<changenum>[0-9]+)/$',
+    (r'^reviewrequests/repository/(P<repository_id>[0-9]+)/changenum/(?P<changenum>[0-9]+)/$',
      'review_request_by_changenum'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_from_changenum/$',

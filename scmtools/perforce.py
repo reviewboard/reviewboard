@@ -7,17 +7,14 @@ from django.conf import settings
 from reviewboard.scmtools.core import *
 
 class PerforceTool(SCMTool):
-    def __init__(self,
-                 p4port = settings.P4_PORT,
-                 p4user = settings.P4_USER,
-                 p4password = settings.P4_PASSWORD):
-        SCMTool.__init__(self, p4port)
+    def __init__(self, repository):
+        SCMTool.__init__(self, repository)
 
         import p4
         self.p4 = p4.P4()
-        self.p4.port = p4port
-        self.p4.user = p4user
-        self.p4.password = p4password
+        self.p4.port = repository.path
+        self.p4.user = repository.username
+        self.p4.password = repository.password
 
         # We defer actually connecting until just before we do some operation
         # that requires an active connection to the perforce depot.  This

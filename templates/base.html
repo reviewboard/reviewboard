@@ -32,27 +32,16 @@
      <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">Report bug</a></li>
     </ul>
    </div>
-   <table id="navbar">
-    <tr>
-     <td>
-      <ul>
-{%     if user.is_authenticated %}
-       <li><a href="/dashboard/">My Dashboard</a></li>
-{%     endif %}
-       <li><a href="/r/">All review requests</a></li>
-       <li><a href="/groups/">Groups</a></li>
-       <li><a href="/users/">Submitters</a></li>
-      </ul>
-     </td>
-     <td id="addchangenum">
-      <form id="changenumform" method="post" action="/r/new/changenum/">
-       <label for="changenum">Change #</label>
-       <input type="text" id="changenum" name="changenum" size="8" />
-       <input type="submit" value="Add" />
-      </form>
-     </td>
-    </tr>
-   </table>
+   <ul id="navbar">
+{% if user.is_authenticated %}
+    <li><a href="/dashboard/">My Dashboard</a></li>
+    <li><a href="/r/new/">New Review Request</a></li>
+{% endif %}
+    <li>-</li>
+    <li><a href="/r/">All review requests</a></li>
+    <li><a href="/groups/">Groups</a></li>
+    <li><a href="/users/">Submitters</a></li>
+   </ul>
    <div id="content">
 {% block content %}{% endblock %}
    </div>

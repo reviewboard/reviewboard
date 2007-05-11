@@ -18,11 +18,12 @@ from django.views.decorators.http import require_GET, require_POST
 from djblets.util.decorators import simple_decorator
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
-import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot
+from reviewboard.scmtools.models import Repository
+import reviewboard.reviews.db as reviews_db
 import reviewboard.scmtools as scmtools
 
 
@@ -48,7 +49,11 @@ INVALID_CHANGE_NUMBER     = JsonError(203, "The change number specified " +
                                            "could not be found")
 CHANGE_NUMBER_IN_USE      = JsonError(204, "The change number specified " +
                                            "has already been used")
-
+MISSING_REPOSITORY        = JsonError(205, "A repository path must be " +
+                                           "specified")
+INVALID_REPOSITORY        = JsonError(206, "The repository path specified " +
+                                           "is not in the list of known " +
+                                           "repositories")
 
 @simple_decorator
 def json_login_required(view_func):
@@ -58,6 +63,7 @@ def json_login_required(view_func):
         else:
             return JsonResponseError(request, NOT_LOGGED_IN)
     return _checklogin
+
 
 class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
     def default(self, o):
@@ -92,6 +98,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'status': status_to_string(o.status),
                 'public': o.public,
                 'changenum': o.changenum,
+                'repository': o.repository,
                 'summary': o.summary,
                 'description': o.description,
                 'testing_done': o.testing_done,
@@ -139,7 +146,15 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'id': o.id,
                 'name': o.name,
                 'revision': o.revision,
-                'timestamp': o.timestamp
+                'timestamp': o.timestamp,
+                'repository': o.repository,
+            }
+        elif isinstance(o, Repository):
+            return {
+                'id': o.id,
+                'name': o.name,
+                'path': o.path,
+                'tool': o.tool.name
             }
         else:
             return super(ReviewBoardJSONEncoder, self).default(o)
@@ -200,12 +215,32 @@ def string_to_status(status):
 
 
 @json_login_required
+def repository_list(request):
+    return JsonResponse(request, {
+        'repositories': Repository.objects.all(),
+    })
+
+
+@json_login_required
 @require_POST
 def new_review_request(request):
     try:
+        repository_path = request.POST.get('repository_path',
+                                           settings.DEFAULT_REPOSITORY_PATH)
+        repository_id = request.POST.get('repository_id', None)
+
+        if repository_path == None or repository_id == None:
+            return JsonResponseError(request, MISSING_REPOSITORY)
+
+        repository = Repository.objects.get(path=repository_path)
+
         review_request = reviews_db.create_review_request(
-            request.user, request.POST.get('changenum', None))
+            request.user, repository, request.POST.get('changenum', None))
+
         return JsonResponse(request, {'review_request': review_request})
+    except Repository.DoesNotExist, e:
+        return JsonResponseError(request, INVALID_REPOSITORY,
+                                 {'repository_path': repository_path})
     except reviews_db.ChangeNumberInUseException, e:
         return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
                                  {'review_request': e.review_request})
@@ -227,9 +262,10 @@ def review_request(request, review_request_id):
 
 
 @json_login_required
-def review_request_by_changenum(request, changenum):
+def review_request_by_changenum(request, repository_id, changenum):
     try:
-        review_request = ReviewRequest.objects.get(changenum=changenum)
+        review_request = ReviewRequest.objects.get(changenum=changenum,
+                                                   repository=repository_id)
 
         if not review_request.public and \
            review_request.submitter != request.user:
@@ -482,7 +518,8 @@ def review_request_draft_update_from_changenum(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     #draft = _prepare_draft(request, review_request)
 
-    changeset = scmtools.get_tool().get_changeset(review_request.changenum)
+    tool = review_request.repository.get_scmtool()
+    changeset = tool.get_changeset(review_request.changenum)
 
     try:
         reviews_db.update_review_request_from_changenum(
@@ -739,7 +776,8 @@ def new_diff(request, review_request_id):
     if not form.is_valid():
         return JsonResponseError(request, INVALID_ATTRIBUTE)
 
-    diffset = form.create(request.FILES['path'], review_request.diffset_history)
+    diffset = form.create(review_request.repository, request.FILES['path'],
+                          review_request.diffset_history)
 
     try:
         draft = review_request.reviewrequestdraft_set.get()

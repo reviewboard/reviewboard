@@ -131,10 +131,11 @@ def login():
     })
 
 
-def create_review_request(changenum):
+def create_review_request(changenum, repository_path):
     try:
         rsp = api_post('/api/json/reviewrequests/new/', {
-            'changenum': changenum
+            'changenum': changenum,
+            'repository_path': repository_path,
         })
     except APIError, e:
         rsp, = e.args
@@ -147,6 +148,28 @@ def create_review_request(changenum):
             raise e
 
     return rsp['review_request']
+
+
+def get_repository_paths():
+    f = os.open('p4 info', 'r')
+    data = f.read()
+    f.close()
+
+    m = re.search(r'^Server address: (.+)$', data, re.M)
+    if m == None:
+        print "Unable to get the server repository."
+        sys.exit(1)
+    else:
+        repository_path = m.group(1)
+
+    m = re.search(r'^Client root: (.+)$', data, re.M)
+    if m == None:
+        print "Unable to get the root of your source tree."
+        sys.exit(1)
+    else:
+        client_root = m.group(1)
+
+    return repository_path, client_root
 
 
 def generate_diff(changenum):
@@ -206,14 +229,14 @@ def upload_diff(review_request, changenum):
 
 
 
-def tempt_fate(changenum):
+def tempt_fate(changenum, repository_path, client_root):
     try:
-        review_request = create_review_request(changenum)
+        review_request = create_review_request(changenum, repository_path)
     except APIError, e:
         rsp, = e.args
         if rsp['err']['code'] == 103: # Not logged in
             login()
-            tempt_fate(changenum)
+            tempt_fate(changenum, repository_path, client_root)
             return
         else:
             print "Error creating review request: %s (code %s)" % \
@@ -265,7 +288,9 @@ def main():
     except IOError:
         login()
 
-    tempt_fate(changenum)
+
+    repository_path, client_root = get_repository_paths()
+    tempt_fate(changenum, repository_path, client_root)
 
 
 if __name__ == "__main__":
