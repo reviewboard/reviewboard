@@ -782,7 +782,7 @@ table.sidebyside .commentflag.draft {
 .review-request .content label {
   display: block;
   margin-top: 20px;
-  min-height: 14px;
+  min-height: 15px;;
 }
 
 .review-request .content label img {
