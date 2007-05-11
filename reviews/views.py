@@ -1,8 +1,10 @@
 from datetime import datetime
+from urllib import quote
 import re
 
 from django import newforms as forms
 from django.conf import settings
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.serializers import serialize
@@ -15,16 +17,35 @@ from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from django.views.decorators.http import require_GET, require_POST
 from djblets.auth.util import login_required
+from djblets.util.decorators import simple_decorator
 
+from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
-import reviewboard.reviews.db as reviews_db
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
 from reviewboard.reviews.models import Review, Comment, Group, Screenshot
 from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, mail_review
 from reviewboard import scmtools
+import reviewboard.reviews.db as reviews_db
+
+
+@simple_decorator
+def valid_prefs_required(view_func):
+    def _check_valid_prefs(request, *args, **kwargs):
+        try:
+            profile = request.user.get_profile()
+            if profile.first_time_setup_done:
+                return view_func(request, *args, **kwargs)
+        except Profile.DoesNotExist:
+            pass
+
+        return HttpResponseRedirect("/account/preferences/?%s=%s" %
+                                    (REDIRECT_FIELD_NAME,
+                                     quote(request.get_full_path())))
+
+    return _check_valid_prefs
 
 
 @login_required
@@ -103,6 +124,7 @@ def group_list(request, template_name):
 
 
 @login_required
+@valid_prefs_required
 def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
     view = request.GET.get('view', 'incoming')
     group = request.GET.get('group', "")

@@ -78,7 +78,7 @@ INSTALLED_APPS = (
 # this data will come in from outside.
 BUILTIN_AUTH = True
 LOGIN_URL = '/account/login'
-AUTH_PROFILE_MODULE = "reviewboard.accounts.Profile"
+AUTH_PROFILE_MODULE = "accounts.Profile"
 
 # Default expiration time for the cache.  Note that this has no effect unless
 # CACHE_BACKEND is specified in settings_local.py

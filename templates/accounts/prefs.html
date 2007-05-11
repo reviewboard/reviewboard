@@ -1,27 +1,34 @@
 {% extends "base.html" %}
 {% load htmlutils %}
-{% block title %}User Preferences{% endblock %}
+{% block title %}My Account{% endblock %}
 
 {% block content %}
-
-<div class="preferences">
- <h2>User Preferences</h2>
-
- <form>
-  <table>
-   <tr>
-    <td class="value">{{ form.collapsed_diffs }}</td>
-    <td><label for="id_collapsed_diffs">Collapse diffs</td>
-   </tr>
-   <tr>
-    <td class="value">{{ form.wordwrapped_diffs }}</td>
-    <td><label for="id_wordwrapped_diffs">Wrap lines</td>
-   </tr>
-   <tr>
-    <td colspan="2"><input type="submit" value="Save" /></td>
-   </tr>
-  </table>
- </form>
+{% if must_configure %}
+{% box important %}
+ <h1>Apologies for the interruption, but please read this.</h1>
+ <p>
+  Before you can continue to use Review Board, you'll need to set a few
+  things. This will help us get to know each other better.
+ </p>
+ <p>
+  At a minimum, make sure you have joined one or more groups.
+ </p>
 </div>
+{% endbox %}
+{% endif %}
+
+<form method="post" action=".">
+ {{form.redirect_to}}
+{% box prefsgroup %}
+ <h1 class="title">Groups</h1>
+ <div class="main">
+  <p>Which groups do you belong to or wish to watch?</p>
+  {{form.groups}}
+ </div>
+{% endbox %}
+ <div class="prefsbuttons">
+  <input type="submit" value="Save Preferences" />
+ </div>
+</form>
 
 {% endblock %}

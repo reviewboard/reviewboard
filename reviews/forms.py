@@ -1,7 +1,7 @@
 import re
 
 from django import newforms as forms
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import User
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import Review, ReviewRequest, \

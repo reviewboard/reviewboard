@@ -22,13 +22,14 @@
     <ul id="accountnav">
     {% if user.is_authenticated %}
      <li>Welcome, <b>{% ifnotequal user.get_full_name "" %}{{user.get_full_name|escape}}{% else %}{{user.username|escape}}{% endifnotequal %}</b></li>
+     <li>- <a href="/account/preferences/">My account</a></li>
      <li>- <a href="/account/logout/">Log out</a></li>
     {% else %}
      <li><a href="/account/login/">Log in</a></li>
      <li>- <a href="/account/register/">Register</a></li>
     {% endif %}
      <li>- <a href="http://code.google.com/p/reviewboard/issues/list">Bugs</a></li>
-     <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">Report Bug</a></li>
+     <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">Report bug</a></li>
     </ul>
    </div>
    <table id="navbar">

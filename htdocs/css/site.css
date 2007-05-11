@@ -17,6 +17,21 @@ input[type="submit"] {
 }
 */
 
+.box.important {
+  //background: #fdf2a0 url("/images/box_top_bg.png") repeat-x top left;
+  background-color: #fdf2a0;
+  border: 1px #b7a93e solid;
+  padding: 0px 10px;
+  //margin: 0 0 10px 0;
+  //padding-left: 55px;
+}
+
+.important .box-inner {
+  background: url("/images/important.png") no-repeat top left;
+  padding: 0;
+  padding-left: 50px;
+}
+
 pre {
   font-size: 10pt;
 }
@@ -1103,3 +1118,14 @@ span.draftlabel {
   padding: 4px;
 }
 
+.prefsbuttons {
+  padding: 8px;
+  background-color: #B6CCE3;
+  border: 1px #3465A4 solid;
+}
+
+.prefsgroup ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 5px;
+}

@@ -7,8 +7,16 @@ class Profile(models.Model):
     """User profile.  Contains some basic configurable settings"""
     user = models.ForeignKey(User, unique=True)
 
+    first_time_setup_done = models.BooleanField(default=False)
+
     collapsed_diffs = models.BooleanField(default=True)
     wordwrapped_diffs = models.BooleanField(default=True)
 
     starred_review_requests = models.ManyToManyField(ReviewRequest, core=False,
                                                      blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+    class Admin:
+        list_display = ('__str__', 'first_time_setup_done')
