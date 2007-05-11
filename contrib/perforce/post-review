@@ -17,7 +17,6 @@ import re
 import simplejson
 from optparse import OptionParser
 
-
 VERSION = "0.5"
 
 # Who stole the cookies from the cookie jar?
@@ -151,7 +150,7 @@ def create_review_request(changenum, repository_path):
 
 
 def get_repository_paths():
-    f = os.open('p4 info', 'r')
+    f = os.popen('p4 info', 'r')
     data = f.read()
     f.close()
 

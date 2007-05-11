@@ -229,7 +229,7 @@ def new_review_request(request):
                                            settings.DEFAULT_REPOSITORY_PATH)
         repository_id = request.POST.get('repository_id', None)
 
-        if repository_path == None or repository_id == None:
+        if repository_path == None and repository_id == None:
             return JsonResponseError(request, MISSING_REPOSITORY)
 
         repository = Repository.objects.get(path=repository_path)
@@ -771,12 +771,13 @@ def new_diff(request, review_request_id):
 
     form_data = request.POST.copy()
     form_data.update(request.FILES)
+    form_data.update({'repositoryid': review_request.repository.id})
     form = UploadDiffForm(form_data)
 
     if not form.is_valid():
         return JsonResponseError(request, INVALID_ATTRIBUTE)
 
-    diffset = form.create(review_request.repository, request.FILES['path'],
+    diffset = form.create(request.FILES['path'],
                           review_request.diffset_history)
 
     try:
