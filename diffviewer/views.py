@@ -138,8 +138,11 @@ def get_diff_files(diffset):
 
     files = []
     for filediff in diffset.files.all():
-        chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
-                               lambda: get_chunks(filediff))
+        if filediff.binary:
+            chunks = []
+        else:
+            chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
+                                   lambda: get_chunks(filediff))
 
         revision = filediff.source_revision
 
@@ -156,6 +159,7 @@ def get_diff_files(diffset):
             'revision': revision,
             'chunks': chunks,
             'filediff': filediff,
+            'binary': filediff.binary,
         })
 
     add_navigation_cues(files)

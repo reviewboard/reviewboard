@@ -1,3 +1,4 @@
+import re
 from popen2 import Popen3
 
 class File:
@@ -7,6 +8,7 @@ class File:
         self.origInfo = None
         self.newInfo = None
         self.data = None
+        self.binary = False
 
 
 def parseFile(lines, linenum, lastline, filename):
@@ -42,7 +44,46 @@ def parseFile(lines, linenum, lastline, filename):
     return file
 
 
+def parseSpecialHeader(line):
+    file = None
+
+    m = re.match("^==== ([^#]+)#(\d+) ==([AMD])== (.*) ====$", line)
+    if m:
+        file = File()
+        file.origFile = m.group(4)
+        file.origInfo = "%s#%s" % (m.group(1), m.group(2))
+        file.newFile = m.group(4)
+        file.newInfo = ""
+        file.data = ""
+
+    return file
+
+
 def parse(data):
+    def checkSpecialHeaders(begin):
+        # Try to see if we have special "====" markers before this.
+        if begin >= 2 and lines[begin - 2].startswith("==== ") and \
+           lines[begin - 1].startswith("Binary files "):
+            print "Found binary"
+            # Okay, binary files. Let's flag it.
+            # We know this isn't related to the next file lsdiff gave us,
+            # because we wouldn't get this message *and* content.
+            newfileinfo = parseSpecialHeader(lines[begin - 2])
+
+            if newfileinfo:
+                newfileinfo.binary = True
+                files.append(newfileinfo)
+        elif begin >= 1 and lines[begin - 1].startswith("==== "):
+            # Is this different than the file lsdiff reported around here?
+            newfileinfo = parseSpecialHeader(lines[begin - 1])
+
+            if newfileinfo and \
+               newfileinfo.origFile != fileinfo.origFile and \
+               newfileinfo.newFile != fileinfo.newFile:
+                # Okay, it's a new file with no content.
+                files.append(newfileinfo)
+
+
     p = Popen3('lsdiff -n')
     p.tochild.write(data)
     p.tochild.close()
@@ -58,9 +99,18 @@ def parse(data):
     current_slice = r.splitlines()
     next_slice = current_slice[1:] + ['%d' % len(lines)]
     for current, next in zip(current_slice, next_slice):
+        # Get the part lsdiff reported
         begin, file = current.split()
         end = next.split()[0]
 
-        files.append(parseFile(lines, int(begin) - 1, int(end) - 1, file))
+        # lsdiff's line numbers are 1-based. We want 0-based.
+        begin = int(begin) - 1
+        end = int(end) - 1
+
+        fileinfo = parseFile(lines, begin, end, file)
+        checkSpecialHeaders(begin)
+        files.append(fileinfo)
+
+    checkSpecialHeaders(len(lines))
 
     return files

@@ -20,6 +20,14 @@
    <th class="rev">New Change</th>
   </tr>
  </thead>
+{% if file.binary %}
+ <tbody class="binary">
+  <tr>
+   <td colspan="2">&nbsp;</td>
+   <td colspan="2">This is a binary file. The content cannot be displayed.</td>
+  </tr>
+ </tbody>
+{% else %}
 {% for chunk in file.chunks %}
 {%  if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
@@ -45,4 +53,5 @@
  </tbody>
 {% endif %}
 {% endfor %}
+{% endif %}
 </table>

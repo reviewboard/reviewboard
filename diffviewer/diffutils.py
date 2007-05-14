@@ -73,6 +73,11 @@ def diff(a, b):
 def patch(diff, file, filename):
     """Apply a diff to a file.  Delegates out to `patch` because noone
        except Larry Wall knows how to patch."""
+
+    if diff == "":
+        # Someone uploaded an unchanged file. Return the one we're patching.
+        return file
+
     (fd, oldfile) = tempfile.mkstemp()
     f = os.fdopen(fd, "w+b")
     f.write(file)

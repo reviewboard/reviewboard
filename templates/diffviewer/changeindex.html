@@ -1,16 +1,20 @@
 <ol class="index">
 {% for file in files %}
  <li><a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.user_filename}}</a>:
- {{ file.num_changes }} change{{ file.num_changes|pluralize }} [ {% spaceless %}
-  {% ifequal file.chunks.__len__ 1 %}
-   <a href="#{{file.index}}.{{file.chunks.0.index}}" onClick="return !gotoAnchor('{{file.index}}.{{file.chunks.0.index}}');"> {% ifequal file.chunks.0.change "insert" %}new content{% endifequal %}{% ifequal file.chunks.0.change "delete" %}deleted content{% endifequal %}</a>
-  {% else %}
-   {% for chunk in file.chunks %}
-    {% ifnotequal chunk.change "" %}
-     <a href="#{{file.index}}.{{chunk.index}}" onClick="return !gotoAnchor('{{file.index}}.{{chunk.index}}');">{{chunk.index}}</a>
-    {% endifnotequal %}
-   {%  endfor %}
-  {% endifequal %}
- {% endspaceless %} ]</li>
+ {% if file.binary %}
+  binary file
+ {% else %}
+  {{ file.num_changes }} change{{ file.num_changes|pluralize }} [ {% spaceless %}
+   {% ifequal file.chunks.__len__ 1 %}
+    <a href="#{{file.index}}.{{file.chunks.0.index}}" onClick="return !gotoAnchor('{{file.index}}.{{file.chunks.0.index}}');"> {% ifequal file.chunks.0.change "insert" %}new content{% endifequal %}{% ifequal file.chunks.0.change "delete" %}deleted content{% endifequal %}</a>
+   {% else %}
+    {% for chunk in file.chunks %}
+     {% ifnotequal chunk.change "" %}
+      <a href="#{{file.index}}.{{chunk.index}}" onClick="return !gotoAnchor('{{file.index}}.{{chunk.index}}');">{{chunk.index}}</a>
+     {% endifnotequal %}
+    {%  endfor %}
+   {% endifequal %}
+  {% endspaceless %} ]</li>
+ {% endif %}
 {% endfor %}
 </ol>

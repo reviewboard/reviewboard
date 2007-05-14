@@ -14,6 +14,7 @@ class FileDiff(models.Model):
     source_revision = models.CharField("Source File Revision", maxlength=512)
     dest_detail = models.CharField("Destination File Details", maxlength=512)
     diff_base64 = models.TextField("Diff (Base64)")
+    binary = models.BooleanField("Binary file", default=False)
 
     def _set_diff(self, data):
         self.diff_base64 = base64.encodestring(data)

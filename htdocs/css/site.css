@@ -497,6 +497,11 @@ table.sidebyside tbody.insert tr.selected {
   background: #9ae298;
 }
 
+table.sidebyside tbody.binary td {
+  padding: 4px;
+  background: #dbebff;
+}
+
 /* Extra whitespace highlight */
 table.sidebyside .ew {
   background: #ee3434;
