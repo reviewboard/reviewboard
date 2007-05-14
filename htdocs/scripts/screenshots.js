@@ -102,7 +102,7 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
             });
 
             this.inlineEditor.on('beginedit', function(editor) {
-                for (b in this.commentBUttons) {
+                for (b in this.commentButtons) {
                     this.commentButtons[b].enable();
                 }
 

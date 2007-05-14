@@ -704,11 +704,6 @@ def review_reply_draft(request, review_request_id, review_id):
     elif context_type == "screenshot_comment":
         context_comment = ScreenshotComment.objects.get(pk=context_id)
 
-        print 'review_reply_draft:'
-        print '    context_type:', context_type
-        print '    context_id:  ', context_id
-        print '    value:       ', value
-
         try:
             comment = ScreenshotComment.objects.get(review=reply,
                                                     reply_to=context_comment)
@@ -964,13 +959,13 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                 review.save()
         elif action == "delete":
             review = get_object_or_404(Review,
-                review_request,
+                review_request=review_request,
                 user=request.user,
                 public=False)
 
             try:
                 comment = review.screenshot_comments.get(screenshot=screenshot,
-                    x=x, y=y, w=w, h=h)
+                                                         x=x, y=y, w=w, h=h)
                 comment.delete()
             except ScreenshotComment.DoesNotExist:
                 pass
