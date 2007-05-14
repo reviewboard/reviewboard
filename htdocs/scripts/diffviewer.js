@@ -315,8 +315,8 @@ function onKeyPress(evt) {
     }
 }
 
-function gotoAnchor(name) {
-    return scrollToAnchor(GetAnchorByName(name));
+function gotoAnchor(name, scroll) {
+    return scrollToAnchor(GetAnchorByName(name), scroll || false);
 }
 
 function GetAnchorByName(name) {
@@ -468,7 +468,7 @@ function addComments(fileid, lines) {
             if (tbody &&
                 (tbody.hasClass("delete") || tbody.hasClass("insert") ||
                  tbody.hasClass("replace"))) {
-                gotoAnchor(tbody.dom.getElementsByTagName("A")[0].name);
+                gotoAnchor(tbody.dom.getElementsByTagName("A")[0].name, true);
             }
         }
     });
@@ -552,13 +552,16 @@ function addComments(fileid, lines) {
     }
 }
 
-function scrollToAnchor(anchor) {
+function scrollToAnchor(anchor, noscroll) {
     if (anchor == INVALID) {
         return false;
     }
 
-    window.scrollTo(0, getEl(document.anchors[anchor]).getY() -
-                       DIFF_SCROLLDOWN_AMOUNT);
+    if (!noscroll) {
+        window.scrollTo(0, getEl(document.anchors[anchor]).getY() -
+                           DIFF_SCROLLDOWN_AMOUNT);
+    }
+
     SetHighlighted(gSelectedAnchor, false);
     SetHighlighted(anchor, true);
     gSelectedAnchor = anchor;
