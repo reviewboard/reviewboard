@@ -183,8 +183,8 @@ var gReviewRequestId = "{{object.id}}";
 {% for line in chunk.lines %}
        <tr>
         <th>{{line.0}}</td>
-        <td><pre>{{ line.1|highlightregion:line.2 }}</pre></td>
-        <td><pre>{{ line.3|highlightregion:line.4 }}</pre></td>
+        <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
+        <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
        </tr>
 {% endfor %}
       </tbody>
