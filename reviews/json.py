@@ -19,7 +19,7 @@ from djblets.util.decorators import simple_decorator
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 from reviewboard.reviews.email import mail_review, mail_review_request, \
-                                      mail_reply
+                                      mail_reply, mail_diff_update
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
@@ -410,6 +410,9 @@ def review_request_draft_save(request, review_request_id):
 
     draft.save_draft()
     draft.delete()
+
+    if settings.SEND_REVIEW_MAIL:
+        mail_review_request(request.user, review_request)
 
     return JsonResponse(request)
 
@@ -846,6 +849,10 @@ def new_diff(request, review_request_id):
     except ReviewRequestDraft.DoesNotExist:
         diffset.history = review_request.diffset_history
         diffset.save()
+
+        # Only e-mail this if not in a draft.
+        if settings.SEND_REVIEW_MAIL:
+            mail_diff_update(request.user, review_request)
 
     return JsonResponse(request, {'diffset_id': diffset.id})
 

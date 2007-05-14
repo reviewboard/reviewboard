@@ -68,11 +68,28 @@ def mail_review_request(user, review_request):
     """
     Sends an e-mail representing the supplied review request.
     """
-    review_request.email_message_id = \
-        send_review_mail(user, review_request,
-                         "Review Request: %s" % review_request.summary, None,
-                         'reviews/review_request_email.txt')
+    subject = "Review Request: %s" % review_request.summary
+    reply_message_id = None
+
+    if review_request.email_message_id:
+        subject = "Re: " + subject
+        reply_message_id = review_request.email_message_id
+
     review_request.time_emailed = datetime.now()
+    review_request.email_message_id = \
+        send_review_mail(user, review_request, subject, reply_message_id,
+                         'reviews/review_request_email.txt')
+    review_request.save()
+
+
+def mail_diff_update(user, review_request):
+    """
+    Sends an e-mail informing users that the diff has been updated.
+    """
+    send_review_mail(user, review_request,
+                     "Re: Review Request: %s" % review_request.summary,
+                     review_request.email_message_id,
+                     'reviews/diff_update.txt')
     review_request.save()
 
 

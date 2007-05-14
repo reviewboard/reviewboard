@@ -26,7 +26,8 @@ from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip, \
     Review, Comment, Group, Screenshot, ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
-from reviewboard.reviews.email import mail_review_request, mail_review
+from reviewboard.reviews.email import mail_review_request, mail_review, \
+                                      mail_diff_update
 from reviewboard import scmtools
 import reviewboard.reviews.db as reviews_db
 
@@ -270,6 +271,10 @@ def upload_diff_done(request, review_request_id, diffset_id):
     except ReviewRequestDraft.DoesNotExist:
         diffset.history = review_request.diffset_history
         diffset.save()
+
+        # Only e-mail this if not in a draft.
+        if settings.SEND_REVIEW_MAIL:
+            mail_diff_update(request.user, review_request)
 
     return HttpResponseRedirect(review_request.get_absolute_url())
 

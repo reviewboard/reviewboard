@@ -1,9 +1,14 @@
-{% load reviewtags %}{% load htmlutils %}
+{% load reviewtags %}{% load htmlutils %}{% load emailtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 http://{{domain}}{{review_request.get_absolute_url}}
 -----------------------------------------------------------
 
+{% condense %}
+{% if review_request.email_message_id %}
+(Updated {{review_request.time_emailed}})
+
+{% endif %}
 Review request for {% reviewer_list review_request %}.
 
 
@@ -12,7 +17,9 @@ Summary
 
 {{ review_request.description }}
 
-{% ifnotequal review_request.bugs_closed "" %}This closes bugs {{ review_request.get_bug_list|humanize_list }}.{% endifnotequal %}
+{% ifnotequal review_request.bugs_closed "" %}
+This closes bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.
+{% endifnotequal %}
 
 
 Diffs
@@ -40,3 +47,4 @@ Screenshots
 Thanks,
 
 {% ifnotequal review_request.submitter.first_name "" %}{{review_request.submitter.first_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %}
+{% endcondense %}
