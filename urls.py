@@ -50,6 +50,11 @@ urlpatterns = patterns('',
     (r'^r/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
      'reviewboard.reviews.views.diff'),
 
+    (r'^r/(?P<review_request_id>[0-9]+)/diff/raw/$',
+     'reviewboard.reviews.views.raw_diff'),
+    (r'^r/(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/raw/$',
+     'reviewboard.reviews.views.raw_diff'),
+
     (r'^r/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
      'reviewboard.reviews.views.diff_fragment'),
 

@@ -235,6 +235,36 @@ def diff(request, object_id, revision=None):
 
 
 @login_required
+def raw_diff(request, review_request_id, revision=None):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    query = Q(history=review_request.diffset_history)
+
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+        query = query & Q(reviewrequestdraft=draft)
+    except ReviewRequestDraft.DoesNotExist:
+        pass
+
+    if revision != None:
+        query = query & Q(revision=revision)
+
+    try:
+        diffset = DiffSet.objects.filter(query).latest()
+    except:
+        raise Http404
+
+    data = ""
+
+    for filediff in diffset.files.all():
+        data += filediff.diff
+
+    resp = HttpResponse(data, mimetype='text/x-patch')
+    resp['Content-Disposition'] = 'inline; filename=%s' % diffset.name
+    return resp
+
+
+@login_required
 def diff_fragment(request, object_id, revision, filediff_id,
                   template_name='diffviewer/diff_file_fragment.html'):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
@@ -342,7 +372,6 @@ def preview_review_request_email(
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
         }),
     ), mimetype='text/plain')
-    return response
 
 
 @login_required
@@ -360,7 +389,6 @@ def preview_review_email(request, review_request_id, review_id,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
         }),
     ), mimetype='text/plain')
-    return response
 
 
 @login_required
@@ -380,7 +408,6 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
         }),
     ), mimetype='text/plain')
-    return response
 
 @login_required
 def upload_screenshot(request, review_request_id,
