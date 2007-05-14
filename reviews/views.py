@@ -203,10 +203,7 @@ def submitter(request, username, template_name):
         })
 
 
-@login_required
-def diff(request, object_id, revision=None):
-    review_request = get_object_or_404(ReviewRequest, pk=object_id)
-
+def _query_for_diff(review_request, revision, query_extra=None):
     query = Q(history=review_request.diffset_history)
 
     try:
@@ -218,10 +215,19 @@ def diff(request, object_id, revision=None):
     if revision != None:
         query = query & Q(revision=revision)
 
+    if query_extra != None:
+        query = query & query_extra
+
     try:
-        diffset = DiffSet.objects.filter(query).latest()
+        return DiffSet.objects.filter(query).latest()
     except:
         raise Http404
+
+
+@login_required
+def diff(request, object_id, revision=None):
+    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+    diffset = _query_for_diff(review_request, revision)
 
     try:
         review = Review.objects.get(user=request.user,
@@ -237,25 +243,9 @@ def diff(request, object_id, revision=None):
 @login_required
 def raw_diff(request, review_request_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    query = Q(history=review_request.diffset_history)
-
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
-        query = query & Q(reviewrequestdraft=draft)
-    except ReviewRequestDraft.DoesNotExist:
-        pass
-
-    if revision != None:
-        query = query & Q(revision=revision)
-
-    try:
-        diffset = DiffSet.objects.filter(query).latest()
-    except:
-        raise Http404
+    diffset = _query_for_diff(review_request, revision)
 
     data = ""
-
     for filediff in diffset.files.all():
         data += filediff.diff
 
@@ -269,18 +259,13 @@ def diff_fragment(request, object_id, revision, filediff_id,
                   template_name='diffviewer/diff_file_fragment.html'):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
-    query = Q(history=review_request.diffset_history) & Q(revision=revision)
-
     try:
         draft = review_request.reviewrequestdraft_set.get()
-        query = query & Q(reviewrequestdraft=draft)
+        query_extra = Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
-        pass
+        query_extra = None
 
-    try:
-        diffset = DiffSet.objects.filter(query).latest()
-    except:
-        raise Http404
+    diffset = _query_for_diff(review_request, revision, query_extra)
 
     return view_diff_fragment(request, diffset.id, filediff_id, template_name)
 
