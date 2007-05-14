@@ -122,6 +122,9 @@ def http_post(path, fields, files={}):
         data = urllib2.urlopen(r).read()
         cj.save(cookiefile)
         return data
+    except urllib2.URLError, e:
+        die("Unable to access %s. The host path may be invalid\n%s" % \
+            (url, e))
     except urllib2.HTTPError, e:
         die("Unable to access %s (%s). The host path may be invalid\n%s" % \
             (url, e.code, e.read()))
@@ -242,14 +245,18 @@ def generate_diff(changenum):
 
         old_file = new_file = empty_file
         old_depot_path = new_depot_path = None
+        changetype_short = None
 
         if changetype == 'edit' or changetype == 'integrate':
             old_depot_path = "%s#%s" % (depot_path, revision)
             new_file = local_name
+            changetype_short = "M"
         elif changetype == 'add' or changetype == 'branch':
             new_file = local_name
+            changetype_short = "A"
         elif changetype == 'delete':
             old_depot_path = "%s#%s" % (depot_path, revision)
+            changetype_short = "D"
         else:
             die("Unknown change type '%s' for %s" % (changetype, depot_path))
 
@@ -270,14 +277,22 @@ def generate_diff(changenum):
         else:
             local_path = local_name
 
-        m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
-        if not m:
-            die("Unable to parse diff header: %s", dl[1])
+        if dl == [] or dl[0].startswith("Binary files "):
+            if dl == []:
+                print "Warning: %s in your changeset is unmodified" % \
+                    local_path
 
-        timestamp = m.group(1)
+            dl.insert(0, "==== %s#%s ==%s== %s ====\n" % \
+                (depot_path, revision, changetype_short, local_path))
+        else:
+            m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
+            if not m:
+                die("Unable to parse diff header: %s", dl[1])
 
-        dl[0] = "--- %s  %s#%s\n" % (local_path, depot_path, revision)
-        dl[1] = "+++ %s  %s\n" % (local_path, timestamp)
+            timestamp = m.group(1)
+
+            dl[0] = "--- %s  %s#%s\n" % (local_path, depot_path, revision)
+            dl[1] = "+++ %s  %s\n" % (local_path, timestamp)
 
         diff_lines += dl
 
