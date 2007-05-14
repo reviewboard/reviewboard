@@ -68,6 +68,9 @@ def mail_review_request(user, review_request):
     """
     Sends an e-mail representing the supplied review request.
     """
+    if not review_request.public:
+        return
+
     subject = "Review Request: %s" % review_request.summary
     reply_message_id = None
 
@@ -86,6 +89,9 @@ def mail_diff_update(user, review_request):
     """
     Sends an e-mail informing users that the diff has been updated.
     """
+    if not review_request.public:
+        return
+
     send_review_mail(user, review_request,
                      "Re: Review Request: %s" % review_request.summary,
                      review_request.email_message_id,
@@ -97,6 +103,9 @@ def mail_review(user, review):
     """
     Sends an e-mail representing the supplied review.
     """
+    if not review.review_request.public:
+        return
+
     review.email_message_id = \
         send_review_mail(user,
                          review.review_request,
@@ -114,6 +123,9 @@ def mail_reply(user, reply):
     Sends an e-mail representing the supplied reply to a review.
     """
     review = reply.base_reply_to
+
+    if not review.review_request.public:
+        return
 
     reply.email_message_id = \
         send_review_mail(user,
