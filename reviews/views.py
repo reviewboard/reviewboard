@@ -308,11 +308,15 @@ def setstatus(request, review_request_id, action):
         raise Http403()
 
     try:
+        if review_request.status == "D" and action == "reopen":
+            review_request.public = False
+
         review_request.status = {
             'discard':   'D',
             'submitted': 'S',
             'reopen':    'P',
         }[action]
+
     except KeyError:
         # This should never happen under normal circumstances
         raise Exception('Error when setting review status: unknown status code')
