@@ -399,3 +399,18 @@ function autosetAddCommentVisibility(section_id) {
 		gCommentSections[section_id].add_comment.show(true);
 	}
 }
+
+function publishDraft() {
+	var target_groups = document.getElementById("target_groups");
+	var target_people = document.getElementById("target_people");
+
+	if (target_groups.innerHTML.strip() == "" &&
+	    target_people.innerHTML.strip() == "") {
+
+		alert("There must be at least one reviewer before this review " +
+		      "request can be published.");
+	} else {
+		loc = String(window.location)
+		window.location = loc.substring(0, loc.length - 1) + "publish/";
+	}
+}

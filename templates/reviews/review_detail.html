@@ -119,7 +119,7 @@ var gReviewRequestId = "{{object.id}}";
  <li><a href="reopen/">Reopen for Review</a></li>
 {%    endifequal %}
 {%  else %}
- <li><a href="publish/">Publish</a></li>
+ <li><a href="#" onClick="publishDraft();">Publish</a></li>
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
  <li><a href="diff/upload/?repositoryid={{object.repository.id}}"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
