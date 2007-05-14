@@ -1,20 +1,72 @@
 {% extends "base.html" %}
 {% load htmlutils %}
+{% load reviewtags %}
 
-{% block title %}Screenshot{%if object.caption %}: {{object.caption}}{% endif %}{% endblock %}
+{% block title %}Screenshot{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
+{% block extrahead %}
+<script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
+<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script language="javascript" src="/scripts/rb/core.js"></script>
+<script language="javascript" src="/scripts/rb/widgets.js"></script>
+<script language="javascript" src="/scripts/comments.js"></script>
+<script language="javascript" src="/scripts/screenshots.js"></script>
+<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
+<script language="javascript">
+  var gReviewRequestPath = '{{review.get_absolute_url}}';
+  var gReviewRequestId = '{{review.id}}';
+  var gScreenshotId = '{{screenshot.id}}';
+  {% if diffset %}var gRevision = '{{diffset.revision}}';{% else %}var gRevision = 'None';{% endif %}
+</script>
+{% endblock %}
+
 {% block content %}
 {% box review-request %}
  <div class="main">
-  <h1 id="summary"><a href="{{object.review.get_absolute_url}}">{{object.review.summary}}</a></h1>
+  <h1 id="summary"><a href="{{review.get_absolute_url}}">{{review.summary}}</a></h1>
   <div class="content">
-   <br />
-   <br />
-   {{ object.caption }}
-   <br />
-   <br />
-   <br />
-   <img src="{{object.get_image_url}}" alt="{{object.caption}}" />
+  Screenshots:<br />
+{% include "reviews/screenshotindex.html" %}
   </div>
  </div>
+ <ul class="controls">
+ </ul>
 {% endbox %}
+
+{% spaceless %}
+<div id="screenshot-display">
+ <img src="{{screenshot.get_image_url}}" alt="{{screenshot.caption}}" />
+</div>
+{% endspaceless %}
+
+<script language="javascript">
+  addComments({% screenshotcommentcounts screenshot %});
+</script>
+
+{% include "reviews/screenshotindex.html" %}
+
+<div id="comment-dlg" style="visibility:hidden;position:absolute;top:0px;">
+ <div class="ydlg-hd">Comments</div>
+ <div class="ydlg-bd">
+  <div id="tab-comments" class="ydlg-tab" title="Comments">
+   <div id="existing-comments"></div>
+   <form id="commentform" class="comment draft" method="post" action="comments/">
+    <input type="hidden" name="action" id="id_comment_action" value="" />
+    <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
+    <label id="id_comment_label" for="id_comment">Your comment:</label><br />
+	<textarea id="id_comment" name="text" rows="4" cols="20"></textarea>
+   </form>
+ </div>
+ <div id="tab-review" class="ydlg-tab" title="Review">
+  <form id="reviewform" method="post">
+   <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
+   <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review.shipit %}checked="checked" {% endif %}/>Ship It!<br />
+   <label for="id_body_top">Review Body:</label>
+   <div id="review-body">
+    <textarea id="id_body_top" name="body_top" rows="5" cols="20">{% if review %}{{review.body_top|escape}}{% endif %}</textarea>
+    <div id="all-review-comments"><i>Comments will be displayed here</i></div>
+    <textarea id="id_body_bottom" name="body_bottom" rows="5" cols="20">{% if review %}{{review.body_bottom|escape}}{% endif %}</textarea>
+   </div>
+  </form>
+ </div>
+</div>
 {% endblock %}

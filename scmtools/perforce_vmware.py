@@ -51,7 +51,7 @@ class VMwarePerforceTool(PerforceTool):
         sections = {}
         for start, end in map(None, section_indices, section_indices[1:]):
             name = locations[start]
-            sections[name] = ' '.join(lines[start:end])[len(name):].strip()
+            sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
 
         changeset.testing_done = sections['Testing Done:']
         changeset.bugs_closed = re.split(r"[, ]+", sections['Bug Number:'])

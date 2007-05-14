@@ -16,6 +16,20 @@ http://{{domain}}{{review.get_absolute_url}}
 {% endifnotequal %}
 
 
+{% for comment in reply.screenshot_comments.all %}
+> On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+> > Screenshot: {{ comment.screenshot.caption }}
+> > <http://{{domain}}{{comment.get_absolute_url}}>
+> >
+{{ comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
+> 
+> {% ifnotequal reply_comment.review_set.get.user.get_full_name "" %}{{reply_comment.review_set.get.user.get_full_name}}{% else %}{{reply_comment.review_set.get.user.username}}{% endifnotequal %} wrote:
+{{reply_comment.text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
+
+{{comment.text}}
+
+
+{% endfor %}
 {% for comment in reply.comments.all %}
 > On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
 > > {{comment.filediff.source_file}}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}

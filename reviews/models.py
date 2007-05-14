@@ -49,10 +49,12 @@ class Group(models.Model):
 
 class Screenshot(models.Model):
     caption = models.CharField(maxlength=256, blank=True)
+    draft_caption = models.CharField(maxlength=256, blank=True)
     image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
 
     def get_absolute_url(self):
-        return "/s/%s/" % self.id
+        review = self.review_request.all()[0]
+        return "/r/%s/s/%s/" % (review.id, self.id)
 
     class Admin:
         pass
@@ -171,7 +173,10 @@ class ReviewRequestDraft(models.Model):
         if draft_is_new:
             map(draft.target_groups.add, review_request.target_groups.all())
             map(draft.target_people.add, review_request.target_people.all())
-            map(draft.screenshots.add, review_request.screenshots.all())
+            for screenshot in review_request.screenshots.all():
+                screenshot.draft_caption = screenshot.caption
+                screenshot.save()
+                draft.screenshots.add(screenshot)
 
             if review_request.diffset_history.diffset_set.count() > 0:
                 draft.diffset = review_request.diffset_history.diffset_set.latest()
@@ -197,6 +202,9 @@ class ReviewRequestDraft(models.Model):
         for s in request.screenshots.all():
             if s not in screenshots:
                 s.delete()
+            else:
+                s.caption = s.draft_caption
+                s.save()
         request.screenshots.clear()
         map(request.screenshots.add, self.screenshots.all())
 
@@ -218,7 +226,7 @@ class Comment(models.Model):
     reply_to = models.ForeignKey("self", blank=True, null=True,
                                  related_name="replies")
     timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
-    text = models.TextField("Comment Text");
+    text = models.TextField("Comment Text")
 
     # A null line number applies to an entire diff.  Non-null line numbers are
     # the line within the entire file, starting at 1.
@@ -248,6 +256,37 @@ class Comment(models.Model):
         ordering = ['timestamp']
 
 
+class ScreenshotComment(models.Model):
+    screenshot = models.ForeignKey(Screenshot, verbose_name='Screenshot')
+    reply_to = models.ForeignKey('self', blank=True, null=True,
+                                 related_name='replies')
+    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+    text = models.TextField('Comment Text')
+
+    # This is a sub-region of the screenshot.  Null X indicates the entire
+    # image.
+    x = models.PositiveSmallIntegerField("Sub-image X", null=True)
+    y = models.PositiveSmallIntegerField("Sub-image Y")
+    w = models.PositiveSmallIntegerField("Sub-image width")
+    h = models.PositiveSmallIntegerField("Sub-image height")
+
+    def public_replies(self, user=None):
+        if user:
+            return self.replies.filter(Q(review__public=True) |
+                                       Q(review__user=user))
+        else:
+            return self.replies.filter(review__public=True)
+
+    def __str__(self):
+        return self.text
+
+    class Admin:
+        list_display = ('text', 'screenshot', 'timestamp')
+
+    class Meta:
+        ordering = ['timestamp']
+
+
 class Review(models.Model):
     review_request = models.ForeignKey(ReviewRequest)
     user = models.ForeignKey(User)
@@ -271,6 +310,9 @@ class Review(models.Model):
 
     comments = models.ManyToManyField(Comment, verbose_name="Comments",
                                       core=False, blank=True)
+    screenshot_comments = models.ManyToManyField(ScreenshotComment,
+                                                 verbose_name="Screenshot Comments",
+                                                 core=False, blank=True)
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
                                          blank=True, null=True)
 

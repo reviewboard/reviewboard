@@ -848,6 +848,54 @@ span.draftlabel {
   margin-right: auto;
 }
 
+#screenshot-display {
+  border: 1px #777777 solid;
+  padding: 10px;
+  cursor: crosshair;
+}
+
+#screenshot-display img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#screenshot-display #selection-interactive {
+  visibility: hidden;
+  border: 1px #ff0000 dashed;
+  position: absolute;
+}
+
+#screenshot-display .selection {
+  position: absolute;
+  border: 1px #a1c0e3 solid;
+}
+
+#screenshot-display .selection-flag {
+  left: 0px;
+  top: 0px;
+  width: 16px;
+  height: 16px;
+  background-color: #a1c0e3;
+  text-align: center;
+
+  cursor: pointer;
+}
+
+#screenshot-display .selection.draft {
+  border: 1px #aceb6f solid;
+}
+
+#screenshot-display .selection-flag.draft {
+  background-color: #aceb6f;
+}
+
+#screenshot-display #selection-container {
+  visibility: hidden;
+  width: 100%;
+  height: 100%;
+}
+
 /* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
 .clearfix:after {
   content: ".";

@@ -68,9 +68,8 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.setstatus'),
 
     # Screenshots
-    (r'^s/(?P<object_id>[0-9]+)/$',
-     'django.views.generic.list_detail.object_detail',
-     {'queryset': Screenshot.objects.all(),}),
+    (r'^r/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',
+     'reviewboard.reviews.views.view_screenshot'),
 
     (r'^r/(?P<review_request_id>[0-9]+)/s/upload/$',
      'reviewboard.reviews.views.upload_screenshot'),

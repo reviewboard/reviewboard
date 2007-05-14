@@ -23,8 +23,8 @@ from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip
-from reviewboard.reviews.models import Review, Comment, Group, Screenshot
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip, \
+    Review, Comment, Group, Screenshot, ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, mail_review
 from reviewboard import scmtools
@@ -408,3 +408,36 @@ def delete_screenshot(request, review_request_id, screenshot_id):
     draft.save()
 
     return HttpResponseRedirect(request.get_absolute_url())
+
+def view_screenshot(request, review_request_id, screenshot_id,
+                    template_name='reviews/screenshot_detail.html'):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+
+    query = Q(history=review_request.diffset_history)
+
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+        query = query & Q(reviewrequestdraft=draft)
+    except ReviewRequestDraft.DoesNotExist:
+        draft = None
+
+    try:
+        diffset = DiffSet.objects.filter(query).latest()
+    except DiffSet.DoesNotExist:
+        diffset = None
+
+    try:
+        comments = ScreenshotComment.objects.filter(screenshot=screenshot)
+    except ScreenshotComment.DoesNotExist:
+        comments = []
+
+    return render_to_response(template_name, RequestContext(request, {
+        'draft': draft,
+        'review': review_request,
+        'details': draft or review_request,
+        'screenshot': screenshot,
+        'request': request,
+        'diffset': diffset,
+        'comments': comments,
+    }))

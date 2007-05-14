@@ -12,7 +12,7 @@ from reviewboard.reviews.db import get_all_review_requests, \
                                    get_review_requests_to_user, \
                                    get_review_requests_to_user_directly, \
                                    get_review_requests_to_group
-from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.reviews.models import ReviewRequestDraft, ScreenshotComment
 from reviewboard.utils.templatetags.htmlutils import humanize_list
 
 register = template.Library()
@@ -243,9 +243,58 @@ def commentcounts(parser, token):
         tag_name, filediff = token.split_contents()
     except ValueError:
         raise template.TemplateSyntaxError, \
-            "%r tag requires a timestamp"
+            "%r tag requires a filediff"
 
     return CommentCounts(filediff)
+
+
+class ScreenshotCommentCounts(template.Node):
+    def __init__(self, screenshot):
+        self.screenshot = screenshot
+
+    def render(self, context):
+        try:
+            screenshot = resolve_variable(self.screenshot, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid variable %s passed to screenshotcommentcounts tag." % \
+                self.screenshot
+
+        comments = {}
+        user = context.get('user', None)
+
+        for comment in screenshot.screenshotcomment_set.all():
+            if comment.review_set.count() > 0:
+                review = comment.review_set.get()
+                if review.public or review.user == user:
+                    position = '%dx%d+%d+%d' % (comment.w, comment.h, \
+                                                comment.x, comment.y)
+
+                    if not comments.has_key(position):
+                        comments[position] = []
+
+                    comments[position].append({
+                        'text': comment.text,
+                        'localdraft' : review.user == user and \
+                                       not review.public,
+                        'x' : comment.x,
+                        'y' : comment.y,
+                        'w' : comment.w,
+                        'h' : comment.h,
+                    })
+
+        return simplejson.dumps(comments)
+
+
+@register.tag
+def screenshotcommentcounts(parser, token):
+    try:
+        tag_name, screenshot = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag requires a screenshot"
+
+    return ScreenshotCommentCounts(screenshot)
 
 
 class ReplyList(template.Node):
@@ -285,6 +334,11 @@ class ReplyList(template.Node):
                 s += generate_reply_html(reply_comment.review_set.get(),
                                          reply_comment.timestamp,
                                          reply_comment.text)
+        elif context_type == "screenshot_comment":
+            for reply_comment in comment.public_replies(user):
+                s += generate_reply_html(reply_comment.review_set.get(),
+                                         reply_comment.timestamp,
+                                         reply_comment.text)
         elif context_type == "body_top":
             for reply in review.body_top_replies.filter(Q(public=True) |
                                                         Q(user=user)):
@@ -317,6 +371,8 @@ def reply_list(parser, token):
                         takes_context=True)
 def reply_section(context, review, comment, context_type, context_id):
     if comment != "":
+        if type(comment) is ScreenshotComment:
+            context_id += 's'
         context_id += str(comment.id)
 
     return {

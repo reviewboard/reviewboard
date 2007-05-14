@@ -1,0 +1,9 @@
+<ol class="index">
+{% for item in details.screenshots.all %}
+ {% ifequal item.id screenshot.id %}
+  <li><b>{{item.caption}}</b></li>
+ {% else %}
+  <li><a href="{{item.get_absolute_url}}">{{item.caption}}</a></li>
+ {% endifequal %}
+{% endfor %}
+</ol>

@@ -144,8 +144,20 @@ var gReviewRequestId = "{{object.id}}";
  <div class="body">
   <pre class="body_top">{{review.body_top}}</pre>
   {% reply_section review "" "body_top" "rcbt" %}
-{% if review.comments.all %}
+{% if review.comments.all or review.screenshot_comments.all %}
    <dl class="diff-comments">
+{% for comment in review.screenshot_comments.all %}
+    <dt>
+     <span class="filename">
+      Screenshot:
+      <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image|basename}}{% endif %}</a>
+     </span>
+    </dt>
+    <dd>
+     <pre>{{comment.text|escape}}</pre>
+         {% reply_section review comment "screenshot_comment" "rc" %}
+    </dd>
+{% endfor %}
 {% for comment in review.comments.all %}
     <dt>
      <table class="sidebyside">

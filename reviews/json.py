@@ -21,7 +21,8 @@ from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
-                                       ReviewRequestDraft, Screenshot
+                                       ReviewRequestDraft, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools.models import Repository
 import reviewboard.reviews.db as reviews_db
 import reviewboard.scmtools as scmtools
@@ -131,6 +132,25 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'num_lines': o.num_lines,
                 'public': review.public,
                 'user': review.user,
+            }
+        elif isinstance(o, ScreenshotComment):
+            review = o.review_set.get()
+            return {
+                'id': o.id,
+                'screenshot': o.screenshot,
+                'text': o.text,
+                'timestamp': o.timestamp,
+                'timesince': timesince(o.timestamp),
+                'public': review.public,
+                'user': review.user,
+            }
+        elif isinstance(o, Screenshot):
+            return {
+                'id': o.id,
+                'caption': o.caption,
+                'title': 'Screenshot: %s' % (o.caption or
+                                             os.path.basename(o.image)),
+                'image_url': o.get_absolute_url(),
             }
         elif isinstance(o, FileDiff):
             return {
@@ -343,7 +363,8 @@ def review_comments_list(request, review_request_id, review_id):
     if isinstance(review, JsonResponseError):
         return review
 
-    return JsonResponse(request, {'comments': review.comments.all()})
+    return JsonResponse(request, {'comments': review.comments.all(),
+                                  'screenshot_comments': review.screenshot_comments.all(),})
 
 
 @json_login_required
@@ -459,13 +480,12 @@ def review_request_draft_set_field(request, review_request_id, field_name):
             return JsonResponseError(request, INVALID_ATTRIBUTE,
                                      {'attribute': field_name})
 
+        draft = _prepare_draft(request, review_request)
+
         data = request.POST['value']
-        screenshot.caption = data
+        screenshot.draft_caption = data
         screenshot.save()
 
-        # FIXME: creating a draft here is idiotic, but the JSON stuff all
-        # assumes that we'll do it.
-        draft = _prepare_draft(request, review_request)
         draft.save()
 
         return JsonResponse(request, {field_name: data})
@@ -621,11 +641,14 @@ def review_draft_comments(request, review_request_id):
                                     public=False,
                                     reviewed_diffset=diffset)
         comments = review.comments.all()
+        screenshot_comments = review.screenshot_comments.all()
     except Review.DoesNotExist:
         comments = []
+        screenshot_comments = []
 
     return JsonResponse(request, {
         'comments': comments,
+        'screenshot_comments': screenshot_comments,
     })
 
 
@@ -674,6 +697,38 @@ def review_reply_draft(request, review_request_id, review_id):
 
             if comment_is_new:
                 reply.comments.add(comment)
+
+    elif context_type == "screenshot_comment":
+        context_comment = ScreenshotComment.objects.get(pk=context_id)
+
+        print 'review_reply_draft:'
+        print '    context_type:', context_type
+        print '    context_id:  ', context_id
+        print '    value:       ', value
+
+        try:
+            comment = ScreenshotComment.objects.get(review=reply,
+                                                    reply_to=context_comment)
+            comment_is_new = False
+        except ScreenshotComment.DoesNotExist:
+            comment = ScreenshotComment(reply_to=context_comment,
+                                        screenshot=context_comment.screenshot,
+                                        x=context_comment.x,
+                                        y=context_comment.y,
+                                        w=context_comment.w,
+                                        h=context_comment.h)
+            comment_is_new = True
+
+        comment.text = value
+        comment.timestamp = datetime.now()
+
+        if value == "" and not comment_is_new:
+            comment.delete()
+        else:
+            comment.save()
+
+            if comment_is_new:
+                reply.screenshot_comments.add(comment)
 
     elif context_type == "body_top":
         reply.body_top = value
@@ -858,4 +913,71 @@ def diff_line_comments(request, review_request_id, diff_revision,
         'comments': filediff.comment_set.filter(
             Q(review__public=True) | Q(review__user=request.user),
             first_line=line)
+    })
+
+@json_login_required
+def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+
+    if request.POST:
+        text = request.POST['text']
+        action = request.POST['action']
+        diff_revision = request.POST['diff_revision']
+
+        try:
+            diffset = review_request.diffset_history.diffset_set.get(
+                revision=diff_revision)
+        except DiffSet.DoesNotExist:
+            return JsonResponseError(request, INVALID_DIFF_REVISION,
+                                     {'diff_revision': diff_revision})
+
+        # TODO: Sanity check the fields
+
+        if action == "set":
+            review, review_is_new = Review.objects.get_or_create(
+                review_request=review_request,
+                user=request.user,
+                public=False,
+                reviewed_diffset=diffset)
+
+            if review_is_new:
+                review.save()
+
+            comment, comment_is_new = review.screenshot_comments.get_or_create(
+               screenshot=screenshot,
+               x=x, y=y, w=w, h=h)
+
+            comment.text = text
+            comment.timestamp = datetime.now()
+            comment.save()
+
+            if comment_is_new:
+                review.screenshot_comments.add(comment)
+                review.save()
+        elif action == "delete":
+            review = get_object_or_404(Review,
+                review_request,
+                user=request.user,
+                public=False)
+
+            try:
+                comment = review.screenshot_comments.get(screenshot=screenshot,
+                    x=x, y=y, w=w, h=h)
+                comment.delete()
+            except ScreenshotComment.DoesNotExist:
+                pass
+
+            if review.body_top.strip() == "" and \
+               review.body_bottom.strip() == "" and \
+               review.comments.count() == 0:
+                review.delete()
+        else:
+            return JsonResponseError(request, INVALID_ACTION,
+                                     {'action': action})
+
+    return JsonResponse(request, {
+        'comments': screenshot.screenshotcomment_set.filter(
+            Q(review__public=True) | Q(review__user=request.user),
+            x=x, y=y, w=w, h=h)
     })

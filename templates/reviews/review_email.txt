@@ -6,6 +6,13 @@ http://{{domain}}{{review.get_absolute_url}}
 
 {{ review.body_top }}
 
+{% for comment in review.screenshot_comments.all %}
+Screenshot: {{ comment.screenshot.caption }}
+<http://{{domain}}/{{comment.screenshot.get_absolute_url}}>
+
+{{ comment.text|indent }}
+
+{% endfor %}
 {% for comment in review.comments.all %}
 {{ comment.filediff.source_file }}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
 <http://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}>

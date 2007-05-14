@@ -205,3 +205,7 @@ def thumbnail(file, size='400x100'):
         image.thumbnail([x, y], Image.ANTIALIAS)
         image.save(miniature_filename, image.format)
     return miniature_url
+
+@register.filter
+def basename(value):
+    return os.path.basename(value)
