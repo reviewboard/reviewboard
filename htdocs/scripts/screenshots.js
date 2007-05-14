@@ -53,6 +53,7 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
 
         this.updateCommentsList();
         this.updateReviewCommentsList();
+        this.newCommentField.dom.value = this.commentBlock.localComment;
 
         var commentLabel = getEl('id_comment_label');
 
