@@ -16,6 +16,10 @@ import httplib, mimetypes, mimetools, urllib2, cookielib, os, sys, getpass
 import re
 import simplejson
 from optparse import OptionParser
+from tempfile import mkstemp
+
+os.environ['http_proxy'] = ''
+os.environ['HTTP_PROXY'] = ''
 
 VERSION = "0.5"
 
@@ -29,10 +33,29 @@ opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 opener.addheaders = [('User-agent', 'post-review/' + VERSION)]
 urllib2.install_opener(opener)
 
+tempfiles = []
+
 
 class APIError(Exception):
     pass
 
+
+def make_tempfile():
+    fd, tmpfile = mkstemp()
+    os.close(fd)
+    tempfiles.append(tmpfile)
+    return tmpfile
+
+
+def die(msg):
+    for tmpfile in tempfiles:
+        try:
+            os.unlink(tmpfile)
+        except:
+            pass
+
+    print msg
+    sys.exit(1)
 
 def encode_multipart_formdata(fields, files):
     BOUNDARY = mimetools.choose_boundary()
@@ -78,9 +101,8 @@ def http_get(path):
         cj.save(cookiefile)
         return rsp
     except urllib2.HTTPError, e:
-        print "Unable to access %s (%s). The host path may be invalid" % \
-            (url, e.code)
-        sys.exit(1)
+        die("Unable to access %s (%s). The host path may be invalid" % \
+            (url, e.code))
 
 
 def api_get(path):
@@ -101,10 +123,8 @@ def http_post(path, fields, files={}):
         cj.save(cookiefile)
         return data
     except urllib2.HTTPError, e:
-        print "Unable to access %s (%s). The host path may be invalid" % \
-            (url, e.code)
-        print e.read()
-        sys.exit(1)
+        die("Unable to access %s (%s). The host path may be invalid\n%s" % \
+            (url, e.code, e.read()))
 
 
 def api_post(path, fields={}, files={}):
@@ -156,19 +176,11 @@ def get_repository_paths():
 
     m = re.search(r'^Server address: (.+)$', data, re.M)
     if m == None:
-        print "Unable to get the server repository."
-        sys.exit(1)
+        die("Unable to get the server repository.")
     else:
         repository_path = m.group(1)
 
-    m = re.search(r'^Client root: (.+)$', data, re.M)
-    if m == None:
-        print "Unable to get the root of your source tree."
-        sys.exit(1)
-    else:
-        client_root = m.group(1)
-
-    return repository_path, client_root
+    return repository_path, ""
 
 
 def generate_diff(changenum):
@@ -181,49 +193,107 @@ def generate_diff(changenum):
     # Get the status and client of the change list.
     m = re.search(r'^Client:\t(.+)$', data, re.M)
     if m == None:
-        print "Unable to get the client for this change list."
-        sys.exit(1)
+        die("Unable to get the client for this change list.")
     else:
         client = m.group(1)
 
     m = re.search(r'^Status:\t(.+)$', data, re.M)
     if m == None:
-        print "Unable to get the status of this change list."
-        sys.exit(1)
+        die("Unable to get the status of this change list.")
     else:
         if m.group(1) != "pending":
-            print "The change number %s is not pending." % changenum
-            sys.exit(1)
+            die("The change number %s is not pending." % changenum)
 
     # Get the file list
-    f = os.popen('p4 -c %s change -o %s' % (client, changenum), 'r')
+    f = os.popen('p4 -c %s opened -c %s' % (client, changenum), 'r')
     lines = f.readlines()
     f.close()
 
-    files = ""
-    in_files = False
+    cwd = os.getcwd()
+    diff_lines = []
+
+    fd, empty_file = mkstemp()
+    os.close(fd)
+
+    fd, tmpfile1 = mkstemp()
+    os.close(fd)
+
+    fd, tmpfile2 = mkstemp()
+    os.close(fd)
 
     for line in lines:
-        line = line.split("#")[0]
-        if line == "Files:\n":
-            in_files = True
-        elif in_files:
-            if line.startswith("\t"):
-                files += '"%s" ' % line.strip()
+        m = re.search(r'^([^#]+)#(\d+) - (\w+) (default )?change', line)
+        if not m:
+            die("Unsupported line from p4 opened: %s" % line)
 
-    f = os.popen('p4 -c %s diff -du %s' % (client, files))
-    diff_content = f.read()
-    f.close()
+        depot_path = m.group(1)
+        revision = m.group(2)
+        changetype = m.group(3)
 
-    return diff_content
+        f = os.popen('p4 -c %s where "%s"' % (client, depot_path))
+        where_info = f.read()
+        f.close()
+
+        m = re.match(r'%s \/\/.+ (.+)$' % depot_path, where_info)
+        if not m:
+            die("Unsupported line from p4 where: %s" % where_info)
+
+        local_name = m.group(1)
+
+        old_file = new_file = empty_file
+        old_depot_path = new_depot_path = None
+
+        if changetype == 'edit' or changetype == 'integrate':
+            old_depot_path = "%s#%s" % (depot_path, revision)
+            new_file = local_name
+        elif changetype == 'add' or changetype == 'branch':
+            new_file = local_name
+        elif changetype == 'delete':
+            old_depot_path = "%s#%s" % (depot_path, revision)
+        else:
+            die("Unknown change type '%s' for %s" % (changetype, depot_path))
+
+        if old_depot_path:
+            os.system('p4 print -o "%s" -q "%s"' % (tmpfile1, old_depot_path))
+            old_file = tmpfile1
+
+        if new_depot_path:
+            os.system('p4 print -o "%s" -q "%s"' % (tmpfile2, new_depot_path))
+            new_file = tmpfile2
+
+        f = os.popen('diff -urNp "%s" "%s"' % (old_file, new_file), 'r')
+        dl = f.readlines()
+        f.close()
+
+        if local_name.startswith(cwd):
+            local_path = local_name[len(cwd) + 1:]
+        else:
+            local_path = local_name
+
+        m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
+        if not m:
+            die("Unable to parse diff header: %s", dl[1])
+
+        timestamp = m.group(1)
+
+        dl[0] = "--- %s  %s#%s\n" % (local_path, depot_path, revision)
+        dl[1] = "+++ %s  %s\n" % (local_path, timestamp)
+
+        diff_lines += dl
+
+
+    os.unlink(empty_file)
+    os.unlink(tmpfile1)
+    os.unlink(tmpfile2)
+
+    return ''.join(diff_lines)
 
 
 def upload_diff(review_request, changenum):
     diff_content = generate_diff(changenum)
 
     rsp = api_post('/api/json/reviewrequests/%s/diff/new/' %
-                   review_request['id'],
-                   {}, #{'basedir': '/trunk/reviewboard'},
+                   review_request['id'], {},
                    {'path': {'filename': 'diff', 'content': diff_content}})
 
 
@@ -238,9 +308,8 @@ def tempt_fate(changenum, repository_path, client_root):
             tempt_fate(changenum, repository_path, client_root)
             return
         else:
-            print "Error creating review request: %s (code %s)" % \
-                (rsp['err']['msg'], rsp['err']['code'])
-            sys.exit(1)
+            die("Error creating review request: %s (code %s)" % \
+                (rsp['err']['msg'], rsp['err']['code']))
 
 
     try:
@@ -249,8 +318,7 @@ def tempt_fate(changenum, repository_path, client_root):
         rsp, = e.args
         print "Error uploading diff: %s (%s)" % (rsp['err']['msg'],
                                                  rsp['err']['code'])
-        print "Your review request still exists, but the diff is not attached."
-        sys.exit(1)
+        die("Your review request still exists, but the diff is not attached.")
 
     print 'Review request posted.'
     print
@@ -266,12 +334,19 @@ def main():
 
     parser = OptionParser(usage="%prog [-p] [-o] changenum",
                           version="%prog " + VERSION)
-    parser.add_option("-p", "--publish",
-                      action="store_true", dest="publish", default=False,
-                      help="publish the review request immediately after submitting")
-    parser.add_option("-o", "--open",
-                      action="store_true", dest="open_browser", default=False,
-                      help="open a web browser to the review request page")
+    #parser.add_option("-p", "--publish",
+    #                  action="store_true", dest="publish", default=False,
+    #                  help="publish the review request immediately after submitting")
+    #parser.add_option("-o", "--open",
+    #                  action="store_true", dest="open_browser", default=False,
+    #                  help="open a web browser to the review request page")
+    parser.add_option("--output-diff",
+                      action="store_true", dest="output_diff_only",
+                      default=False,
+                      help="outputs a diff to the console and exits. Does not post")
+    parser.add_option("--server", dest="server",
+                      metavar="SERVER",
+                      help="specify a different Review Board server to use")
 
     (options, args) = parser.parse_args()
 
@@ -280,13 +355,18 @@ def main():
 
     changenum = args[0]
 
+    if options.server:
+        globals()["REVIEWBOARD_HOST"] = options.server
+
+    if options.output_diff_only:
+        print generate_diff(changenum)
+        sys.exit(0)
 
     # Let's begin.
     try:
         cj.load(cookiefile)
     except IOError:
         login()
-
 
     repository_path, client_root = get_repository_paths()
     tempt_fate(changenum, repository_path, client_root)
