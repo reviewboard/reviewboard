@@ -1,6 +1,7 @@
 import re
 
 from django import template
+from django.conf import settings
 from django.db.models import Q
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
@@ -389,3 +390,7 @@ def reviewer_list(review_request):
     names  = [group.name    for group in review_request.target_groups.all()]
     names += [user.username for user  in review_request.target_people.all()]
     return humanize_list(names)
+
+@register.filter
+def bugzilla_url(bug_id):
+    return settings.BUGZILLA_URL % bug_id

@@ -67,7 +67,7 @@ var gReviewRequestId = "{{object.id}}";
    <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
    <td class="value"><span id="bugs_closed">
 {%  for bug in details.get_bug_list %}
-   <a href="http://bugzilla/show_bug.cgi?id={{bug}}">{{bug}}</a>{%if not forloop.last %}, {%endif %}
+   <a href={{bug|bugzilla_url}}>{{bug}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
   </span></td>
    <td class="indented label"><label for="target_people">People:</label></td>
