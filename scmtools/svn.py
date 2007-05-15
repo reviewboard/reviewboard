@@ -11,8 +11,10 @@ class SVNTool(SCMTool):
 
         SCMTool.__init__(self, repository)
         self.client = pysvn.Client()
-        self.client.set_default_username(repository.username)
-        self.client.set_default_password(repository.password)
+        if repository.username:
+            self.client.set_default_username(repository.username)
+        if repository.password:
+            self.client.set_default_password(repository.password)
 
         self.uses_atomic_revisions = True
 
