@@ -27,11 +27,14 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         from_email = "%s <%s>" % (user.get_full_name(), user.email)
 
     recipient_list = \
-        [user.email for user in review_request.target_people.all()] + \
+        [u.email for u in review_request.target_people.all()] + \
         [group.mailing_list for group in review_request.target_groups.all()]
 
     if recipient_list == []:
         return None
+
+    if not user.email in recipient_list:
+        recipient_list += [user.email]
 
     context['domain'] = current_site.domain
     context['review_request'] = review_request
