@@ -1,0 +1,19 @@
+{% load htmlutils %}{% load emailtags %}
+-----------------------------------------------------------
+This is an automatically generated e-mail. To reply, visit:
+http://{{domain}}{{review.get_absolute_url}}
+-----------------------------------------------------------
+
+{% condense %}
+Updated the diff.
+
+
+{% for filediff in review_request.diffset_history.diffset_set.latest.files.all %}
+  {{ filediff.source_file }}{% endfor %}
+
+Diff: http://{{domain}}{{ review_request.get_absolute_url }}diff
+{% endcondense %}
+
+
+On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+{% quoted_email reviews/review_request_email.txt %}
