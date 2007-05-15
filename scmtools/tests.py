@@ -2,6 +2,7 @@ import os
 import unittest
 
 from django.core.exceptions import ImproperlyConfigured
+from django.test import TestCase as DjangoTestCase
 
 from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
                                       Revision, HEAD, PRE_CREATION, \
@@ -153,11 +154,15 @@ class PerforceTests(unittest.TestCase):
         self.assertEqual(hash(file), 1392492355)
 
 
-class VMWareTests(unittest.TestCase):
+class VMWareTests(DjangoTestCase):
     """Tests for VMware specific code"""
+    fixtures = ['vmware.json']
 
     def setUp(self):
-        self.tool = VMwarePerforceTool()
+        self.repository = Repository(name='VMware Test',
+                                     path='perforce.eng.vmware.com:1666',
+                                     tool=Tool.objects.get(name='VMware Perforce'))
+        self.tool = self.repository.get_scmtool()
 
     def testParse(self):
         """Testing VMwarePerforceTool.parse_change_desc"""
