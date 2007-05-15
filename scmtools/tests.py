@@ -87,18 +87,18 @@ class SubversionTests(unittest.TestCase):
 
     def testRevisionParsing(self):
         """Testing revision number parsing"""
-        self.assertEqual(self.tool.parse_diff_revision('(working copy)'),
+        self.assertEqual(self.tool.parse_diff_revision('', '(working copy)')[1],
                          HEAD)
-        self.assertEqual(self.tool.parse_diff_revision('(revision 0)'),
+        self.assertEqual(self.tool.parse_diff_revision('', '(revision 0)')[1],
                          PRE_CREATION)
 
-        self.assertEqual(self.tool.parse_diff_revision('(revision 1)'),
+        self.assertEqual(self.tool.parse_diff_revision('', '(revision 1)')[1],
                          '1')
-        self.assertEqual(self.tool.parse_diff_revision('(revision 23)'),
+        self.assertEqual(self.tool.parse_diff_revision('', '(revision 23)')[1],
                          '23')
 
         self.assertRaises(SCMException,
-                          lambda: self.tool.parse_diff_revision('hello'))
+                          lambda: self.tool.parse_diff_revision('', 'hello'))
 
     def testInterface(self):
         """Testing basic SVNTool API"""
@@ -150,7 +150,7 @@ class PerforceTests(unittest.TestCase):
 
         file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py',
                                   1)
-        self.assertEqual(hash(file), 1241177531)
+        self.assertEqual(hash(file), 1392492355)
 
 
 class VMWareTests(unittest.TestCase):
