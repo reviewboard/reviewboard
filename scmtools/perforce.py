@@ -54,8 +54,8 @@ class PerforceTool(SCMTool):
         else:
             file = '%s#%s' % (path, revision)
 
-        f = os.popen('p4 -p %s -u %s print -q %s' % (settings.P4_PORT,
-                                                     settings.P4_USER, file))
+        f = os.popen('p4 -p %s -u %s print -q %s' % (self.p4.port,
+                                                     self.p4.user, file))
         data = f.read()
         failure = f.close()
 

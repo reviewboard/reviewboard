@@ -4,8 +4,9 @@ import unittest
 from django.core.exceptions import ImproperlyConfigured
 
 from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
-                                      Revision, HEAD, PRE_CREATION, get_tool, \
+                                      Revision, HEAD, PRE_CREATION, \
                                       ChangeSet
+from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.svn import SVNTool
 from reviewboard.scmtools.perforce import PerforceTool
 from reviewboard.scmtools.perforce_vmware import VMwarePerforceTool
@@ -49,8 +50,10 @@ class SubversionTests(unittest.TestCase):
     """Unit tests for subversion.  These will fail if you're offline."""
 
     def setUp(self):
-        self.repo = 'http://svn.collab.net/repos/svn/'
-        self.tool = SVNTool(repopath=self.repo)
+        self.repository = Repository(name='Subversion SVN',
+                                     path='http://svn.collab.net/repos/svn',
+                                     tool=Tool.objects.get(name='Subversion'))
+        self.tool = self.repository.get_scmtool()
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -68,7 +71,7 @@ class SubversionTests(unittest.TestCase):
 
         self.assertEqual(self.tool.get_file('/' + file, rev), expected)
 
-        self.assertEqual(self.tool.get_file(self.repo + '/' + file, rev),
+        self.assertEqual(self.tool.get_file(self.repository.path + '/' + file, rev),
                          expected)
 
 
@@ -117,7 +120,10 @@ class PerforceTests(unittest.TestCase):
        """
 
     def setUp(self):
-        self.tool = PerforceTool('public.perforce.com:1666')
+        self.repository = Repository(name='Perforce.com',
+                                     path='public.perforce.com:1666',
+                                     tool=Tool.objects.get(name='Perforce'))
+        self.tool = self.repository.get_scmtool()
 
     def testChangeset(self):
         """Testing PerforceTool.get_changeset"""

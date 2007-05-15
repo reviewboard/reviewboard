@@ -60,7 +60,7 @@ class SVNTool(SCMTool):
         if revision == HEAD:
             r = pysvn.Revision(pysvn.opt_revision_kind.head)
         elif revision == PRE_CREATION:
-            raise FileNotFoundException(path, revision)
+            raise FileNotFoundException('', revision)
         else:
             r = pysvn.Revision(pysvn.opt_revision_kind.number, str(revision))
 
