@@ -96,6 +96,7 @@ def review_detail(request, object_id, template_name):
         'reviews': review_request.review_set.filter(public=True,
                                                     base_reply_to__isnull=True),
         'request': request,
+        'bugtracker_url': settings.BUGTRACKER_URL or "",
     }))
 
 

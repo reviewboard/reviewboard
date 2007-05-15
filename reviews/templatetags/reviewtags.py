@@ -392,5 +392,8 @@ def reviewer_list(review_request):
     return humanize_list(names)
 
 @register.filter
-def bugzilla_url(bug_id):
-    return settings.BUGZILLA_URL % bug_id
+def bug_url(bug_id):
+    if settings.BUGTRACKER_URL == None:
+        return None
+
+    return settings.BUGTRACKER_URL % bug_id

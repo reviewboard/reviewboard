@@ -55,8 +55,12 @@ function onBugsChanged(el, list) {
 	var str = "";
 
 	for (var i = 0; i < list.length; i++) {
-		str += "<a href=\"http://bugzilla/show_bug.cgi?id=" + list[i] + "\">";
-		str += list[i] + "</a>";
+		if (gBugTrackerURL != "") {
+			var url = gBugTrackerURL.replace("%s", list[i]);
+			str += '<a href="' + url + '">' + list[i] + '</a>';
+		} else {
+			str += list[i];
+		}
 
 		if (i < list.length - 1) {
 			str += ", ";

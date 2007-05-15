@@ -18,6 +18,7 @@
 var gUserURL = "{{user.get_absolute_url}}";
 var gUserFullName = "{% firstof user.get_full_name user.username %}";
 var gReviewRequestId = "{{object.id}}";
+var gBugTrackerURL = "{{bugtracker_url}}";
 </script>
 {% endblock %}
 
@@ -67,7 +68,7 @@ var gReviewRequestId = "{{object.id}}";
    <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
    <td class="value"><span id="bugs_closed">
 {%  for bug in details.get_bug_list %}
-   <a href={{bug|bugzilla_url}}>{{bug}}</a>{% if not forloop.last %}, {% endif %}
+{%   if bugtracker_url %}<a href={{bug|bug_url}}>{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
 {%  endfor %}
   </span></td>
    <td class="indented label"><label for="target_people">People:</label></td>
