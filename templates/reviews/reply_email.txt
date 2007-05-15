@@ -6,7 +6,7 @@ http://{{domain}}{{review.get_absolute_url}}
 
 {% condense %}
 {% ifnotequal reply.body_top "" %}
-> On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+> On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
 {{review.body_top|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_top "" %}{% ifnotequal reply_review reply %}
 > 
 > {% ifnotequal reply_review.user.get_full_name "" %}{{reply_review.user.get_full_name}}{% else %}{{reply_review.user.username}}{% endifnotequal %} wrote:
@@ -31,7 +31,7 @@ http://{{domain}}{{review.get_absolute_url}}
 
 {% endfor %}
 {% for comment in reply.comments.all %}
-> On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+> On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
 > > {{comment.filediff.source_file}}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
 > > <http://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.id}}/#line{{comment.first_line}}>
 > >
