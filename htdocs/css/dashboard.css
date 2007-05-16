@@ -1,0 +1,44 @@
+/****************************************************************************
+ * Dashboard
+ ****************************************************************************/
+.dashboard .main {
+  padding: 4px;
+}
+
+#dashboard-main {
+  margin-left: 21em;
+  vertical-align: top;
+}
+
+#dashboard-navbar tr.selected {
+  background: #b2ceec;
+}
+
+
+/****************************************************************************
+ * Sidebar
+ ****************************************************************************/
+.sidebar {
+  background-color: #E9E9E9;
+}
+
+.sidebar .main {
+  padding: 4px;
+}
+
+.sidebar .main-item {
+  font-weight: bold;
+}
+
+.sidebar .sub-item {
+  padding-left: 20px;
+}
+
+.sidebar .sub-sub-item {
+  padding-left: 40px;
+}
+
+#sidebar-wrapper {
+  float: left;
+  width: 20em;
+}

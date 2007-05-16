@@ -4,13 +4,15 @@
 
 {% block title %}Screenshot{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
 {% block extrahead %}
+<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
+<link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
+<link rel="stylesheet" type="text/css" href="/css/reviews.css" />
 <script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
 <script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
 <script language="javascript" src="/scripts/rb/core.js"></script>
 <script language="javascript" src="/scripts/rb/widgets.js"></script>
 <script language="javascript" src="/scripts/comments.js"></script>
 <script language="javascript" src="/scripts/screenshots.js"></script>
-<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
 <script language="javascript">
   var gReviewRequestPath = '{{review.get_absolute_url}}';
   var gReviewRequestId = '{{review.id}}';

@@ -1,0 +1,300 @@
+table.sidebyside {
+  background: white;
+  border: 1px #C0C0C0 solid;
+  border-collapse: collapse;
+  margin: 2px;
+  padding: 2px;
+}
+
+table.sidebyside a {
+  color: black;
+  text-decoration: none;
+}
+
+table.sidebyside col.left {
+  border-right: 1px #C0C0C0 solid;
+  width: 50%;
+}
+
+table.sidebyside col.line {
+  border-right: 1px #C0C0C0 solid;
+}
+
+table.sidebyside col.right {
+  width: 50%;
+}
+
+table.sidebyside pre {
+  font-size: 8pt;
+  line-height: 140%;
+  margin: 0;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+table.sidebyside tbody.binary td {
+  background: #dbebff;
+  padding: 4px;
+}
+
+table.sidebyside tbody.collapsed {
+  border-bottom: 1px #303030 solid;
+  border-top: 1px #303030 solid;
+}
+
+table.sidebyside tbody.collapsed td {
+  background: #e4d9cb;
+  font-size: x-small;
+  text-align: center;
+}
+
+table.sidebyside tbody.collapsed th {
+  background: #e4d9cb;
+}
+
+table.sidebyside tbody.delete {
+  background: #fcc8c8;
+  border-bottom: 1px #303030 solid;
+  border-top: 1px #303030 solid;
+}
+
+table.sidebyside tbody.delete th {
+  background: #fcc8c8;
+}
+
+table.sidebyside tbody.delete tr.selected {
+  background: #dfb1b1;
+}
+
+table.sidebyside tbody.insert {
+  background: #aeffac;
+  border-bottom: 1px #303030 solid;
+  border-top: 1px #303030 solid;
+}
+
+table.sidebyside tbody.insert th {
+  background: #aeffac;
+}
+
+table.sidebyside tbody.insert tr.selected {
+  background: #9ae298;
+}
+
+table.sidebyside tbody.replace {
+  background: #fffe88;
+  border-bottom: 1px #303030 solid;
+  border-top: 1px #303030 solid;
+}
+
+table.sidebyside tbody.replace th {
+  background: #fffe88;
+}
+
+table.sidebyside tbody.replace tr.selected {
+  background: #e2e179;
+}
+
+table.sidebyside tbody.replace .hl {
+  background: #d9d752;
+}
+
+table.sidebyside tbody td {
+  vertical-align: top;
+}
+
+table.sidebyside tbody th {
+  background: #F0F0F0;
+  text-align: right;
+  vertical-align: top;
+}
+
+table.sidebyside tbody tr.selected {
+  background: #e2e2e2;
+}
+
+table.sidebyside thead th {
+  background: #F0F0F0;
+  border-bottom: 1px #C0C0C0 solid;
+  font-size: 120%;
+  font-weight: bold;
+  padding: 4px 8px;
+  text-align: left;
+  text-overflow: ellipsis;
+}
+
+table.sidebyside thead th.rev {
+  font-size: 100%;
+}
+
+table.sidebyside thead th.controls,
+table.sidebyside th.controls {
+  font-size: 100%;
+  font-weight: normal;
+  padding: 2px 0 2px 2px;
+  vertical-align: top;
+}
+
+table.sidebyside .commentflag {
+  background: url('/images/comment.png') no-repeat;
+  cursor: pointer;
+  font-size: 90%;
+  font-weight: normal;
+  height: 21px;
+  left: 2px;
+  line-height: 1.9em;
+  margin-top: -1px;
+  padding-left: 5px;
+  position: absolute;
+  text-align: left;
+  vertical-align: top;
+  width: 25px;
+}
+
+table.sidebyside .commentflag.draft {
+  background: url('/images/comment-draft.png') no-repeat;
+}
+
+/* Extra whitespace highlight */
+table.sidebyside .ew {
+  background: #ee3434;
+}
+
+#diffs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#diffs div.index ol {
+  margin-bottom: 20px;
+  padding-left: 30px;
+}
+
+#diffs table.sidebyside {
+  margin-bottom: 20px;
+}
+
+#comment-dlg textarea {
+  border: 1px #888a85 solid;
+  font-size: 10pt;
+  height: 100px;
+  margin: 5px 0 0 0;
+  padding: 10px;
+  width: 450px;
+}
+
+#comment-dlg #commentform {
+  margin: 0;
+  padding: 0;
+}
+
+#comment-dlg #commentform .label {
+  display: block;
+  font-weight: bold;
+}
+
+#comment-dlg #comments-list {
+  font-size: 90%;
+  margin: 0px;
+  padding: 0px;
+}
+
+#comment-dlg #comments-list dd {
+  padding: 1em 0;
+}
+
+#comment-dlg #comments-list dt {
+  margin-top: 0.5em;
+}
+
+#comment-dlg #comments-list dt a {
+  color: #AB5603;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#comment-dlg #comments-list dt span {
+  color: #487858;
+  font-weight: normal;
+}
+
+#comment-dlg #comments-list li.comment {
+  border-top: 1px #cccccc solid;
+  margin-bottom: 0.4em;
+}
+
+#comment-dlg #comments-list li.comment:first-child {
+  border-top: 0px;
+}
+
+#comment-dlg #comments-list .draft dt a {
+  color: #4e9a06;
+}
+
+#comment-dlg #comment-status {
+  color: black;
+  float: left;
+  margin-top: 5px;
+}
+
+#comment-dlg #comment-status.error {
+  font-weight: bold;
+}
+
+#comment-dlg #reviewform {
+  padding: 0;
+  margin: 0;
+}
+
+#comment-dlg #review-body {
+  border: 1px #888a85 solid;
+  cursor: text;
+  display: block;
+  height: 300px;
+  padding: 0px;
+}
+
+#comment-dlg #review-body textarea {
+  border: 0;
+  height: 1.5em;
+  margin: 0px;
+  overflow: hidden;
+}
+
+#comment-dlg #review-body #all-review-comments {
+  border-bottom: 1px #888a85 dotted;
+  border-top: 1px #888a85 dotted;
+  cursor: default;
+  margin: 0px 10px;
+}
+
+#comment-dlg #review-body #all-review-comments dd {
+  padding: 1em 0 1em 0;
+}
+
+#comment-dlg #review-body #all-review-comments dl {
+  padding: 0.5em 0 0.5em 0;
+}
+
+#comment-dlg #review-body #all-review-comments dt .filename {
+  font-weight: bold;
+}
+
+#comment-dlg #review-body #all-review-comments dt .lines {
+  color: #487858;
+}
+
+#comment-dlg #review-body #all-review-comments ol {
+  list-style: none;
+  margin: 0px;
+  padding: 5px 0px 0px 0px;
+}
+
+#comment-dlg #tab-review label {
+  display: block;
+  padding-top: 10px;
+}

@@ -1,0 +1,392 @@
+/****************************************************************************
+ * New Review Request
+ ****************************************************************************/
+.new-review-request {
+  background-color: #fefadf;
+}
+
+.new-review-request label {
+  color: #575012;
+  font-weight: bold;
+}
+
+.new-review-request table td {
+  padding: 5px;
+}
+
+
+/****************************************************************************
+ * Review Request Box
+ ****************************************************************************/
+.inline-editor-form.summary-editor {
+  margin-top: -2px;
+  margin-left: -3px;
+}
+
+.review-request {
+  background-color: #fefadf;
+}
+
+.review-request label {
+  color: #575012;
+  font-weight: bold;
+}
+
+.review-request noscript form {
+  margin: 10px 5px 5px 5px;
+  text-align: right;
+}
+
+.review-request textarea {
+  border: 1px #b8b5a0 solid;
+}
+
+.review-request .content {
+  margin: 5px;
+  padding: 0;
+}
+
+.review-request .content img {
+  border: none;
+}
+
+.review-request .content label {
+  display: block;
+  margin-top: 20px;
+  min-height: 15px;;
+}
+
+.review-request .content label img {
+  vertical-align: middle;
+}
+
+.review-request .content pre {
+  background-color: #FFFFFF;
+  border: 1px #b8b5a0 solid;
+  margin: 5px 0 0 0;
+  padding: 10px;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+.review-request .controls {
+  list-style: none;
+  margin: 0;
+  padding: 0px 8px 4px 8px;
+  text-align: right;
+}
+
+.review-request .controls a {
+  color: black;
+  text-decoration: none;
+}
+
+.review-request .controls a:hover {
+  color: #0000C0;
+}
+
+.review-request .controls img {
+  vertical-align: bottom;
+}
+
+.review-request .controls li {
+  display: inline;
+  padding-left: 8px;
+}
+
+.review-request .header {
+  margin: 5px;
+}
+
+.review-request #details {
+  border-bottom: 1px #c2c1b0 solid;
+  border-spacing: 8px;
+  border-top: 1px #c2c1b0 solid;
+  margin-top: 5px;
+  padding: 5px 0px;
+  width: 100%;
+}
+
+.review-request #details .caption {
+  color: #39350b;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.review-request #details .indented {
+  padding-left: 20px;
+}
+
+.review-request #details .label {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.review-request #diff_revision {
+  font-weight: bold;
+  text-align: right;
+  vertical-align: bottom;
+}
+
+.review-request #status {
+  color: #39350b;
+  margin: 5px 0;
+}
+
+.review-request #summary {
+  display: inline;
+  font-size: 130%;
+}
+
+.review-request #summary a {
+  color: black;
+}
+
+.review-request #summary_wrapper {
+  margin-right: 10em;
+  padding: 0px;
+}
+
+.review-request #topcontrols {
+  float: right;
+  list-style: none;
+  margin: -1px -1px 0 0;
+  padding: 0px;
+  width: 10em;
+}
+
+.review-request #topcontrols a {
+  color: black;
+  text-decoration: none;
+}
+
+.review-request #topcontrols img {
+  vertical-align: middle;
+}
+
+.review-request #topcontrols li {
+  background-color: #B6CCE3;
+  border: 1px #3465A4 solid;
+  cursor: pointer;
+  font-size: 120%;
+  padding: 5px 10px;
+}
+
+.review-request #updated_time,
+.review-request #created_time {
+  text-align: right;
+  vertical-align: bottom;
+}
+
+#review_request_form input[type='text'],
+#review_request_form textarea {
+  width: 400px;
+}
+
+
+/****************************************************************************
+ * Reviews
+ ****************************************************************************/
+.review {
+  background-color: #e9edf5;
+}
+
+.review .body {
+  background-color: #FAFAFA;
+  border: 1px #AAAAAA solid;
+  clear: both;
+  margin: 5px;
+  padding: 10px;
+}
+
+.review .body pre {
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+.review .body .body_top,
+.review .body .body_bottom {
+  margin: 0px;
+}
+
+.review .controls {
+  list-style: none;
+  margin: 0;
+  padding: 0px 8px 4px 8px;
+  text-align: right;
+}
+
+.review .body .controls a {
+  text-decoration: none;
+}
+
+.review .diff-comments dd {
+  margin-bottom: 20px;
+}
+
+.review .diff-comments dt thead th {
+  font-weight: normal;
+}
+
+.review .diff-comments .filename a {
+  color: black;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.review .header {
+  padding: 2px 4px;
+}
+
+.review .header a {
+  color: black;
+  text-decoration: none;
+}
+
+.review .reviewer {
+  float: left;
+  font-weight: bold;
+}
+
+.review .posted_time {
+  text-align: right;
+}
+
+.review .reply-comments {
+  margin: 20px 0px 0px 0px;
+  padding: 0px;
+}
+
+.review .reply-comments .reply-comment {
+  display: inline;
+}
+
+.review .reply-comments .reply-comment dd {
+  margin-left: 10px;
+}
+
+.review .reply-comments .reply-comment dl {
+  border-left: 2px #D0D0D0 solid;
+  margin: 0px;
+  padding: 5px;
+}
+
+.review .reply-comments .reply-comment dt a {
+  color: #AB5603;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.review .reply-comments .reply-comment.draft dt a {
+  color: #4e9a06;
+}
+
+.review .reply-comments .reply-comment dt span {
+  color: #487858;
+  font-weight: normal;
+}
+
+.review .shipit {
+  background: #aeff60;
+  border: 1px #888888 solid;
+  float: left;
+  font-weight: bold;
+  left: -10px;
+  margin-right: 5px;
+  padding: 4px 8px;
+  position: relative;
+  top: -8px;
+}
+
+
+/****************************************************************************
+ * Screenshots
+ ****************************************************************************/
+.screenshot-caption {
+  margin-top: 2px;
+}
+
+.screenshot-caption img {
+  vertical-align: bottom;
+}
+
+.screenshot-container {
+  float: left;
+  margin-right: 10px;
+  max-width: 400px;
+  text-align: center;
+  vertical-align: top;
+}
+
+.screenshot-container img {
+  margin: 0 auto;
+}
+
+#screenshot-display {
+  border: 1px #777777 solid;
+  cursor: crosshair;
+  padding: 10px;
+}
+
+#screenshot-display img {
+  display: block;
+  margin: 0 auto;
+}
+
+#screenshot-display .selection {
+  border: 1px #a1c0e3 solid;
+  position: absolute;
+}
+
+#screenshot-display .selection-flag {
+  background-color: #a1c0e3;
+  cursor: pointer;
+  height: 16px;
+  left: 0px;
+  text-align: center;
+  top: 0px;
+  width: 16px;
+}
+
+#screenshot-display .selection.draft {
+  border: 1px #aceb6f solid;
+}
+
+#screenshot-display .selection-flag.draft {
+  background-color: #aceb6f;
+}
+
+#screenshot-display #selection-container {
+  visibility: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+#screenshot-display #selection-interactive {
+  border: 1px #ff0000 dashed;
+  position: absolute;
+  visibility: hidden;
+}
+
+/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+.clearfix:after {
+  clear: both;
+  content: ".";
+  display: block;
+  height: 0;
+  visibility: hidden;
+}
+
+.clearfix {display: inline-block;}
+
+/* Hides from IE-mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hide from IE-mac */

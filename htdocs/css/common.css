@@ -1,0 +1,370 @@
+body {
+  background-color: white;
+  color: black;
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
+  font-size: 8pt;
+}
+
+h1 {
+  font-size: 10pt;
+}
+
+/*
+input[type="submit"] {
+  border: 1px #808080 solid;
+  background: url("/images/button_bg.png");
+  padding: 2px 6px;
+}
+*/
+
+form th {
+  text-align: right;
+  vertical-align: top;
+}
+
+label {
+  font-weight: bold;
+}
+
+pre {
+  font-size: 10pt;
+}
+
+span.draftlabel {
+  color: #008000;
+  font-size: x-small;
+}
+
+table.list {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table.list td {
+  padding: 4px;
+}
+
+table td.label {
+  text-align: right;
+}
+
+table.list td.summary {
+  cursor: pointer;
+}
+
+table.list td a {
+  color: black;
+  text-decoration: none;
+}
+
+table.list th {
+  padding: 4px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+table.list tr {
+  background-color: #F8F8F8;
+  border: 1px #B3C7BF solid;
+}
+
+table.list tr:hover {
+  background-color: #E8E8E8;
+}
+
+table.list tr.headers {
+  border: 0px;
+  border-bottom: 1px #888888 solid;
+}
+
+table.list tr:hover.headers {
+  background-color: transparent;
+}
+
+table.list tr:hover .age1 {
+  background: #abd5a9;
+}
+
+table.list tr:hover .age2 {
+  background: #c6e07f;
+}
+
+table.list tr:hover .age3 {
+  background: #e3d87e;
+}
+
+table.list tr:hover .age4 {
+  background: #e4bd98;
+}
+
+table.list tr:hover .age5 {
+  background: #e0a3a3;
+}
+
+table.list .age1 {
+  background: #beedbc;
+  border-left: 1px #8bbd5c solid;
+  border-right: 1px #8bbd5c solid;
+  border-top: 1px #707070 solid;
+  border-bottom: 1px #707070 solid;
+  white-space: nowrap;
+}
+
+table.list .age2 {
+  background: #ddfa8e;
+  border-left: 1px #a3e266 solid;
+  border-right: 1px #a3e266 solid;
+  border-top: 1px #707070 solid;
+  border-bottom: 1px #707070 solid;
+  white-space: nowrap;
+}
+
+table.list .age3 {
+  background: #fdf18c;
+  border-left: 1px #d8c158 solid;
+  border-right: 1px #d8c158 solid;
+  border-top: 1px #707070 solid;
+  border-bottom: 1px #707070 solid;
+  white-space: nowrap;
+}
+
+table.list .age4 {
+  background: #fed3a9;
+  border-left: 1px #d49659 solid;
+  border-right: 1px #d49659 solid;
+  border-top: 1px #707070 solid;
+  border-bottom: 1px #707070 solid;
+  white-space: nowrap;
+}
+
+table.list .age5 {
+  background: #fab6b6;
+  border-left: 1px #f56363 solid;
+  border-right: 1px #f56363 solid;
+  border-top: 1px #707070 solid;
+  border-bottom: 1px #707070 solid;
+  white-space: nowrap;
+}
+
+ul.errorlist {
+  display: inline;
+  margin: 0 0 0 15px;
+  padding: 0;
+}
+
+ul.errorlist li {
+  color: red;
+  display: inline;
+}
+
+
+/****************************************************************************
+ * Banners
+ ****************************************************************************/
+.banner div {
+  background: #cdff9c;
+  border: 1px #4e9a06 solid;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+}
+
+.banner h1 {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.banner input[type='submit'] {
+  margin-left: 10px;
+}
+
+
+/****************************************************************************
+ * Box classes
+ ****************************************************************************/
+.box {
+  background: url('/images/box_top_bg.png') repeat-x top left;
+  border: 1px #888A85 solid;
+}
+
+.box.important {
+  background-color: #fdf2a0;
+  border: 1px #b7a93e solid;
+  padding: 0px 10px;
+}
+
+.box.important .box-inner {
+  background: url("/images/important.png") no-repeat top left;
+  padding: 0 0 0 50px;
+}
+
+.box h1.title {
+  background: #a2bedc url('/images/box_top_bg.png') repeat-x top left;
+  font-size: 120%;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.box .main {
+  padding: 5px;
+}
+
+.box-container {
+  border: 1px #DCDCDC solid;
+  margin-bottom: 10px;
+}
+
+.box-inner {
+  background: url('/images/box_bottom_bg.png') repeat-x bottom left;
+}
+
+
+/****************************************************************************
+ * Inline editor forms
+ ****************************************************************************/
+.editicon {
+  margin-left: 4px;
+  vertical-align: bottom;
+  cursor: pointer;
+}
+
+.inline-editor-form {
+  display: block;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.inline-editor-form input[type="submit"] {
+  margin-left: 5px;
+}
+
+.inline-editor-form input[type="text"] {
+  border: 1px #888a85 solid;
+  padding: 1px 2px;
+}
+
+.inline-editor-form textarea {
+  border: 1px #888a85 solid;
+  font-size: 10pt;
+  margin: 5px 0 0 0;
+  padding: 10px;
+}
+
+.loading-indicator {
+  display: inline;
+}
+
+.prefsbuttons {
+  padding: 8px;
+  background-color: #B6CCE3;
+  border: 1px #3465A4 solid;
+}
+
+.prefsgroup ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 5px;
+}
+
+.reviewlist .main,
+.grouplist .main,
+.submitterlist .main,
+.reviewlist .main {
+  padding: 4px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section .title {
+  background: #DDDDDD;
+  border: 1px black solid;
+  padding: 4px 8px;
+}
+
+.section .body {
+  margin-left: 20px;
+  padding: 10px;
+}
+
+#accountnav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  right: 20px;
+  top: 10px;
+}
+
+#accountnav li {
+  display: inline;
+}
+
+#beta {
+  color: #808080;
+  display: inline;
+  font-size: 12pt;
+  font-weight: normal;
+}
+
+#error div {
+  background: #ffcd9c;
+  border: 1px #9a4306 solid;
+  margin-bottom: 10px;
+  padding: 8px 10px;
+}
+
+#error h1 {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+#error input[type='submit'] {
+  margin-left: 10px;
+}
+
+#headbar {
+  margin-bottom: 8px;
+}
+
+#navbar {
+  background-color: #C6DCF3;
+  border: 1px #3465A4 solid;
+  list-style: none;
+  margin-bottom: 12px;
+  padding: 9px 6px;
+}
+
+#navbar li {
+  display: inline;
+  height: 30px;
+  margin-right: 14px;
+}
+
+#navbar a {
+  color: #0000AA;
+  font-size: 110%;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#navbar .newreviewrequest {
+  text-align: right;
+}
+
+#title {
+  display: inline;
+  font-size: 24pt;
+  font-weight: normal;
+}
+
+#title a {
+  color: black;
+  text-decoration: none;
+}
+
+
+

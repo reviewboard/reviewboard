@@ -1,3 +1,7 @@
+img {
+  behavior: url("/scripts/pngfix.htc");
+}
+
 .box,
 .box-inner,
 .box h1.title {
