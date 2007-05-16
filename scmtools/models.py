@@ -17,6 +17,7 @@ class Repository(models.Model):
     username = models.CharField(maxlength=32, blank=True)
     password = models.CharField(maxlength=128, blank=True)
     tool = models.ForeignKey(Tool)
+    bug_tracker = models.URLField(verify_exists=False, blank=True)
 
 
     def get_scmtool(self):

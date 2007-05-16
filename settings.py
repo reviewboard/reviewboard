@@ -101,9 +101,6 @@ DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
 # out to the e-mail addresses defined for the group.
 SEND_REVIEW_MAIL = False
 
-# Bug tracker
-BUGTRACKER_URL = None
-
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 from settings_local import *
