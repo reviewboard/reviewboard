@@ -189,3 +189,28 @@ class VMWareTests(DjangoTestCase):
         ]
         for file, expected in map(None, changeset.files, expected_files):
             self.assertEqual(file, expected)
+
+
+    def testParseSingleLineDesc(self):
+        """
+        Testing VMwarePerforceTool.parse_change_desc with a single line
+        description.
+        """
+        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
+                                 'vmware-single-line-desc.txt'), 'r')
+        data = file.read().split('\n')
+        file.close()
+
+        changeset = self.tool.parse_change_desc(data, 1234567)
+        self.assertEqual(changeset.summary, "There is only a single line in this changeset description.")
+        self.assertEqual(changeset.description, "")
+        self.assertEqual(changeset.changenum, 1234567)
+        self.assertEqual(changeset.testing_done, "")
+
+        self.assertEqual(len(changeset.bugs_closed), 0)
+
+        expected_files = [
+            '//depot/qa/foo/bar',
+        ]
+        for file, expected in map(None, changeset.files, expected_files):
+            self.assertEqual(file, expected)
