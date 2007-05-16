@@ -10,6 +10,20 @@ function getApiPath() {
     return '/api/json/reviewrequests/' + gReviewRequestId;
 }
 
+function normalizeURL(url) {
+	i = url.indexOf("#");
+
+	if (i != -1) {
+		url = url.substring(0, i);
+	}
+
+	if (url[url.length - 1] == "/") {
+		url = url.substring(0, url.length - 1);
+	}
+
+	return url;
+}
+
 function onEditComplete(field, value, callback) {
     asyncJsonRequest("POST", getApiPath() + '/draft/set/' + field + '/', {
             success: function(rsp) {
@@ -198,12 +212,7 @@ function showDiscardBanner() {
 }
 
 function discardReview() {
-	/*
-	 * The link that can get us here adds a '#', so it has to be
-	 * stripped off.
-	 */
-	loc = String(window.location);
-	window.location = loc.substring(0, loc.length - 1) + 'discard/';
+	window.location = normalizeURL(window.location.href) + "/discard/";
 }
 
 function showCommentForm(review_id, section_id) {
@@ -414,7 +423,6 @@ function publishDraft() {
 		alert("There must be at least one reviewer before this review " +
 		      "request can be published.");
 	} else {
-		loc = String(window.location)
-		window.location = loc.substring(0, loc.length - 1) + "publish/";
+		window.location = normalizeURL(window.location.href) + "/publish/";
 	}
 }
