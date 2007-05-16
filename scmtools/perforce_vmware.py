@@ -55,6 +55,16 @@ class VMwarePerforceTool(PerforceTool):
 
         changeset.testing_done = sections['Testing Done:']
         changeset.bugs_closed = re.split(r"[, ]+", sections['Bug Number:'])
-        # FIXME: branch?
+
+        # Pull the branch name out of the file list
+        branches = []
+        for file in changeset.files:
+            try:
+                branch = file.split('/')[4]
+                if branch not in branches:
+                    branches.append(branch)
+            except IndexError:
+                pass
+        changeset.branch = ', '.join(branches)
 
         return changeset

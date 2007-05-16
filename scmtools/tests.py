@@ -190,6 +190,8 @@ class VMWareTests(DjangoTestCase):
         for file, expected in map(None, changeset.files, expected_files):
             self.assertEqual(file, expected)
 
+        self.assertEqual(changeset.branch, 'hosted07')
+
 
     def testParseSingleLineDesc(self):
         """
