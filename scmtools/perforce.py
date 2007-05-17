@@ -119,3 +119,6 @@ class PerforceTool(SCMTool):
                 description[file_header.end():].split('\n')])
 
         return changeset
+
+    def get_fields(self):
+        return ['changenum', 'diff_path']

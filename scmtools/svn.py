@@ -73,3 +73,6 @@ class SVNTool(SCMTool):
             return self.repopath + path
         else:
             return self.repopath + "/" + path
+
+    def get_fields(self):
+        return ['basedir', 'diff_path']

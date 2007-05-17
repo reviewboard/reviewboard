@@ -4,6 +4,30 @@
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="/css/reviews.css" />
+<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript">
+var fields = ["changenum", "basedir", "diff_path"];
+var visible = {{fields}};
+function updateFormDisplay() {
+    var selection = getEl("id_repository").dom;
+    var selectedID = selection.options[selection.selectedIndex].value;
+    var shown = visible[selectedID];
+
+    for (i in fields) {
+        getEl("row_" + fields[i]).dom.style.display = "none";
+    }
+    for (i in shown) {
+        getEl("row_" + shown[i]).dom.style.display = "table-row";
+    }
+}
+
+YAHOO.util.Event.on(window, "load", function(e) {
+    updateFormDisplay();
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -14,17 +38,23 @@
   <table>
    <tr>
     <td><label for="id_repository">Repository:</label></td>
-    <td>{{form.repository}}</td>
+    {% spaceless %}<td>
+     <select name="repository" id="id_repository" onchange="updateFormDisplay();">
+      {% for repository in form.fields.repository.choices %}
+      <option value="{{repository.0}}">{{repository.1}}</option>
+      {% endfor %}
+     </select>
+    </td>{% endspaceless %}
    </tr>
-   <tr>
+   <tr id="row_changenum">
     <td><label for="id_changenum">Change Number:</label></td>
     <td>{{form.changenum}}</td>
    </tr>
-   <tr>
-    <td><label for="id_basepath">Base Diff Path:</label></td>
-    <td>{{form.basedir}} (Subversion only)</td>
+   <tr id="row_basedir">
+    <td><label for="id_basedir">Base Diff Path:</label></td>
+    <td>{{form.basedir}}</td>
    </tr>
-   <tr>
+   <tr id="row_diff_path">
     <td><label for="id_diff_path">Diff:</label></td>
     <td>{{form.diff_path}}</td>
    </tr>

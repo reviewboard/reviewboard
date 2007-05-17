@@ -29,6 +29,7 @@ from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, mail_review, \
                                       mail_diff_update
 from reviewboard import scmtools
+from reviewboard.scmtools.models import Repository
 import reviewboard.reviews.db as reviews_db
 
 
@@ -76,8 +77,15 @@ def new_review_request(request,
     else:
         form = NewReviewRequestForm()
 
+    # Repository ID : visible fields mapping.  This is so we can dynamically
+    # show/hide the relevant fields with javascript.
+    fields = {}
+    for repo in Repository.objects.all():
+        fields[repo.id] = repo.get_scmtool().get_fields()
+
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
+        'fields': simplejson.dumps(fields),
     }))
 
 @login_required
