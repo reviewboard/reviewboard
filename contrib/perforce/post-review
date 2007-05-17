@@ -18,26 +18,34 @@ import simplejson
 from optparse import OptionParser
 from tempfile import mkstemp
 
-os.environ['http_proxy'] = ''
-os.environ['HTTP_PROXY'] = ''
-
 VERSION = "0.5"
 
 # Who stole the cookies from the cookie jar?
 # Was it you?
 # >:(
+if os.environ.has_key("USERPROFILE"):
+    cookiepath = os.path.join(os.environ["USERPROFILE"], "UserData")
+else:
+    cookiepath = os.environ["HOME"]
+
 cj = cookielib.MozillaCookieJar()
-cookiefile = os.path.join(os.environ["HOME"], ".post-review-cookies.txt")
+cookiefile = os.path.join(cookiepath, ".post-review-cookies.txt")
 
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 opener.addheaders = [('User-agent', 'post-review/' + VERSION)]
 urllib2.install_opener(opener)
 
 tempfiles = []
+options = None
 
 
 class APIError(Exception):
     pass
+
+
+def debug(s):
+    if options.debug:
+        print ">>> %s" % s
 
 
 def make_tempfile():
@@ -47,15 +55,18 @@ def make_tempfile():
     return tmpfile
 
 
-def die(msg):
+def die(msg=None):
     for tmpfile in tempfiles:
         try:
             os.unlink(tmpfile)
         except:
             pass
 
-    print msg
+    if msg:
+        print msg
+
     sys.exit(1)
+
 
 def encode_multipart_formdata(fields, files):
     BOUNDARY = mimetools.choose_boundary()
@@ -94,6 +105,8 @@ def process_json(data):
 
 
 def http_get(path):
+    debug('HTTP GETting %s' % path)
+
     url = REVIEWBOARD_HOST + path
 
     try:
@@ -101,8 +114,10 @@ def http_get(path):
         cj.save(cookiefile)
         return rsp
     except urllib2.HTTPError, e:
-        die("Unable to access %s (%s). The host path may be invalid" % \
-            (url, e.code))
+        print "Unable to access %s (%s). The host path may be invalid" % \
+            (url, e.code)
+        debug(e.data)
+        die()
 
 
 def api_get(path):
@@ -110,6 +125,11 @@ def api_get(path):
 
 
 def http_post(path, fields, files={}):
+    debug_fields = fields.copy()
+    if debug_fields.has_key("password"):
+        debug_fields["password"] = "**************"
+    debug('HTTP POSTing to %s: %s' % (path, debug_fields))
+
     url = REVIEWBOARD_HOST + path
     content_type, body = encode_multipart_formdata(fields, files)
     headers = {
@@ -123,6 +143,7 @@ def http_post(path, fields, files={}):
         cj.save(cookiefile)
         return data
     except urllib2.URLError, e:
+        debug(e.read())
         die("Unable to access %s. The host path may be invalid\n%s" % \
             (url, e))
     except urllib2.HTTPError, e:
@@ -147,6 +168,7 @@ def login():
     # We then perform the login.
     http_get("/account/login/")
 
+    debug('Logging in with username "%s"' % username)
     result = http_post("/account/login/", {
         'username': username,
         'password': password
@@ -155,6 +177,7 @@ def login():
 
 def create_review_request(changenum, repository_path):
     try:
+        debug("Attempting to create review request for %s" % changenum)
         rsp = api_post('/api/json/reviewrequests/new/', {
             'changenum': changenum,
             'repository_path': repository_path,
@@ -163,12 +186,14 @@ def create_review_request(changenum, repository_path):
         rsp, = e.args
 
         if rsp['err']['code'] == 204: # Change number in use
+            debug("Review request already exists. Updating it...")
             rsp = api_post(
                 '/api/json/reviewrequests/%s/update_from_changenum/' %
                 rsp['review_request']['id'])
         else:
             raise e
 
+    debug("Review request created")
     return rsp['review_request']
 
 
@@ -183,10 +208,31 @@ def get_repository_paths():
     else:
         repository_path = m.group(1)
 
+    debug("Repository path '%s'" % repository_path)
+
     return repository_path, ""
 
 
+def write_file_from_perforce(depot_path, tmpfile):
+    """
+    Grabs a file from Perforce and writes it to a temp file. We do this
+    wrather than telling p4 print to write it out in order to work around
+    a permissions bug on Windows.
+    """
+    debug('Writing "%s" to "%s"' % (depot_path, tmpfile))
+
+    f = os.popen('p4 print -q "%s"' % depot_path)
+    data = f.read()
+    f.close()
+
+    f = open(tmpfile, "w")
+    f.write(data)
+    f.close()
+
+
 def generate_diff(changenum):
+    debug("Generating diff for changnum %s" % changenum)
+
     f = os.popen('p4 change -o %s' % changenum, 'r')
     data = f.read()
     f.close()
@@ -261,11 +307,11 @@ def generate_diff(changenum):
             die("Unknown change type '%s' for %s" % (changetype, depot_path))
 
         if old_depot_path:
-            os.system('p4 print -o "%s" -q "%s"' % (tmpfile1, old_depot_path))
+            write_file_from_perforce(old_depot_path, tmpfile1)
             old_file = tmpfile1
 
         if new_depot_path:
-            os.system('p4 print -o "%s" -q "%s"' % (tmpfile2, new_depot_path))
+            write_file_from_perforce(new_depot_path, tmpfile2)
             new_file = tmpfile2
 
         f = os.popen('diff -urNp "%s" "%s"' % (old_file, new_file), 'r')
@@ -307,6 +353,7 @@ def generate_diff(changenum):
 def upload_diff(review_request, changenum):
     diff_content = generate_diff(changenum)
 
+    debug("Uploading diff")
     rsp = api_post('/api/json/reviewrequests/%s/diff/new/' %
                    review_request['id'], {},
                    {'path': {'filename': 'diff', 'content': diff_content}})
@@ -322,9 +369,9 @@ def tempt_fate(changenum, repository_path, client_root):
             login()
             tempt_fate(changenum, repository_path, client_root)
             return
-        else:
-            die("Error creating review request: %s (code %s)" % \
-                (rsp['err']['msg'], rsp['err']['code']))
+
+        die("Error creating review request: %s (code %s)" % \
+            (rsp['err']['msg'], rsp['err']['code']))
 
 
     try:
@@ -362,8 +409,10 @@ def main():
     parser.add_option("--server", dest="server",
                       metavar="SERVER",
                       help="specify a different Review Board server to use")
+    parser.add_option("-d", "--debug", action="store_true",
+                      dest="debug", default=False, help="display debug output")
 
-    (options, args) = parser.parse_args()
+    (globals()["options"], args) = parser.parse_args()
 
     if len(args) != 1:
         parser.error("specify the change number of a pending changeset")
