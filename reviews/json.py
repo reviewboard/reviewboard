@@ -42,6 +42,8 @@ PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
                                            "to access this")
 INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
 NOT_LOGGED_IN             = JsonError(103, "You are not logged in")
+LOGIN_FAILED              = JsonError(104, "The username or password was " +
+                                           "not correct")
 
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
@@ -232,6 +234,23 @@ def string_to_status(status):
         return None
     else:
         raise "Invalid status '%s'" % status
+
+
+@require_POST
+def account_login(request):
+    username = request.POST.get('username', None)
+    password = request.POST.get('password', None)
+
+    user = auth.authenticate(username=username, password=password)
+
+    if not user or not user.is_active:
+        return JsonResponseError(request, LOGIN_FAILED)
+
+    auth.login(request, user)
+    user.last_login = datetime.now()
+    user.save()
+
+    return JsonResponse(request)
 
 
 @json_login_required

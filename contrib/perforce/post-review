@@ -164,15 +164,19 @@ def login():
     username = raw_input('Username: ')
     password = getpass.getpass('Password: ')
 
-    # We do an initial login so a test cookie can be populated.
-    # We then perform the login.
-    http_get("/account/login/")
-
     debug('Logging in with username "%s"' % username)
-    result = http_post("/account/login/", {
-        'username': username,
-        'password': password
-    })
+    try:
+        api_post('/api/json/accounts/login/', {
+            'username': username,
+            'password': password,
+        })
+    except APIError, e:
+        rsp, = e.args
+
+        die("Unable to log in: %s (%s)" % (rsp["err"]["msg"],
+                                           rsp["err"]["code"]))
+
+    debug("Logged in.")
 
 
 def create_review_request(changenum, repository_path):
@@ -231,7 +235,7 @@ def write_file_from_perforce(depot_path, tmpfile):
 
 
 def generate_diff(changenum):
-    debug("Generating diff for changnum %s" % changenum)
+    debug("Generating diff for changenum %s" % changenum)
 
     f = os.popen('p4 change -o %s' % changenum, 'r')
     data = f.read()

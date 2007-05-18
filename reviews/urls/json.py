@@ -2,6 +2,9 @@ from django.conf.urls.defaults import *
 from reviewboard.reviews.db import *
 
 urlpatterns = patterns('reviewboard.reviews.json',
+    # Accounts
+    (r'^accounts/login/$', 'account_login'),
+
     # Repositories
     (r'^repositories/$', 'repository_list'),
 
