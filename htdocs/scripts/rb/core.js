@@ -105,5 +105,5 @@ var asyncJsonRequest = function(method, url, callbacks, postData) {
         callbacks.failure(res.statusText);
       }
     }
-  }, postData);
+  }, postData || "dummy");
 };
