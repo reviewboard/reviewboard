@@ -9,37 +9,20 @@ class NISBackend:
     """
 
     def authenticate(self, username, password):
-        user = None
-
         try:
             passwd = nis.match(username, 'passwd').split(':')
             original_crypted = passwd[1]
             new_crypted = crypt.crypt(password, original_crypted[:2])
 
             if original_crypted == new_crypted:
-                try:
-                    user = User.objects.get(username=username)
-                except User.DoesNotExist:
-                    # Create a new user.
-                    first_name, last_name = passwd[4].split(' ', 1)
-                    email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
-
-                    user = User(username=username,
-                                password='',
-                                first_name=first_name,
-                                last_name=last_name,
-                                email=email)
-                    user.is_staff = False
-                    user.is_superuser = False
-                    user.save()
-
+                # FIXME: We're doing 2 NIS fetches here if the user does
+                # not already exit.  It'd be nice to avoid that, but it's
+                # not critical.
+                return self.get_or_create_user(username)
         except nis.error:
             pass
 
-        return user
-
     def get_or_create_user(self, username):
-        # FIXME: remove duplication with authenticate()
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
