@@ -42,20 +42,6 @@ class VMwarePerforceTool(PerforceTool):
                     locations[i] = section
         section_indices = sorted(locations.keys())
 
-        # The interesting part of the description field contains everything up
-        # to the first marked section.
-        changeset.description = '\n'.join(lines[:section_indices[0]])
-
-        # Now pull out each individual section.  This gives us a dictionary
-        # mapping section name to a string.
-        sections = {}
-        for start, end in map(None, section_indices, section_indices[1:]):
-            name = locations[start]
-            sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
-
-        changeset.testing_done = sections['Testing Done:']
-        changeset.bugs_closed = re.split(r"[, ]+", sections['Bug Number:'])
-
         # Pull the branch name out of the file list
         branches = []
         for file in changeset.files:
@@ -66,5 +52,27 @@ class VMwarePerforceTool(PerforceTool):
             except IndexError:
                 pass
         changeset.branch = ', '.join(branches)
+
+        try:
+            # The interesting part of the description field contains everything up
+            # to the first marked section.
+            changeset.description = '\n'.join(lines[:section_indices[0]])
+        except IndexError:
+            # If none of the sections exist, just return the changeset as-is
+            return changeset
+
+        # Now pull out each individual section.  This gives us a dictionary
+        # mapping section name to a string.
+        sections = {}
+        for start, end in map(None, section_indices, section_indices[1:]):
+            name = locations[start]
+            sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
+
+        changeset.testing_done = sections.get('Testing Done:')
+
+        try:
+            changeset.bugs_closed = re.split(r"[, ]+", sections['Bug Number:'])
+        except KeyError:
+            pass
 
         return changeset

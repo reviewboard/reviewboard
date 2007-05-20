@@ -204,8 +204,10 @@ class VMWareTests(DjangoTestCase):
         file.close()
 
         changeset = self.tool.parse_change_desc(data, 1234567)
-        self.assertEqual(changeset.summary, "There is only a single line in this changeset description.")
-        self.assertEqual(changeset.description, "")
+        self.assertEqual(changeset.summary,
+                         "There is only a single line in this changeset description.")
+        self.assertEqual(changeset.description,
+                         "There is only a single line in this changeset description.")
         self.assertEqual(changeset.changenum, 1234567)
         self.assertEqual(changeset.testing_done, "")
 
