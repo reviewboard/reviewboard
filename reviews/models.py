@@ -200,9 +200,7 @@ class ReviewRequestDraft(models.Model):
 
         screenshots = self.screenshots.all()
         for s in request.screenshots.all():
-            if s not in screenshots:
-                s.delete()
-            else:
+            if s in screenshots:
                 s.caption = s.draft_caption
                 s.save()
         request.screenshots.clear()
