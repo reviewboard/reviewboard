@@ -200,6 +200,7 @@ ul.errorlist li {
 
 .box h1.title {
   background: #a2bedc url('/images/box_top_bg.png') repeat-x top left;
+  border-bottom: 1px #728eac solid;
   font-size: 120%;
   margin: 0;
   padding: 5px 10px;
@@ -255,6 +256,18 @@ ul.errorlist li {
   display: inline;
 }
 
+
+/****************************************************************************
+ * Log In Form
+ ****************************************************************************/
+.box.loginform table td {
+  padding: 4px;
+}
+
+
+/****************************************************************************
+ * Account page
+ ****************************************************************************/
 .prefsbuttons {
   padding: 8px;
   background-color: #B6CCE3;
