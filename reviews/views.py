@@ -23,8 +23,9 @@ from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, Quip, \
-    Review, Comment, Group, Screenshot, ScreenshotComment
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
+                                       Quip, Review, Comment, Group, \
+                                       Screenshot, ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, mail_review, \
                                       mail_diff_update
@@ -99,8 +100,8 @@ def review_detail(request, object_id, template_name):
 
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
-        'object': review_request,
-        'details': draft or review_request,
+        'review_request': review_request,
+        'review_request_details': draft or review_request,
         'reviews': review_request.review_set.filter(public=True,
                                                     base_reply_to__isnull=True),
         'request': request,
@@ -245,7 +246,16 @@ def diff(request, object_id, revision=None):
     except Review.DoesNotExist:
         review = None
 
-    return view_diff(request, diffset.id, {'review': review})
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+    except ReviewRequestDraft.DoesNotExist:
+        draft = None
+
+    return view_diff(request, diffset.id, {
+        'review': review,
+        'review_request': review_request,
+        'review_request_details': draft or review_request,
+    })
 
 
 @login_required

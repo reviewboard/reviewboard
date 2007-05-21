@@ -3,7 +3,7 @@
 {% load htmlutils %}
 {% load reviewtags %}
 
-{% block title %}Review Request | {{details}}{% endblock %}
+{% block title %}Review Request | {{review_request_details}}{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="/css/reviews.css" />
@@ -19,8 +19,8 @@
 <script type="text/javascript">
 var gUserURL = "{{user.get_absolute_url}}";
 var gUserFullName = "{% firstof user.get_full_name user.username %}";
-var gReviewRequestId = "{{object.id}}";
-var gBugTrackerURL = "{{object.repository.bug_tracker}}";
+var gReviewRequestId = "{{review_request.id}}";
+var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 </script>
 {% endblock %}
 
@@ -30,108 +30,11 @@ var gBugTrackerURL = "{{object.repository.bug_tracker}}";
 
 {% box review-request %}
 <ul id="topcontrols">
-{% if details.diffset or object.diffset_history.diffset_set.count %}
+{% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %}
  <li onclick="javascript:window.location='diff/';"><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
 {% endif %}
 </ul>
-<div class="main">
- <div class="header">
-  <div id="summary_wrapper"><h1 id="summary">{{details.summary}}</h1></div>
-  <p id="status">
-   {{object.get_status_display}}<br />
-   Updated {{details.last_updated|timesince}} ago
-  </p>
- </div>
- <table id="details">
-  <colgroup>
-   <col width="0%" />
-   <col width="50%" />
-  </colgroup>
-  <colgroup>
-   <col width="0%" />
-   <col width="50%" />
-  </colgroup>
-  <tr>
-   <td class="label"><label for="submitter">Submitter:</label></td>
-   <td class="value"><a id="submitter" href="{{object.submitter.get_absolute_url}}">{% firstof object.submitter.get_full_name object.submitter.username %}</a></td>
-   <td class="caption" colspan="2">Reviewers</td>
-  </tr>
-  <tr>
-   <td class="label"><label for="branch">Branch:</label></td>
-   <td class="value"><span id="branch">{{details.branch}}</span></td>
-   <td class="indented label"><label for="target_groups">Groups:</label></td>
-   <td class="value"><span id="target_groups">
-{%  for group in details.target_groups.all %}
-<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
-{%  endfor %}
-  </span></td>
-  </tr>
-  <tr>
-   <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
-   <td class="value"><span id="bugs_closed">
-{%  for bug in details.get_bug_list %}
-{%   if object.repository.bug_tracker %}<a href={{bug|bug_url:object}}>{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
-{%  endfor %}
-  </span></td>
-   <td class="indented label"><label for="target_people">People:</label></td>
-   <td class="value"><span id="target_people">
-{%  for person in details.target_people.all %}
-<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
-{%  endfor %}
-  </span></td>
-  </tr>
-  <tr>
-   <td class="label"><label for="changenum">Change Number:</label></td>
-   <td class="value"><span id="changenum">{{object.changenum}}</span></td>
-   <td class="label"><label for="repository">Repository:</label></td>
-   <td class="value"><span id="repository">{{object.repository}}</span></td>
-  </tr>
- </table>
- <div class="content">
-  <label for="description">Description:</label>
-  <pre id="description">{{details.description|escape}}</pre>
- </div>
- <div class="content">
-  <label for="testing_done">Testing Done:</label>
-  <pre id="testing_done">{{details.testing_done|escape}}</pre>
- </div>
- {% if details.screenshots.count %}
- <div class="content clearfix">
-  <label for="images">Screenshots:</label>
-  {% for image in details.screenshots.all %}
-   <div class="screenshot-container">
-    <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a><br />
-    <div class="screenshot-caption">
-     <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
-     {% ifequal request.user object.submitter %}
-      <a href="s/{{image.id}}/delete/"><img src="/images/delete.png" alt="Delete Screenshot" /></a>
-     {% endifequal %}
-    </div>
-   </div>
-  {% endfor %}
- </div>
- {% endif %}
-</div>
-<ul class="controls">
-{% ifequal request.user object.submitter %}
-{%  if details.public %}
-{%    ifequal details.status 'P' %}
- <li><a href="submitted/">Set Submitted</a></li>
- <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
-{%    else %}
- <li><a href="reopen/">Reopen for Review</a></li>
-{%    endifequal %}
-{%  else %}
- <li><a href="#" onClick="publishDraft();">Publish</a></li>
- <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
-{%  endif %}
- <li><a href="diff/upload/?repositoryid={{object.repository.id}}"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
- <li><a href="s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
-{% endifequal %}
-{% ifequal request.user object.submitter %}
- <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
-{% endifequal %}
-</ul>
+{% include "reviews/review_request_box.html" %}
 {% endbox %}
 
 {% for review in reviews %}
@@ -208,7 +111,7 @@ var gBugTrackerURL = "{{object.repository.bug_tracker}}";
 {% endbox %}
 {% endfor %}
 
-{% ifequal request.user object.submitter %}
+{% ifequal request.user review_request.submitter %}
 <script type="text/javascript">
   registerEditor('summary', false, false);
   registerEditor('branch', false, false);
@@ -218,7 +121,7 @@ var gBugTrackerURL = "{{object.repository.bug_tracker}}";
   registerCommaListEditor('target_groups', onTargetGroupsChanged);
   registerCommaListEditor('target_people', onTargetPeopleChanged);
 
-{% for image in details.screenshots.all %}
+{% for image in review_request_details.screenshots.all %}
   registerEditor('screenshot_{{image.id}}_caption', false);
 {% endfor %}
 

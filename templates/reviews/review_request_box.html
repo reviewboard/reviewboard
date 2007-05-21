@@ -1,0 +1,100 @@
+{% load htmlutils %}
+{% load reviewtags %}
+<div class="main">
+ <div class="header">
+  <div id="summary_wrapper"><h1 id="summary">{{review_request_details.summary}}</h1></div>
+  <p id="status">
+   {{review_request.get_status_display}}<br />
+   Updated {{review_request_details.last_updated|timesince}} ago
+  </p>
+ </div>
+ <table id="details">
+  <colgroup>
+   <col width="0%" />
+   <col width="50%" />
+  </colgroup>
+  <colgroup>
+   <col width="0%" />
+   <col width="50%" />
+  </colgroup>
+  <tr>
+   <td class="label"><label for="submitter">Submitter:</label></td>
+   <td class="value"><a id="submitter" href="{{review_request.submitter.get_absolute_url}}">{% firstof review_request.submitter.get_full_name review_request.submitter.username %}</a></td>
+   <td class="caption" colspan="2">Reviewers</td>
+  </tr>
+  <tr>
+   <td class="label"><label for="branch">Branch:</label></td>
+   <td class="value"><span id="branch">{{review_request_details.branch}}</span></td>
+   <td class="indented label"><label for="target_groups">Groups:</label></td>
+   <td class="value"><span id="target_groups">
+{%  for group in review_request_details.target_groups.all %}
+<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </span></td>
+  </tr>
+  <tr>
+   <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
+   <td class="value"><span id="bugs_closed">
+{%  for bug in review_request_details.get_bug_list %}
+{%   if review_request.repository.bug_tracker %}<a href={{bug|bug_url:review_request}}>{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
+{%  endfor %}
+  </span></td>
+   <td class="indented label"><label for="target_people">People:</label></td>
+   <td class="value"><span id="target_people">
+{%  for person in review_request_details.target_people.all %}
+<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+  </span></td>
+  </tr>
+  <tr>
+   <td class="label"><label for="changenum">Change Number:</label></td>
+   <td class="value"><span id="changenum">{{review_request.changenum}}</span></td>
+   <td class="label"><label for="repository">Repository:</label></td>
+   <td class="value"><span id="repository">{{review_request.repository}}</span></td>
+  </tr>
+ </table>
+ <div class="content">
+  <label for="description">Description:</label>
+  <pre id="description">{{review_request_details.description|escape}}</pre>
+ </div>
+ <div class="content">
+  <label for="testing_done">Testing Done:</label>
+  <pre id="testing_done">{{review_request_details.testing_done|escape}}</pre>
+ </div>
+ {% if review_request_details.screenshots.count %}
+ <div class="content clearfix">
+  <label for="images">Screenshots:</label>
+  {% for image in review_request_details.screenshots.all %}
+   <div class="screenshot-container">
+    <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a><br />
+    <div class="screenshot-caption">
+     <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
+     {% ifequal request.user review_request.submitter %}
+      <a href="s/{{image.id}}/delete/"><img src="/images/delete.png" alt="Delete Screenshot" /></a>
+     {% endifequal %}
+    </div>
+   </div>
+  {% endfor %}
+ </div>
+ {% endif %}
+</div>
+<ul class="controls">
+{% ifequal request.user review_request.submitter %}
+{%  if review_request_details.public %}
+{%    ifequal review_request_details.status 'P' %}
+ <li><a href="submitted/">Set Submitted</a></li>
+ <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
+{%    else %}
+ <li><a href="reopen/">Reopen for Review</a></li>
+{%    endifequal %}
+{%  else %}
+ <li><a href="#" onClick="publishDraft();">Publish</a></li>
+ <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
+{%  endif %}
+ <li><a href="diff/upload/?repositoryid={{review_request.repository.id}}"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+ <li><a href="s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
+{% endifequal %}
+{% ifequal request.user review_request.submitter %}
+ <noscript><li><a href="edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
+{% endifequal %}
+</ul>

@@ -22,31 +22,19 @@
 
 {% block content %}
 {% box review-request %}
- <div class="main">
-  <table class="header">
-   <colgroup>
-    <col width="100%" />
-    <col />
-   </colgroup>
-   <tr>
-    <td id="summary_wrapper"><h1 id="summary"><a href="{{diffset.history.reviewrequest_set.get.get_absolute_url}}">{{diffset.history.reviewrequest_set.get.summary}}</a></h1></td>
-    <td id="diff_revision" nowrap="nowrap">Diff revision {{diffset.revision}}</td>
-   </tr>
-   <tr>
-    <td id="status">{{diffset.history.reviewrequest_set.get.get_status_display}}</td>
-    <td id="created_time" nowrap="nowrap">Uploaded {{diffset.timestamp|timesince}} ago</td>
-   </tr>
-  </table>
-  <a name="index_header"></a>
+<ul id="topcontrols">
+ <li onclick="javascript:window.location='{{diffset.history.reviewrequest_set.get.get_absolute_url}}';"><a href="{{diffset.history.reviewrequest_set.get.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+</ul>
+{% include "reviews/review_request_box.html" %}
+<a name="index_header"></a>
 {% include "diffviewer/changeindex.html" %}
- </div>
- <ul class="controls">
+<ul class="controls">
 {% if collapseall %}
-  <li><a href=".?expand=1"><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> Expand changes</a></li>
+ <li><a href=".?expand=1"><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> Expand changes</a></li>
 {% else %}
-  <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> Collapse changes</a></li>
+ <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> Collapse changes</a></li>
 {% endif %}
- </ul>
+</ul>
 {% endbox %}
 
 <div id="diffs">

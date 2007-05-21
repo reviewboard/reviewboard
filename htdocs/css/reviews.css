@@ -155,7 +155,7 @@
   list-style: none;
   margin: -1px -1px 0 0;
   padding: 0px;
-  width: 10em;
+  white-space: nowrap;
 }
 
 .review-request #topcontrols a {

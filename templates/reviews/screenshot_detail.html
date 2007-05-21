@@ -23,6 +23,9 @@
 
 {% block content %}
 {% box review-request %}
+ <ul id="topcontrols">
+  <li onclick="javascript:window.location='{{diffset.history.reviewrequest_set.get.get_absolute_url}}';"><a href="{{diffset.history.reviewrequest_set.get.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+ </ul>
  <div class="main">
   <h1 id="summary"><a href="{{review.get_absolute_url}}">{{review.summary}}</a></h1>
   <div class="content">
@@ -30,8 +33,6 @@
 {% include "reviews/screenshotindex.html" %}
   </div>
  </div>
- <ul class="controls">
- </ul>
 {% endbox %}
 
 {% spaceless %}
