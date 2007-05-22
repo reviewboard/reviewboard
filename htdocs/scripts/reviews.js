@@ -349,10 +349,10 @@ function showReplyDraftBanner(review_id) {
 		dh.append(getEl(review_id + '-banner').dom, {
 			tag: 'div', id: review_id + '-draft', children: [
 				{tag: 'h1', html: 'This reply is a draft.'},
-				{html: ' Be sure to save when finished.'},
+				{html: ' Be sure to publish when finished.'},
 				{tag: 'input', type: 'submit',
 				 id: review_id + '-btn-draft-save',
-				 value: 'Save',
+				 value: 'Publish',
 				 onClick: "submitReplyDraft('" + review_id + "');"},
 				{tag: 'input', type: 'submit',
 				 id: review_id + '-btn-draft-discard',
