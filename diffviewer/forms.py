@@ -9,8 +9,8 @@ import reviewboard.scmtools as scmtools
 from scmtools import PRE_CREATION
 
 class UploadDiffForm(forms.Form):
-    # XXX: it'd be really nice to have "required" dependent on scmtool
     repositoryid = forms.IntegerField(required=True, widget=forms.HiddenInput)
+    # XXX: it'd be really nice to have "required" dependent on scmtool
     basedir = forms.CharField(required=False)
     path = forms.CharField(widget=forms.FileInput())
 
