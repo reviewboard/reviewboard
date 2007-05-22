@@ -42,6 +42,7 @@ table.list {
 
 table.list td {
   padding: 4px;
+  line-height: 1.4em;
 }
 
 table td.label {
@@ -63,6 +64,11 @@ table.list th {
   white-space: nowrap;
 }
 
+table.list th.day {
+  background: #E9E9E9;
+  border-bottom: 1px #999999 solid;
+}
+
 table.list tr {
   background-color: #F8F8F8;
   border: 1px #B3C7BF solid;
@@ -70,6 +76,11 @@ table.list tr {
 
 table.list tr:hover {
   background-color: #E8E8E8;
+}
+
+table.list tr.month {
+  background: #E9E9E9;
+  border-bottom: 1px #999999 solid;
 }
 
 table.list tr.headers {

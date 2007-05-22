@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -44,7 +45,7 @@ class FileDiff(models.Model):
 class DiffSet(models.Model):
     name = models.CharField('Name', maxlength=256, core=True)
     revision = models.IntegerField("Revision", core=True)
-    timestamp = models.DateTimeField("Timestamp", auto_now_add=True)
+    timestamp = models.DateTimeField("Timestamp", default=datetime.now)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
                                 edit_inline=models.STACKED)
     repository = models.ForeignKey(Repository)
@@ -70,7 +71,7 @@ class DiffSet(models.Model):
 
 class DiffSetHistory(models.Model):
     name = models.CharField('Name', maxlength=256)
-    timestamp = models.DateTimeField("Timestamp", auto_now_add=True)
+    timestamp = models.DateTimeField("Timestamp", default=datetime.now)
 
     def __str__(self):
         return 'Diff Set History (%s revisions)' % (self.diffset_set.count())

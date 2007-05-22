@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -8,6 +9,7 @@ from django.db.models import Q
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
+from reviewboard.utils.fields import ModificationTimestampField
 
 
 class Quip(models.Model):
@@ -68,8 +70,8 @@ class ReviewRequest(models.Model):
     )
 
     submitter = models.ForeignKey(User, verbose_name="Submitter")
-    time_added = models.DateTimeField("Time Added", auto_now_add=True)
-    last_updated = models.DateTimeField("Last Updated", auto_now=True)
+    time_added = models.DateTimeField("Time Added", default=datetime.now)
+    last_updated = ModificationTimestampField("Last Updated")
     status = models.CharField(maxlength=1, choices=STATUSES)
     public = models.BooleanField("Public", default=False)
     changenum = models.PositiveIntegerField("Change Number", blank=True,
@@ -109,9 +111,8 @@ class ReviewRequest(models.Model):
     def __str__(self):
         return self.summary
 
-    def save(self):
+    def _pre_save(self):
         self.bugs_closed = self.bugs_closed.strip()
-        super(ReviewRequest, self).save()
 
     class Admin:
         list_display = ('summary', 'submitter', 'status', 'public', \
@@ -125,7 +126,7 @@ class ReviewRequest(models.Model):
 class ReviewRequestDraft(models.Model):
     review_request = models.ForeignKey(ReviewRequest,
                                        verbose_name="Review Request", core=True)
-    last_updated = models.DateTimeField("Last Updated", auto_now=True)
+    last_updated = ModificationTimestampField("Last Updated")
     summary = models.CharField("Summary", maxlength=300, core=True)
     description = models.TextField("Description")
     testing_done = models.TextField("Testing Done")
@@ -153,9 +154,8 @@ class ReviewRequestDraft(models.Model):
     def _submitter(self):
         return self.review_request.submitter
 
-    def save(self):
+    def _pre_save(self):
         self.bugs_closed = self.bugs_closed.strip()
-        super(ReviewRequestDraft, self).save()
 
     @staticmethod
     def create(review_request):
@@ -223,7 +223,7 @@ class Comment(models.Model):
     filediff = models.ForeignKey(FileDiff, verbose_name='File')
     reply_to = models.ForeignKey("self", blank=True, null=True,
                                  related_name="replies")
-    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+    timestamp = models.DateTimeField('Timestamp', default=datetime.now)
     text = models.TextField("Comment Text")
 
     # A null line number applies to an entire diff.  Non-null line numbers are
@@ -258,7 +258,7 @@ class ScreenshotComment(models.Model):
     screenshot = models.ForeignKey(Screenshot, verbose_name='Screenshot')
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies')
-    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+    timestamp = models.DateTimeField('Timestamp', default=datetime.now)
     text = models.TextField('Comment Text')
 
     # This is a sub-region of the screenshot.  Null X indicates the entire
@@ -288,7 +288,7 @@ class ScreenshotComment(models.Model):
 class Review(models.Model):
     review_request = models.ForeignKey(ReviewRequest)
     user = models.ForeignKey(User)
-    timestamp = models.DateTimeField('Timestamp', auto_now_add=True)
+    timestamp = models.DateTimeField('Timestamp', default=datetime.now)
     public = models.BooleanField("Public", default=False)
     ship_it = models.BooleanField("Ship It", default=False)
     base_reply_to = models.ForeignKey("self", blank=True, null=True,
