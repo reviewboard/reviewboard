@@ -14,7 +14,7 @@ class ModificationTimestampField(models.DateTimeField):
     def __init__(self, verbose_name=None, name=None, **kwargs):
         kwargs.update({
             'editable': False,
-            'blank': true,
+            'blank': True,
         })
         models.DateTimeField.__init__(self, verbose_name, name, **kwargs)
 
