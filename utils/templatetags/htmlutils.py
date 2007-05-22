@@ -84,45 +84,6 @@ def errorbox(parser, token):
     return ErrorBoxNode(nodelist, tagid)
 
 
-class FormField(template.Node):
-    def __init__(self, elementid):
-        self.elementid = elementid
-
-    def render(self, context):
-        formelement = "form.%s" % self.elementid
-        try:
-            field_str = resolve_variable(formelement, context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid element ID %s passed to formfield tag." % formelement
-
-        label = capfirst(self.elementid.replace('_', ' '))
-
-        try:
-            error_list = resolve_variable("%s.html_error_list" % formelement,
-                                          context)
-        except VariableDoesNotExist:
-            error_list = ""
-
-        output  = "  <tr>\n"
-        output += "   <td class=\"label\"><label for=\"id_%s\">%s:" \
-                  "</label></td>\n" % (self.elementid, label)
-        output += "   <td class=\"field\">%s</td>\n" % field_str
-        output += "   <td>%s</td>\n" % error_list
-        output += "  </tr>\n"
-        return output
-
-@register.tag
-def formfield(parser, token):
-    try:
-        tag_name, elementid = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires an element ID and a string label"
-
-    return FormField(elementid)
-
-
 class AgeId(template.Node):
     def __init__(self, timestamp):
         self.timestamp = timestamp
