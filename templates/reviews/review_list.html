@@ -19,6 +19,7 @@
   <tr class="headers">
    <th>Summary</th>
    <th>Submitter</th>
+   <th>Posted</th>
    <th>Last Updated</th>
   </tr>
  </thead>
@@ -27,6 +28,7 @@
   <tr>
    <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{% reviewsummary review %}</a></td>
    <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
+   <td class="{% ageid review.time_added %}">{{review.time_added|date:"F jS, Y, P"}}</td>
    <td class="{% ageid review.last_updated %}">{{review.last_updated|timesince}} ago</td>
   </tr>
 {%  endfor %}
