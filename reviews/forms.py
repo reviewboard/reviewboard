@@ -41,16 +41,20 @@ class NewReviewRequestForm(forms.Form):
         return set(result)
 
     def create(self, user, file):
-        repository = Repository.objects.get(pk=self.clean_data['repository'])
-        changenum = self.clean_data['changenum'] or None
+        # XXX Compatibility with Django 0.96 and 1.0.
+        formdata = getattr(self, "cleaned_data",
+                           getattr(self, "clean_data", None))
+
+        repository = Repository.objects.get(pk=formdata['repository'])
+        changenum = formdata['changenum'] or None
 
         review_request = reviews_db.create_review_request(user,
                                                           repository,
                                                           changenum)
 
         diff_form = UploadDiffForm(data={
-            'basedir': self.clean_data['basedir'],
-            'path': self.clean_data['diff_path'],
+            'basedir': formdata['basedir'],
+            'path': formdata['diff_path'],
             'repositoryid': repository.id,
         })
         diff_form.full_clean()
@@ -65,10 +69,14 @@ class UploadScreenshotForm(forms.Form):
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, data, review):
+        # XXX Compatibility with Django 0.96 and 1.0.
+        formdata = getattr(self, "cleaned_data",
+                           getattr(self, "clean_data", None))
+
         draft = ReviewRequestDraft.create(review)
 
-        screenshot = Screenshot(caption=self.clean_data['caption'],
-                                draft_caption=self.clean_data['caption'])
+        screenshot = Screenshot(caption=formdata['caption'],
+                                draft_caption=formdata['caption'])
         screenshot.save()
         screenshot.save_image_file(data["filename"], data["content"])
 

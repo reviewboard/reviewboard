@@ -28,7 +28,11 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         form = PreferencesForm(request.POST)
 
         if form.is_valid():
-            request.user.group_set = form.clean_data['groups']
+            # XXX Compatibility with Django 0.96 and 1.0.
+            formdata = getattr(form, "cleaned_data",
+                               getattr(form, "clean_data", None))
+
+            request.user.group_set = formdata['groups']
             request.user.save()
 
             profile, profile_is_new = \

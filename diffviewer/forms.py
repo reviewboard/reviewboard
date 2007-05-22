@@ -15,8 +15,12 @@ class UploadDiffForm(forms.Form):
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, file, diffset_history=None):
+        # XXX Compatibility with Django 0.96 and 1.0.
+        formdata = getattr(self, "cleaned_data",
+                           getattr(self, "clean_data", None))
+
         # Parse the diff
-        repository = Repository.objects.get(pk=self.clean_data['repositoryid'])
+        repository = Repository.objects.get(pk=formdata['repositoryid'])
 
         files = diffparser.parse(file["content"])
 
@@ -29,7 +33,7 @@ class UploadDiffForm(forms.Form):
         if tool.get_diffs_use_absolute_paths():
             basedir = ''
         else:
-            basedir = str(self.clean_data['basedir']) + '/'
+            basedir = str(formdata['basedir']) + '/'
 
         for f in files:
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
