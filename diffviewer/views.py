@@ -265,6 +265,10 @@ def upload(request, donepath, diffset_history_id=None,
                 return HttpResponseRedirect(donepath % diffset.id)
             except scmtools.FileNotFoundException, e:
                 differror = str(e)
+            except ValueError:
+                # FIXME: it'd be nice to have some help as to exactly what broke
+                # during parsing.
+                differror = 'This diff did not parse correctly'
     else:
         form = UploadDiffForm(initial={'repositoryid': repository_id})
 
