@@ -596,6 +596,7 @@ def review_draft_save(request, review_request_id, publish=False):
         user=request.user,
         review_request=review_request,
         public=False,
+        base_reply_to__isnull=True,
         reviewed_diffset=diffset)
     review.public      = publish
     review.ship_it     = request.POST.has_key('shipit')
@@ -630,6 +631,7 @@ def review_draft_delete(request, review_request_id):
         review = Review.objects.get(user=request.user,
                                     review_request=review_request,
                                     public=False,
+                                    base_reply_to__isnull=True,
                                     reviewed_diffset=diffset)
 
         for comment in review.comments.all():
@@ -661,6 +663,7 @@ def review_draft_comments(request, review_request_id):
         review = Review.objects.get(user=request.user,
                                     review_request=review_request,
                                     public=False,
+                                    base_reply_to__isnull=True,
                                     reviewed_diffset=diffset)
         comments = review.comments.all()
         screenshot_comments = review.screenshot_comments.all()
@@ -891,6 +894,7 @@ def diff_line_comments(request, review_request_id, diff_revision,
                 review_request=review_request,
                 user=request.user,
                 public=False,
+                base_reply_to__isnull=True,
                 reviewed_diffset=filediff.diffset)
 
             if review_is_new:
@@ -960,6 +964,7 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                 review_request=review_request,
                 user=request.user,
                 public=False,
+                base_reply_to__isnull=True,
                 reviewed_diffset=diffset)
 
             if review_is_new:

@@ -242,6 +242,7 @@ def diff(request, object_id, revision=None):
         review = Review.objects.get(user=request.user,
                                     review_request=review_request,
                                     public=False,
+                                    base_reply_to__isnull=True,
                                     reviewed_diffset=diffset)
     except Review.DoesNotExist:
         review = None
