@@ -3,38 +3,38 @@
 {% block title %}Register account{% endblock %}
 
 {% block content %}
-<div class="section">
- <div class="title">Register account</div>
- <div class="body">
-  <form method="post" action=".">
-   <table id="login_form">
-    <tr>
-     <td class="label"><label for="id_username">Username:</label></td>
-     <td class="field">{{form.username}}</td>
-     <td class="errorbox">{{form.errors.username}}</td>
-    </tr>
-    <tr>
-     <td class="label"><label for="id_password1">Password:</label></td>
-     <td class="field">{{form.password1}}</td>
-     <td class="errorbox">{{form.errors.password1}}</td>
-    </tr>
-    <tr>
-     <td class="label"><label for="id_password2">Password (repeat):</label></td>
-     <td class="field">{{form.password2}}</td>
-     <td class="errorbox">{{form.errors.password2}}</td>
-    </tr>
-    <tr>
-     <td class="label"><label for="id_email">E-mail:</label></td>
-     <td class="field">{{form.email}}</td>
-     <td class="errorbox">{{form.errors.email}}</td>
-    </tr>
-    <tr>
-     <td><input type="submit" value="Register" /></td>
-     <td>&nbsp;</td>
-    </tr>
-   </table>
-  </form>
+{% box registerform %}
+<form method="post" action=".">
+ <h1 class="title">Register</h1>
+ <div class="main">
+  <table id="login_form">
+   <tr>
+    <td class="label"><label for="id_username">Username:</label></td>
+    <td class="field">{{form.username}}</td>
+    <td class="errorbox">{{form.errors.username}}</td>
+   </tr>
+   <tr>
+    <td class="label"><label for="id_password1">Password:</label></td>
+    <td class="field">{{form.password1}}</td>
+    <td class="errorbox">{{form.errors.password1}}</td>
+   </tr>
+   <tr>
+    <td class="label"><label for="id_password2">Password (repeat):</label></td>
+    <td class="field">{{form.password2}}</td>
+    <td class="errorbox">{{form.errors.password2}}</td>
+   </tr>
+   <tr>
+    <td class="label"><label for="id_email">E-mail address:</label></td>
+    <td class="field">{{form.email}}</td>
+    <td class="errorbox">{{form.errors.email}}</td>
+   </tr>
+   <tr>
+    <td><input type="submit" value="Register" /></td>
+    <td>&nbsp;</td>
+   </tr>
+  </table>
  </div>
-</div>
+</form>
+{% endbox %}
 {% endblock %}
 
