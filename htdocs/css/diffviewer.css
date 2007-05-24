@@ -56,13 +56,13 @@ table.sidebyside tbody.collapsed th {
 }
 
 table.sidebyside tbody.delete {
-  background: #fcc8c8;
+  background: #ffe5e9 url('/images/delete_top_bg.png') repeat-x top left;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.delete th {
-  background: #fcc8c8;
+  background: none;
 }
 
 table.sidebyside tbody.delete tr.selected {
@@ -70,13 +70,13 @@ table.sidebyside tbody.delete tr.selected {
 }
 
 table.sidebyside tbody.insert {
-  background: #aeffac;
+  background: #e9ffe8 url('/images/insert_top_bg.png') repeat-x top left;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.insert th {
-  background: #aeffac;
+  background: none;
 }
 
 table.sidebyside tbody.insert tr.selected {
@@ -84,13 +84,13 @@ table.sidebyside tbody.insert tr.selected {
 }
 
 table.sidebyside tbody.replace {
-  background: #fffe88;
+  background: #fffee5 url('/images/replace_top_bg.png') repeat-x top left;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.replace th {
-  background: #fffe88;
+  background: none;
 }
 
 table.sidebyside tbody.replace tr.selected {
@@ -98,7 +98,7 @@ table.sidebyside tbody.replace tr.selected {
 }
 
 table.sidebyside tbody.replace .hl {
-  background: #d9d752;
+  background: #fff966;
 }
 
 table.sidebyside tbody td {
