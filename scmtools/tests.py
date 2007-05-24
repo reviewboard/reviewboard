@@ -218,3 +218,16 @@ class VMWareTests(DjangoTestCase):
         ]
         for file, expected in map(None, changeset.files, expected_files):
             self.assertEqual(file, expected)
+
+    def testParseMultiLineSummary(self):
+        """
+        Testing VMwarePerforceTool.parse_change_desc with a summary spanning
+        multiple lines.
+        """
+        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
+                                 'vmware-phil-is-crazy.txt'), 'r')
+        data = file.read().split('\n')
+        file.close()
+
+        changeset = self.tool.parse_change_desc(data, 123456)
+        self.assertEqual(changeset.summary, "Changes: Emma")

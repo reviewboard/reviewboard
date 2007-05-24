@@ -1,0 +1,51 @@
+Change 434785 by davidt@davidt-dev1-hosted07 on 2007/02/08 17:04:32 *pending*
+
+        Changes:
+	Emma
+
+	Emma Woodhouse, handsome, clever, and rich, with a comfortable home
+	and happy disposition, seemed to unite some of the best blessings
+	of existence; and had lived nearly twenty-one years in the world
+	with very little to distress or vex her.
+
+	She was the youngest of the two daughters of a most affectionate,
+	indulgent father; and had, in consequence of her sister's marriage,
+	been mistress of his house from a very early period.  Her mother
+	had died too long ago for her to have more than an indistinct
+	remembrance of her caresses; and her place had been supplied
+	by an excellent woman as governess, who had fallen little short
+	of a mother in affection.
+
+	Sixteen years had Miss Taylor been in Mr. Woodhouse's family,
+	less as a governess than a friend, very fond of both daughters,
+	but particularly of Emma.  Between _them_ it was more the intimacy
+	of sisters.  Even before Miss Taylor had ceased to hold the nominal
+	office of governess, the mildness of her temper had hardly allowed
+	her to impose any restraint; and the shadow of authority being
+	now long passed away, they had been living together as friend and
+	friend very mutually attached, and Emma doing just what she liked;
+	highly esteeming Miss Taylor's judgment, but directed chiefly by
+	her own.
+
+	QA Notes:
+	Testing Done:
+	- Read a book.
+	Documentation Notes:
+	Bug Number: 128700
+	Reviewed by: nobody
+	Approved by:
+	Breaks vmcore compatibility:
+	Breaks vmkernel compatibility:
+	Breaks vmkdrivers compatibility:
+	Mailto:
+	#You need to change the automerge defaults below to YES|NO|MANUAL.
+	#You can automerge to at most one component branch.
+
+	Merge to: bfg-main: YES
+
+Affected files ...
+
+//depot/bora/hosted07/foo.cc#4 edit
+//depot/bora/hosted07/foo.hh#3 edit
+//depot/bora/hosted07/bar.cc#17 edit
+//depot/bora/hosted07/bar.hh#2 edit

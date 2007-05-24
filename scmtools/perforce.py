@@ -113,10 +113,16 @@ class PerforceTool(SCMTool):
 
         changeset.description = '\n'.join([x.strip() for x in
                 description[:file_header.start()].split('\n')]).strip()
-        changeset.summary = changeset.description.split('\n', 1)[0]
         changeset.files = filter(lambda x: len(x),
             [x.strip().split('#', 1)[0] for x in
                 description[file_header.end():].split('\n')])
+
+        split = changeset.description.find('\n\n')
+        if split >= 0 and split < 100:
+            changeset.summary = \
+                changeset.description.split('\n\n', 1)[0].replace('\n', ' ')
+        else:
+            changeset.summary = changeset.description.split('\n', 1)[0]
 
         return changeset
 
