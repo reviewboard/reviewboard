@@ -64,7 +64,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
          {% reply_section review comment "screenshot_comment" "rc" %}
     </dd>
 {% endfor %}
-{% for comment in review.comments.all %}
+{% for comment in review.ordered_comments %}
     <dt>
      <table class="sidebyside">
       <colgroup>

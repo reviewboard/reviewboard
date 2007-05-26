@@ -98,12 +98,17 @@ def review_detail(request, object_id, template_name):
     except ReviewRequestDraft.DoesNotExist:
         draft = None
 
+    reviews = review_request.review_set.filter(public=True,
+                                               base_reply_to__isnull=True)
+    for review in reviews:
+        review.ordered_comments = \
+            review.comments.order_by('filediff', 'first_line')
+
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
         'review_request_details': draft or review_request,
-        'reviews': review_request.review_set.filter(public=True,
-                                                    base_reply_to__isnull=True),
+        'reviews': reviews,
         'request': request,
     }))
 
