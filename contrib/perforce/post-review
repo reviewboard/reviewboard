@@ -337,7 +337,7 @@ def generate_diff(changenum):
         else:
             m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
             if not m:
-                die("Unable to parse diff header: %s", dl[1])
+                die("Unable to parse diff header: %s" % dl[1])
 
             timestamp = m.group(1)
 
