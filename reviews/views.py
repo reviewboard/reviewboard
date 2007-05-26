@@ -390,6 +390,9 @@ def preview_review_email(request, review_request_id, review_id,
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
 
+    review.ordered_comments = \
+        review.comments.order_by('filediff', 'first_line')
+
     return HttpResponse(render_to_string(template_name,
         RequestContext(request, {
             'review_request': review_request,

@@ -109,6 +109,9 @@ def mail_review(user, review):
     if not review.review_request.public:
         return
 
+    review.ordered_comments = \
+        review.comments.order_by('filediff', 'first_line')
+
     review.email_message_id = \
         send_review_mail(user,
                          review.review_request,
