@@ -47,9 +47,10 @@ def condense(parser, token):
 
 @register.simple_tag
 def reviewer_list(review_request):
-    names  = [group.name    for group in review_request.target_groups.all()]
-    names += [user.username for user  in review_request.target_people.all()]
-    return humanize_list(names)
+    return humanize_list([group.display_name or group.name \
+                          for group in review_request.target_groups.all()] + \
+                         [user.get_full_name() or user.username \
+                          for user in review_request.target_people.all()])
 
 
 @register.filter
