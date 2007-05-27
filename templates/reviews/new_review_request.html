@@ -49,14 +49,17 @@ YAHOO.util.Event.on(window, "load", function(e) {
    <tr id="row_changenum">
     <td><label for="id_changenum">Change Number:</label></td>
     <td>{{form.changenum}}</td>
+    <td>{{form.changenum.errors}}</td>
    </tr>
    <tr id="row_basedir">
     <td><label for="id_basedir">Base Diff Path:</label></td>
     <td>{{form.basedir}}</td>
+    <td>{{form.basedir.errors}}</td>
    </tr>
    <tr id="row_diff_path">
     <td><label for="id_diff_path">Diff:</label></td>
     <td>{{form.diff_path}}</td>
+    <td>{{form.diff_path.errors}}</td>
    </tr>
   </table>
  </div>
