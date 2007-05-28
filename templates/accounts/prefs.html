@@ -19,6 +19,21 @@
 
 <form method="post" action=".">
  {{form.redirect_to}}
+{% box prefsuser %}
+ <h1 class="title">User Preferences</h1>
+ <div class="main">
+  <table>
+   <tr>
+    <td><label for="id_first_name">First Name:</label></td>
+    <td>{{form.first_name}}</td>
+   </tr>
+   <tr>
+    <td><label for="id_last_name">Last Name:</label></td>
+    <td>{{form.last_name}}</td>
+   </tr>
+  </table>
+ </div>
+{% endbox %}
 {% box prefsgroup %}
  <h1 class="title">Groups</h1>
  <div class="main">

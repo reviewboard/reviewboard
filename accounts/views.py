@@ -13,6 +13,8 @@ class PreferencesForm(forms.Form):
     redirect_to = forms.CharField(required=False, widget=forms.HiddenInput)
     groups = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple,
                                        required=False)
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
 
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
@@ -33,6 +35,8 @@ def user_preferences(request, template_name='accounts/prefs.html'):
                                getattr(form, "clean_data", None))
 
             request.user.group_set = formdata['groups']
+            request.user.first_name = formdata['first_name']
+            request.user.last_name = formdata['last_name']
             request.user.save()
 
             profile, profile_is_new = \
@@ -45,6 +49,8 @@ def user_preferences(request, template_name='accounts/prefs.html'):
     else:
         form = PreferencesForm({
             'redirect_to': redirect_to,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
             'groups': [g.id for g in request.user.group_set.all()],
         })
 
