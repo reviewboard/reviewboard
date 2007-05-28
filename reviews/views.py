@@ -52,18 +52,6 @@ def valid_prefs_required(view_func):
 
 
 @login_required
-@require_POST
-def new_from_changenum(request):
-    try:
-        review_request = reviews_db.create_review_request(
-            request.user, request.POST.get('changenum', None))
-        return HttpResponseRedirect(review_request.get_absolute_url())
-    except reviews_db.InvalidChangeNumberException:
-        # TODO Display an error page
-        return HttpResponseRedirect('/r/')
-
-
-@login_required
 def new_review_request(request,
                        template_name='reviews/new_review_request.html'):
     if request.method == 'POST':

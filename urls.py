@@ -35,8 +35,6 @@ urlpatterns = patterns('',
      {'template_name': 'reviews/review_list.html'}),
 
     # Review request creation
-    (r'^r/new/changenum/$',
-      'reviewboard.reviews.views.new_from_changenum'),
     (r'^r/new/$', 'reviewboard.reviews.views.new_review_request'),
 
     # Review request detail
