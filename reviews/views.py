@@ -218,23 +218,22 @@ def submitter(request, username, template_name):
 
 
 def _query_for_diff(review_request, revision, query_extra=None):
-    query = Q(history=review_request.diffset_history)
-
+    # Either the diff is part of a draft, or part of the history
     try:
         draft = review_request.reviewrequestdraft_set.get()
-        query = query & Q(reviewrequestdraft=draft)
+        query = Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
-        pass
+        query = Q(history=review_request.diffset_history)
 
-    if revision != None:
+    if revision:
         query = query & Q(revision=revision)
 
-    if query_extra != None:
+    if query_extra:
         query = query & query_extra
 
     try:
         return DiffSet.objects.filter(query).latest()
-    except:
+    except DiffSet.DoesNotExist:
         raise Http404
 
 
