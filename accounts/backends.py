@@ -15,19 +15,17 @@ class NISBackend:
             new_crypted = crypt.crypt(password, original_crypted[:2])
 
             if original_crypted == new_crypted:
-                # FIXME: We're doing 2 NIS fetches here if the user does
-                # not already exit.  It'd be nice to avoid that, but it's
-                # not critical.
-                return self.get_or_create_user(username)
+                return self.get_or_create_user(username, passwd)
         except nis.error:
             pass
 
-    def get_or_create_user(self, username):
+    def get_or_create_user(self, username, passwd=None):
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             try:
-                passwd = nis.match(username, 'passwd').split(':')
+                if not passwd:
+                    passwd = nis.match(username, 'passwd').split(':')
                 first_name, last_name = passwd[4].split(' ', 1)
                 email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
@@ -96,8 +94,9 @@ class LDAPBackend:
             except ImportError:
                 pass
             except ldap.INVALID_CREDENTIALS:
-                # I'd really like to warn the user that their ANON_BIND_UID
-                # and ANON_BIND_PASSWD are wrong, but I don't know how
+                # FIXME I'd really like to warn the user that their
+                # ANON_BIND_UID and ANON_BIND_PASSWD are wrong, but I don't
+                # know how
                 pass
             except ldap.LDAPError:
                 pass
