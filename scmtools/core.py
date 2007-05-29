@@ -16,6 +16,7 @@ class ChangeSet:
         self.branch = ""
         self.bugs_closed = []
         self.files = []
+        self.username = ""
 
 
 class FileNotFoundException(Exception):

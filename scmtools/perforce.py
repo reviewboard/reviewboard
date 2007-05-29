@@ -105,9 +105,12 @@ class PerforceTool(SCMTool):
         # At the moment, we only care about the description and the list of
         # files.  We take the first line of the description as the summary.
         #
-        # We start by chopping off the first line (which we don't care about
-        # right now).  We then split everything around the 'Affected files ...'
-        # line, and process the results.
+        # We parse the username out of the first line to check that one user
+        # isn't attempting to "claim" another's changelist.  We then split
+        # everything around the 'Affected files ...' line, and process the
+        # results.
+        changeset.username = changedesc[0].split(' ')[3].split('@')[0]
+
         description = '\n'.join(changedesc[1:])
         file_header = re.search('Affected files ...', description)
 

@@ -8,6 +8,10 @@ import reviewboard.diffviewer.parser as diffparser
 import reviewboard.scmtools as scmtools
 from scmtools import PRE_CREATION
 
+class EmptyDiffError(ValueError):
+    pass
+
+
 class UploadDiffForm(forms.Form):
     repositoryid = forms.IntegerField(required=True, widget=forms.HiddenInput)
     # XXX: it'd be really nice to have "required" dependent on scmtool
@@ -25,7 +29,7 @@ class UploadDiffForm(forms.Form):
         files = diffparser.parse(file["content"])
 
         if len(files) == 0:
-            raise Exception("Empty diff") # XXX
+            raise EmptyDiffError
 
         # Check that we can actually get all these files.
         tool = repository.get_scmtool()

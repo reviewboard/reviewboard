@@ -41,7 +41,11 @@ YAHOO.util.Event.on(window, "load", function(e) {
     {% spaceless %}<td>
      <select name="repository" id="id_repository" onchange="updateFormDisplay();">
       {% for repository in form.fields.repository.choices %}
-      <option value="{{repository.0}}">{{repository.1}}</option>
+       {% ifequal form.data.repository repository.0 %}
+        <option value="{{repository.0}}" selected="selected">{{repository.1}}</option>
+       {% else %}
+        <option value="{{repository.0}}">{{repository.1}}</option>
+       {% endifequal %}
       {% endfor %}
      </select>
     </td>{% endspaceless %}

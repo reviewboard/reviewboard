@@ -3,12 +3,16 @@ import re
 from django import newforms as forms
 from django.contrib.auth.models import User
 
-from reviewboard.diffviewer.forms import UploadDiffForm
+from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.models import Repository
 import reviewboard.reviews.db as reviews_db
+
+
+class OwnershipError(ValueError):
+    pass
 
 
 class NewReviewRequestForm(forms.Form):
@@ -48,6 +52,19 @@ class NewReviewRequestForm(forms.Form):
         repository = Repository.objects.get(pk=formdata['repository'])
         changenum = formdata['changenum'] or None
 
+        # It's a little odd to validate this here, but we want to have access to
+        # the user.
+        if changenum:
+            try:
+                changeset = repository.get_scmtool().get_changeset(changenum)
+                if user.username != changeset.username:
+                    self.errors['changenum'] = forms.util.ErrorList([
+                        'This change number is owned by another user.'])
+                    raise OwnershipError()
+            except NotImplementedError:
+                # This scmtool doesn't have changesets
+                pass
+
         review_request = reviews_db.create_review_request(user,
                                                           repository,
                                                           changenum)
@@ -59,7 +76,13 @@ class NewReviewRequestForm(forms.Form):
         })
         diff_form.full_clean()
 
-        diff_form.create(file, review_request.diffset_history)
+        try:
+            diff_form.create(file, review_request.diffset_history)
+        except EmptyDiffError:
+            # FIXME: remove review_request
+            self.errors['diff_path'] = forms.util.ErrorList([
+                'The selected file does not appear to be a diff.'])
+            raise
 
         return review_request
 

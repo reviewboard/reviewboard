@@ -23,10 +23,13 @@ from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
+from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
                                        Quip, Review, Comment, Group, \
                                        Screenshot, ScreenshotComment
-from reviewboard.reviews.forms import NewReviewRequestForm, UploadScreenshotForm
+from reviewboard.reviews.forms import NewReviewRequestForm, \
+                                      UploadScreenshotForm, \
+                                      OwnershipError
 from reviewboard.reviews.email import mail_review_request, mail_review, \
                                       mail_diff_update
 from reviewboard import scmtools
@@ -60,9 +63,14 @@ def new_review_request(request,
         form = NewReviewRequestForm(form_data)
 
         if form.is_valid():
-            review_request = form.create(request.user,
-                                         request.FILES['diff_path'])
-            return HttpResponseRedirect(review_request.get_absolute_url())
+            try:
+                review_request = form.create(request.user,
+                                             request.FILES['diff_path'])
+                return HttpResponseRedirect(review_request.get_absolute_url())
+            except OwnershipError:
+                pass
+            except EmptyDiffError:
+                pass
     else:
         form = NewReviewRequestForm()
 
@@ -71,6 +79,10 @@ def new_review_request(request,
     fields = {}
     for repo in Repository.objects.all():
         fields[repo.id] = repo.get_scmtool().get_fields()
+
+    # Turn the selected index back into an int so we can compare it properly.
+    if 'repository' in form.data:
+        form.data['repository'] = int(form.data['repository'])
 
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
