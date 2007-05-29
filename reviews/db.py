@@ -37,9 +37,17 @@ def get_review_requests_to_user_directly(username, user=None, status='P'):
                                     Q(target_people__username=username))
 
 def get_review_requests_to_user(username, user=None, status='P'):
-    return _get_review_request_list(user, status,
-                                    Q(target_people__username=username) |
-                                    Q(target_groups__users__username=username))
+    # Using an OR query inside the extra_query field like this:
+    # Q(target_people__username=username) |
+    #     Q(target_groups__users__username=username))
+    # does not work.  I haven't exactly figured out why.
+
+    # Concatenating the results, converting to a set, then back to a list gives
+    # us unique results without relying on the apparently unintuitive results of
+    # OR Q queries.
+    return list(set(
+        list(get_review_requests_to_user_groups(username, user, status)) +
+        list(get_review_requests_to_user_directly(username, user, status))))
 
 def get_review_requests_from_user(username, user=None, status='P'):
     return _get_review_request_list(user, status,
