@@ -42,12 +42,22 @@ def get_review_requests_to_user(username, user=None, status='P'):
     #     Q(target_groups__users__username=username))
     # does not work.  I haven't exactly figured out why.
 
-    # Concatenating the results, converting to a set, then back to a list gives
-    # us unique results without relying on the apparently unintuitive results of
-    # OR Q queries.
-    return list(set(
-        list(get_review_requests_to_user_groups(username, user, status)) +
-        list(get_review_requests_to_user_directly(username, user, status))))
+    # This is disgusting, but it actually works =P
+    results = []
+    def add_if_unique(requests):
+        for request in requests:
+            found = False
+            for result in results:
+                if request.id == result.id:
+                    found = True
+            if not found:
+                results.append(request)
+
+    add_if_unique(get_review_requests_to_user_groups(username, user, status))
+    add_if_unique(get_review_requests_to_user_directly(username, user, status))
+    results.sort(lambda a, b: cmp(a.last_updated, b.last_updated),
+                 reverse=True)
+    return results
 
 def get_review_requests_from_user(username, user=None, status='P'):
     return _get_review_request_list(user, status,
