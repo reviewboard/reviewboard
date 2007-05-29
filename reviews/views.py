@@ -219,10 +219,15 @@ def submitter(request, username, template_name):
 
 def _query_for_diff(review_request, revision, query_extra=None):
     # Either the diff is part of a draft, or part of the history
+    query = None
+
     try:
         draft = review_request.reviewrequestdraft_set.get()
         query = Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
+        pass
+
+    if revision or not query:
         query = Q(history=review_request.diffset_history)
 
     if revision:
