@@ -3,6 +3,7 @@ import re
 from django import template
 from django.conf import settings
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from django.template import loader, resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
@@ -120,7 +121,10 @@ class ReviewRequestCount(template.Node):
                 "Invalid list type '%s' passed to 'reviewrequestcount' tag." \
                 % self.listtype
 
-        return str(review_requests.count())
+        if type(review_requests) == QuerySet:
+            return str(review_requests.count())
+        else:
+            return str(len(review_requests))
 
 
 @register.tag
