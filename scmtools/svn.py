@@ -1,6 +1,7 @@
 import pysvn
 
-from reviewboard.scmtools.core import SCMException, FileNotFoundException, SCMTool
+from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
+                                      SCMTool
 from reviewboard.scmtools.core import HEAD, PRE_CREATION
 
 class SVNTool(SCMTool):
