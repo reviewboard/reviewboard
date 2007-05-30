@@ -14,8 +14,8 @@
 <script language="javascript" src="/scripts/diffviewer.js"></script>
 <link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
 <script language="javascript">
-  var gReviewRequestPath = '{{diffset.history.reviewrequest_set.get.get_absolute_url}}';
-  var gReviewRequestId = '{{diffset.history.reviewrequest_set.get.id}}';
+  var gReviewRequestPath = '{{review_request.get_absolute_url}}';
+  var gReviewRequestId = '{{review_request.id}}';
   var gRevision = '{{diffset.revision}}';
 </script>
 {% endblock %}
@@ -23,7 +23,7 @@
 {% block content %}
 {% box review-request %}
 <ul id="topcontrols">
- <li onclick="javascript:window.location='{{diffset.history.reviewrequest_set.get.get_absolute_url}}';"><a href="{{diffset.history.reviewrequest_set.get.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+ <li onclick="javascript:window.location='{{review_request.get_absolute_url}}';"><a href="{{review_request.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
 </ul>
 {% include "reviews/review_request_box.html" %}
 <a name="index_header"></a>
