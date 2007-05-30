@@ -39,7 +39,7 @@ NO_ERROR                  = JsonError(0,   "If you see this, yell at " +
 
 DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
 PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
-                                           "to access this")
+                                           "for this")
 INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
 NOT_LOGGED_IN             = JsonError(103, "You are not logged in")
 LOGIN_FAILED              = JsonError(104, "The username or password was " +
@@ -66,6 +66,21 @@ def json_login_required(view_func):
         else:
             return JsonResponseError(request, NOT_LOGGED_IN)
     return _checklogin
+
+
+def json_permission_required(perm):
+    def _dec(view_func):
+        def _checkpermissions(request, *args, **kwargs):
+            if not request.user.is_authenticated():
+                return JsonResponseError(request, NOT_LOGGED_IN)
+            elif not request.user.has_perm(perm):
+                return JsonResponseError(request, PERMISSION_DENIED)
+
+            return view_func(request, *args, **kwargs)
+
+        return _checkpermissions
+
+    return _dec
 
 
 class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
@@ -313,6 +328,17 @@ def review_request_by_changenum(request, repository_id, changenum):
         return JsonResponse(request, {'review_request': review_request})
     except ReviewRequest.DoesNotExist:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
+
+
+@json_permission_required('reviews.delete_reviewrequest')
+def review_request_delete(request, review_request_id):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.delete()
+    except ReviewRequest.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    return JsonResponse(request)
 
 
 @json_login_required

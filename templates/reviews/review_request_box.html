@@ -79,6 +79,9 @@
  {% endif %}
 </div>
 <ul class="controls">
+{% if perms.reviews.delete_reviewrequest %}
+ <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="/images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
+{% endif %}
 {% ifequal request.user review_request.submitter %}
 {%  if review_request_details.public %}
 {%    ifequal review_request_details.status 'P' %}

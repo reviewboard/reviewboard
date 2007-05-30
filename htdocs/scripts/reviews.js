@@ -1,6 +1,9 @@
 var dh = YAHOO.ext.DomHelper;
 var commentTemplate = null;
 
+// Dialogs
+var gDeleteReviewRequestDlg = null;
+
 // State variables
 var gCommentSections = {};
 var gYourComments = {};
@@ -131,7 +134,7 @@ function showError(text) {
 
 	dh.append(getEl('error').dom, {
 		tag: 'div', id: id, children: [
-			{tag: 'h1', html: 'Error:'},
+			{tag: 'h1', html: 'Error: '},
 			{html: text},
 			{tag: 'input', type: 'submit',
 			 value: 'Dismiss', onClick: closeHandler}
@@ -142,7 +145,7 @@ function showError(text) {
 
 function showServerError(specific) {
 	showError(specific +
-	          " Please try again later. If this continues to" +
+	          ". Please try again later. If this continues to" +
 	          " happen, please report it to your administrator");
 }
 
@@ -425,4 +428,35 @@ function publishDraft() {
 	} else {
 		window.location = normalizeURL(window.location.href) + "/publish/";
 	}
+}
+
+function deleteReviewRequest() {
+	if (!gDeleteReviewRequestDlg) {
+		gDeleteReviewRequestDlg = new RB.dialogs.MessageDialog({
+			title: "Confirm Deletion",
+			summary: "Are you sure you want to delete this review request?",
+			description: "This action is irreversible.",
+			buttons: [{
+				text: "Delete",
+				cb: onDeleteReviewRequestConfirmed
+			}, {
+				text: "Cancel",
+				default: true
+			}]
+		});
+	}
+
+	gDeleteReviewRequestDlg.show(getEl("delete-review-request-link"));
+}
+
+function onDeleteReviewRequestConfirmed() {
+	asyncJsonRequest("POST", getApiPath() + '/delete/', {
+		success: function(rsp) {
+			window.location = "/"; // XXX Need a better path.
+		},
+		failure: function(errmsg) {
+			showServerError("Deleting the review request has failed " +
+			                "due to a server error: " + errmsg);
+		}
+	});
 }
