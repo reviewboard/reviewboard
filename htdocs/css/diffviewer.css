@@ -56,7 +56,7 @@ table.sidebyside tbody.collapsed th {
 }
 
 table.sidebyside tbody.delete {
-  background: #ffe5e9;
+  background: #ffc5ce;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
@@ -70,7 +70,7 @@ table.sidebyside tbody.delete tr.selected {
 }
 
 table.sidebyside tbody.insert {
-  background: #e9ffe8;
+  background: #c5ffc4;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
@@ -84,7 +84,7 @@ table.sidebyside tbody.insert tr.selected {
 }
 
 table.sidebyside tbody.replace {
-  background: #fffee5;
+  background: #fdfebc;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
