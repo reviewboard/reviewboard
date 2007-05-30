@@ -326,6 +326,16 @@ def upload_diff_done(request, review_request_id, diffset_id):
 def publish(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
+    # If a draft exists, save it before publishing.  Without this, further
+    # updates to the review request will get saved to the wrong draft and appear
+    # not to work.
+    try:
+        draft = review_request.reviewrequestdraft_set.get()
+        draft.save_draft()
+        draft.delete()
+    except ReviewRequestDraft.DoesNotExist:
+        pass
+
     if review_request.submitter == request.user:
         review_request.public = True
 
