@@ -1,12 +1,16 @@
 {% extends "base_feeds.html" %}
 {% load htmlutils %}
 {% load reviewtags %}
-{% block title %}{% firstof source "All" %} pending review requests{% endblock %}
+{% block title %}{% firstof source "All" %} review requests{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" type="text/css" href="/css/dashboard.css" />
+{% endblock %}
 
 {% block content %}
 
 {% box reviewlist %}
-<h1 class="title">{% firstof source "All" %} pending review requests</h1>
+<h1 class="title">{% firstof source "All" %} review requests</h1>
 <div class="main">
 {% if object_list %}
 <table class="list">
@@ -34,6 +38,11 @@
 {%  endfor %}
  </tbody>
 </table>
+{% if is_paginated %}
+Results <b>{{first_on_page}} - {{last_on_page}}</b> of <b>{{hits}}</b>
+{% if has_previous %}<a class="pagination" href="?page={{previous}}">←Previous {{results_per_page}}</a>{% endif %}
+{% if has_next %}<a class="pagination" href="?page={{next}}">→Next {{results_per_page}}</a>{% endif %}
+{% endif %}
 {% else %}
 <p>No pending reviews.</p>
 {% endif %}
