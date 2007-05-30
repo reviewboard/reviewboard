@@ -56,7 +56,7 @@ table.sidebyside tbody.collapsed th {
 }
 
 table.sidebyside tbody.delete {
-  background: #ffe5e9 url('/images/delete_top_bg.png') repeat-x top left;
+  background: #ffe5e9;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
@@ -70,7 +70,7 @@ table.sidebyside tbody.delete tr.selected {
 }
 
 table.sidebyside tbody.insert {
-  background: #e9ffe8 url('/images/insert_top_bg.png') repeat-x top left;
+  background: #e9ffe8;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
@@ -84,7 +84,7 @@ table.sidebyside tbody.insert tr.selected {
 }
 
 table.sidebyside tbody.replace {
-  background: #fffee5 url('/images/replace_top_bg.png') repeat-x top left;
+  background: #fffee5;
   border-bottom: 1px #303030 solid;
   border-top: 1px #303030 solid;
 }
