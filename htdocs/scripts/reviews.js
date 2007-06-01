@@ -183,7 +183,7 @@ function showDraftBanner() {
 		dh.append(getEl('main-banner').dom, {
 			tag: 'div', id: 'draft', children: [
 				{tag: 'h1', html: 'This review request is a draft.'},
-				{html: ' Be sure to save when finished.'},
+				{tag: 'span', html: 'Be sure to save when finished.'},
 				{tag: 'input', type: 'submit', id: 'btn-draft-save',
 				 value: 'Save', onClick: 'submitDraft();'},
 				{tag: 'input', type: 'submit', id: 'btn-draft-revert',

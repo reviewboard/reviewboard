@@ -32,6 +32,13 @@ RB.widgets.InlineEditor = function(config) {
         cls: 'cancel'
     };
 
+    /*
+     * Rather than animating on IE, the icon just simply disappears and
+     * never comes back. So disable animations.
+     */
+    this.animateIcon =
+        this.multiline && (navigator.appVersion.indexOf("MSIE") == -1);
+
     if (this.multiline) {
         this.field = this.form.createChild({
             tag: 'textarea',
@@ -185,7 +192,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
     show: function() {
         if (this.editicon) {
-            this.editicon.hide(this.multiline);
+            this.editicon.hide(this.animateIcon);
         }
 
         if (!this.hideButtons) {
@@ -217,7 +224,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         this.field.blur();
 
         if (this.editicon) {
-            this.editicon.show(this.multiline);
+            this.editicon.show(this.animateIcon);
         }
 
         if (this.multiline && this.editing) {
@@ -261,27 +268,46 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
     },
 
     fitWidthToParent: function() {
-        if (this.editing) {
-            if (this.multiline) {
-                this.form.setWidth(getEl(this.form.dom.parentNode).getWidth());
-                this.field.setWidth(this.form.getWidth());
-            } else {
-                this.el.beginMeasure();
-                this.form.setWidth(this.el.getWidth());
-                this.el.endMeasure();
+        if (!this.editing) {
+            return;
+        }
 
-                var saveButtonX = this.saveButton.getX();
-                var buttonsWidth = this.cancelButton.getX() - saveButtonX +
-                                   this.cancelButton.getWidth() + saveButtonX -
-                                   (this.field.getX() + this.field.getWidth());
-                this.field.setWidth(this.form.getWidth() - buttonsWidth);
-            }
+        if (this.multiline) {
+            var formParent = getEl(this.form.dom.parentNode);
+            formParent.beginMeasure();
+            var parentWidth = formParent.getBox(true, true).width;
+            formParent.endMeasure();
+
+            this.field.setWidth(parentWidth);
+        } else {
+            this.el.beginMeasure();
+            var elWidth = this.el.getBox(true, true).width +
+                          this.el.getPadding("lr") +
+                          this.el.getBorderWidth("lr");
+            this.el.endMeasure();
+
+            this.saveButton.beginMeasure();
+            this.cancelButton.beginMeasure();
+            var saveButtonX = this.saveButton.getX() -
+                              this.saveButton.getPadding("lr") -
+                              this.saveButton.getBorderWidth("lr");
+            var x2 = this.cancelButton.getX() +
+                     this.cancelButton.getBox(true, true).width +
+                     this.cancelButton.getPadding("lr") +
+                     this.cancelButton.getBorderWidth("lr");
+            var buttonsWidth = x2 - saveButtonX;
+            this.cancelButton.endMeasure();
+            this.saveButton.endMeasure();
+
+            this.field.setWidth(elWidth - buttonsWidth);
         }
     },
 
     findLabelForId: function(id) {
         var method = function(el) {
-            return (el.getAttribute('for') == id);
+            // FireFox wants "for", IE wants "htmlFor"
+            return (el.getAttribute("for") == id ||
+                    el.getAttribute("htmlFor") == id);
         };
 
         return YAHOO.util.Dom.getElementsBy(method, 'label', document);

@@ -181,11 +181,11 @@ ul.errorlist li {
 
 .banner h1 {
   display: inline;
-  margin: 0;
+  margin-right: 0.2em;
   padding: 0;
 }
 
-.banner input[type='submit'] {
+.banner input {
   margin-left: 10px;
 }
 
