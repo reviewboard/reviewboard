@@ -4,4 +4,4 @@ Change 1234567 by christian@christian-lx on 2007/05/15 22:30:14 *pending*
 
 Affected files ...
 
-... //depot/qa/foo/bar#1 edit
+//depot/qa/foo/bar#1 edit
