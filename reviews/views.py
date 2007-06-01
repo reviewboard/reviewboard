@@ -25,7 +25,7 @@ from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
-                                       Quip, Review, Comment, Group, \
+                                       Review, Comment, Group, \
                                        Screenshot, ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm, \
