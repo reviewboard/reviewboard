@@ -116,10 +116,10 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 
 {% ifequal request.user review_request.submitter %}
 <script type="text/javascript">
-  registerEditor('summary', false, false);
-  registerEditor('branch', false, false);
-  registerEditor('description', true, false);
-  registerEditor('testing_done', true, false);
+  registerEditor('summary', false);
+  registerEditor('branch', false);
+  registerEditor('description', true);
+  registerEditor('testing_done', true);
   registerCommaListEditor('bugs_closed', onBugsChanged);
   registerCommaListEditor('target_groups', onTargetGroupsChanged);
   registerCommaListEditor('target_people', onTargetPeopleChanged);

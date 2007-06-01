@@ -27,5 +27,9 @@ img,
 .review-request .controls {
   border-top: 1px #999999 solid;
   padding-top: 3px;
-  background-color: #ECECEC;
+  background-color: #e8e5cd;
+}
+
+.review-request #details td {
+  padding: 4px;
 }
