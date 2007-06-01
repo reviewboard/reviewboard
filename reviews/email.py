@@ -21,14 +21,18 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     """
     current_site = Site.objects.get(pk=settings.SITE_ID)
 
-    if user.get_full_name() == "":
-        from_email = user.email
-    else:
-        from_email = "%s <%s>" % (user.get_full_name(), user.email)
+    def get_email_user(u):
+        if not u.get_full_name():
+            return user.email
+        else:
+            return '%s <%s>' % (u.get_full_name(), u.email)
+
+    from_email = get_email_user(u)
 
     recipient_list = \
-        [u.email for u in review_request.target_people.all()] + \
-        [group.mailing_list for group in review_request.target_groups.all()]
+        [get_email_user(u) for u in review_request.target_people.all()] + \
+        ['%s <%s>' % (group.display_name, group.mailing_list) \
+            for group in review_request.target_groups.all()]
 
     if recipient_list == []:
         return None
