@@ -395,5 +395,7 @@ ul.errorlist li {
   text-decoration: none;
 }
 
-
+.pagination {
+  color: #000000;
+}
 
