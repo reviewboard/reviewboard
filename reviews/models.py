@@ -101,6 +101,9 @@ class ReviewRequest(models.Model):
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
         unique_together = (('changenum', 'repository'),)
+        permissions = (
+            ("can_change_status", "Can change review request status"),
+        )
 
 
 class ReviewRequestDraft(models.Model):
