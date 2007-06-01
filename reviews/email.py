@@ -27,7 +27,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         else:
             return '%s <%s>' % (u.get_full_name(), u.email)
 
-    from_email = get_email_user(u)
+    from_email = get_email_user(user)
 
     recipient_list = \
         [get_email_user(u) for u in review_request.target_people.all()] + \
