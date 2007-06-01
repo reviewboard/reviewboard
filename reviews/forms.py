@@ -8,7 +8,9 @@ from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.models import Repository
-import reviewboard.reviews.db as reviews_db
+from reviewboard.reviews.db import create_review_request, \
+                                   update_review_request_from_changenum, \
+                                   ChangeNumberInUseException
 
 
 class OwnershipError(ValueError):
@@ -65,9 +67,14 @@ class NewReviewRequestForm(forms.Form):
                 # This scmtool doesn't have changesets
                 pass
 
-        review_request = reviews_db.create_review_request(user,
-                                                          repository,
-                                                          changenum)
+        try:
+            review_request = \
+                create_review_request(user, repository, changenum)
+        except ChangeNumberInUseException:
+            review_request = \
+                ReviewRequest.objects.get(changenum=changenum)
+            update_review_request_from_changenum(review_request, changenum)
+            review_request.save()
 
         diff_form = UploadDiffForm(data={
             'basedir': formdata['basedir'],
