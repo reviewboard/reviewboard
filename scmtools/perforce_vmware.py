@@ -51,7 +51,7 @@ class VMwarePerforceTool(PerforceTool):
                     branches.append(branch)
             except IndexError:
                 pass
-        changeset.branch = ', '.join(branches)
+        branch = ', '.join(branches)
 
         try:
             # The interesting part of the description field contains everything up
@@ -62,11 +62,26 @@ class VMwarePerforceTool(PerforceTool):
             return changeset
 
         # Now pull out each individual section.  This gives us a dictionary
-        # mapping section name to a string.
+        # mapping section name to a string.  We special-case "Merge to:" in
+        # here, since it can appear multiple times.
         sections = {}
+        branches = [branch]
         for start, end in map(None, section_indices, section_indices[1:]):
             name = locations[start]
-            sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
+            if name == 'Merge to:':
+                # Include merge information in the branch field
+                m = re.match('Merge to: (?P<branch>[\w\-]+): (?P<type>[A-Z]+)',
+                             lines[start])
+                if m:
+                    if m.group('type') == 'YES':
+                        branches.append(m.group('branch'))
+                    elif m.group('type') == 'MANUAL':
+                        branches.append(m.group('branch') + ' (manual)')
+
+            else:
+                sections[name] = '\n'.join(lines[start:end])[len(name):].strip()
+
+        changeset.branch = ' &rarr; '.join(branches)
 
         changeset.testing_done = sections.get('Testing Done:')
 

@@ -40,11 +40,13 @@ Change 434785 by davidt@davidt-dev1-hosted07 on 2007/02/08 17:04:32 *pending*
 	#You need to change the automerge defaults below to YES|NO|MANUAL.
 	#You can automerge to at most one component branch.
 
-	Merge to: bfg-main: YES
+        Merge to: hosted07: YES
+	Merge to: bfg-main: MANUAL
+        Merge to: main: NO
 
 Affected files ...
 
-//depot/bora/hosted07/foo.cc#4 edit
-//depot/bora/hosted07/foo.hh#3 edit
-//depot/bora/hosted07/bar.cc#17 edit
-//depot/bora/hosted07/bar.hh#2 edit
+//depot/bora/hosted07-rel/foo.cc#4 edit
+//depot/bora/hosted07-rel/foo.hh#3 edit
+//depot/bora/hosted07-rel/bar.cc#17 edit
+//depot/bora/hosted07-rel/bar.hh#2 edit

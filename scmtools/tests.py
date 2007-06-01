@@ -182,15 +182,16 @@ class VMWareTests(DjangoTestCase):
         self.assertEqual(changeset.bugs_closed[0], '128700')
 
         expected_files = [
-            '//depot/bora/hosted07/foo.cc',
-            '//depot/bora/hosted07/foo.hh',
-            '//depot/bora/hosted07/bar.cc',
-            '//depot/bora/hosted07/bar.hh',
+            '//depot/bora/hosted07-rel/foo.cc',
+            '//depot/bora/hosted07-rel/foo.hh',
+            '//depot/bora/hosted07-rel/bar.cc',
+            '//depot/bora/hosted07-rel/bar.hh',
         ]
         for file, expected in map(None, changeset.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(changeset.branch, 'hosted07')
+        self.assertEqual(changeset.branch,
+                         'hosted07-rel &rarr; hosted07 &rarr; bfg-main (manual)')
 
 
     def testParseSingleLineDesc(self):
@@ -231,3 +232,5 @@ class VMWareTests(DjangoTestCase):
 
         changeset = self.tool.parse_change_desc(data, 123456)
         self.assertEqual(changeset.summary, "Changes: Emma")
+
+        self.assertEqual(changeset.branch, 'bfg-main')
