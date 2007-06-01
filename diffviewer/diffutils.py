@@ -94,10 +94,12 @@ def patch(diff, file, filename):
         os.unlink(newfile)
 
         try:
-            pass #os.unlink(newfile + ".rej")
+            os.unlink(newfile + ".rej")
         except:
             pass
 
+        # FIXME: This doesn't provide any useful error report on why the patch
+        # failed to apply, which makes it hard to debug.
         raise Exception(("The patch to '%s' didn't apply cleanly. " +
                          "`patch` returned: %s") %
                         (filename, p.fromchild.read()))

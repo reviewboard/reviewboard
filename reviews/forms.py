@@ -23,14 +23,6 @@ class NewReviewRequestForm(forms.Form):
     repository = forms.ChoiceField(required=True)
     changenum = forms.IntegerField(required=False)
 
-#    summary = forms.CharField(max_length=300)
-#    description = forms.CharField(widget=forms.Textarea(attrs={'rows': 10}))
-#    testing_done = forms.CharField(widget=forms.Textarea(attrs={'rows': 10}))
-#    bugs_closed = forms.CharField()
-#    branch = forms.CharField()
-#    target_groups = forms.CharField()
-#    target_people = forms.CharField()
-
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         self.fields['repository'].choices = \

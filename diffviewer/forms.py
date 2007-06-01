@@ -17,7 +17,8 @@ class EmptyDiffError(ValueError):
 
 class UploadDiffForm(forms.Form):
     repositoryid = forms.IntegerField(required=True, widget=forms.HiddenInput)
-    # XXX: it'd be really nice to have "required" dependent on scmtool
+    # XXX: it'd be really nice to have "required" for these things be
+    # dependent on the scmtool for the repository
     basedir = forms.CharField(required=False)
     path = forms.CharField(widget=forms.FileInput())
 
@@ -46,6 +47,7 @@ class UploadDiffForm(forms.Form):
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
             filename = os.path.join(basedir, f2)
 
+            # FIXME: this would be a good place to find permissions errors
             if revision != PRE_CREATION and \
                not tool.file_exists(filename, revision):
                 raise scmtools.FileNotFoundException(filename, revision)

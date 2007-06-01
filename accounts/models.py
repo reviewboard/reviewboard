@@ -7,6 +7,9 @@ class Profile(models.Model):
     """User profile.  Contains some basic configurable settings"""
     user = models.ForeignKey(User, unique=True)
 
+    # This will redirect new users to the account settings page the first time
+    # they log in (or immediately after creating an account).  This allows
+    # people to fix their real name and join groups.
     first_time_setup_done = models.BooleanField(default=False)
 
     collapsed_diffs = models.BooleanField(default=True)
