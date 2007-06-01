@@ -441,7 +441,7 @@ function deleteReviewRequest() {
 				cb: onDeleteReviewRequestConfirmed
 			}, {
 				text: "Cancel",
-				default: true
+				is_default: true
 			}]
 		});
 	}
