@@ -12,26 +12,6 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.utils.fields import ModificationTimestampField
 
 
-class Quip(models.Model):
-    PLACES = (
-        ('dn', 'Dashboard: By Name'),
-        ('dg', 'Dashboard: By Group'),
-        ('de', 'Dashboard: Empty'),
-        ('dm', 'Dashboard: Mine'),
-    )
-    place = models.CharField(maxlength=2, choices=PLACES)
-    text = models.TextField()
-
-    def __str__(self):
-        if len(self.text) < 100:
-            return self.text
-        else:
-            return '%s...' % self.text[:97]
-
-    class Admin:
-        pass
-
-
 class Group(models.Model):
     name = models.CharField(maxlength=64)
     display_name = models.CharField(maxlength=64)
