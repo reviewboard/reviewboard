@@ -66,6 +66,8 @@ class NewReviewRequestForm(forms.Form):
             review_request = \
                 ReviewRequest.objects.get(changenum=changenum)
             update_review_request_from_changenum(review_request, changenum)
+            if review_request.status == 'D':
+                review_request.status = 'P'
             review_request.save()
 
         diff_form = UploadDiffForm(data={
