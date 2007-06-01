@@ -70,7 +70,7 @@ class ReviewRequest(models.Model):
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         verbose_name='diff set history',
                                         blank=True)
-    branch = models.CharField("Branch", maxlength=30, blank=True)
+    branch = models.CharField("Branch", maxlength=300, blank=True)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
     target_people = models.ManyToManyField(User, verbose_name="Target People",
