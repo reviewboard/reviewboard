@@ -189,13 +189,14 @@ def create_review_request(changenum, repository_path):
     except APIError, e:
         rsp, = e.args
 
-        if rsp['err']['code'] == 204: # Change number in use
-            debug("Review request already exists. Updating it...")
-            rsp = api_post(
-                '/api/json/reviewrequests/%s/update_from_changenum/' %
-                rsp['review_request']['id'])
-        else:
-            raise e
+        if not options.diff_only:
+            if rsp['err']['code'] == 204: # Change number in use
+                debug("Review request already exists. Updating it...")
+                rsp = api_post(
+                    '/api/json/reviewrequests/%s/update_from_changenum/' %
+                    rsp['review_request']['id'])
+            else:
+                raise e
 
     debug("Review request created")
     return rsp['review_request']
@@ -413,6 +414,9 @@ def main():
     parser.add_option("--server", dest="server",
                       metavar="SERVER",
                       help="specify a different Review Board server to use")
+    parser.add_option("--diff-only", dest="diff_only",
+                      action="store_true", default=False,
+                      help="uploads a new diff, but does not update info from changelist")
     parser.add_option("-d", "--debug", action="store_true",
                       dest="debug", default=False, help="display debug output")
 
