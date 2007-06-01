@@ -1,7 +1,10 @@
+import os
+
 from django import newforms as forms
 from django.conf import settings
 from django.core import validators
 from django.core.validators import ValidationError
+
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.models import Repository
 import reviewboard.diffviewer.parser as diffparser
@@ -37,11 +40,11 @@ class UploadDiffForm(forms.Form):
         if tool.get_diffs_use_absolute_paths():
             basedir = ''
         else:
-            basedir = str(formdata['basedir']) + '/'
+            basedir = str(formdata['basedir'])
 
         for f in files:
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
-            filename = basedir + f2
+            filename = os.path.join(basedir, f2)
 
             if revision != PRE_CREATION and \
                not tool.file_exists(filename, revision):
@@ -58,7 +61,7 @@ class UploadDiffForm(forms.Form):
         for f in files:
             filediff = FileDiff(diffset=diffset,
                                 source_file=f.origFile,
-                                dest_file=basedir + f.newFile,
+                                dest_file=os.path.join(basedir, f.newFile),
                                 source_revision=str(f.origInfo),
                                 dest_detail=f.newInfo,
                                 diff=f.data,
