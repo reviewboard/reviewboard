@@ -224,10 +224,15 @@ ul.errorlist li {
 .box-container {
   border: 1px #DCDCDC solid;
   margin-bottom: 10px;
+  width: 100%;
 }
 
 .box-inner {
   background: url('/images/box_bottom_bg.png') repeat-x bottom left;
+}
+
+.box-inner form {
+  margin: 0;
 }
 
 
@@ -358,7 +363,7 @@ ul.errorlist li {
   background-color: #C6DCF3;
   border: 1px #3465A4 solid;
   list-style: none;
-  margin-bottom: 12px;
+  margin: 10px 0;
   padding: 9px 6px;
 }
 

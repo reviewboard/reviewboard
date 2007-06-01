@@ -1,11 +1,26 @@
-img {
-  behavior: url("/scripts/pngfix.htc");
+body {
 }
 
+img,
 .box,
 .box-inner,
 .box h1.title {
-  background-image: none;
+  behavior: url("/scripts/pngfix.htc");
+}
+
+#content {
+}
+
+.box-container {
+  width: 99%;
+}
+
+.box.important {
+  padding: 10px;
+}
+
+.box.important .box-inner {
+  width: 90%;
 }
 
 .review-request .controls {
