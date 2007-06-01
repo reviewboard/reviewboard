@@ -40,8 +40,8 @@
 </table>
 {% if is_paginated %}
 Results <b>{{first_on_page}} - {{last_on_page}}</b> of <b>{{hits}}</b>
-{% if has_previous %}<a class="pagination" href="?page={{previous}}">←Previous {{results_per_page}}</a>{% endif %}
-{% if has_next %}<a class="pagination" href="?page={{next}}">→Next {{results_per_page}}</a>{% endif %}
+{% if has_previous %}<a class="pagination" href="?page={{previous}}">&larr;Previous {{results_per_page}}</a>{% endif %}
+{% if has_next %}<a class="pagination" href="?page={{next}}">&rarr;Next {{results_per_page}}</a>{% endif %}
 {% endif %}
 {% else %}
 <p>No pending reviews.</p>
