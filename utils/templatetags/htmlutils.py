@@ -36,14 +36,17 @@ class BoxNode(template.Node):
 
 @register.tag
 def box(parser, token):
-    classname = None
+    bits = token.split_contents()
+    tagname = bits[0]
 
-    if len(token.contents.split()) > 1:
-        try:
-            tag_name, classname = token.split_contents()
-        except ValueError:
-            raise template.TemplateSyntaxError, \
-                "%r tag requires a class name" % tagname
+    if len(bits) > 2:
+        raise TemplateSyntaxError, \
+            "%r tag takes zero or one arguments." % tagname
+
+    if len(bits) == 2:
+        classname = bits[1]
+    else:
+        classname = None
 
     nodelist = parser.parse(('endbox'),)
     parser.delete_first_token()
@@ -67,10 +70,10 @@ class ErrorBoxNode(template.Node):
 
 @register.tag
 def errorbox(parser, token):
-    bits = token.contents.split()
+    bits = token.split_contents()
     tagname = bits[0]
 
-    if len(bits) > 1:
+    if len(bits) > 2:
         raise TemplateSyntaxError, \
             "%r tag takes zero or one arguments." % tagname
 
@@ -152,6 +155,7 @@ def indent(value, numspaces=4):
     indent_str = " " * numspaces
     return indent_str + value.replace("\n", "\n" + indent_str)
 
+
 # From http://www.djangosnippets.com/snippets/192
 @register.filter
 def thumbnail(file, size='400x100'):
@@ -166,6 +170,7 @@ def thumbnail(file, size='400x100'):
         image.thumbnail([x, y], Image.ANTIALIAS)
         image.save(miniature_filename, image.format)
     return miniature_url
+
 
 @register.filter
 def basename(value):
