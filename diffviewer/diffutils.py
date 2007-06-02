@@ -1,7 +1,7 @@
 import difflib
 import math
 import os
-import popen2
+import subprocess
 import tempfile
 
 def diff(a, b):
@@ -83,10 +83,13 @@ def patch(diff, file, filename):
     f.write(file)
     f.close()
 
+    # XXX: catch exception if Popen fails?
     newfile = '%s-new' % oldfile
-    p = popen2.Popen3('patch -o %s %s' % (newfile, oldfile))
-    p.tochild.write(diff)
-    p.tochild.close()
+    p = subprocess.Popen(['patch', '-o', newfile, oldfile],
+                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                         close_fds=True)
+    p.stdin.write(diff)
+    p.stdin.close()
     failure = p.wait()
 
     if failure:
@@ -102,7 +105,7 @@ def patch(diff, file, filename):
         # failed to apply, which makes it hard to debug.
         raise Exception(("The patch to '%s' didn't apply cleanly. " +
                          "`patch` returned: %s") %
-                        (filename, p.fromchild.read()))
+                        (filename, p.stdout.read()))
 
     f = open(newfile, "r")
     data = f.read()

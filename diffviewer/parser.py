@@ -1,5 +1,5 @@
 import re
-from popen2 import Popen3
+import subprocess
 
 class File:
     def __init__(self):
@@ -84,10 +84,11 @@ def parse(data):
                 files.append(newfileinfo)
 
 
-    p = Popen3('lsdiff -n')
-    p.tochild.write(data)
-    p.tochild.close()
-    r = p.fromchild.read().strip()
+    p = subprocess.Popen(['lsdiff', '-n'], stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE, close_fds=True)
+    p.stdin.write(data)
+    p.stdin.close()
+    r = p.stdout.read().strip()
     failure = p.wait()
 
     if failure:
