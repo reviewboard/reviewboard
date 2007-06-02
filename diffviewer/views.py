@@ -155,7 +155,6 @@ def get_diff_files(diffset):
 
         files.append({
             'depot_filename': filediff.source_file,
-            'user_filename': filediff.dest_file,
             'revision': revision,
             'chunks': chunks,
             'filediff': filediff,
