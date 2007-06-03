@@ -302,6 +302,7 @@ class Review(models.Model):
 
     def is_reply(self):
         return self.base_reply_to != None
+    is_reply.boolean = True
 
     def public_replies(self):
         return self.replies.filter(public=True)
