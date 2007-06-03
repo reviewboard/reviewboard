@@ -18,13 +18,13 @@ def check_dependencies():
        (sys.version_info[0] == 2 and sys.version_info[1] < 4):
         dependency_error('Python 2.4 or newer is required.')
 
-    # Django 0.96
+    # Django 0.97
     try:
         import django
-        if django.VERSION[0] == 0 and django.VERSION[1] < 96:
-            dependency_error('Django 0.96 or newer is required.')
+        if django.VERSION[0] == 0 and django.VERSION[1] < 97:
+            dependency_error('Django 0.97 or newer is required.')
     except ImportError:
-        dependency_error('Django 0.96 or newer is required.')
+        dependency_error('Django 0.97 or newer is required.')
 
     # PIL
     try:
