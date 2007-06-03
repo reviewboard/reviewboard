@@ -1,74 +1,106 @@
-import time
-import smtplib, rfc822
-import socket
-import random
 from datetime import datetime
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.mail import SafeMIMEText
+from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
 from reviewboard.reviews.models import ReviewRequest, Review
 
-DNS_NAME = socket.getfqdn()
+def get_email_address_for_user(u):
+    if not u.get_full_name():
+        return user.email
+    else:
+        return '%s <%s>' % (u.get_full_name(), u.email)
+
+
+def get_email_address_for_group(g):
+    return '%s <%s>' % (g.display_name, g.mailing_list)
+
+
+class SpiffyEmailMessage(EmailMessage):
+    def __init__(self, subject, body, from_email, to, in_reply_to):
+        EmailMessage.__init__(self, subject, body, from_email, to)
+        self.in_reply_to = in_reply_to
+        self.message_id = None
+
+    def message(self):
+        msg = super(EmailMessage, self).message()
+
+        if self.in_reply_to:
+            msg['In-Reply-To'] = in_reply_to
+            msg['References'] = in_reply_to
+
+        self.message_id = msg['Message-ID']
+
+        return msg
+
 
 def send_review_mail(user, review_request, subject, in_reply_to,
-                     template_name, context={}):
+                     extra_recipients, template_name, context={}):
     """
     Formats and sends an e-mail out with the current domain and review request
     being added to the template context. Returns the resulting message ID.
     """
     current_site = Site.objects.get(pk=settings.SITE_ID)
 
-    def get_email_user(u):
-        if not u.get_full_name():
-            return user.email
-        else:
-            return '%s <%s>' % (u.get_full_name(), u.email)
+    from_email = get_email_address_for_user(user)
 
-    from_email = get_email_user(user)
+    recipient_table = {
+        from_email: 1,
+        get_email_address_for_user(review_request.submitter): 1,
+    }
 
-    recipient_list = \
-        [get_email_user(u) for u in review_request.target_people.all()] + \
-        ['%s <%s>' % (group.display_name, group.mailing_list) \
-            for group in review_request.target_groups.all()]
+    for u in review_request.target_people.all():
+        recipient_table[get_email_address_for_user(u)] = 1
 
-    if recipient_list == []:
-        return None
+    for group in review_request.target_groups.all():
+        recipient_table[get_email_address_for_group(group)] = 1
 
-    if not user.email in recipient_list:
-        recipient_list += [user.email]
+    if extra_recipients:
+        for recipient in extra_recipients:
+            recipient_table[get_email_address_for_user(recipient)] = 1
+
+    recipient_list = [recipient for recipient in recipient_table]
 
     context['domain'] = current_site.domain
     context['review_request'] = review_request
     body = render_to_string(template_name, context)
 
-    server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
-    if settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD:
-        server.login(settings.EMAIL_HOST_USER,
-                     settings.EMAIL_HOST_PASSWORD)
+    message = SpiffyEmailMessage(subject.strip(), body, from_email,
+                                 ', '.join(recipient_list),
+                                 in_reply_to)
+    message.send()
 
-    msg = SafeMIMEText(body, 'plain', settings.DEFAULT_CHARSET)
-    msg['Subject'] = subject.strip()
-    msg['From'] = from_email
-    msg['To'] = ', '.join(recipient_list)
-    msg['Date'] = rfc822.formatdate()
+    return message.message_id
 
-    if in_reply_to:
-        msg['In-Reply-To'] = in_reply_to
-        msg['References'] = in_reply_to
 
-    try:
-        random_bits = str(random.getrandbits(64))
-    except AttributeError: # Python 2.3 doesn't have random.getrandbits()
-        random_bits = ''.join([random.choice('1234567890') for i in range(19)])
+def harvest_people_from_review(review):
+    """
+    Returns a list of all people who have been involved in the discussion on
+    a review.
+    """
 
-    msg['Message-ID'] = "<%d.%s@%s>" % (time.time(), random_bits, DNS_NAME)
+    # This list comprehension gives us every user in every reply, recursively.
+    # It looks strange and perhaps backwards, but works. We do it this way
+    # because harvest_people_from_review gives us a list back, which we can't
+    # stick in as the result for a standard list comprehension. We could
+    # opt for a simple for loop and concetenate the list, but this is more
+    # fun.
+    return [review.user] + \
+           [u for reply in review.replies.all()
+              for u in harvest_people_from_review(reply)]
 
-    server.sendmail(from_email, recipient_list, msg.as_string())
 
-    return msg['Message-ID']
+def harvest_people_from_review_request(review_request):
+    """
+    Returns a list of all people who have been involved in a discussion on
+    a review request.
+    """
+    # See the comment in harvest_people_from_review for this list
+    # comprehension.
+    return [u for review in review_request.review_set.all()
+              for u in harvest_people_from_review(review)]
 
 
 def mail_review_request(user, review_request):
@@ -84,11 +116,14 @@ def mail_review_request(user, review_request):
     if review_request.email_message_id:
         subject = "Re: " + subject
         reply_message_id = review_request.email_message_id
+        extra_recipients = harvest_people_from_review_request(review_request)
+    else:
+        extra_recipients = None
 
     review_request.time_emailed = datetime.now()
     review_request.email_message_id = \
         send_review_mail(user, review_request, subject, reply_message_id,
-                         'reviews/review_request_email.txt')
+                         extra_recipients, 'reviews/review_request_email.txt')
     review_request.save()
 
 
@@ -102,6 +137,7 @@ def mail_diff_update(user, review_request):
     send_review_mail(user, review_request,
                      "Re: Review Request: %s" % review_request.summary,
                      review_request.email_message_id,
+                     harvest_people_from_review_request(review_request),
                      'reviews/diff_update.txt')
     review_request.save()
 
@@ -122,6 +158,7 @@ def mail_review(user, review):
                          "Re: Review Request: %s" %
                          review.review_request.summary,
                          review.review_request.email_message_id,
+                         None,
                          'reviews/review_email.txt',
                          {'review': review})
     review.time_emailed = datetime.now()
@@ -143,6 +180,7 @@ def mail_reply(user, reply):
                          "Re: Review Request: %s" %
                          review.review_request.summary,
                          review.email_message_id,
+                         harvest_people_from_review(review),
                          'reviews/reply_email.txt',
                          {'review': review,
                           'reply': reply})
