@@ -3,32 +3,31 @@
 {% block title %}Upload diff{% endblock %}
 
 {% block content %}
-<div class="section">
- <div class="title">Upload diff</div>
- <div class="body">
-  {% if differror %}
+{% box upload %}
+<form method="post" enctype="multipart/form-data" action=".">
+ <h1 class="title">Upload diff</h1>
+ {% if differror %}
   {%  errorbox %}
-  <p>There were errors in the diff file. {{differror}}
+   <p>There were errors in the diff file. {{differror}}
   {%  enderrorbox %}
+ {% endif %}
+ <table id="upload_diff_form">
+  {{form.repositoryid}}
+  {% if not diffs_use_absolute_paths %}
+   <tr>
+    <td><label for="id_basedir">Base directory:</label></td>
+    <td>{{form.basedir}} {{form.basedir.errors}}</td>
+   </tr>
   {% endif %}
-  <form method="post" enctype="multipart/form-data" action=".">
-   <table id="upload_diff_form">
-    {{form.repositoryid}}
-    {% if not diffs_use_absolute_paths %}
-    <tr>
-     <td><label for="id_basedir">Base directory:</label></td>
-     <td>{{form.basedir}} {{form.basedir.errors}}</td>
-    </tr>
-	{% endif %}
-    <tr>
-     <td><label for="id_path">Filename:</label></td>
-     <td>{{form.path}} {{form.path.errors}}</td>
-    </tr>
-    <tr>
-     <td>&nbsp;</td>
-     <td class="field"><input type="submit" value="Upload" /></td>
-    </tr>
-  </form>
- </div>
-</div>
+  <tr>
+   <td><label for="id_path">Filename:</label></td>
+   <td>{{form.path}} {{form.path.errors}}</td>
+  </tr>
+  <tr>
+   <td>&nbsp;</td>
+   <td class="field"><input type="submit" value="Upload" /></td>
+  </tr>
+ </table>
+</form>
+{% endbox %}
 {% endblock %}
