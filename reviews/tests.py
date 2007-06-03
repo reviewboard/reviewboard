@@ -95,7 +95,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["grumpy", "doc", "dopey"], ["reviewboard"])
 
     def assertValidRecipients(self, user_list, group_list):
-        recipient_list = re.split(r",\s*", mail.outbox[0].to)
+        recipient_list = mail.outbox[0].to
         self.assertEqual(len(recipient_list), len(user_list) + len(group_list))
 
         for user in user_list:
