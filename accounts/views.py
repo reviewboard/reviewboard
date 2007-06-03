@@ -30,13 +30,9 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         form = PreferencesForm(request.POST)
 
         if form.is_valid():
-            # XXX Compatibility with Django 0.96 and 1.0.
-            formdata = getattr(form, "cleaned_data",
-                               getattr(form, "clean_data", None))
-
-            request.user.group_set = formdata['groups']
-            request.user.first_name = formdata['first_name']
-            request.user.last_name = formdata['last_name']
+            request.user.group_set = form.cleaned_data['groups']
+            request.user.first_name = form.cleaned_data['first_name']
+            request.user.last_name = form.cleaned_data['last_name']
             request.user.save()
 
             profile, profile_is_new = \

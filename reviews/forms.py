@@ -39,12 +39,8 @@ class NewReviewRequestForm(forms.Form):
         return set(result)
 
     def create(self, user, file):
-        # XXX Compatibility with Django 0.96 and 1.0.
-        formdata = getattr(self, "cleaned_data",
-                           getattr(self, "clean_data", None))
-
-        repository = Repository.objects.get(pk=formdata['repository'])
-        changenum = formdata['changenum'] or None
+        repository = Repository.objects.get(pk=self.cleaned_data['repository'])
+        changenum = self.cleaned_data['changenum'] or None
 
         # It's a little odd to validate this here, but we want to have access to
         # the user.
@@ -71,8 +67,8 @@ class NewReviewRequestForm(forms.Form):
             review_request.save()
 
         diff_form = UploadDiffForm(data={
-            'basedir': formdata['basedir'],
-            'path': formdata['diff_path'],
+            'basedir': self.cleaned_data['basedir'],
+            'path': self.cleaned_data['diff_path'],
             'repositoryid': repository.id,
         })
         diff_form.full_clean()
@@ -93,14 +89,10 @@ class UploadScreenshotForm(forms.Form):
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, data, review):
-        # XXX Compatibility with Django 0.96 and 1.0.
-        formdata = getattr(self, "cleaned_data",
-                           getattr(self, "clean_data", None))
-
         draft = ReviewRequestDraft.create(review)
 
-        screenshot = Screenshot(caption=formdata['caption'],
-                                draft_caption=formdata['caption'])
+        screenshot = Screenshot(caption=self.cleaned_data['caption'],
+                                draft_caption=self.cleaned_data['caption'])
         screenshot.save()
         screenshot.save_image_file(data["filename"], data["content"])
 
