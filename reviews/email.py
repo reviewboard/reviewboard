@@ -28,8 +28,8 @@ class SpiffyEmailMessage(EmailMessage):
         msg = super(SpiffyEmailMessage, self).message()
 
         if self.in_reply_to:
-            msg['In-Reply-To'] = in_reply_to
-            msg['References'] = in_reply_to
+            msg['In-Reply-To'] = self.in_reply_to
+            msg['References'] = self.in_reply_to
 
         self.message_id = msg['Message-ID']
 
