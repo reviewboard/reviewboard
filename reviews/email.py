@@ -25,7 +25,7 @@ class SpiffyEmailMessage(EmailMessage):
         self.message_id = None
 
     def message(self):
-        msg = super(EmailMessage, self).message()
+        msg = super(SpiffyEmailMessage, self).message()
 
         if self.in_reply_to:
             msg['In-Reply-To'] = in_reply_to
@@ -68,8 +68,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     body = render_to_string(template_name, context)
 
     message = SpiffyEmailMessage(subject.strip(), body, from_email,
-                                 ', '.join(recipient_list),
-                                 in_reply_to)
+                                 recipient_list, in_reply_to)
     message.send()
 
     return message.message_id
