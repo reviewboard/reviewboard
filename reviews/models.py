@@ -97,6 +97,7 @@ class ReviewRequest(models.Model):
     class Admin:
         list_display = ('summary', 'submitter', 'status', 'public', \
                         'last_updated')
+        list_filter = ('public', 'status', 'time_added', 'last_updated')
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
@@ -197,6 +198,7 @@ class ReviewRequestDraft(models.Model):
 
     class Admin:
         list_display = ('summary', '_submitter', 'last_updated')
+        list_filter = ('last_updated',)
 
     class Meta:
         ordering = ['-last_updated']
@@ -232,6 +234,7 @@ class Comment(models.Model):
     class Admin:
         list_display = ('text', 'filediff', 'first_line', 'num_lines',
                         'timestamp')
+        list_filter = ('timestamp',)
 
     class Meta:
         ordering = ['timestamp']
@@ -263,6 +266,7 @@ class ScreenshotComment(models.Model):
 
     class Admin:
         list_display = ('text', 'screenshot', 'timestamp')
+        list_filter = ('timestamp',)
 
     class Meta:
         ordering = ['timestamp']
@@ -314,6 +318,7 @@ class Review(models.Model):
     class Admin:
         list_display = ('review_request', 'user', 'public', 'ship_it',
                         'is_reply', 'timestamp')
+        list_filter = ('public', 'timestamp')
 
     class Meta:
         ordering = ['timestamp']
