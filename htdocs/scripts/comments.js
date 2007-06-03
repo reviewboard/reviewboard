@@ -6,7 +6,7 @@ var gReviewCommentTmpl = new YAHOO.ext.DomHelper.Template(
           "<span class=\"filename\">{filename}</span> " +
           "<span class=\"lines\">{lines}</span>" +
         "</dt>" +
-        "<dd>{text}</dd>" +
+        "<dd><pre>{text}</pre></dd>" +
       "</dl>" +
     "</li>");
 gReviewCommentTmpl.compile();

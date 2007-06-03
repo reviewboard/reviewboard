@@ -177,6 +177,17 @@ table.sidebyside .ew {
   margin-bottom: 20px;
 }
 
+#comment-dlg dd pre {
+  font-size: 8pt;
+  line-height: 140%;
+  margin: 0;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
 #comment-dlg textarea {
   border: 1px #888a85 solid;
   font-size: 10pt;
@@ -273,11 +284,11 @@ table.sidebyside .ew {
 }
 
 #comment-dlg #review-body #all-review-comments dd {
-  padding: 1em 0 1em 0;
+  padding: 1em 0;
 }
 
 #comment-dlg #review-body #all-review-comments dl {
-  padding: 0.5em 0 0.5em 0;
+  padding: 0.5em 0;
 }
 
 #comment-dlg #review-body #all-review-comments dt .filename {

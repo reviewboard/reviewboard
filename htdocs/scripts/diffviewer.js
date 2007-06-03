@@ -13,7 +13,7 @@ var gLineCommentTmpl = new YAHOO.ext.DomHelper.Template(
           "<span class=\"timestamp\">{timesince} ago.</span> " +
           "<span class=\"lines\">{lines}</span>" +
         "</dt>" +
-        "<dd>{text}</dd>" +
+        "<dd><pre>{text}</pre></dd>" +
       "</dl>" +
     "</li>");
 gLineCommentTmpl.compile();
@@ -28,7 +28,7 @@ var gLineCommentDraftTmpl = new YAHOO.ext.DomHelper.Template(
             "<span class=\"lines\">{lines}</span>" +
           "</label>" +
         "</dt>" +
-        "<dd id=\"id_yourcomment\">{text}</dd>" +
+        "<dd id=\"id_yourcomment\"><pre>{text}</pre></dd>" +
       "</dl>" +
     "</li>");
 gLineCommentDraftTmpl.compile();
