@@ -1,6 +1,7 @@
 # Django settings for reviewboard project.
 
 import os
+import sys
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -101,6 +102,21 @@ DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
 # out to the e-mail addresses defined for the group.
 SEND_REVIEW_MAIL = False
 
+# Dependency checker functionality.  Gives our users nice errors when they start
+# out, instead of encountering them later on.  Most of the magic for this
+# happens in manage.py, not here.
+install_help = '''
+Please see http://code.google.com/p/reviewboard/wiki/GettingStarted
+for help setting up Review Board.
+'''
+def dependency_error(string):
+    sys.stderr.write('%s\n' % string)
+    sys.stderr.write(install_help)
+    sys.exit(1)
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
-from settings_local import *
+try:
+    from settings_local import *
+except ImportError:
+    dependency_error('Unable to read settings_local.py.')
