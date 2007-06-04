@@ -159,7 +159,7 @@ def group_list(request, template_name):
 
 @login_required
 @valid_prefs_required
-def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
+def dashboard(request, template_name='reviews/dashboard.html'):
     view = request.GET.get('view', 'incoming')
     group = request.GET.get('group', "")
 
@@ -186,14 +186,28 @@ def dashboard(request, limit=50, template_name='reviews/dashboard.html'):
             request.user.username, request.user)
         title = "All Incoming Review Requests"
 
-    review_requests = review_requests[:limit]
+    class BogusQuerySet:
+        """
+        Simple class to fool the object_list generic view into thinking a
+        list is a QuerySet.
+        """
+        def __init__(self, list):
+            self.list = list
 
-    return render_to_response(template_name, RequestContext(request, {
-        'review_requests': review_requests,
-        'title': title,
-        'view': view,
-        'group': group
-    }))
+        def _clone(self):
+            return self.list
+
+    return object_list(request,
+        queryset=BogusQuerySet(review_requests),
+        template_name=template_name,
+        paginate_by=50,
+        allow_empty=True,
+        template_object_name='review_request',
+        extra_context={
+            'title': title,
+            'view': view,
+            'group': group,
+        })
 
 
 @login_required

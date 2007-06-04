@@ -51,7 +51,7 @@
     </tr>
    </thead>
    <tbody>
-{% for review_request in review_requests %}
+{% for review_request in review_request_list %}
     <tr>
      <td class="summary" onclick="javascript:window.location='{{review_request.get_absolute_url}}'; return false;"><a href="{{review_request.get_absolute_url}}">{% reviewsummary review_request %}</a></td>
      <td><a href="{{review_request.submitter.get_absolute_url}}">{{review_request.submitter}}</a></td>
@@ -61,6 +61,11 @@
 {% endfor %}
    </tbody>
   </table>
+{% if is_paginated %}
+Results <b>{{first_on_page}} - {{last_on_page}}</b> of <b>{{hits}}</b>
+{% if has_previous %}<a class="pagination" href="?view={{view}}&group={{group}}&page={{previous}}">&larr;Previous {{results_per_page}}</a>{% endif %}
+{% if has_next %}<a class="pagination" href="?view={{view}}&group={{group}}&page={{next}}">&rarr;Next {{results_per_page}}</a>{% endif %}
+{% endif %}
  </div>
  {% endbox %}
 </div>
