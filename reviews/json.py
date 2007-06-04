@@ -795,7 +795,7 @@ def review_reply_draft(request, review_request_id, review_id):
         raise Http403()
 
     if reply.body_top == "" and reply.body_bottom == "" and \
-       reply.comments.count() == 0:
+       reply.comments.count() == 0 and reply.screenshot_comments.count() == 0:
         reply.delete()
     else:
         reply.save()
