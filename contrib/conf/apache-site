@@ -10,9 +10,14 @@ FastCGIExternalServer /root/reviewboard/htdocs/reviewboard.fcgi -host 127.0.0.1:
 	Alias /css /root/reviewboard/htdocs/images
 	Alias /images /root/reviewboard/htdocs/images
 	Alias /scripts /root/reviewboard/htdocs/scripts
+	Alias /errordocs/ /root/reviewboard/htdocs/errordocs
+
+	# Error handler for when the fastcgi server isn't up
+	ErrorDocument 500 /errordocs/500.html
 
 	RewriteEngine on
 	RewriteRule ^/(media.*)$ /root/reviewboard/htdocs/$1 [QSA,L]
+	RewriteRule ^/(errordocs.*)$ /root/reviewboard/htdocs/$1 [QSA,L]
 	#RewriteRule ^/(css.*)$ /$1 [QSA,L]
 	#RewriteRule ^/(images.*)$ /$1 [QSA,L]
 	#RewriteRule ^/(scripts.*)$ /$1 [QSA,L]
