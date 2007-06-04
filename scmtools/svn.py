@@ -1,8 +1,8 @@
 import pysvn
+import re
 
-from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
-                                      SCMTool
-from reviewboard.scmtools.core import HEAD, PRE_CREATION
+from reviewboard.scmtools.core import \
+    SCMException, FileNotFoundException, SCMTool, HEAD, PRE_CREATION
 
 class SVNTool(SCMTool):
     def __init__(self, repository):
@@ -34,16 +34,26 @@ class SVNTool(SCMTool):
     def parse_diff_revision(self, file_str, revision_str):
         if revision_str == "(working copy)":
             return file_str, HEAD
-        elif revision_str.startswith("(revision "):
-            revision = revision_str.split()[1][:-1]
 
-            if revision == "0":
-                revision = PRE_CREATION
-
-            return file_str, revision
-        else:
+        m = re.match("^(\(([^\)]+)\)\s)?\(revision (\d+)\)$", revision_str)
+        if not m:
             raise SCMException("Unable to parse diff revision header '%s'" %
                                revision_str)
+
+        relocated_file = m.group(2)
+        revision = m.group(3)
+
+        if revision == "0":
+            revision = PRE_CREATION
+
+        if relocated_file:
+            if not relocated_file.startswith("..."):
+                raise SCMException("Unable to parse SVN relocated path '%s'" %
+                                   relocated_file)
+
+            file_str = "%s/%s" % (relocated_file[4:], file_str)
+
+        return file_str, revision
 
 
     def get_filenames_in_revision(self, revision):
