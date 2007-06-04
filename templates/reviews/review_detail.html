@@ -42,6 +42,9 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 
 {% for review in reviews %}
 <a name="review{{review.id}}"></a>
+{% if forloop.last %}
+<a name="last-review" />
+{% endif %}
 {% box review %}
 <div class="main">
  <div class="banner" id="{{review.id}}-banner"></div>

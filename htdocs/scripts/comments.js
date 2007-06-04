@@ -288,7 +288,12 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
     },
 
     publishReview: function() {
-        this.reviewAction("publish", this.resetReview.createDelegate(this));
+        this.reviewAction("publish", this.finishPublish.createDelegate(this));
+    },
+
+    finishPublish: function(deleteDraft) {
+        this.resetReview(deleteDraft);
+        window.location = gReviewRequestPath + '#last-review';
     },
 
     showError: function(text) {
