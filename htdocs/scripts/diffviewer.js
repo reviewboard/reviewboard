@@ -487,6 +487,7 @@ function onLineMouseOver(e, unused, table) {
 	if (node.hasClass("commentflag")) {
 		if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
 			node = gGhostCommentFlagRow;
+			getEl(node.dom.parentNode).addClass("selected");
 		} else {
 			node = getEl(node.dom.parentNode);
 		}
@@ -521,6 +522,8 @@ function onLineMouseOver(e, unused, table) {
 				gGhostCommentFlag.enableDisplayMode();
 				gGhostCommentFlag.setAbsolutePositioned();
 				gGhostCommentFlag.setX(2);
+			} else if (gGhostCommentFlagRow != null) {
+				getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
 			}
 
 			gGhostCommentFlag.setTop(node.getY() - 1);
@@ -531,7 +534,11 @@ function onLineMouseOver(e, unused, table) {
 			gGhostCommentFlag.on('mouseover',
 				onLineMouseOver.createDelegate(this, [table], true));
 			gGhostCommentFlagRow = node;
+
+			getEl(node.dom.parentNode).addClass("selected");
 		}
+	} else if (gGhostCommentFlagRow != null && node != gGhostCommentFlagRow) {
+		getEl(node.dom.parentNode).removeClass("selected");
 	}
 }
 
