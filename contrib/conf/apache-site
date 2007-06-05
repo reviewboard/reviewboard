@@ -1,6 +1,6 @@
 AddHandler fastcgi-script .fcgi
 # FastCGIExternalServer /root/reviewboard/reviewboard.fcgi -socket /var/run/reviewboard/django.sock
-FastCGIExternalServer /root/reviewboard/htdocs/reviewboard.fcgi -host 127.0.0.1:3033
+FastCGIExternalServer /root/reviewboard/htdocs/reviewboard.fcgi -host 127.0.0.1:3033 -idle-timeout 60
 
 <VirtualHost 10.18.66.1:80>
 	ServerName reviewboard.eng.vmware.com
