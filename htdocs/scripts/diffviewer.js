@@ -546,6 +546,7 @@ function onLineMouseOut(e, unused, table) {
 	var relTarget = e.relatedTarget || e.toElement;
 	if (gGhostCommentFlag && relTarget != gGhostCommentFlag.dom) {
 		gGhostCommentFlag.hide();
+		getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
 	}
 
 	if (gSelection.table == table) {
