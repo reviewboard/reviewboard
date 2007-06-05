@@ -481,7 +481,7 @@ function onLineMouseUp(e, unused, table, fileid) {
 	gGhostCommentFlagRow = null;
 }
 
-function onLineMouseOver(e, unused, table) {
+function onLineMouseOver(e, unused, table, fileid) {
 	var node = getEl(e.target || e.srcElement);
 
 	if (node.hasClass("commentflag")) {
@@ -531,8 +531,10 @@ function onLineMouseOver(e, unused, table) {
 			gGhostCommentFlag.removeAllListeners();
 			gGhostCommentFlag.on('mousedown',
 				onLineMouseDown.createDelegate(this, [table], true));
+			gGhostCommentFlag.on('mouseup',
+				onLineMouseUp.createDelegate(this, [table, fileid], true));
 			gGhostCommentFlag.on('mouseover',
-				onLineMouseOver.createDelegate(this, [table], true));
+				onLineMouseOver.createDelegate(this, [table, fileid], true));
 			gGhostCommentFlagRow = node;
 
 			getEl(node.dom.parentNode).addClass("selected");
@@ -546,7 +548,10 @@ function onLineMouseOut(e, unused, table) {
 	var relTarget = e.relatedTarget || e.toElement;
 	if (gGhostCommentFlag && relTarget != gGhostCommentFlag.dom) {
 		gGhostCommentFlag.hide();
-		getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
+
+		if (gGhostCommentFlagRow != null) {
+			getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
+		}
 	}
 
 	if (gSelection.table == table) {
@@ -580,7 +585,8 @@ function addComments(fileid, lines) {
     table.on('mousedown', onLineMouseDown.createDelegate(this, [table], true));
     table.on('mouseup', onLineMouseUp.createDelegate(this, [table, fileid],
 	                                                 true));
-    table.on('mouseover', onLineMouseOver.createDelegate(this, [table], true));
+    table.on('mouseover', onLineMouseOver.createDelegate(this, [table, fileid],
+	                                                     true));
     table.on('mouseout', onLineMouseOut.createDelegate(this, [table], true));
 
     for (linenum in lines) {
