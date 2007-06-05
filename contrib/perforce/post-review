@@ -379,11 +379,12 @@ def tempt_fate(changenum, repository_path, client_root):
             (rsp['err']['msg'], rsp['err']['code']))
 
 
-    try:
-        upload_diff(review_request, changenum)
-    except APIError, e:
-        rsp, = e.args
-        print "Error uploading diff: %s (%s)" % (rsp['err']['msg'],
+    if not options.change_only:
+        try:
+            upload_diff(review_request, changenum)
+        except APIError, e:
+            rsp, = e.args
+            print "Error uploading diff: %s (%s)" % (rsp['err']['msg'],
                                                  rsp['err']['code'])
         die("Your review request still exists, but the diff is not attached.")
 
@@ -417,6 +418,9 @@ def main():
     parser.add_option("--diff-only", dest="diff_only",
                       action="store_true", default=False,
                       help="uploads a new diff, but does not update info from changelist")
+    parser.add_option("--change-only", dest="change_only",
+                      action="store_true", default=False,
+                      help="updates info from changelist, but does not upload a new diff")
     parser.add_option("-d", "--debug", action="store_true",
                       dest="debug", default=False, help="display debug output")
 
