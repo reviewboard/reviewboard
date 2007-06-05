@@ -88,8 +88,11 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
 
         var inlineCommentField = document.getElementById('id_yourcomment');
         if (inlineCommentField) {
-            for (b in this.commentButtons) {
-                this.commentButtons[b].disable();
+            this.commentButtons[0].disable();
+            if (this.commentBlock && this.commentBlock.hasDraft) {
+                this.commentButtons[1].enable();
+            } else {
+                this.commentButtons[1].disable();
             }
 
             this.inlineEditor = new RB.widgets.InlineEditor({
@@ -102,8 +105,11 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
             });
 
             this.inlineEditor.on('beginedit', function(editor) {
-                for (b in this.commentButtons) {
-                    this.commentButtons[b].enable();
+                this.commentButtons[0].enable();
+                if (this.commentBlock && this.commentBlock.hasDraft) {
+                    this.commentButtons[1].enable();
+                } else {
+                    this.commentButtons[1].disable();
                 }
 
                 getEl(inlineCommentField).scrollIntoView(
@@ -112,9 +118,8 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
 
             this.commentForm.hide();
         } else {
-            for (b in this.commentButtons) {
-                this.commentButtons[b].enable();
-            }
+            this.commentButtons[0].enable();
+            this.commentButtons[1].disable();
 
             this.inlineEditor = null;
             this.commentForm.show();
