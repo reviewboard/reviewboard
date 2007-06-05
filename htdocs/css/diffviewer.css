@@ -153,6 +153,10 @@ table.sidebyside .commentflag {
   width: 25px;
 }
 
+#ghost-commentflag {
+  cursor: pointer;
+}
+
 table.sidebyside .commentflag.draft {
   background: url('/images/comment-draft.png') no-repeat;
 }
