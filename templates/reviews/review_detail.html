@@ -54,8 +54,10 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
   <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
  </div>
  <div class="body">
-  <pre class="body_top">{{review.body_top}}</pre>
-  {% reply_section review "" "body_top" "rcbt" %}
+  {% if review.body_top %}
+   <pre class="body_top">{{review.body_top}}</pre>
+   {% reply_section review "" "body_top" "rcbt" %}
+  {% endif %}
 {% if review.comments.all or review.screenshot_comments.all %}
    <dl class="diff-comments">
 {% for comment in review.screenshot_comments.all %}
@@ -110,8 +112,10 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 {% endfor %}
    </dl>
 {% endif %}
-  <pre class="body_bottom">{{review.body_bottom}}</pre>
-  {% reply_section review "" "body_bottom" "rcbb" %}
+  {% if review.body_bottom %}
+   <pre class="body_bottom">{{review.body_bottom}}</pre>
+   {% reply_section review "" "body_bottom" "rcbb" %}
+  {% endif %}
  </div>
 </div>
 {% endbox %}
