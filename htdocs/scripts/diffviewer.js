@@ -236,6 +236,8 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
         this.el.hide(true, .35, function() {
             this.el.remove();
         }.createDelegate(this));
+
+		this.anchor.remove();
     };
 
     this.updatePosition = function() {
@@ -280,10 +282,10 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
         cls: 'commentflag'
     }, true);
 
-    dh.append(lineNumCell, {
+    this.anchor = dh.append(lineNumCell, {
         tag: 'a',
         name: 'file' + this.filediffid + 'line' + this.linenum
-    });
+    }, true);
 
     for (comment in comments) {
         if (comments[comment].localdraft) {
@@ -422,7 +424,6 @@ function onLineMouseDown(e, unused, table) {
 
 		var row = node.parentNode;
 
-		console.debug("2: ", table);
 		gSelection.table    = table;
 		gSelection.begin    = gSelection.end    = node;
 		gSelection.beginNum = gSelection.endNum = parseInt(node.innerHTML);
@@ -492,8 +493,6 @@ function onLineMouseOver(e, unused, table) {
 	}
 
 	if (isLineNumCell(node.dom)) {
-		console.debug(table);
-
 		node.setStyle("cursor", "pointer");
 
 		if (gSelection.table == table) {
@@ -527,7 +526,6 @@ function onLineMouseOver(e, unused, table) {
 			gGhostCommentFlag.setTop(node.getY() - 1);
 			gGhostCommentFlag.show();
 			gGhostCommentFlag.removeAllListeners();
-			console.debug("1: ", table);
 			gGhostCommentFlag.on('mousedown',
 				onLineMouseDown.createDelegate(this, [table], true));
 			gGhostCommentFlag.on('mouseover',
