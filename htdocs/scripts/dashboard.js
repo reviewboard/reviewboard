@@ -21,7 +21,7 @@ function addNavItem(name, count, level, jsonpath, view, group) {
 		levelClass = "sub-sub-item";
 	}
 
-	var url = '/dashboard?view=' + view;
+	var url = '/dashboard/?view=' + view;
 
     if (group) {
         url += "&group=" + group
