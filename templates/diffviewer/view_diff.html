@@ -8,12 +8,12 @@
 <link rel="stylesheet" type="text/css" href="/css/reviews.css" />
 <script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
 <script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
-<script language="javascript" src="/scripts/rb/core.js"></script>
-<script language="javascript" src="/scripts/rb/widgets.js"></script>
-<script language="javascript" src="/scripts/comments.js"></script>
-<script language="javascript" src="/scripts/diffviewer.js"></script>
+<script type="text/javascript" src="/scripts/rb/core.js"></script>
+<script type="text/javascript" src="/scripts/rb/widgets.js"></script>
+<script type="text/javascript" src="/scripts/comments.js"></script>
+<script type="text/javascript" src="/scripts/diffviewer.js"></script>
 <link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
-<script language="javascript">
+<script type="text/javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gReviewRequestId = '{{review_request.id}}';
   var gRevision = '{{diffset.revision}}';
@@ -46,7 +46,7 @@
 {% for file in files %}
 <a name="{{file.index}}"></a>
 {% include "diffviewer/diff_file_fragment.html" %}
-<script language="javascript">
+<script type="text/javascript">
   gFileAnchorToId["file{{file.index}}"] = {{file.filediff.id}};
   addComments("file{{file.index}}", {% commentcounts file.filediff %});
 </script>
@@ -67,6 +67,7 @@
     <label id="id_comment_label" for="id_comment">Your comment:</label><br />
 	<textarea id="id_comment" name="text" rows="4" cols="20"></textarea>
    </form>
+  </div>
  </div>
  <div id="tab-review" class="ydlg-tab" title="Review">
   <form id="reviewform" method="post">

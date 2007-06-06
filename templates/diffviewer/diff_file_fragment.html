@@ -34,10 +34,10 @@
   <tr>
 {% for line in chunk.lines %}
 {% if forloop.first %}
-   <th class="controls">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</td>
-   <th>{{line.0}}</td>
+   <th class="controls">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</th>
+   <th>{{line.0}}</th>
 {% else %}
-   <th colspan="2">{{line.0}}</td>
+   <th colspan="2">{{line.0}}</th>
 {% endif %}
    <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
    <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
