@@ -479,8 +479,11 @@ def upload_screenshot(request, review_request_id,
 def delete_screenshot(request, review_request_id, screenshot_id):
     request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
+    s = Screenshot.objects.get(id=screenshot_id)
+
     draft = ReviewRequestDraft.create(request)
-    draft.screenshots.remove(Screenshot.objects.get(id=screenshot_id))
+    draft.screenshots.remove(s)
+    draft.inactive_screenshots.add(s)
     draft.save()
 
     return HttpResponseRedirect(request.get_absolute_url())

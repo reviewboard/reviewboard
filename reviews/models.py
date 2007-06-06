@@ -35,7 +35,10 @@ class Screenshot(models.Model):
     image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
 
     def get_absolute_url(self):
-        review = self.review_request.all()[0]
+        try:
+            review = self.review_request.all()[0]
+        except IndexError:
+            review = self.inactive_review_request.all()[0]
         return "/r/%s/s/%s/" % (review.id, self.id)
 
     class Admin:
@@ -79,6 +82,8 @@ class ReviewRequest(models.Model):
     screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
                                          related_name="review_request",
                                          core=False, blank=True)
+    inactive_screenshots = models.ManyToManyField(Screenshot,
+        related_name="inactive_review_request", core=False, blank=True)
 
     def get_bug_list(self):
         bugs = re.split(r"[, ]+", self.bugs_closed)
@@ -126,6 +131,8 @@ class ReviewRequestDraft(models.Model):
                                            core=False, blank=True)
     screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
                                          core=False, blank=True)
+    inactive_screenshots = models.ManyToManyField(Screenshot,
+        related_name="inactive_review_request", core=False, blank=True)
 
     def get_bug_list(self):
         bugs = re.split(r"[, ]+", self.bugs_closed)
@@ -189,6 +196,9 @@ class ReviewRequestDraft(models.Model):
                 s.save()
         request.screenshots.clear()
         map(request.screenshots.add, self.screenshots.all())
+
+        request.inactive_screenshots.clear()
+        map(request.inactive_screenshots.add, self.inactive_screenshots.all())
 
         if self.diffset:
             self.diffset.history = request.diffset_history
