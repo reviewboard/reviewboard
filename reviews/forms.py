@@ -76,7 +76,7 @@ class NewReviewRequestForm(forms.Form):
         try:
             diff_form.create(file, review_request.diffset_history)
         except EmptyDiffError:
-            # FIXME: remove review_request
+            review_request.delete()
             self.errors['diff_path'] = forms.util.ErrorList([
                 'The selected file does not appear to be a diff.'])
             raise
