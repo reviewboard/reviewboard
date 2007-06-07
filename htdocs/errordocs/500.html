@@ -30,14 +30,30 @@
    .box-inner {
      padding: 10px;
    }
+   .centered {
+     margin-left: auto;
+     margin-right: auto;
+     text-align: left;
+   }
   </style>
+  <meta http-equiv="refresh" content="60" />
  </head>
  <body>
   <div class="box-container">
    <div class="box">
     <div class="box-inner">
      <h1>Review Board is taking a nap</h1>
-     <span>It will wake up soon.</span>
+     <div class="centered">
+      <span>There are several possible reasons:</span>
+      <ul>
+       <li>We're updating it.</li>
+       <li>You're trying to look at a really huge diff without collapsing, and
+       it timed out (try viewing another diff and going back to collapsed
+       changes; we're working on fixing this).</li>
+       <li>Our lazy good-for-nothing oompa-loompas stopped pedalling.</li>
+      </ul>
+      <span>It'll be back soon.</span>
+     </div>
     </div>
    </div>
   </div>
