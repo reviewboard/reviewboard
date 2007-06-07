@@ -123,7 +123,7 @@ class ReviewRequestDraft(models.Model):
                                                     maxlength=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name='diff set', blank=True,
                                 null=True, core=False)
-    branch = models.CharField("Branch", maxlength=30, blank=True)
+    branch = models.CharField("Branch", maxlength=300, blank=True)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
                                            core=False, blank=True)
     target_people = models.ManyToManyField(User, verbose_name="Target People",
