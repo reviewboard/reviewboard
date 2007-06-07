@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+
+import sys
+
 from django.core.management import execute_manager
+
 try:
     import settings # Assumed to be in the same directory.
 except ImportError:
-    import sys
     sys.stderr.write("Error: Can't find the file 'settings.py' in the directory containing %r. It appears you've customized things.\nYou'll have to run django-admin.py, passing it your settings module.\n(If the file settings.py does indeed exist, it's causing an ImportError somehow.)\n" % __file__)
     sys.exit(1)
 
@@ -13,7 +16,6 @@ def check_dependencies():
     from settings import dependency_error
 
     # Python 2.4
-    import sys
     if sys.version_info[0] < 2 or \
        (sys.version_info[0] == 2 and sys.version_info[1] < 4):
         dependency_error('Python 2.4 or newer is required.')
@@ -73,7 +75,7 @@ if __name__ == "__main__":
         # check twice, so just return.
         import os
         if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-            print 'Running depdendency checks (set DEBUG=False to turn this off)...'
+            sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...')
             check_dependencies()
 
     execute_manager(settings)
