@@ -53,16 +53,6 @@
 {% endfor %}
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
-{% ifnotequal review_request.diffset_history.diffset_set.count 1 %}
-This diff has multiple revisions.
-<ol>
- {% for diff in review_request.diffset_history.diffset_set.all %}
-  {% ifnotequal diff.id diffset.id %}
-   <li><a href="{{diff.get_absolute_url}}">Revision {{diff.revision}}:{{diff.timestamp|timesince}} ago</a></li>
-  {% endifnotequal %}
- {% endfor %}
-</ol>
-{% endifnotequal %}
 {% endif %}
 </div>
 
