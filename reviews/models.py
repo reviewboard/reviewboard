@@ -132,7 +132,7 @@ class ReviewRequestDraft(models.Model):
     screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
                                          core=False, blank=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
-        related_name="inactive_review_request", core=False, blank=True)
+        related_name="inactive_drafts", core=False, blank=True)
 
     def get_bug_list(self):
         bugs = re.split(r"[, ]+", self.bugs_closed)
