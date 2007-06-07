@@ -75,7 +75,7 @@ if __name__ == "__main__":
         # check twice, so just return.
         import os
         if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-            sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...')
+            sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
             check_dependencies()
 
     execute_manager(settings)
