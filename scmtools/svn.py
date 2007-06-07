@@ -19,6 +19,23 @@ class SVNTool(SCMTool):
 
         self.uses_atomic_revisions = True
 
+        # svnlook uses 'rev 0', while svn diff uses 'revision 0'
+        self.revision_re = re.compile("""
+            ^(\(([^\)]+)\)\s)?           # creating diffs between two branches
+                                         # of a remote repository will insert
+                                         # extra "relocation information" into
+                                         # the diff.
+
+            (?:\d+-\d+-\d+\ +            # svnlook-style diffs contain a
+               \d+:\d+:\d+\ +            # timestamp on each line before the
+               [A-Z]+\ +)?               # revision number.  This here is
+                                         # probably a really crappy way to
+                                         # express that, but oh well.
+
+            \(rev(?:ision)?\ (\d+)\)$    # svnlook uses 'rev 0' while svn diff
+                                         # uses 'revision 0'
+            """, re.VERBOSE)
+
 
     def get_file(self, path, revision=HEAD):
         if not path:
@@ -35,7 +52,8 @@ class SVNTool(SCMTool):
         if revision_str == "(working copy)":
             return file_str, HEAD
 
-        m = re.match("^(\(([^\)]+)\)\s)?\(revision (\d+)\)$", revision_str)
+        # svn diff -u has "revision" while svnlook has "rev"
+        m = self.revision_re.match(revision_str)
         if not m:
             raise SCMException("Unable to parse diff revision header '%s'" %
                                revision_str)
