@@ -98,6 +98,9 @@ class SubversionTests(unittest.TestCase):
         self.assertEqual(self.tool.parse_diff_revision('', '(revision 23)')[1],
                          '23')
 
+        self.assertEqual(self.tool.parse_diff_revision('',
+            '2007-06-06 15:32:23 UTC (rev 10958)')[1], '10958')
+
         self.assertRaises(SCMException,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
 
