@@ -568,7 +568,7 @@ def review_request_draft_set(request, review_request_id):
 
     for field_name in mutable_review_request_fields:
         if request.POST.has_key(field_name):
-            value, result['invalid_' + field_entries] = \
+            value, result['invalid_' + field_name] = \
                 _set_draft_field_data(draft, field_name,
                                       request.POST[field_name])
 
