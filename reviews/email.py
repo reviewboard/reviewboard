@@ -106,7 +106,7 @@ def mail_review_request(user, review_request):
     """
     Sends an e-mail representing the supplied review request.
     """
-    if not review_request.public:
+    if not review_request.public or review_request.status == 'D':
         return
 
     subject = "Review Request: %s" % review_request.summary
@@ -130,7 +130,7 @@ def mail_diff_update(user, review_request):
     """
     Sends an e-mail informing users that the diff has been updated.
     """
-    if not review_request.public:
+    if not review_request.public or review_request.status == 'D':
         return
 
     send_review_mail(user, review_request,
