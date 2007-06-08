@@ -214,6 +214,9 @@ CommentBlock = function(x, y, w, h, container, comments) {
         }
 
         gCommentDlg.setCommentBlock(this);
+        if (gCommentDlg.isVisible()) {
+            gCommentDlg.hide();
+        }
         gCommentDlg.show(this.el);
         gSelectionSensitive = false;
     };

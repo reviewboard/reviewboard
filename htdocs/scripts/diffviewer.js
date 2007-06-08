@@ -270,6 +270,9 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
         }
 
         gCommentDlg.setCommentBlock(this);
+        if (gCommentDlg.isVisible()) {
+            gCommentDlg.hide();
+        }
         gCommentDlg.show(this.el);
     };
 
