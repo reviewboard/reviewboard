@@ -443,10 +443,9 @@ def review_request_draft_discard(request, review_request_id):
 @json_login_required
 @require_POST
 def review_request_draft_save(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
     try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+        draft = ReviewRequestDraft.objects.get(review_request=review_request_id)
+        review_request = draft.review_request
     except ReviewRequestDraft.DoesNotExist:
         return JsonResponseError(request, DOES_NOT_EXIST)
 
