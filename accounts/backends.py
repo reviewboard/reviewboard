@@ -26,13 +26,19 @@ class NISBackend:
             try:
                 if not passwd:
                     passwd = nis.match(username, 'passwd').split(':')
-                first_name, last_name = passwd[4].split(' ', 1)
+
+		names = passwd[4].split(' ', 1)
+		first_name = names[0]
+                last_name = None
+		if len(names) > 1:
+		  last_name = names[1]
+
                 email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
                 user = User(username=username,
                             password='',
                             first_name=first_name,
-                            last_name=last_name,
+                            last_name=last_name or '',
                             email=email)
                 user.is_staff = False
                 user.is_superuser = False
