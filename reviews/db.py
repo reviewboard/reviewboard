@@ -10,15 +10,13 @@ def _get_review_request_list(user, status, extra_query=None):
     else:
         query = Q(public=True)
 
-    if status != None:
+    if status:
         query = query & Q(status=status)
 
     if extra_query:
         query = query & extra_query
 
-    review_requests = ReviewRequest.objects.filter(query).distinct()
-
-    return review_requests
+    return ReviewRequest.objects.filter(query).distinct()
 
 
 def get_all_review_requests(user=None, status='P'):
@@ -43,6 +41,8 @@ def get_review_requests_to_user(username, user=None, status='P'):
     # does not work.  I haven't exactly figured out why.
 
     # This is disgusting, but it actually works =P
+    # FIXME: it might be useful to cache this and invalidate the cache every
+    #        time the status on a review request changes.
     results = []
     def add_if_unique(requests):
         for request in requests:
