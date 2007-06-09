@@ -101,7 +101,7 @@ def parse(data):
     next_slice = current_slice[1:] + ['%d' % len(lines)]
     for current, next in zip(current_slice, next_slice):
         # Get the part lsdiff reported
-        begin, file = current.split()
+        begin, file = current.split()[:2]
         end = next.split()[0]
 
         # lsdiff's line numbers are 1-based. We want 0-based.
