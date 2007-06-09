@@ -18,7 +18,7 @@ class UserVisibleError(Exception):
     pass
 
 
-def get_diff_files(diffset):
+def get_diff_files(diffset, interdiffset=None):
     def get_original_file(file, revision):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
@@ -33,7 +33,14 @@ def get_diff_files(diffset):
         except Exception, e:
             raise UserVisibleError(str(e))
 
-    def get_chunks(filediff):
+    def get_patched_file(buffer, filediff):
+        try:
+            return diffutils.patch(filediff.diff, buffer, filediff.dest_file)
+        except Exception, e:
+            raise UserVisibleError(str(e))
+
+
+    def get_chunks(filediff, interfilediff=None):
         def diff_line(linenum, oldline, newline):
             if not oldline or not newline:
                 return [linenum, oldline or '', [], newline or '', []]
@@ -64,10 +71,10 @@ def get_diff_files(diffset):
         else:
             old = get_original_file(file, revision)
 
-        try:
-            new = diffutils.patch(filediff.diff, old, filediff.dest_file)
-        except Exception, e:
-            raise UserVisibleError(str(e))
+        new = get_patched_file(old, filediff)
+
+        if interfilediff:
+            old, new = new, get_patched_file(old, interfilediff)
 
         a = (old or '').splitlines()
         b = (new or '').splitlines()
@@ -106,7 +113,6 @@ def get_diff_files(diffset):
             else:
                 chunks.append(new_chunk(lines, numlines, tag))
 
-
         return chunks
 
     def add_navigation_cues(files):
@@ -140,6 +146,19 @@ def get_diff_files(diffset):
     for filediff in diffset.files.all():
         if filediff.binary:
             chunks = []
+        elif interdiffset:
+            # XXX This is slow. We should optimize this.
+            interfilediff = None
+            for filediff2 in interdiffset.files.all():
+                if filediff2.source_file == filediff.source_file:
+                    interfilediff = filediff2
+                    break
+
+            if interfilediff:
+                chunks = cache_memoize('diff-sidebyside-interdiff-%s-%s' %
+                                       (filediff.id, interfilediff.id),
+                                       lambda: get_chunks(filediff,
+                                                          interfilediff))
         else:
             chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
                                    lambda: get_chunks(filediff))
@@ -166,12 +185,17 @@ def get_diff_files(diffset):
     return files
 
 
-def view_diff(request, object_id, extra_context={},
+def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
-    diffset = get_object_or_404(DiffSet, pk=object_id)
+    diffset = get_object_or_404(DiffSet, pk=diffset_id)
+
+    if interdiffset_id:
+        interdiffset = get_object_or_404(DiffSet, pk=interdiffset_id)
+    else:
+        interdiffset = None
 
     try:
-        files = get_diff_files(diffset)
+        files = get_diff_files(diffset, interdiffset)
 
         if request.GET.get('expand', False):
             collapseall = False
@@ -184,6 +208,7 @@ def view_diff(request, object_id, extra_context={},
 
         context = {
             'diffset': diffset,
+            'interdiffset': interdiffset,
             'files': files,
             'collapseall': collapseall,
         }

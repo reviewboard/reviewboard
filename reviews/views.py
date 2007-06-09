@@ -257,9 +257,15 @@ def _query_for_diff(review_request, revision, query_extra=None):
 
 
 @login_required
-def diff(request, object_id, revision=None):
-    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+def diff(request, review_request_id, revision=None, interdiff_revision=None):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
+
+    if interdiff_revision:
+        interdiffset = _query_for_diff(review_request, interdiff_revision)
+        interdiffset_id = interdiffset.id
+    else:
+        interdiffset_id = None
 
     try:
         review = Review.objects.get(user=request.user,
@@ -275,7 +281,7 @@ def diff(request, object_id, revision=None):
     except ReviewRequestDraft.DoesNotExist:
         draft = None
 
-    return view_diff(request, diffset.id, {
+    return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,
         'review_request': review_request,
         'review_request_details': draft or review_request,
