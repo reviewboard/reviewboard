@@ -166,9 +166,13 @@ def thumbnail(file, size='400x100'):
     miniature_url = os.path.join(settings.MEDIA_URL, miniature)
 
     if not os.path.exists(miniature_filename):
-        image = Image.open(os.path.join(settings.MEDIA_ROOT, file))
-        image.thumbnail([x, y], Image.ANTIALIAS)
-        image.save(miniature_filename, image.format)
+        try:
+            image = Image.open(os.path.join(settings.MEDIA_ROOT, file))
+            image.thumbnail([x, y], Image.ANTIALIAS)
+            image.save(miniature_filename, image.format)
+        except IOError:
+            return ""
+
     return miniature_url
 
 
