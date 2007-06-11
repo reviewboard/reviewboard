@@ -147,7 +147,7 @@ def humanize_list(value):
     if len(value) > 3:
         s += ","
 
-    return s + " and " + value[-1]
+    return "%s and %s" % (s, value[-1])
 
 
 @register.filter
