@@ -10,6 +10,7 @@ from django.db.models import Q
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.utils.fields import ModificationTimestampField
+from utils.templatetags.htmlutils import thumbnail
 
 
 class Group(models.Model):
@@ -34,6 +35,14 @@ class Screenshot(models.Model):
     draft_caption = models.CharField(maxlength=256, blank=True)
     image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
 
+    def thumb(self):
+        url = thumbnail(self.image)
+        return '<img src="%s" alt="%s" />' % (url, self.caption)
+    thumb.allow_tags = True
+
+    def __str__(self):
+        return "%s (%s)" % (self.caption, self.image)
+
     def get_absolute_url(self):
         try:
             review = self.review_request.all()[0]
@@ -42,7 +51,8 @@ class Screenshot(models.Model):
         return "/r/%s/s/%s/" % (review.id, self.id)
 
     class Admin:
-        pass
+        list_display = ('thumb', 'caption', 'image')
+        list_display_links = ('thumb', 'caption')
 
 
 class ReviewRequest(models.Model):

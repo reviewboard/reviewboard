@@ -66,7 +66,7 @@
   <label for="images">Screenshots:</label>
   {% for image in review_request_details.screenshots.all %}
    <div class="screenshot-container">
-    <a href="{{image.get_absolute_url}}"><img src="{{image.image|thumbnail}}" alt="{{image.caption}}" /></a><br />
+    <a href="{{image.get_absolute_url}}">{{image.thumb}}</a><br />
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
      {% ifequal request.user review_request.submitter %}
