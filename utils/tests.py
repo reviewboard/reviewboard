@@ -1,29 +1,10 @@
 import datetime
 import unittest
 
-from django.template import Node, Token, TOKEN_TEXT, TemplateSyntaxError
+from django.template import Token, TOKEN_TEXT, TemplateSyntaxError
+from djblets.util.testing import TagTest
 
 from reviewboard.utils.templatetags import htmlutils
-
-
-class StubNodeList(Node):
-    def render(self, context):
-        return 'content'
-
-
-class StubParser:
-    def parse(self, until):
-        return StubNodeList()
-
-    def delete_first_token(self):
-        pass
-
-
-class TagTest(unittest.TestCase):
-    """Base testing setup for utils.templatetags.htmlutils"""
-
-    def setUp(self):
-        self.parser = StubParser()
 
 
 class BoxTest(TagTest):

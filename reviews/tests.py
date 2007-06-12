@@ -9,14 +9,12 @@ from django.test import TestCase
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_address_for_group, \
                                       mail_review_request, mail_review, \
-                                      mail_reply, mail_diff_update
+                                      mail_reply
 from reviewboard.reviews.models import Group, ReviewRequest, Review
 
 
 class EmailTests(TestCase):
-    """
-    Tests the e-mail support.
-    """
+    """Tests the e-mail support."""
     fixtures = ['email_test']
 
     def setUp(self):
@@ -24,9 +22,7 @@ class EmailTests(TestCase):
         mail.outbox = []
 
     def testNewReviewRequestEmail(self):
-        """
-        Test sending an e-mail when creating a new review request.
-        """
+        """Testing sending an e-mail when creating a new review request."""
         review_request = ReviewRequest.objects.get(submitter__username="doc")
         mail_review_request(review_request.submitter, review_request)
 
@@ -37,9 +33,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["grumpy", "doc"], ["reviewboard"])
 
     def testReviewEmail(self):
-        """
-        Test sending an e-mail when replying to a review request.
-        """
+        """Testing sending an e-mail when replying to a review request."""
         review = Review.objects.get(pk=1)
         self.assertEqual(review.user.username, "grumpy")
         mail_review(review.user, review)
@@ -51,9 +45,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["grumpy", "doc"], ["reviewboard"])
 
     def testReviewReplyEmail(self):
-        """
-        Test sending an e-mail when replying to a review.
-        """
+        """Testing sending an e-mail when replying to a review."""
         base_review = Review.objects.get(pk=1)
         reply = Review.objects.get(base_reply_to=base_review,
                                    user__username="dopey")
@@ -66,9 +58,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["grumpy", "doc", "dopey"], ["reviewboard"])
 
     def testUpdateReviewRequestEmail(self):
-        """
-        Test sending an e-mail when updating a review request.
-        """
+        """Testing sending an e-mail when updating a review request."""
         review_request = ReviewRequest.objects.get(submitter__username="doc")
         review_request.email_message_id = "junk"
         mail_review_request(review_request.submitter, review_request)
@@ -80,9 +70,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["grumpy", "doc", "dopey"], ["reviewboard"])
 
     def testDiffUpdateEmail(self):
-        """
-        Test sending an e-mail when replying to a review.
-        """
+        """Testing sending an e-mail when replying to a review."""
         base_review = Review.objects.get(pk=1)
         reply = Review.objects.get(base_reply_to=base_review,
                                    user__username="dopey")
@@ -105,3 +93,5 @@ class EmailTests(TestCase):
         for group in group_list:
             self.assert_(get_email_address_for_group(
                 Group.objects.get(name=group)) in recipient_list)
+
+
