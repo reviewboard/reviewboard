@@ -34,7 +34,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 {% box review-request %}
 <ul id="topcontrols">
 {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %}
- <li onclick="javascript:window.location='diff/';"><a href="diff/"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+ <li onclick="javascript:window.location='diff/#index_header';"><a href="diff/#index_header"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
 {% endif %}
 </ul>
 {% include "reviews/review_request_box.html" %}
