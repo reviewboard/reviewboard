@@ -125,6 +125,23 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'target_groups': o.target_groups.all(),
                 'target_people': o.target_people.all(),
             }
+        elif isinstance(o, ReviewRequestDraft):
+            if o.bugs_closed == '':
+                bugs_closed = []
+            else:
+                bugs_closed = map(int, o.bugs_closed.split(","))
+
+            return {
+                'id': o.id,
+                'review_request': o.review_request,
+                'last_updated': o.last_updated,
+                'summary': o.summary,
+                'description': o.description,
+                'bugs_closed': bugs_closed,
+                'branch': o.branch,
+                'target_groups': o.target_groups.all(),
+                'target_people': o.target_people.all(),
+            }
         elif isinstance(o, Review):
             return {
                 'id': o.id,
