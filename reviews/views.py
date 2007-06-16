@@ -223,8 +223,8 @@ def group(request, name, template_name):
 @login_required
 def submitter(request, username, template_name):
     return review_list(request,
-        queryset=reviews_db.get_review_requests_to_user_directly(username,
-                                                                 status=None),
+        queryset=reviews_db.get_review_requests_from_user(username,
+                                                          status=None),
         template_name=template_name,
         extra_context={
             'source': username + "'s",
