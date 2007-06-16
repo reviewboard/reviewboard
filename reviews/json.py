@@ -595,6 +595,10 @@ def review_request_draft_update_from_changenum(request, review_request_id):
         return JsonResponseError(request, INVALID_CHANGE_NUMBER,
                                  {'changenum': review_request.changenum})
 
+    if review_request.status == 'D':
+        review_request.status = 'P'
+        review_request.public = False
+
     review_request.save()
 
     return JsonResponse(request, {'review_request': review_request})
