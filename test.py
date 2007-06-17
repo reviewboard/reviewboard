@@ -44,7 +44,7 @@ def runner(module_list, verbosity=1, extra_tests=[]):
 
     nose.main(argv=['test.py', '-v',
                     '--with-coverage', '--cover-package=' + covers,
-                    '--with-doctest', '--doctest-extension=.py',
+                    '--with-doctest', '--doctest-extension=.txt',
                     '-e', exclusion])
 
     destroy_test_db(old_name, verbosity)

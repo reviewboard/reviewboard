@@ -188,6 +188,7 @@ class TestHumanizeList(unittest.TestCase):
 
 class TestIndent(unittest.TestCase):
     def test(self):
+        """Testing indent filter"""
         self.assertEqual(htmlutils.indent('foo'), '    foo')
         self.assertEqual(htmlutils.indent('foo', 3), '   foo')
         self.assertEqual(htmlutils.indent('foo\nbar'), '    foo\n    bar')

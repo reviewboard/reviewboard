@@ -171,7 +171,7 @@ class VMWareTests(DjangoTestCase):
         """Testing VMwarePerforceTool.parse_change_desc"""
 
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
-                                 'vmware-changeset.txt'), 'r')
+                                 'vmware.changeset'), 'r')
         data = file.read().split('\n')
         file.close()
 
@@ -203,7 +203,7 @@ class VMWareTests(DjangoTestCase):
         description.
         """
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
-                                 'vmware-single-line-desc.txt'), 'r')
+                                 'vmware-single-line-desc.changeset'), 'r')
         data = file.read().split('\n')
         file.close()
 
@@ -229,7 +229,7 @@ class VMWareTests(DjangoTestCase):
         multiple lines.
         """
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
-                                 'vmware-phil-is-crazy.txt'), 'r')
+                                 'vmware-phil-is-crazy.changeset'), 'r')
         data = file.read().split('\n')
         file.close()
 
