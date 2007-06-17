@@ -81,6 +81,10 @@ class NewReviewRequestForm(forms.Form):
             self.errors['diff_path'] = forms.util.ErrorList([
                 'The selected file does not appear to be a diff.'])
             raise
+        except Exception, e:
+            review_request.delete()
+            self.errors['diff_path'] = forms.util.ErrorList([e])
+            raise
 
         return review_request
 

@@ -24,8 +24,10 @@ def parseFile(lines, linenum, lastline, filename):
             file.origFile, file.origInfo = lines[linenum].split(None, 2)[1:]
             file.newFile,  file.newInfo  = lines[linenum + 1].split(None, 2)[1:]
         except ValueError:
+            # FIXME: use a custom error class here
             raise Exception("The diff file is missing revision information")
     else:
+        # FIXME: use a custom error class here
         raise Exception('Unable to recognize diff format')
 
     file.data = ""
@@ -92,6 +94,7 @@ def parse(data):
     failure = p.wait()
 
     if failure:
+        # FIXME: use a custom error class here
         raise Exception('Error running lsdiff')
 
     lines = data.splitlines()
