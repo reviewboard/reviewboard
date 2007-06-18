@@ -48,11 +48,13 @@ class CoreTests(unittest.TestCase):
 
 
 class SubversionTests(unittest.TestCase):
-    """Unit tests for subversion.  These will fail if you're offline."""
+    """Unit tests for subversion."""
 
     def setUp(self):
+        svn_repo_path = os.path.join(os.path.dirname(__file__),
+                                     'testdata/svn_repo')
         self.repository = Repository(name='Subversion SVN',
-                                     path='http://svn.collab.net/repos/svn',
+                                     path='file://' + svn_repo_path,
                                      tool=Tool.objects.get(name='Subversion'))
         self.tool = self.repository.get_scmtool()
 
@@ -65,7 +67,7 @@ class SubversionTests(unittest.TestCase):
 
         # There are 3 versions of this test in order to get 100% coverage of
         # the svn module.
-        rev = Revision('19741')
+        rev = Revision('2')
         file = 'trunk/doc/misc-docs/Makefile'
 
         self.assertEqual(self.tool.get_file(file, rev), expected)

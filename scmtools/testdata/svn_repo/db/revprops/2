@@ -1,0 +1,14 @@
+K 10
+svn:author
+V 7
+emurphy
+K 8
+svn:date
+V 27
+2007-06-17T14:57:21.699311Z
+K 7
+svn:log
+V 59
+Spoof up the test data to match what the test is expecting
+
+END
