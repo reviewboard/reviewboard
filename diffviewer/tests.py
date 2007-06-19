@@ -4,6 +4,35 @@ import unittest
 import reviewboard.diffviewer.parser as diffparser
 import diffutils
 
+
+class MyersDifferTest(unittest.TestCase):
+    def diff(self):
+        self.__test_diff(["1", "2", "3"],
+                         ["1", "2", "3"],
+                         [("equal", 0, 0, 3, 3),])
+
+        self.__test_diff(["1", "2", "3"],
+                         [],
+                         [("delete", 0, 0, 3, 0),])
+
+        self.__test_diff("1\n2\n3\n",
+                         "0\n1\n2\n3\n",
+                         [("insert", 0, 0, 0, 1),
+                          ("equal",  0, 1, 3, 3)])
+
+        self.__test_diff("1\n2\n3\n7\n",
+                         "1\n2\n4\n5\n6\n7\n",
+                         [("equal",   0, 0, 2, 2),
+                          ("replace", 2, 2, 1, 1),
+                          ("insert",  3, 3, 0, 2),
+                          ("equal",   3, 5, 1, 1)])
+
+
+    def __test_diff(self, a, b, expected):
+        opcodes = list(diffutils.MyersDiffer(a, b).get_opcodes())
+        self.failUnless(opcodes == expected)
+
+
 class DiffParserTest(unittest.TestCase):
     PREFIX = 'diffviewer/testdata'
 

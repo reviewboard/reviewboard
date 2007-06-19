@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core import validators
 from django.core.validators import ValidationError
 
+from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.models import Repository
 import reviewboard.diffviewer.parser as diffparser
@@ -52,7 +53,8 @@ class UploadDiffForm(forms.Form):
             f.origInfo = revision
 
         diffset = DiffSet(name=file["filename"], revision=0,
-                          history=diffset_history)
+                          history=diffset_history,
+                          diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
         diffset.repository = repository
         diffset.save()
 

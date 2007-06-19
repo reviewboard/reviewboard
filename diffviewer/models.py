@@ -49,6 +49,8 @@ class DiffSet(models.Model):
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
                                 edit_inline=models.STACKED)
     repository = models.ForeignKey(Repository)
+    diffcompat = models.IntegerField('Differ compatibility version',
+                                     default=0)
 
     def save(self):
         if self.revision == 0 and self.history != None:

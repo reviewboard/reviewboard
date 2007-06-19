@@ -83,7 +83,10 @@ def get_diff_files(diffset, interdiffset=None):
 
         chunks = []
         linenum = 1
-        for tag, i1, i2, j1, j2 in diffutils.diff(a, b):
+        differ = diffutils.Differ(a, b, ignore_space=True,
+                                  compat_version=diffset.diffcompat)
+
+        for tag, i1, i2, j1, j2 in differ.get_opcodes():
             oldlines = a[i1:i2]
             newlines = b[j1:j2]
             numlines = max(len(oldlines), len(newlines))

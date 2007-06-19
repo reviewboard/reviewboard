@@ -1,73 +1,29 @@
-import difflib
 import math
 import os
 import subprocess
 import tempfile
 
-def diff(a, b):
+from difflib import SequenceMatcher
+from reviewboard.diffviewer.myersdiff import MyersDiffer
+from reviewboard.diffviewer.smdiff import SMDiffer
+
+
+DEFAULT_DIFF_COMPAT_VERSION = 1
+
+
+def Differ(a, b, ignore_space=False,
+           compat_version=DEFAULT_DIFF_COMPAT_VERSION):
     """
-    Wrapper around SequenceMatcher that works around bugs in how it does
-    its matching.
+    Factory wrapper for returning a differ class based on the compat version
+    and flags specified.
     """
-    matcher = difflib.SequenceMatcher(None, a, b).get_opcodes()
-
-    for tag, i1, i2, j1, j2 in matcher:
-        if tag == 'replace':
-            oldlines = a[i1:i2]
-            newlines = b[j1:j2]
-
-            i = 0
-            j = 0
-            i_start = 0
-            j_start = 0
-
-            while i < len(oldlines) and j < len(newlines):
-                new_tag = None
-                new_i = i
-                new_j = j
-
-                if oldlines[i] == "" and newlines[j] == "":
-                    new_tag = "equal"
-                    new_i += 1
-                    new_j += 1
-                elif oldlines[i] == "":
-                    new_tag = "insert"
-                    new_j += 1
-                elif newlines[j] == "":
-                    new_tag = "delete"
-                    new_i += 1
-                else:
-                    new_tag = "replace"
-                    new_i += 1
-                    new_j += 1
-
-                if new_tag != tag:
-                    if i > i_start or j > j_start:
-                        yield tag, i1 + i_start, i1 + i, j1 + j_start, j1 + j
-
-                    tag = new_tag
-                    i_start = i
-                    j_start = j
-
-                i = new_i
-                j = new_j
-
-            yield tag, i1 + i_start, i1 + i, j1 + j_start, j1 + j
-            i_start = i
-            j_start = j
-
-            if i2 > i1 + i_start or j2 > j1 + j_start:
-                tag = None
-
-                if len(oldlines) > len(newlines):
-                    tag = "delete"
-                elif len(oldlines) < len(newlines):
-                    tag = "insert"
-
-                if tag != None:
-                    yield tag, i1 + i_start, i2, j1 + j_start, j2
-        else:
-            yield tag, i1, i2, j1, j2
+    if compat_version == 0:
+        return SMDiffer(a, b)
+    elif compat_version == 1:
+        return MyersDiffer(a, b, ignore_space)
+    else:
+        raise Exception("Invalid diff compat version (%s) passed to Differ" %
+                        (compat_version))
 
 
 def patch(diff, file, filename):
@@ -121,22 +77,24 @@ def get_line_changed_regions(oldline, newline):
     if oldline is None or newline is None:
         return (None, None)
 
-    s = difflib.SequenceMatcher(None, oldline, newline)
-    oldchanges = []
-    newchanges = []
-    back = (0, 0)
+    # Use the SequenceMatcher directly. It seems to give us better results
+    # for this. We should investigate steps to move to the new differ.
+    differ = SequenceMatcher(None, oldline, newline)
 
     # This thresholds our results -- we don't want to show inter-line diffs if
     # most of the line has changed, unless those lines are very short.
-    opcodes = s.get_opcodes()
 
     # FIXME: just a plain, linear threshold is pretty crummy here.  Short
     # changes in a short line get lost.  I haven't yet thought of a fancy
     # nonlinear test.
-    if s.ratio() < 0.6:
+    if differ.ratio() < 0.6:
         return (None, None)
 
-    for tag, i1, i2, j1, j2 in opcodes:
+    oldchanges = []
+    newchanges = []
+    back = (0, 0)
+
+    for tag, i1, i2, j1, j2 in differ.get_opcodes():
         if tag == "equal":
             if (i2 - i1 < 3) or (j2 - j1 < 3):
                 back = (j2 - j1, i2 - i1)
