@@ -2,7 +2,7 @@
 {% load reviewtags %}
 <div class="main">
  <div class="header">
-  <div id="summary_wrapper"><h1 id="summary">{{review_request_details.summary}}</h1></div>
+  <div id="summary_wrapper"><label>Summary: </label><h1 id="summary">{{review_request_details.summary}}</h1></div>
   <p id="status">
    {{review_request.get_status_display}}<br />
    Updated {{review_request_details.last_updated|timesince}} ago
