@@ -94,7 +94,7 @@ def get_diff_files(diffset, interdiffset=None):
             linenum += numlines
 
             if tag == 'equal' and \
-               numlines >= settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
+               numlines > settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
                 last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
 
                 if len(chunks) == 0:
