@@ -128,6 +128,49 @@ def ageid(parser, token):
     return AgeId(timestamp)
 
 
+class IfUserOrPermNode(template.Node):
+    def __init__(self, nodelist, user, perm):
+        self.nodelist = nodelist
+        self.user = user
+        self.perm = perm
+
+    def render(self, context):
+        try:
+            req_user = resolve_variable('user', context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Missing 'user' variable in context."
+
+        if not req_user.is_authenticated():
+            return ''
+
+        try:
+            user = resolve_variable(self.user, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid user variable %s passed to ifuserorperm tag." % \
+                self.user
+
+        if user == req_user or req_user.has_perm(self.perm):
+            return self.nodelist.render(context)
+
+        return ''
+
+
+@register.tag
+def ifuserorperm(parser, token):
+    bits = token.split_contents()
+    tagname = bits[0]
+
+    if len(bits) != 3:
+        raise TemplateSyntaxError, \
+            "%r tag takes a user and a permission." % tagname
+
+    nodelist = parser.parse(('endifuserorperm'),)
+    parser.delete_first_token()
+    return IfUserOrPermNode(nodelist, bits[1], bits[2])
+
+
 @register.filter
 def escapespaces(value):
     return value.replace('  ', '&nbsp; ').replace('\n', '<br />')

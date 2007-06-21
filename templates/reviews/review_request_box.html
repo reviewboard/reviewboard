@@ -82,7 +82,7 @@
 {% if perms.reviews.delete_reviewrequest %}
  <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="/images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
 {% endif %}
-{% ifequal request.user review_request.submitter %}
+{% ifuserorperm review_request.submitter reviews.can_change_status %}
 {%  if review_request_details.public %}
 {%    ifequal review_request_details.status 'P' %}
  <li><a href="submitted/">Set Submitted</a></li>
@@ -94,6 +94,8 @@
  <li><a href="#" onClick="publishDraft();">Publish</a></li>
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
+{% endifuserorperm %}
+{% ifequal request.user review_request.submitter %}
  <li><a href="diff/upload/?repositoryid={{review_request.repository.id}}"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
  <li><a href="s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
 {% endifequal %}

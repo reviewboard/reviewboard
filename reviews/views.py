@@ -371,7 +371,8 @@ def publish(request, review_request_id):
 def setstatus(request, review_request_id, action):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if request.user != review_request.submitter:
+    if request.user != review_request.submitter and \
+       not request.user.has_perm("reviews.can_change_status"):
         raise HttpResponseForbidden()
 
     try:

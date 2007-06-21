@@ -117,7 +117,7 @@ class ReviewRequest(models.Model):
         ordering = ['-last_updated', 'submitter', 'summary']
         unique_together = (('changenum', 'repository'),)
         permissions = (
-            ("can_change_status", "Can change review request status"),
+            ("can_change_status", "Can change status"),
         )
 
 
