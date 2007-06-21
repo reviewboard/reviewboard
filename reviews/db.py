@@ -1,8 +1,7 @@
 from django.db.models import Q
 
 from reviewboard.diffviewer.models import DiffSetHistory
-from reviewboard.reviews.models import ReviewRequest, Review
-from reviewboard import scmtools
+from reviewboard.reviews.models import ReviewRequest
 
 def _get_review_request_list(user, status, extra_query=None):
     if user:
@@ -77,7 +76,6 @@ def get_review_requests_from_user(username, user=None, status='P'):
 class InvalidChangeNumberException(Exception):
     def __init__(self):
         Exception.__init__(self, None)
-        self.review_request = review_request
 
 
 class ChangeNumberInUseException(Exception):

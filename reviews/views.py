@@ -1,38 +1,32 @@
-from datetime import datetime
 from urllib import quote
-import re
 
-from django import newforms as forms
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.core.serializers import serialize
-from django.db.models import Q, ManyToManyField
-from django.http import HttpResponse, HttpResponseRedirect, Http404
+from django.db.models import Q
+from django.http import HttpResponse, HttpResponseRedirect, Http404, \
+                        HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.views.generic.list_detail import object_list
-from django.views.decorators.http import require_GET, require_POST
 from djblets.auth.util import login_required
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.accounts.models import Profile
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
-from reviewboard.diffviewer.views import UserVisibleError, get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
-                                       Review, Comment, Group, \
-                                       Screenshot, ScreenshotComment
+                                       Review, Group, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm, \
                                       OwnershipError
-from reviewboard.reviews.email import mail_review_request, mail_review, \
+from reviewboard.reviews.email import mail_review_request, \
                                       mail_diff_update
-from reviewboard import scmtools
 from reviewboard.scmtools.models import Repository
 import reviewboard.reviews.db as reviews_db
 
@@ -370,7 +364,7 @@ def publish(request, review_request_id):
 
         return HttpResponseRedirect(review_request.get_absolute_url())
     else:
-        raise Http403() # XXX Error out
+        raise HttpResponseForbidden() # XXX Error out
 
 
 @login_required
@@ -378,7 +372,7 @@ def setstatus(request, review_request_id, action):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if request.user != review_request.submitter:
-        raise Http403()
+        raise HttpResponseForbidden()
 
     try:
         if review_request.status == "D" and action == "reopen":

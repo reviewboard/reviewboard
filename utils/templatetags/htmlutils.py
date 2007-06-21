@@ -1,13 +1,11 @@
 import datetime
 import Image
 import os
-import time
 
 from django.conf import settings
 from django import template
 from django.template import resolve_variable
 from django.template import TemplateSyntaxError, VariableDoesNotExist
-from django.template.defaultfilters import capfirst
 
 register = template.Library()
 

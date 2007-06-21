@@ -6,7 +6,7 @@ from django.utils.feedgenerator import Atom1Feed
 from reviewboard.reviews.db import get_all_review_requests, \
                                    get_review_requests_to_user_directly, \
                                    get_review_requests_to_group
-from reviewboard.reviews.models import ReviewRequest, Group
+from reviewboard.reviews.models import Group
 
 class BaseReviewFeed(Feed):
     title_template = "feeds/reviews_title.html"

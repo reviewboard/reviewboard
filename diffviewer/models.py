@@ -2,9 +2,8 @@ import base64
 from datetime import datetime
 
 from django.db import models
-from django.contrib.auth.models import User
-from reviewboard.scmtools import PRE_CREATION, HEAD
 from reviewboard.scmtools.models import Repository
+
 
 class FileDiff(models.Model):
     diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,

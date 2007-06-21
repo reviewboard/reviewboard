@@ -2,7 +2,6 @@ import os
 import re
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q

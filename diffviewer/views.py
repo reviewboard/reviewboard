@@ -1,4 +1,3 @@
-import sys
 import traceback
 
 from django.conf import settings
@@ -8,7 +7,7 @@ from django.template import RequestContext
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.models import DiffSet, FileDiff, DiffSetHistory
 from reviewboard.scmtools.models import Repository
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.scmtools as scmtools

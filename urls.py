@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.conf.urls.defaults import *
-from reviewboard.reviews.models import ReviewRequest, Group, Screenshot
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed
 from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
 from reviewboard.reviews.feeds import AtomSubmitterReviewsFeed

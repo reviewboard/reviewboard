@@ -1,23 +1,22 @@
 from datetime import datetime
+import os.path
 import re
 
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.serializers import serialize
 from django.core.serializers.json import DateTimeAwareJSONEncoder
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.utils import simplejson
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_POST
 
 from djblets.util.decorators import simple_decorator
 from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply, mail_diff_update
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
@@ -25,7 +24,6 @@ from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ScreenshotComment
 from reviewboard.scmtools.models import Repository
 import reviewboard.reviews.db as reviews_db
-import reviewboard.scmtools as scmtools
 
 
 class JsonError:
@@ -374,7 +372,7 @@ def count_review_requests(request, func, **kwargs):
     })
 
 
-def _get_and_validate_review(review_request_id, review_id):
+def _get_and_validate_review(request, review_request_id, review_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = get_object_or_404(Review, pk=review_id)
 
@@ -389,7 +387,7 @@ def _get_and_validate_review(review_request_id, review_id):
 
 @json_login_required
 def review(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, JsonResponseError):
         return review
@@ -420,7 +418,7 @@ def count_review_list(request, review_request_id):
 
 @json_login_required
 def review_comments_list(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, JsonResponseError):
         return review
@@ -431,7 +429,7 @@ def review_comments_list(request, review_request_id, review_id):
 
 @json_login_required
 def count_review_comments(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, JsonResponseError):
         return review
@@ -726,7 +724,7 @@ def review_draft_comments(request, review_request_id):
 @json_login_required
 @require_POST
 def review_reply_draft(request, review_request_id, review_id):
-    source_review = _get_and_validate_review(review_request_id, review_id)
+    source_review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(source_review, JsonResponseError):
         return source_review
 
@@ -812,7 +810,7 @@ def review_reply_draft(request, review_request_id, review_id):
         else:
             reply.body_bottom_reply_to = source_review
     else:
-        raise Http403()
+        raise HttpResponseForbidden()
 
     if reply.body_top == "" and reply.body_bottom == "" and \
        reply.comments.count() == 0 and reply.screenshot_comments.count() == 0:
@@ -826,7 +824,7 @@ def review_reply_draft(request, review_request_id, review_id):
 @json_login_required
 @require_POST
 def review_reply_draft_save(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, JsonResponseError):
         return review
 
@@ -847,7 +845,7 @@ def review_reply_draft_save(request, review_request_id, review_id):
 @json_login_required
 @require_POST
 def review_reply_draft_discard(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, JsonResponseError):
         return review
 
@@ -864,7 +862,7 @@ def review_reply_draft_discard(request, review_request_id, review_id):
 
 @json_login_required
 def review_replies_list(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, JsonResponseError):
         return review
 
@@ -874,7 +872,7 @@ def review_replies_list(request, review_request_id, review_id):
 
 @json_login_required
 def count_review_replies(request, review_request_id, review_id):
-    review = _get_and_validate_review(review_request_id, review_id)
+    review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, JsonResponseError):
         return review
 

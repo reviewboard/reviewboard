@@ -1,5 +1,5 @@
-from scmtools.core import SCMException, FileNotFoundException, SCMTool
-from scmtools.core import HEAD, PRE_CREATION
+from scmtools.core import FileNotFoundException, SCMTool
+from scmtools.core import HEAD
 
 class LocalFileTool(SCMTool):
     def __init__(self, repository):

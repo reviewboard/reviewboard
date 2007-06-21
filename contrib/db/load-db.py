@@ -5,7 +5,8 @@
 # This loads a JSON dump of the database into ReviewBoard. It first resets
 # the database to ensure there are no duplicate entries.
 
-import os, simplejson, sys
+import os
+import sys
 
 if not os.path.exists("manage.py"):
     print "This must be run in the directory containing manage.py."

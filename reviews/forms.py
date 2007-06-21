@@ -1,11 +1,9 @@
 import re
 
 from django import newforms as forms
-from django.contrib.auth.models import User
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
-from reviewboard.diffviewer.models import DiffSetHistory
-from reviewboard.reviews.models import Review, ReviewRequest, \
+from reviewboard.reviews.models import ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.models import Repository
 from reviewboard.reviews.db import create_review_request, \

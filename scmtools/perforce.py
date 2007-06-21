@@ -1,8 +1,5 @@
 import os
 import re
-import popen2
-
-from django.conf import settings
 
 from reviewboard.scmtools.core import *
 

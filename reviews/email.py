@@ -5,11 +5,10 @@ from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 
-from reviewboard.reviews.models import ReviewRequest, Review
 
 def get_email_address_for_user(u):
     if not u.get_full_name():
-        return user.email
+        return u.email
     else:
         return '%s <%s>' % (u.get_full_name(), u.email)
 

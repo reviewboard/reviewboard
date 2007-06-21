@@ -1,16 +1,12 @@
 import os
 import unittest
 
-from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase as DjangoTestCase
 
 from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
                                       Revision, HEAD, PRE_CREATION, \
                                       ChangeSet
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.scmtools.svn import SVNTool
-from reviewboard.scmtools.perforce import PerforceTool
-from reviewboard.scmtools.perforce_vmware import VMwarePerforceTool
 
 class CoreTests(unittest.TestCase):
     """Tests for the scmtools.core module"""

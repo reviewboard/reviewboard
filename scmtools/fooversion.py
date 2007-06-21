@@ -1,5 +1,4 @@
-from reviewboard.scmtools.core import SCMException, FileNotFoundException, HEAD
-from reviewboard.scmtools.core import SCMTool, ChangeSet
+from reviewboard.scmtools.core import ChangeSet
 from reviewboard.scmtools.svn import SVNTool
 import os
 
@@ -28,6 +27,6 @@ class FooVersionTool(SVNTool):
 
     def get_pending_changesets(self, userid):
         # XXX: this is broken
-        return [parse_change_desc("12345"),
-                parse_change_desc("314150"),
-                parse_change_desc("202020")]
+        return [self.parse_change_desc("12345"),
+                self.parse_change_desc("314150"),
+                self.parse_change_desc("202020")]

@@ -1,7 +1,6 @@
 import re
 
 from django import template
-from django.template import NodeList, TemplateSyntaxError
 from django.template.loader import render_to_string
 
 from reviewboard.reviews.templatetags.reviewtags import humanize_list

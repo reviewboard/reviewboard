@@ -1,9 +1,6 @@
 import os
 
 from django import newforms as forms
-from django.conf import settings
-from django.core import validators
-from django.core.validators import ValidationError
 
 from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff

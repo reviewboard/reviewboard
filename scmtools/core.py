@@ -1,7 +1,3 @@
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-
-
 class SCMException(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)

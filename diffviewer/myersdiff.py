@@ -609,7 +609,7 @@ class MyersDiffer:
                                 if minimum == consec:
                                     j -= consec
                                 elif minimum < consec:
-                                    dicards[i + j] = 0
+                                    discards[i + j] = 0
 
                         consec = 0
 
