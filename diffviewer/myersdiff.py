@@ -1,3 +1,5 @@
+import math
+
 class MyersDiffer:
     """
     An implementation of Eugene Myers's O(ND) Diff algorithm based on GNU diff.
@@ -191,16 +193,10 @@ class MyersDiffer:
         dmax = a_upper - b_lower
 
         down_min = down_max = down_k
-        up_min = up_max = up_k
+        up_min   = up_max   = up_k
 
         cost = 0
-        max_cost = 1
-        temp = self.max_lines
-        while temp != 0:
-            max_cost <<= 1
-            temp >>= 2
-
-        max_cost = max(256, max_cost)
+        max_cost = max(256, int(math.sqrt(self.max_lines)))
 
         while True:
             cost += 1
@@ -243,8 +239,7 @@ class MyersDiffer:
 
                 down_vector[k] = x
 
-                if odd_delta and up_min <= k <= up_max and \
-                   up_vector[k] <= x:
+                if odd_delta and up_min <= k <= up_max and up_vector[k] <= x:
                     return x, y, True, True
 
             # Extend the reverse path
@@ -302,8 +297,7 @@ class MyersDiffer:
 
             if cost > 200 and big_snake:
                 best = 0
-                ret_x = 0
-                ret_y = 0
+                ret_x = ret_y = 0
 
                 for d in range(down_max, down_min - 1, -2):
                     dd = d - down_k
@@ -386,7 +380,7 @@ class MyersDiffer:
                         x = b_lower + d
                         y = b_lower
 
-                    if bxy_best == None or x + y < bxy_best:
+                    if x + y < bxy_best:
                         bxy_best = x + y
                         bx_bet = x
 
@@ -450,7 +444,7 @@ class MyersDiffer:
         appears both before and after the line, rather than only after.
         """
         i = j = 0
-        i_end = len(data.data)
+        i_end = data.length
 
         while True:
             # Scan forward in order to find the start of a run of changes.
@@ -537,13 +531,7 @@ class MyersDiffer:
 
     def _discard_confusing_lines(self):
         def build_discard_list(data, discards, counts):
-            end = data.length
-            many = 5
-
-            tem = (end / 64) >> 2
-            while tem > 0:
-                many *= 2
-                tem >>= 2
+            many = 5 * int(math.sqrt(data.length / 64))
 
             for i, item in enumerate(data.data):
                 if item != 0:
@@ -555,9 +543,7 @@ class MyersDiffer:
                         discards[i] = 2
 
         def check_discard_runs(data, discards):
-            end = data.length
-
-            for i in range(end):
+            for i in range(data.length):
                 # Cancel the provisional discards that are not in the middle
                 # of a run of discards
                 if discards[i] == 2:
@@ -568,7 +554,7 @@ class MyersDiffer:
 
                     # Find the end of this run of discardable lines and count
                     # how many are provisionally discardable.
-                    for j in range(i, end):
+                    for j in range(i, data.length):
                         if discards[j] == 0:
                             break
                         elif discards[j] == 2:
@@ -591,14 +577,7 @@ class MyersDiffer:
                             if discards[j] == 2:
                                 discards[j] = 0
                     else:
-                        minimum = 1
-                        tem = length >> 4
-
-                        while tem > 0:
-                            tem >>= 2
-                            minimum <<= 1
-
-                        minimum += 1
+                        minimum = 2 + int(math.sqrt(length / 4))
                         consec = 0
 
                         for j in range(length):
