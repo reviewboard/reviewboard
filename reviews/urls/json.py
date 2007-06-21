@@ -1,5 +1,9 @@
-from django.conf.urls.defaults import *
-from reviewboard.reviews.db import *
+from django.conf.urls.defaults import patterns
+
+from reviewboard.reviews.db import get_all_review_requests, \
+                                   get_review_requests_to_group, \
+                                   get_review_requests_to_user, \
+                                   get_review_requests_from_user
 
 urlpatterns = patterns('reviewboard.reviews.json',
     # Accounts

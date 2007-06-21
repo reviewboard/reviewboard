@@ -1,7 +1,7 @@
 import os
 import re
 
-from reviewboard.scmtools.core import *
+from reviewboard.scmtools.core import SCMTool, ChangeSet, HEAD, PRE_CREATION
 
 class PerforceTool(SCMTool):
     def __init__(self, repository):

@@ -1,11 +1,13 @@
-from django.conf import settings
-from django.conf.urls.defaults import *
-from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed
-from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
-from reviewboard.reviews.feeds import AtomSubmitterReviewsFeed
-from reviewboard.reviews.feeds import RssGroupReviewsFeed
-from reviewboard.reviews.feeds import AtomGroupReviewsFeed
 import os.path
+
+from django.conf import settings
+from django.conf.urls.defaults import patterns, include
+
+from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
+                                      RssSubmitterReviewsFeed, \
+                                      AtomSubmitterReviewsFeed, \
+                                      RssGroupReviewsFeed, \
+                                      AtomGroupReviewsFeed
 
 rss_feeds = {
     'r': RssReviewsFeed,
