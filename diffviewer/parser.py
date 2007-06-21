@@ -41,7 +41,7 @@ def parseFile(lines, linenum, lastline, filename):
             lines[i + 1].startswith("____________________")):
             break
         else:
-            file.data += line + "\n"
+            file.data += line 
 
     return file
 
@@ -97,7 +97,7 @@ def parse(data):
         # FIXME: use a custom error class here
         raise Exception('Error running lsdiff')
 
-    lines = data.splitlines()
+    lines = data.splitlines(True)
     files = []
 
     current_slice = r.splitlines()
