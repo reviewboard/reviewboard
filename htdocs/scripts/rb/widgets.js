@@ -21,7 +21,7 @@ RB.widgets.InlineEditor = function(config) {
     var saveButton = {
         tag: 'input',
         type: 'submit',
-        value: 'Save',
+        value: 'OK',
         cls: 'save'
     };
 
