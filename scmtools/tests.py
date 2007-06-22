@@ -1,4 +1,5 @@
 import os
+import nose
 import unittest
 
 from django.test import TestCase as DjangoTestCase
@@ -52,7 +53,11 @@ class SubversionTests(unittest.TestCase):
         self.repository = Repository(name='Subversion SVN',
                                      path='file://' + svn_repo_path,
                                      tool=Tool.objects.get(name='Subversion'))
-        self.tool = self.repository.get_scmtool()
+
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -125,7 +130,11 @@ class PerforceTests(unittest.TestCase):
         self.repository = Repository(name='Perforce.com',
                                      path='public.perforce.com:1666',
                                      tool=Tool.objects.get(name='Perforce'))
-        self.tool = self.repository.get_scmtool()
+
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest
 
     def testChangeset(self):
         """Testing PerforceTool.get_changeset"""
@@ -163,7 +172,11 @@ class VMWareTests(DjangoTestCase):
         self.repository = Repository(name='VMware Test',
                                      path='perforce.eng.vmware.com:1666',
                                      tool=Tool.objects.get(name='VMware Perforce'))
-        self.tool = self.repository.get_scmtool()
+
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest
 
     def testParse(self):
         """Testing VMwarePerforceTool.parse_change_desc"""
