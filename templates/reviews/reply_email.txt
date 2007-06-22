@@ -55,10 +55,11 @@ On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name
 {% endcondense %}
 
 
-On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
-{% quoted_email reviews/review_request_email.txt %}
-
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 http://{{domain}}{{review.get_absolute_url}}
 -----------------------------------------------------------
+
+
+On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+{% quoted_email reviews/review_request_email.txt %}
