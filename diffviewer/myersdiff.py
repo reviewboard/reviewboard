@@ -351,6 +351,8 @@ class MyersDiffer:
                 if best > 0:
                     return ret_x, ret_y, False, True
 
+            continue # XXX
+
             # If we've reached or gone past the max cost, just give up now
             # and report the halfway point between our best results.
             if cost >= max_cost:
