@@ -13,8 +13,12 @@ def get_email_address_for_user(u):
         return '%s <%s>' % (u.get_full_name(), u.email)
 
 
-def get_email_address_for_group(g):
-    return '%s <%s>' % (g.display_name, g.mailing_list)
+def get_email_addresses_for_group(g):
+    if g.mailing_list:
+        return ['%s <%s>' % (g.display_name, g.mailing_list)]
+    else:
+        return [get_email_address_for_user(u) \
+                for u in g.users.all()]
 
 
 class SpiffyEmailMessage(EmailMessage):
@@ -54,7 +58,8 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         recipient_table[get_email_address_for_user(u)] = 1
 
     for group in review_request.target_groups.all():
-        recipient_table[get_email_address_for_group(group)] = 1
+        for address in get_email_addresses_for_group(group):
+            recipient_table[address] = 1
 
     if extra_recipients:
         for recipient in extra_recipients:

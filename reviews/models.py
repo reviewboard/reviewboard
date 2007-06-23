@@ -15,7 +15,7 @@ from utils.templatetags.htmlutils import thumbnail
 class Group(models.Model):
     name = models.CharField(maxlength=64)
     display_name = models.CharField(maxlength=64)
-    mailing_list = models.EmailField()
+    mailing_list = models.EmailField(blank=True)
     users = models.ManyToManyField(User, core=False, blank=True,
                                    filter_interface=models.HORIZONTAL)
 

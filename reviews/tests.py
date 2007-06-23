@@ -4,7 +4,7 @@ from django.core import mail
 from django.test import TestCase
 
 from reviewboard.reviews.email import get_email_address_for_user, \
-                                      get_email_address_for_group, \
+                                      get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \
                                       mail_reply
 from reviewboard.reviews.models import Group, ReviewRequest, Review
@@ -87,8 +87,8 @@ class EmailTests(TestCase):
             self.assert_(get_email_address_for_user(
                 User.objects.get(username=user)) in recipient_list)
 
-        for group in group_list:
-            self.assert_(get_email_address_for_group(
-                Group.objects.get(name=group)) in recipient_list)
+        for group in Group.objects.filter(name__in=group_list):
+            for address in get_email_addresses_for_group(group):
+                self.assert_(address in recipient_list)
 
 
