@@ -215,7 +215,7 @@ class MyersDiffer:
                 down_max -= 1
 
             # Extend the forward path
-            for k in range(down_max, down_min - 1, -2):
+            for k in xrange(down_max, down_min - 1, -2):
                 tlo = down_vector[k - 1]
                 thi = down_vector[k + 1]
 
@@ -255,7 +255,7 @@ class MyersDiffer:
             else:
                 up_max -= 1
 
-            for k in range(up_max, up_min - 1, -2):
+            for k in xrange(up_max, up_min - 1, -2):
                 tlo = up_vector[k - 1]
                 thi = up_vector[k + 1]
 
@@ -299,7 +299,7 @@ class MyersDiffer:
                 best = 0
                 ret_x = ret_y = 0
 
-                for d in range(down_max, down_min - 1, -2):
+                for d in xrange(down_max, down_min - 1, -2):
                     dd = d - down_k
                     x = down_vector[d]
                     y = x - d
@@ -326,7 +326,7 @@ class MyersDiffer:
 
                 best = 0
 
-                for d in range(up_max, up_min - 1, -2):
+                for d in xrange(up_max, up_min - 1, -2):
                     dd = d - up_k
                     x = up_vector[d]
                     y = x - d
@@ -360,7 +360,7 @@ class MyersDiffer:
 
                 # Find the forward diagonal that maximized x + y
                 fxy_best = -1
-                for d in range(down_max, down_min - 1, -2):
+                for d in xrange(down_max, down_min - 1, -2):
                     x = min(down_vector[d], a_upper)
                     y = x - d
 
@@ -374,7 +374,7 @@ class MyersDiffer:
 
                 # Find the backward diagonal that minimizes x + y
                 bxy_best = self.max_lines
-                for d in range(up_max, up_min - 1, -2):
+                for d in xrange(up_max, up_min - 1, -2):
                     x = max(a_lower, up_vector[d])
                     y = x - d
 
@@ -545,7 +545,7 @@ class MyersDiffer:
                         discards[i] = 2
 
         def check_discard_runs(data, discards):
-            for i in range(data.length):
+            for i in xrange(data.length):
                 # Cancel the provisional discards that are not in the middle
                 # of a run of discards
                 if discards[i] == 2:
@@ -556,7 +556,7 @@ class MyersDiffer:
 
                     # Find the end of this run of discardable lines and count
                     # how many are provisionally discardable.
-                    for j in range(i, data.length):
+                    for j in xrange(i, data.length):
                         if discards[j] == 0:
                             break
                         elif discards[j] == 2:
@@ -582,7 +582,7 @@ class MyersDiffer:
                         minimum = 2 + int(math.sqrt(length / 4))
                         consec = 0
 
-                        for j in range(length):
+                        for j in xrange(length):
                             if discards[i + j] != 2:
                                 consec = 0
                             else:
@@ -594,7 +594,7 @@ class MyersDiffer:
 
                         consec = 0
 
-                        for j in range(length):
+                        for j in xrange(length):
                             discard = discards[i + j]
 
                             if j >= 8 and discard == 1:
@@ -614,7 +614,7 @@ class MyersDiffer:
                         i += length - 1
                         consec = 0
 
-                        for j in range(length):
+                        for j in xrange(length):
                             discard = discards[i - j]
 
                             if j >= 8 and discard == 1:
