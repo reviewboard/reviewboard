@@ -3,27 +3,26 @@
 This is an automatically generated e-mail. To reply, visit:
 http://{{domain}}{{review.get_absolute_url}}
 -----------------------------------------------------------
-
+{% if review.ship_it %}
+Ship it!
+{% endif %}
+{% if review.body_top %}
 {{ review.body_top }}
+{% endif %}{% for comment in review.screenshot_comments.all %}
 
-{% for comment in review.screenshot_comments.all %}
 Screenshot: {{ comment.screenshot.caption }}
 <http://{{domain}}/{{comment.screenshot.get_absolute_url}}>
-
 {{ comment.text|indent }}
+{% endfor %}{% for comment in review.ordered_comments %}
 
-{% endfor %}
-{% for comment in review.ordered_comments %}
 {{ comment.filediff.source_file }}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
 <http://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}>
 
 {{ comment.text|indent }}
 
-{% endfor %}
-
+{% endfor %}{% if review.body_bottom %}
 {{ review.body_bottom }}
-
-
+{% endif %}
 - {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}
 
 
