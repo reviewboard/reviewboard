@@ -102,6 +102,10 @@ DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
 # out to the e-mail addresses defined for the group.
 SEND_REVIEW_MAIL = False
 
+# Access method used for the site, used in e-mails.  Override this in
+# settings_local.py if you choose to use https instead of http.
+DOMAIN_METHOD = "http"
+
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.

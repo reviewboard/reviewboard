@@ -68,6 +68,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     recipient_list = [recipient for recipient in recipient_table]
 
     context['domain'] = current_site.domain
+    context['domain_method'] = settings.DOMAIN_METHOD
     context['review_request'] = review_request
     body = render_to_string(template_name, context)
 

@@ -1,7 +1,7 @@
 {% load htmlutils %}{% load emailtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
-http://{{domain}}{{review.get_absolute_url}}
+{{domain_method}}://{{domain}}{{review.get_absolute_url}}
 -----------------------------------------------------------
 
 {% condense %}
@@ -11,7 +11,7 @@ Updated the diff.
 {% for filediff in review_request.diffset_history.diffset_set.latest.files.all %}
   {{ filediff.source_file }}{% endfor %}
 
-Diff: http://{{domain}}{{ review_request.get_absolute_url }}diff
+Diff: {{domain_method}}://{{domain}}{{ review_request.get_absolute_url }}diff
 {% endcondense %}
 
 

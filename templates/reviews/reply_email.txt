@@ -15,7 +15,7 @@
 {% for comment in reply.screenshot_comments.all %}
 > On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
 > > Screenshot: {{ comment.screenshot.caption }}
-> > <http://{{domain}}{{comment.get_absolute_url}}>
+> > <{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
 > >
 {{ comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
@@ -29,7 +29,7 @@
 {% for comment in reply.comments.all %}
 > On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
 > > {{comment.filediff.source_file}}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
-> > <http://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}>
+> > <{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}>
 > >
 {{comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
@@ -57,7 +57,7 @@ On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name
 
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
-http://{{domain}}{{review.get_absolute_url}}
+{{domain_method}}://{{domain}}{{review.get_absolute_url}}
 -----------------------------------------------------------
 
 

@@ -1,7 +1,7 @@
 {% load reviewtags %}{% load htmlutils %}{% load emailtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
-http://{{domain}}{{review_request.get_absolute_url}}
+{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}
 -----------------------------------------------------------
 
 {% condense %}
@@ -27,7 +27,7 @@ Diffs
 {% for filediff in review_request.diffset_history.diffset_set.latest.files.all %}
   {{ filediff.source_file }}{% endfor %}
 
-Diff: http://{{domain}}{{ review_request.get_absolute_url }}diff
+Diff: {{domain_method}}://{{domain}}{{ review_request.get_absolute_url }}diff
 
 
 Testing
@@ -40,7 +40,7 @@ Screenshots
 -----------
 {% for screenshot in review_request.screenshots.all %}
 {{ screenshot.caption }}
-  http://{{domain}}{{ screenshot.get_absolute_url }}{% endfor %}
+  {{domain_method}}://{{domain}}{{ screenshot.get_absolute_url }}{% endfor %}
 
 {% endif %}
 

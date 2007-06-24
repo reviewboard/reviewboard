@@ -408,6 +408,7 @@ def preview_review_request_email(
             'review_request': review_request,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+            'domain_method': settings.DOMAIN_METHOD,
         }),
     ), mimetype='text/plain')
 
@@ -428,6 +429,7 @@ def preview_review_email(request, review_request_id, review_id,
             'review': review,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+            'domain_method': settings.DOMAIN_METHOD,
         }),
     ), mimetype='text/plain')
 
@@ -447,6 +449,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
             'reply': reply,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+            'domain_method': settings.DOMAIN_METHOD,
         }),
     ), mimetype='text/plain')
 
