@@ -17,60 +17,110 @@ from reviewboard.utils.templatetags.htmlutils import humanize_list
 
 register = template.Library()
 
-@register.tag
-@blocktag
-def reviewsummary(context, nodelist, review_request):
-    if review_request.submitter == context.get('user', None):
-        try:
-            draft = review_request.reviewrequestdraft_set.get()
-            return "<span class=\"draftlabel\">[Draft]</span> " + \
-                   draft.summary
-        except ReviewRequestDraft.DoesNotExist:
-            pass
 
-        if not review_request.public:
-            # XXX Do we want to say "Draft?"
-            return "<span class=\"draftlabel\">[Draft]</span> " + \
+class ReviewSummary(template.Node):
+    def __init__(self, review_request):
+        self.review_request = review_request
+
+    def render(self, context):
+        try:
+            review_request = resolve_variable(self.review_request, context)
+        except VariableDoesNotExist:
+            raise template.TemplateSyntaxError, \
+                "Invalid variable %s passed to reviewsummary tag." % \
+                self.review_request
+
+        if review_request.submitter == context.get('user', None):
+            try:
+                draft = review_request.reviewrequestdraft_set.get()
+                return "<span class=\"draftlabel\">[Draft]</span> " + \
+                       draft.summary
+            except ReviewRequestDraft.DoesNotExist:
+                pass
+
+            if not review_request.public:
+                # XXX Do we want to say "Draft?"
+                return "<span class=\"draftlabel\">[Draft]</span> " + \
+                       review_request.summary
+
+        if review_request.status == 'S':
+            return "<span class=\"draftlabel\">[Submitted]</span> " + \
                    review_request.summary
 
-    if review_request.status == 'S':
-        return "<span class=\"draftlabel\">[Submitted]</span> " + \
-               review_request.summary
-
-    return review_request.summary
+        return review_request.summary
 
 
 @register.tag
-@blocktag
-def pendingreviewcount(context, nodelist, obj):
+def reviewsummary(parser, token):
+    try:
+        tag_name, review_request = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag requires a timestamp"
+
+    return ReviewSummary(review_request)
+
+
+@register.simple_tag
+def pendingreviewcount(obj):
     return str(obj.reviewrequest_set.filter(public=True, status='P').count())
 
 
+class ReviewRequestCount(template.Node):
+    def __init__(self, listtype, param):
+        self.listtype = listtype
+        self.param = param
+
+    def render(self, context):
+        if self.param != None:
+            try:
+                param = resolve_variable(self.param, context)
+            except VariableDoesNotExist:
+                raise template.TemplateSyntaxError, \
+                    "Invalid variable %s passed to 'reviewrequestcount' tag." \
+                    % self.param
+
+        user = context.get('user', None)
+
+        if self.listtype == 'all':
+            review_requests = get_all_review_requests(user)
+        elif self.listtype == 'outgoing':
+            review_requests = get_review_requests_from_user(user.username, user)
+        elif self.listtype == 'incoming':
+            review_requests = get_review_requests_to_user(user.username, user)
+        elif self.listtype == 'incoming-directly':
+            review_requests = \
+                get_review_requests_to_user_directly(user.username, user)
+        elif self.listtype == 'to-group':
+            review_requests = get_review_requests_to_group(param, user)
+        else:
+            raise template.TemplateSyntaxError, \
+                "Invalid list type '%s' passed to 'reviewrequestcount' tag." \
+                % self.listtype
+
+        if type(review_requests) == QuerySet:
+            return str(review_requests.count())
+        else:
+            return str(len(review_requests))
+
+
 @register.tag
-@blocktag
-def reviewrequestcount(context, nodelist, listtype, params=None):
-    user = context.get('user', None)
+def reviewrequestcount(parser, token):
+    bits = token.contents.split()
+    del(bits[0])
 
-    if listtype == 'all':
-        review_requests = get_all_review_requests(user)
-    elif listtype == 'outgoing':
-        review_requests = get_review_requests_from_user(user.username, user)
-    elif listtype == 'incoming':
-        review_requests = get_review_requests_to_user(user.username, user)
-    elif listtype == 'incoming-directly':
-        review_requests = \
-            get_review_requests_to_user_directly(user.username, user)
-    elif listtype == 'to-group':
-        review_requests = get_review_requests_to_group(param, user)
-    else:
-        raise template.TemplateSyntaxError, \
-            "Invalid list type '%s' passed to 'reviewrequestcount' tag." \
-            % listtype
+    if len(bits) == 0 or len(bits) > 2:
+        raise TemplateSyntaxError, "incorrect number of arguments passed " + \
+                                   "'reviewrequestcount'"
 
-    if type(review_requests) == QuerySet:
-        return str(review_requests.count())
+    listtype = bits[0]
+
+    if len(bits) == 2:
+        param = bits[1]
     else:
-        return str(len(review_requests))
+        param = None
+
+    return ReviewRequestCount(listtype, param)
 
 
 @register.tag
