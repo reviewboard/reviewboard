@@ -26,7 +26,8 @@ class Group(models.Model):
         return "/groups/%s/" % self.name
 
     class Admin:
-        pass
+        list_display = ('name', 'display_name', 'mailing_list')
+        ordering = ['name']
 
 
 class Screenshot(models.Model):
