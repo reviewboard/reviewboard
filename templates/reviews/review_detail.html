@@ -3,7 +3,7 @@
 {% load htmlutils %}
 {% load reviewtags %}
 
-{% block title %}Review Request | {{review_request_details}}{% endblock %}
+{% block title %}{{review_request_details.summary}} | Review Request{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="/css/reviews.css" />
