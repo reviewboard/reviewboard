@@ -3,7 +3,7 @@
 {% block title %}Log in{% endblock %}
 
 {% block content %}
-{% box important %}
+{% box "important" %}
 {% if BUILTIN_AUTH %}
  <h1>New user?</h1>
  <p>
@@ -20,7 +20,7 @@
 {% endif %}
 {% endbox %}
 
-{% box loginform %}
+{% box "loginform" %}
 <form method="post" action=".">
  <h1 class="title">Log In</h1>
  <div class="main">

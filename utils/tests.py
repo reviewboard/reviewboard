@@ -14,7 +14,6 @@ class BoxTest(TagTest):
                              Token(TOKEN_TEXT, 'box'))
         context = {}
 
-        self.assertEqual(node.render_title_area(context), '')
         self.assertEqual(node.render(context),
                          '<div class="box-container"><div class="box">\n' +
                          '<div class="box-inner">content</div></div></div>\n')
@@ -22,10 +21,9 @@ class BoxTest(TagTest):
     def testClass(self):
         """Testing box tag (with extra class)"""
         node = htmlutils.box(self.parser,
-                             Token(TOKEN_TEXT, 'box class'))
+                             Token(TOKEN_TEXT, 'box "class"'))
         context = {}
 
-        self.assertEqual(node.render_title_area(context), '')
         self.assertEqual(node.render(context),
                          '<div class="box-container"><div class="box class">\n' +
                          '<div class="box-inner">content</div></div></div>\n')
@@ -35,7 +33,7 @@ class BoxTest(TagTest):
         self.assertRaises(TemplateSyntaxError,
                           lambda: htmlutils.box(self.parser,
                                                 Token(TOKEN_TEXT,
-                                                      'box class foo')))
+                                                      'box "class" "foo"')))
 
 
 class ErrorBoxTest(TagTest):
@@ -52,7 +50,7 @@ class ErrorBoxTest(TagTest):
     def testId(self):
         """Testing errorbox tag (with id)"""
         node = htmlutils.errorbox(self.parser,
-                                  Token(TOKEN_TEXT, 'errorbox id'))
+                                  Token(TOKEN_TEXT, 'errorbox "id"'))
 
         context = {}
 
@@ -65,7 +63,8 @@ class ErrorBoxTest(TagTest):
         self.assertRaises(TemplateSyntaxError,
                           lambda: htmlutils.errorbox(self.parser,
                                                      Token(TOKEN_TEXT,
-                                                           'errorbox id foo')))
+                                                           'errorbox "id" ' +
+                                                           '"foo"')))
 
 
 class AgeIdTest(TagTest):
@@ -84,71 +83,37 @@ class AgeIdTest(TagTest):
 
     def testNow(self):
         """Testing ageid tag (now)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid now'))
-
-        self.assertEqual(node.render(self.context), 'age1')
+        self.assertEqual(htmlutils.ageid(self.now), 'age1')
 
     def testMinus1(self):
         """Testing ageid tag (yesterday)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid minus1'))
-
-        self.assertEqual(node.render(self.context), 'age2')
+        self.assertEqual(htmlutils.ageid(self.now - datetime.timedelta(1)),
+                         'age2')
 
     def testMinus2(self):
         """Testing ageid tag (two days ago)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid minus2'))
-
-        self.assertEqual(node.render(self.context), 'age3')
+        self.assertEqual(htmlutils.ageid(self.now - datetime.timedelta(2)),
+                         'age3')
 
     def testMinus3(self):
         """Testing ageid tag (three days ago)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid minus3'))
-
-        self.assertEqual(node.render(self.context), 'age4')
+        self.assertEqual(htmlutils.ageid(self.now - datetime.timedelta(3)),
+                         'age4')
 
     def testMinus4(self):
         """Testing ageid tag (four days ago)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid minus4'))
-
-        self.assertEqual(node.render(self.context), 'age5')
+        self.assertEqual(htmlutils.ageid(self.now - datetime.timedelta(4)),
+                         'age5')
 
     def testNotDateTime(self):
         """Testing ageid tag (non-datetime object)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid foo'))
         class Foo:
             def __init__(self, now):
                 self.day   = now.day
                 self.month = now.month
                 self.year  = now.year
 
-        context = {'foo': Foo(self.now),}
-        self.assertEqual(node.render(context), 'age1')
-
-    def testError1(self):
-        """Testing ageid tag (invalid usage)"""
-        self.assertRaises(TemplateSyntaxError,
-                          lambda: htmlutils.ageid(self.parser,
-                                                  Token(TOKEN_TEXT,
-                                                        'ageid')))
-
-        self.assertRaises(TemplateSyntaxError,
-                          lambda: htmlutils.ageid(self.parser,
-                                                  Token(TOKEN_TEXT,
-                                                        'ageid timestamp foo')))
-
-    def testError2(self):
-        """Testing ageid tag (bad variable name)"""
-        node = htmlutils.ageid(self.parser,
-                               Token(TOKEN_TEXT, 'ageid foo'))
-
-        self.assertRaises(TemplateSyntaxError,
-                          lambda: node.render({}))
+        self.assertEqual(htmlutils.ageid(Foo(self.now)), 'age1')
 
 
 class TestEscapeSpaces(unittest.TestCase):

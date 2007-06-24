@@ -17,7 +17,7 @@
 
 {% block content %}
 <div id="sidebar-wrapper">
-{% box sidebar %}
+{% box "sidebar" %}
  <div class="main">
   <table class="list" id="dashboard-navbar">
    <colgroup>
@@ -32,7 +32,7 @@
 </div>
 
 <div id="dashboard-main">
- {% box dashboard %}
+ {% box "dashboard" %}
  <h1 class="title">{{title}}</h1>
  <div class="main">
   <table class="list" id="dashboard-list">

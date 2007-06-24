@@ -31,7 +31,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 <div class="banner" id="error"></div>
 <div class="banner" id="main-banner"></div>
 
-{% box review-request %}
+{% box "review-request" %}
 <ul id="topcontrols">
 {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %}
  <li onclick="javascript:window.location='diff/#index_header';"><a href="diff/#index_header"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
@@ -45,7 +45,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 {% if forloop.last %}
 <a name="last-review" />
 {% endif %}
-{% box review %}
+{% box "review" %}
 <div class="main">
  <div class="banner" id="{{review.id}}-banner"></div>
  <div class="header">

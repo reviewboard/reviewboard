@@ -4,171 +4,75 @@ import os
 
 from django.conf import settings
 from django import template
-from django.template import resolve_variable
-from django.template import TemplateSyntaxError, VariableDoesNotExist
+from djblets.util.decorators import blocktag
+
 
 register = template.Library()
 
-class BoxNode(template.Node):
-    def __init__(self, nodelist, classname):
-        self.nodelist = nodelist
-        self.classname = classname
-
-    def render(self, context):
-        output = "<div class=\"box-container\">"
-        output += "<div class=\"box"
-        if self.classname:
-            output += " " + self.classname
-
-        output += "\">\n"
-        output += "<div class=\"box-inner\">"
-        output += self.nodelist.render(context)
-
-        output += "</div>"
-        output += "</div>"
-        output += "</div>\n"
-        return output
-
-    def render_title_area(self, context):
-        return ""
 
 @register.tag
-def box(parser, token):
-    bits = token.split_contents()
-    tagname = bits[0]
+@blocktag
+def box(context, nodelist, classname=None):
+    output = "<div class=\"box-container\">"
+    output += "<div class=\"box"
+    if classname:
+        output += " " + classname
 
-    if len(bits) > 2:
-        raise TemplateSyntaxError, \
-            "%r tag takes zero or one arguments." % tagname
+    output += "\">\n"
+    output += "<div class=\"box-inner\">"
+    output += nodelist.render(context)
 
-    if len(bits) == 2:
-        classname = bits[1]
+    output += "</div>"
+    output += "</div>"
+    output += "</div>\n"
+    return output
+
+
+@register.tag
+@blocktag
+def errorbox(context, nodelist, div_id=None):
+    output = "<div class=\"errorbox\""
+    if div_id:
+        output += " id=\"%s\"" % div_id
+
+    output += ">\n"
+    output += nodelist.render(context)
+    output += "</div>"
+    return output
+
+
+@register.simple_tag
+def ageid(timestamp):
+    # Convert datetime.date into datetime.datetime
+    if timestamp.__class__ is not datetime.datetime:
+        timestamp = datetime.datetime(timestamp.year, timestamp.month,
+                                      timestamp.day)
+
+
+    now = datetime.datetime.now()
+    delta = now - (timestamp -
+                   datetime.timedelta(0, 0, timestamp.microsecond))
+
+    if delta.days == 0:
+        return "age1"
+    elif delta.days == 1:
+        return "age2"
+    elif delta.days == 2:
+        return "age3"
+    elif delta.days == 3:
+        return "age4"
     else:
-        classname = None
-
-    nodelist = parser.parse(('endbox'),)
-    parser.delete_first_token()
-    return BoxNode(nodelist, classname)
-
-
-class ErrorBoxNode(template.Node):
-    def __init__(self, nodelist, tagid):
-        self.nodelist = nodelist
-        self.tagid = tagid
-
-    def render(self, context):
-        output = "<div class=\"errorbox\""
-        if self.tagid:
-            output += " id=\"%s\"" % self.tagid
-
-        output += ">\n"
-        output += self.nodelist.render(context)
-        output += "</div>"
-        return output
-
-@register.tag
-def errorbox(parser, token):
-    bits = token.split_contents()
-    tagname = bits[0]
-
-    if len(bits) > 2:
-        raise TemplateSyntaxError, \
-            "%r tag takes zero or one arguments." % tagname
-
-    if len(bits) == 2:
-        tagid = bits[1]
-    else:
-        tagid = None
-
-    nodelist = parser.parse(('end' + tagname,))
-    parser.delete_first_token()
-    return ErrorBoxNode(nodelist, tagid)
-
-
-class AgeId(template.Node):
-    def __init__(self, timestamp):
-        self.timestamp = timestamp
-
-    def render(self, context):
-        try:
-            timestamp = resolve_variable(self.timestamp, context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid element ID %s passed to ageid tag." % self.timestamp
-
-        # Convert datetime.date into datetime.datetime
-        if timestamp.__class__ is not datetime.datetime:
-            timestamp = datetime.datetime(timestamp.year, timestamp.month,
-                                          timestamp.day)
-
-
-        now = datetime.datetime.now()
-        delta = now - (timestamp -
-                       datetime.timedelta(0, 0, timestamp.microsecond))
-
-        if delta.days == 0:
-            return "age1"
-        elif delta.days == 1:
-            return "age2"
-        elif delta.days == 2:
-            return "age3"
-        elif delta.days == 3:
-            return "age4"
-        else:
-            return "age5"
-
-@register.tag
-def ageid(parser, token):
-    try:
-        tag_name, timestamp = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires a timestamp"
-
-    return AgeId(timestamp)
-
-
-class IfUserOrPermNode(template.Node):
-    def __init__(self, nodelist, user, perm):
-        self.nodelist = nodelist
-        self.user = user
-        self.perm = perm
-
-    def render(self, context):
-        try:
-            req_user = resolve_variable('user', context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Missing 'user' variable in context."
-
-        if not req_user.is_authenticated():
-            return ''
-
-        try:
-            user = resolve_variable(self.user, context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid user variable %s passed to ifuserorperm tag." % \
-                self.user
-
-        if user == req_user or req_user.has_perm(self.perm):
-            return self.nodelist.render(context)
-
-        return ''
+        return "age5"
 
 
 @register.tag
-def ifuserorperm(parser, token):
-    bits = token.split_contents()
-    tagname = bits[0]
+@blocktag
+def ifuserorperm(context, nodelist, user, perm):
+    req_user = context.get('user', None)
+    if user == req_user or req_user.has_perm(perm):
+        return nodelist.render(context)
 
-    if len(bits) != 3:
-        raise TemplateSyntaxError, \
-            "%r tag takes a user and a permission." % tagname
-
-    nodelist = parser.parse(('endifuserorperm'),)
-    parser.delete_first_token()
-    return IfUserOrPermNode(nodelist, bits[1], bits[2])
+    return ''
 
 
 @register.filter

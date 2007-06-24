@@ -4,7 +4,7 @@
 
 {% block content %}
 {% if must_configure %}
-{% box important %}
+{% box "important" %}
  <h1>Apologies for the interruption, but please read this.</h1>
  <p>
   Before you can continue to use Review Board, you'll need to set a few
@@ -19,7 +19,7 @@
 
 <form method="post" action=".">
  {{form.redirect_to}}
-{% box prefsuser %}
+{% box "prefsuser" %}
  <h1 class="title">User Preferences</h1>
  <div class="main">
   <table>
@@ -34,7 +34,7 @@
   </table>
  </div>
 {% endbox %}
-{% box prefsgroup %}
+{% box "prefsgroup" %}
  <h1 class="title">Groups</h1>
  <div class="main">
   <p>Which groups do you belong to or wish to watch?</p>

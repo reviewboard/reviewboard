@@ -4,6 +4,7 @@ from django import template
 from django.template.loader import render_to_string
 
 from reviewboard.reviews.templatetags.reviewtags import humanize_list
+from djblets.util.decorators import blocktag
 
 
 register = template.Library()
@@ -27,21 +28,12 @@ def quoted_email(parser, token):
     return QuotedEmail(template_name)
 
 
-class Condense(template.Node):
-    def __init__(self, nodelist):
-        self.nodelist = nodelist
-
-    def render(self, context):
-        text = self.nodelist.render(context).strip()
-        text = re.sub("\n{4,}", "\n\n\n", text)
-        return text
-
-
 @register.tag
-def condense(parser, token):
-    nodelist = parser.parse(('endcondense',))
-    parser.delete_first_token()
-    return Condense(nodelist)
+@blocktag
+def condense(context, nodelist):
+    text = nodelist.render(context).strip()
+    text = re.sub("\n{4,}", "\n\n\n", text)
+    return text
 
 
 @register.simple_tag

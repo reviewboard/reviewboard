@@ -1,8 +1,14 @@
+import unittest
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.template import Token, TOKEN_TEXT
 from django.test import TestCase
 
+from djblets.util.testing import TagTest
+
+import reviewboard.reviews.templatetags.emailtags as emailtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \
@@ -92,3 +98,23 @@ class EmailTests(TestCase):
                 self.assert_(address in recipient_list)
 
 
+class CondenseTagTest(TagTest):
+    def getContentText(self):
+        return "foo\nbar\n\n\n\n\n\n\nfoobar!"
+
+    def testPlain(self):
+        """Testing condense tag"""
+        node = emailtags.condense(self.parser, Token(TOKEN_TEXT, 'condense'))
+        self.assertEqual(node.render({}), "foo\nbar\n\n\nfoobar!")
+
+
+class QuoteTextFilterTest(unittest.TestCase):
+    def testPlain(self):
+        """Testing quote_text filter (default level)"""
+        self.assertEqual(emailtags.quote_text("foo\nbar"),
+                         "> foo\n> bar")
+
+    def testLevel2(self):
+        """Testing quote_text filter (level 2)"""
+        self.assertEqual(emailtags.quote_text("foo\nbar", 2),
+                         "> > foo\n> > bar")
