@@ -179,7 +179,7 @@ class VMWareTests(DjangoTestCase):
             raise nose.SkipTest
 
     def testParse(self):
-        """Testing VMwarePerforceTool.parse_change_desc"""
+        """Testing VMware changeset parsing"""
 
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
                                  'vmware.changeset'), 'r')
@@ -209,10 +209,7 @@ class VMWareTests(DjangoTestCase):
 
 
     def testParseSingleLineDesc(self):
-        """
-        Testing VMwarePerforceTool.parse_change_desc with a single line
-        description.
-        """
+        """Testing VMware changeset parsing with a single line description."""
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
                                  'vmware-single-line-desc.changeset'), 'r')
         data = file.read().split('\n')
@@ -235,10 +232,7 @@ class VMWareTests(DjangoTestCase):
             self.assertEqual(file, expected)
 
     def testParseMultiLineSummary(self):
-        """
-        Testing VMwarePerforceTool.parse_change_desc with a summary spanning
-        multiple lines.
-        """
+        """Testing VMware changeset parsing with a summary spanning multiple lines."""
         file = open(os.path.join(os.path.dirname(__file__), 'testdata',
                                  'vmware-phil-is-crazy.changeset'), 'r')
         data = file.read().split('\n')
