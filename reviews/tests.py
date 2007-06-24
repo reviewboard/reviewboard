@@ -8,6 +8,7 @@ from django.test import TestCase
 
 from djblets.util.testing import TagTest
 
+import reviewboard.reviews.db as reviews_db
 import reviewboard.reviews.templatetags.emailtags as emailtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
@@ -115,3 +116,141 @@ class QuoteTextFilterTest(unittest.TestCase):
         """Testing quote_text filter (level 2)"""
         self.assertEqual(emailtags.quote_text("foo\nbar", 2),
                          "> > foo\n> > bar")
+
+
+class DbQueryTests(TestCase):
+    """Tests review request query utility functions."""
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def testAllReviewRequests(self):
+        """Testing get_all_review_requests"""
+        self.assertValidSummaries(
+            reviews_db.get_all_review_requests(
+                User.objects.get(username="doc")),
+            ["Comments Improvements",
+             "Update for cleaned_data changes",
+             "Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Error dialog"])
+
+        self.assertValidSummaries(
+            reviews_db.get_all_review_requests(status=None),
+            ["Update for cleaned_data changes",
+             "Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Error dialog",
+             "Improved login form"])
+
+        self.assertValidSummaries(
+            reviews_db.get_all_review_requests(
+                User.objects.get(username="doc"), status=None),
+            ["Comments Improvements",
+             "Update for cleaned_data changes",
+             "Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Added interdiff support",
+             "Error dialog",
+             "Improved login form"])
+
+    def testReviewRequestsToGroup(self):
+        """Testing get_review_requests_to_group"""
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_group("privgroup"),
+            ["Add permission checking for JSON API"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_group("privgroup", status=None),
+            ["Add permission checking for JSON API"])
+
+    def testReviewRequestsToUserGroups(self):
+        """Testing get_review_requests_to_user_groups"""
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user_groups("doc"),
+            ["Update for cleaned_data changes",
+             "Add permission checking for JSON API"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user_groups("doc", status=None),
+            ["Update for cleaned_data changes",
+             "Add permission checking for JSON API"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user_groups("doc",
+                User.objects.get(username="doc")),
+            ["Comments Improvements",
+             "Update for cleaned_data changes",
+             "Add permission checking for JSON API"])
+
+    def testReviewRequestsToUserDirectly(self):
+        """Testing get_review_requests_to_user_directly"""
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user_directly("doc"),
+            ["Add permission checking for JSON API",
+             "Made e-mail improvements"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user_directly("doc", status=None),
+            ["Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Improved login form"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user_directly("doc",
+                User.objects.get(username="doc"), status=None),
+            ["Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Added interdiff support",
+             "Improved login form"])
+
+    def testReviewRequestsFromUser(self):
+        """Testing get_review_requests_from_user"""
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_from_user("doc"), [])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_from_user("doc", status=None),
+            ["Improved login form"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_from_user("doc",
+                user=User.objects.get(username="doc"), status=None),
+            ["Comments Improvements",
+             "Added interdiff support",
+             "Improved login form"])
+
+    def testReviewRequestsToUser(self):
+        """Testing get_review_requests_to_user"""
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user("doc"),
+            ["Update for cleaned_data changes",
+             "Add permission checking for JSON API",
+             "Made e-mail improvements"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user("doc", status=None),
+            ["Update for cleaned_data changes",
+             "Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Improved login form"])
+
+        self.assertValidSummaries(
+            reviews_db.get_review_requests_to_user("doc",
+                User.objects.get(username="doc"), status=None),
+            ["Comments Improvements",
+             "Update for cleaned_data changes",
+             "Add permission checking for JSON API",
+             "Made e-mail improvements",
+             "Added interdiff support",
+             "Improved login form"])
+
+    def assertValidSummaries(self, review_requests, summaries):
+        r_summaries = [r.summary for r in review_requests]
+
+        for summary in r_summaries:
+            self.assert_(summary in summaries,
+                         'summary "%s" not found in summary list' % summary)
+
+        for summary in summaries:
+            self.assert_(summary in r_summaries,
+                         'summary "%s" not found in review request list' %
+                         summary)
