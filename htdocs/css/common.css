@@ -84,8 +84,14 @@ table.list tr.month {
 }
 
 table.list tr.headers {
-  border: 0px;
-  border-bottom: 1px #888888 solid;
+}
+
+table.list tr.headers th {
+  background: url("/images/ui/header_bg.png") repeat-x bottom left;
+  border-top: 1px #999999 solid;
+  border-bottom: 1px #999999 solid;
+  border-left: 1px #CCCCCC solid;
+  border-right: 1px #CCCCCC solid;
 }
 
 table.list tr:hover.headers {
