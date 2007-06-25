@@ -38,8 +38,8 @@ def check_dependencies():
 
     # patchutils
     try:
-        subprocess.call(['lsdiff', '--version'], stdin=subprocess.PIPE,
-                        stdout=subprocess.PIPE, close_fds=True)
+        subprocess.call(['lsdiff', '--version'],
+                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     except OSError:
         dependency_error('Patchutils not found.')
 

@@ -87,7 +87,7 @@ def parse(data):
 
 
     p = subprocess.Popen(['lsdiff', '-n'], stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, close_fds=True)
+                         stdout=subprocess.PIPE)
     p.stdin.write(data)
     p.stdin.close()
     r = p.stdout.read().strip()
