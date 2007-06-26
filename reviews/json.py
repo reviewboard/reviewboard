@@ -101,7 +101,10 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'url': o.get_absolute_url(),
             }
         elif isinstance(o, ReviewRequest):
-            bugs_closed = [int(b.strip()) for b in o.bugs_closed.split(',')]
+            if o.bugs_closed:
+                bugs_closed = [int(b.strip()) for b in o.bugs_closed.split(',')]
+            else:
+                bugs_closed = ''
 
             return {
                 'id': o.id,
@@ -121,7 +124,10 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'target_people': o.target_people.all(),
             }
         elif isinstance(o, ReviewRequestDraft):
-            bugs_closed = [int(b.strip()) for b in o.bugs_closed.split(',')]
+            if o.bugs_closed:
+                bugs_closed = [int(b.strip()) for b in o.bugs_closed.split(',')]
+            else:
+                bugs_closed = ''
 
             return {
                 'id': o.id,
