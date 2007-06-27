@@ -20,6 +20,9 @@ class PerforceTool(SCMTool):
 
         self.uses_atomic_revisions = True
 
+    def __del__(self):
+        self.p4.close()
+
     def _connect(self):
         if not self.connected or self.p4.dropped():
             self.p4.connect()
