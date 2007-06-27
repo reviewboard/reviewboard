@@ -27,8 +27,11 @@ class PerforceTool(SCMTool):
             self.p4.connect()
 
     def _disconnect(self):
-        if self.p4.connected:
-            self.p4.disconnect()
+        try:
+            if self.p4.connected:
+                self.p4.disconnect()
+        except AttributeError:
+            pass
 
     def get_pending_changesets(self, userid):
         self._connect()
