@@ -46,4 +46,5 @@ for model in ('scmtools.tool', 'scmtools.repository',
         for entry in new_data[model]:
             a.append(entry)
 
-print simplejson.dumps(a)
+
+simplejson.dump(a, sys.stdout)
