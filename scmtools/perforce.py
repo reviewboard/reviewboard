@@ -16,7 +16,6 @@ class PerforceTool(SCMTool):
         # We defer actually connecting until just before we do some operation
         # that requires an active connection to the perforce depot.  This
         # connection is then left open as long as possible.
-        self.connected = False
 
         self.uses_atomic_revisions = True
 
@@ -24,14 +23,12 @@ class PerforceTool(SCMTool):
         self._disconnect()
 
     def _connect(self):
-        if not self.connected or self.p4.dropped():
+        if not self.p4.connected:
             self.p4.connect()
-            self.connected = True
 
     def _disconnect(self):
-        if self.connected and not self.p4.dropped():
+        if self.p4.connected:
             self.p4.disconnect()
-            self.connected = False
 
     def get_pending_changesets(self, userid):
         self._connect()
