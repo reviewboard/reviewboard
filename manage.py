@@ -70,12 +70,13 @@ def check_dependencies():
 
 if __name__ == "__main__":
     if settings.DEBUG:
-        # If DJANGO_SETTINGS_MODULE is in our environment, we're in
-        # execute_manager's sub-process.  It doesn't make sense to do this
-        # check twice, so just return.
-        import os
-        if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-            sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
-            check_dependencies()
+        if sys.argv[1] == 'runserver' or sys.argv[1] == 'test':
+            # If DJANGO_SETTINGS_MODULE is in our environment, we're in
+            # execute_manager's sub-process.  It doesn't make sense to do this
+            # check twice, so just return.
+            import os
+            if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+                sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
+                check_dependencies()
 
     execute_manager(settings)
