@@ -21,12 +21,17 @@ class PerforceTool(SCMTool):
         self.uses_atomic_revisions = True
 
     def __del__(self):
-        self.p4.disconnect()
+        self._disconnect()
 
     def _connect(self):
         if not self.connected or self.p4.dropped():
             self.p4.connect()
             self.connected = True
+
+    def _disconnect(self):
+        if self.connected and not self.p4.dropped():
+            self.p4.disconnect()
+            self.connected = False
 
     def get_pending_changesets(self, userid):
         self._connect()
@@ -36,16 +41,14 @@ class PerforceTool(SCMTool):
 
     def get_changeset(self, changesetid):
         self._connect()
-        return self.parse_change_desc(
-            self.p4.run_describe('-s', str(changesetid)),
-            changesetid)
+        changeset = self.p4.run_describe('-s', str(changesetid))
+        self._disconnect()
+        return self.parse_change_desc(changeset, changesetid)
 
     def get_diffs_use_absolute_paths(self):
         return True
 
     def get_file(self, path, revision=HEAD):
-        self._connect()
-
         if revision == PRE_CREATION:
             return ''
 
@@ -64,8 +67,6 @@ class PerforceTool(SCMTool):
 
         return data
 
-        return '\n'.join(self.p4.run_print(file)[1:])
-
     def parse_diff_revision(self, file_str, revision_str):
         # Perforce has this lovely idiosyncracy that diffs show revision #1 both
         # for pre-creation and when there's an actual revision.
@@ -76,6 +77,8 @@ class PerforceTool(SCMTool):
 
         if len(files) == 0:
             revision = PRE_CREATION
+
+        self._disconnect()
 
         return filename, revision
 
