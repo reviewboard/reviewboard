@@ -1,4 +1,5 @@
 from django import newforms as forms
+from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
@@ -15,6 +16,8 @@ class PreferencesForm(forms.Form):
                                        required=False)
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
+    syntax_highlighting = forms.BooleanField(required=False,
+        label="Enable syntax highlighting in the diff viewer")
 
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
@@ -26,6 +29,11 @@ class PreferencesForm(forms.Form):
 def user_preferences(request, template_name='accounts/prefs.html'):
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/')
 
+    profile, profile_is_new = \
+        Profile.objects.get_or_create(user=request.user)
+    must_configure = not profile.first_time_setup_done
+    profile.save()
+
     if request.POST:
         form = PreferencesForm(request.POST)
 
@@ -35,9 +43,9 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             request.user.last_name = form.cleaned_data['last_name']
             request.user.save()
 
-            profile, profile_is_new = \
-                Profile.objects.get_or_create(user=request.user)
             profile.first_time_setup_done = True
+            profile.syntax_highlighting = \
+                form.cleaned_data['syntax_highlighting']
             profile.save()
 
             return HttpResponseRedirect(redirect_to)
@@ -47,16 +55,12 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             'redirect_to': redirect_to,
             'first_name': request.user.first_name,
             'last_name': request.user.last_name,
+            'syntax_highlighting': profile.syntax_highlighting,
             'groups': [g.id for g in request.user.group_set.all()],
         })
 
-    try:
-        profile = request.user.get_profile()
-        must_configure = not profile.first_time_setup_done
-    except Profile.DoesNotExist:
-        must_configure = True
-
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
+        'settings': settings,
         'must_configure': must_configure,
     }))

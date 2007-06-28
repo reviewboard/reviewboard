@@ -1,6 +1,7 @@
 import re
 
 from django import template
+from django.conf import settings
 from django.template import resolve_variable
 from django.template import NodeList, VariableDoesNotExist
 from django.utils.html import escape
@@ -89,21 +90,71 @@ def forchunkswithlines(parser, token):
 
 
 @register.filter
-def highlightregion(value, r):
-    if r == None:
-        return escape(value)
-    else:
-        prev = 0
-        s = ""
+def highlightregion(value, regions):
+    if not regions:
+        return value
 
-        for i, j in r:
-            s += "%s<span class=\"hl\">%s</span>" % \
-                 (escape(value[prev:i]), escape(value[i:j]))
-            prev = j
+    s = ""
 
-        s += escape(value[prev:])
+    # We need to insert span tags into a string already consisting
+    # of span tags. We have a list of ranges that our span tags should
+    # go into, but those ranges are in the markup-less string.
+    #
+    # We go through the string and keep track of the location in the
+    # markup and in the markup-less string. We make sure to insert our
+    # span tag any time that we're within the current region, so long
+    # as we haven't already created one. We close the span tag whenever
+    # we're done with the region or when we're about to enter a tag in
+    # the markup string.
+    #
+    # This code makes the assumption that the list of regions is sorted.
+    # This is safe to assume in practice, but if we ever at some point
+    # had reason to doubt it, we could always sort the regions up-front.
+    in_tag = in_entity = in_hl = False
+    j = r = 0
+    region = regions[r]
 
-        return s
+    for i in xrange(len(value)):
+        skip_char = False
+        if value[i] == "<":
+            in_tag = True
+
+            if in_hl:
+                s += "</span>"
+                in_hl = False
+        elif value[i] == ">":
+            in_tag = False
+        elif value[i] == ';' and in_entity:
+            in_entity = False
+            j += 1
+        elif not in_tag and not in_entity:
+            if not in_hl and region[0] <= j < region[1]:
+                s += '<span class="hl">'
+                in_hl = True
+
+            if value[i] == '&':
+                in_entity = True
+            else:
+                j += 1
+
+        s += value[i]
+
+        if j == region[1]:
+            r += 1
+
+            if in_hl:
+                s += '</span>'
+                in_hl = False
+
+            if r == len(regions):
+                break
+
+            region = regions[r]
+
+    if i + 1 < len(value):
+        s += value[i + 1:]
+
+    return s
 
 
 extraWhitespace = re.compile(r'(\s+$| +\t)')

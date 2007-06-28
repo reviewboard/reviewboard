@@ -102,6 +102,9 @@ DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
 # out to the e-mail addresses defined for the group.
 SEND_REVIEW_MAIL = False
 
+# Enable syntax highlighting in the diff viewer
+DIFF_SYNTAX_HIGHLIGHTING = False
+
 # Access method used for the site, used in e-mails.  Override this in
 # settings_local.py if you choose to use https instead of http.
 DOMAIN_METHOD = "http"

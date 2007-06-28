@@ -36,6 +36,14 @@ def check_dependencies():
 
     import subprocess
 
+    # pygments
+    if settings.DIFF_SYNTAX_HIGHLIGHTING:
+        try:
+            import pygments
+        except ImportError:
+            dependency_error('The Pygments library is required when ' +
+                             'DIFF_SYNTAX_HIGHLIGHTING is enabled.')
+
     # patchutils
     try:
         subprocess.call(['lsdiff', '--version'],

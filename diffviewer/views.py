@@ -4,6 +4,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.utils.html import escape
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.forms import UploadDiffForm
@@ -17,7 +18,8 @@ class UserVisibleError(Exception):
     pass
 
 
-def get_diff_files(diffset, interdiffset=None):
+def get_diff_files(diffset, interdiffset=None,
+                   enable_syntax_highlighting=True):
     def get_original_file(file, revision):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
@@ -40,14 +42,14 @@ def get_diff_files(diffset, interdiffset=None):
 
 
     def get_chunks(filediff, interfilediff=None):
-        def diff_line(linenum, oldline, newline):
+        def diff_line(linenum, oldline, newline, oldmarkup, newmarkup):
             if not oldline or not newline:
-                return [linenum, oldline or '', [], newline or '', []]
+                return [linenum, oldmarkup or '', [], newmarkup or '', []]
 
             oldregion, newregion = \
                 diffutils.get_line_changed_regions(oldline, newline)
 
-            return [linenum, oldline, oldregion, newline, newregion]
+            return [linenum, oldmarkup, oldregion, newmarkup, newregion]
 
         def new_chunk(lines, numlines, tag, collapsable=False):
             return {
@@ -61,6 +63,25 @@ def get_diff_files(diffset, interdiffset=None):
             numlines = end - start
             chunks.append(new_chunk(lines[start:end], end - start, 'equal',
                           collapsable))
+
+        def apply_pygments(data, filename):
+            try:
+                from pygments import highlight
+                from pygments.lexers import get_lexer_for_filename
+                from pygments.formatters import HtmlFormatter
+            except ImportError:
+                return data.splitlines()
+
+            lexer = get_lexer_for_filename(filename)
+
+            try:
+                # This is only available in 0.7 and higher
+                lexer.add_filter('codetagify')
+            except AttributeError:
+                pass
+
+            return highlight(data, lexer, HtmlFormatter()).splitlines()
+
 
         file = filediff.source_file
         revision = filediff.source_revision
@@ -80,17 +101,31 @@ def get_diff_files(diffset, interdiffset=None):
         a_num_lines = len(a)
         b_num_lines = len(b)
 
+        markup_a = markup_b = None
+
+        if enable_syntax_highlighting:
+            try:
+                markup_a = apply_pygments(old or '', filediff.source_file)
+                markup_b = apply_pygments(new or '', filediff.dest_file)
+            except ValueError:
+                pass
+
+        if not markup_a:
+            markup_a = escape(old).splitlines()
+            markup_b = escape(new).splitlines()
+
         chunks = []
         linenum = 1
         differ = diffutils.Differ(a, b, ignore_space=True,
                                   compat_version=diffset.diffcompat)
 
         for tag, i1, i2, j1, j2 in differ.get_opcodes():
-            oldlines = a[i1:i2]
-            newlines = b[j1:j2]
+            oldlines = markup_a[i1:i2]
+            newlines = markup_b[j1:j2]
             numlines = max(len(oldlines), len(newlines))
             lines = map(diff_line,
-                        range(linenum, linenum + numlines), oldlines, newlines)
+                        range(linenum, linenum + numlines),
+                        a[i1:i2], b[j1:j2], oldlines, newlines)
             linenum += numlines
 
             if tag == 'equal' and \
@@ -144,26 +179,34 @@ def get_diff_files(diffset, interdiffset=None):
                 chunk['nextid'] = '%d.%d' % next
 
 
+    key_prefix = "diff-sidebyside"
+
+    if enable_syntax_highlighting:
+        key_prefix += "-hl"
+
+
     files = []
     for filediff in diffset.files.all():
         if filediff.binary:
             chunks = []
-        elif interdiffset:
-            # XXX This is slow. We should optimize this.
-            interfilediff = None
-            for filediff2 in interdiffset.files.all():
-                if filediff2.source_file == filediff.source_file:
-                    interfilediff = filediff2
-                    break
-
-            if interfilediff:
-                chunks = cache_memoize('diff-sidebyside-interdiff-%s-%s' %
-                                       (filediff.id, interfilediff.id),
-                                       lambda: get_chunks(filediff,
-                                                          interfilediff))
         else:
-            chunks = cache_memoize('diff-sidebyside-%s' % filediff.id,
-                                   lambda: get_chunks(filediff))
+            key = key_prefix
+            interfilediff = None
+
+            if interdiffset:
+                # XXX This is slow. We should optimize this.
+                for filediff2 in interdiffset.files.all():
+                    if filediff2.source_file == filediff.source_file:
+                        interfilediff = filediff2
+                        break
+
+                if interfilediff:
+                    key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
+            else:
+                key += str(filediff.id)
+
+            chunks = cache_memoize(key, lambda: get_chunks(filediff,
+                                                           interfilediff))
 
         revision = filediff.source_revision
 
@@ -197,7 +240,9 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         interdiffset = None
 
     try:
-        files = get_diff_files(diffset, interdiffset)
+        files = get_diff_files(diffset, interdiffset,
+                               settings.DIFF_SYNTAX_HIGHLIGHTING and
+                               request.user.get_profile().syntax_highlighting)
 
         if request.GET.get('expand', False):
             collapseall = False

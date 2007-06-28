@@ -14,6 +14,7 @@ class Profile(models.Model):
 
     collapsed_diffs = models.BooleanField(default=True)
     wordwrapped_diffs = models.BooleanField(default=True)
+    syntax_highlighting = models.BooleanField(default=True)
 
     starred_review_requests = models.ManyToManyField(ReviewRequest, core=False,
                                                      blank=True)

@@ -31,6 +31,12 @@
     <td><label for="id_last_name">Last Name:</label></td>
     <td>{{form.last_name}}</td>
    </tr>
+{% if settings.DIFF_SYNTAX_HIGHLIGHTING %}
+   <tr>
+    <td></td>
+    <td>{{form.syntax_highlighting}} {{form.syntax_highlighting.label}}</td>
+   </tr>
+{% endif %}
   </table>
  </div>
 {% endbox %}
