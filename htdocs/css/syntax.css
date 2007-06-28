@@ -5,7 +5,7 @@
 .err { border: 1px solid #FF0000 } /* Error */
 .k { font-weight: bold } /* Keyword */
 .o { color: black; } /* Operator */
-.cp { color: #0000C0 } /* Comment.Preproc */
+.cp { color: #612B00 } /* Comment.Preproc */
 .gd { color: #A00000 } /* Generic.Deleted */
 .ge { font-style: italic } /* Generic.Emph */
 .gr { color: #FF0000 } /* Generic.Error */
@@ -34,7 +34,7 @@
 .nl { color: black } /* Name.Label */
 .nn { color: black } /* Name.Namespace */
 .nt { color: #000080; font-weight: bold } /* Name.Tag */
-.nv { color: #B8860B } /* Name.Variable */
+.nv { color: black } /* Name.Variable */
 .ow { font-weight: bold } /* Operator.Word */
 .mf { color: darkred; font-weight: bold } /* Literal.Number.Float */
 .mh { color: darkred; font-weight: bold } /* Literal.Number.Hex */
