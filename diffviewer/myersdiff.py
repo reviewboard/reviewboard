@@ -316,11 +316,10 @@ class MyersDiffer:
                                 while self.a_data.undiscarded[x_index] == \
                                       self.b_data.undiscarded[y_index]:
                                     if k == self.SNAKE_LIMIT - 1 + k_offset:
-                                        best = v
-                                        ret_x, ret_y = x, y
-                                        break
+                                        return x, y, v
 
                                     k += 1
+                    return 0, 0, 0
 
                 ret_x, ret_y, best = \
                     find_diagonal(down_min, down_max, down_k, self.downoff,
