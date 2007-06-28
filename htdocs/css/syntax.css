@@ -31,7 +31,7 @@
 .ni { color: #999999; font-weight: bold } /* Name.Entity */
 .ne { color: #D2413A; font-weight: bold } /* Name.Exception */
 .nf { color: black } /* Name.Function */
-.nl { color: #A0A000 } /* Name.Label */
+.nl { color: black } /* Name.Label */
 .nn { color: black } /* Name.Namespace */
 .nt { color: #000080; font-weight: bold } /* Name.Tag */
 .nv { color: #B8860B } /* Name.Variable */

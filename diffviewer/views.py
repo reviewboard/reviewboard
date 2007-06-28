@@ -1,5 +1,12 @@
 import traceback
 
+try:
+    import pygments
+    from pygments.lexers import guess_lexer_for_filename
+    from pygments.formatters import HtmlFormatter
+except ImportError:
+    pygments = None
+
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -65,14 +72,7 @@ def get_diff_files(diffset, interdiffset=None,
                           collapsable))
 
         def apply_pygments(data, filename):
-            try:
-                from pygments import highlight
-                from pygments.lexers import get_lexer_for_filename
-                from pygments.formatters import HtmlFormatter
-            except ImportError:
-                return data.splitlines()
-
-            lexer = get_lexer_for_filename(filename)
+            lexer = guess_lexer_for_filename(filename, data)
 
             try:
                 # This is only available in 0.7 and higher
@@ -80,7 +80,7 @@ def get_diff_files(diffset, interdiffset=None,
             except AttributeError:
                 pass
 
-            return highlight(data, lexer, HtmlFormatter()).splitlines()
+            return pygments.highlight(data, lexer, HtmlFormatter()).splitlines()
 
 
         file = filediff.source_file
@@ -178,6 +178,8 @@ def get_diff_files(diffset, interdiffset=None,
             if next:
                 chunk['nextid'] = '%d.%d' % next
 
+
+    enable_syntax_highlighting = enable_syntax_highlighting and pygments
 
     key_prefix = "diff-sidebyside"
 
