@@ -115,7 +115,6 @@ def highlightregion(value, regions):
     region = regions[r]
 
     for i in xrange(len(value)):
-        skip_char = False
         if value[i] == "<":
             in_tag = True
 
