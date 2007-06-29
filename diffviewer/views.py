@@ -11,6 +11,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
+from django.template.loader import render_to_string
 from django.utils.html import escape
 from djblets.util.misc import cache_memoize
 
@@ -232,6 +233,13 @@ def get_diff_files(diffset, interdiffset=None,
     return files
 
 
+def render_diff_fragment(request, file, context,
+                         template_name='diffviewer/diff_file_fragment.html'):
+    context['file'] = file
+
+    return render_to_string(template_name, RequestContext(request, context))
+
+
 def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
@@ -242,9 +250,9 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         interdiffset = None
 
     try:
-        files = get_diff_files(diffset, interdiffset,
-                               settings.DIFF_SYNTAX_HIGHLIGHTING and
-                               request.user.get_profile().syntax_highlighting)
+        highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
+                       request.user.get_profile().syntax_highlighting
+        files = get_diff_files(diffset, interdiffset, highlighting)
 
         if request.GET.get('expand', False):
             collapseall = False
@@ -258,10 +266,22 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         context = {
             'diffset': diffset,
             'interdiffset': interdiffset,
-            'files': files,
             'collapseall': collapseall,
         }
         context.update(extra_context)
+
+        # XXX We can probably make this even more awesome and completely skip
+        # the get_diff_files call, caching basically the entire context.
+        for file in files:
+            key = 'diff-fragment-%s' % file['filediff'].id
+            if collapseall:
+                key += '-collapsed'
+            if highlighting:
+                key += '-highlighting'
+            file['fragment'] = cache_memoize(key,
+                lambda: render_diff_fragment(request, file, context))
+
+        context['files'] = files
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))

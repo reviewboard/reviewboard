@@ -47,7 +47,7 @@
 
 {% for file in files %}
 <a name="{{file.index}}"></a>
-{% include "diffviewer/diff_file_fragment.html" %}
+{{ file.fragment }}
 <script type="text/javascript">
   gFileAnchorToId["file{{file.index}}"] = {{file.filediff.id}};
   addComments("file{{file.index}}", {% commentcounts file.filediff %});
