@@ -39,8 +39,13 @@
 {% else %}
    <th colspan="2">{{line.0}}</th>
 {% endif %}
+{% ifequal chunk.change "replace" %}
    <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
    <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
+{% else %}
+   <td><pre>{{ line.1|showextrawhitespace }}</pre></td>
+   <td><pre>{{ line.3|showextrawhitespace }}</pre></td>
+{% endifequal %}
   </tr>
 {% endfor %}
  </tbody>
