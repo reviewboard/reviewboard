@@ -1,3 +1,5 @@
+import reviewboard.diffviewer.parser as diffparser
+
 class SCMException(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
@@ -85,3 +87,6 @@ class SCMTool:
         # Return a list of fields which are valid for this tool in the "new
         # review request" page.
         raise NotImplementedError
+
+    def getParser(self, data):
+        return diffparser.DiffParser(data)

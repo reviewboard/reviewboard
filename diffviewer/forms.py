@@ -23,15 +23,13 @@ class UploadDiffForm(forms.Form):
     def create(self, file, diffset_history=None):
         # Parse the diff
         repository = Repository.objects.get(pk=self.cleaned_data['repositoryid'])
-
-        files = diffparser.parse(file["content"])
+        tool = repository.get_scmtool()
+        files = tool.getParser(file["content"]).parse()
 
         if len(files) == 0:
             raise EmptyDiffError
 
         # Check that we can actually get all these files.
-        tool = repository.get_scmtool()
-
         if tool.get_diffs_use_absolute_paths():
             basedir = ''
         else:

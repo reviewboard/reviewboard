@@ -114,13 +114,13 @@ class DiffParserTest(unittest.TestCase):
     def testUnifiedDiff(self):
         """Testing parse on a unified diff"""
         data = self.diff('-u')
-        files = diffparser.parse(data)
+        files = diffparser.DiffParser(data).parse()
         self.compareDiffs(files, "unified")
 
     def testContextDiff(self):
         """Testing parse on a context diff"""
         data = self.diff('-c')
-        files = diffparser.parse(data)
+        files = diffparser.DiffParser(data).parse()
         self.compareDiffs(files, "context")
 
     def testPatch(self):
