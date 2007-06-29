@@ -99,14 +99,14 @@ class DiffParser:
             # Okay, binary files. Let's flag it.
             # We know this isn't related to the next file lsdiff gave us,
             # because we wouldn't get this message *and* content.
-            newfileinfo = self._parseSpecialHeader(lines[begin - 2])
+            newfileinfo = self._parseSpecialHeader(self.lines[begin - 2])
 
             if newfileinfo:
                 newfileinfo.binary = True
                 self.files.append(newfileinfo)
         elif begin >= 1 and self.lines[begin - 1].startswith("==== "):
             # Is this different than the file lsdiff reported around here?
-            newfileinfo = self._parseSpecialHeader(lines[begin - 1])
+            newfileinfo = self._parseSpecialHeader(self.lines[begin - 1])
 
             if newfileinfo and \
                newfileinfo.origFile != fileinfo.origFile and \
