@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
+from djblets.util.misc import get_object_or_none
 import crypt
 import nis
 
@@ -27,11 +28,11 @@ class NISBackend:
                 if not passwd:
                     passwd = nis.match(username, 'passwd').split(':')
 
-		names = passwd[4].split(' ', 1)
-		first_name = names[0]
+                names = passwd[4].split(' ', 1)
+                first_name = names[0]
                 last_name = None
-		if len(names) > 1:
-		  last_name = names[1]
+                if len(names) > 1:
+                  last_name = names[1]
 
                 email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
@@ -48,10 +49,7 @@ class NISBackend:
         return user
 
     def get_user(self, user_id):
-        try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return None
+        return get_object_or_none(User, pk=user_id)
 
 
 class LDAPBackend:
@@ -109,7 +107,4 @@ class LDAPBackend:
         return user
 
     def get_user(self, user_id):
-        try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
-            return None
+        return get_object_or_none(User, pk=user_id)

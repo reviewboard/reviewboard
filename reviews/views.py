@@ -14,6 +14,7 @@ from django.utils import simplejson
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from djblets.util.decorators import simple_decorator
+from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
@@ -87,11 +88,7 @@ def new_review_request(request,
 def review_detail(request, object_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
-    except ReviewRequestDraft.DoesNotExist:
-        draft = None
-
+    draft = get_object_or_none(review_request.reviewrequestdraft_set)
     reviews = review_request.review_set.filter(public=True,
                                                base_reply_to__isnull=True)
     for review in reviews:
@@ -261,19 +258,13 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None):
     else:
         interdiffset_id = None
 
-    try:
-        review = Review.objects.get(user=request.user,
-                                    review_request=review_request,
-                                    public=False,
-                                    base_reply_to__isnull=True,
-                                    reviewed_diffset=diffset)
-    except Review.DoesNotExist:
-        review = None
-
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
-    except ReviewRequestDraft.DoesNotExist:
-        draft = None
+    review = get_object_or_none(Review,
+                                user=request.user,
+                                review_request=review_request,
+                                public=False,
+                                base_reply_to__isnull=True,
+                                reviewed_diffset=diffset)
+    draft = get_object_or_none(review_request.reviewrequestdraft_set)
 
     return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,
@@ -499,11 +490,9 @@ def view_screenshot(request, review_request_id, screenshot_id,
 
     query = Q(history=review_request.diffset_history)
 
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
+    draft = get_object_or_none(review_request.reviewrequestdraft_set)
+    if draft:
         query = query & Q(reviewrequestdraft=draft)
-    except ReviewRequestDraft.DoesNotExist:
-        draft = None
 
     try:
         diffset = DiffSet.objects.filter(query).latest()
