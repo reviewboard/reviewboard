@@ -45,6 +45,11 @@ table.sidebyside tbody.collapsed {
   border-top: 1px #303030 solid;
 }
 
+table.sidebyside tbody.collapsed a {
+  text-decoration: underline;
+  color: black;
+}
+
 table.sidebyside tbody.collapsed td {
   background: #e4d9cb;
   font-size: x-small;

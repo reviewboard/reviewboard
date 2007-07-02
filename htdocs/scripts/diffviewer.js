@@ -76,6 +76,7 @@ var gCurrentAnchor = 0;
 var gFileAnchorToId = {};
 var gCommentDlg = null;
 var gCommentBlocks = {};
+var gHiddenComments = {};
 var gGhostCommentFlag = null;
 var gGhostCommentFlagRow = null;
 var gSelection = {
@@ -396,6 +397,9 @@ function findLineNumCell(table, linenum) {
             continue;
         }
 
+        var oldHigh = high;
+        var oldLow = low;
+
         if (value > linenum) {
             high = i;
         } else if (value < linenum) {
@@ -404,7 +408,15 @@ function findLineNumCell(table, linenum) {
             return cell;
         }
 
-         i = Math.round((low + high) / 2);
+        /*
+         * Make sure we don't get stuck in an infinite loop. This can happen
+         * when a comment is placed in a line that isn't being shown.
+         */
+        if (oldHigh == high && oldLow == low) {
+            break;
+        }
+
+        i = Math.round((low + high) / 2);
     }
 
     // Well.. damn. Ignore this then.
@@ -443,7 +455,7 @@ function onLineMouseDown(e, unused, table) {
 function onLineMouseUp(e, unused, table, fileid) {
 	var node = e.target || e.srcElement;
 
-	if (node == gGhostCommentFlag.dom) {
+	if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
 		node = gGhostCommentFlagRow.dom;
 	}
 
@@ -587,24 +599,50 @@ function onLineMouseOut(e, unused, table) {
 	}
 }
 
-function addComments(fileid, lines) {
-    var table = getEl(fileid);
+function addCommentFlags(fileid, table, lines) {
+    var remaining = {};
 
-    table.on('mousedown', onLineMouseDown.createDelegate(this, [table], true));
-    table.on('mouseup', onLineMouseUp.createDelegate(this, [table, fileid],
-	                                                 true));
-    table.on('mouseover', onLineMouseOver.createDelegate(this, [table, fileid],
-	                                                     true));
-    table.on('mouseout', onLineMouseOut.createDelegate(this, [table], true));
-
-    for (linenum in lines) {
+    for (var linenum in lines) {
         linenum = parseInt(linenum);
         var cell = findLineNumCell(table.dom, linenum);
 
         if (cell != null) {
             new CommentBlock(fileid, cell, linenum, lines[linenum]);
+        } else {
+            remaining[linenum] = lines[linenum];
         }
     }
+
+    gHiddenComments = remaining;
+}
+
+function addComments(fileid, lines) {
+    var table = getEl(fileid);
+
+    table.on('mousedown', onLineMouseDown.createDelegate(this, [table], true));
+    table.on('mouseup', onLineMouseUp.createDelegate(this, [table, fileid],
+                                                     true));
+    table.on('mouseover', onLineMouseOver.createDelegate(this, [table, fileid],
+                                                         true));
+    table.on('mouseout', onLineMouseOut.createDelegate(this, [table], true));
+
+    addCommentFlags(fileid, table, lines);
+}
+
+function expandChunk(fileid, filediff_id, chunk_index, tbody_id) {
+    var url = '/r/' + gReviewRequestId + '/diff/' + gRevision +
+              '/fragment/' + filediff_id + '/chunk/' + chunk_index + '/';
+    YAHOO.util.Connect.asyncRequest("GET", url, {
+        success: function(res) {
+            var tbody = getEl(tbody_id);
+            var table = getEl(tbody.dom.parentNode);
+            var el = dh.insertHtml("afterEnd", tbody.dom, res.responseText);
+            tbody.remove();
+
+            addCommentFlags(fileid, table, gHiddenComments);
+            onPageResize(); // Make sure we update the flag positions.
+        }
+    });
 }
 
 function scrollToAnchor(anchor, noscroll) {

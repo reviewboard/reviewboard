@@ -225,12 +225,10 @@ def submitter(request, username, template_name):
 def _query_for_diff(review_request, revision, query_extra=None):
     # Either the diff is part of a draft, or part of the history
     query = None
+    draft = get_object_or_none(review_request.reviewrequestdraft_set)
 
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
+    if draft:
         query = Q(reviewrequestdraft=draft)
-    except ReviewRequestDraft.DoesNotExist:
-        pass
 
     if revision or not query:
         query = Q(history=review_request.diffset_history)
@@ -289,6 +287,7 @@ def raw_diff(request, review_request_id, revision=None):
 
 @login_required
 def diff_fragment(request, object_id, revision, filediff_id,
+                  interdiffset_id=None, chunkindex=None,
                   template_name='diffviewer/diff_file_fragment.html'):
     review_request = get_object_or_404(ReviewRequest, pk=object_id)
 
@@ -300,7 +299,8 @@ def diff_fragment(request, object_id, revision, filediff_id,
 
     diffset = _query_for_diff(review_request, revision, query_extra)
 
-    return view_diff_fragment(request, diffset.id, filediff_id, template_name)
+    return view_diff_fragment(request, diffset.id, filediff_id,
+                              interdiffset_id, chunkindex, template_name)
 
 
 @login_required

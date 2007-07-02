@@ -2,6 +2,7 @@
 {% if standalone and error %}
 {{error}}
 {% endif %}
+{% if not standalone %}
 <table class="sidebyside" id="file{{file.index}}">
  <colgroup>
   <col class="controls" />
@@ -20,6 +21,7 @@
    <th class="rev">New Change</th>
   </tr>
  </thead>
+{% endif %}
 {% if file.binary %}
  <tbody class="binary">
   <tr>
@@ -50,14 +52,16 @@
 {% endfor %}
  </tbody>
 {% else %}
- <tbody class="collapsed">
+ <tbody class="collapsed" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
   <tr>
    <th class="controls">&nbsp;</th>
    <th>...</th>
-   <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden</td>
+   <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{forloop.counter0}}', 'collapsed-chunk{{file.index}}.{{forloop.counter0}}'); return false;">Expand</a>]</td>
   </tr>
  </tbody>
 {% endif %}
 {% endfor %}
 {% endif %}
+{% if not standalone %}
 </table>
+{% endif %}

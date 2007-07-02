@@ -240,6 +240,28 @@ def render_diff_fragment(request, file, context,
     return render_to_string(template_name, RequestContext(request, context))
 
 
+def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
+                        context):
+    key = 'diff-fragment-%s' % file['filediff'].id
+
+    if chunkindex:
+        chunkindex = int(chunkindex)
+        if chunkindex < 0 or chunkindex >= len(file['chunks']):
+            raise UserVisibleError(
+                "Invalid chunk index %s specified." % chunkindex)
+
+        file['chunks'] = [file['chunks'][chunkindex]]
+        key += '-chunk-%s' % chunkindex
+
+    if collapseall:
+        key += '-collapsed'
+    if highlighting:
+        key += '-highlighting'
+
+    return cache_memoize(key, lambda: render_diff_fragment(request, file,
+                                                           context))
+
+
 def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
@@ -273,13 +295,9 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         # XXX We can probably make this even more awesome and completely skip
         # the get_diff_files call, caching basically the entire context.
         for file in files:
-            key = 'diff-fragment-%s' % file['filediff'].id
-            if collapseall:
-                key += '-collapsed'
-            if highlighting:
-                key += '-highlighting'
-            file['fragment'] = cache_memoize(key,
-                lambda: render_diff_fragment(request, file, context))
+            file['fragment'] = build_diff_fragment(request, file, None,
+                                                   highlighting, collapseall,
+                                                   context)
 
         context['files'] = files
 
@@ -299,23 +317,32 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
                                   RequestContext(request, context))
 
 
-def view_diff_fragment(request, diffset_id, filediff_id,
+def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
+                       chunkindex=None,
                        template_name='diffviewer/diff_file_fragment.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
     filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
 
+    if interdiffset_id:
+        interdiffset = get_object_or_404(DiffSet, pk=interdiffset_id)
+    else:
+        interdiffset = None
+
     try:
-        files = get_diff_files(filediff.diffset)
+        highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
+                       request.user.get_profile().syntax_highlighting
+        files = get_diff_files(filediff.diffset, interdiffset, highlighting)
 
         for file in files:
             if file['filediff'].id == filediff.id:
-                return render_to_response(template_name,
-                    RequestContext(request, {
-                        'file': file,
-                        'standalone': True,
-                    })
-                )
+                context = {
+                    'standalone': True,
+                }
 
+                return HttpResponse(build_diff_fragment(request, file,
+                                                        chunkindex,
+                                                        highlighting, False,
+                                                        context))
         raise UserVisibleError(
             "Internal error. Unable to locate file record for filediff %s" % \
             filediff.id)
