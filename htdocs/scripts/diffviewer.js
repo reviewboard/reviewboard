@@ -243,7 +243,7 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
             this.el.remove();
         }.createDelegate(this));
 
-		this.anchor.remove();
+        this.anchor.remove();
     };
 
     this.updatePosition = function() {
@@ -433,170 +433,170 @@ function isLineNumCell(cell) {
 }
 
 function onLineMouseDown(e, unused, table) {
-	var node = e.target || e.srcElement;
+    var node = e.target || e.srcElement;
 
-	if (gGhostCommentFlagRow != null && node == gGhostCommentFlag.dom) {
-		node = gGhostCommentFlagRow.dom;
-	}
+    if (gGhostCommentFlagRow != null && node == gGhostCommentFlag.dom) {
+        node = gGhostCommentFlagRow.dom;
+    }
 
-	if (isLineNumCell(node)) {
-		YAHOO.util.Event.stopEvent(e);
+    if (isLineNumCell(node)) {
+        YAHOO.util.Event.stopEvent(e);
 
-		var row = node.parentNode;
+        var row = node.parentNode;
 
-		gSelection.table    = table;
-		gSelection.begin    = gSelection.end    = node;
-		gSelection.beginNum = gSelection.endNum = parseInt(node.innerHTML);
-		gSelection.lastSeenIndex = row.rowIndex;
-		getEl(row).addClass("selected");
-	}
+        gSelection.table    = table;
+        gSelection.begin    = gSelection.end    = node;
+        gSelection.beginNum = gSelection.endNum = parseInt(node.innerHTML);
+        gSelection.lastSeenIndex = row.rowIndex;
+        getEl(row).addClass("selected");
+    }
 }
 
 function onLineMouseUp(e, unused, table, fileid) {
-	var node = e.target || e.srcElement;
+    var node = e.target || e.srcElement;
 
-	if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
-		node = gGhostCommentFlagRow.dom;
-	}
+    if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
+        node = gGhostCommentFlagRow.dom;
+    }
 
-	if (isLineNumCell(node)) {
-		YAHOO.util.Event.stopEvent(e);
+    if (isLineNumCell(node)) {
+        YAHOO.util.Event.stopEvent(e);
 
-		var commentBlock = new CommentBlock(fileid, gSelection.begin,
-											gSelection.beginNum, []);
-		commentBlock.localNumLines =
-			gSelection.endNum - gSelection.beginNum + 1;
+        var commentBlock = new CommentBlock(fileid, gSelection.begin,
+                                            gSelection.beginNum, []);
+        commentBlock.localNumLines =
+            gSelection.endNum - gSelection.beginNum + 1;
 
-		var rows = gSelection.table.dom.rows;
+        var rows = gSelection.table.dom.rows;
 
-		for (var i = gSelection.begin.parentNode.rowIndex;
-			 i <= gSelection.end.parentNode.rowIndex;
-			 i++) {
+        for (var i = gSelection.begin.parentNode.rowIndex;
+             i <= gSelection.end.parentNode.rowIndex;
+             i++) {
 
-			getEl(rows[i]).removeClass("selected");
-		}
+            getEl(rows[i]).removeClass("selected");
+        }
 
-		gSelection.begin    = gSelection.end    = null;
-		gSelection.beginNum = gSelection.endNum = 0;
-		gSelection.rows = [];
-		gSelection.table = null;
+        gSelection.begin    = gSelection.end    = null;
+        gSelection.beginNum = gSelection.endNum = 0;
+        gSelection.rows = [];
+        gSelection.table = null;
 
-		commentBlock.showCommentDlg();
-	} else {
-		var tbody = null;
+        commentBlock.showCommentDlg();
+    } else {
+        var tbody = null;
 
-		if (node.tagName == "PRE") {
-			tbody = getEl(node.parentNode.parentNode.parentNode);
-		} else if (node.tagName == "TD") {
-			tbody = getEl(node.parentNode.parentNode);
-		}
+        if (node.tagName == "PRE") {
+            tbody = getEl(node.parentNode.parentNode.parentNode);
+        } else if (node.tagName == "TD") {
+            tbody = getEl(node.parentNode.parentNode);
+        }
 
-		if (tbody &&
-			(tbody.hasClass("delete") || tbody.hasClass("insert") ||
-			 tbody.hasClass("replace"))) {
-			gotoAnchor(tbody.dom.getElementsByTagName("A")[0].name, true);
-		}
-	}
+        if (tbody &&
+            (tbody.hasClass("delete") || tbody.hasClass("insert") ||
+             tbody.hasClass("replace"))) {
+            gotoAnchor(tbody.dom.getElementsByTagName("A")[0].name, true);
+        }
+    }
 
-	gGhostCommentFlagRow = null;
+    gGhostCommentFlagRow = null;
 }
 
 function onLineMouseOver(e, unused, table, fileid) {
-	var node = getEl(e.target || e.srcElement);
+    var node = getEl(e.target || e.srcElement);
 
-	if (node.hasClass("commentflag")) {
-		if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
-			node = gGhostCommentFlagRow;
-			getEl(node.dom.parentNode).addClass("selected");
-		} else {
-			node = getEl(node.dom.parentNode);
-		}
-	}
+    if (node.hasClass("commentflag")) {
+        if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
+            node = gGhostCommentFlagRow;
+            getEl(node.dom.parentNode).addClass("selected");
+        } else {
+            node = getEl(node.dom.parentNode);
+        }
+    }
 
-	if (isLineNumCell(node.dom)) {
-		node.setStyle("cursor", "pointer");
+    if (isLineNumCell(node.dom)) {
+        node.setStyle("cursor", "pointer");
 
-		if (gSelection.table == table) {
-			var linenum = parseInt(node.dom.innerHTML);
+        if (gSelection.table == table) {
+            var linenum = parseInt(node.dom.innerHTML);
 
-			if (linenum >= gSelection.beginNum) {
-				var row = node.dom.parentNode;
+            if (linenum >= gSelection.beginNum) {
+                var row = node.dom.parentNode;
 
-				for (var i = gSelection.lastSeenIndex;
-					 i <= row.rowIndex;
-					 i++) {
-					getEl(table.dom.rows[i]).addClass("selected");
-				}
+                for (var i = gSelection.lastSeenIndex;
+                     i <= row.rowIndex;
+                     i++) {
+                    getEl(table.dom.rows[i]).addClass("selected");
+                }
 
-				gSelection.end = node.dom;
-				gSelection.endNum = linenum;
-				gSelection.lastSeenIndex = row.rowIndex;
-			}
-		} else if (node.dom.childNodes.length == 1) {
-			if (!gGhostCommentFlag) {
-				gGhostCommentFlag = dh.append(document.body, {
-					id: 'ghost-commentflag',
-					tag: 'img',
-					src: '/images/comment-ghost.png'
-				}, true);
-				gGhostCommentFlag.enableDisplayMode();
-				gGhostCommentFlag.setAbsolutePositioned();
-				gGhostCommentFlag.setX(2);
-			} else if (gGhostCommentFlagRow != null) {
-				getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
-			}
+                gSelection.end = node.dom;
+                gSelection.endNum = linenum;
+                gSelection.lastSeenIndex = row.rowIndex;
+            }
+        } else if (node.dom.childNodes.length == 1) {
+            if (!gGhostCommentFlag) {
+                gGhostCommentFlag = dh.append(document.body, {
+                    id: 'ghost-commentflag',
+                    tag: 'img',
+                    src: '/images/comment-ghost.png'
+                }, true);
+                gGhostCommentFlag.enableDisplayMode();
+                gGhostCommentFlag.setAbsolutePositioned();
+                gGhostCommentFlag.setX(2);
+            } else if (gGhostCommentFlagRow != null) {
+                getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
+            }
 
-			gGhostCommentFlag.setTop(node.getY() - 1);
-			gGhostCommentFlag.show();
-			gGhostCommentFlag.removeAllListeners();
-			gGhostCommentFlag.on('mousedown',
-				onLineMouseDown.createDelegate(this, [table], true));
-			gGhostCommentFlag.on('mouseup',
-				onLineMouseUp.createDelegate(this, [table, fileid], true));
-			gGhostCommentFlag.on('mouseover',
-				onLineMouseOver.createDelegate(this, [table, fileid], true));
-			gGhostCommentFlagRow = node;
+            gGhostCommentFlag.setTop(node.getY() - 1);
+            gGhostCommentFlag.show();
+            gGhostCommentFlag.removeAllListeners();
+            gGhostCommentFlag.on('mousedown',
+                onLineMouseDown.createDelegate(this, [table], true));
+            gGhostCommentFlag.on('mouseup',
+                onLineMouseUp.createDelegate(this, [table, fileid], true));
+            gGhostCommentFlag.on('mouseover',
+                onLineMouseOver.createDelegate(this, [table, fileid], true));
+            gGhostCommentFlagRow = node;
 
-			getEl(node.dom.parentNode).addClass("selected");
-		}
-	} else if (gGhostCommentFlagRow != null && node != gGhostCommentFlagRow) {
-		getEl(node.dom.parentNode).removeClass("selected");
-	}
+            getEl(node.dom.parentNode).addClass("selected");
+        }
+    } else if (gGhostCommentFlagRow != null && node != gGhostCommentFlagRow) {
+        getEl(node.dom.parentNode).removeClass("selected");
+    }
 }
 
 function onLineMouseOut(e, unused, table) {
-	var relTarget = e.relatedTarget || e.toElement;
-	if (gGhostCommentFlag && relTarget != gGhostCommentFlag.dom) {
-		gGhostCommentFlag.hide();
+    var relTarget = e.relatedTarget || e.toElement;
+    if (gGhostCommentFlag && relTarget != gGhostCommentFlag.dom) {
+        gGhostCommentFlag.hide();
 
-		if (gGhostCommentFlagRow != null) {
-			getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
-		}
-	}
+        if (gGhostCommentFlagRow != null) {
+            getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
+        }
+    }
 
-	if (gSelection.table == table) {
-		var fromNode = getEl(e.originalTarget);
+    if (gSelection.table == table) {
+        var fromNode = getEl(e.originalTarget);
 
-		if (fromNode.hasClass("commentflag")) {
-			if (gGhostCommentFlag != null &&
-				fromNode == gGhostCommentFlag.dom) {
-				fromNode = gGhostCommentFlagRow;
-			} else {
-				fromNode = getEl(fromNode.dom.parentNode);
-			}
-		}
+        if (fromNode.hasClass("commentflag")) {
+            if (gGhostCommentFlag != null &&
+                fromNode == gGhostCommentFlag.dom) {
+                fromNode = gGhostCommentFlagRow;
+            } else {
+                fromNode = getEl(fromNode.dom.parentNode);
+            }
+        }
 
-		if (isLineNumCell(relTarget)) {
-			var destRowIndex = relTarget.parentNode.rowIndex;
+        if (isLineNumCell(relTarget)) {
+            var destRowIndex = relTarget.parentNode.rowIndex;
 
-			if (destRowIndex >= gSelection.begin.parentNode.rowIndex) {
-				for (var i = gSelection.lastSeenIndex;
-					 i > relTarget.parentNode.rowIndex; i--) {
-					getEl(table.dom.rows[i]).removeClass("selected");
-				}
-			}
-		}
-	}
+            if (destRowIndex >= gSelection.begin.parentNode.rowIndex) {
+                for (var i = gSelection.lastSeenIndex;
+                     i > relTarget.parentNode.rowIndex; i--) {
+                    getEl(table.dom.rows[i]).removeClass("selected");
+                }
+            }
+        }
+    }
 }
 
 function addCommentFlags(fileid, table, lines) {
