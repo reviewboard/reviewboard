@@ -390,8 +390,39 @@ ul.errorlist li {
   text-align: right;
 }
 
+#paginator {
+  padding: 8px 4px 4px 4px;
+}
+
+#paginator .current-page {
+  font-weight: bold;
+  padding: 2px 6px;
+}
+
+#paginator .page-count {
+  color: #444444;
+  margin-left: 10px;
+}
+
+#paginator a {
+  border: 1px solid #CCCCCC;
+  color: black;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+
+#paginator a:hover {
+  background: #9BC0F2;
+  border-color: #003366;
+  color: black;
+}
+
+#paginator a:visited {
+  color: black;
+}
+
 #title {
-  display: inline;
+  Display: inline;
   font-size: 24pt;
   font-weight: normal;
 }
@@ -400,8 +431,3 @@ ul.errorlist li {
   color: black;
   text-decoration: none;
 }
-
-.pagination {
-  color: #000000;
-}
-

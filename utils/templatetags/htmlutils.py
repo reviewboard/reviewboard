@@ -75,6 +75,29 @@ def ifuserorperm(context, nodelist, user, perm):
     return ''
 
 
+# Heavily based on paginator by insin
+# http://www.djangosnippets.org/snippets/73/
+@register.inclusion_tag('paginator.html', takes_context=True)
+def paginator(context, adjacent_pages=3):
+    page_nums = range(max(1, context['page'] - adjacent_pages),
+                      min(context['pages'], context['page'] + adjacent_pages)
+                      + 1)
+
+    return {
+        'hits': context['hits'],
+        'results_per_page': context['results_per_page'],
+        'page': context['page'],
+        'pages': context['pages'],
+        'page_numbers': page_nums,
+        'next': context['next'],
+        'previous': context['previous'],
+        'has_next': context['has_next'],
+        'has_previous': context['has_previous'],
+        'show_first': 1 not in page_nums,
+        'show_last': context['pages'] not in page_nums,
+    }
+
+
 @register.filter
 def escapespaces(value):
     return value.replace('  ', '&nbsp; ').replace('\n', '<br />')

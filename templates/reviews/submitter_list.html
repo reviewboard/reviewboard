@@ -24,11 +24,9 @@
  </tr>
 {% endfor %}
 </table>
-{% if is_paginated %}
-Results <b>{{first_on_page}} - {{last_on_page}}</b> of <b>{{hits}}</b>
-{% if has_previous %}<a class="pagination" href="?page={{previous}}">&larr;Previous {{results_per_page}}</a>{% endif %}
-{% if has_next %}<a class="pagination" href="?page={{next}}">&rarr;Next {{results_per_page}}</a>{% endif %}
-{% endif %}
+{%  if is_paginated %}
+{%   paginator %}
+{%  endif %}
 {% else %}
 <p>No submitters.</p>
 {% endif %}
