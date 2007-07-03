@@ -1,0 +1,15 @@
+--- orig_src/README.crlf	2007-07-02 23:33:27.000000000 -0700
++++ new_src/README.crlf	2007-07-02 23:32:59.000000000 -0700
+@@ -1,9 +1,10 @@
+ Test data for a README file.
+ 
+ There's a line here.
+-
+ A line there.
+ 
+ And here.
+ Yes, this is a good README file. Like most README files, this doesn't tell you
+-anything you really didn't already know.
++anything you really didn't already know. Oh well.
++
++*squee*

@@ -29,20 +29,25 @@ def patch(diff, file, filename):
     """Apply a diff to a file.  Delegates out to `patch` because noone
        except Larry Wall knows how to patch."""
 
+    def convert_line_endings(data):
+        temp = data.replace('\r\n', '\n')
+        temp = temp.replace('\r', '\n')
+        return temp
+
     if diff == "":
         # Someone uploaded an unchanged file. Return the one we're patching.
         return file
 
     (fd, oldfile) = tempfile.mkstemp()
     f = os.fdopen(fd, "w+b")
-    f.write(file)
+    f.write(convert_line_endings(file))
     f.close()
 
     # XXX: catch exception if Popen fails?
     newfile = '%s-new' % oldfile
     p = subprocess.Popen(['patch', '-o', newfile, oldfile],
                          stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    p.stdin.write(diff)
+    p.stdin.write(convert_line_endings(diff))
     p.stdin.close()
     failure = p.wait()
 

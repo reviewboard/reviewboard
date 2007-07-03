@@ -92,7 +92,7 @@ class DiffParserTest(unittest.TestCase):
         return data
 
     def compareDiffs(self, files, testdir):
-        self.failUnless(len(files) == 3)
+        self.assertEqual(len(files), 4)
         for file in files:
             f = open("%s/diffs/%s/%s.diff" %
                      (self.PREFIX, testdir, os.path.basename(file.newFile)))
@@ -126,23 +126,42 @@ class DiffParserTest(unittest.TestCase):
     def testPatch(self):
         """Testing patching"""
 
-        def get_file(*relative):
-            f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))
-            data = f.read()
-            f.close()
-            return data
-
         file = 'foo.c'
 
-        old = get_file('orig_src', file)
-        new = get_file('new_src', file)
-        diff = get_file('diffs', 'unified', 'foo.c.diff')
+        old = self._get_file('orig_src', file)
+        new = self._get_file('new_src', file)
+        diff = self._get_file('diffs', 'unified', 'foo.c.diff')
 
         patched = diffutils.patch(diff, old, file)
         self.assertEqual(patched, new)
 
-        diff = get_file('diffs', 'unified', 'README.diff')
+        diff = self._get_file('diffs', 'unified', 'README.diff')
         self.assertRaises(Exception, lambda: diffutils.patch(diff, old, file))
+
+
+    def testPatchCRLFFileCRLFDiff(self):
+        """Testing patching a CRLF file with a CRLF diff."""
+        old = self._get_file('orig_src', 'README.crlf')
+        new = self._get_file('new_src', 'README')
+        diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
+        patched = diffutils.patch(diff, old, new)
+        self.assertEqual(patched, new)
+
+    def testPatchLFFileCRLFDiff(self):
+        """Testing patching a CRLF file with a CRLF diff."""
+        old = self._get_file('orig_src', 'README')
+        new = self._get_file('new_src', 'README')
+        diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
+        patched = diffutils.patch(diff, old, new)
+        self.assertEqual(patched, new)
+
+    def testPatchCRLFFileLFDiff(self):
+        """Testing patching a CRLF file with a CRLF diff."""
+        old = self._get_file('orig_src', 'README.crlf')
+        new = self._get_file('new_src', 'README')
+        diff = self._get_file('diffs', 'unified', 'README.diff')
+        patched = diffutils.patch(diff, old, new)
+        self.assertEqual(patched, new)
 
     def testInterline(self):
         """Testing inter-line diffs"""
@@ -175,6 +194,12 @@ class DiffParserTest(unittest.TestCase):
         new = 'nopqrstuvwxyz'
         regions = diffutils.get_line_changed_regions(old, new)
         deepEqual(regions, (None, None))
+
+    def _get_file(self, *relative):
+        f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))
+        data = f.read()
+        f.close()
+        return data
 
 
 class HighlightRegionTest(TestCase):
