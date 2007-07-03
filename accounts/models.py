@@ -16,6 +16,14 @@ class Profile(models.Model):
     wordwrapped_diffs = models.BooleanField(default=True)
     syntax_highlighting = models.BooleanField(default=True)
 
+    sort_review_request_columns = models.CharField(maxlength=128, blank=True)
+    sort_submitter_columns = models.CharField(maxlength=128, blank=True)
+    sort_group_columns = models.CharField(maxlength=128, blank=True)
+
+    #review_request_columns = models.CharField(maxlength=128, blank=True)
+    #submitter_columns = models.CharField(maxlength=128, blank=True)
+    #group_columns = models.CharField(maxlength=128, blank=True)
+
     starred_review_requests = models.ManyToManyField(ReviewRequest, core=False,
                                                      blank=True)
 

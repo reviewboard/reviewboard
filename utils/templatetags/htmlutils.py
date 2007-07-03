@@ -2,12 +2,90 @@ import datetime
 import Image
 import os
 
-from django.conf import settings
 from django import template
+from django.conf import settings
+from django.template import resolve_variable
+from django.template import TemplateSyntaxError, VariableDoesNotExist
 from djblets.util.decorators import blocktag
 
 
 register = template.Library()
+
+
+class ColumnHeader(template.Node):
+    def __init__(self, field_name, text):
+        self.field_name = field_name
+        self.text = text
+
+    def render(self, context):
+        try:
+            temp = resolve_variable('sort_list', context)
+
+            if temp:
+                sort_list = list(temp)
+            else:
+                sort_list = None
+        except VariableDoesNotExist:
+            sort_list = None
+
+        sort_indicator = ""
+
+        if sort_list:
+            rev_field_name = "-%s" % self.field_name
+
+            new_field_name = self.field_name
+
+            try:
+                i = sort_list.index(self.field_name)
+
+                if i == 0:
+                    sort_indicator = "&#x25bc;"
+                    new_field_name = rev_field_name
+                else:
+                    sort_indicator = "&#x25be;"
+                    new_field_name = self.field_name
+            except ValueError:
+                try:
+                    i = sort_list.index(rev_field_name)
+
+                    if i == 0:
+                        sort_indicator = "&#x25b2;"
+                        new_field_name = self.field_name
+                    else:
+                        sort_indicator = "&#x25b4;"
+                        new_field_name = rev_field_name
+                except ValueError:
+                    i = -1
+
+            if i != -1:
+                del(sort_list[i])
+            else:
+                sort_list = sort_list[:2]
+
+            sort_list.insert(0, new_field_name)
+        else:
+            sort_list = [self.field_name]
+
+        url = "?sort=%s" % ','.join(sort_list)
+        s  = '<th onclick="javascript:window.location = \'%s\'">' % url
+        s += '<a href="%s">%s</a> %s' % (url, self.text, sort_indicator)
+
+        if sort_indicator:
+            s += ' <a class="unsort" href="?sort=%s">x</a>' % \
+                 (','.join(sort_list[1:]))
+
+        s += "</th>"
+        return s
+
+@register.tag
+def column_header(parser, token):
+    try:
+        tag_name, field_name, text = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag required a field name and column text"
+
+    return ColumnHeader(field_name.strip('"'), text.strip('"'))
 
 
 @register.tag
@@ -63,6 +141,12 @@ def ageid(timestamp):
         return "age4"
     else:
         return "age5"
+
+
+@register.simple_tag
+def sort_indicator(sort_list, field_name):
+
+    return ""
 
 
 @register.tag

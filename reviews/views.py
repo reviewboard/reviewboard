@@ -29,6 +29,7 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
 from reviewboard.reviews.email import mail_review_request, \
                                       mail_diff_update
 from reviewboard.scmtools.models import Repository
+from reviewboard.utils.views import sortable_object_list
 import reviewboard.reviews.db as reviews_db
 
 
@@ -104,28 +105,39 @@ def review_detail(request, object_id, template_name):
     }))
 
 
-def review_list(request, queryset, template_name, extra_context={}):
-    return object_list(request,
-        queryset=queryset.filter(Q(status='P') |
-                                 Q(status='S')).order_by('-last_updated'),
-        paginate_by=50,
-        allow_empty=True,
+def review_list(request, queryset, template_name, default_filter=True,
+                extra_context={}, **kwargs):
+    profile, profile_is_new = \
+        Profile.objects.get_or_create(user=request.user)
+
+    if default_filter:
+        queryset = queryset.filter(Q(status='P') |
+                                   Q(status='S')).order_by('-last_updated')
+
+    sort = request.GET.get('sort', profile.sort_review_request_columns)
+    response = sortable_object_list(request,
+        queryset=queryset,
+        default_sort=profile.sort_review_request_columns,
         template_name=template_name,
-        extra_context=dict(
-            {'app_path': request.path},
-            **extra_context
-        ))
+        extra_context=extra_context,
+        **kwargs)
+
+    if profile.sort_review_request_columns != sort:
+        profile.sort_review_request_columns = sort
+        profile.save()
+
+    return response
 
 
 @login_required
-def all_review_requests(request, template_name):
+def all_review_requests(request, template_name='reviews/review_list.html'):
     return review_list(request,
         queryset=reviews_db.get_all_review_requests(request.user, status=None),
         template_name=template_name)
 
 
 @login_required
-def submitter_list(request, template_name):
+def submitter_list(request, template_name='reviews/submitter_list.html'):
     return object_list(request,
         queryset=User.objects.filter(),
         template_name=template_name,
@@ -137,7 +149,7 @@ def submitter_list(request, template_name):
 
 
 @login_required
-def group_list(request, template_name):
+def group_list(request, template_name='reviews/group_list.html'):
     return object_list(request,
         queryset=Group.objects.all(),
         template_name=template_name,
@@ -158,16 +170,16 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         review_requests = \
             reviews_db.get_review_requests_from_user(request.user.username,
                                                      request.user)
-        title = "All Outgoing Review Requests";
+        title = "All Outgoing Review Requests"
     elif view == 'to-me':
         review_requests = reviews_db.get_review_requests_to_user_directly(
             request.user.username, request.user)
-        title = "Incoming Review Requests to Me";
+        title = "Incoming Review Requests to Me"
     elif view == 'to-group':
         if group != "":
             review_requests = reviews_db.get_review_requests_to_group(
                 group, request.user)
-            title = "Incoming Review Requests to %s" % group;
+            title = "Incoming Review Requests to %s" % group
         else:
             review_requests = reviews_db.get_review_requests_to_user_groups(
                 request.user.username, request.user)
@@ -185,14 +197,48 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         def __init__(self, list):
             self.list = list
 
+        def order_by(self, *field_names):
+            return BogusQuerySet(sorted(self.list,
+                lambda a,b: self._sort_func(a, b, field_names)))
+
+        def _sort_func(self, a, b, field_list):
+            for field in field_list:
+                if field[0] == "-":
+                    reverse = True
+                    field = field[1:]
+                else:
+                    reverse = False
+
+                try:
+                    a_value = str(getattr(a, field))
+                    b_value = str(getattr(b, field))
+
+                    if reverse:
+                        i = cmp(b_value, a_value)
+                    else:
+                        i = cmp(a_value, b_value)
+
+                    if i != 0:
+                        return i
+                except AttributeError:
+                    # The field doesn't exist, so just ignore it.
+                    pass
+
+            # They're equal, so compare the objects themselves to "sort" it out.
+            return cmp(a, b)
+
         def _clone(self):
             return self.list
 
-    return object_list(request,
-        queryset=BogusQuerySet(review_requests),
+    if isinstance(review_requests, list):
+        queryset = BogusQuerySet(review_requests)
+    else:
+        queryset = review_requests
+
+    return review_list(request,
+        queryset=queryset,
         template_name=template_name,
-        paginate_by=50,
-        allow_empty=True,
+        default_filter=False,
         template_object_name='review_request',
         extra_context={
             'title': title,
@@ -202,7 +248,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
 
 @login_required
-def group(request, name, template_name):
+def group(request, name, template_name='reviews/review_list.html'):
     return review_list(request,
         queryset=reviews_db.get_review_requests_to_group(name, status=None),
         template_name=template_name,
@@ -212,7 +258,7 @@ def group(request, name, template_name):
 
 
 @login_required
-def submitter(request, username, template_name):
+def submitter(request, username, template_name='reviews/review_list.html'):
     return review_list(request,
         queryset=reviews_db.get_review_requests_from_user(username,
                                                           status=None),

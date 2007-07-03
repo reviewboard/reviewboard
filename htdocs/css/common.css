@@ -92,10 +92,33 @@ table.list tr.headers th {
   border-bottom: 1px #999999 solid;
   border-left: 1px #CCCCCC solid;
   border-right: 1px #CCCCCC solid;
+  color: #444444;
+  cursor: pointer;
+}
+
+table.list tr.headers th a {
+  color: black;
+  text-decoration: none;
+}
+
+table.list tr.headers th a.unsort {
+  color: #444444;
+}
+
+table.list tr.headers th a:hover {
+  text-decoration: underline;
 }
 
 table.list tr:hover.headers {
   background-color: transparent;
+}
+
+table.list tr.headers th:hover {
+  background: url("/images/ui/header_bg_primary.png") repeat-x bottom left;
+}
+
+table.list tr.headers th:hover a {
+  text-decoration: underline;
 }
 
 table.list tr:hover .age1 {

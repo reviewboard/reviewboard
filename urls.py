@@ -29,11 +29,9 @@ urlpatterns = patterns('',
      {'url': '/dashboard/'}),
 
     # Review request browsing
-    (r'^dashboard/$', 'reviewboard.reviews.views.dashboard',
-     {'template_name': 'reviews/dashboard.html'}),
+    (r'^dashboard/$', 'reviewboard.reviews.views.dashboard'),
 
-    (r'^r/$', 'reviewboard.reviews.views.all_review_requests',
-     {'template_name': 'reviews/review_list.html'}),
+    (r'^r/$', 'reviewboard.reviews.views.all_review_requests'),
 
     # Review request creation
     (r'^r/new/$', 'reviewboard.reviews.views.new_review_request'),
@@ -97,20 +95,13 @@ urlpatterns = patterns('',
      'reviewboard.reviews.views.preview_reply_email'),
 
     # Users
-    (r'^users/$', 'reviewboard.reviews.views.submitter_list',
-     {'template_name': 'reviews/submitter_list.html'}),
-
+    (r'^users/$', 'reviewboard.reviews.views.submitter_list'),
     (r'^users/(?P<username>[A-Za-z0-9_-]+)/$',
-     'reviewboard.reviews.views.submitter',
-     {'template_name': 'reviews/review_list.html'}),
+     'reviewboard.reviews.views.submitter'),
 
     # Groups
-    (r'^groups/$', 'reviewboard.reviews.views.group_list',
-     {'template_name': 'reviews/group_list.html'}),
-
-    (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
-     'reviewboard.reviews.views.group',
-     {'template_name': 'reviews/review_list.html'}),
+    (r'^groups/$', 'reviewboard.reviews.views.group_list'),
+    (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$', 'reviewboard.reviews.views.group'),
 
     # Feeds
     (r'^feeds/rss/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
