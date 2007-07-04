@@ -15,7 +15,7 @@ class Tool(models.Model):
 class Repository(models.Model):
     name = models.CharField(maxlength=64, unique=True)
     path = models.CharField(maxlength=128, unique=True)
-    mirror_path = models.CharField(maxlength=128, unique=True)
+    mirror_path = models.CharField(maxlength=128, blank=True)
     username = models.CharField(maxlength=32, blank=True)
     password = models.CharField(maxlength=128, blank=True)
     tool = models.ForeignKey(Tool)
