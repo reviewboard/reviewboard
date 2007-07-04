@@ -9,7 +9,7 @@ class PerforceTool(SCMTool):
 
         import p4
         self.p4 = p4.P4()
-        self.p4.port = repository.path
+        self.p4.port = repository.mirror_path or repository.path
         self.p4.user = repository.username
         self.p4.password = repository.password
 
