@@ -63,9 +63,8 @@ def new_review_request(request,
                 review_request = form.create(request.user,
                                              request.FILES['diff_path'])
                 return HttpResponseRedirect(review_request.get_absolute_url())
-            except OwnershipError:
-                pass
-            except EmptyDiffError:
+            except:
+                # XXX - OwnershipError?
                 pass
     else:
         form = NewReviewRequestForm()

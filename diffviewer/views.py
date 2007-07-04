@@ -7,6 +7,7 @@ try:
 except ImportError:
     pygments = None
 
+from django import newforms as forms
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
@@ -384,16 +385,18 @@ def upload(request, donepath, diffset_history_id=None,
                 diffset = form.create(request.FILES['path'], diffset_history)
                 return HttpResponseRedirect(donepath % diffset.id)
             except scmtools.FileNotFoundException, e:
-                differror = str(e)
+                form.errors['path'] = forms.util.ErrorList([e])
+            except scmtools.SCMError, e:
+                form.errors['path'] = forms.util.ErrorList([e])
             except ValueError:
                 # FIXME: it'd be nice to have some help as to exactly what broke
                 # during parsing.
-                differror = 'This diff did not parse correctly'
+                form.errors['path'] = forms.util.ErrorList([
+                    'This diff did not parse correctly'])
     else:
         form = UploadDiffForm(initial={'repositoryid': repository_id})
 
     return render_to_response(template_name, RequestContext(request, {
-        'differror': differror,
         'form': form,
         'diffs_use_absolute_paths':
             repository.get_scmtool().get_diffs_use_absolute_paths(),

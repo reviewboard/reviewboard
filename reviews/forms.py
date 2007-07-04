@@ -5,6 +5,7 @@ from django import newforms as forms
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
+import reviewboard.scmtools as scmtools
 from reviewboard.scmtools.models import Repository
 from reviewboard.reviews.db import create_review_request, \
                                    update_review_request_from_changenum, \
@@ -74,6 +75,9 @@ class NewReviewRequestForm(forms.Form):
 
         try:
             diff_form.create(file, review_request.diffset_history)
+            if 'path' in diff_form.errors:
+                review_request.delete()
+                self.errors['diff_path'] = diff_form.errors['path']
         except EmptyDiffError:
             review_request.delete()
             self.errors['diff_path'] = forms.util.ErrorList([

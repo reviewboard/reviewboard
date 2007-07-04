@@ -2,7 +2,7 @@ import pysvn
 import re
 
 from reviewboard.scmtools.core import \
-    SCMException, FileNotFoundException, SCMTool, HEAD, PRE_CREATION
+    SCMError, FileNotFoundException, SCMTool, HEAD, PRE_CREATION
 
 class SVNTool(SCMTool):
     def __init__(self, repository):
@@ -55,7 +55,7 @@ class SVNTool(SCMTool):
         # svn diff -u has "revision" while svnlook has "rev"
         m = self.revision_re.match(revision_str)
         if not m:
-            raise SCMException("Unable to parse diff revision header '%s'" %
+            raise SCMError("Unable to parse diff revision header '%s'" %
                                revision_str)
 
         relocated_file = m.group(2)
@@ -66,7 +66,7 @@ class SVNTool(SCMTool):
 
         if relocated_file:
             if not relocated_file.startswith("..."):
-                raise SCMException("Unable to parse SVN relocated path '%s'" %
+                raise SCMError("Unable to parse SVN relocated path '%s'" %
                                    relocated_file)
 
             file_str = "%s/%s" % (relocated_file[4:], file_str)

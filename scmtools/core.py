@@ -1,6 +1,6 @@
 import reviewboard.diffviewer.parser as diffparser
 
-class SCMException(Exception):
+class SCMError(Exception):
     def __init__(self, msg):
         Exception.__init__(self, msg)
 

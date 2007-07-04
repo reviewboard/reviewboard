@@ -17,11 +17,13 @@
    <tr>
     <td><label for="id_basedir">Base directory:</label></td>
     <td>{{form.basedir}} {{form.basedir.errors}}</td>
+    <td>{{form.basedir.errors}}</td>
    </tr>
   {% endif %}
   <tr>
    <td><label for="id_path">Filename:</label></td>
-   <td>{{form.path}} {{form.path.errors}}</td>
+   <td>{{form.path}}</td>
+   <td>{{form.path.errors}}</td>
   </tr>
   <tr>
    <td>&nbsp;</td>

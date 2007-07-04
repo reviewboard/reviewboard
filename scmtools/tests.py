@@ -4,7 +4,7 @@ import unittest
 
 from django.test import TestCase as DjangoTestCase
 
-from reviewboard.scmtools.core import SCMException, FileNotFoundException, \
+from reviewboard.scmtools.core import SCMError, FileNotFoundException, \
                                       Revision, HEAD, PRE_CREATION, \
                                       ChangeSet
 from reviewboard.scmtools.models import Repository, Tool
@@ -104,7 +104,7 @@ class SubversionTests(unittest.TestCase):
         self.assertEqual(self.tool.parse_diff_revision('',
             '2007-06-06 15:32:23 UTC (rev 10958)')[1], '10958')
 
-        self.assertRaises(SCMException,
+        self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
 
     def testInterface(self):
