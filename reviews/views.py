@@ -1,5 +1,6 @@
 from urllib import quote
 
+from django import newforms as forms
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User
@@ -506,12 +507,11 @@ def upload_screenshot(request, review_request_id,
                 screenshot = form.create(request.FILES['path'], r)
                 return HttpResponseRedirect(r.get_absolute_url())
             except Exception, e:
-                error = str(e)
+                form.errors['path'] = forms.util.ErrorList([e])
     else:
         form = UploadScreenshotForm()
 
     return render_to_response(template_name, RequestContext(request, {
-        'error': error,
         'form': form,
     }))
 

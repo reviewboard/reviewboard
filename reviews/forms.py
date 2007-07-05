@@ -1,6 +1,7 @@
 import re
 
 from django import newforms as forms
+from PIL import Image
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, \
@@ -96,13 +97,19 @@ class UploadScreenshotForm(forms.Form):
     path = forms.CharField(widget=forms.FileInput())
 
     def create(self, data, review):
-        draft = ReviewRequestDraft.create(review)
-
         screenshot = Screenshot(caption=self.cleaned_data['caption'],
                                 draft_caption=self.cleaned_data['caption'])
         screenshot.save()
-        screenshot.save_image_file(data["filename"], data["content"])
+        screenshot.save_image_file(data['filename'], data['content'])
 
+        try:
+            image = Image.open(screenshot.get_image_filename())
+            image.load()
+        except:
+            screenshot.delete()
+            raise ValueError('Selected file does not appear to be an image')
+
+        draft = ReviewRequestDraft.create(review)
         review.screenshots.add(screenshot)
         draft.screenshots.add(screenshot)
 
