@@ -32,7 +32,6 @@ from django.core.management import setup_environ
 setup_environ(settings)
 
 from django.contrib.auth.models import User
-from django.utils import simplejson
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.models import Group, ReviewRequest, Review, Comment

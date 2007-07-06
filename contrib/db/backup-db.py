@@ -8,43 +8,50 @@
 #
 #   $ ./contrib/db/load-db.py dbdump.json
 
-import os, simplejson, sys
+import sys, os
 
-if not os.path.exists("manage.py"):
-    print "This must be run in the directory containing manage.py."
+sys.path.append(os.getcwd())
+
+try:
+    import settings
+except ImportError:
+    sys.stderr.write(("Error: Can't find the file 'settings.py' in the " +
+                      "directory containing %r. Make sure you're running " +
+                      "from the root reviewboard directory.") % __file__)
     sys.exit(1)
 
 
-fp = os.popen("./manage.py dumpdata accounts reviews diffviewer scmtools", "r")
-buffer = fp.read()
-fp.close()
+# This must be done before we import any models
+from django.core.management import setup_environ
+setup_environ(settings)
 
-data = simplejson.loads(buffer)
+from django.core import serializers
 
-new_data = {}
-
-for entry in data:
-    model = entry["model"]
-
-    if not new_data.has_key(model):
-        new_data[model] = []
-
-    new_data[model].append(entry)
+import reviewboard.accounts.models as accounts
+import reviewboard.diffviewer.models as diffviewer
+import reviewboard.reviews.models as reviews
+import reviewboard.scmtools.models as scmtools
 
 
-a = []
+models = (scmtools.Tool, scmtools.Repository,
+          diffviewer.DiffSetHistory, diffviewer.DiffSet,
+          diffviewer.FileDiff,
+          reviews.Group, reviews.Screenshot, reviews.ScreenshotComment,
+          reviews.Comment, reviews.ReviewRequest,
+          reviews.ReviewRequestDraft, reviews.Review,
+          accounts.Profile)
 
-for model in ('scmtools.tool', 'scmtools.repository',
-              'diffviewer.diffsethistory', 'diffviewer.diffset',
-              'diffviewer.filediff',
-              'reviews.group',
-              'reviews.screenshot', 'reviews.screenshotcomment',
-              'reviews.comment', 'reviews.reviewrequest',
-              'reviews.reviewrequestdraft', 'reviews.review',
-              'accounts.profile'):
-    if new_data.has_key(model):
-        for entry in new_data[model]:
-            a.append(entry)
+serializer = serializers.get_serializer("json")()
 
+sys.stdout.write("[")
+for model in models:
+    serializer.serialize(model.objects.all(), ensure_ascii=False)
+    value = serializer.getvalue()
 
-simplejson.dump(a, sys.stdout)
+    if value != "[]":
+        sys.stdout.write(value[1:-1]) # Skip the "[" and "]"
+
+        if model != models[-1]:
+            sys.stdout.write(", ")
+
+sys.stdout.write("]")

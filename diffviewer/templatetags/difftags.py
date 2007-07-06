@@ -25,8 +25,10 @@ class ForChunksWithLines(template.Node):
                 var
 
     def render(self, context):
+        highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
+                       context['user'].get_profile().syntax_highlighting
         filediff = self.get_variable(self.filediff, context)
-        files = get_diff_files(filediff.diffset)
+        files = get_diff_files(filediff.diffset, highlighting=highlighting)
 
         for file in files:
             if file["filediff"].id == filediff.id:
@@ -85,8 +87,7 @@ def forchunkswithlines(parser, token):
     nodelist_loop = parser.parse(('endforchunkswithlines'),)
     parser.delete_first_token()
 
-    return ForChunksWithLines(filediff, first_line, num_lines,
-                              nodelist_loop)
+    return ForChunksWithLines(filediff, first_line, num_lines, nodelist_loop)
 
 
 @register.filter
