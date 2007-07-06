@@ -190,7 +190,7 @@ class VMWareTests(DjangoTestCase):
         self.assertEqual(changeset.summary, "Emma")
         self.assertEqual(hash(changeset.description), 315618127)
         self.assertEqual(changeset.changenum, 123456)
-        self.assertEqual(changeset.testing_done, "- Read a book.")
+        self.assertEqual(hash(changeset.testing_done), 1030854806)
 
         self.assertEqual(len(changeset.bugs_closed), 1)
         self.assertEqual(changeset.bugs_closed[0], '128700')

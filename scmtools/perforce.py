@@ -117,8 +117,15 @@ class PerforceTool(SCMTool):
         description = '\n'.join(changedesc[1:])
         file_header = re.search('Affected files ...', description)
 
-        changeset.description = '\n'.join([x.strip() for x in
-                description[:file_header.start()].split('\n')]).strip()
+        desc = None
+        for line in description[:file_header.start()].split('\n'):
+            if line.startswith('\t'):
+                line = line[1:]
+            if desc:
+                desc += '\n' + line.rstrip()
+            else:
+                desc = line.rstrip()
+        changeset.description = desc.rstrip()
         changeset.files = filter(lambda x: len(x),
             [x.strip().split('#', 1)[0] for x in
                 description[file_header.end():].split('\n')])

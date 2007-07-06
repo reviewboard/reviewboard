@@ -29,6 +29,8 @@ Change 434785 by davidt@davidt-dev1-hosted07 on 2007/02/08 17:04:32 *pending*
 	QA Notes:
 	Testing Done:
 	- Read a book.
+	- This was a very silly book, with chapters and words and all sorts of
+	  victorian-era hoity toity sentences.
 	Documentation Notes:
 	Bug Number: 128700
 	Reviewed by: nobody
@@ -40,9 +42,9 @@ Change 434785 by davidt@davidt-dev1-hosted07 on 2007/02/08 17:04:32 *pending*
 	#You need to change the automerge defaults below to YES|NO|MANUAL.
 	#You can automerge to at most one component branch.
 
-        Merge to: hosted07: YES
+	Merge to: hosted07: YES
 	Merge to: bfg-main: MANUAL
-        Merge to: main: NO
+	Merge to: main: NO
 
 Affected files ...
 
