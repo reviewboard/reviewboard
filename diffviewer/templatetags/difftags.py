@@ -112,7 +112,7 @@ def highlightregion(value, regions):
     # This is safe to assume in practice, but if we ever at some point
     # had reason to doubt it, we could always sort the regions up-front.
     in_tag = in_entity = in_hl = False
-    j = r = 0
+    i = j = r = 0
     region = regions[r]
 
     for i in xrange(len(value)):
