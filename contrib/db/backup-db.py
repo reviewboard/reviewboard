@@ -45,13 +45,19 @@ serializer = serializers.get_serializer("json")()
 
 sys.stdout.write("[")
 for model in models:
-    serializer.serialize(model.objects.all(), ensure_ascii=False)
-    value = serializer.getvalue()
+    count = model.objects.count()
 
-    if value != "[]":
-        sys.stdout.write(value[1:-1]) # Skip the "[" and "]"
+    for i, obj in enumerate(model.objects.all()):
+        serializer.serialize([obj], ensure_ascii=False)
+        value = serializer.getvalue()
 
-        if model != models[-1]:
-            sys.stdout.write(", ")
+        if value != "[]":
+            sys.stdout.write(value[1:-1]) # Skip the "[" and "]"
+
+            if i < count - 1:
+                sys.stdout.write(", ")
+
+    if count > 0 and model != models[-1]:
+        sys.stdout.write(", ")
 
 sys.stdout.write("]")
