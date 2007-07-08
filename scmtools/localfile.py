@@ -1,5 +1,4 @@
-from scmtools.core import FileNotFoundException, SCMTool
-from scmtools.core import HEAD
+from scmtools.core import FileNotFoundError, SCMTool, HEAD
 
 class LocalFileTool(SCMTool):
     def __init__(self, repository):
@@ -13,7 +12,7 @@ class LocalFileTool(SCMTool):
 
     def get_file(self, path, revision=HEAD):
         if not path or revision != HEAD:
-            raise FileNotFoundException(path, revision)
+            raise FileNotFoundError(path, revision)
 
         try:
             fp = open(self.repopath + '/' + path, 'r')
@@ -21,7 +20,7 @@ class LocalFileTool(SCMTool):
             fp.close()
             return data
         except IOError, e:
-            raise FileNotFoundException(path, revision, str(e))
+            raise FileNotFoundError(path, revision, str(e))
 
     def parse_diff_revision(self, file_str, revision_str):
         return file_str, HEAD

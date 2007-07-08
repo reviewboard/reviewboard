@@ -310,10 +310,10 @@ def new_review_request(request):
     except Repository.DoesNotExist, e:
         return JsonResponseError(request, INVALID_REPOSITORY,
                                  {'repository_path': repository_path})
-    except reviews_db.ChangeNumberInUseException, e:
+    except reviews_db.ChangeNumberInUseError, e:
         return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
                                  {'review_request': e.review_request})
-    except reviews_db.InvalidChangeNumberException:
+    except reviews_db.InvalidChangeNumberError:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
 
 
@@ -608,7 +608,7 @@ def review_request_draft_update_from_changenum(request, review_request_id):
     try:
         reviews_db.update_review_request_from_changenum(
             review_request, review_request.changenum)
-    except reviews_db.InvalidChangeNumberException:
+    except reviews_db.InvalidChangeNumberError:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER,
                                  {'changenum': review_request.changenum})
 

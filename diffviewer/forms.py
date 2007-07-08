@@ -42,7 +42,7 @@ class UploadDiffForm(forms.Form):
             # FIXME: this would be a good place to find permissions errors
             if revision != PRE_CREATION and \
                not tool.file_exists(filename, revision):
-                raise scmtools.FileNotFoundException(filename, revision)
+                raise scmtools.FileNotFoundError(filename, revision)
 
             f.origFile = filename
             f.origInfo = revision

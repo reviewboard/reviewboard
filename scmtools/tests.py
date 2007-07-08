@@ -4,7 +4,7 @@ import unittest
 
 from django.test import TestCase as DjangoTestCase
 
-from reviewboard.scmtools.core import SCMError, FileNotFoundException, \
+from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
                                       Revision, HEAD, PRE_CREATION, \
                                       ChangeSet
 from reviewboard.scmtools.models import Repository, Tool
@@ -82,10 +82,10 @@ class SubversionTests(unittest.TestCase):
         self.assert_(self.tool.file_exists('trunk/doc/misc-docs/Makefile'))
         self.assert_(not self.tool.file_exists('trunk/doc/misc-docs/Makefile2'))
 
-        self.assertRaises(FileNotFoundException,
+        self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file(''))
 
-        self.assertRaises(FileNotFoundException,
+        self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file('hello',
                                                      PRE_CREATION))
 

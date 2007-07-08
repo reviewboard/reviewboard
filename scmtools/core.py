@@ -17,7 +17,7 @@ class ChangeSet:
         self.username = ""
 
 
-class FileNotFoundException(Exception):
+class FileNotFoundError(Exception):
     def __init__(self, path, revision=None, detail=None):
         if revision == None or revision == HEAD:
             msg = "The file '%s' could not be found in the repository" % path
@@ -64,7 +64,7 @@ class SCMTool:
         try:
             self.get_file(path, revision)
             return True
-        except FileNotFoundException, e:
+        except FileNotFoundError, e:
             return False
 
     def parse_diff_revision(self, file_str, revision_str):

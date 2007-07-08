@@ -10,7 +10,7 @@ import reviewboard.scmtools as scmtools
 from reviewboard.scmtools.models import Repository
 from reviewboard.reviews.db import create_review_request, \
                                    update_review_request_from_changenum, \
-                                   ChangeNumberInUseException
+                                   ChangeNumberInUseError
 
 
 class OwnershipError(ValueError):
@@ -55,7 +55,7 @@ class NewReviewRequestForm(forms.Form):
         try:
             review_request = \
                 create_review_request(user, repository, changenum)
-        except ChangeNumberInUseException:
+        except ChangeNumberInUseError:
             review_request = \
                 ReviewRequest.objects.get(changenum=changenum)
             update_review_request_from_changenum(review_request, changenum)

@@ -2,7 +2,7 @@ import pysvn
 import re
 
 from reviewboard.scmtools.core import \
-    SCMError, FileNotFoundException, SCMTool, HEAD, PRE_CREATION
+    SCMError, FileNotFoundError, SCMTool, HEAD, PRE_CREATION
 
 class SVNTool(SCMTool):
     def __init__(self, repository):
@@ -39,13 +39,13 @@ class SVNTool(SCMTool):
 
     def get_file(self, path, revision=HEAD):
         if not path:
-            raise FileNotFoundException(path, revision)
+            raise FileNotFoundError(path, revision)
 
         try:
             return self.client.cat(self.__normalize_path(path),
                                    self.__normalize_revision(revision))
         except pysvn.ClientError, e:
-            raise FileNotFoundException(path, revision, str(e))
+            raise FileNotFoundError(path, revision, str(e))
 
 
     def parse_diff_revision(self, file_str, revision_str):
@@ -89,7 +89,7 @@ class SVNTool(SCMTool):
         if revision == HEAD:
             r = pysvn.Revision(pysvn.opt_revision_kind.head)
         elif revision == PRE_CREATION:
-            raise FileNotFoundException('', revision)
+            raise FileNotFoundError('', revision)
         else:
             r = pysvn.Revision(pysvn.opt_revision_kind.number, str(revision))
 

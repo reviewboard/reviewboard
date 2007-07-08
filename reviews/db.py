@@ -73,12 +73,12 @@ def get_review_requests_from_user(username, user=None, status='P'):
                                     Q(submitter__username=username))
 
 
-class InvalidChangeNumberException(Exception):
+class InvalidChangeNumberError(Exception):
     def __init__(self):
         Exception.__init__(self, None)
 
 
-class ChangeNumberInUseException(Exception):
+class ChangeNumberInUseError(Exception):
     def __init__(self, review_request=None):
         Exception.__init__(self, None)
         self.review_request = review_request
@@ -89,7 +89,7 @@ def update_review_request_from_changenum(review_request, changenum):
         review_request.repository.get_scmtool().get_changeset(changenum)
 
     if not changeset:
-        raise InvalidChangeNumberException()
+        raise InvalidChangeNumberError()
 
     review_request.changenum = changenum
     review_request.summary = changeset.summary
@@ -103,7 +103,7 @@ def create_review_request(user, repository, changenum=None):
     try:
         review_request = ReviewRequest.objects.get(changenum=changenum,
                                                    repository=repository)
-        raise ChangeNumberInUseException(review_request)
+        raise ChangeNumberInUseError(review_request)
     except ReviewRequest.DoesNotExist:
         pass
 
