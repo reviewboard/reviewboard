@@ -1,0 +1,763 @@
+#!/usr/bin/env python
+
+import cookielib
+import httplib
+import mimetools
+import mimetypes
+import os
+import getpass
+import re
+import simplejson
+import sys
+import urllib2
+from optparse import OptionParser
+from tempfile import mkstemp
+from urlparse import urljoin
+
+VERSION = "0.6"
+
+# Who stole the cookies from the cookie jar?
+# Was it you?
+# >:(
+if 'USERPROFILE' in os.environ:
+    homepath = os.path.join(os.environ["USERPROFILE"], "UserData")
+else:
+    homepath = os.environ["HOME"]
+
+cj = cookielib.MozillaCookieJar()
+cookiefile = os.path.join(homepath, ".post-review-cookies.txt")
+
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.addheaders = [('User-agent', 'post-review/' + VERSION)]
+urllib2.install_opener(opener)
+
+user_config = None
+tempfiles = []
+options = None
+
+
+class APIError(Exception):
+    pass
+
+
+class RepositoryInfo:
+    """
+    A representation of a source code repository.
+    """
+    def __init__(self, path=None, base_path=None, supports_changesets=False):
+        self.path = path
+        self.base_path = base_path
+        self.supports_changesets = supports_changesets
+
+    def __str__(self):
+        return "Path: %s, Base path: %s, Supports changesets: %s" % \
+            (self.path, self.base_path, self.supports_changesets)
+
+
+class ReviewBoardServer:
+    """
+    An instance of a Review Board server.
+    """
+    def __init__(self, url, info):
+        self.url = url
+        self.info = info
+
+    def login(self):
+        """
+        Logs in to a Review Board server, prompting the user for login
+        information.
+        """
+        print "You must log in the first time."
+        username = raw_input('Username: ')
+        password = getpass.getpass('Password: ')
+
+        debug('Logging in with username "%s"' % username)
+        try:
+            self.api_post('/api/json/accounts/login/', {
+                'username': username,
+                'password': password,
+            })
+        except APIError, e:
+            rsp, = e.args
+
+            die("Unable to log in: %s (%s)" % (rsp["err"]["msg"],
+                                               rsp["err"]["code"]))
+
+        debug("Logged in.")
+
+    def new_review_request(self, changenum):
+        """
+        Creates a review request on a Review Board server, updating an
+        existing one if the changeset number already exists.
+        """
+        try:
+            debug("Attempting to create review request for %s" % changenum)
+            data = { 'repository_path': self.info.path }
+
+            if changenum:
+                data['changenum'] = changenum
+
+            rsp = self.api_post('/api/json/reviewrequests/new/', data)
+        except APIError, e:
+            rsp, = e.args
+
+            if not options.diff_only:
+                if rsp['err']['code'] == 204: # Change number in use
+                    debug("Review request already exists. Updating it...")
+                    rsp = self.api_post(
+                        '/api/json/reviewrequests/%s/update_from_changenum/' %
+                        rsp['review_request']['id'])
+                else:
+                    raise e
+
+        debug("Review request created")
+        return rsp['review_request']
+
+    def set_review_request_field(self, review_request, field, value):
+        """
+        Sets a field in a review request to the specified value.
+        """
+        id = review_request['id']
+
+        debug("Attempting to set field '%s' to '%s' for review request '%s'" %
+              (field, value, id))
+
+        self.api_post('/api/json/reviewrequests/%s/draft/set/' % id, {
+            field: value,
+        })
+
+    def get_review_request(self, id):
+        """
+        Returns the review request with the specified ID.
+        """
+        rsp = self.api_get('/api/json/reviewrequests/%s/' % id)
+        return rsp['review_request']
+
+    def save_draft(self, review_request):
+        """
+        Saves a draft of a review request.
+        """
+        rsp = self.api_post("/api/json/reviewrequests/%s/draft/save/" %
+                            review_request['id'])
+        debug("Review request draft saved")
+
+    def upload_diff(self, review_request, diff_content):
+        """
+        Uploads a diff to a Review Board server.
+        """
+        debug("Uploading diff")
+        fields = {}
+
+        if self.info.base_path:
+            fields['basedir'] = self.info.base_path
+
+        rsp = self.api_post('/api/json/reviewrequests/%s/diff/new/' %
+                            review_request['id'], fields,
+                            {'path': {'filename': 'diff',
+                                      'content': diff_content}})
+
+    def process_json(self, data):
+        """
+        Loads in a JSON file and returns the data if successful. On failure,
+        APIError is raised.
+        """
+        rsp = simplejson.loads(data)
+
+        if rsp['stat'] == 'fail':
+            raise APIError, rsp
+
+        return rsp
+
+    def http_get(self, path):
+        """
+        Performs an HTTP GET on the specified path, storing any cookies that
+        were set.
+        """
+        debug('HTTP GETting %s' % path)
+
+        url = urljoin(self.url, path)
+
+        try:
+            rsp = urllib2.urlopen(url).read()
+            cj.save(cookiefile)
+            return rsp
+        except urllib2.HTTPError, e:
+            print "Unable to access %s (%s). The host path may be invalid" % \
+                (url, e.code)
+            debug(e.data)
+            die()
+
+    def api_get(self, path):
+        """
+        Performs an API call using HTTP GET at the specified path.
+        """
+        return self.process_json(self.http_get(path))
+
+    def http_post(self, path, fields, files={}):
+        """
+        Performs an HTTP POST on the specified path, storing any cookies that
+        were set.
+        """
+        debug_fields = fields.copy()
+        if 'password' in debug_fields:
+            debug_fields["password"] = "**************"
+        debug('HTTP POSTing to %s: %s' % (path, debug_fields))
+
+        url = urljoin(self.url, path)
+        content_type, body = self._encode_multipart_formdata(fields, files)
+        headers = {
+            'Content-Type': content_type,
+            'Content-Length': str(len(body))
+        }
+
+        try:
+            r = urllib2.Request(urljoin(self.url, path), body, headers)
+            data = urllib2.urlopen(r).read()
+            cj.save(cookiefile)
+            return data
+        except urllib2.URLError, e:
+            try:
+                debug(e.read())
+            except AttributeError:
+                pass
+
+            die("Unable to access %s. The host path may be invalid\n%s" % \
+                (url, e))
+        except urllib2.HTTPError, e:
+            die("Unable to access %s (%s). The host path may be invalid\n%s" % \
+                (url, e.code, e.read()))
+
+    def api_post(self, path, fields={}, files={}):
+        """
+        Performs an API call using HTTP POST at the specified path.
+        """
+        return self.process_json(self.http_post(path, fields, files))
+
+    def _encode_multipart_formdata(self, fields, files):
+        """
+        Encodes data for use in an HTTP POST.
+        """
+        BOUNDARY = mimetools.choose_boundary()
+        content = ""
+
+        for key in fields:
+            content += "--" + BOUNDARY + "\r\n"
+            content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
+            content += "\r\n"
+            content += fields[key] + "\r\n"
+
+        for key in files:
+            filename = files[key]['filename']
+            value = files[key]['content']
+            content += "--" + BOUNDARY + "\r\n"
+            content += "Content-Disposition: form-data; name=\"%s\"; " % key
+            content += "filename=\"%s\"\r\n" % filename
+            content += "\r\n"
+            content += value + "\r\n"
+
+        content += "--" + BOUNDARY + "--\r\n"
+        content += "\r\n"
+
+        content_type = "multipart/form-data; boundary=%s" % BOUNDARY
+
+        return content_type, content
+
+
+class SCMClient(object):
+    """
+    A base representation of an SCM tool for fetching repository information
+    and generating diffs.
+    """
+    def get_repository_info(self):
+        return None
+
+    def scan_for_server(self, repository_info):
+        """
+        Scans the current directory on up to find a .reviewboard file
+        containing the server path.
+        """
+        server_url = self._get_server_from_config(user_config, repository_info)
+        if server_url:
+            return server_url
+
+        for path in walk_parents(os.getcwd()):
+            filename = os.path.join(path, ".reviewboardrc")
+            if os.path.exists(filename):
+                config = load_config_file(filename)
+                server_url = self._get_server_from_config(config,
+                                                          repository_info)
+                if server_url:
+                    return server_url
+
+        return None
+
+    def diff(self, changenum, files):
+        return None
+
+    def add_options(self, parser):
+        """
+        Adds options to an OptionParser.
+        """
+        pass
+
+    def _get_server_from_config(self, config, repository_info):
+        if 'REVIEWBOARD_URL' in config:
+            return config['REVIEWBOARD_URL']
+        elif 'TREES' in config:
+            trees = config['TREES']
+            if not isinstance(trees, dict):
+                die("Warning: 'TREES' in %s is not a dict!" % filename)
+
+            if repository_info.path in trees and \
+               'REVIEWBOARD_URL' in trees[repository_info.path]:
+                return trees[repository_info.path]['REVIEWBOARD_URL']
+
+        return None
+
+
+class SVNClient(SCMClient):
+    """
+    A wrapper around the svn Subversion tool that fetches repository
+    information and generates compatible diffs.
+    """
+    def get_repository_info(self):
+        data = execute('svn info')
+
+        m = re.search(r'^Repository Root: (.+)$', data, re.M)
+        if not m:
+            return None
+
+        path = m.group(1)
+
+        m = re.search(r'^URL: (.+)$', data, re.M)
+        if not m:
+            return None
+
+        base_path = m.group(1)[len(path):]
+
+        return RepositoryInfo(path=path, base_path=base_path)
+
+    def scan_for_server(self, repository_info):
+        def get_url_prop(path):
+            url = execute("svn propget reviewboard:url %s" % path).strip()
+            return url or None
+
+        # Scan first for dot files, since it's faster and will cover the
+        # user's $HOME/.reviewboardrc
+        server_url = super(SVNClient, self).scan_for_server(repository_info)
+        if server_url:
+            return server_url
+
+        for path in walk_parents(os.getcwd()):
+            if not os.path.exists(os.path.join(path, ".svn")):
+                break
+
+            prop = get_url_prop(path)
+            if prop:
+                return prop
+
+        return get_url_prop(repository_info.path)
+
+    def diff(self, changenum, files):
+        """
+        Performs a diff across all modified files in a Subversion repository.
+        """
+        return execute('svn diff %s' % ' '.join(files))
+
+
+class PerforceClient(SCMClient):
+    """
+    A wrapper around the p4 Perforce tool that fetches repository information
+    and generates compatible diffs.
+    """
+    def get_repository_info(self):
+        data = execute('p4 info')
+
+        m = re.search(r'^Server address: (.+)$', data, re.M)
+        if not m:
+            return None
+
+        return RepositoryInfo(path=m.group(1), supports_changesets=True)
+
+
+    def diff(self, changenum, files):
+        """
+        Goes through the hard work of generating a diff on Perforce in order
+        to take into account adds/deletes and to provide the necessary
+        revision information.
+        """
+        debug("Generating diff for changenum %s" % changenum)
+        data = execute('p4 change -o %s' % changenum)
+        client = None
+
+        # Get the status and client of the change list.
+        m = re.search(r'^Client:\t(.+)$', data, re.M)
+        if m == None:
+            die("Unable to get the client for this change list.")
+        else:
+            client = m.group(1)
+
+        m = re.search(r'^Status:\t(.+)$', data, re.M)
+        if m == None:
+            die("Unable to get the status of this change list.")
+        else:
+            if m.group(1) != "pending":
+                die("The change number %s is not pending." % changenum)
+
+        # Get the file list
+        lines = execute('p4 -c %s opened -c %s' %
+                        (client, changenum)).splitlines()
+        cwd = os.getcwd()
+        diff_lines = []
+
+        fd, empty_file = mkstemp()
+        os.close(fd)
+
+        fd, tmpfile1 = mkstemp()
+        os.close(fd)
+
+        fd, tmpfile2 = mkstemp()
+        os.close(fd)
+
+        for line in lines:
+            m = re.search(r'^([^#]+)#(\d+) - (\w+) (default )?change', line)
+            if not m:
+                die("Unsupported line from p4 opened: %s" % line)
+
+            depot_path = m.group(1)
+            revision = m.group(2)
+            changetype = m.group(3)
+
+            where_info = execute('p4 -c %s where "%s"' % (client, depot_path))
+
+            m = re.match(r'%s \/\/.+ (.+)$' % depot_path, where_info)
+            if not m:
+                die("Unsupported line from p4 where: %s" % where_info)
+
+            local_name = m.group(1)
+
+            old_file = new_file = empty_file
+            old_depot_path = new_depot_path = None
+            changetype_short = None
+
+            if changetype == 'edit' or changetype == 'integrate':
+                old_depot_path = "%s#%s" % (depot_path, revision)
+                new_file = local_name
+                changetype_short = "M"
+            elif changetype == 'add' or changetype == 'branch':
+                new_file = local_name
+                changetype_short = "A"
+            elif changetype == 'delete':
+                old_depot_path = "%s#%s" % (depot_path, revision)
+                changetype_short = "D"
+            else:
+                die("Unknown change type '%s' for %s" %
+                    (changetype, depot_path))
+
+            if old_depot_path:
+                self._write_file(old_depot_path, tmpfile1)
+                old_file = tmpfile1
+
+            if new_depot_path:
+                self._write_file(new_depot_path, tmpfile2)
+                new_file = tmpfile2
+
+            dl = execute('diff -urNp "%s" "%s"' %
+                         (old_file, new_file)).splitlines()
+
+            if local_name.startswith(cwd):
+                local_path = local_name[len(cwd) + 1:]
+            else:
+                local_path = local_name
+
+            if dl == [] or dl[0].startswith("Binary files "):
+                if dl == []:
+                    print "Warning: %s in your changeset is unmodified" % \
+                        local_path
+
+                dl.insert(0, "==== %s#%s ==%s== %s ====\n" % \
+                    (depot_path, revision, changetype_short, local_path))
+            else:
+                m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
+                if not m:
+                    die("Unable to parse diff header: %s" % dl[1])
+
+                timestamp = m.group(1)
+
+                dl[0] = "--- %s  %s#%s\n" % (local_path, depot_path, revision)
+                dl[1] = "+++ %s  %s\n" % (local_path, timestamp)
+
+            diff_lines += dl
+
+
+        os.unlink(empty_file)
+        os.unlink(tmpfile1)
+        os.unlink(tmpfile2)
+
+        return ''.join(diff_lines)
+
+
+    def _write_file(self, depot_path, tmpfile):
+        """
+        Grabs a file from Perforce and writes it to a temp file. We do this
+        wrather than telling p4 print to write it out in order to work around
+        a permissions bug on Windows.
+        """
+        debug('Writing "%s" to "%s"' % (depot_path, tmpfile))
+        data = execute('p4 print -q "%s"' % depot_path)
+
+        f = open(tmpfile, "w")
+        f.write(data)
+        f.close()
+
+
+def debug(s):
+    """
+    Prints debugging information if post-review was run with --debug
+    """
+    if options.debug:
+        print ">>> %s" % s
+
+
+def make_tempfile():
+    """
+    Creates a temporary file and returns the path. The path is stored
+    in an array for later cleanup.
+    """
+    fd, tmpfile = mkstemp()
+    os.close(fd)
+    tempfiles.append(tmpfile)
+    return tmpfile
+
+
+def execute(command):
+    """
+    Utility function to execute a command and return the output.
+    """
+    f = os.popen(command, 'r')
+    data = f.read()
+    f.close()
+    return data
+
+
+def die(msg=None):
+    """
+    Cleanly exits the program with an error message. Erases all remaining
+    temporary files.
+    """
+    for tmpfile in tempfiles:
+        try:
+            os.unlink(tmpfile)
+        except:
+            pass
+
+    if msg:
+        print msg
+
+    sys.exit(1)
+
+
+def walk_parents(path):
+    """
+    Walks up the tree to the root directory.
+    """
+    while os.path.splitdrive(path)[1] != os.sep:
+        yield path
+        path = os.path.dirname(path)
+
+
+def load_config_file(filename):
+    """
+    Loads data from a config file.
+    """
+    config = {
+        'TREES': {},
+    }
+
+    if os.path.exists(filename):
+        try:
+            execfile(filename, config)
+        except:
+            pass
+
+    return config
+
+
+def tempt_fate(server, tool, changenum, files, diff_content=None):
+    """
+    Attempts to create a review request on a Review Board server and upload
+    a diff. On success, the review request path is displayed.
+    """
+    if not diff_content:
+        diff_content = tool.diff(changenum, files)
+
+        if diff_content.strip() == "":
+            die("The generated diff is empty!")
+
+    try:
+        save_draft = False
+
+        if options.rid:
+            review_request = server.get_review_request(options.rid)
+        else:
+            review_request = server.new_review_request(changenum)
+
+        if options.target_groups:
+            server.set_review_request_field(review_request, 'target_groups',
+                                            options.target_groups)
+            save_draft = True
+
+        if options.target_people:
+            server.set_review_request_field(review_request, 'target_people',
+                                            options.target_people)
+            save_draft = True
+
+        if save_draft:
+            server.save_draft(review_request)
+    except APIError, e:
+        rsp, = e.args
+        if rsp['err']['code'] == 103: # Not logged in
+            server.login()
+            tempt_fate(server, tool, changenum, files, diff_content)
+            return
+
+        if options.rid:
+            die("Error getting review request %s: %s (code %s)" % \
+                (options.rid, rsp['err']['msg'], rsp['err']['code']))
+        else:
+            die("Error creating review request: %s (code %s)" % \
+                (rsp['err']['msg'], rsp['err']['code']))
+
+
+    if not server.info.supports_changesets or not options.change_only:
+        try:
+            server.upload_diff(review_request, diff_content)
+        except APIError, e:
+            rsp, = e.args
+            print "Error uploading diff: %s (%s)" % (rsp['err']['msg'],
+                                                     rsp['err']['code'])
+            die("Your review request still exists, but the diff is not " +
+                "attached.")
+
+    print 'Review request posted.'
+    print
+    print 'URL: %s/%s/' % (urljoin(server.url, "r"), review_request['id'])
+    sys.exit(0)
+
+
+def parse_options(tool, repository_info):
+    parser = OptionParser(usage="%prog [-p] [-o] changenum",
+                          version="%prog " + VERSION)
+
+    # TODO: Implement these options.
+    #parser.add_option("-p", "--publish",
+    #                  action="store_true", dest="publish", default=False,
+    #                  help="publish the review request immediately after submitting")
+    #parser.add_option("-o", "--open",
+    #                  action="store_true", dest="open_browser", default=False,
+    #                  help="open a web browser to the review request page")
+
+    parser.add_option("--output-diff",
+                      action="store_true", dest="output_diff_only",
+                      default=False,
+                      help="outputs a diff to the console and exits. " +
+                           "Does not post")
+    parser.add_option("--server", dest="server",
+                      metavar="SERVER",
+                      help="specify a different Review Board server " +
+                           "to use")
+    parser.add_option("--diff-only", dest="diff_only",
+                      action="store_true", default=False,
+                      help="uploads a new diff, but does not update " +
+                           "info from changelist")
+    parser.add_option("--target-groups", dest="target_groups",
+                      default=None,
+                      help="names of the groups who will perform " +
+                           "the review")
+    parser.add_option("--target-people", dest="target_people",
+                      default=None,
+                      help="names of the people who will perform " +
+                           "the review")
+    parser.add_option("-r", "--review-request-id", dest="rid", metavar="ID",
+                      default=None,
+                      help="existing review request ID to update")
+
+    if repository_info:
+        if repository_info.supports_changesets:
+            parser.add_option("--change-only", dest="change_only",
+                              action="store_true", default=False,
+                              help="updates info from changelist, but does " +
+                                   "not upload a new diff")
+
+        tool.add_options(parser)
+
+
+    parser.add_option("-d", "--debug", action="store_true",
+                      dest="debug", default=False, help="display debug output")
+
+    (globals()["options"], args) = parser.parse_args()
+
+    return args
+
+
+def main():
+    # Load the config file
+    globals()['user_config'] = \
+        load_config_file(os.path.join(homepath, ".reviewboardrc"))
+
+    # Try to find the SCM Client we're going to be working with
+    repository_info = None
+    tool = None
+
+    for tool in (SVNClient(), PerforceClient()):
+        repository_info = tool.get_repository_info()
+
+        if repository_info:
+            break
+
+    args = parse_options(tool, repository_info)
+
+    if not repository_info:
+        print "The current directory does not contain a checkout from a"
+        print "supported source code repository."
+        sys.exit(1)
+
+    debug("Repository info '%s'" % repository_info)
+
+    # Try to find a valid Review Board server to use.
+    if options.server:
+        server_url = options.server
+    else:
+        server_url = tool.scan_for_server(repository_info)
+
+    if not server_url:
+        print "Unable to find a Review Board server for this source code tree."
+        sys.exit(1)
+
+    server = ReviewBoardServer(server_url, repository_info)
+
+    if repository_info.supports_changesets:
+        if len(args) != 1:
+            parser.error("specify the change number of a pending changeset")
+
+        changenum = args[0]
+        files = None
+    else:
+        changenum = None
+        files = args
+
+    if options.output_diff_only:
+        print tool.diff(changenum, files)
+        sys.exit(0)
+
+    # Let's begin.
+    try:
+        cj.load(cookiefile)
+    except IOError:
+        server.login()
+
+    tempt_fate(server, tool, changenum, files)
+
+
+if __name__ == "__main__":
+    main()
