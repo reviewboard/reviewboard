@@ -423,8 +423,10 @@ def review_comments_list(request, review_request_id, review_id):
     if isinstance(review, JsonResponseError):
         return review
 
-    return JsonResponse(request, {'comments': review.comments.all(),
-                                  'screenshot_comments': review.screenshot_comments.all(),})
+    return JsonResponse(request, {
+        'comments': review.comments.all(),
+        'screenshot_comments': review.screenshot_comments.all(),
+    })
 
 
 @json_login_required
@@ -724,7 +726,8 @@ def review_draft_comments(request, review_request_id):
 @json_login_required
 @require_POST
 def review_reply_draft(request, review_request_id, review_id):
-    source_review = _get_and_validate_review(request, review_request_id, review_id)
+    source_review = _get_and_validate_review(request, review_request_id,
+                                             review_id)
     if isinstance(source_review, JsonResponseError):
         return source_review
 
@@ -866,8 +869,9 @@ def review_replies_list(request, review_request_id, review_id):
     if isinstance(review, JsonResponseError):
         return review
 
-    return JsonResponse(request,
-        {'replies': review.replies.filter(public=True)})
+    return JsonResponse(request, {
+        'replies': review.replies.filter(public=True)
+    })
 
 
 @json_login_required
@@ -876,8 +880,9 @@ def count_review_replies(request, review_request_id, review_id):
     if isinstance(review, JsonResponseError):
         return review
 
-    return JsonResponse(request,
-        {'count': review.replies.filter(public=True).count()})
+    return JsonResponse(request, {
+        'count': review.replies.filter(public=True).count()
+    })
 
 
 @json_login_required

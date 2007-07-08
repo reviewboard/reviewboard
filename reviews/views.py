@@ -322,10 +322,7 @@ def raw_diff(request, review_request_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
 
-    data = ""
-    for filediff in diffset.files.all():
-        data += filediff.diff
-
+    data = ''.join(filediff.diff for filediff in diffset.files.all())
     resp = HttpResponse(data, mimetype='text/x-patch')
     resp['Content-Disposition'] = 'inline; filename=%s' % diffset.name
     return resp

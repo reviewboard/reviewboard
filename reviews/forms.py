@@ -32,11 +32,8 @@ class NewReviewRequestForm(forms.Form):
     def create_from_list(data, constructor, error):
         """Helper function to combine the common bits of clean_target_people
            and clean_target_groups"""
-        result = []
         names = [x for x in map(str.strip, re.split(',\s*', data)) if x]
-        for name in names:
-            result.append(constructor(name))
-        return set(result)
+        return set([constructor(name) for name in names])
 
     def create(self, user, file):
         repository = Repository.objects.get(pk=self.cleaned_data['repository'])
