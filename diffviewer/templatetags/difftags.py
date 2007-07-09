@@ -1,11 +1,11 @@
 import re
 
 from django import template
-from django.conf import settings
 from django.template import resolve_variable
 from django.template import NodeList, VariableDoesNotExist
 from django.utils.html import escape
-from reviewboard.diffviewer.views import get_diff_files
+from reviewboard.diffviewer.views import get_diff_files, \
+                                         get_enable_highlighting
 
 register = template.Library()
 
@@ -25,14 +25,13 @@ class ForChunksWithLines(template.Node):
                 var
 
     def render(self, context):
-        highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
-                       context['user'].get_profile().syntax_highlighting
         filediff = self.get_variable(self.filediff, context)
-        files = get_diff_files(filediff.diffset, highlighting=highlighting)
+        files = get_diff_files(filediff.diffset, filediff, None,
+                               get_enable_highlighting(context['user']))
 
-        for file in files:
-            if file["filediff"].id == filediff.id:
-                return self.render_file(file, context)
+        if files:
+            assert len(files) == 1
+            return self.render_file(files[0], context)
 
         return "Missing lines"
 

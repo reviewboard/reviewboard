@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.html import escape
-from djblets.util.misc import cache_memoize
+from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm
@@ -28,28 +28,21 @@ class UserVisibleError(Exception):
     pass
 
 
-def get_diff_files(diffset, interdiffset=None,
+def get_diff_files(diffset, filediff=None, interdiffset=None,
                    enable_syntax_highlighting=True):
     def get_original_file(file, revision):
         """Get a file either from the cache or the SCM.  SCM exceptions are
            passed back to the caller."""
         tool = diffset.repository.get_scmtool()
 
-        try:
-            if revision == scmtools.HEAD:
-                return tool.get_file(file, revision)
-            else:
-                return cache_memoize("%s-%s" % (file, revision),
-                    lambda: tool.get_file(file, revision))
-        except Exception, e:
-            raise UserVisibleError(str(e))
+        if revision == scmtools.HEAD:
+            return tool.get_file(file, revision)
+
+        return cache_memoize("%s-%s" % (file, revision),
+            lambda: tool.get_file(file, revision))
 
     def get_patched_file(buffer, filediff):
-        try:
-            return diffutils.patch(filediff.diff, buffer, filediff.dest_file)
-        except Exception, e:
-            raise UserVisibleError(str(e))
-
+        return diffutils.patch(filediff.diff, buffer, filediff.dest_file)
 
     def get_chunks(filediff, interfilediff=None):
         def diff_line(linenum, oldline, newline, oldmarkup, newmarkup):
@@ -88,16 +81,18 @@ def get_diff_files(diffset, interdiffset=None,
 
         file = filediff.source_file
         revision = filediff.source_revision
+        old = ""
 
-        if revision == scmtools.PRE_CREATION:
-            old = ""
-        else:
-            old = get_original_file(file, revision)
+        try:
+            if revision != scmtools.PRE_CREATION:
+                old = get_original_file(file, revision)
 
-        new = get_patched_file(old, filediff)
+            new = get_patched_file(old, filediff)
 
-        if interfilediff:
-            old, new = new, get_patched_file(old, interfilediff)
+            if interfilediff:
+                old, new = new, get_patched_file(old, interfilediff)
+        except Exception, e:
+            raise UserVisibleError(str(e))
 
         a = (old or '').splitlines()
         b = (new or '').splitlines()
@@ -182,16 +177,19 @@ def get_diff_files(diffset, interdiffset=None,
                 chunk['nextid'] = '%d.%d' % next
 
 
-    enable_syntax_highlighting = enable_syntax_highlighting and pygments
-
     key_prefix = "diff-sidebyside"
 
     if enable_syntax_highlighting:
         key_prefix += "-hl"
 
-
     files = []
-    for filediff in diffset.files.all():
+
+    if filediff:
+        filediffs = [filediff]
+    else:
+        filediffs = diffset.files.all()
+
+    for filediff in filediffs:
         if filediff.binary:
             chunks = []
         else:
@@ -235,6 +233,12 @@ def get_diff_files(diffset, interdiffset=None,
     return files
 
 
+def get_enable_highlighting(user):
+    profile, profile_is_new = Profile.objects.get_or_create(user=user)
+    return settings.DIFF_SYNTAX_HIGHLIGHTING and \
+           profile.syntax_highlighting and pygments
+
+
 def render_diff_fragment(request, file, context,
                          template_name='diffviewer/diff_file_fragment.html'):
     context['file'] = file
@@ -249,8 +253,8 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
     if chunkindex:
         chunkindex = int(chunkindex)
         if chunkindex < 0 or chunkindex >= len(file['chunks']):
-            raise UserVisibleError(
-                "Invalid chunk index %s specified." % chunkindex)
+            raise UserVisibleError("Invalid chunk index %s specified." % \
+                                   chunkindex)
 
         file['chunks'] = [file['chunks'][chunkindex]]
         key += '-chunk-%s' % chunkindex
@@ -267,19 +271,11 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
 def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
-
-    if interdiffset_id:
-        interdiffset = get_object_or_404(DiffSet, pk=interdiffset_id)
-    else:
-        interdiffset = None
+    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
+    highlighting = get_enable_highlighting(request.user)
 
     try:
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-        highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
-                       profile.syntax_highlighting
-
-        files = get_diff_files(diffset, interdiffset, highlighting)
+        files = get_diff_files(diffset, None, interdiffset, highlighting)
 
         if request.GET.get('expand', False):
             collapseall = False
@@ -298,7 +294,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         context.update(extra_context)
 
         # XXX We can probably make this even more awesome and completely skip
-        # the get_diff_files call, caching basically the entire context.
+        #     the get_diff_files call, caching basically the entire context.
         for file in files:
             file['fragment'] = build_diff_fragment(request, file, None,
                                                    highlighting, collapseall,
@@ -308,9 +304,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))
-
         response.set_cookie('collapsediffs', collapseall)
-
         return response
 
     except Exception, e:
@@ -327,30 +321,21 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
                        template_name='diffviewer/diff_file_fragment.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
     filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
-
-    if interdiffset_id:
-        interdiffset = get_object_or_404(DiffSet, pk=interdiffset_id)
-    else:
-        interdiffset = None
+    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
+    highlighting = get_enable_highlighting(request.user)
 
     try:
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-        highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
-                       profile.syntax_highlighting
+        files = get_diff_files(diffset, filediff, interdiffset, highlighting)
 
-        files = get_diff_files(filediff.diffset, interdiffset, highlighting)
+        if not files:
+            context = {
+                'standalone': True,
+            }
 
-        for file in files:
-            if file['filediff'].id == filediff.id:
-                context = {
-                    'standalone': True,
-                }
-
-                return HttpResponse(build_diff_fragment(request, file,
-                                                        chunkindex,
-                                                        highlighting, False,
-                                                        context))
+            return HttpResponse(build_diff_fragment(request, file,
+                                                    chunkindex,
+                                                    highlighting, False,
+                                                    context))
         raise UserVisibleError(
             "Internal error. Unable to locate file record for filediff %s" % \
             filediff.id)
