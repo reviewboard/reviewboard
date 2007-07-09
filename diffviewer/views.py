@@ -327,7 +327,10 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
     try:
         files = get_diff_files(diffset, filediff, interdiffset, highlighting)
 
-        if not files:
+        if files:
+            assert len(files) == 1
+            file = files[0]
+
             context = {
                 'standalone': True,
             }
