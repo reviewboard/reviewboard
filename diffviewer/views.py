@@ -75,7 +75,7 @@ def get_diff_files(diffset, interdiffset=None,
                           collapsable))
 
         def apply_pygments(data, filename):
-            lexer = guess_lexer_for_filename(filename, data)
+            lexer = guess_lexer_for_filename(filename, data, stripnl=False)
 
             try:
                 # This is only available in 0.7 and higher
