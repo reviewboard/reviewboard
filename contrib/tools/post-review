@@ -184,7 +184,10 @@ class ReviewBoardServer:
         except urllib2.HTTPError, e:
             print "Unable to access %s (%s). The host path may be invalid" % \
                 (url, e.code)
-            debug(e.data)
+            try:
+                debug(e.read())
+            except AttributeError:
+                pass
             die()
 
     def api_get(self, path):
