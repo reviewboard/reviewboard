@@ -231,6 +231,7 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
 
     closeDlg: function() {
         this.hide(this.checkEmptyCommentBlock.createDelegate(this));
+		this.el.blur();
     },
 });
 
