@@ -16,6 +16,7 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 from djblets.util.misc import cache_memoize
 
+from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff, DiffSetHistory
 from reviewboard.scmtools.models import Repository
@@ -273,8 +274,11 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         interdiffset = None
 
     try:
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
         highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
-                       request.user.get_profile().syntax_highlighting
+                       profile.syntax_highlighting
+
         files = get_diff_files(diffset, interdiffset, highlighting)
 
         if request.GET.get('expand', False):
@@ -330,8 +334,11 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
         interdiffset = None
 
     try:
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
         highlighting = settings.DIFF_SYNTAX_HIGHLIGHTING and \
-                       request.user.get_profile().syntax_highlighting
+                       profile.syntax_highlighting
+
         files = get_diff_files(filediff.diffset, interdiffset, highlighting)
 
         for file in files:
