@@ -43,21 +43,16 @@ models = (scmtools.Tool, scmtools.Repository,
 
 serializer = serializers.get_serializer("json")()
 
-sys.stdout.write("[")
+totalobjs = 0
 for model in models:
-    count = model.objects.count()
+    totalobjs += model.objects.count()
 
-    for i, obj in enumerate(model.objects.all()):
+print "# dbdump v1 - %s objects" % totalobjs
+
+for model in models:
+    for obj in model.objects.all():
         serializer.serialize([obj], ensure_ascii=False)
         value = serializer.getvalue()
 
         if value != "[]":
-            sys.stdout.write(value[1:-1]) # Skip the "[" and "]"
-
-            if i < count - 1:
-                sys.stdout.write(", ")
-
-    if count > 0 and model != models[-1]:
-        sys.stdout.write(", ")
-
-sys.stdout.write("]")
+            print value[1:-1] # Skip the "[" and "]"
