@@ -71,10 +71,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         def apply_pygments(data, filename):
             # XXX Guessing is preferable but really slow, especially on XML
             #     files.
-            if filename.endswith(".xml"):
-                lexer = get_lexer_for_filename(filename, stripnl=False)
-            else:
-                lexer = guess_lexer_for_filename(filename, data, stripnl=False)
+            #if filename.endswith(".xml"):
+            lexer = get_lexer_for_filename(filename, stripnl=False)
+            #else:
+            #    lexer = guess_lexer_for_filename(filename, data, stripnl=False)
 
             try:
                 # This is only available in 0.7 and higher
