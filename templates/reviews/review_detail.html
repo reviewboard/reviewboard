@@ -29,6 +29,12 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 {% endblock %}
 
 {% block content %}
+{% ifneatnumber review_request.changenum %}
+{%  box "yay" %}
+ <img src="/images/trophy.png" width="31" height="34" border="0" alt="" />
+ <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got change #{{review_request.changenum}}!</h1>
+{%  endbox %}
+{% endifneatnumber %}
 <div class="banner" id="error"></div>
 <div class="banner" id="main-banner"></div>
 

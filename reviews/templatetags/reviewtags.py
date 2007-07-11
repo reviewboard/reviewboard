@@ -144,6 +144,29 @@ def forcomment(context, nodelist, filediff, review=None):
     return new_nodelist.render(context)
 
 
+@register.tag
+@blocktag
+def ifneatnumber(context, nodelist, changenum):
+    if changenum == None or changenum < 1000:
+        return ""
+
+    changenumstr = str(changenum)
+    interesting = False
+
+    if changenum >= 1000:
+        trailing = changenumstr[1:]
+        if trailing == "0" * len(trailing):
+            interesting = True
+
+    if not interesting and changenumstr == ''.join(reversed(changenumstr)):
+        interesting = True
+
+    if not interesting:
+        return ""
+
+    return nodelist.render(context)
+
+
 class CommentCounts(template.Node):
     def __init__(self, filediff):
         self.filediff = filediff

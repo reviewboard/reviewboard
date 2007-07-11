@@ -238,6 +238,26 @@ ul.errorlist li {
   padding: 0 0 0 50px;
 }
 
+.box.yay {
+  background-color: #fdf2a0;
+  border: 1px #b7a93e solid;
+  padding: 0px 10px;
+}
+
+.box.yay .box-inner {
+  background: transparent;
+}
+
+.box.yay h1 {
+}
+
+.box.yay img {
+  float: left;
+  position: relative;
+  left: -5px;
+  top: -15px;
+}
+
 .box h1.title {
   background: #a2bedc url('/images/box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
