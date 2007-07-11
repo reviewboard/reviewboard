@@ -158,7 +158,8 @@ def ifneatnumber(context, nodelist, changenum):
         if trailing == "0" * len(trailing):
             interesting = True
 
-    if not interesting and changenumstr == ''.join(reversed(changenumstr)):
+    if not interesting and len(changenumstr) % 2 == 0 and \
+       changenumstr == ''.join(reversed(changenumstr)):
         interesting = True
 
     if not interesting:
