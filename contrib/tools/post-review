@@ -8,6 +8,7 @@ import os
 import getpass
 import re
 import simplejson
+import socket
 import sys
 import urllib2
 from optparse import OptionParser
@@ -380,7 +381,16 @@ class PerforceClient(SCMClient):
         if not m:
             return None
 
-        return RepositoryInfo(path=m.group(1), supports_changesets=True)
+        repository_path = m.group(1)
+
+        try:
+            hostname, port = repository_path.split(":")
+            info = socket.gethostbyaddr(hostname)
+            repository_path = "%s:%s" % (info[0], port)
+        except socket.gaierror:
+            pass
+
+        return RepositoryInfo(path=repository_path, supports_changesets=True)
 
 
     def diff(self, changenum, files):
