@@ -2,7 +2,8 @@ import traceback
 
 try:
     import pygments
-    from pygments.lexers import guess_lexer_for_filename
+    from pygments.lexers import guess_lexer_for_filename, \
+                                get_lexer_for_filename
     from pygments.formatters import HtmlFormatter
 except ImportError:
     pygments = None
@@ -68,7 +69,12 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                           collapsable))
 
         def apply_pygments(data, filename):
-            lexer = guess_lexer_for_filename(filename, data, stripnl=False)
+            # XXX Guessing is preferable but really slow, especially on XML
+            #     files.
+            if filename.endswith(".xml"):
+                lexer = get_lexer_for_filename(filename, stripnl=False)
+            else:
+                lexer = guess_lexer_for_filename(filename, data, stripnl=False)
 
             try:
                 # This is only available in 0.7 and higher
@@ -103,12 +109,14 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
         if enable_syntax_highlighting:
             try:
+                # TODO: Try to figure out the right lexer for these files
+                #       once instead of twice.
                 markup_a = apply_pygments(old or '', filediff.source_file)
                 markup_b = apply_pygments(new or '', filediff.dest_file)
             except ValueError:
                 pass
 
-        if not markup_a:
+        if not markup_a or not markup_b:
             markup_a = escape(old).splitlines()
             markup_b = escape(new).splitlines()
 
