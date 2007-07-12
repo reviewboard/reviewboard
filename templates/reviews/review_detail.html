@@ -29,10 +29,10 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 {% endblock %}
 
 {% block content %}
-{% ifneatnumber review_request.changenum %}
+{% ifneatnumber review_request.id %}
 {%  box "yay" %}
  <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
- <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got change #{{review_request.changenum}}!</h1>
+ <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
 <div class="banner" id="error"></div>

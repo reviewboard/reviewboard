@@ -146,25 +146,25 @@ def forcomment(context, nodelist, filediff, review=None):
 
 @register.tag
 @blocktag
-def ifneatnumber(context, nodelist, changenum):
-    if changenum == None or changenum < 1000:
+def ifneatnumber(context, nodelist, rid):
+    if rid == None or rid < 1000:
         return ""
 
-    changenumstr = str(changenum)
+    ridstr = str(rid)
     interesting = False
 
     context.push()
     context['milestone'] = False
     context['palindrome'] = False
 
-    if changenum >= 1000:
-        trailing = changenumstr[1:]
+    if rid >= 1000:
+        trailing = ridstr[1:]
         if trailing == "0" * len(trailing):
             context['milestone'] = True
             interesting = True
 
     if not interesting:
-        if changenumstr == ''.join(reversed(changenumstr)):
+        if ridstr == ''.join(reversed(ridstr)):
             context['palindrome'] = True
             interesting = True
 
