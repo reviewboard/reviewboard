@@ -153,19 +153,28 @@ def ifneatnumber(context, nodelist, changenum):
     changenumstr = str(changenum)
     interesting = False
 
+    context.push()
+    context['milestone'] = False
+    context['palindrome'] = False
+
     if changenum >= 1000:
         trailing = changenumstr[1:]
         if trailing == "0" * len(trailing):
+            context['milestone'] = True
             interesting = True
 
-    if not interesting and len(changenumstr) % 2 == 0 and \
-       changenumstr == ''.join(reversed(changenumstr)):
-        interesting = True
+    if not interesting:
+        if changenumstr == ''.join(reversed(changenumstr)):
+            context['palindrome'] = True
+            interesting = True
 
     if not interesting:
+        context.pop()
         return ""
 
-    return nodelist.render(context)
+    s = nodelist.render(context)
+    context.pop()
+    return s
 
 
 class CommentCounts(template.Node):

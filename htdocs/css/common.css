@@ -249,13 +249,15 @@ ul.errorlist li {
 }
 
 .box.yay h1 {
+  padding-left: 0;
 }
 
 .box.yay img {
   float: left;
-  position: relative;
   left: -5px;
-  top: -15px;
+  position: relative;
+  top: -23px;
+  padding: 0;
 }
 
 .box h1.title {

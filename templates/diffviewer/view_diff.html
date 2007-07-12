@@ -24,7 +24,7 @@
 {% block content %}
 {% ifneatnumber review_request.changenum %}
 {%  box "yay" %}
- <img src="/images/trophy.png" width="31" height="34" border="0" alt="" />
+ <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
  <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got change #{{review_request.changenum}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
