@@ -33,8 +33,8 @@
 {% for chunk in file.chunks %}
 {%  if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
-  <tr>
 {% for line in chunk.lines %}
+  <tr>
 {% if forloop.first %}
    <th class="controls">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</th>
    <th>{{line.0}}</th>
