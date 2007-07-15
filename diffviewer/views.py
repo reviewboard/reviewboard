@@ -242,9 +242,14 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
 
 def get_enable_highlighting(user):
-    profile, profile_is_new = Profile.objects.get_or_create(user=user)
+    if user.is_authenticated():
+        profile, profile_is_new = Profile.objects.get_or_create(user=user)
+        user_syntax_highlighting = profile.syntax_highlighting
+    else:
+        user_syntax_highlighting = True
+
     return settings.DIFF_SYNTAX_HIGHLIGHTING and \
-           profile.syntax_highlighting and pygments
+           user_syntax_highlighting and pygments
 
 
 def render_diff_fragment(request, file, context,

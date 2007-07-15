@@ -18,6 +18,7 @@
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gReviewRequestId = '{{review_request.id}}';
   var gRevision = '{{diffset.revision}}';
+  var gUserAuthenticated = {{user.is_authenticated|lower}};
 </script>
 {% endblock %}
 

@@ -18,6 +18,7 @@
   var gReviewRequestId = '{{review.id}}';
   var gScreenshotId = '{{screenshot.id}}';
   {% if diffset %}var gRevision = '{{diffset.revision}}';{% else %}var gRevision = 'None';{% endif %}
+  var gUserAuthenticated = {{user.is_authenticated|lower}};
 </script>
 {% endblock %}
 

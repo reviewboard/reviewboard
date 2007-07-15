@@ -4,10 +4,10 @@ from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest
 
 def _get_review_request_list(user, status, extra_query=None):
-    if user:
-        query = Q(public=True) | Q(submitter=user)
-    else:
-        query = Q(public=True)
+    query = Q(public=True)
+
+    if user and user.is_authenticated():
+        query = query | Q(submitter=user)
 
     if status:
         query = query & Q(status=status)

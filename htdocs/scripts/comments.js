@@ -114,6 +114,20 @@ CommentDialog = function(el) {
     }, this, true);
 
 
+    if (!gUserAuthenticated) {
+        this.reviewTab.el.hide();
+        this.commentForm.hide();
+
+        for (b in this.commentButtons) {
+            this.commentButtons[b].disable();
+        }
+
+        for (b in this.reviewButtons) {
+            this.reviewButtons[b].disable();
+        }
+    }
+
+
     /*
      * Set the initial state
      */

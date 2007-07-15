@@ -51,6 +51,17 @@ def valid_prefs_required(view_func):
     return _check_valid_prefs
 
 
+@simple_decorator
+def check_login_required(view_func):
+    def _check(*args, **kwargs):
+        if settings.REQUIRE_SITEWIDE_LOGIN:
+            return login_required(view_func, *args, **kwargs)
+        else:
+            return view_func(*args, **kwargs)
+
+    return _check
+
+
 @login_required
 def new_review_request(request,
                        template_name='reviews/new_review_request.html'):
@@ -85,7 +96,7 @@ def new_review_request(request,
         'fields': simplejson.dumps(fields),
     }))
 
-@login_required
+@check_login_required
 def review_detail(request, review_request_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
@@ -107,36 +118,41 @@ def review_detail(request, review_request_id, template_name):
 
 def review_list(request, queryset, template_name, default_filter=True,
                 extra_context={}, **kwargs):
-    profile, profile_is_new = \
-        Profile.objects.get_or_create(user=request.user)
+    profile = None
+    sort_columns = "-last_updated"
+
+    if request.user.is_authenticated():
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+        sort_columns = profile.sort_review_request_columns or sort_columns
 
     if default_filter:
         queryset = queryset.filter(Q(status='P') |
                                    Q(status='S')).order_by('-last_updated')
 
-    sort = request.GET.get('sort', profile.sort_review_request_columns)
+    sort = request.GET.get('sort', sort_columns)
     response = sortable_object_list(request,
         queryset=queryset,
-        default_sort=profile.sort_review_request_columns,
+        default_sort=sort_columns,
         template_name=template_name,
         extra_context=extra_context,
         **kwargs)
 
-    if profile.sort_review_request_columns != sort:
+    if profile and profile.sort_review_request_columns != sort:
         profile.sort_review_request_columns = sort
         profile.save()
 
     return response
 
 
-@login_required
+@check_login_required
 def all_review_requests(request, template_name='reviews/review_list.html'):
     return review_list(request,
         queryset=reviews_db.get_all_review_requests(request.user, status=None),
         template_name=template_name)
 
 
-@login_required
+@check_login_required
 def submitter_list(request, template_name='reviews/submitter_list.html'):
     return object_list(request,
         queryset=User.objects.filter(),
@@ -148,7 +164,7 @@ def submitter_list(request, template_name='reviews/submitter_list.html'):
         })
 
 
-@login_required
+@check_login_required
 def group_list(request, template_name='reviews/group_list.html'):
     return object_list(request,
         queryset=Group.objects.all(),
@@ -247,7 +263,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         })
 
 
-@login_required
+@check_login_required
 def group(request, name, template_name='reviews/review_list.html'):
     return review_list(request,
         queryset=reviews_db.get_review_requests_to_group(name, status=None),
@@ -257,7 +273,7 @@ def group(request, name, template_name='reviews/review_list.html'):
         })
 
 
-@login_required
+@check_login_required
 def submitter(request, username, template_name='reviews/review_list.html'):
     return review_list(request,
         queryset=reviews_db.get_review_requests_from_user(username,
@@ -291,7 +307,7 @@ def _query_for_diff(review_request, revision, query_extra=None):
         raise Http404
 
 
-@login_required
+@check_login_required
 def diff(request, review_request_id, revision=None, interdiff_revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
@@ -302,12 +318,16 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None):
     else:
         interdiffset_id = None
 
-    review = get_object_or_none(Review,
-                                user=request.user,
-                                review_request=review_request,
-                                public=False,
-                                base_reply_to__isnull=True,
-                                reviewed_diffset=diffset)
+    if request.user.is_authenticated():
+        review = get_object_or_none(Review,
+                                    user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    base_reply_to__isnull=True,
+                                    reviewed_diffset=diffset)
+    else:
+        review = None
+
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
 
     return view_diff(request, diffset.id, interdiffset_id, {
@@ -317,7 +337,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None):
     })
 
 
-@login_required
+@check_login_required
 def raw_diff(request, review_request_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
@@ -328,7 +348,7 @@ def raw_diff(request, review_request_id, revision=None):
     return resp
 
 
-@login_required
+@check_login_required
 def diff_fragment(request, object_id, revision, filediff_id,
                   interdiffset_id=None, chunkindex=None,
                   template_name='diffviewer/diff_file_fragment.html'):
@@ -430,7 +450,7 @@ def setstatus(request, review_request_id, action):
         return HttpResponseRedirect(review_request.get_absolute_url())
 
 
-@login_required
+@check_login_required
 def preview_review_request_email(
         request, review_request_id,
         template_name='reviews/review_request_email.txt'):
@@ -447,7 +467,7 @@ def preview_review_request_email(
     ), mimetype='text/plain')
 
 
-@login_required
+@check_login_required
 def preview_review_email(request, review_request_id, review_id,
                          template_name='reviews/review_email.txt'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -468,7 +488,7 @@ def preview_review_email(request, review_request_id, review_id,
     ), mimetype='text/plain')
 
 
-@login_required
+@check_login_required
 def preview_reply_email(request, review_request_id, review_id, reply_id,
                         template_name='reviews/reply_email.txt'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -486,6 +506,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
             'domain_method': settings.DOMAIN_METHOD,
         }),
     ), mimetype='text/plain')
+
 
 @login_required
 def upload_screenshot(request, review_request_id,
@@ -512,6 +533,7 @@ def upload_screenshot(request, review_request_id,
         'form': form,
     }))
 
+
 @login_required
 def delete_screenshot(request, review_request_id, screenshot_id):
     request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -525,6 +547,8 @@ def delete_screenshot(request, review_request_id, screenshot_id):
 
     return HttpResponseRedirect(request.get_absolute_url())
 
+
+@check_login_required
 def view_screenshot(request, review_request_id, screenshot_id,
                     template_name='reviews/screenshot_detail.html'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)

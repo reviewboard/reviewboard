@@ -109,6 +109,11 @@ DIFF_SYNTAX_HIGHLIGHTING = False
 # settings_local.py if you choose to use https instead of http.
 DOMAIN_METHOD = "http"
 
+# Require a login for accessing any part of the site. If False, review
+# requests, diffs, lists of review requests, etc. will be accessible without
+# a login.
+REQUIRE_SITEWIDE_LOGIN = False
+
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
