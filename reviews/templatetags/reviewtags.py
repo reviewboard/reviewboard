@@ -289,6 +289,19 @@ class ReplyList(template.Node):
                 'draft': not reply.public
             })
 
+        def process_body_replies(queryset, attrname, user):
+            if user.is_anonymous():
+                queryset = queryset.filter(Q(public=True))
+            else:
+                queryset = queryset.filter(Q(public=True) | Q(user=user))
+
+            s = ""
+            for reply_comment in queryset:
+                s += generate_reply_html(reply, reply.timestamp,
+                                         getattr(reply, attname))
+
+            return s
+
         if self.review != "":
             review = resolve_variable(self.review, context)
 
@@ -299,29 +312,29 @@ class ReplyList(template.Node):
         context_id = resolve_variable(self.context_id, context)
 
         user = context.get('user', None)
+        if user.is_anonymous():
+            user = None
 
         s = ""
 
-        if context_type == "comment":
+        if context_type == "comment" or context_type == "screenshot_comment":
             for reply_comment in comment.public_replies(user):
                 s += generate_reply_html(reply_comment.review_set.get(),
                                          reply_comment.timestamp,
                                          reply_comment.text)
-        elif context_type == "screenshot_comment":
-            for reply_comment in comment.public_replies(user):
-                s += generate_reply_html(reply_comment.review_set.get(),
-                                         reply_comment.timestamp,
-                                         reply_comment.text)
-        elif context_type == "body_top":
-            for reply in review.body_top_replies.filter(Q(public=True) |
-                                                        Q(user=user)):
+        elif context_type == "body_top" or context_type == "body_bottom":
+            q = Q(public=True)
+
+            if user:
+                q = q | Q(user=user)
+
+            replies = getattr(review, "%s_replies" % context_type).filter(q)
+
+            for reply in replies:
                 s += generate_reply_html(reply, reply.timestamp,
-                                         reply.body_top)
-        elif context_type == "body_bottom":
-            for reply in review.body_bottom_replies.filter(Q(public=True) |
-                                                           Q(user=user)):
-                s += generate_reply_html(reply, reply.timestamp,
-                                         reply.body_bottom)
+                                         getattr(reply, context_type))
+
+            return s
         else:
             raise TemplateSyntaxError, "Invalid context type passed"
 
