@@ -37,7 +37,7 @@ urlpatterns = patterns('',
     (r'^r/new/$', 'reviewboard.reviews.views.new_review_request'),
 
     # Review request detail
-    (r'^r/(?P<object_id>[0-9]+)/$',
+    (r'^r/(?P<review_request_id>[0-9]+)/$',
      'reviewboard.reviews.views.review_detail',
      {'template_name': 'reviews/review_detail.html'}),
 

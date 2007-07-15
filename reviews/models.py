@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, permalink
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
@@ -22,8 +22,9 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
+    @permalink
     def get_absolute_url(self):
-        return "/groups/%s/" % self.name
+        return ('reviewboard.reviews.views.group', None, {'name': self.name})
 
     class Admin:
         list_display = ('name', 'display_name', 'mailing_list')
@@ -43,12 +44,17 @@ class Screenshot(models.Model):
     def __str__(self):
         return "%s (%s)" % (self.caption, self.image)
 
+    @permalink
     def get_absolute_url(self):
         try:
             review = self.review_request.all()[0]
         except IndexError:
             review = self.inactive_review_request.all()[0]
-        return "/r/%s/s/%s/" % (review.id, self.id)
+
+        return ('reviewboard.reviews.views.view_screenshot', None, {
+            'review_request_id': review.id,
+            'screenshot_id': self.id
+        })
 
     class Admin:
         list_display = ('thumb', 'caption', 'image')
@@ -100,8 +106,11 @@ class ReviewRequest(models.Model):
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
         return bugs
 
+    @permalink
     def get_absolute_url(self):
-        return "/r/%s/" % self.id
+        return ('reviewboard.reviews.views.review_detail', None, {
+            'review_request_id': self.id,
+        })
 
     def __str__(self):
         return self.summary
