@@ -1,6 +1,7 @@
 # Django settings for reviewboard project.
 
 import os
+import os.path
 import sys
 
 DEBUG = True
@@ -125,6 +126,9 @@ def dependency_error(string):
     sys.stderr.write('%s\n' % string)
     sys.stderr.write(install_help)
     sys.exit(1)
+
+if os.path.split(os.path.dirname(__file__))[1] != 'reviewboard':
+    dependency_error('The directory containing manage.py must be named "reviewboard"')
 
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
