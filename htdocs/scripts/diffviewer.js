@@ -467,21 +467,6 @@ function onLineMouseUp(e, unused, table, fileid) {
                                             gSelection.beginNum, []);
         commentBlock.localNumLines =
             gSelection.endNum - gSelection.beginNum + 1;
-
-        var rows = gSelection.table.dom.rows;
-
-        for (var i = gSelection.begin.parentNode.rowIndex;
-             i <= gSelection.end.parentNode.rowIndex;
-             i++) {
-
-            getEl(rows[i]).removeClass("selected");
-        }
-
-        gSelection.begin    = gSelection.end    = null;
-        gSelection.beginNum = gSelection.endNum = 0;
-        gSelection.rows = [];
-        gSelection.table = null;
-
         commentBlock.showCommentDlg();
     } else {
         var tbody = null;
@@ -498,6 +483,22 @@ function onLineMouseUp(e, unused, table, fileid) {
             gotoAnchor(tbody.dom.getElementsByTagName("A")[0].name, true);
         }
     }
+
+	if (gSelection.begin != null) {
+        var rows = gSelection.table.dom.rows;
+
+        for (var i = gSelection.begin.parentNode.rowIndex;
+             i <= gSelection.end.parentNode.rowIndex;
+             i++) {
+
+            getEl(rows[i]).removeClass("selected");
+        }
+
+        gSelection.begin    = gSelection.end    = null;
+        gSelection.beginNum = gSelection.endNum = 0;
+        gSelection.rows = [];
+        gSelection.table = null;
+	}
 
     gGhostCommentFlagRow = null;
 }
@@ -587,7 +588,6 @@ function onLineMouseOut(e, unused, table) {
             var destRowIndex = relTarget.parentNode.rowIndex;
 
             if (destRowIndex >= gSelection.begin.parentNode.rowIndex) {
-				console.debug("mouse out. removing");
                 for (var i = gSelection.lastSeenIndex;
                      i > relTarget.parentNode.rowIndex; i--) {
                     getEl(table.dom.rows[i]).removeClass("selected");
