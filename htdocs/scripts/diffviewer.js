@@ -569,10 +569,6 @@ function onLineMouseOut(e, unused, table) {
     var relTarget = e.relatedTarget || e.toElement;
     if (gGhostCommentFlag && relTarget != gGhostCommentFlag.dom) {
         gGhostCommentFlag.hide();
-
-        if (gGhostCommentFlagRow != null) {
-            getEl(gGhostCommentFlagRow.dom.parentNode).removeClass("selected");
-        }
     }
 
     if (gSelection.table == table) {
@@ -591,6 +587,7 @@ function onLineMouseOut(e, unused, table) {
             var destRowIndex = relTarget.parentNode.rowIndex;
 
             if (destRowIndex >= gSelection.begin.parentNode.rowIndex) {
+				console.debug("mouse out. removing");
                 for (var i = gSelection.lastSeenIndex;
                      i > relTarget.parentNode.rowIndex; i--) {
                     getEl(table.dom.rows[i]).removeClass("selected");
