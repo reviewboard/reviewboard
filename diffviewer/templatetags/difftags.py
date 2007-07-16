@@ -3,7 +3,6 @@ import re
 from django import template
 from django.template import resolve_variable
 from django.template import NodeList, VariableDoesNotExist
-from django.utils.html import escape
 from reviewboard.diffviewer.views import get_diff_files, \
                                          get_enable_highlighting
 

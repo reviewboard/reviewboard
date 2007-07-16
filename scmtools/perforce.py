@@ -1,5 +1,10 @@
-import os
 import re
+import subprocess
+
+try:
+    from p4 import P4Error
+except ImportError:
+    pass
 
 from reviewboard.scmtools.core import SCMTool, ChangeSet, HEAD, PRE_CREATION
 
@@ -20,7 +25,13 @@ class PerforceTool(SCMTool):
         self.uses_atomic_revisions = True
 
     def __del__(self):
-        self._disconnect()
+        try:
+            self._disconnect()
+        except P4Error:
+            # Exceptions in __del__ get ignored but spew warnings.  If there's
+            # no internet connection, we'll get a P4Error from disconnect().
+            # This is totally safe to ignore.
+            pass
 
     def _connect(self):
         if not self.p4.connected:
@@ -57,15 +68,21 @@ class PerforceTool(SCMTool):
         else:
             file = '%s#%s' % (path, revision)
 
-        f = os.popen('p4 -p %s -u %s print -q %s' % (self.p4.port,
-                                                     self.p4.user, file))
-        data = f.read()
-        failure = f.close()
+        p = subprocess.Popen(
+            ['p4', '-p', self.p4.port, '-u', self.p4.user, 'print', file],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+        failure = p.wait()
 
         if failure:
-            raise Exception('unable to fetch %s from perforce' % file)
-
-        return data
+            # The command-line output is the same as the contents of a P4Error
+            # except they're prefixed with a line that says "Perforce client
+            # error:", and the lines of the error are indented with tabs.
+            error = p.stderr.readlines()
+            raise P4Error('\n'.join(line[1:] for line in error[1:]))
+        else:
+            return p.stdout.read()
 
     def parse_diff_revision(self, file_str, revision_str):
         # Perforce has this lovely idiosyncracy that diffs show revision #1 both

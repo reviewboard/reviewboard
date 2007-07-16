@@ -5,7 +5,6 @@ from django import newforms as forms
 from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.models import Repository
-import reviewboard.diffviewer.parser as diffparser
 import reviewboard.scmtools as scmtools
 from scmtools import PRE_CREATION
 

@@ -298,7 +298,7 @@ class ReplyList(template.Node):
             s = ""
             for reply_comment in queryset:
                 s += generate_reply_html(reply, reply.timestamp,
-                                         getattr(reply, attname))
+                                         getattr(reply, attrname))
 
             return s
 

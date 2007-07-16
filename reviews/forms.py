@@ -6,7 +6,6 @@ from PIL import Image
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
-import reviewboard.scmtools as scmtools
 from reviewboard.scmtools.models import Repository
 from reviewboard.reviews.db import create_review_request, \
                                    update_review_request_from_changenum, \

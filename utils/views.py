@@ -1,7 +1,5 @@
 from django.views.generic.list_detail import object_list
 
-from reviewboard.accounts.models import Profile
-
 
 def sortable_object_list(request, queryset, default_sort="",
                          extra_context={}, *args, **kwargs):

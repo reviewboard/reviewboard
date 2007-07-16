@@ -33,10 +33,8 @@ setup_environ(settings)
 
 from django.contrib.auth.models import User
 
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.reviews.models import Group, ReviewRequest, Review, Comment
 from reviewboard.scmtools.models import Repository
-from reviewboard.reviews.json import ReviewBoardJSONEncoder
 
 
 def get_object_info(o):

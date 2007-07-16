@@ -1,5 +1,3 @@
-import math
-
 class MyersDiffer:
     """
     An implementation of Eugene Myers's O(ND) Diff algorithm based on GNU diff.

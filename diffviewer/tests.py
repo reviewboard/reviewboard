@@ -147,16 +147,16 @@ class DiffParserTest(unittest.TestCase):
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
-    def testPatchLFFileCRLFDiff(self):
-        """Testing patching a CRLF file with a CRLF diff."""
+    def testPatchCRFileCRLFDiff(self):
+        """Testing patching a CR file with a CRLF diff."""
         old = self._get_file('orig_src', 'README')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
-    def testPatchCRLFFileLFDiff(self):
-        """Testing patching a CRLF file with a CRLF diff."""
+    def testPatchCRLFFileCRDiff(self):
+        """Testing patching a CRLF file with a CR diff."""
         old = self._get_file('orig_src', 'README.crlf')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.diff')

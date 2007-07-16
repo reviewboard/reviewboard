@@ -20,13 +20,11 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
-from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
                                        Review, Group, Screenshot, \
                                        ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, \
-                                      UploadScreenshotForm, \
-                                      OwnershipError
+                                      UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request, \
                                       mail_diff_update
 from reviewboard.scmtools.models import Repository

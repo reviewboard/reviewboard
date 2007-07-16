@@ -5,7 +5,6 @@
 # This loads a JSON dump of the database into ReviewBoard. It first resets
 # the database to ensure there are no duplicate entries.
 
-import gc
 import os
 import re
 import sys

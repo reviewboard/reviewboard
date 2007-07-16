@@ -5,7 +5,7 @@ import os
 from django import template
 from django.conf import settings
 from django.template import resolve_variable
-from django.template import TemplateSyntaxError, VariableDoesNotExist
+from django.template import VariableDoesNotExist
 from djblets.util.decorators import blocktag
 
 

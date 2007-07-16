@@ -3,7 +3,7 @@ import unittest
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
-from django.template import Token, TOKEN_TEXT
+from django.template import Token, TOKEN_TEXT, TemplateSyntaxError
 from django.test import TestCase
 
 from djblets.util.testing import TagTest
@@ -94,6 +94,14 @@ class EmailTests(TestCase):
             for address in get_email_addresses_for_group(group):
                 self.assert_(address in recipient_list,
                     "group %s was not found in the recipient list" % address)
+
+
+class QuotedEmailTagTest(TagTest):
+    def testInvalid(self):
+        """Testing quoted_email tag (invalid usage)"""
+        self.assertRaises(TemplateSyntaxError,
+                          lambda: emailtags.quoted_email(self.parser,
+                              Token(TOKEN_TEXT, 'quoted_email')))
 
 
 class CondenseTagTest(TagTest):

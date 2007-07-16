@@ -3,6 +3,10 @@ import nose
 import unittest
 
 from django.test import TestCase as DjangoTestCase
+try:
+    from p4 import P4Error
+except ImportError:
+    pass
 
 from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
                                       Revision, HEAD, PRE_CREATION, \
@@ -11,25 +15,6 @@ from reviewboard.scmtools.models import Repository, Tool
 
 class CoreTests(unittest.TestCase):
     """Tests for the scmtools.core module"""
-
-    def testGetTool(self):
-        """Testing tool instantiation"""
-        return
-
-        # XXX This needs to be updated to use the new methods of loading
-        #     tools.
-        #tool = get_tool('reviewboard.scmtools.svn.SVNTool')
-        #self.assertEqual(tool.__class__, SVNTool)
-
-        #tool = get_tool('reviewboard.scmtools.perforce.PerforceTool')
-        #self.assertEqual(tool.__class__, PerforceTool)
-
-        #self.assertRaises(ImproperlyConfigured,
-        #                  lambda: get_tool('blah.blah'))
-
-        #self.assertRaises(ImproperlyConfigured,
-        #                  lambda: get_tool('reviewboard.scmtools.svn.Foo'))
-
 
     def testInterface(self):
         """Testing basic scmtools.core API"""
@@ -139,7 +124,14 @@ class PerforceTests(unittest.TestCase):
     def testChangeset(self):
         """Testing PerforceTool.get_changeset"""
 
-        desc = self.tool.get_changeset(157)
+        try:
+            desc = self.tool.get_changeset(157)
+        except P4Error, e:
+            if str(e).startswith('Connect to server failed'):
+                raise nose.SkipTest(
+                    'Connection to public.perforce.com failed.  No internet?')
+            else:
+                raise
         self.assertEqual(desc.changenum, 157)
         self.assertEqual(hash(desc.description), -209144366)
 
@@ -159,8 +151,17 @@ class PerforceTests(unittest.TestCase):
     def testGetFile(self):
         """Testing PerforceTool.get_file"""
 
-        file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py',
-                                  1)
+        file = self.tool.get_file('//depot/foo', PRE_CREATION)
+        self.assertEqual(file, '')
+
+        try:
+            file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
+        except Exception, e:
+            if str(e).startswith('Connect to server failed'):
+                raise nose.SkipTest(
+                    'Connection to public.perforce.com failed.  No internet?')
+            else:
+                raise
         self.assertEqual(hash(file), 1392492355)
 
 
