@@ -65,7 +65,7 @@ def check_dependencies():
         dependency_warning('pysvn not found.  SVN integration will not work.')
 
     try:
-        imp.find_modules('p4')
+        imp.find_module('p4')
     except ImportError:
         dependency_warning('p4python not found.  Perforce integration will not work.')
 
