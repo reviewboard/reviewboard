@@ -18,7 +18,7 @@ Summary
 {{ review_request.description }}
 
 {% ifnotequal review_request.bugs_closed "" %}
-This closes bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.
+This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.
 {% endifnotequal %}
 
 
