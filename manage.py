@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import imp
 import sys
 
 from django.core.management import execute_manager
@@ -30,7 +31,7 @@ def check_dependencies():
 
     # PIL
     try:
-        import PIL
+        imp.find_module('PIL')
     except ImportError:
         dependency_error('The Python Imaging Library (PIL) is required.')
 
@@ -39,7 +40,7 @@ def check_dependencies():
     # pygments
     if settings.DIFF_SYNTAX_HIGHLIGHTING:
         try:
-            import pygments
+            imp.find_module('pygments')
         except ImportError:
             dependency_error('The Pygments library is required when ' +
                              'DIFF_SYNTAX_HIGHLIGHTING is enabled.')
@@ -59,12 +60,12 @@ def check_dependencies():
         warnings_found += 1
 
     try:
-        import pysvn
+        imp.find_module('pysvn')
     except ImportError:
         dependency_warning('pysvn not found.  SVN integration will not work.')
 
     try:
-        import p4
+        imp.find_modules('p4')
     except ImportError:
         dependency_warning('p4python not found.  Perforce integration will not work.')
 

@@ -2,11 +2,11 @@ import traceback
 
 try:
     import pygments
-    from pygments.lexers import guess_lexer_for_filename, \
-                                get_lexer_for_filename
+    from pygments.lexers import get_lexer_for_filename
+    # from pygments.lexers import guess_lexer_for_filename
     from pygments.formatters import HtmlFormatter
 except ImportError:
-    pygments = None
+    pass
 
 from django import newforms as forms
 from django.conf import settings

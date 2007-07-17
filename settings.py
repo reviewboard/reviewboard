@@ -1,7 +1,6 @@
 # Django settings for reviewboard project.
 
 import os
-import os.path
 import sys
 
 DEBUG = True
