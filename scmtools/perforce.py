@@ -69,7 +69,7 @@ class PerforceTool(SCMTool):
             file = '%s#%s' % (path, revision)
 
         p = subprocess.Popen(
-            ['p4', '-p', self.p4.port, '-u', self.p4.user, 'print', file],
+            ['p4', '-p', self.p4.port, '-u', self.p4.user, 'print', '-q', file],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
 
