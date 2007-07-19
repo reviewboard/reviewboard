@@ -45,14 +45,22 @@ class SVNTool(SCMTool):
             return self.client.cat(self.__normalize_path(path),
                                    self.__normalize_revision(revision))
         except pysvn.ClientError, e:
-            raise FileNotFoundError(path, revision, str(e))
+            stre = str(e)
+            if stre.find('path not found'):
+                raise FileNotFoundError(path, revision, str(e))
+            elif stre.find('callback_ssl_server_trust_prompt required'):
+                raise SCMError(
+                    'HTTPS certificate not accepted.  Please ensure that ' +
+                    'the proper certificate exists in ~/.subversion/auth ' +
+                    'for the user that reviewboard is running as.')
+            else:
+                raise SCMError(e)
 
 
     def parse_diff_revision(self, file_str, revision_str):
         if revision_str == "(working copy)":
             return file_str, HEAD
 
-        # svn diff -u has "revision" while svnlook has "rev"
         m = self.revision_re.match(revision_str)
         if not m:
             raise SCMError("Unable to parse diff revision header '%s'" %
