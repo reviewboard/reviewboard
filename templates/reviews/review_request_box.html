@@ -33,7 +33,7 @@
   </span></td>
   </tr>
   <tr>
-   <td class="label"><label for="bugs_closed">Bugs Closed:</label></td>
+   <td class="label"><label for="bugs_closed">Bugs:</label></td>
    <td class="value"><span id="bugs_closed">
 {%  for bug in review_request_details.get_bug_list %}
 {%   if review_request.repository.bug_tracker %}<a href={{bug|bug_url:review_request}}>{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}

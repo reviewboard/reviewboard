@@ -4,6 +4,9 @@ class MyersDiffer:
     """
     SNAKE_LIMIT = 20
 
+    # The Myers diff algorithm effectively turns the diff problem into a graph
+    # search.  It works by finding the "shortest middle snake," which
+
     class DiffData:
         def __init__(self, data):
             self.data = data
