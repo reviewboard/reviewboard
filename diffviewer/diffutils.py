@@ -38,6 +38,10 @@ def patch(diff, file, filename):
         # Someone uploaded an unchanged file. Return the one we're patching.
         return file
 
+    # Prepare the temporary directory if none is available
+    if not tempfile.tempdir:
+        tempfile.tempdir = tempfile.mkdtemp(prefix='reviewboard.')
+
     (fd, oldfile) = tempfile.mkstemp()
     f = os.fdopen(fd, "w+b")
     f.write(convert_line_endings(file))
@@ -52,19 +56,12 @@ def patch(diff, file, filename):
     failure = p.wait()
 
     if failure:
-        os.unlink(oldfile)
-        os.unlink(newfile)
-
-        try:
-            os.unlink(newfile + ".rej")
-        except:
-            pass
-
         # FIXME: This doesn't provide any useful error report on why the patch
         # failed to apply, which makes it hard to debug.
-        raise Exception(("The patch to '%s' didn't apply cleanly. " +
+        raise Exception(("The patch to '%s' didn't apply cleanly. The temporary " +
+                         "files have been left in '%s' for debugging purposes.\n" +
                          "`patch` returned: %s") %
-                        (filename, p.stdout.read()))
+                        (filename, tempfile.tempdir, p.stdout.read()))
 
     f = open(newfile, "r")
     data = f.read()
