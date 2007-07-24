@@ -1,6 +1,7 @@
 import re
 import subprocess
 
+
 class File:
     def __init__(self):
         self.origFile = None
@@ -10,8 +11,10 @@ class File:
         self.data = None
         self.binary = False
 
+
 class DiffParserError(Exception):
     pass
+
 
 class DiffParser:
     binregexp = re.compile("^==== ([^#]+)#(\d+) ==([AMD])== (.*) ====$")
@@ -86,10 +89,13 @@ class DiffParser:
 
     def _parseRevisionInfo(self, linenum, file):
         try:
-            file.origFile, file.origInfo = self.lines[linenum].split(None, 2)[1:]
-            file.newFile,  file.newInfo  = self.lines[linenum + 1].split(None, 2)[1:]
+            file.origFile, file.origInfo = \
+                self.lines[linenum].split(None, 2)[1:]
+            file.newFile, file.newInfo = \
+                self.lines[linenum + 1].split(None, 2)[1:]
         except ValueError:
-            raise DiffParserError("The diff file is missing revision information")
+            raise DiffParserError("The diff file is missing revision " +
+                                  "information")
 
     def _checkSpecialHeaders(self, begin, fileinfo=None):
         # Try to see if we have special "====" markers before this.
