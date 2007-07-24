@@ -208,12 +208,18 @@ def indent(value, numspaces=4):
     return indent_str + value.replace("\n", "\n" + indent_str)
 
 
-# From http://www.djangosnippets.com/snippets/192
+# From http://www.djangosnippets.org/snippets/192
 @register.filter
 def thumbnail(file, size='400x100'):
     x, y = [int(x) for x in size.split('x')]
-    basename, format = file.rsplit('.', 1)
-    miniature = '%s_%s.%s' % (basename, size, format)
+
+    if file.find(".") != -1:
+        basename, format = file.rsplit('.', 1)
+        miniature = '%s_%s.%s' % (basename, size, format)
+    else:
+        basename = file
+        miniature = '%s_%s' % (basename, size)
+
     miniature_filename = os.path.join(settings.MEDIA_ROOT, miniature)
     miniature_url = os.path.join(settings.MEDIA_URL, miniature)
 
