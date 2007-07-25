@@ -187,13 +187,14 @@ table.list .age5 {
 }
 
 ul.errorlist {
+  background: #fff6a6;
+  border: 1px black solid;
   display: inline;
   margin: 0 0 0 15px;
-  padding: 0;
+  padding: 4px 8px;
 }
 
 ul.errorlist li {
-  color: red;
   display: inline;
 }
 
