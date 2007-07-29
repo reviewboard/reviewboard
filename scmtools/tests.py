@@ -8,6 +8,7 @@ try:
 except ImportError:
     pass
 
+from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
                                       Revision, HEAD, PRE_CREATION, \
                                       ChangeSet
@@ -27,6 +28,104 @@ class CoreTests(unittest.TestCase):
         self.assertEqual(cs.branch, '')
         self.assert_(len(cs.bugs_closed) == 0)
         self.assert_(len(cs.files) == 0)
+
+
+class CVSTests(unittest.TestCase):
+    """Unit tests for CVS."""
+
+    def setUp(self):
+        self.cvs_repo_path = os.path.join(os.path.dirname(__file__),
+                                          'testdata/cvs_repo')
+        self.repository = Repository(name='CVS',
+                                     path=self.cvs_repo_path,
+                                     tool=Tool.objects.get(name='CVS'))
+
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest
+
+    def testGetFile(self):
+        """Testing CVSTool.get_file"""
+        expected = "test content\n"
+        file = 'test/testfile'
+        rev = Revision('1.1')
+
+        self.assertEqual(self.tool.get_file(file, rev), expected)
+
+        self.assert_(self.tool.file_exists('test/testfile'))
+        self.assert_(not self.tool.file_exists('test/testfile2'))
+
+        self.assertRaises(FileNotFoundError,
+                          lambda: self.tool.get_file(''))
+        self.assertRaises(FileNotFoundError,
+                          lambda: self.tool.get_file('hello', PRE_CREATION))
+
+    def testRevisionParsing(self):
+        """Testing revision number parsing"""
+        self.assertEqual(self.tool.parse_diff_revision('', 'PRE-CREATION')[1],
+                         PRE_CREATION)
+        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000	1.2')[1],
+                         '1.2')
+        self.assertEqual(self.tool.parse_diff_revision('', '7 Nov 2005 13:17:07 -0000	1.2.3.4')[1],
+                         '1.2.3.4')
+        self.assertRaises(SCMError,
+                          lambda: self.tool.parse_diff_revision('', 'hello'))
+
+    def testInterface(self):
+        """Testing basic CVSTool API"""
+        self.assertEqual(self.tool.get_diffs_use_absolute_paths(), True)
+        self.assertEqual(self.tool.get_fields(), ['diff_path'])
+
+    def testSimpleDiff(self):
+        """Testing parsing CVS simple diff"""
+        diff = "Index: testfile\n==========================================" + \
+               "=========================\nRCS file: %s/test/testfile,v\nre" + \
+               "trieving revision 1.1.1.1\ndiff -u -r1.1.1.1 testfile\n--- " + \
+               "testfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n+++ te" + \
+               "stfile    26 Jul 2007 10:20:20 -0000\n@@ -1 +1,2 @@\n-test " + \
+               "content\n+updated test content\n+added info"
+
+        file = self.tool.getParser(diff % self.cvs_repo_path).parse()[0]
+        self.assertEqual(file.origFile, 'test/testfile')
+        self.assertEqual(file.origInfo, '26 Jul 2007 08:50:30 -0000      1.1.1.1')
+        self.assertEqual(file.newFile, 'testfile')
+        self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
+        self.assertEqual(len(file.data), 161)
+
+    def testBadDiff(self):
+        """Testing parsing CVS diff with bad info"""
+        diff = "Index: newfile\n===========================================" + \
+               "========================\ndiff -N newfile\n--- /dev/null	1" + \
+               "Jan 1970 00:00:00 -0000\n+++ newfile	26 Jul 2007 10:11:45 " + \
+               "-0000\n@@ -0,0 +1 @@\n+new file content"
+
+        self.assertRaises(DiffParserError,
+                          lambda: self.tool.getParser(diff).parse())
+
+    def testBadDiff2(self):
+        """Testing parsing CVS bad diff with new file"""
+        diff = "Index: newfile\n===========================================" + \
+               "========================\nRCS file: newfile\ndiff -N newfil" + \
+               "e\n--- /dev/null\n+++ newfile	2" + \
+               "6 Jul 2007 10:11:45 -0000\n@@ -0,0 +1 @@\n+new file content"
+
+        self.assertRaises(DiffParserError,
+                          lambda: self.tool.getParser(diff).parse())
+
+    def testNewfileDiff(self):
+        """Testing parsing CVS diff with new file"""
+        diff = "Index: newfile\n===========================================" + \
+               "========================\nRCS file: newfile\ndiff -N newfil" + \
+               "e\n--- /dev/null	1 Jan 1970 00:00:00 -0000\n+++ newfile	2" + \
+               "6 Jul 2007 10:11:45 -0000\n@@ -0,0 +1 @@\n+new file content"
+
+        file = self.tool.getParser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'newfile')
+        self.assertEqual(file.origInfo, 'PRE-CREATION')
+        self.assertEqual(file.newFile, 'newfile')
+        self.assertEqual(file.newInfo, '26 Jul 2007 10:11:45 -0000')
+        self.assertEqual(len(file.data), 111)
 
 
 class SubversionTests(unittest.TestCase):
