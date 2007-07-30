@@ -19,6 +19,11 @@ class UploadDiffForm(forms.Form):
     basedir = forms.CharField(required=False)
     path = forms.CharField(widget=forms.FileInput())
 
+    # Extensions used for intelligent sorting of header files
+    # before implementation files.
+    HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
+    IMPL_EXTENSIONS   = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
+
     def create(self, file, diffset_history=None):
         # Parse the diff
         repository = Repository.objects.get(pk=self.cleaned_data['repositoryid'])
@@ -52,6 +57,9 @@ class UploadDiffForm(forms.Form):
         diffset.repository = repository
         diffset.save()
 
+        # Sort the files so that header files come before implementation.
+        files.sort(cmp=self._compare_files, key=lambda f: f.origFile)
+
         for f in files:
             filediff = FileDiff(diffset=diffset,
                                 source_file=f.origFile,
@@ -63,3 +71,23 @@ class UploadDiffForm(forms.Form):
             filediff.save()
 
         return diffset
+
+    def _compare_files(self, filename1, filename2):
+        """
+        Compares two files, giving precedence to header files over source
+        files. This allows the resulting list of files to be more
+        intelligently sorted.
+        """
+        if filename1.find('.') != -1 and filename2.find('.') != -1:
+            basename1, ext1 = filename1.rsplit('.')
+            basename2, ext2 = filename2.rsplit('.')
+
+            if basename1 == basename2:
+                if ext1 in self.HEADER_EXTENSIONS and \
+                   ext2 in self.IMPL_EXTENSIONS:
+                    return -1
+                elif ext1 in self.IMPL_EXTENSIONS and \
+                     ext2 in self.HEADER_EXTENSIONS:
+                    return 1
+
+        return cmp(filename1, filename2)
