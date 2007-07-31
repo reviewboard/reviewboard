@@ -355,6 +355,15 @@ class Review(models.Model):
             comment.timetamp = self.timestamp
             comment.save()
 
+    def delete(self):
+        for comment in self.comments.all():
+            comment.delete()
+
+        for comment in self.screenshot_comments.all():
+            comment.delete()
+
+        super(Review, self).delete()
+
     def get_absolute_url(self):
         return "%s#review%s" % (self.review_request.get_absolute_url(),
                                 self.id)

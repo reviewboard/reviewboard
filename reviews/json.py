@@ -682,13 +682,6 @@ def review_draft_delete(request, review_request_id):
                                     public=False,
                                     base_reply_to__isnull=True,
                                     reviewed_diffset=diffset)
-
-        for comment in review.comments.all():
-            comment.delete()
-
-        for comment in review.screenshot_comments.all():
-            comment.delete()
-
         review.delete()
         return JsonResponse(request)
     except Review.DoesNotExist:
@@ -860,12 +853,6 @@ def review_reply_draft_discard(request, review_request_id, review_id):
     try:
         reply = Review.objects.get(base_reply_to=review, public=False,
                                    user=request.user)
-        for comment in reply.comments.all():
-            comment.delete()
-
-        for comment in reply.screenshot_comments.all():
-            comment.delete()
-
         reply.delete()
         return JsonResponse(request)
     except Review.DoesNotExist:
@@ -986,7 +973,8 @@ def diff_line_comments(request, review_request_id, diff_revision,
 
             if review.body_top.strip() == "" and \
                review.body_bottom.strip() == "" and \
-               review.comments.count() == 0:
+               review.comments.count() == 0 and \
+               review.screenshot_comments.count() == 0:
                 review.delete()
         else:
             return JsonResponseError(request, INVALID_ACTION,
@@ -1054,7 +1042,8 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
 
             if review.body_top.strip() == "" and \
                review.body_bottom.strip() == "" and \
-               review.comments.count() == 0:
+               review.comments.count() == 0 and \
+               review.screenshot_comments.count() == 0:
                 review.delete()
         else:
             return JsonResponseError(request, INVALID_ACTION,
