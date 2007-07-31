@@ -115,8 +115,9 @@ class ReviewRequest(models.Model):
     def __str__(self):
         return self.summary
 
-    def _pre_save(self):
+    def save(self):
         self.bugs_closed = self.bugs_closed.strip()
+        super(ReviewRequest, self).save()
 
     class Admin:
         list_display = ('summary', 'submitter', 'status', 'public', \
@@ -164,8 +165,9 @@ class ReviewRequestDraft(models.Model):
     def _submitter(self):
         return self.review_request.submitter
 
-    def _pre_save(self):
+    def save(self):
         self.bugs_closed = self.bugs_closed.strip()
+        super(ReviewRequestDraft, self).save()
 
     @staticmethod
     def create(review_request):
