@@ -58,7 +58,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
  <div class="header">
   {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
-  <div class="posted_time">Posted {{review.timestamp|timesince}} ago</div>
+  <div class="posted_time">Posted {{review.timestamp|timesince}} ago ({{review.timestamp|date:"F jS, Y, P"}})</div>
  </div>
  <div class="body">
   {% if review.body_top %}

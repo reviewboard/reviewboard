@@ -3,7 +3,7 @@
      <dt>
       {% if draft %}<label for="yourcomment_{{context_id}}-{{id}}">{% endif %}
       <a href="{{reply_user.get_absolute_url}}">{% firstof reply_user.get_full_name reply_user.username %}</a>
-      <span class="timestamp">{{timestamp|timesince}} ago.</span>
+      <span class="timestamp">{{timestamp|timesince}} ago ({{timestamp|date:"F jS, Y, P"}})</span>
       {% if draft %}</label>{% endif %}
      </dt>
      <dd><pre{% if draft %} id="yourcomment_{{context_id}}-{{id}}"{% endif %}>{{text|escape}}</pre></dd>
