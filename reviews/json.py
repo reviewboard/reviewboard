@@ -644,11 +644,14 @@ def review_draft_save(request, review_request_id, publish=False):
         public=False,
         base_reply_to__isnull=True,
         reviewed_diffset=diffset)
-    review.public      = publish
     review.ship_it     = request.POST.has_key('shipit')
     review.body_top    = request.POST['body_top']
     review.body_bottom = request.POST['body_bottom']
-    review.save()
+
+    if publish:
+        review.publish()
+    else:
+        review.save()
 
     if publish and settings.SEND_REVIEW_MAIL:
         mail_review(request.user, review)
@@ -834,8 +837,7 @@ def review_reply_draft_save(request, review_request_id, review_id):
     try:
         reply = Review.objects.get(base_reply_to=review, public=False,
                                    user=request.user)
-        reply.public = True
-        reply.save()
+        reply.publish()
 
         if settings.SEND_REVIEW_MAIL:
             mail_reply(request.user, reply)

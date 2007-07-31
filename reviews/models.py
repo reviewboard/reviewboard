@@ -342,6 +342,19 @@ class Review(models.Model):
     def public_replies(self):
         return self.replies.filter(public=True)
 
+    def publish(self):
+        self.timestamp = datetime.now()
+        self.public = True
+        self.save()
+
+        for comment in self.comments.all():
+            comment.timetamp = self.timestamp
+            comment.save()
+
+        for comment in self.screenshot_comments.all():
+            comment.timetamp = self.timestamp
+            comment.save()
+
     def get_absolute_url(self):
         return "%s#review%s" % (self.review_request.get_absolute_url(),
                                 self.id)
