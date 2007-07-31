@@ -323,6 +323,7 @@ function onKeyPress(evt) {
     for (var i = 0; i < gActions.length; i++) {
         if (gActions[i].keys.indexOf(keyChar) != -1) {
             gActions[i].onPress();
+            YAHOO.util.Event.stopEvent(evt);
             return;
         }
     }
