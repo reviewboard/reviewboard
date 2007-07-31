@@ -62,7 +62,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
  </div>
  <div class="body">
   {% if review.body_top %}
-   <pre class="body_top">{{review.body_top}}</pre>
+   <pre class="body_top">{{review.body_top|escape}}</pre>
    {% reply_section review "" "body_top" "rcbt" %}
   {% endif %}
 {% if review.comments.all or review.screenshot_comments.all %}
@@ -120,7 +120,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
    </dl>
 {% endif %}
   {% if review.body_bottom %}
-   <pre class="body_bottom">{{review.body_bottom}}</pre>
+   <pre class="body_bottom">{{review.body_bottom|escape}}</pre>
    {% reply_section review "" "body_bottom" "rcbb" %}
   {% endif %}
  </div>
