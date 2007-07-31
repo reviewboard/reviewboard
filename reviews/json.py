@@ -686,6 +686,9 @@ def review_draft_delete(request, review_request_id):
         for comment in review.comments.all():
             comment.delete()
 
+        for comment in review.screenshot_comments.all():
+            comment.delete()
+
         review.delete()
         return JsonResponse(request)
     except Review.DoesNotExist:
@@ -859,6 +862,10 @@ def review_reply_draft_discard(request, review_request_id, review_id):
                                    user=request.user)
         for comment in reply.comments.all():
             comment.delete()
+
+        for comment in reply.screenshot_comments.all():
+            comment.delete()
+
         reply.delete()
         return JsonResponse(request)
     except Review.DoesNotExist:
