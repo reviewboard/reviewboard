@@ -32,7 +32,6 @@ class ColumnHeader(template.Node):
 
         if sort_list:
             rev_field_name = "-%s" % self.field_name
-
             new_field_name = self.field_name
 
             try:
@@ -66,16 +65,23 @@ class ColumnHeader(template.Node):
         else:
             sort_list = [self.field_name]
 
-        url = "?sort=%s" % ','.join(sort_list)
+        request = context['request']
+        url_prefix = "?"
+
+        for key in request.GET:
+            url_prefix += "%s=%s&" % (key, request.GET[key])
+
+        url = "%ssort=%s" % (url_prefix, ','.join(sort_list))
         s  = '<th onclick="javascript:window.location = \'%s\'">' % url
         s += '<a href="%s">%s</a> %s' % (url, self.text, sort_indicator)
 
         if sort_indicator:
-            s += ' <a class="unsort" href="?sort=%s">x</a>' % \
-                 (','.join(sort_list[1:]))
+            s += ' <a class="unsort" href="%ssort=%s">x</a>' % \
+                 (url_prefix, ','.join(sort_list[1:]))
 
         s += "</th>"
         return s
+
 
 @register.tag
 def column_header(parser, token):
