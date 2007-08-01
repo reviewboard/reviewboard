@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
 from djblets.util.decorators import simple_decorator
@@ -94,7 +95,9 @@ def new_review_request(request,
         'fields': simplejson.dumps(fields),
     }))
 
+
 @check_login_required
+@cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_detail(request, review_request_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
