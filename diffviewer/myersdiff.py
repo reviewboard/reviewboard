@@ -297,7 +297,7 @@ class MyersDiffer:
             # closer to that of GNU diff, which more people would expect.
 
             if cost > 200 and big_snake:
-                def find_diagonal(minimum, maximum, k, diagoff, vector,
+                def find_diagonal(minimum, maximum, k, best, diagoff, vector,
                                   vdiff_func, check_x_range, check_y_range,
                                   discard_index, k_offset):
                     for d in xrange(maximum, minimum - 1, -2):
@@ -323,7 +323,7 @@ class MyersDiffer:
                     return 0, 0, 0
 
                 ret_x, ret_y, best = \
-                    find_diagonal(down_min, down_max, down_k, self.downoff,
+                    find_diagonal(down_min, down_max, down_k, 0, self.downoff,
                                   down_vector,
                                   lambda x: x - a_lower,
                                   lambda x: a_lower + self.SNAKE_LIMIT <=
@@ -337,7 +337,7 @@ class MyersDiffer:
                     return ret_x, ret_y, True, False
 
                 ret_x, ret_y, best = \
-                    find_diagonal(up_min, up_max, up_k, self.upoff,
+                    find_diagonal(up_min, up_max, up_k, best, self.upoff,
                                   up_vector,
                                   lambda x: a_upper - x,
                                   lambda x: a_lower < x <= a_upper -
