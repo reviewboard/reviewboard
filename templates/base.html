@@ -23,6 +23,9 @@
     {% if user.is_authenticated %}
      <li>Welcome, <b>{% ifnotequal user.get_full_name "" %}{{user.get_full_name|escape}}{% else %}{{user.username|escape}}{% endifnotequal %}</b></li>
      <li>- <a href="/account/preferences/">My account</a></li>
+{% if user.is_staff %}
+     <li>- <a href="/admin/">Admin</a></li>
+{% endif %}
      <li>- <a href="/account/logout/">Log out</a></li>
     {% else %}
      <li><a href="/account/login/">Log in</a></li>
