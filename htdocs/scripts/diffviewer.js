@@ -576,7 +576,7 @@ function onLineMouseOut(e, unused, table) {
     if (gSelection.table == table) {
         var fromNode = getEl(e.originalTarget);
 
-        if (fromNode.hasClass("commentflag")) {
+        if (fromNode && fromNode.hasClass("commentflag")) {
             if (gGhostCommentFlag != null &&
                 fromNode == gGhostCommentFlag.dom) {
                 fromNode = gGhostCommentFlagRow;
