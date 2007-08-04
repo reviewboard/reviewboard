@@ -385,5 +385,5 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
                     errmsg;
             }.createDelegate(this)
         });
-    },
+    }
 });
