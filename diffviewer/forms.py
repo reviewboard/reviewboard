@@ -79,8 +79,8 @@ class UploadDiffForm(forms.Form):
         intelligently sorted.
         """
         if filename1.find('.') != -1 and filename2.find('.') != -1:
-            basename1, ext1 = filename1.rsplit('.')
-            basename2, ext2 = filename2.rsplit('.')
+            basename1, ext1 = filename1.rsplit('.', 1)
+            basename2, ext2 = filename2.rsplit('.', 1)
 
             if basename1 == basename2:
                 if ext1 in self.HEADER_EXTENSIONS and \
