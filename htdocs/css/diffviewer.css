@@ -67,10 +67,10 @@ table.sidebyside tbody.delete {
 }
 
 table.sidebyside tbody.delete th {
-  background: none;
+  background: #ffc5ce;
 }
 
-table.sidebyside tbody.delete tr.selected {
+table.sidebyside tbody.delete tr.selected * {
   background: #dfb1b1;
 }
 
@@ -81,10 +81,10 @@ table.sidebyside tbody.insert {
 }
 
 table.sidebyside tbody.insert th {
-  background: none;
+  background: #c5ffc4;
 }
 
-table.sidebyside tbody.insert tr.selected {
+table.sidebyside tbody.insert tr.selected * {
   background: #9ae298;
 }
 
@@ -95,10 +95,10 @@ table.sidebyside tbody.replace {
 }
 
 table.sidebyside tbody.replace th {
-  background: none;
+  background: #fdfebc;
 }
 
-table.sidebyside tbody.replace tr.selected {
+table.sidebyside tbody.replace tr.selected * {
   background: #e2e179;
 }
 
@@ -116,7 +116,7 @@ table.sidebyside tbody th {
   vertical-align: top;
 }
 
-table.sidebyside tbody tr.selected {
+table.sidebyside tbody tr.selected * {
   background: #e2e2e2;
 }
 
