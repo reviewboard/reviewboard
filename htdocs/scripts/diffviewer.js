@@ -451,6 +451,9 @@ function onLineMouseDown(e, unused, table) {
         gSelection.beginNum = gSelection.endNum = parseInt(node.innerHTML);
         gSelection.lastSeenIndex = row.rowIndex;
         getEl(row).addClass("selected");
+
+		/* Disable text selection on IE */
+		table.dom.onselectstart = function() { return false; }
     }
 }
 
@@ -502,6 +505,9 @@ function onLineMouseUp(e, unused, table, fileid) {
 	}
 
     gGhostCommentFlagRow = null;
+
+	/* Re-enable text selection on IE */
+	table.dom.onselectstart = null;
 }
 
 function onLineMouseOver(e, unused, table, fileid) {
