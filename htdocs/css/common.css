@@ -417,11 +417,16 @@ ul.errorlist li {
   margin-bottom: 8px;
 }
 
+#navbar-outer {
+  border: 1px #E0E0E0 solid;
+  margin: 10px 0;
+}
+
 #navbar {
   background-color: #C6DCF3;
   border: 1px #3465A4 solid;
   list-style: none;
-  margin: 10px 0;
+  margin: 0;
   padding: 9px 6px;
 }
 

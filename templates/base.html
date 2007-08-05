@@ -35,16 +35,18 @@
      <li>- <a href="http://code.google.com/p/reviewboard/issues/entry" target="_blank">Report bug</a></li>
     </ul>
    </div>
-   <ul id="navbar">
+   <div id="navbar-outer">
+    <ul id="navbar">
 {% if user.is_authenticated %}
-    <li><a href="/dashboard/">My Dashboard</a></li>
-    <li><a href="/r/new/">New Review Request</a></li>
-    <li>-</li>
+     <li><a href="/dashboard/">My Dashboard</a></li>
+     <li><a href="/r/new/">New Review Request</a></li>
+     <li>-</li>
 {% endif %}
-    <li><a href="/r/">All review requests</a></li>
-    <li><a href="/groups/">Groups</a></li>
-    <li><a href="/users/">Submitters</a></li>
-   </ul>
+     <li><a href="/r/">All review requests</a></li>
+     <li><a href="/groups/">Groups</a></li>
+     <li><a href="/users/">Submitters</a></li>
+    </ul>
+   </div>
    <div id="content">
 {% block content %}{% endblock %}
    </div>
