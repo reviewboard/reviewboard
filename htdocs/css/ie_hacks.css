@@ -4,7 +4,8 @@ body {
 img,
 .box,
 .box-inner,
-.box h1.title {
+.box h1.title,
+table.sidebyside .commentflag {
   behavior: url("/scripts/pngfix.htc");
 }
 
