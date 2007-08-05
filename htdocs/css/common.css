@@ -224,7 +224,9 @@ ul.errorlist li {
  * Box classes
  ****************************************************************************/
 .box {
-  background: url('/images/box_top_bg.png') repeat-x top left;
+  background-image: url('/images/box_top_bg.png');
+  background-position: top left;
+  background-repeat: repeat-x;
   border: 1px #888A85 solid;
 }
 
@@ -262,7 +264,7 @@ ul.errorlist li {
 }
 
 .box h1.title {
-  background: #a2bedc url('/images/box_top_bg.png') repeat-x top left;
+  background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   font-size: 120%;
   margin: 0;
@@ -280,7 +282,10 @@ ul.errorlist li {
 }
 
 .box-inner {
-  background: url('/images/box_bottom_bg.png') repeat-x bottom left;
+  background-image: url('/images/box_bottom_bg.png');
+  background-position: bottom left;
+  background-repeat: repeat-x;
+  padding-bottom: 1px; /* IE wants this and it does no harm. */
 }
 
 .box-inner form {
@@ -292,9 +297,9 @@ ul.errorlist li {
  * Inline editor forms
  ****************************************************************************/
 .editicon {
+  cursor: pointer;
   margin-left: 4px;
   vertical-align: bottom;
-  cursor: pointer;
 }
 
 .inline-editor-form {

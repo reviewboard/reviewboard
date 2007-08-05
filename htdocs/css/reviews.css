@@ -25,6 +25,7 @@
 
 .review-request {
   background-color: #fefadf;
+  background-image: url('/images/review_request_box_top_bg.png');
 }
 
 .review-request label {
@@ -39,6 +40,10 @@
 
 .review-request textarea {
   border: 1px #b8b5a0 solid;
+}
+
+.review-request .box-inner {
+  background-image: url('/images/review_request_box_bottom_bg.png');
 }
 
 .review-request .content {
@@ -192,6 +197,7 @@
  ****************************************************************************/
 .review {
   background-color: #e9edf5;
+  background-image: url('/images/review_box_top_bg.png');
 }
 
 .review .body {
@@ -213,6 +219,10 @@
 .review .body .body_top,
 .review .body .body_bottom {
   margin: 0px;
+}
+
+.review .box-inner {
+  background-image: url('/images/review_box_bottom_bg.png') !important;
 }
 
 .review .controls {

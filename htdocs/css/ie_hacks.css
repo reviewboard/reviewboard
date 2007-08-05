@@ -2,9 +2,6 @@ body {
 }
 
 img,
-.box,
-.box-inner,
-.box h1.title,
 table.sidebyside .commentflag {
   behavior: url("/scripts/pngfix.htc");
 }
@@ -45,12 +42,6 @@ table.sidebyside th.controls {
 
 .box.important .box-inner {
   width: 90%;
-}
-
-.review-request .controls {
-  border-top: 1px #999999 solid;
-  padding-top: 3px;
-  background-color: #e8e5cd;
 }
 
 .review-request #details td {
