@@ -1,11 +1,26 @@
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import url
+from django.views.decorators.cache import never_cache
 
 from reviewboard.reviews.db import get_all_review_requests, \
                                    get_review_requests_to_group, \
                                    get_review_requests_to_user, \
                                    get_review_requests_from_user
 
-urlpatterns = patterns('reviewboard.reviews.json',
+def never_cache_patterns(prefix, *args):
+    pattern_list = []
+    for t in args:
+        if isinstance(t, (list, tuple)):
+            t = url(prefix=prefix, *t)
+        elif isinstance(t, RegexURLPattern):
+            t.add_prefix(prefix)
+
+        t._callback = never_cache(t.callback)
+        pattern_list.append(t)
+
+    return pattern_list
+
+
+urlpatterns = never_cache_patterns('reviewboard.reviews.json',
     # Accounts
     (r'^accounts/login/$', 'account_login'),
 
