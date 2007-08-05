@@ -36,6 +36,7 @@ span.draftlabel {
 }
 
 table.list {
+  border: 1px #B3C7BF solid;
   border-collapse: collapse;
   width: 100%;
 }
@@ -47,6 +48,10 @@ table.list td {
 
 table td.label {
   text-align: right;
+}
+
+table.list td {
+  border-bottom: 1px #B3C7BF solid;
 }
 
 table.list td.summary {
@@ -71,7 +76,6 @@ table.list th.day {
 
 table.list tr {
   background-color: #F8F8F8;
-  border: 1px #B3C7BF solid;
 }
 
 table.list tr:hover {
@@ -81,9 +85,6 @@ table.list tr:hover {
 table.list tr.month {
   background: #E9E9E9;
   border-bottom: 1px #999999 solid;
-}
-
-table.list tr.headers {
 }
 
 table.list tr.headers th {
