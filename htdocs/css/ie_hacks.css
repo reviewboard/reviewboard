@@ -24,6 +24,12 @@ table.sidebyside tbody.insert td:first-child {
   border-top: 1px #303030 solid;
 }
 
+/* The padding around the selector arrow causes rows to grow on IE. */
+table.sidebyside thead th.controls,
+table.sidebyside th.controls {
+  padding: 0;
+}
+
 .banner input {
   vertical-align: middle;
 }

@@ -74,6 +74,7 @@ var gActions = [
 var gSelectedAnchor = INVALID;
 var gCurrentAnchor = 0;
 var gFileAnchorToId = {};
+var gAnchors = [];
 var gCommentDlg = null;
 var gCommentBlocks = {};
 var gHiddenComments = {};
@@ -231,7 +232,7 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
 
     closeDlg: function() {
         this.hide(this.checkEmptyCommentBlock.createDelegate(this));
-		this.el.blur();
+        this.el.blur();
     }
 });
 
@@ -334,8 +335,8 @@ function gotoAnchor(name, scroll) {
 }
 
 function GetAnchorByName(name) {
-    for (var anchor = 0; anchor < document.anchors.length; anchor++) {
-        if (document.anchors[anchor].name == name) {
+    for (var anchor = 0; anchor < gAnchors.length; anchor++) {
+        if (gAnchors[anchor].name == name) {
             return anchor;
         }
     }
@@ -344,11 +345,21 @@ function GetAnchorByName(name) {
 }
 
 function onPageLoaded(evt) {
+    /*
+     * IE includes <a href=".."> tags in document.anchors, so we must pull
+     * them out.
+     */
+    for (var anchor = 0; anchor < document.anchors.length; anchor++) {
+        if (document.anchors[anchor].name) {
+            gAnchors.push(document.anchors[anchor]);
+        }
+    }
+
     /* Skip over the change index to the first item */
     gSelectedAnchor = 1;
     SetHighlighted(gSelectedAnchor, true)
 
-    YAHOO.util.Event.on(window, "keypress", onKeyPress);
+    YAHOO.util.Event.on(document, "keypress", onKeyPress);
     YAHOO.util.Event.on(window, "resize", onPageResize);
 }
 
@@ -452,8 +463,8 @@ function onLineMouseDown(e, unused, table) {
         gSelection.lastSeenIndex = row.rowIndex;
         getEl(row).addClass("selected");
 
-		/* Disable text selection on IE */
-		table.dom.onselectstart = function() { return false; }
+        /* Disable text selection on IE */
+        table.dom.onselectstart = function() { return false; }
     }
 }
 
@@ -488,7 +499,7 @@ function onLineMouseUp(e, unused, table, fileid) {
         }
     }
 
-	if (gSelection.begin != null) {
+    if (gSelection.begin != null) {
         var rows = gSelection.table.dom.rows;
 
         for (var i = gSelection.begin.parentNode.rowIndex;
@@ -502,12 +513,12 @@ function onLineMouseUp(e, unused, table, fileid) {
         gSelection.beginNum = gSelection.endNum = 0;
         gSelection.rows = [];
         gSelection.table = null;
-	}
+    }
 
     gGhostCommentFlagRow = null;
 
-	/* Re-enable text selection on IE */
-	table.dom.onselectstart = null;
+    /* Re-enable text selection on IE */
+    table.dom.onselectstart = null;
 }
 
 function onLineMouseOver(e, unused, table, fileid) {
@@ -656,7 +667,7 @@ function scrollToAnchor(anchor, noscroll) {
     }
 
     if (!noscroll) {
-        window.scrollTo(0, getEl(document.anchors[anchor]).getY() -
+        window.scrollTo(0, getEl(gAnchors[anchor]).getY() -
                            DIFF_SCROLLDOWN_AMOUNT);
     }
 
@@ -669,11 +680,11 @@ function scrollToAnchor(anchor, noscroll) {
 
 function GetNextAnchor(dir) {
     for (var anchor = gSelectedAnchor + dir; ; anchor = anchor + dir) {
-        if (anchor < 0 || anchor >= document.anchors.length) {
+        if (anchor < 0 || anchor >= gAnchors.length) {
             return INVALID;
         }
 
-        var name = document.anchors[anchor].name;
+        var name = gAnchors[anchor].name;
 
         if (name == "index_header" || name == "index_footer") {
             return INVALID;
@@ -684,14 +695,14 @@ function GetNextAnchor(dir) {
 }
 
 function GetNextFileAnchor(dir) {
-    var fileId = document.anchors[gSelectedAnchor].name.split(".")[0];
+    var fileId = gAnchors[gSelectedAnchor].name.split(".")[0];
     var newAnchor = parseInt(fileId) + dir;
     return GetAnchorByName(newAnchor);
 }
 
 function SetHighlighted(anchor, highlighted) {
-    var anchorNode = document.anchors[anchor];
-    var nextNode = anchorNode.nextSibling.nextSibling;
+    var anchorNode = gAnchors[anchor];
+    var nextNode = getEl(gAnchors[anchor]).getNextSibling();
     var controlsNode;
 
     if (anchorNode.parentNode.tagName == "TH") {
@@ -702,11 +713,7 @@ function SetHighlighted(anchor, highlighted) {
         return;
     }
 
-    controlsNode.textContent = (highlighted ? "▶" : "");
-}
-
-function addAnchorMapping(name, id) {
-    gFileAnchorToId[name] = id;
+    controlsNode.innerHTML = (highlighted ? "▶" : "");
 }
 
 YAHOO.util.Event.on(window, "load", onPageLoaded);
