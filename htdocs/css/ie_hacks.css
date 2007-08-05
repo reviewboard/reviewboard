@@ -26,6 +26,10 @@ table.sidebyside th.controls {
   vertical-align: middle;
 }
 
+.box-container {
+  width: 99.5%;
+}
+
 .box.important {
   padding: 10px;
 }
