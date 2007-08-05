@@ -3,6 +3,7 @@
  ****************************************************************************/
 .new-review-request {
   background-color: #fefadf;
+  background-image: url('/images/review_request_box_top_bg.png');
 }
 
 .new-review-request label {
@@ -12,6 +13,10 @@
 
 .new-review-request table td {
   padding: 5px;
+}
+
+.new-review-request .box-inner {
+  background-image: url('/images/review_request_box_bottom_bg.png');
 }
 
 
