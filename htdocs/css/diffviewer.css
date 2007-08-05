@@ -35,14 +35,19 @@ table.sidebyside pre {
   word-wrap: break-word;      /* IE 5.5+ */
 }
 
+table.sidebyside tr.first td,
+table.sidebyside tr.first th {
+  border-top: 1px #D0D0D0 solid;
+}
+
+table.sidebyside tr.last td,
+table.sidebyside tr.last th {
+  border-bottom: 1px #D0D0D0 solid;
+}
+
 table.sidebyside tbody.binary td {
   background: #dbebff;
   padding: 4px;
-}
-
-table.sidebyside tbody.collapsed {
-  border-bottom: 1px #303030 solid;
-  border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.collapsed a {
@@ -62,8 +67,6 @@ table.sidebyside tbody.collapsed th {
 
 table.sidebyside tbody.delete {
   background: #ffc5ce;
-  border-bottom: 1px #303030 solid;
-  border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.delete th {
@@ -76,8 +79,6 @@ table.sidebyside tbody.delete tr.selected * {
 
 table.sidebyside tbody.insert {
   background: #c5ffc4;
-  border-bottom: 1px #303030 solid;
-  border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.insert th {
@@ -90,8 +91,6 @@ table.sidebyside tbody.insert tr.selected * {
 
 table.sidebyside tbody.replace {
   background: #fdfebc;
-  border-bottom: 1px #303030 solid;
-  border-top: 1px #303030 solid;
 }
 
 table.sidebyside tbody.replace th {

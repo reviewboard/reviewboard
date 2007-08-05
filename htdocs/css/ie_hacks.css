@@ -7,20 +7,13 @@ table.sidebyside .commentflag {
   behavior: url("/scripts/pngfix.htc");
 }
 
-/* IE doesn't support borders on tbodys or cols */
-table.sidebyside tbody.collapsed td,
-table.sidebyside tbody.collapsed th {
-  border-bottom: 1px #303030 solid;
-  border-top: 1px #303030 solid;
-}
-
 /* Line number column and side-by-side divider borders. */
 table.sidebyside tr td {
   border-left: 1px #C0C0C0 solid;
 }
 
 table.sidebyside tbody.insert td:first-child {
-  border-top: 1px #303030 solid;
+  border-top: 1px #AAAAAA solid;
 }
 
 /* The padding around the selector arrow causes rows to grow on IE. */
