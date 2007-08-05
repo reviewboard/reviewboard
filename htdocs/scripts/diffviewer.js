@@ -652,7 +652,20 @@ function expandChunk(fileid, filediff_id, chunk_index, tbody_id) {
         success: function(res) {
             var tbody = getEl(tbody_id);
             var table = getEl(tbody.dom.parentNode);
-            var el = dh.insertHtml("afterEnd", tbody.dom, res.responseText);
+
+            /*
+             * We do this by hand instead of using DomHelper because the
+             * HTML we get starts with <tbody>, which DomHelper will try
+             * temporarily putting in a <tbody>. IE doesn't like this. It
+             * also doesn't allow setting the innerHTML of anything
+             * table-related, so we put this in a <div> and wrap a <table>.
+             */
+            var tempTable = document.createElement('div');
+            tempTable.innerHTML = "<table>" + res.responseText.strip() +
+                                  "</table>";
+            table.dom.insertBefore(tempTable.firstChild.firstChild,
+                                   tbody.dom.nextSibling);
+
             tbody.remove();
 
             addCommentFlags(fileid, table, gHiddenComments);
