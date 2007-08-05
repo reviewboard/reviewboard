@@ -28,7 +28,8 @@ class ColumnHeader(template.Node):
         except VariableDoesNotExist:
             sort_list = None
 
-        sort_indicator = ""
+        sort_text = ""
+        sort_img = ""
 
         if sort_list:
             rev_field_name = "-%s" % self.field_name
@@ -36,22 +37,24 @@ class ColumnHeader(template.Node):
 
             try:
                 i = sort_list.index(self.field_name)
+                sort_text = "(Ascending)"
 
                 if i == 0:
-                    sort_indicator = "&#x25bc;"
+                    sort_img = "sort_asc_primary.png"
                     new_field_name = rev_field_name
                 else:
-                    sort_indicator = "&#x25be;"
+                    sort_img = "sort_asc_secondary.png"
                     new_field_name = self.field_name
             except ValueError:
                 try:
                     i = sort_list.index(rev_field_name)
+                    sort_text = "(Descending)"
 
                     if i == 0:
-                        sort_indicator = "&#x25b2;"
+                        sort_img = "sort_desc_primary.png"
                         new_field_name = self.field_name
                     else:
-                        sort_indicator = "&#x25b4;"
+                        sort_img = "sort_desc_secondary.png"
                         new_field_name = rev_field_name
                 except ValueError:
                     i = -1
@@ -73,10 +76,13 @@ class ColumnHeader(template.Node):
 
         url = "%ssort=%s" % (url_prefix, ','.join(sort_list))
         s  = '<th onclick="javascript:window.location = \'%s\'">' % url
-        s += '<a href="%s">%s</a> %s' % (url, self.text, sort_indicator)
+        s += '<a href="%s">%s <img src="/images/%s" alt="%s" width="9" height="5" border="0" /></a>' % \
+             (url, self.text, sort_img, sort_text)
 
-        if sort_indicator:
-            s += ' <a class="unsort" href="%ssort=%s">x</a>' % \
+        if sort_text:
+            s += (' <a class="unsort" href="%ssort=%s">' +
+                  '<img src="/images/unsort.png" width="7" height="7" ' +
+                  'border="0" alt="Unsort" /></a>') % \
                  (url_prefix, ','.join(sort_list[1:]))
 
         s += "</th>"
