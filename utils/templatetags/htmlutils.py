@@ -165,6 +165,17 @@ def ifuserorperm(context, nodelist, user, perm):
     return ''
 
 
+@register.tag
+@blocktag
+def attr(context, nodelist, attrname):
+    content = nodelist.render(context)
+
+    if content.strip() == "":
+        return ""
+
+    return ' %s="%s"' % (attrname, content)
+
+
 # Heavily based on paginator by insin
 # http://www.djangosnippets.org/snippets/73/
 @register.inclusion_tag('paginator.html', takes_context=True)
