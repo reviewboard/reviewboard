@@ -311,12 +311,12 @@
 .review .shipit {
   background: #aeff60;
   border: 1px #888888 solid;
-  float: left;
   font-weight: bold;
   left: -10px;
-  margin-right: 5px;
+  margin-bottom: 8px;
   padding: 4px 8px;
   position: relative;
+  width: 4.5em;
   top: -8px;
 }
 
