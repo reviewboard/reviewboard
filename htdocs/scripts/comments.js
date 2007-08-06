@@ -25,7 +25,8 @@ CommentDialog = function(el) {
         autoTabs: true,
         proxyDrag: true,
         constraintoviewport: false,
-        fixedcenter: false
+        fixedcenter: false,
+		closable: false
     });
 
     var tabs = this.getTabs();
