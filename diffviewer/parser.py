@@ -13,123 +13,123 @@ class File:
 
 
 class DiffParserError(Exception):
-    pass
+    def __init__(self, msg, linenum):
+        Exception.__init__(self, msg)
+        self.linenum = linenum
 
 
-class DiffParser:
-    binregexp = re.compile("^==== ([^#]+)#(\d+) ==([AMD])== (.*) ====$")
-
+class DiffParser(object):
+    """
+    Parses diff files into fragments, taking into account special fields
+    present in certain types of diffs.
+    """
     def __init__(self, data):
         self.data = data
         self.lines = data.splitlines()
 
     def parse(self):
+        """
+        Parses the diff, returning a list of File objects representing each
+        file in the diff.
+        """
         self.files = []
-        p = subprocess.Popen(['lsdiff', '-n'], stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE)
-        p.stdin.write(self.data)
-        p.stdin.close()
-        r = p.stdout.read().strip()
-        failure = p.wait()
-        if failure:
-            raise DiffParserError('Error running lsdiff')
-        current_slice = r.splitlines()
-        next_slice = current_slice[1:] + ['%d' % len(self.lines)]
-        for current, next in zip(current_slice, next_slice):
-            # Get the part lsdiff reported
-            begin, file = current.split()[:2]
-            end = next.split()[0]
+        file = None
+        i = 0
 
-            # lsdiff's line numbers are 1-based. We want 0-based.
-            begin = int(begin) - 1
-            end = int(end) - 1
+        # Go through each line in the diff, looking for diff headers.
+        while i < len(self.lines):
+            next_linenum, new_file = self.parse_change_header(i)
 
-            fileinfo = self._parseFile(begin, end, file)
-            self._checkSpecialHeaders(begin, fileinfo)
-            self.files.append(fileinfo)
+            if new_file:
+                # This line is the start of a new file diff.
+                file = new_file
+                self.files.append(file)
+                i = next_linenum
+            else:
+                if file:
+                    file.data += self.lines[i] + "\n"
 
-        self._checkSpecialHeaders(len(self.lines))
+                i += 1
 
         return self.files
 
-    def _parseFile(self, linenum, lastline, filename):
-        # this usually scm/diff type specific
-        file = self._extractRevisionInfo(linenum)
-
-        file.data = ""
-
-        for i in range(linenum, lastline + 1):
-            line = self.lines[i]
-            if line.startswith("diff ") or \
-               (line.startswith("Index: ") and \
-                self.lines[i + 1].startswith("====================")) or \
-               (line.startswith("Property changes on: ") and \
-                self.lines[i + 1].startswith("____________________")):
-                break
-            else:
-                file.data += line + "\n"
-
-        return file
-
-    def _extractRevisionInfo(self, linenum):
-        file = File()
-        # check if we find a change
-        if self._isChange(linenum):
-            # Unified or Context diff
-            self._parseRevisionInfo(linenum, file)
-        else:
-            raise DiffParserError('Unable to recognize diff format')
-        return file
-
-    def _isChange(self, linenum):
-        return (self.lines[linenum].startswith('--- ') and \
-                self.lines[linenum + 1].startswith('+++ ')) or \
-               (self.lines[linenum].startswith('*** ') and \
-                self.lines[linenum + 1].startswith('--- '))
-
-    def _parseRevisionInfo(self, linenum, file):
-        try:
-            file.origFile, file.origInfo = \
-                self.lines[linenum].split(None, 2)[1:]
-            file.newFile, file.newInfo = \
-                self.lines[linenum + 1].split(None, 2)[1:]
-        except ValueError:
-            raise DiffParserError("The diff file is missing revision " +
-                                  "information")
-
-    def _checkSpecialHeaders(self, begin, fileinfo=None):
-        # Try to see if we have special "====" markers before this.
-        if begin >= 2 and self.lines[begin - 2].startswith("==== ") and \
-           self.lines[begin - 1].startswith("Binary files "):
-            print "Found binary"
-            # Okay, binary files. Let's flag it.
-            # We know this isn't related to the next file lsdiff gave us,
-            # because we wouldn't get this message *and* content.
-            newfileinfo = self._parseSpecialHeader(self.lines[begin - 2])
-
-            if newfileinfo:
-                newfileinfo.binary = True
-                self.files.append(newfileinfo)
-        elif begin >= 1 and self.lines[begin - 1].startswith("==== "):
-            # Is this different than the file lsdiff reported around here?
-            newfileinfo = self._parseSpecialHeader(self.lines[begin - 1])
-
-            if newfileinfo and \
-               newfileinfo.origFile != fileinfo.origFile and \
-               newfileinfo.newFile != fileinfo.newFile:
-                # Okay, it's a new file with no content.
-                self.files.append(newfileinfo)
-
-    def _parseSpecialHeader(self, line):
+    def parse_change_header(self, linenum):
+        """
+        Parses part of the diff beginning at the specified line number, trying
+        to find a diff header.
+        """
+        info = {}
         file = None
+        start = linenum
+        linenum = self.parse_special_header(linenum, info)
+        linenum = self.parse_diff_header(linenum, info)
 
-        m = self.__class__.binregexp.match(line)
-        if m:
+        # If we have enough information to represent a header, build the
+        # file to return.
+        if 'origFile' in info and 'newFile' in info and \
+           'origInfo' in info and 'newInfo' in info:
             file = File()
-            file.origFile = m.group(4)
-            file.origInfo = "%s#%s" % (m.group(1), m.group(2))
-            file.newFile = m.group(4)
-            file.newInfo = ""
+            file.binary   = info.get('binary', False)
+            file.origFile = info.get('origFile')
+            file.newFile  = info.get('newFile')
+            file.origInfo = info.get('origInfo')
+            file.newInfo  = info.get('newInfo')
             file.data = ""
 
-        return file
+            # The header is part of the diff, so make sure it gets in the
+            # diff content.
+            for i in range(start, linenum):
+                file.data += self.lines[i] + "\n"
+
+        return linenum, file
+
+    def parse_special_header(self, linenum, info):
+        """
+        Parses part of a diff beginning at the specified line number, trying
+        to find a special diff header. This usually occurs before the standard
+        diff header.
+
+        The line number returned is the line after the special header,
+        which can be multiple lines long.
+        """
+        if linenum + 1 < len(self.lines) and \
+           self.lines[linenum].startswith("Index: ") and \
+           self.lines[linenum + 1].startswith("===================="):
+            # This is an Index: header, which is common in CVS and Subversion,
+            # amongst other systems.
+            try:
+                info['index'] = self.lines[linenum].split(None, 2)[1]
+            except ValueError:
+                raise DiffParserError("Malformed Index line", linenum)
+            linenum += 2
+
+        return linenum
+
+    def parse_diff_header(self, linenum, info):
+        """
+        Parses part of a diff beginning at the specified line number, trying
+        to find a standard diff header.
+
+        The line number returned is the line after the special header,
+        which can be multiple lines long.
+        """
+        if linenum + 1 < len(self.lines) and \
+           ((self.lines[linenum].startswith('--- ') and \
+             self.lines[linenum + 1].startswith('+++ ')) or \
+            (self.lines[linenum].startswith('*** ') and \
+             self.lines[linenum + 1].startswith('--- '))):
+            # This is a unified or context diff header. Parse the
+            # file and extra info.
+            try:
+                info['origFile'], info['origInfo'] = \
+                    self.lines[linenum].split(None, 2)[1:]
+                linenum += 1
+
+                info['newFile'], info['newInfo'] = \
+                    self.lines[linenum].split(None, 2)[1:]
+                linenum += 1
+            except ValueError:
+                raise DiffParserError("The diff file is missing revision " +
+                                      "information", linenum)
+
+        return linenum

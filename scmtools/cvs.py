@@ -40,8 +40,9 @@ class CVSTool(SCMTool):
     def get_fields(self):
         return ['diff_path']
 
-    def getParser(self, data):
+    def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)
+
 
 class CVSDiffParser(DiffParser):
     """
@@ -54,25 +55,41 @@ class CVSDiffParser(DiffParser):
         DiffParser.__init__(self, data)
         self.regex_full = re.compile('^RCS file: %s/(.*),v$' % re.escape(repo))
 
-    def _parseRevisionInfo(self, linenum, file):
-        m = self.regex_full.match(self.lines[linenum-3])
+    def parse_special_header(self, linenum, info):
+        linenum = super(CVSDiffParser, self).parse_special_header(linenum, info)
+
+        if 'index' not in info:
+            # We didn't find an index, so the rest is probably bogus too.
+            return linenum
+
+        m = self.regex_full.match(self.lines[linenum])
         if not m:
-            m = self.regex_small.match(self.lines[linenum-2])
+            m = self.regex_small.match(self.lines[linenum])
 
         if m:
-            filename = m.group(1)
+            info['filename'] = m.group(1)
+            linenum += 1
         else:
-            raise DiffParserError('Unable to find RCS line around line "%d"' % linenum)
+            raise DiffParserError('Unable to find RCS line', linenum)
 
-        try:
-            file.origFile, file.origInfo = self.lines[linenum].split(None, 2)[1:]
-            file.newFile,  file.newInfo  = self.lines[linenum + 1].split(None, 2)[1:]
-            if file.origFile == '/dev/null':
-                file.origFile, file.origInfo = (file.newFile, 'PRE-CREATION')
-            else:
-                file.origFile = filename
-        except ValueError:
-            raise DiffParserError("The diff file is missing revision information")
+        if self.lines[linenum].startswith('retrieving '):
+            linenum += 1
+
+        if self.lines[linenum].startswith('diff '):
+            linenum += 1
+
+        return linenum
+
+    def parse_diff_header(self, linenum, info):
+        linenum = super(CVSDiffParser, self).parse_diff_header(linenum, info)
+
+        if info.get('origFile') == '/dev/null':
+            info['origFile'] = info['newFile']
+            info['origInfo'] = 'PRE-CREATION'
+        elif 'filename' in info:
+            info['origFile'] = info['filename']
+
+        return linenum
 
 
 class CVSClient:

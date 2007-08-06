@@ -1,8 +1,9 @@
 import pysvn
 import re
 
+from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import \
-    SCMError, FileNotFoundError, SCMTool, HEAD, PRE_CREATION
+    SCMError, FileNotFoundError, SCMTool, HEAD, PRE_CREATION, UNKNOWN
 
 class SVNTool(SCMTool):
     def __init__(self, repository):
@@ -61,10 +62,16 @@ class SVNTool(SCMTool):
         if revision_str == "(working copy)":
             return file_str, HEAD
 
+        # Binary diffs don't provide revision information, so we set a fake
+        # "(unknown)" in the SVNDiffParser. This will never actually appear
+        # in SVN diffs.
+        if revision_str == "(unknown)":
+            return file_str, UNKNOWN
+
         m = self.revision_re.match(revision_str)
         if not m:
             raise SCMError("Unable to parse diff revision header '%s'" %
-                               revision_str)
+                           revision_str)
 
         relocated_file = m.group(2)
         revision = m.group(3)
@@ -75,7 +82,7 @@ class SVNTool(SCMTool):
         if relocated_file:
             if not relocated_file.startswith("..."):
                 raise SCMError("Unable to parse SVN relocated path '%s'" %
-                                   relocated_file)
+                               relocated_file)
 
             file_str = "%s/%s" % (relocated_file[4:], file_str)
 
@@ -113,3 +120,30 @@ class SVNTool(SCMTool):
 
     def get_fields(self):
         return ['basedir', 'diff_path']
+
+    def get_parser(self, data):
+        return SVNDiffParser(data)
+
+
+class SVNDiffParser(DiffParser):
+    BINARY_STRING = "Cannot display: file marked as a binary type."
+
+    def __init__(self, data):
+        DiffParser.__init__(self, data)
+
+    def parse_special_header(self, linenum, info):
+        linenum = super(SVNDiffParser, self).parse_special_header(linenum, info)
+
+        if 'index' in info:
+            if self.lines[linenum] == self.BINARY_STRING:
+                # Skip this and the svn:mime-type line.
+                linenum += 2
+                info['binary'] = True
+                info['origFile'] = info['index']
+                info['newFile'] = info['index']
+
+                # We can't get the revision info from this diff header.
+                info['origInfo'] = '(unknown)'
+                info['newInfo'] = '(working copy)'
+
+        return linenum

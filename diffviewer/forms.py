@@ -6,7 +6,7 @@ from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.models import Repository
 import reviewboard.scmtools as scmtools
-from scmtools import PRE_CREATION
+from scmtools import PRE_CREATION, UNKNOWN
 
 class EmptyDiffError(ValueError):
     pass
@@ -28,7 +28,7 @@ class UploadDiffForm(forms.Form):
         # Parse the diff
         repository = Repository.objects.get(pk=self.cleaned_data['repositoryid'])
         tool = repository.get_scmtool()
-        files = tool.getParser(file["content"]).parse()
+        files = tool.get_parser(file["content"]).parse()
 
         if len(files) == 0:
             raise EmptyDiffError
@@ -44,7 +44,7 @@ class UploadDiffForm(forms.Form):
             filename = os.path.join(basedir, f2)
 
             # FIXME: this would be a good place to find permissions errors
-            if revision != PRE_CREATION and \
+            if revision != PRE_CREATION and revision != UNKNOWN and \
                not tool.file_exists(filename, revision):
                 raise scmtools.FileNotFoundError(filename, revision)
 

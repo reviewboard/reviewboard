@@ -1,6 +1,8 @@
 import re
 import subprocess
 
+from reviewboard.diffviewer.parser import DiffParser
+
 try:
     from p4 import P4Error
 except ImportError:
@@ -158,3 +160,34 @@ class PerforceTool(SCMTool):
 
     def get_fields(self):
         return ['changenum', 'diff_path']
+
+    def get_parser(self, data):
+        return PerforceDiffParser(data)
+
+
+class PerforceDiffParser(DiffParser):
+    SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD])== (.*) ====$")
+
+    def __init__(self, data):
+        DiffParser.__init__(self, data)
+
+    def parse_diff_header(self, linenum, info):
+        m = self.SPECIAL_REGEX.match(self.lines[linenum])
+        if m:
+            info['origFile'] = m.group(1)
+            info['origInfo'] = "%s#%s" % (m.group(1), m.group(2))
+            info['newFile'] = m.group(4)
+            info['newInfo'] = ""
+            linenum += 1
+
+            if linenum < len(self.lines) and \
+               self.lines[linenum].startswith("Binary files "):
+                info['binary'] = True
+                linenum += 1
+
+            # In this case, this *is* our diff header. We don't want to
+            # let the next line's real diff header be a part of this one,
+            # so return early and don't invoke the next.
+            return linenum
+
+        return super(PerforceDiffParser, self).parse_diff_header(linenum, info)

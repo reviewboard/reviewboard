@@ -76,6 +76,11 @@ def new_review_request(request,
                 return HttpResponseRedirect(review_request.get_absolute_url())
             except:
                 # XXX - OwnershipError?
+                #
+                # We're preventing an exception from being thrown here so that
+                # we can display the errors that form.create() sets in
+                # a much nicer way in the template. Otherwise, the user would
+                # see a useless backtrace.
                 pass
     else:
         form = NewReviewRequestForm()

@@ -49,6 +49,7 @@ class Revision(object):
 
 
 HEAD = Revision("HEAD")
+UNKNOWN = Revision('UNKNOWN')
 PRE_CREATION = Revision("PRE-CREATION")
 
 
@@ -88,5 +89,5 @@ class SCMTool:
         # review request" page.
         raise NotImplementedError
 
-    def getParser(self, data):
+    def get_parser(self, data):
         return diffparser.DiffParser(data)

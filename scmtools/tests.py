@@ -84,14 +84,15 @@ class CVSTests(unittest.TestCase):
                "trieving revision 1.1.1.1\ndiff -u -r1.1.1.1 testfile\n--- " + \
                "testfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n+++ te" + \
                "stfile    26 Jul 2007 10:20:20 -0000\n@@ -1 +1,2 @@\n-test " + \
-               "content\n+updated test content\n+added info"
+               "content\n+updated test content\n+added info\n"
+        diff = diff % self.cvs_repo_path
 
-        file = self.tool.getParser(diff % self.cvs_repo_path).parse()[0]
+        file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'test/testfile')
         self.assertEqual(file.origInfo, '26 Jul 2007 08:50:30 -0000      1.1.1.1')
         self.assertEqual(file.newFile, 'testfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
-        self.assertEqual(len(file.data), 161)
+        self.assertEqual(file.data, diff)
 
     def testBadDiff(self):
         """Testing parsing CVS diff with bad info"""
@@ -101,7 +102,7 @@ class CVSTests(unittest.TestCase):
                "-0000\n@@ -0,0 +1 @@\n+new file content"
 
         self.assertRaises(DiffParserError,
-                          lambda: self.tool.getParser(diff).parse())
+                          lambda: self.tool.get_parser(diff).parse())
 
     def testBadDiff2(self):
         """Testing parsing CVS bad diff with new file"""
@@ -111,21 +112,21 @@ class CVSTests(unittest.TestCase):
                "6 Jul 2007 10:11:45 -0000\n@@ -0,0 +1 @@\n+new file content"
 
         self.assertRaises(DiffParserError,
-                          lambda: self.tool.getParser(diff).parse())
+                          lambda: self.tool.get_parser(diff).parse())
 
     def testNewfileDiff(self):
         """Testing parsing CVS diff with new file"""
         diff = "Index: newfile\n===========================================" + \
                "========================\nRCS file: newfile\ndiff -N newfil" + \
                "e\n--- /dev/null	1 Jan 1970 00:00:00 -0000\n+++ newfile	2" + \
-               "6 Jul 2007 10:11:45 -0000\n@@ -0,0 +1 @@\n+new file content"
+               "6 Jul 2007 10:11:45 -0000\n@@ -0,0 +1 @@\n+new file content\n"
 
-        file = self.tool.getParser(diff).parse()[0]
+        file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'newfile')
         self.assertEqual(file.origInfo, 'PRE-CREATION')
         self.assertEqual(file.newFile, 'newfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:11:45 -0000')
-        self.assertEqual(len(file.data), 111)
+        self.assertEqual(file.data, diff)
 
 
 class SubversionTests(unittest.TestCase):
@@ -201,6 +202,16 @@ class SubversionTests(unittest.TestCase):
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_pending_changesets(1))
 
+    def testBinaryDiff(self):
+        """Testing parsing SVN diff with binary file"""
+        diff = "Index: binfile\n===========================================" + \
+               "========================\nCannot display: file marked as a " + \
+               "binary type.\nsvn:mime-type = application/octet-stream\n"
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'binfile')
+        self.assertEqual(file.binary, True)
+
 
 class PerforceTests(unittest.TestCase):
     """Unit tests for perforce.
@@ -262,6 +273,54 @@ class PerforceTests(unittest.TestCase):
             else:
                 raise
         self.assertEqual(hash(file), 1392492355)
+
+    def testEmptyDiff(self):
+        """Testing Perforce empty diff parsing"""
+        diff = "==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n"
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, '//depot/foo/proj/README')
+        self.assertEqual(file.origInfo, '//depot/foo/proj/README#2')
+        self.assertEqual(file.newFile, '/src/proj/README')
+        self.assertEqual(file.newInfo, '')
+        self.assertEqual(file.binary, False)
+
+    def testBinaryDiff(self):
+        """Testing Perforce binary diff parsing"""
+        diff = "==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png " + \
+               "====\nBinary files /tmp/foo and /src/proj/test.png differ\n"
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
+        self.assertEqual(file.origInfo, '//depot/foo/proj/test.png#1')
+        self.assertEqual(file.newFile, '/src/proj/test.png')
+        self.assertEqual(file.newInfo, '')
+        self.assertEqual(file.binary, True)
+
+    def testEmptyAndNormalDiffs(self):
+        """Testing Perforce empty and normal diff parsing"""
+        diff = "==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png " + \
+               "====\n" + \
+               "--- test.c  //depot/foo/proj/test.c#2\n" + \
+               "+++ test.c  01-02-03 04:05:06\n" + \
+               "@@ -1 +1,2 @@\n" + \
+               "-test content\n" + \
+               "+updated test content\n" + \
+               "+added info\n"
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files[0].origFile, '//depot/foo/proj/test.png')
+        self.assertEqual(files[0].origInfo, '//depot/foo/proj/test.png#1')
+        self.assertEqual(files[0].newFile, '/src/proj/test.png')
+        self.assertEqual(files[0].newInfo, '')
+        self.assertEqual(files[0].binary, False)
+
+        self.assertEqual(files[1].origFile, 'test.c')
+        self.assertEqual(files[1].origInfo, '//depot/foo/proj/test.c#2')
+        self.assertEqual(files[1].newFile, 'test.c')
+        self.assertEqual(files[1].newInfo, '01-02-03 04:05:06')
+        self.assertEqual(files[1].binary, False)
 
 
 class VMWareTests(DjangoTestCase):
