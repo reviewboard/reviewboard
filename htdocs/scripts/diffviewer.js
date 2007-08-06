@@ -580,7 +580,10 @@ function onLineMouseOver(e, unused, table, fileid) {
             gGhostCommentFlagRow = node;
 
             getEl(node.dom.parentNode).addClass("selected");
-        }
+        } else if (node.dom.childNodes.length > 1 &&
+		           getEl(node.dom.childNodes[1]).hasClass("commentflag")) {
+            getEl(node.dom.parentNode).addClass("selected");
+		}
     } else if (gGhostCommentFlagRow != null && node != gGhostCommentFlagRow) {
         getEl(node.dom.parentNode).removeClass("selected");
     }
@@ -614,7 +617,13 @@ function onLineMouseOut(e, unused, table) {
                 }
             }
         }
-    }
+    } else if (gSelection.table == null) {
+        var fromNode = getEl(e.originalTarget);
+
+        if (isLineNumCell(e.originalTarget)) {
+			getEl(e.originalTarget.parentNode).removeClass("selected");
+		}
+	}
 }
 
 function addCommentFlags(fileid, table, lines) {
