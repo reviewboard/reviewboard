@@ -1,5 +1,6 @@
 import re
 import subprocess
+import os
 
 from reviewboard.diffviewer.parser import DiffParser
 
@@ -72,19 +73,19 @@ class PerforceTool(SCMTool):
 
         p = subprocess.Popen(
             ['p4', '-p', self.p4.port, '-u', self.p4.user, 'print', '-q', file],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        failure = p.wait()
+        (res, errdata) = p.communicate()
+        failure = p.poll()
 
         if failure:
+            error = errdata.splitlines()
             # The command-line output is the same as the contents of a P4Error
             # except they're prefixed with a line that says "Perforce client
             # error:", and the lines of the error are indented with tabs.
-            error = p.stderr.readlines()
             raise P4Error('\n'.join(line[1:] for line in error[1:]))
         else:
-            return p.stdout.read()
+            return res
 
     def parse_diff_revision(self, file_str, revision_str):
         # Perforce has this lovely idiosyncracy that diffs show revision #1 both
