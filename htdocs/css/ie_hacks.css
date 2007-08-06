@@ -3,8 +3,20 @@ body {
 }
 
 img,
-table.sidebyside .commentflag {
+table.sidebyside .commentflag,
+.box.important .box-inner {
   behavior: url("/scripts/pngfix.htc");
+}
+
+/*
+ * The trophy appears too high on IE and the box has padding that I can't
+ * get rid of. Just make the trophy inline.
+ */
+.box.yay img {
+  float: left;
+  left: 0;
+  top: 0;
+  margin-right: 10px;
 }
 
 /* Line number column and side-by-side divider borders. */

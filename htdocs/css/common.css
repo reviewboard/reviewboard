@@ -233,6 +233,7 @@ ul.errorlist li {
 
 .box.important {
   background-color: #fdf2a0;
+  background-image: url('/images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
 }
@@ -244,6 +245,7 @@ ul.errorlist li {
 
 .box.yay {
   background-color: #fdf2a0;
+  background-image: url('/images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
 }
@@ -259,9 +261,10 @@ ul.errorlist li {
 .box.yay img {
   float: left;
   left: -5px;
+  margin: 0;
+  padding: 0;
   position: relative;
   top: -23px;
-  padding: 0;
 }
 
 .box h1.title {
