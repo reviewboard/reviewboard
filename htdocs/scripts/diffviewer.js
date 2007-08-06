@@ -180,6 +180,8 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
                     this.commentButtons[1].disable();
                 }
 
+				this.updateCloseButton();
+
                 getEl(inlineCommentField).scrollIntoView(
                     this.commentsTab.bodyEl.dom.parentNode);
             }, this, true);
