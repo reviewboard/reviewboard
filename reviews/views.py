@@ -350,8 +350,6 @@ def raw_diff(request, review_request_id, revision=None):
 
     data = ''
     for filediff in diffset.files.all():
-        data += 'Index: %s\n' % filediff.source_file
-        data += '=' * 67 + '\n'
         data += filediff.diff
 
     resp = HttpResponse(data, mimetype='text/x-patch')
