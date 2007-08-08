@@ -36,7 +36,7 @@ class FileDiff(models.Model):
             (None, {
                 'fields': ('diffset', ('source_file', 'source_revision'),
                            ('dest_file', 'dest_detail'),
-                           'diff_base64')
+                           'binary', 'diff_base64')
             }),
         )
 
