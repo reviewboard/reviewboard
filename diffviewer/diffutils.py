@@ -34,7 +34,7 @@ def patch(diff, file, filename):
         temp = temp.replace('\r', '\n')
         return temp
 
-    if diff == "":
+    if diff.strip() == "":
         # Someone uploaded an unchanged file. Return the one we're patching.
         return file
 
