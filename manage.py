@@ -79,7 +79,8 @@ def check_dependencies():
 
 if __name__ == "__main__":
     if settings.DEBUG:
-        if sys.argv[1] == 'runserver' or sys.argv[1] == 'test':
+        if len(sys.argv) > 1 and \
+           (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
             # If DJANGO_SETTINGS_MODULE is in our environment, we're in
             # execute_manager's sub-process.  It doesn't make sense to do this
             # check twice, so just return.
