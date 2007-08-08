@@ -138,6 +138,12 @@ class DiffParserTest(unittest.TestCase):
         diff = self._get_file('diffs', 'unified', 'README.diff')
         self.assertRaises(Exception, lambda: diffutils.patch(diff, old, file))
 
+    def testEmptyPatch(self):
+        """Testing patching with an empty diff"""
+        old = 'This is a test'
+        diff = ''
+        patched = diffutils.patch(diff, old, 'test.c')
+        self.assertEqual(patched, old)
 
     def testPatchCRLFFileCRLFDiff(self):
         """Testing patching a CRLF file with a CRLF diff."""

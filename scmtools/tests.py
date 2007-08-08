@@ -284,6 +284,7 @@ class PerforceTests(unittest.TestCase):
         self.assertEqual(file.newFile, '/src/proj/README')
         self.assertEqual(file.newInfo, '')
         self.assertEqual(file.binary, False)
+        self.assertEqual(file.data, '')
 
     def testBinaryDiff(self):
         """Testing Perforce binary diff parsing"""
@@ -295,18 +296,20 @@ class PerforceTests(unittest.TestCase):
         self.assertEqual(file.origInfo, '//depot/foo/proj/test.png#1')
         self.assertEqual(file.newFile, '/src/proj/test.png')
         self.assertEqual(file.newInfo, '')
+        self.assertEqual(file.data, '')
         self.assertEqual(file.binary, True)
 
     def testEmptyAndNormalDiffs(self):
         """Testing Perforce empty and normal diff parsing"""
-        diff = "==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png " + \
-               "====\n" + \
-               "--- test.c  //depot/foo/proj/test.c#2\n" + \
-               "+++ test.c  01-02-03 04:05:06\n" + \
-               "@@ -1 +1,2 @@\n" + \
-               "-test content\n" + \
-               "+updated test content\n" + \
-               "+added info\n"
+        diff1_text = "==== //depot/foo/proj/test.png#1 ==A== " + \
+                     "/src/proj/test.png ====\n"
+        diff2_text = "--- test.c  //depot/foo/proj/test.c#2\n" + \
+                     "+++ test.c  01-02-03 04:05:06\n" + \
+                     "@@ -1 +1,2 @@\n" + \
+                     "-test content\n" + \
+                     "+updated test content\n" + \
+                     "+added info\n"
+        diff = diff1_text + diff2_text
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
@@ -315,12 +318,14 @@ class PerforceTests(unittest.TestCase):
         self.assertEqual(files[0].newFile, '/src/proj/test.png')
         self.assertEqual(files[0].newInfo, '')
         self.assertEqual(files[0].binary, False)
+        self.assertEqual(files[0].data, '')
 
         self.assertEqual(files[1].origFile, 'test.c')
         self.assertEqual(files[1].origInfo, '//depot/foo/proj/test.c#2')
         self.assertEqual(files[1].newFile, 'test.c')
         self.assertEqual(files[1].newInfo, '01-02-03 04:05:06')
         self.assertEqual(files[1].binary, False)
+        self.assertEqual(files[1].data, diff2_text)
 
 
 class VMWareTests(DjangoTestCase):

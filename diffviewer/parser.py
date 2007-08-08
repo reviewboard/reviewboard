@@ -23,6 +23,9 @@ class DiffParser(object):
     Parses diff files into fragments, taking into account special fields
     present in certain types of diffs.
     """
+
+    INDEX_SEP = "=" * 67
+
     def __init__(self, data):
         self.data = data
         self.lines = data.splitlines()
@@ -77,9 +80,21 @@ class DiffParser(object):
             file.data = ""
 
             # The header is part of the diff, so make sure it gets in the
-            # diff content.
-            for i in range(start, linenum):
-                file.data += self.lines[i] + "\n"
+            # diff content. But only the parts that patch will understand.
+            for i in xrange(start, linenum):
+                line = self.lines[i]
+
+                if line.startswith("--- ") or line.startswith("+++ ") or \
+                   line.startswith("RCS file: ") or \
+                   line.startswith("retrieving revision ") or \
+                   line.startswith("diff ") or \
+                   (i > start and line == self.INDEX_SEP and \
+                    self.lines[i - 1].startswith("Index: ")) or \
+                   (i + 1 < linenum and line.startswith("Index: ") and \
+                    self.lines[i + 1] == self.INDEX_SEP):
+
+                    # This is a valid part of a diff header. Add it.
+                    file.data += self.lines[i] + "\n"
 
         return linenum, file
 
@@ -94,7 +109,7 @@ class DiffParser(object):
         """
         if linenum + 1 < len(self.lines) and \
            self.lines[linenum].startswith("Index: ") and \
-           self.lines[linenum + 1].startswith("===================="):
+           self.lines[linenum + 1] == self.INDEX_SEP:
             # This is an Index: header, which is common in CVS and Subversion,
             # amongst other systems.
             try:
