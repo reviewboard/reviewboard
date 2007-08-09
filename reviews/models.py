@@ -325,10 +325,12 @@ class Review(models.Model):
                                              related_name="body_bottom_replies")
 
     comments = models.ManyToManyField(Comment, verbose_name="Comments",
-                                      core=False, blank=True)
-    screenshot_comments = models.ManyToManyField(ScreenshotComment,
-                                                 verbose_name="Screenshot Comments",
-                                                 core=False, blank=True)
+                                      core=False, blank=True,
+                                      filter_interface=models.VERTICAL)
+    screenshot_comments = models.ManyToManyField(
+        ScreenshotComment,
+        verbose_name="Screenshot Comments",
+        core=False, blank=True, filter_interface=models.VERTICAL)
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
                                          blank=True, null=True)
 

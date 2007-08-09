@@ -61,7 +61,7 @@ class DiffSet(models.Model):
         super(DiffSet, self).save()
 
     def __str__(self):
-        return "%s r%s" % (self.name, self.revision)
+        return "[%s] %s r%s" % (self.id, self.name, self.revision)
 
     class Admin:
         list_display = ('__str__', 'revision', 'timestamp')
