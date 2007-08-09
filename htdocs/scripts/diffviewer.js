@@ -180,7 +180,7 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
                     this.commentButtons[1].disable();
                 }
 
-				this.updateCloseButton();
+                this.updateCloseButton();
 
                 getEl(inlineCommentField).scrollIntoView(
                     this.commentsTab.bodyEl.dom.parentNode);
@@ -581,9 +581,9 @@ function onLineMouseOver(e, unused, table, fileid) {
 
             getEl(node.dom.parentNode).addClass("selected");
         } else if (node.dom.childNodes.length > 1 &&
-		           getEl(node.dom.childNodes[1]).hasClass("commentflag")) {
+                   getEl(node.dom.childNodes[1]).hasClass("commentflag")) {
             getEl(node.dom.parentNode).addClass("selected");
-		}
+        }
     } else if (gGhostCommentFlagRow != null && node != gGhostCommentFlagRow) {
         getEl(node.dom.parentNode).removeClass("selected");
     }
@@ -621,9 +621,9 @@ function onLineMouseOut(e, unused, table) {
         var fromNode = getEl(e.originalTarget);
 
         if (isLineNumCell(e.originalTarget)) {
-			getEl(e.originalTarget.parentNode).removeClass("selected");
-		}
-	}
+            getEl(e.originalTarget.parentNode).removeClass("selected");
+        }
+    }
 }
 
 function addCommentFlags(fileid, table, lines) {

@@ -26,7 +26,7 @@ CommentDialog = function(el) {
         proxyDrag: true,
         constraintoviewport: false,
         fixedcenter: false,
-		closable: false
+        closable: false
     });
 
     var tabs = this.getTabs();
@@ -35,7 +35,7 @@ CommentDialog = function(el) {
      * Global Dialog
      */
     this.addKeyListener(27, this.closeDlg, this);
-	this.closeButton = this.addButton("Close", this.closeDlg, this);
+    this.closeButton = this.addButton("Close", this.closeDlg, this);
     this.setDefaultButton(this.closeButton);
     this.messageDiv = dh.insertBefore(this.footer.dom,
         {tag: 'div', id: 'comment-status'}, true);
@@ -172,7 +172,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
             //this.bodyTop.el.focus();
         }
 
-		this.updateCloseButton();
+        this.updateCloseButton();
         this.onDlgResize();
 
         if (activeTab == this.commentsTab) {
@@ -257,17 +257,17 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
         scrollNode.scrollTop = scrollNode.scrollHeight;
     },
 
-	updateCloseButton: function() {
+    updateCloseButton: function() {
         var activeTab = this.getTabs().getActiveTab();
 
         if (activeTab == this.commentsTab &&
-		    ((this.inlineEditor && this.inlineEditor.editing) ||
-			 this.commentForm.isVisible())) {
-			this.closeButton.setText("Cancel");
-		} else {
-			this.closeButton.setText("Close");
-		}
-	},
+            ((this.inlineEditor && this.inlineEditor.editing) ||
+             this.commentForm.isVisible())) {
+            this.closeButton.setText("Cancel");
+        } else {
+            this.closeButton.setText("Close");
+        }
+    },
 
     updateCommentCount: function() {
         var count = this.existingComments.getChildrenByClassName("comment",

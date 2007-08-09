@@ -132,9 +132,13 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
     },
 
     startEdit: function() {
-        this.initialValue = this.el.dom.innerHTML;
-        this.setValue(this.normalizeText(this.initialValue.htmlDecode()));
-        //this.setValue(this.normalizeText(this.initialvalue.htmlDecode()));
+        if (this.el.dom.firstChild && this.el.dom.firstChild.tagName == "PRE") {
+            this.initialValue = this.el.dom.firstChild.innerHTML;
+        } else {
+            this.initialValue = this.el.dom.innerHTML;
+        }
+        console.debug(this.initialValue);
+        this.setValue(this.normalizeText(this.initialValue).htmlDecode());
         this.editing = true;
         this.show();
         this.fireEvent('beginedit', this);
@@ -261,6 +265,8 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
     setValue: function(value) {
         this.field.dom.value = value;
+        console.debug(value);
+        console.debug(this.field.dom.value);
     },
 
     getValue: function() {
