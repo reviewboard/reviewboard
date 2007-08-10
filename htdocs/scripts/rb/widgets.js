@@ -137,7 +137,6 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         } else {
             this.initialValue = this.el.dom.innerHTML;
         }
-        console.debug(this.initialValue);
         this.setValue(this.normalizeText(this.initialValue).htmlDecode());
         this.editing = true;
         this.show();
@@ -265,8 +264,6 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
 
     setValue: function(value) {
         this.field.dom.value = value;
-        console.debug(value);
-        console.debug(this.field.dom.value);
     },
 
     getValue: function() {
