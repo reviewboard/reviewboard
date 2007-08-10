@@ -25,8 +25,15 @@ class ForChunksWithLines(template.Node):
 
     def render(self, context):
         filediff = self.get_variable(self.filediff, context)
-        files = get_diff_files(filediff.diffset, filediff, None,
-                               get_enable_highlighting(context['user']))
+
+        key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
+
+        if key in context:
+            files = context[key]
+        else:
+            files = get_diff_files(filediff.diffset, filediff, None,
+                                   get_enable_highlighting(context['user']))
+            context[key] = files
 
         if files:
             assert len(files) == 1
