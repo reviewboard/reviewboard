@@ -18,8 +18,8 @@ class PerforceTool(SCMTool):
         import p4
         self.p4 = p4.P4()
         self.p4.port = str(repository.mirror_path or repository.path)
-        self.p4.user = repository.username
-        self.p4.password = repository.password
+        self.p4.user = str(repository.username)
+        self.p4.password = str(repository.password)
 
         # We defer actually connecting until just before we do some operation
         # that requires an active connection to the perforce depot.  This
