@@ -28,6 +28,8 @@ class Group(models.Model):
 
     class Admin:
         list_display = ('name', 'display_name', 'mailing_list')
+
+    class Meta:
         ordering = ['name']
 
 
