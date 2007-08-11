@@ -52,7 +52,7 @@
    </thead>
    <tbody>
 {% for review_request in review_request_list %}
-    <tr>
+    <tr class="{% cycle odd,even %}">
      <td class="summary" onclick="javascript:window.location='{{review_request.get_absolute_url}}'; return false;"><a href="{{review_request.get_absolute_url}}">{% reviewsummary review_request %}</a></td>
      <td><a href="{{review_request.submitter.get_absolute_url}}">{{review_request.submitter}}</a></td>
      <td class="{% ageid review_request.time_added %}">{{review_request.time_added|date:"F jS, Y, P"}}</td>

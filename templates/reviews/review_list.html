@@ -29,7 +29,7 @@
  </thead>
  <tbody>
 {%  for review in object_list %}
-  <tr>
+  <tr class="{% cycle odd,even %}">
    <td class="summary" onclick="javascript:window.location='{{review.get_absolute_url}}';"><a href="{{review.get_absolute_url}}">{% reviewsummary review %}</a></td>
    <td><a href="{{review.submitter.get_absolute_url}}">{{review.submitter}}</a></td>
    <td class="{% ageid review.time_added %}">{{review.time_added|date:"F jS, Y, P"}}</td>
