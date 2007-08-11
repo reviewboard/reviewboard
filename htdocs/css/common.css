@@ -50,10 +50,6 @@ table td.label {
   text-align: right;
 }
 
-table.list td {
-  border-bottom: 1px #B3C7BF solid;
-}
-
 table.list td.summary {
   cursor: pointer;
 }
@@ -75,16 +71,19 @@ table.list th.day {
 }
 
 table.list tr {
-  background-color: #F8F8F8;
+  background-color: white;
+}
+
+table.list tr.even {
+  background: #F2F2F2;
 }
 
 table.list tr:hover {
-  background-color: #E8E8E8;
+  background-color: #d4e0f3;
 }
 
 table.list tr.month {
   background: #E9E9E9;
-  border-bottom: 1px #999999 solid;
 }
 
 table.list tr.headers th {
@@ -122,69 +121,79 @@ table.list tr.headers th:hover a {
   text-decoration: underline;
 }
 
-table.list tr:hover .age1 {
-  background: #abd5a9;
-}
-
-table.list tr:hover .age2 {
-  background: #c6e07f;
-}
-
-table.list tr:hover .age3 {
-  background: #e3d87e;
-}
-
-table.list tr:hover .age4 {
-  background: #e4bd98;
-}
-
-table.list tr:hover .age5 {
-  background: #e0a3a3;
-}
-
 table.list .age1 {
   background: #beedbc;
   border-left: 1px #8bbd5c solid;
   border-right: 1px #8bbd5c solid;
-  border-top: 1px #707070 solid;
-  border-bottom: 1px #707070 solid;
   white-space: nowrap;
+}
+
+table.list tr.even .age1 {
+  background: #b4e3b2;
 }
 
 table.list .age2 {
   background: #ddfa8e;
   border-left: 1px #a3e266 solid;
   border-right: 1px #a3e266 solid;
-  border-top: 1px #707070 solid;
-  border-bottom: 1px #707070 solid;
   white-space: nowrap;
+}
+
+table.list tr.even .age2 {
+  background: #d3f084;
 }
 
 table.list .age3 {
   background: #fdf18c;
   border-left: 1px #d8c158 solid;
   border-right: 1px #d8c158 solid;
-  border-top: 1px #707070 solid;
-  border-bottom: 1px #707070 solid;
   white-space: nowrap;
+}
+
+table.list tr.even .age3 {
+  background: #f3e782;
 }
 
 table.list .age4 {
   background: #fed3a9;
   border-left: 1px #d49659 solid;
   border-right: 1px #d49659 solid;
-  border-top: 1px #707070 solid;
-  border-bottom: 1px #707070 solid;
   white-space: nowrap;
+}
+
+table.list tr.even .age4 {
+  background: #f4c99f;
 }
 
 table.list .age5 {
   background: #fab6b6;
   border-left: 1px #f56363 solid;
   border-right: 1px #f56363 solid;
-  border-top: 1px #707070 solid;
-  border-bottom: 1px #707070 solid;
   white-space: nowrap;
+}
+
+table.list tr.even .age5 {
+  background: #f0acac;
+}
+
+table.list tr:hover .age1 {
+  background: #a1cb9f;
+}
+
+table.list tr:hover .age2 {
+  background: #bcd675;
+}
+
+table.list tr:hover .age3 {
+  background: #d9ce74;
+}
+
+table.list tr:hover .age4 {
+  background: #dab38e;
+}
+
+table.list tr:hover .age5 {
+  background: #d69999;
 }
 
 ul.errorlist {
@@ -423,6 +432,7 @@ ul.errorlist li {
 #navbar-outer {
   border: 1px #E0E0E0 solid;
   margin: 10px 0;
+  width: 100%;
 }
 
 #navbar {

@@ -58,3 +58,7 @@ table.sidebyside th.controls {
 .review-request #topcontrols {
   padding: 0 1px 0 0;
 }
+
+#navbar-outer {
+  width: 99.9%;
+}
