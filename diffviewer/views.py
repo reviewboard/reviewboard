@@ -378,9 +378,7 @@ def upload(request, donepath, diffset_history_id=None,
         return HttpResponse("Repository ID %s was invalid" % repository_id)
 
     if request.method == 'POST':
-        form_data = request.POST.copy()
-        form_data.update(request.FILES)
-        form = UploadDiffForm(form_data)
+        form = UploadDiffForm(request.POST, request.FILES)
 
         if form.is_valid():
             if diffset_history_id != None:

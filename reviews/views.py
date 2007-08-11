@@ -65,9 +65,7 @@ def check_login_required(view_func):
 def new_review_request(request,
                        template_name='reviews/new_review_request.html'):
     if request.method == 'POST':
-        form_data = request.POST.copy()
-        form_data.update(request.FILES)
-        form = NewReviewRequestForm(form_data)
+        form = NewReviewRequestForm(request.POST, request.FILES)
 
         if form.is_valid():
             try:
@@ -523,9 +521,7 @@ def upload_screenshot(request, review_request_id,
     error = None
 
     if request.method == 'POST':
-        form_data = request.POST.copy()
-        form_data.update(request.FILES)
-        form = UploadScreenshotForm(form_data)
+        form = UploadScreenshotForm(request.POST, request.FILES)
 
         if form.is_valid():
             r = get_object_or_404(ReviewRequest, pk=review_request_id)

@@ -65,8 +65,10 @@ class NewReviewRequestForm(forms.Form):
 
         diff_form = UploadDiffForm(data={
             'basedir': self.cleaned_data['basedir'],
-            'path': self.cleaned_data['diff_path'],
             'repositoryid': repository.id,
+        },
+        files={
+            'path': self.cleaned_data['diff_path'],
         })
         diff_form.full_clean()
 

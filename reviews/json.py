@@ -890,9 +890,8 @@ def new_diff(request, review_request_id):
         return JsonResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()
-    form_data.update(request.FILES)
     form_data.update({'repositoryid': review_request.repository.id})
-    form = UploadDiffForm(form_data)
+    form = UploadDiffForm(form_data, request.FILES)
 
     if not form.is_valid():
         return JsonResponseError(request, INVALID_ATTRIBUTE)
