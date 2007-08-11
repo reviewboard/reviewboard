@@ -321,6 +321,10 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
 
 
 function onKeyPress(evt) {
+    if (evt.shiftKey || evt.altKey || evt.ctrlKey) {
+        return;
+    }
+
     var keyChar = String.fromCharCode(YAHOO.util.Event.getCharCode(evt));
 
     for (var i = 0; i < gActions.length; i++) {
@@ -741,3 +745,5 @@ function SetHighlighted(anchor, highlighted) {
 }
 
 YAHOO.util.Event.on(window, "load", onPageLoaded);
+
+// vim: set et:
