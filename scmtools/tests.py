@@ -406,3 +406,127 @@ class VMWareTests(DjangoTestCase):
         self.assertEqual(changeset.summary, "Changes: Emma")
 
         self.assertEqual(changeset.branch, 'bfg-main')
+
+
+class MercurialTests(DjangoTestCase):
+    """Unit tests for mercurial."""
+    fixtures = ['hg.json']
+
+    def setUp(self):
+        hg_repo_path = os.path.join(os.path.dirname(__file__),
+                                    'testdata/hg_repo')
+        self.repository = Repository(name='Test HG',
+                                     path=hg_repo_path,
+                                     tool=Tool.objects.get(name='Mercurial'))
+
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest
+
+    def _firstFileInDiff(self, diff):
+        return self.tool.get_parser(diff).parse()[0]
+
+    def testPatchCreatesNewFile(self):
+        """Testing HgTool with a patch that creates a new file"""
+
+        self.assertEqual(PRE_CREATION,
+            self.tool.parse_diff_revision("/dev/null", "bf544ea505f8")[1])
+
+    def testDiffParserNewFile(self):
+        """Testing HgDiffParser with a diff that creates a new file"""
+
+        diffContents = 'diff -r bf544ea505f8 readme\n' + \
+                       '--- /dev/null\n' + \
+                       '+++ b/readme\n'
+
+        file = self._firstFileInDiff(diffContents)
+        self.assertEqual(file.origFile, "readme")
+
+    def testDiffParserUncommitted(self):
+        """Testing HgDiffParser with a diff with an uncommitted change"""
+
+        diffContents = 'diff -r bf544ea505f8 readme\n' + \
+                       '--- a/readme\n' + \
+                       '+++ b/readme\n'
+
+        file = self._firstFileInDiff(diffContents)
+        self.assertEqual(file.origInfo, "bf544ea505f8")
+        self.assertEqual(file.origFile, "readme")
+        self.assertEqual(file.newInfo, "Uncommitted")
+        self.assertEqual(file.newFile, "readme")
+
+    def testDiffParserCommitted(self):
+        """Testing HgDiffParser with a diff between committed revisions"""
+
+        diffContents = 'diff -r 356a6127ef19 -r 4960455a8e88 readme\n' + \
+                       '--- a/readme\n' + \
+                       '+++ b/readme\n'
+
+        file = self._firstFileInDiff(diffContents)
+        self.assertEqual(file.origInfo, "356a6127ef19")
+        self.assertEqual(file.origFile, "readme")
+        self.assertEqual(file.newInfo, "4960455a8e88")
+        self.assertEqual(file.newFile, "readme")
+
+    def testDiffParserWithPreambleJunk(self):
+        """Testing HgDiffParser with a diff that contains non-diff junk test as a preamble"""
+
+        diffContents = 'changeset:   60:3613c58ad1d5\n' + \
+                       'user:        Michael Rowe <mrowe@mojain.com>\n' + \
+                       'date:        Fri Jul 27 11:44:37 2007 +1000\n' + \
+                       'files:       readme\n' + \
+                       'description:\n' + \
+                       'Update the readme file\n' + \
+                       '\n' + \
+                       '\n' + \
+                       'diff -r 356a6127ef19 -r 4960455a8e88 readme\n' + \
+                       '--- a/readme\n' + \
+                       '+++ b/readme\n'
+
+        file = self._firstFileInDiff(diffContents)
+        self.assertEqual(file.origInfo, "356a6127ef19")
+        self.assertEqual(file.origFile, "readme")
+        self.assertEqual(file.newInfo, "4960455a8e88")
+        self.assertEqual(file.newFile, "readme")
+
+    def testRevisionParsing(self):
+        """Testing HgDiffParser revision number parsing"""
+
+        self.assertEqual(self.tool.parse_diff_revision('doc/readme', 'bf544ea505f8'),
+                         ('doc/readme', 'bf544ea505f8'))
+
+        self.assertEqual(self.tool.parse_diff_revision('/dev/null', 'bf544ea505f8'),
+                         ('/dev/null', PRE_CREATION))
+
+        # TODO think of a meaningful thing to test here...
+        # self.assertRaises(SCMException,
+        #                  lambda: self.tool.parse_diff_revision('', 'hello'))
+
+    def testGetFile(self):
+        """Testing HgTool.get_file"""
+
+        rev = Revision('661e5dd3c493')
+        file = 'doc/readme'
+
+        self.assertEqual(self.tool.get_file(file, rev), 'Hello\n\ngoodbye\n')
+
+        self.assert_(self.tool.file_exists('doc/readme'))
+        self.assert_(not self.tool.file_exists('doc/readme2'))
+
+        self.assertRaises(FileNotFoundError, lambda: self.tool.get_file(''))
+
+        self.assertRaises(FileNotFoundError,
+                          lambda: self.tool.get_file('hello', PRE_CREATION))
+
+    def testInterface(self):
+        """Testing basic HgTool API"""
+        self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
+
+        self.assertRaises(NotImplementedError,
+                          lambda: self.tool.get_changeset(1))
+
+        self.assertRaises(NotImplementedError,
+                          lambda: self.tool.get_pending_changesets(1))
+
+        self.assertEqual(self.tool.get_fields(), ['diff_path'])
