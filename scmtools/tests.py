@@ -530,3 +530,193 @@ class MercurialTests(DjangoTestCase):
                           lambda: self.tool.get_pending_changesets(1))
 
         self.assertEqual(self.tool.get_fields(), ['diff_path'])
+
+
+class GitTests(DjangoTestCase):
+    """
+    Unit tests for Git
+    """
+    fixtures = ['git']
+
+    def setUp(self):
+        self.repository = Repository.objects.get(name="Git test repo")
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest
+
+    def _readFixture(self, filename):
+        return open( \
+            os.path.join(os.path.dirname(__file__), 'testdata/%s' % filename), \
+            'r').read()
+
+    def _firstFileInDiff(self, diff):
+        return self.tool.get_parser(diff).parse()[0]
+
+    def testSimpleDiff(self):
+        """Testing parsing simple Git diff"""
+        diff = self._readFixture('git_simple.diff')
+        file = self._firstFileInDiff(diff)
+        self.assertEqual(file.origFile, 'cfg/testcase.ini')
+        self.assertEqual(file.newFile, 'cfg/testcase.ini')
+        self.assertEqual(file.origInfo, 'cc18ec8')
+        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertFalse(file.binary)
+        self.assertEqual(len(file.data), 219)
+        self.assertEqual(file.data.splitlines()[0],
+                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+        self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
+
+    def testNewfileDiff(self):
+        """Testing parsing Git diff with new file"""
+        diff = self._readFixture('git_newfile.diff')
+        file = self._firstFileInDiff(diff)
+        self.assertEqual(file.origFile, 'IAMNEW')
+        self.assertEqual(file.newFile, 'IAMNEW')
+        self.assertEqual(file.origInfo, PRE_CREATION)
+        self.assertEqual(file.newInfo, 'e69de29')
+        self.assertFalse(file.binary)
+        self.assertEqual(len(file.data), 80)
+        self.assertEqual(file.data.splitlines()[0],
+                         "diff --git a/IAMNEW b/IAMNEW")
+        self.assertEqual(file.data.splitlines()[-1], "+Hello")
+
+    def testDelFileDiff(self):
+        """Testing parsing Git diff with deleted file"""
+        diff = self._readFixture('git_delfile.diff')
+        file = self._firstFileInDiff(diff)
+        self.assertEqual(file.origFile, 'OLDFILE')
+        self.assertEqual(file.newFile, 'OLDFILE')
+        self.assertEqual(file.origInfo, '8ebcb01')
+        self.assertEqual(file.newInfo, '0000000')
+        self.assertFalse(file.binary)
+        self.assertEqual(len(file.data), 84)
+        self.assertEqual(file.data.splitlines()[0],
+                         "diff --git a/OLDFILE b/OLDFILE")
+        self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
+
+    def testBinaryDiff(self):
+        """Testing parsing Git diff with binary"""
+        diff = self._readFixture('git_binary.diff')
+        file = self._firstFileInDiff(diff)
+        self.assertEqual(file.origFile, 'pysvn-1.5.1.tar.gz')
+        self.assertEqual(file.newFile, 'pysvn-1.5.1.tar.gz')
+        self.assertEqual(file.origInfo, PRE_CREATION)
+        self.assertEqual(file.newInfo, '86b520c')
+        self.assertTrue(file.binary)
+        self.assertEqual(len(file.data), 53)
+        self.assertEqual(file.data.splitlines()[0],
+                         "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+
+    def testComplexDiff(self):
+        """Testing parsing Git diff with existing and new files"""
+        diff = self._readFixture('git_complex.diff')
+        files = self.tool.get_parser(diff).parse()
+
+        self.assertEqual(len(files), 6)
+
+        self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
+        self.assertEqual(files[0].newFile, 'cfg/testcase.ini')
+        self.assertEqual(files[0].origInfo, '5e35098')
+        self.assertEqual(files[0].newInfo, 'e254ef4')
+        self.assertFalse(files[0].binary)
+        self.assertEqual(len(files[0].data), 610)
+        self.assertEqual(files[0].data.splitlines()[0],
+                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+        self.assertEqual(files[0].data.splitlines()[12],
+                         "         if isinstance(value, basestring):")
+
+        self.assertEqual(files[1].origFile, 'tests/tests.py')
+        self.assertEqual(files[1].newFile, 'tests/tests.py')
+        self.assertEqual(files[1].origInfo, PRE_CREATION)
+        self.assertEqual(files[1].newInfo, 'e279a06')
+        self.assertFalse(files[1].binary)
+        self.assertEqual(len(files[1].data), 138)
+        self.assertEqual(files[1].data.splitlines()[0],
+                         "diff --git a/tests/tests.py b/tests/tests.py")
+        self.assertEqual(files[1].data.splitlines()[-1],
+                         "+This is some new content")
+
+        self.assertEqual(files[2].origFile, 'pysvn-1.5.1.tar.gz')
+        self.assertEqual(files[2].newFile, 'pysvn-1.5.1.tar.gz')
+        self.assertEqual(files[2].origInfo, PRE_CREATION)
+        self.assertEqual(files[2].newInfo, '86b520c')
+        self.assertTrue(files[2].binary)
+        self.assertEqual(len(files[2].data), 53)
+        self.assertEqual(files[2].data.splitlines()[0],
+                         "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+
+        self.assertEqual(files[3].origFile, 'readme')
+        self.assertEqual(files[3].newFile, 'readme')
+        self.assertEqual(files[3].origInfo, '5e35098')
+        self.assertEqual(files[3].newInfo, 'e254ef4')
+        self.assertFalse(files[3].binary)
+        self.assertEqual(len(files[3].data), 97)
+        self.assertEqual(files[3].data.splitlines()[0],
+                         "diff --git a/readme b/readme")
+        self.assertEqual(files[3].data.splitlines()[-1],
+                         "+Hello there")
+
+        self.assertEqual(files[4].origFile, 'OLDFILE')
+        self.assertEqual(files[4].newFile, 'OLDFILE')
+        self.assertEqual(files[4].origInfo, '8ebcb01')
+        self.assertEqual(files[4].newInfo, '0000000')
+        self.assertFalse(files[4].binary)
+        self.assertEqual(len(files[4].data), 84)
+        self.assertEqual(files[4].data.splitlines()[0],
+                         "diff --git a/OLDFILE b/OLDFILE")
+        self.assertEqual(files[4].data.splitlines()[-1],
+                         "-Goodbye")
+
+        self.assertEqual(files[5].origFile, 'readme2')
+        self.assertEqual(files[5].newFile, 'readme2')
+        self.assertEqual(files[5].origInfo, '5e43098')
+        self.assertEqual(files[5].newInfo, 'e248ef4')
+        self.assertFalse(files[5].binary)
+        self.assertEqual(len(files[5].data), 101)
+        self.assertEqual(files[5].data.splitlines()[0],
+                         "diff --git a/readme2 b/readme2")
+        self.assertEqual(files[5].data.splitlines()[-1],
+                         "+Hello there")
+
+    def testParseDiffRevision(self):
+        """Testing Git revision number parsing"""
+
+        self.assertEqual(self.tool.parse_diff_revision('doc/readme', 'bf544ea'),
+                         ('doc/readme', 'bf544ea'))
+        self.assertEqual(self.tool.parse_diff_revision('/dev/null', 'bf544ea'),
+                         ('/dev/null', PRE_CREATION))
+        self.assertEqual(self.tool.parse_diff_revision('/dev/null', '0000000'),
+                         ('/dev/null', PRE_CREATION))
+
+    def testFileExists(self):
+        """Testing GitTool.file_exists"""
+
+        self.assert_(self.tool.file_exists("readme", "e965047"))
+        self.assert_(self.tool.file_exists("readme", "d6613f5"))
+
+        self.assert_(not self.tool.file_exists("readme", PRE_CREATION))
+        self.assert_(not self.tool.file_exists("readme", "fffffff"))
+        self.assert_(not self.tool.file_exists("readme2", "fffffff"))
+
+        # these sha's are valid, but commit and tree objects, not blobs
+        self.assert_(not self.tool.file_exists("readme", "a62df6c"))
+        self.assert_(not self.tool.file_exists("readme2", "ccffbb4"))
+
+    def testGetFile(self):
+        """Testing GitTool.get_file"""
+
+        self.assertEqual(self.tool.get_file("readme", PRE_CREATION), '')
+        self.assertEqual(self.tool.get_file("readme", "e965047"), 'Hello\n')
+        self.assertEqual(self.tool.get_file("readme", "d6613f5"), 'Hello there\n')
+
+        self.assertEqual(self.tool.get_file("readme"), 'Hello there\n')
+
+        self.assertRaises(SCMError, lambda: self.tool.get_file(""))
+
+        self.assertRaises(FileNotFoundError,
+                          lambda: self.tool.get_file("", "0000000"))
+        self.assertRaises(FileNotFoundError,
+                          lambda: self.tool.get_file("hello", "0000000"))
+        self.assertRaises(FileNotFoundError,
+                          lambda: self.tool.get_file("readme", "0000000"))

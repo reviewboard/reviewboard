@@ -1,0 +1,50 @@
+diff --git a/cfg/testcase.ini b/cfg/testcase.ini
+index 5e35098..e254ef4 100644
+--- a/cfg/testcase.ini
++++ b/cfg/testcase.ini
+@@ -620,4 +620,5 @@ class DecimalField(Field):
+         try:
+             return decimal.Decimal(value)
+         except decimal.InvalidOperation:
+-            raise validators.ValidationError, ugettext("This value must be a decimal number.")
++            raise validators.ValidationError(
++                _("This value must be a decimal number."))
+
+     def _format(self, value):
+         if isinstance(value, basestring):
+diff --git a/tests/models.py b/tests/models.py
+new file mode 100644
+index 0000000..e69de29
+diff --git a/tests/tests.py b/tests/tests.py
+new file mode 100644
+index 0000000..e279a06
+--- /dev/null
++++ b/tests/tests.py
+@@ -0,0 +1,2 @@
++Blah blah blah
++This is some new content
+diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz
+new file mode 100644
+index 0000000..86b520c
+Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ
+diff --git a/readme b/readme
+index 5e35098..e254ef4 100644
+--- a/readme
++++ b/readme
+@@ -1,1 +1,1 @@ Hello
+-Hello
++Hello there
+diff --git a/OLDFILE b/OLDFILE
+deleted file mode 100644
+index 8ebcb01..0000000
+--- a/OLDFILE
++++ /dev/null
+@@ -1,1 +0,0 @@
+-Goodbye
+diff --git a/readme2 b/readme2
+index 5e43098..e248ef4 100644
+--- a/readme2
++++ b/readme2
+@@ -1,1 +1,1 @@ Hello
+-Hello
++Hello there

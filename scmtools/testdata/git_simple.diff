@@ -1,0 +1,13 @@
+diff --git a/cfg/testcase.ini b/cfg/testcase.ini
+index cc18ec8..5e70b73 100644
+--- a/cfg/testcase.ini
++++ b/cfg/testcase.ini
+@@ -1,6 +1,7 @@
++blah blah blah
+ [mysql]
+ host = localhost
+ port = 3306
+ user = user
+ pass = pass
+-db = pyunit
++db = pyunit
