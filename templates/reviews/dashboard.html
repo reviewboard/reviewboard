@@ -25,6 +25,12 @@
     <col class="count" />
    </colgroup>
    <tbody>
+{% dashboard_entry "main-item" "Outgoing Reviews" "outgoing" %}
+{% dashboard_entry "main-item" "Incoming Reviews" "incoming" %}
+{% dashboard_entry "sub-item"  "To Me"            "to-me" %}
+{% for g in user.group_set.all %}
+{%  dashboard_entry "sub-item" g.name "to-group" g %}
+{% endfor %}
    </tbody>
   </table>
  </div>
@@ -67,23 +73,4 @@
  </div>
  {% endbox %}
 </div>
-
-<script language="javascript">
-var gCurView = "{{view}}";
-var gCurGroup = "{{group}}";
-
-function onPageLoaded(evt) {
-    addNavItem("Outgoing Reviews", {% reviewrequestcount outgoing %}, 0, "from/user/{{user.username}}", "outgoing");
-    addNavItem("Incoming Reviews", {% reviewrequestcount incoming %}, 0, "to/user/{{user.username}}", "incoming");
-    addNavItem("To Me", {% reviewrequestcount incoming-directly %}, 1, "to/user/{{user.username}}", "to-me");
-{% for group in user.group_set.all %}
-    addNavItem("{{group.name}}", {% reviewrequestcount to-group group.name %}, 1,
-               "to/group/{{group.name}}",
-			   "to-group",
-			   "{{group.name}}");
-{% endfor %}
-}
-
-YAHOO.util.Event.on(window, "load", onPageLoaded);
-</script>
 {% endblock %}

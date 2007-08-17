@@ -36,11 +36,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
            passed back to the caller."""
         tool = diffset.repository.get_scmtool()
 
-        if revision == scmtools.HEAD:
-            return tool.get_file(file, revision)
-
-        return cache_memoize("%s-%s" % (file, revision),
-            lambda: tool.get_file(file, revision))
+        return tool.get_file(file, revision)
 
     def get_patched_file(buffer, filediff):
         return diffutils.patch(filediff.diff, buffer, filediff.dest_file)
@@ -185,60 +181,65 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                 chunk['nextid'] = '%d.%d' % next
 
 
-    key_prefix = "diff-sidebyside"
+    def generate_files(diffset, interdiffset):
+        files = []
+        for filediff in diffset.files.all():
+            if filediff.binary:
+                chunks = []
+            else:
+                interfilediff = None
+
+                if interdiffset:
+                    # XXX This is slow. We should optimize this.
+                    for filediff2 in interdiffset.files.all():
+                        if filediff2.source_file == filediff.source_file:
+                            interfilediff = filediff2
+                            break
+
+                chunks = get_chunks(filediff, interfilediff)
+
+            revision = filediff.source_revision
+
+            if revision == scmtools.HEAD:
+                revision = "HEAD"
+            elif revision == scmtools.PRE_CREATION:
+                revision = "Pre-creation"
+            else:
+                revision = "Revision %s" % revision
+
+            files.append({
+                'depot_filename': filediff.source_file,
+                'revision': revision,
+                'chunks': chunks,
+                'filediff': filediff,
+                'binary': filediff.binary,
+            })
+
+        add_navigation_cues(files)
+
+        return files
+
+
+    key = "diff-sidebyside-"
 
     if enable_syntax_highlighting:
-        key_prefix += "-hl"
+        key += "hl-"
 
-    files = []
+    if interdiffset:
+        key += "interdiff-%s-%s" % (diffset.id, interdiffset.id)
+    else:
+        key += str(diffset.id)
+
+    files = cache_memoize(key, lambda: generate_files(diffset, interdiffset))
 
     if filediff:
-        filediffs = [filediff]
+        for f in files:
+            if f['filediff'] == filediff:
+                return [f]
+
+        return []
     else:
-        filediffs = diffset.files.all()
-
-    for filediff in filediffs:
-        if filediff.binary:
-            chunks = []
-        else:
-            key = key_prefix
-            interfilediff = None
-
-            if interdiffset:
-                # XXX This is slow. We should optimize this.
-                for filediff2 in interdiffset.files.all():
-                    if filediff2.source_file == filediff.source_file:
-                        interfilediff = filediff2
-                        break
-
-                if interfilediff:
-                    key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
-            else:
-                key += str(filediff.id)
-
-            chunks = cache_memoize(key, lambda: get_chunks(filediff,
-                                                           interfilediff))
-
-        revision = filediff.source_revision
-
-        if revision == scmtools.HEAD:
-            revision = "HEAD"
-        elif revision == scmtools.PRE_CREATION:
-            revision = "Pre-creation"
-        else:
-            revision = "Revision %s" % revision
-
-        files.append({
-            'depot_filename': filediff.source_file,
-            'revision': revision,
-            'chunks': chunks,
-            'filediff': filediff,
-            'binary': filediff.binary,
-        })
-
-    add_navigation_cues(files)
-
-    return files
+        return files
 
 
 def get_enable_highlighting(user):

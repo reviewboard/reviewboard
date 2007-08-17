@@ -66,63 +66,6 @@ def pendingreviewcount(obj):
     return str(obj.reviewrequest_set.filter(public=True, status='P').count())
 
 
-class ReviewRequestCount(template.Node):
-    def __init__(self, listtype, param):
-        self.listtype = listtype
-        self.param = param
-
-    def render(self, context):
-        if self.param != None:
-            try:
-                param = resolve_variable(self.param, context)
-            except VariableDoesNotExist:
-                raise template.TemplateSyntaxError, \
-                    "Invalid variable %s passed to 'reviewrequestcount' tag." \
-                    % self.param
-
-        user = context.get('user', None)
-
-        if self.listtype == 'all':
-            review_requests = get_all_review_requests(user)
-        elif self.listtype == 'outgoing':
-            review_requests = get_review_requests_from_user(user.username, user)
-        elif self.listtype == 'incoming':
-            review_requests = get_review_requests_to_user(user.username, user)
-        elif self.listtype == 'incoming-directly':
-            review_requests = \
-                get_review_requests_to_user_directly(user.username, user)
-        elif self.listtype == 'to-group':
-            review_requests = get_review_requests_to_group(param, user)
-        else:
-            raise template.TemplateSyntaxError, \
-                "Invalid list type '%s' passed to 'reviewrequestcount' tag." \
-                % self.listtype
-
-        if type(review_requests) == QuerySet:
-            return str(review_requests.count())
-        else:
-            return str(len(review_requests))
-
-
-@register.tag
-def reviewrequestcount(parser, token):
-    bits = token.contents.split()
-    del(bits[0])
-
-    if len(bits) == 0 or len(bits) > 2:
-        raise TemplateSyntaxError, "incorrect number of arguments passed " + \
-                                   "'reviewrequestcount'"
-
-    listtype = bits[0]
-
-    if len(bits) == 2:
-        param = bits[1]
-    else:
-        param = None
-
-    return ReviewRequestCount(listtype, param)
-
-
 @register.tag
 @blocktag
 def forcomment(context, nodelist, filediff, review=None):
@@ -367,6 +310,42 @@ def reply_section(context, review, comment, context_type, context_id):
         'context_type': context_type,
         'context_id': context_id,
         'user': context.get('user', None)
+    }
+
+
+@register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
+def dashboard_entry(context, level, text, view, group=None):
+    user = context.get('user', None)
+
+    if view == 'all':
+        review_requests = get_all_review_requests(user)
+    elif view == 'outgoing':
+        review_requests = get_review_requests_from_user(user.username, user)
+    elif view == 'incoming':
+        review_requests = get_review_requests_to_user(user.username, user)
+    elif view == 'to-me':
+        review_requests = get_review_requests_to_user_directly(user.username,
+                                                               user)
+    elif view == 'to-group':
+        review_requests = get_review_requests_to_group(group.name, user)
+    else:
+        raise template.TemplateSyntaxError, \
+            "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
+
+    if type(review_requests) == QuerySet:
+        count = review_requests.count()
+    else:
+        count = len(review_requests)
+
+    return {
+        'level': level,
+        'text': text,
+        'view': view,
+        'group': group,
+        'count': count,
+        'user': user,
+        'selected': context.get('view', None) == view and \
+                    (not group or context.get('group', None) == group.name),
     }
 
 
