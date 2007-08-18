@@ -1,0 +1,4 @@
+    <tr onclick="javascript:window.location=&quot;/dashboard/?view={{view}}{% if group %}&amp;group={{group.name}}{% endif %}&quot;; return false;"{% if selected %} class="selected"{% endif %}>
+     <td class="summary {{level}}"><a href="/dashboard/?view={{view}}{% if group %}&amp;group={{group.name}}{% endif %}">{{text}}</a></td>
+     <td>{{count}}</td>
+    </tr>
