@@ -1,13 +1,29 @@
 import os
 import subprocess
 import tempfile
-
 from difflib import SequenceMatcher
+
+try:
+    import pygments
+    from pygments.lexers import get_lexer_for_filename
+    # from pygments.lexers import guess_lexer_for_filename
+    from pygments.formatters import HtmlFormatter
+except ImportError:
+    pass
+
+from django.conf import settings
+from djblets.util.misc import cache_memoize
+
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.smdiff import SMDiffer
+import reviewboard.scmtools as scmtools
 
 
 DEFAULT_DIFF_COMPAT_VERSION = 1
+
+
+class UserVisibleError(Exception):
+    pass
 
 
 def Differ(a, b, ignore_space=False,
@@ -116,3 +132,220 @@ def get_line_changed_regions(oldline, newline):
         back = (0, 0)
 
     return (oldchanges, newchanges)
+
+
+def get_original_file(diffset, file, revision):
+    """Get a file either from the cache or the SCM.  SCM exceptions are
+       passed back to the caller."""
+    tool = diffset.repository.get_scmtool()
+
+    return tool.get_file(file, revision)
+
+
+def get_patched_file(buffer, filediff):
+    return patch(filediff.diff, buffer, filediff.dest_file)
+
+
+def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
+    def diff_line(linenum, oldline, newline, oldmarkup, newmarkup):
+        if not oldline or not newline:
+            return [linenum, oldmarkup or '', [], newmarkup or '', []]
+
+        oldregion, newregion = get_line_changed_regions(oldline, newline)
+
+        return [linenum, oldmarkup, oldregion, newmarkup, newregion]
+
+    def new_chunk(lines, numlines, tag, collapsable=False):
+        return {
+            'lines': lines,
+            'numlines': numlines,
+            'change': tag,
+            'collapsable': collapsable,
+        }
+
+    def add_ranged_chunks(lines, start, end, collapsable=False):
+        numlines = end - start
+        chunks.append(new_chunk(lines[start:end], end - start, 'equal',
+                      collapsable))
+
+    def apply_pygments(data, filename):
+        # XXX Guessing is preferable but really slow, especially on XML
+        #     files.
+        #if filename.endswith(".xml"):
+        lexer = get_lexer_for_filename(filename, stripnl=False)
+        #else:
+        #    lexer = guess_lexer_for_filename(filename, data, stripnl=False)
+
+        try:
+            # This is only available in 0.7 and higher
+            lexer.add_filter('codetagify')
+        except AttributeError:
+            pass
+
+        return pygments.highlight(data, lexer, HtmlFormatter()).splitlines()
+
+
+    file = filediff.source_file
+    revision = filediff.source_revision
+    old = ""
+
+    try:
+        if revision != scmtools.PRE_CREATION:
+            old = get_original_file(diffset, file, revision)
+
+        new = get_patched_file(old, filediff)
+
+        if interfilediff:
+            old, new = new, get_patched_file(old, interfilediff)
+    except Exception, e:
+        raise UserVisibleError(str(e))
+
+    a = (old or '').splitlines()
+    b = (new or '').splitlines()
+    a_num_lines = len(a)
+    b_num_lines = len(b)
+
+    markup_a = markup_b = None
+
+    if enable_syntax_highlighting:
+        try:
+            # TODO: Try to figure out the right lexer for these files
+            #       once instead of twice.
+            markup_a = apply_pygments(old or '', filediff.source_file)
+            markup_b = apply_pygments(new or '', filediff.dest_file)
+        except ValueError:
+            pass
+
+    if not markup_a or not markup_b:
+        markup_a = escape(old).splitlines()
+        markup_b = escape(new).splitlines()
+
+    chunks = []
+    linenum = 1
+    differ = Differ(a, b, ignore_space=True, compat_version=diffset.diffcompat)
+
+    for tag, i1, i2, j1, j2 in differ.get_opcodes():
+        oldlines = markup_a[i1:i2]
+        newlines = markup_b[j1:j2]
+        numlines = max(len(oldlines), len(newlines))
+        lines = map(diff_line,
+                    range(linenum, linenum + numlines),
+                    a[i1:i2], b[j1:j2], oldlines, newlines)
+        linenum += numlines
+
+        if tag == 'equal' and \
+           numlines > settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
+            last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
+
+            if len(chunks) == 0:
+                add_ranged_chunks(lines, 0, last_range_start, True)
+                add_ranged_chunks(lines, last_range_start, numlines)
+            else:
+                add_ranged_chunks(lines, 0, settings.DIFF_CONTEXT_NUM_LINES)
+
+                if i2 == a_num_lines and j2 == b_num_lines:
+                    add_ranged_chunks(lines,
+                                      settings.DIFF_CONTEXT_NUM_LINES,
+                                      numlines, True)
+                else:
+                    add_ranged_chunks(lines,
+                                      settings.DIFF_CONTEXT_NUM_LINES,
+                                      last_range_start, True)
+                    add_ranged_chunks(lines, last_range_start, numlines)
+        else:
+            chunks.append(new_chunk(lines, numlines, tag))
+
+    return chunks
+
+
+def add_navigation_cues(files):
+    """Add index, nextid and previd data to a list of files/chunks"""
+    # FIXME: this modifies in-place right now, which is kind of ugly
+    interesting = []
+    indices = []
+    for i, file in enumerate(files):
+        file['index'] = i
+        k = 1
+        for j, chunk in enumerate(file['chunks']):
+            if chunk['change'] != 'equal':
+                interesting.append(chunk)
+                indices.append((i, k))
+                k += 1
+
+        file['num_changes'] = k - 1
+
+    for chunk, previous, current, next in zip(interesting,
+                                              [None] + indices[:-1],
+                                              indices,
+                                              indices[1:] + [None]):
+        chunk['index'] = current[1]
+        if previous:
+            chunk['previd'] = '%d.%d' % previous
+        if next:
+            chunk['nextid'] = '%d.%d' % next
+
+
+def generate_files(diffset, interdiffset, enable_syntax_highlighting):
+    files = []
+    for filediff in diffset.files.all():
+        if filediff.binary:
+            chunks = []
+        else:
+            interfilediff = None
+
+            if interdiffset:
+                # XXX This is slow. We should optimize this.
+                for filediff2 in interdiffset.files.all():
+                    if filediff2.source_file == filediff.source_file:
+                        interfilediff = filediff2
+                        break
+
+            chunks = get_chunks(diffset, filediff, interfilediff,
+                                enable_syntax_highlighting)
+
+        revision = filediff.source_revision
+
+        if revision == scmtools.HEAD:
+            revision = "HEAD"
+        elif revision == scmtools.PRE_CREATION:
+            revision = "Pre-creation"
+        else:
+            revision = "Revision %s" % revision
+
+        files.append({
+            'depot_filename': filediff.source_file,
+            'revision': revision,
+            'chunks': chunks,
+            'filediff': filediff,
+            'binary': filediff.binary,
+        })
+
+    add_navigation_cues(files)
+
+    return files
+
+
+def get_diff_files(diffset, filediff=None, interdiffset=None,
+                   enable_syntax_highlighting=True):
+    key = "diff-sidebyside-"
+
+    if enable_syntax_highlighting:
+        key += "hl-"
+
+    if interdiffset:
+        key += "interdiff-%s-%s" % (diffset.id, interdiffset.id)
+    else:
+        key += str(diffset.id)
+
+    files = cache_memoize(key,
+        lambda: generate_files(diffset, interdiffset,
+                               enable_syntax_highlighting))
+
+    if filediff:
+        for f in files:
+            if f['filediff'] == filediff:
+                return [f]
+
+        return []
+    else:
+        return files
