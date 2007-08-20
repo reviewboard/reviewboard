@@ -1,44 +1,56 @@
 /****************************************************************************
  * Dashboard
  ****************************************************************************/
-.dashboard .main {
-  padding: 4px;
+#dashboard-main {
+  border-left: 1px black solid;
+  vertical-align: top;
+  margin-left: 18em;
+  background-color: white;
 }
 
-#dashboard-main {
-  margin-left: 21em;
-  vertical-align: top;
+#dashboard-main table:after {
+  clear: both;
+}
+
+#dashboard-main .main {
+  padding: 0;
+}
+
+#dashboard-navbar {
+  float: left;
+  width: 18em;
+}
+
+#dashboard-navbar td {
+  padding: 5px 8px;
+}
+
+#dashboard-navbar .selected {
+  border-top: 1px #999999 solid;
+  border-bottom: 1px #999999 solid;
+}
+
+#dashboard-navbar .selected td {
+  background: #D0D0D0;
+}
+
+#dashboard-navbar .main-item {
+  font-weight: bold;
+}
+
+#dashboard-navbar .sub-item {
+  padding-left: 25px;
+}
+
+#dashboard-navbar .sub-sub-item {
+  padding-left: 45px;
+}
+
+#dashboard-navbar tr,
+#dashboard-wrapper {
+  background-color: #E9E9E9;
 }
 
 #dashboard-navbar tr.selected {
   background: #b2ceec;
-}
-
-
-/****************************************************************************
- * Sidebar
- ****************************************************************************/
-.sidebar {
-  background-color: #E9E9E9;
-}
-
-.sidebar .main {
-  padding: 4px;
-}
-
-.sidebar .main-item {
-  font-weight: bold;
-}
-
-.sidebar .sub-item {
-  padding-left: 20px;
-}
-
-.sidebar .sub-sub-item {
-  padding-left: 40px;
-}
-
-#sidebar-wrapper {
-  float: left;
-  width: 20em;
 }

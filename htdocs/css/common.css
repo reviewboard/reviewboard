@@ -28,7 +28,6 @@ span.draftlabel {
 }
 
 table.list {
-  border: 1px #B3C7BF solid;
   border-collapse: collapse;
   width: 100%;
 }
@@ -82,7 +81,6 @@ table.list tr.headers th {
   background: url("/images/ui/header_bg.png") repeat-x bottom left;
   border-top: 1px #999999 solid;
   border-bottom: 1px #999999 solid;
-  border-left: 1px #CCCCCC solid;
   border-right: 1px #CCCCCC solid;
   color: #444444;
   cursor: pointer;
@@ -389,7 +387,7 @@ ul.errorlist li {
 .reviewlist .main,
 .grouplist .main,
 .submitterlist .main {
-  padding: 4px;
+  padding: 0px;
 }
 
 .section {
@@ -519,4 +517,28 @@ ul.errorlist li {
 #title a {
   color: black;
   text-decoration: none;
+}
+
+/*
+ * clearfix hack. See http://www.webtoolkit.info/css-clearfix.html
+ */
+.clearfix:after {
+	content: ".";
+	display: block;
+	clear: both;
+	visibility: hidden;
+	line-height: 0;
+	height: 0;
+}
+
+.clearfix {
+	display: inline-block;
+}
+
+html[xmlns] .clearfix {
+	display: block;
+}
+
+* html .clearfix {
+	height: 1%;
 }
