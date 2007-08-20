@@ -12,6 +12,7 @@ except ImportError:
     pass
 
 from django.conf import settings
+from django.utils.html import escape
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.myersdiff import MyersDiffer

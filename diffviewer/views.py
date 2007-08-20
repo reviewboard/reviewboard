@@ -11,7 +11,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
-from django.utils.html import escape
 from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
