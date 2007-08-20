@@ -16,6 +16,10 @@ class Profile(models.Model):
     wordwrapped_diffs = models.BooleanField(default=True)
     syntax_highlighting = models.BooleanField(default=True)
 
+    # Indicate whether submitted review requests should appear in the
+    # review request lists (excluding the dashboard).
+    show_submitted = models.BooleanField(default=True)
+
     sort_review_request_columns = models.CharField(maxlength=128, blank=True)
     sort_submitter_columns = models.CharField(maxlength=128, blank=True)
     sort_group_columns = models.CharField(maxlength=128, blank=True)

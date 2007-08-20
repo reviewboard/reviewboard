@@ -9,14 +9,6 @@ h1 {
   font-size: 10pt;
 }
 
-/*
-input[type="submit"] {
-  border: 1px #808080 solid;
-  background: url("/images/button_bg.png");
-  padding: 2px 6px;
-}
-*/
-
 form th {
   text-align: right;
   vertical-align: top;
@@ -284,6 +276,34 @@ ul.errorlist li {
   padding: 5px 10px;
 }
 
+.box .titlebox {
+  background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
+  border-bottom: 1px #728eac solid;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.box .titlebox h1 {
+  display: inline;
+  font-size: 120%;
+  padding-right: 10px;
+}
+
+.box .titlebox ul {
+  list-style: none;
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.box .titlebox ul li {
+  display: inline;
+}
+
+.box .titlebox ul li a {
+  color: #0000AA;
+}
+
 .box .main {
   padding: 5px;
 }
@@ -368,8 +388,7 @@ ul.errorlist li {
 
 .reviewlist .main,
 .grouplist .main,
-.submitterlist .main,
-.reviewlist .main {
+.submitterlist .main {
   padding: 4px;
 }
 
@@ -492,7 +511,7 @@ ul.errorlist li {
 }
 
 #title {
-  Display: inline;
+  display: inline;
   font-size: 24pt;
   font-weight: normal;
 }

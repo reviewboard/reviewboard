@@ -124,17 +124,26 @@ def review_list(request, queryset, template_name, default_filter=True,
                 extra_context={}, **kwargs):
     profile = None
     sort_columns = "-last_updated"
+    show_submitted = True
 
     if request.user.is_authenticated():
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
         sort_columns = profile.sort_review_request_columns or sort_columns
+        show_submitted = profile.show_submitted
 
     if default_filter:
         queryset = queryset.filter(Q(status='P') |
                                    Q(status='S')).order_by('-last_updated')
 
     sort = request.GET.get('sort', sort_columns)
+    show_submitted = int(request.GET.get('show_submitted', show_submitted))
+
+    extra_context['show_submitted'] = show_submitted
+
+    if not show_submitted:
+        queryset = queryset.exclude(Q(status='S'))
+
     response = sortable_object_list(request,
         queryset=queryset,
         default_sort=sort_columns,
@@ -142,8 +151,12 @@ def review_list(request, queryset, template_name, default_filter=True,
         extra_context=extra_context,
         **kwargs)
 
-    if profile and profile.sort_review_request_columns != sort:
+    if profile and \
+       (profile.sort_review_request_columns != sort or \
+        profile.show_submitted != show_submitted):
+        # Something in the profile changed, so save the change.
         profile.sort_review_request_columns = sort
+        profile.show_submitted = show_submitted
         profile.save()
 
     return response
