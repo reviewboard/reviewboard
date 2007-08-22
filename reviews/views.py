@@ -19,6 +19,7 @@ from djblets.util.decorators import simple_decorator
 from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.models import Profile
+from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
@@ -111,17 +112,23 @@ def review_detail(request, review_request_id, template_name):
         review.ordered_comments = \
             review.comments.order_by('filediff', 'first_line')
 
+    repository = review_request.repository
+
+    upload_diff_form = UploadDiffForm(initial={'repositoryid': repository.id})
+
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
         'review_request_details': draft or review_request,
         'reviews': reviews,
         'request': request,
+        'upload_diff_form': upload_diff_form,
+        'scmtool': repository.get_scmtool(),
     }))
 
 
 def review_list(request, queryset, template_name, default_filter=True,
-                extra_context={}, **kwargs):
+                allow_hide_submitted=True, extra_context={}, **kwargs):
     profile = None
     sort_columns = "-last_updated"
     show_submitted = True
@@ -141,7 +148,7 @@ def review_list(request, queryset, template_name, default_filter=True,
 
     extra_context['show_submitted'] = show_submitted
 
-    if not show_submitted:
+    if allow_hide_submitted and not show_submitted:
         queryset = queryset.exclude(Q(status='S'))
 
     response = sortable_object_list(request,
@@ -273,6 +280,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         template_name=template_name,
         default_filter=False,
         template_object_name='review_request',
+        allow_hide_submitted=False,
         extra_context={
             'title': title,
             'view': view,
