@@ -39,7 +39,7 @@ def runner(module_list, verbosity=1, interactive=False, extra_tests=[]):
     settings.DEBUG = False
     old_name = settings.DATABASE_NAME
     create_test_db(verbosity)
-    management.syncdb(verbosity, interactive=interactive)
+    management.call_command('syncdb', verbosity=verbosity, interactive=interactive)
 
     # Nose uses all local modules, which is really silly.  These were getting
     # tested (and failing), so turn them off.
