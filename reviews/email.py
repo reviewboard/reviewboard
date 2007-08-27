@@ -15,7 +15,15 @@ def get_email_address_for_user(u):
 
 def get_email_addresses_for_group(g):
     if g.mailing_list:
-        return ['%s <%s>' % (g.display_name, g.mailing_list)]
+        if g.mailing_list.find(",") == -1:
+            # The mailing list field has only one e-mail address in it,
+            # so we can just use that and the group's display name.
+            return ['%s <%s>' % (g.display_name, g.mailing_list)]
+        else:
+            # The mailing list field has multiple e-mail addresses in it.
+            # We don't know which one should have the group's display name
+            # attached to it, so just return their custom list as-is.
+            return g.mailing_list
     else:
         return [get_email_address_for_user(u) for u in g.users.all()]
 
