@@ -23,6 +23,13 @@
 {% endblock %}
 
 {% block content %}
+{% if error %}
+{% errorbox %}
+ <p>{{ error }}</p>
+ {% if trace %}<pre>{{ trace }}</pre>{% endif %}
+{% enderrorbox %}
+{% else %}
+
 {% ifneatnumber review_request.id %}
 {%  box "yay" %}
  <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
@@ -48,10 +55,6 @@
 {% endbox %}
 
 <div id="diffs">
-{% if error %}
- {{ error }}
- {% if trace %}<pre>{{ trace }}</pre>{% endif %}
-{% else %}
 
 {% for file in files %}
 <a name="{{file.index}}"></a>
@@ -63,7 +66,6 @@
 {% endfor %}
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
-{% endif %}
 </div>
 
 <div id="comment-dlg" style="visibility:hidden;position:absolute;top:0px;">
@@ -92,4 +94,5 @@
   </form>
  </div>
 </div>
+{% endif %}
 {% endblock %}
