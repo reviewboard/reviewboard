@@ -140,7 +140,9 @@ def get_original_file(diffset, file, revision):
        passed back to the caller."""
     tool = diffset.repository.get_scmtool()
 
-    return tool.get_file(file, revision)
+    key = "%s:%s:%s" % (diffset.repository.path, file, revision)
+
+    return cache_memoize(key, lambda: tool.get_file(file, revision))
 
 
 def get_patched_file(buffer, filediff):
@@ -286,9 +288,19 @@ def add_navigation_cues(files):
             chunk['nextid'] = '%d.%d' % next
 
 
-def generate_files(diffset, interdiffset, enable_syntax_highlighting):
+def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
+    if filediff:
+        filediffs = [filediff]
+    else:
+        filediffs = diffset.files.all()
+
+    key_prefix = "diff-sidebyside-"
+
+    if enable_syntax_highlighting:
+        key_prefix += "hl-"
+
     files = []
-    for filediff in diffset.files.all():
+    for filediff in filediffs:
         if filediff.binary:
             chunks = []
         else:
@@ -301,8 +313,16 @@ def generate_files(diffset, interdiffset, enable_syntax_highlighting):
                         interfilediff = filediff2
                         break
 
-            chunks = get_chunks(diffset, filediff, interfilediff,
-                                enable_syntax_highlighting)
+            key = key_prefix
+
+            if interfilediff:
+                key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
+            else:
+                key += str(filediff.id)
+
+            chunks = cache_memoize(key,
+                lambda: get_chunks(diffset, filediff, interfilediff,
+                                   enable_syntax_highlighting))
 
         revision = filediff.source_revision
 
@@ -328,25 +348,5 @@ def generate_files(diffset, interdiffset, enable_syntax_highlighting):
 
 def get_diff_files(diffset, filediff=None, interdiffset=None,
                    enable_syntax_highlighting=True):
-    key = "diff-sidebyside-"
-
-    if enable_syntax_highlighting:
-        key += "hl-"
-
-    if interdiffset:
-        key += "interdiff-%s-%s" % (diffset.id, interdiffset.id)
-    else:
-        key += str(diffset.id)
-
-    files = cache_memoize(key,
-        lambda: generate_files(diffset, interdiffset,
-                               enable_syntax_highlighting))
-
-    if filediff:
-        for f in files:
-            if f['filediff'] == filediff:
-                return [f]
-
-        return []
-    else:
-        return files
+    return generate_files(diffset, filediff, interdiffset,
+                          enable_syntax_highlighting)
