@@ -135,9 +135,27 @@ def get_line_changed_regions(oldline, newline):
     return (oldchanges, newchanges)
 
 
+def convert_to_utf8(s):
+    """
+    Returns the passed string as a unicode string. If conversion to UTF-8
+    fails, we try to convert to iso-8859-15 and then to utf-8, which works
+    in most case (thanks to Trac for this).
+    """
+    if isinstance(s, unicode):
+        return s
+    else:
+        try:
+            u = unicode(s, 'utf-8')
+            return u
+        except UnicodeError:
+            u = unicode(s, 'iso-8859-15')
+            return u.encode('utf-8') 
+
+
 def get_original_file(diffset, file, revision):
     """Get a file either from the cache or the SCM.  SCM exceptions are
        passed back to the caller."""
+
     tool = diffset.repository.get_scmtool()
 
     key = "%s:%s:%s" % (diffset.repository.path, file, revision)
@@ -201,10 +219,13 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
         if interfilediff:
             old, new = new, get_patched_file(old, interfilediff)
     except Exception, e:
-        raise UserVisibleError(str(e))
+        raise UserVisibleError(convert_to_utf8(e))
 
-    a = (old or '').splitlines()
-    b = (new or '').splitlines()
+    old = convert_to_utf8(old)
+    new = convert_to_utf8(new)
+
+    a = (old or '').split("\n")
+    b = (new or '').split("\n")
     a_num_lines = len(a)
     b_num_lines = len(b)
 
@@ -220,8 +241,8 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
             pass
 
     if not markup_a or not markup_b:
-        markup_a = escape(old).splitlines()
-        markup_b = escape(new).splitlines()
+        markup_a = escape(old).split("\n")
+        markup_b = escape(new).split("\n")
 
     chunks = []
     linenum = 1
@@ -231,6 +252,7 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
         oldlines = markup_a[i1:i2]
         newlines = markup_b[j1:j2]
         numlines = max(len(oldlines), len(newlines))
+
         lines = map(diff_line,
                     range(linenum, linenum + numlines),
                     a[i1:i2], b[j1:j2], oldlines, newlines)
