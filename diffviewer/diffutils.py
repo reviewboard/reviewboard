@@ -143,13 +143,16 @@ def convert_to_utf8(s):
     """
     if isinstance(s, unicode):
         return s
-    else:
+    elif isinstance(s, basestring):
         try:
+            print type(s)
             u = unicode(s, 'utf-8')
             return u
         except UnicodeError:
             u = unicode(s, 'iso-8859-15')
             return u.encode('utf-8') 
+    else:
+        raise TypeError("Value to convert is unexpected type %s", type(s))
 
 
 def get_original_file(diffset, file, revision):
@@ -160,7 +163,15 @@ def get_original_file(diffset, file, revision):
 
     key = "%s:%s:%s" % (diffset.repository.path, file, revision)
 
-    return cache_memoize(key, lambda: tool.get_file(file, revision))
+    # We wrap the result of get_file in a list and then return the first
+    # element after getting the result from the cache. This prevents the
+    # cache backend from converting to unicode, since we're no longer
+    # passing in a string and the cache backend doesn't recursively look
+    # through the list in order to convert the elements inside.
+    #
+    # Basically, this fixes the massive regressions introduced by the Django
+    # unicode changes.
+    return cache_memoize(key, lambda: [tool.get_file(file, revision)])[0]
 
 
 def get_patched_file(buffer, filediff):
@@ -210,16 +221,13 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
     revision = filediff.source_revision
     old = ""
 
-    try:
-        if revision != scmtools.PRE_CREATION:
-            old = get_original_file(diffset, file, revision)
+    if revision != scmtools.PRE_CREATION:
+        old = get_original_file(diffset, file, revision)
 
-        new = get_patched_file(old, filediff)
+    new = get_patched_file(old, filediff)
 
-        if interfilediff:
-            old, new = new, get_patched_file(old, interfilediff)
-    except Exception, e:
-        raise UserVisibleError(convert_to_utf8(e))
+    if interfilediff:
+        old, new = new, get_patched_file(old, interfilediff)
 
     old = convert_to_utf8(old)
     new = convert_to_utf8(new)
