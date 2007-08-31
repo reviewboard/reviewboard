@@ -145,7 +145,6 @@ def convert_to_utf8(s):
         return s
     elif isinstance(s, basestring):
         try:
-            print type(s)
             u = unicode(s, 'utf-8')
             return u
         except UnicodeError:
