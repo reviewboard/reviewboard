@@ -124,15 +124,14 @@ def review_detail(request, review_request_id, template_name):
 
     repository = review_request.repository
 
-    upload_diff_form = UploadDiffForm(initial={'repositoryid': repository.id})
-
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
         'review_request_details': draft or review_request,
         'reviews': reviews,
         'request': request,
-        'upload_diff_form': upload_diff_form,
+        'upload_diff_form': UploadDiffForm(repository),
+        'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
     }))
 
@@ -364,11 +363,15 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None):
         review = None
 
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
+    repository = review_request.repository
 
     return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,
         'review_request': review_request,
         'review_request_details': draft or review_request,
+        'upload_diff_form': UploadDiffForm(repository),
+        'upload_screenshot_form': UploadScreenshotForm(),
+        'scmtool': repository.get_scmtool(),
     })
 
 
@@ -402,30 +405,6 @@ def diff_fragment(request, object_id, revision, filediff_id,
 
     return view_diff_fragment(request, diffset.id, filediff_id,
                               interdiffset_id, chunkindex, template_name)
-
-
-@login_required
-def upload_diff_done(request, review_request_id, diffset_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    diffset = get_object_or_404(DiffSet, pk=diffset_id)
-
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
-
-        if draft.diffset and draft.diffset != diffset:
-            draft.diffset.delete()
-
-        draft.diffset = diffset
-        draft.save()
-    except ReviewRequestDraft.DoesNotExist:
-        diffset.history = review_request.diffset_history
-        diffset.save()
-
-        # Only e-mail this if not in a draft.
-        if settings.SEND_REVIEW_MAIL:
-            mail_diff_update(request.user, review_request)
-
-    return HttpResponseRedirect(review_request.get_absolute_url())
 
 
 @login_required
@@ -544,30 +523,6 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
             'domain_method': settings.DOMAIN_METHOD,
         }),
     ), mimetype='text/plain')
-
-
-@login_required
-def upload_screenshot(request, review_request_id,
-                      template_name='reviews/upload_screenshot.html'):
-    error = None
-
-    if request.method == 'POST':
-        form = UploadScreenshotForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            r = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-            try:
-                screenshot = form.create(request.FILES['path'], r)
-                return HttpResponseRedirect(r.get_absolute_url())
-            except Exception, e:
-                form.errors['path'] = forms.util.ErrorList([e])
-    else:
-        form = UploadScreenshotForm()
-
-    return render_to_response(template_name, RequestContext(request, {
-        'form': form,
-    }))
 
 
 @login_required

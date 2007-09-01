@@ -96,10 +96,35 @@
 {%  endif %}
 {% endifuserorperm %}
 {% ifequal request.user review_request.submitter %}
- <li><a href="{{review_request.get_absolute_url}}diff/upload/?repositoryid={{review_request.repository.id}}"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
- <li><a href="{{review_request.get_absolute_url}}s/upload/"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
+ <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Diff</a></li>
+ <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Upload Screenshot</a></li>
 {% endifequal %}
 {% ifequal request.user review_request.submitter %}
  <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
 {% endifequal %}
 </ul>
+{% ifequal request.user review_request.submitter %}
+<script type="text/javascript">
+  RB.dialogs.registerFormDialog("upload-diff-link", {
+    title: "Upload Diff",
+    confirmButton: "Upload",
+    width: 400,
+    height: 250,
+    path: '/api/json/reviewrequests/{{review_request.id}}/diff/new/',
+    upload: true,
+    onSubmitted: function() { window.location.reload(); },
+    fields: {% form_dialog_fields upload_diff_form %}
+  });
+
+  RB.dialogs.registerFormDialog("upload-screenshot-link", {
+    title: "Upload Screenshot",
+    confirmButton: "Upload",
+    width: 350,
+    height: 250,
+    path: '/api/json/reviewrequests/{{review_request.id}}/screenshot/new/',
+    upload: true,
+    onSubmitted: function() { window.location.reload(); },
+    fields: {% form_dialog_fields upload_screenshot_form %}
+  });
+</script>
+{% endifequal %}

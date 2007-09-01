@@ -196,7 +196,7 @@ table.list tr:hover .age5 {
 
 ul.errorlist {
   background: #fff6a6;
-  border: 1px black solid;
+  border: 1px #9F9656 solid;
   display: inline;
   margin: 0 0 0 15px;
   padding: 4px 8px;
@@ -274,19 +274,16 @@ ul.errorlist li {
   top: -23px;
 }
 
-.box h1.title {
-  background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
-  border-bottom: 1px #728eac solid;
-  font-size: 120%;
-  margin: 0;
-  padding: 5px 10px;
-}
-
+.box h1.title,
 .box .titlebox {
   background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 5px 10px;
+}
+
+.box h1.title {
+  font-size: 120%;
 }
 
 .box .titlebox h1 {
@@ -307,7 +304,7 @@ ul.errorlist li {
 }
 
 .box .titlebox ul li a {
-  color: #0000AA;
+  color: #0000CC;
 }
 
 .box .main {
@@ -370,10 +367,43 @@ ul.errorlist li {
 
 
 /****************************************************************************
- * Log In Form
+ * Forms
  ****************************************************************************/
-.box.loginform table td {
+form table td {
   padding: 4px;
+}
+
+.formdlg .error {
+  background-color: #FFF6A6;
+  border: 1px #9F9656 solid;
+  font-weight: bold;
+  margin-bottom: 10px;
+  padding: 4px 8px;
+}
+
+.formdlg ul.errorlist {
+  display: block;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.formdlg .errorlist li {
+  display: list-item;
+  padding: 2px 4px;
+}
+
+.formdlg .spinner {
+  float: left;
+}
+
+.formdlg .spinner img {
+  vertical-align: top;
+}
+
+.formdlg .spinner h1 {
+  display: inline;
+  margin-left: 10px;
 }
 
 

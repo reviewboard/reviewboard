@@ -63,13 +63,6 @@ urlpatterns = patterns('',
 
 
     # Review request modification
-    (r'^r/[0-9]+/diff/upload/$',
-     'reviewboard.diffviewer.views.upload',
-      {'donepath': 'done/%s/'}),
-
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/upload/done/(?P<diffset_id>[0-9]+)/$',
-     'reviewboard.reviews.views.upload_diff_done'),
-
     (r'^r/(?P<review_request_id>[0-9]+)/publish/$',
      'reviewboard.reviews.views.publish'),
 
@@ -79,9 +72,6 @@ urlpatterns = patterns('',
     # Screenshots
     (r'^r/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',
      'reviewboard.reviews.views.view_screenshot'),
-
-    (r'^r/(?P<review_request_id>[0-9]+)/s/upload/$',
-     'reviewboard.reviews.views.upload_screenshot'),
 
     (r'^r/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/delete/$',
      'reviewboard.reviews.views.delete_screenshot'),

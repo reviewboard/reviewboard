@@ -262,3 +262,21 @@ def thumbnail(file, size='400x100'):
 @register.filter
 def basename(value):
     return os.path.basename(value)
+
+
+@register.simple_tag
+def form_dialog_fields(form):
+    s = ''
+
+    for field in form:
+        s += "{ name: '%s', " % field.name
+
+        if field.is_hidden:
+            s += "hidden: true, "
+        else:
+            s += "label: '%s', " % field.label_tag(field.label + ":")
+
+        s += "widget: '%s' }," % unicode(field)
+
+    # Chop off the last ','
+    return "[ %s ]" % s[:-1]

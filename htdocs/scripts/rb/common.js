@@ -85,25 +85,46 @@ var getViewportInfo = function() {
 
 
 var asyncJsonRequest = function(method, url, callbacks, postData) {
-  YAHOO.util.Connect.asyncRequest(method, url, {
-    success: function(res) {
-      rsp = YAHOO.ext.util.JSON.decode(res.responseText);
-
-      if (rsp.stat == 'fail') {
-        if (callbacks.failure) {
-          callbacks.failure(rsp.err.msg, rsp);
+    var onSuccess = function(res) {
+        /*
+         * When uploading files asynchronously, YUI performs the action in
+         * an iframe and the result is loaded like HTML. As such, it ends up
+         * with a <pre>..</pre> and entities.
+         */
+        if (res.responseText.substr(0, 5) == "<pre>") {
+            res.responseText = res.responseText.stripTags().htmlDecode();
         }
-      } else {
-        if (callbacks.success) {
-          callbacks.success(rsp);
-        }
-      }
-    }.createDelegate(this),
 
-    failure: function(res) {
-      if (callbacks.failure) {
-        callbacks.failure(res.statusText);
-      }
-    }
-  }, postData || "dummy");
+        try {
+            rsp = YAHOO.ext.util.JSON.decode(res.responseText);
+        } catch(e) {
+            if (callbacks.failure) {
+				/*
+				 * Let the user know what happened. It'd be nice to give
+				 * a link to the debug output from the request for debugging
+				 * purposes.
+				 */
+                callbacks.failure("Unable to parse the server response");
+            }
+            return;
+        }
+
+        if (rsp.stat == 'fail') {
+            if (callbacks.failure) {
+                callbacks.failure(rsp.err.msg, rsp);
+            }
+        } else if (callbacks.success) {
+            callbacks.success(rsp);
+        }
+    }.createDelegate(this);
+
+    YAHOO.util.Connect.asyncRequest(method, url, {
+        success: onSuccess,
+        upload: onSuccess,
+        failure: function(res) {
+            if (callbacks.failure) {
+                callbacks.failure(res.statusText);
+            }
+        }
+    }, postData || "dummy");
 };

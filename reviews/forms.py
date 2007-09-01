@@ -63,9 +63,8 @@ class NewReviewRequestForm(forms.Form):
                 review_request.public = False
             review_request.save()
 
-        diff_form = UploadDiffForm(data={
+        diff_form = UploadDiffForm(repository, data={
             'basedir': self.cleaned_data['basedir'],
-            'repositoryid': repository.id,
         },
         files={
             'path': self.cleaned_data['diff_path'],
@@ -105,7 +104,7 @@ class UploadScreenshotForm(forms.Form):
             image.load()
         except:
             screenshot.delete()
-            raise ValueError('Selected file does not appear to be an image')
+            raise ValueError('The file does not appear to be an image')
 
         draft = ReviewRequestDraft.create(review)
         review.screenshots.add(screenshot)

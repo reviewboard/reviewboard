@@ -15,23 +15,31 @@ from django.utils import simplejson
 from django.views.decorators.http import require_POST
 
 from djblets.util.decorators import simple_decorator
-from reviewboard.diffviewer.forms import UploadDiffForm
+from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply, mail_diff_update
+from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.models import Repository
 import reviewboard.reviews.db as reviews_db
+import reviewboard.scmtools as scmtools
 
 
 class JsonError:
+    """
+    A JSON error, containing an error code and human readable message.
+    """
     def __init__(self, code, msg):
         self.code = code
         self.msg = msg
 
 
+#
+# Standard error messages
+#
 NO_ERROR                  = JsonError(0,   "If you see this, yell at " +
                                            "the developers")
 
@@ -42,6 +50,7 @@ INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
 NOT_LOGGED_IN             = JsonError(103, "You are not logged in")
 LOGIN_FAILED              = JsonError(104, "The username or password was " +
                                            "not correct")
+INVALID_FORM_DATA         = JsonError(105, "One or more fields had errors")
 
 UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
 INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
@@ -55,18 +64,31 @@ MISSING_REPOSITORY        = JsonError(205, "A repository path must be " +
 INVALID_REPOSITORY        = JsonError(206, "The repository path specified " +
                                            "is not in the list of known " +
                                            "repositories")
+REPO_FILE_NOT_FOUND       = JsonError(207, "The file was not found in the " +
+                                           "repository")
+
 
 @simple_decorator
 def json_login_required(view_func):
+    """
+    Checks that the user is logged in before invoking the view. If the user
+    is not logged in, a NOT_LOGGED_IN error is returned.
+    """
     def _checklogin(request, *args, **kwargs):
         if request.user.is_authenticated():
             return view_func(request, *args, **kwargs)
         else:
             return JsonResponseError(request, NOT_LOGGED_IN)
+
     return _checklogin
 
 
 def json_permission_required(perm):
+    """
+    Checks that the user is logged in and has the appropriate permissions
+    to access this view. A PERMISSION_DENIED error is returned if the user
+    does not have the proper permissions.
+    """
     def _dec(view_func):
         def _checkpermissions(request, *args, **kwargs):
             if not request.user.is_authenticated():
@@ -238,6 +260,18 @@ class JsonResponseError(JsonResponse):
         errdata.update(extra_params)
 
         JsonResponse.__init__(self, request, errdata, "fail")
+
+
+class JsonResponseFormError(JsonResponseError):
+    def __init__(self, request, form):
+        fields = {}
+
+        for field in form.errors:
+            fields[field] = list(form.errors[field])
+
+        JsonResponseError.__init__(self, request, INVALID_FORM_DATA, {
+            'fields': fields
+        })
 
 
 def status_to_string(status):
@@ -890,14 +924,33 @@ def new_diff(request, review_request_id):
         return JsonResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()
-    form_data.update({'repositoryid': review_request.repository.id})
-    form = UploadDiffForm(form_data, request.FILES)
+    form = UploadDiffForm(review_request.repository, form_data, request.FILES)
 
     if not form.is_valid():
-        return JsonResponseError(request, INVALID_ATTRIBUTE)
+        return JsonResponseFormError(request, form)
 
-    diffset = form.create(request.FILES['path'],
-                          review_request.diffset_history)
+    try:
+        diffset = form.create(request.FILES['path'],
+                              review_request.diffset_history)
+    except scmtools.FileNotFoundError, e:
+        return JsonResponseError(request, REPO_FILE_NOT_FOUND, {
+            'file': e.filename,
+            'revision': e.revision
+        })
+    except EmptyDiffError, e:
+        return JsonResponseError(request, INVALID_FORM_DATA, {
+            'fields': {
+                'path': [str(e)]
+            }
+        })
+    except e:
+        # This could be very wrong, but at least they'll see the error.
+        # We probably want a new error type for this.
+        return JsonResponseError(request, INVALID_FORM_DATA, {
+            'fields': {
+                'path': [str(e)]
+            }
+        })
 
     try:
         draft = review_request.reviewrequestdraft_set.get()
@@ -916,6 +969,32 @@ def new_diff(request, review_request_id):
             mail_diff_update(request.user, review_request)
 
     return JsonResponse(request, {'diffset_id': diffset.id})
+
+
+@json_login_required
+@require_POST
+def new_screenshot(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if review_request.submitter != request.user:
+        return JsonResponseError(request, PERMISSION_DENIED)
+
+    form_data = request.POST.copy()
+    form = UploadScreenshotForm(form_data, request.FILES)
+
+    if not form.is_valid():
+        return JsonResponseFormError(request, form)
+
+    try:
+        screenshot = form.create(request.FILES['path'], review_request)
+    except ValueError, e:
+        return JsonResponseError(request, INVALID_FORM_DATA, {
+            'fields': {
+                'path': [str(e)],
+            },
+        })
+
+    return JsonResponse(request, {'screenshot_id': screenshot.id})
 
 
 @json_login_required

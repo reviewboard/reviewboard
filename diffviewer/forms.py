@@ -13,25 +13,30 @@ class EmptyDiffError(ValueError):
 
 
 class UploadDiffForm(forms.Form):
-    repositoryid = forms.IntegerField(required=True, widget=forms.HiddenInput)
-    # XXX: it'd be really nice to have "required" for these things be
-    # dependent on the scmtool for the repository
-    basedir = forms.CharField(required=False)
-    path = forms.CharField(widget=forms.FileInput())
+    basedir = forms.CharField(label="Base directory")
+    path = forms.CharField(label="Diff path", widget=forms.FileInput())
 
     # Extensions used for intelligent sorting of header files
     # before implementation files.
     HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
     IMPL_EXTENSIONS   = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
 
+    def __init__(self, repository, *args, **kwargs):
+        forms.Form.__init__(self, *args, **kwargs)
+        self.repository = repository
+
+        if self.repository.get_scmtool().get_diffs_use_absolute_paths():
+            # This SCMTool uses absolute paths, so there's no need to ask
+            # the user for the base directory.
+            del(self.fields['basedir'])
+
     def create(self, file, diffset_history=None):
         # Parse the diff
-        repository = Repository.objects.get(pk=self.cleaned_data['repositoryid'])
-        tool = repository.get_scmtool()
+        tool = self.repository.get_scmtool()
         files = tool.get_parser(file["content"]).parse()
 
         if len(files) == 0:
-            raise EmptyDiffError
+            raise EmptyDiffError("The diff file is empty")
 
         # Check that we can actually get all these files.
         if tool.get_diffs_use_absolute_paths():
@@ -54,7 +59,7 @@ class UploadDiffForm(forms.Form):
         diffset = DiffSet(name=file["filename"], revision=0,
                           history=diffset_history,
                           diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
-        diffset.repository = repository
+        diffset.repository = self.repository
         diffset.save()
 
         # Sort the files so that header files come before implementation.
