@@ -7,6 +7,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson
 
 from djblets.util.decorators import blocktag
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.reviews.db import get_all_review_requests, \
                                    get_review_requests_from_user, \
                                    get_review_requests_to_user, \
@@ -118,6 +119,15 @@ def ifneatnumber(context, nodelist, rid):
     s = nodelist.render(context)
     context.pop()
     return s
+
+
+@register.tag
+@blocktag
+def ifnewreviews(context, nodelist, review_request):
+    if review_request.get_new_reviews(context["user"]).count() > 0:
+        return nodelist.render(context)
+
+    return ""
 
 
 class CommentCounts(template.Node):

@@ -37,6 +37,7 @@
   <div class="main">
    <table class="list" id="dashboard-list">
     <colgroup>
+     <col class="convo" width="0%" />
      <col class="summary" width="100%" />
      <col class="submitter" width="0%" />
      <col class="posted" width="0%" />
@@ -44,6 +45,7 @@
     </colgroup>
     <thead>
      <tr class="headers">
+      <th><img src='/images/convo.png' width='18' height='16' alt='' /></th>
       {% column_header "summary"      "Summary"      %}
       {% column_header "submitter"    "Submitter"    %}
       {% column_header "time_added"   "Posted"       %}
@@ -53,6 +55,7 @@
     <tbody>
 {% for review_request in review_request_list %}
      <tr class="{% cycle odd,even %}">
+      <td>{% ifnewreviews review_request %}<img src="/images/convo.png" width="18" height="16" alt="" />{% endifnewreviews %}</td>
       <td class="summary" onclick="javascript:window.location='{{review_request.get_absolute_url}}'; return false;"><a href="{{review_request.get_absolute_url}}">{% reviewsummary review_request %}</a></td>
       <td><a href="{{review_request.submitter.get_absolute_url}}">{{review_request.submitter}}</a></td>
       <td class="{% ageid review_request.time_added %}">{{review_request.time_added|date:"F jS, Y, P"}}</td>

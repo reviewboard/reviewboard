@@ -76,16 +76,18 @@ class ColumnHeader(template.Node):
 
         url = "%ssort=%s" % (url_prefix, ','.join(sort_list))
         s  = '<th onclick="javascript:window.location = \'%s\'">' % url
-        s += '<a href="%s">%s <img src="/images/%s" alt="%s" width="9" height="5" border="0" /></a>' % \
-             (url, self.text, sort_img, sort_text)
+        s += '<a href="%s">%s' % (url, self.text)
 
         if sort_text:
+            s += ' <img src="/images/%s" alt="%s"' % (sort_img, sort_text)
+            s += ' width="9" height="5" border="0" /></a>'
             s += (' <a class="unsort" href="%ssort=%s">' +
                   '<img src="/images/unsort.png" width="7" height="7" ' +
-                  'border="0" alt="Unsort" /></a>') % \
+                  'border="0" alt="Unsort" />') % \
                  (url_prefix, ','.join(sort_list[1:]))
 
-        s += "</th>"
+        s += '</a></th>'
+
         return s
 
 

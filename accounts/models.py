@@ -1,6 +1,16 @@
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth.models import User
+
 from reviewboard.reviews.models import ReviewRequest
+
+
+class ReviewRequestVisit(models.Model):
+    """A review request visit."""
+    user = models.ForeignKey(User, related_name="review_request_visits")
+    review_request = models.ForeignKey(ReviewRequest, related_name="visits")
+    timestamp = models.DateTimeField("Last Visited", default=datetime.now)
 
 
 class Profile(models.Model):

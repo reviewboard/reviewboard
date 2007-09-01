@@ -9,6 +9,10 @@ h1 {
   font-size: 10pt;
 }
 
+img {
+  border: 0;
+}
+
 form th {
   text-align: right;
   vertical-align: top;
@@ -109,6 +113,10 @@ table.list tr.headers th:hover {
 
 table.list tr.headers th:hover a {
   text-decoration: underline;
+}
+
+table.list tr.headers img {
+  vertical-align: middle;
 }
 
 table.list .age1 {

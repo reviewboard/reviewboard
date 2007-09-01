@@ -1,3 +1,4 @@
+from datetime import datetime
 from urllib import quote
 
 from django import newforms as forms
@@ -18,7 +19,7 @@ from djblets.auth.util import login_required
 from djblets.util.decorators import simple_decorator
 from djblets.util.misc import get_object_or_none
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
@@ -111,6 +112,15 @@ def review_detail(request, review_request_id, template_name):
     for review in reviews:
         review.ordered_comments = \
             review.comments.order_by('filediff', 'first_line')
+
+    # If the review request is public and pending review and if the user
+    # is logged in, mark that they've visited this review request.
+    if review_request.public and review_request.status == "P" and \
+       request.user.is_authenticated():
+        visited, visited_is_new = ReviewRequestVisit.objects.get_or_create(
+            user=request.user, review_request=review_request)
+        visited.timestamp = datetime.now()
+        visited.save()
 
     repository = review_request.repository
 

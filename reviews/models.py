@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
+from djblets.util.misc import get_object_or_none
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
@@ -108,6 +109,21 @@ class ReviewRequest(models.Model):
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
         return bugs
 
+    def get_new_reviews(self, user):
+        """
+        Returns any new reviews since the user last viewed the review request.
+        """
+        if user.is_authenticated():
+            visit = get_object_or_none(self.visits, user=user)
+
+            if visit:
+                return self.review_set.filter(
+                    public=True,
+                    timestamp__gt=visit.timestamp).exclude(user=user)
+
+        return self.review_set.get_empty_query_set()
+
+
     @permalink
     def get_absolute_url(self):
         return ('reviewboard.reviews.views.review_detail', None, {
@@ -119,6 +135,12 @@ class ReviewRequest(models.Model):
 
     def save(self):
         self.bugs_closed = self.bugs_closed.strip()
+
+        if self.status != "P":
+            # If this is not a pending review request now, delete any
+            # and all ReviewRequestVisit objects.
+            self.visits.delete()
+
         super(ReviewRequest, self).save()
 
     class Admin:
