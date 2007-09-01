@@ -1,6 +1,5 @@
 import re
 import subprocess
-import os
 
 from reviewboard.diffviewer.parser import DiffParser
 

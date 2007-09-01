@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import url
+from django.core.urlresolvers import RegexURLPattern
 from django.views.decorators.cache import never_cache
 
 from reviewboard.reviews.db import get_all_review_requests, \

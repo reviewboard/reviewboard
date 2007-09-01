@@ -1,8 +1,7 @@
 import re
 import subprocess
 
-from reviewboard.diffviewer.parser import \
-    File, DiffParser, DiffParserError
+from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.core import \
     FileNotFoundError, SCMError, SCMTool, HEAD, PRE_CREATION
 

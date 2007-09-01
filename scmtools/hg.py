@@ -1,10 +1,6 @@
-import re
-import os
-
-from reviewboard.diffviewer.parser import \
-    DiffParser, DiffParserError, File
+from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.core import \
-    FileNotFoundError, SCMError, SCMTool, HEAD, PRE_CREATION
+    FileNotFoundError, SCMTool, HEAD, PRE_CREATION
 
 class HgTool(SCMTool):
     def __init__(self, repository):

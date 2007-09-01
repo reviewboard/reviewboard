@@ -1,7 +1,3 @@
-import re
-import subprocess
-
-
 class File:
     def __init__(self):
         self.origFile = None
