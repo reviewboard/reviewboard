@@ -25,9 +25,9 @@ class FileDiff(models.Model):
     diff = property(fget=lambda self: self._get_diff(),
                     fset=lambda self, v: self._set_diff(v))
 
-    def __str__(self):
-        return "%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
-                                       self.dest_file, self.dest_detail)
+    def __unicode__(self):
+        return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
+                                        self.dest_file, self.dest_detail)
 
     class Admin:
         list_display = ('source_file', 'source_revision',
@@ -60,11 +60,11 @@ class DiffSet(models.Model):
 
         super(DiffSet, self).save()
 
-    def __str__(self):
-        return "[%s] %s r%s" % (self.id, self.name, self.revision)
+    def __unicode__(self):
+        return u"[%s] %s r%s" % (self.id, self.name, self.revision)
 
     class Admin:
-        list_display = ('__str__', 'revision', 'timestamp')
+        list_display = ('__unicode__', 'revision', 'timestamp')
 
     class Meta:
         get_latest_by = 'timestamp'
@@ -74,8 +74,8 @@ class DiffSetHistory(models.Model):
     name = models.CharField('Name', maxlength=256)
     timestamp = models.DateTimeField("Timestamp", default=datetime.now)
 
-    def __str__(self):
-        return 'Diff Set History (%s revisions)' % (self.diffset_set.count())
+    def __unicode__(self):
+        return u'Diff Set History (%s revisions)' % (self.diffset_set.count())
 
     class Admin:
         pass

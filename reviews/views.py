@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.utils.encoding import smart_unicode
 from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
@@ -228,7 +229,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         if group != "":
             review_requests = reviews_db.get_review_requests_to_group(
                 group, request.user)
-            title = "Incoming Review Requests to %s" % group
+            title = u"Incoming Review Requests to %s" % group
         else:
             review_requests = reviews_db.get_review_requests_to_user_groups(
                 request.user.username, request.user)
@@ -259,8 +260,8 @@ def dashboard(request, template_name='reviews/dashboard.html'):
                     reverse = False
 
                 try:
-                    a_value = str(getattr(a, field))
-                    b_value = str(getattr(b, field))
+                    a_value = smart_unicode(getattr(a, field))
+                    b_value = smart_unicode(getattr(b, field))
 
                     if reverse:
                         i = cmp(b_value, a_value)

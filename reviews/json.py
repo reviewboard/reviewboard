@@ -202,8 +202,8 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
             return {
                 'id': o.id,
                 'caption': o.caption,
-                'title': 'Screenshot: %s' % (o.caption or
-                                             os.path.basename(o.image)),
+                'title': u'Screenshot: %s' % (o.caption or
+                                              os.path.basename(o.image)),
                 'image_url': o.get_absolute_url(),
             }
         elif isinstance(o, FileDiff):

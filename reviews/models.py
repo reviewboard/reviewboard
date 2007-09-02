@@ -31,7 +31,7 @@ class Group(models.Model):
     users = models.ManyToManyField(User, core=False, blank=True,
                                    filter_interface=models.HORIZONTAL)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     @permalink
@@ -56,7 +56,7 @@ class Screenshot(models.Model):
         return '<img src="%s" alt="%s" />' % (url, self.caption)
     thumb.allow_tags = True
 
-    def __str__(self):
+    def __unicode__(self):
         return "%s (%s)" % (self.caption, self.image)
 
     @permalink
@@ -251,7 +251,7 @@ class ReviewRequest(models.Model):
             'review_request_id': self.id,
         })
 
-    def __str__(self):
+    def __unicode__(self):
         return self.summary
 
     def save(self):
@@ -304,7 +304,7 @@ class ReviewRequestDraft(models.Model):
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
         return bugs
 
-    def __str__(self):
+    def __unicode__(self):
         return self.summary
 
     def _submitter(self):
@@ -404,7 +404,7 @@ class Comment(models.Model):
         else:
             return self.replies.filter(review__public=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.text
 
     class Admin:
@@ -437,7 +437,7 @@ class ScreenshotComment(models.Model):
         else:
             return self.replies.filter(review__public=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.text
 
     class Admin:
@@ -479,7 +479,7 @@ class Review(models.Model):
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
                                          blank=True, null=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return "Review of '%s'" % self.review_request
 
     def is_reply(self):

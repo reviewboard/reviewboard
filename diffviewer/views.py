@@ -133,7 +133,7 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
                                                     highlighting, False,
                                                     context))
         raise UserVisibleError(
-            "Internal error. Unable to locate file record for filediff %s" % \
+            u"Internal error. Unable to locate file record for filediff %s" % \
             filediff.id)
     except Exception, e:
         context = { 'error': e, 'standalone': True, }

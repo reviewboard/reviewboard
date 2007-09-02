@@ -10,7 +10,7 @@ def get_email_address_for_user(u):
     if not u.get_full_name():
         return u.email
     else:
-        return '%s <%s>' % (u.get_full_name(), u.email)
+        return u'%s <%s>' % (u.get_full_name(), u.email)
 
 
 def get_email_addresses_for_group(g):
@@ -18,7 +18,7 @@ def get_email_addresses_for_group(g):
         if g.mailing_list.find(",") == -1:
             # The mailing list field has only one e-mail address in it,
             # so we can just use that and the group's display name.
-            return ['%s <%s>' % (g.display_name, g.mailing_list)]
+            return [u'%s <%s>' % (g.display_name, g.mailing_list)]
         else:
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
@@ -120,7 +120,7 @@ def mail_review_request(user, review_request):
     if not review_request.public or review_request.status == 'D':
         return
 
-    subject = "Review Request: %s" % review_request.summary
+    subject = u"Review Request: %s" % review_request.summary
     reply_message_id = None
 
     if review_request.email_message_id:
@@ -145,7 +145,7 @@ def mail_diff_update(user, review_request):
         return
 
     send_review_mail(user, review_request,
-                     "Re: Review Request: %s" % review_request.summary,
+                     u"Re: Review Request: %s" % review_request.summary,
                      review_request.email_message_id,
                      harvest_people_from_review_request(review_request),
                      'reviews/diff_update.txt')
@@ -165,7 +165,7 @@ def mail_review(user, review):
     review.email_message_id = \
         send_review_mail(user,
                          review.review_request,
-                         "Re: Review Request: %s" %
+                         u"Re: Review Request: %s" %
                          review.review_request.summary,
                          review.review_request.email_message_id,
                          None,
@@ -187,7 +187,7 @@ def mail_reply(user, reply):
     reply.email_message_id = \
         send_review_mail(user,
                          review.review_request,
-                         "Re: Review Request: %s" %
+                         u"Re: Review Request: %s" %
                          review.review_request.summary,
                          review.email_message_id,
                          harvest_people_from_review(review),

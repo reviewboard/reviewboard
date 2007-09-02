@@ -40,13 +40,13 @@ class RssSubmitterReviewsFeed(BaseReviewFeed):
         return User.objects.get(username=bits[0])
 
     def title(self, submitter):
-        return "Review requests to %s" % submitter
+        return u"Review requests to %s" % submitter
 
     def link(self, submitter):
         return submitter.get_absolute_url()
 
     def description(self, submitter):
-        return "Pending review requests to %s" % submitter
+        return u"Pending review requests to %s" % submitter
 
     def items(self, submitter):
         return ReviewRequest.objects.to_user_directly(submitter.username).\
@@ -61,13 +61,13 @@ class RssGroupReviewsFeed(BaseReviewFeed):
         return Group.objects.get(name=bits[0])
 
     def title(self, group):
-        return "Review requests to group %s" % group
+        return u"Review requests to group %s" % group
 
     def link(self, group):
         return group.get_absolute_url()
 
     def description(self, group):
-        return "Pending review requests to %s" % group
+        return u"Pending review requests to %s" % group
 
     def items(self, group):
         return ReviewRequest.objects.to_group(group).\

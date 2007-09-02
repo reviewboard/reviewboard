@@ -88,12 +88,12 @@ class EmailTests(TestCase):
         for user in user_list:
             self.assert_(get_email_address_for_user(
                 User.objects.get(username=user)) in recipient_list,
-                "user %s was not found in the recipient list" % user)
+                u"user %s was not found in the recipient list" % user)
 
         for group in Group.objects.filter(name__in=group_list):
             for address in get_email_addresses_for_group(group):
                 self.assert_(address in recipient_list,
-                    "group %s was not found in the recipient list" % address)
+                    u"group %s was not found in the recipient list" % address)
 
 
 class QuotedEmailTagTest(TagTest):
@@ -256,9 +256,9 @@ class DbQueryTests(TestCase):
 
         for summary in r_summaries:
             self.assert_(summary in summaries,
-                         'summary "%s" not found in summary list' % summary)
+                         u'summary "%s" not found in summary list' % summary)
 
         for summary in summaries:
             self.assert_(summary in r_summaries,
-                         'summary "%s" not found in review request list' %
+                         u'summary "%s" not found in review request list' %
                          summary)

@@ -41,8 +41,8 @@ class Profile(models.Model):
     starred_review_requests = models.ManyToManyField(ReviewRequest, core=False,
                                                      blank=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.user.username
 
     class Admin:
-        list_display = ('__str__', 'first_time_setup_done')
+        list_display = ('__unicode__', 'first_time_setup_done')

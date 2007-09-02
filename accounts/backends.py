@@ -34,7 +34,7 @@ class NISBackend:
                 if len(names) > 1:
                   last_name = names[1]
 
-                email = '%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
+                email = u'%s@%s' % (username, settings.NIS_EMAIL_DOMAIN)
 
                 user = User(username=username,
                             password='',
@@ -85,7 +85,7 @@ class LDAPBackend:
                                         ldap.SCOPE_SUBTREE, "objectclass=*")
 
                 first_name, last_name = passwd[0][1]['cn'][0].split(' ', 1)
-                email = '%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
+                email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
 
                 user = User(username=username,
                             password='',

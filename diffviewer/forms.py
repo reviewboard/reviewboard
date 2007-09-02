@@ -1,6 +1,7 @@
 import os
 
 from django import newforms as forms
+from django.utils.encoding import smart_unicode
 
 from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -42,7 +43,7 @@ class UploadDiffForm(forms.Form):
         if tool.get_diffs_use_absolute_paths():
             basedir = ''
         else:
-            basedir = str(self.cleaned_data['basedir'])
+            basedir = smart_unicode(self.cleaned_data['basedir'])
 
         for f in files:
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
@@ -69,7 +70,7 @@ class UploadDiffForm(forms.Form):
             filediff = FileDiff(diffset=diffset,
                                 source_file=f.origFile,
                                 dest_file=os.path.join(basedir, f.newFile),
-                                source_revision=str(f.origInfo),
+                                source_revision=smart_unicode(f.origInfo),
                                 dest_detail=f.newInfo,
                                 diff=f.data,
                                 binary=f.binary)

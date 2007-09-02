@@ -5,11 +5,11 @@ class Tool(models.Model):
     name = models.CharField(maxlength=32, unique=True)
     class_name = models.CharField(maxlength=128, unique=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     class Admin:
-        list_display = ('__str__', 'class_name')
+        list_display = ('__unicode__', 'class_name')
 
 
 class Repository(models.Model):
@@ -42,7 +42,7 @@ class Repository(models.Model):
         return cls(self)
 
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 
@@ -50,4 +50,4 @@ class Repository(models.Model):
         verbose_name_plural = "Repositories"
 
     class Admin:
-        list_display = ('__str__', 'path')
+        list_display = ('__unicode__', 'path')
