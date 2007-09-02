@@ -46,7 +46,8 @@ RB.dialogs.BaseDialog = function(config) {
     if (this.buttonlist) {
         for (var i = this.buttonlist.length - 1; i >= 0; i--) {
             var button = this.addButton(this.buttonlist[i].text,
-				onButtonPressed.createDelegate(this, [this.buttonlist[i].cb]));
+				this.onButtonPressed.createDelegate(this,
+				                                    [this.buttonlist[i].cb]));
 
             if (this.buttonlist[i].is_default) {
                 this.setDefaultButton(button);
