@@ -69,6 +69,13 @@ def check_dependencies():
     except ImportError:
         dependency_warning('p4python not found.  Perforce integration will not work.')
 
+    try:
+        imp.find_module('mercurial')
+    except ImportError:
+        dependency_warning('hg not found.  Mercurial integration will not work.')
+
+    # FIXME: check existence of the 'git' binary
+
     # Django will print warnings/errors for database backend modules and flup
     # if the configuration requires it.
 

@@ -142,7 +142,7 @@ class SubversionTests(unittest.TestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('pysvn is not installed')
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -229,7 +229,7 @@ class PerforceTests(unittest.TestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('perforce/p4python is not installed')
 
     def testChangeset(self):
         """Testing PerforceTool.get_changeset"""
@@ -340,7 +340,7 @@ class VMWareTests(DjangoTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('perforce/p4python is not installed')
 
     def testParse(self):
         """Testing VMware changeset parsing"""
@@ -422,7 +422,7 @@ class MercurialTests(DjangoTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('Hg is not installed')
 
     def _firstFileInDiff(self, diff):
         return self.tool.get_parser(diff).parse()[0]

@@ -122,6 +122,9 @@ class GitClient:
     def __init__(self, path):
         self.path = path
 
+        # FIXME: it'd be nice to check the existence of the 'git' binary so we
+        # can skip tests
+
     def cat_file(self, commit, option="blob"):
         """
         Call git-cat-file(1) to get content or type information for a
