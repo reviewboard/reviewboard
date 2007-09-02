@@ -1,5 +1,9 @@
-import pysvn
 import re
+
+try:
+    from pysvn import ClientError, Revision, opt_revision_kind
+except ImportError:
+    pass
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import \
@@ -12,6 +16,8 @@ class SVNTool(SCMTool):
             self.repopath = self.repopath[:-1]
 
         SCMTool.__init__(self, repository)
+
+        import pysvn
         self.client = pysvn.Client()
         if repository.username:
             self.client.set_default_username(str(repository.username))
@@ -45,7 +51,7 @@ class SVNTool(SCMTool):
         try:
             return self.client.cat(self.__normalize_path(path),
                                    self.__normalize_revision(revision))
-        except pysvn.ClientError, e:
+        except ClientError, e:
             stre = str(e)
             if stre.find('path not found'):
                 raise FileNotFoundError(path, revision, str(e))
@@ -102,11 +108,11 @@ class SVNTool(SCMTool):
 
     def __normalize_revision(self, revision):
         if revision == HEAD:
-            r = pysvn.Revision(pysvn.opt_revision_kind.head)
+            r = Revision(opt_revision_kind.head)
         elif revision == PRE_CREATION:
             raise FileNotFoundError('', revision)
         else:
-            r = pysvn.Revision(pysvn.opt_revision_kind.number, str(revision))
+            r = Revision(opt_revision_kind.number, str(revision))
 
         return r
 

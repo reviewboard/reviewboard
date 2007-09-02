@@ -1,13 +1,12 @@
 import re
 import subprocess
 
-from reviewboard.diffviewer.parser import DiffParser
-
 try:
     from p4 import P4Error
 except ImportError:
     pass
 
+from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool, ChangeSet, HEAD, PRE_CREATION
 
 class PerforceTool(SCMTool):
