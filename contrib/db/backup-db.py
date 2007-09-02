@@ -51,7 +51,7 @@ print "# dbdump v1 - %s objects" % totalobjs
 
 for model in models:
     for obj in model.objects.all():
-        serializer.serialize([obj], ensure_ascii=False)
+        serializer.serialize([obj])
         value = serializer.getvalue()
 
         if value != "[]":
