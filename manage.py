@@ -2,6 +2,7 @@
 
 import imp
 import sys
+import os
 
 from django.core.management import execute_manager
 
@@ -74,7 +75,13 @@ def check_dependencies():
     except ImportError:
         dependency_warning('hg not found.  Mercurial integration will not work.')
 
-    # FIXME: check existence of the 'git' binary
+    found = False
+    for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
+        if os.path.exists(os.path.join(dir, 'git')):
+            found = True
+            break
+    if not found:
+        dependency_warning('git binary not found.  Git integration will not work.')
 
     # Django will print warnings/errors for database backend modules and flup
     # if the configuration requires it.

@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 
@@ -122,8 +123,15 @@ class GitClient:
     def __init__(self, path):
         self.path = path
 
-        # FIXME: it'd be nice to check the existence of the 'git' binary so we
-        # can skip tests
+        found = False
+        for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
+            if os.path.exists(os.path.join(dir, 'git')):
+                found = True
+                break
+        if not found:
+            # This is technically not the right kind of error, but it's the
+            # pattern we use with all the other tools.
+            raise ImportError
 
     def cat_file(self, commit, option="blob"):
         """

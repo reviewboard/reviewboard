@@ -543,7 +543,7 @@ class GitTests(DjangoTestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('git binary not found')
 
     def _readFixture(self, filename):
         return open( \
