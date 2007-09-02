@@ -25,7 +25,7 @@ class ChangeNumberInUseError(Exception):
 
 
 class Group(models.Model):
-    name = models.CharField(maxlength=64)
+    name = models.SlugField(maxlength=64)
     display_name = models.CharField(maxlength=64)
     mailing_list = models.EmailField(blank=True)
     users = models.ManyToManyField(User, core=False, blank=True,
@@ -42,6 +42,7 @@ class Group(models.Model):
         list_display = ('name', 'display_name', 'mailing_list')
 
     class Meta:
+        verbose_name = "review group"
         ordering = ['name']
 
 
