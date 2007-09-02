@@ -260,7 +260,7 @@ class ReviewRequest(models.Model):
         if self.status != "P":
             # If this is not a pending review request now, delete any
             # and all ReviewRequestVisit objects.
-            self.visits.delete()
+            self.visits.all().delete()
 
         super(ReviewRequest, self).save()
 
