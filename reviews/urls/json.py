@@ -2,10 +2,8 @@ from django.conf.urls.defaults import url
 from django.core.urlresolvers import RegexURLPattern
 from django.views.decorators.cache import never_cache
 
-from reviewboard.reviews.db import get_all_review_requests, \
-                                   get_review_requests_to_group, \
-                                   get_review_requests_to_user, \
-                                   get_review_requests_from_user
+from reviewboard.reviews.models import ReviewRequest
+
 
 def never_cache_patterns(prefix, *args):
     pattern_list = []
@@ -30,30 +28,30 @@ urlpatterns = never_cache_patterns('reviewboard.reviews.json',
 
     # Review request lists
     (r'^reviewrequests/all/$', 'review_request_list',
-     {'func': get_all_review_requests}),
+     {'func': ReviewRequest.objects.public}),
     (r'^reviewrequests/all/count/$', 'count_review_requests',
-     {'func': get_all_review_requests}),
+     {'func': ReviewRequest.objects.public}),
 
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/$',
      'review_request_list',
-     {'func': get_review_requests_to_group}),
+     {'func': ReviewRequest.objects.to_group}),
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
-     {'func': get_review_requests_to_group}),
+     {'func': ReviewRequest.objects.to_group}),
 
     (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/$',
      'review_request_list',
-     {'func': get_review_requests_to_user}),
+     {'func': ReviewRequest.objects.to_user}),
     (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
-     {'func': get_review_requests_to_user}),
+     {'func': ReviewRequest.objects.to_user}),
 
     (r'^reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/$',
      'review_request_list',
-     {'func': get_review_requests_from_user}),
+     {'func': ReviewRequest.objects.from_user}),
     (r'^reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
-     {'func': get_review_requests_from_user}),
+     {'func': ReviewRequest.objects.from_user}),
 
     # Review requests
     (r'^reviewrequests/new/$', 'new_review_request'),

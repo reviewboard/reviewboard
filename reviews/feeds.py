@@ -3,9 +3,6 @@ from django.contrib.syndication.feeds import Feed
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.feedgenerator import Atom1Feed
 
-from reviewboard.reviews.db import get_all_review_requests, \
-                                   get_review_requests_to_user_directly, \
-                                   get_review_requests_to_group
 from reviewboard.reviews.models import Group
 
 class BaseReviewFeed(Feed):
@@ -32,7 +29,7 @@ class RssReviewsFeed(BaseReviewFeed):
     description = "All pending review requests."
 
     def items(self):
-        return get_all_review_requests()[:20]
+        return ReviewRequest.objects.public()[:20]
 
 
 class RssSubmitterReviewsFeed(BaseReviewFeed):
@@ -52,7 +49,7 @@ class RssSubmitterReviewsFeed(BaseReviewFeed):
         return "Pending review requests to %s" % submitter
 
     def items(self, submitter):
-        return get_review_requests_to_user_directly(submitter.username).\
+        return ReviewRequest.objects.to_user_directly(submitter.username).\
             order_by('-last_updated')[:20]
 
 
@@ -73,7 +70,7 @@ class RssGroupReviewsFeed(BaseReviewFeed):
         return "Pending review requests to %s" % group
 
     def items(self, group):
-        return get_review_requests_to_group(group).\
+        return ReviewRequest.objects.to_group(group).\
             order_by('-last_updated')[:20]
 
 

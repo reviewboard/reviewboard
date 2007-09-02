@@ -5,11 +5,9 @@ from PIL import Image
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.reviews.models import ReviewRequest, \
-                                       ReviewRequestDraft, Screenshot
+                                       ReviewRequestDraft, Screenshot, \
+                                       ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository
-from reviewboard.reviews.db import create_review_request, \
-                                   update_review_request_from_changenum, \
-                                   ChangeNumberInUseError
 
 
 class OwnershipError(ValueError):
@@ -52,15 +50,16 @@ class NewReviewRequestForm(forms.Form):
                 pass
 
         try:
-            review_request = \
-                create_review_request(user, repository, changenum)
+            review_request = ReviewRequest.objects.create(user, repository,
+                                                          changenum)
         except ChangeNumberInUseError:
-            review_request = \
-                ReviewRequest.objects.get(changenum=changenum)
-            update_review_request_from_changenum(review_request, changenum)
+            review_request = ReviewRequest.objects.get(changenum=changenum)
+            review_request.update_from_changenum(changenum)
+
             if review_request.status == 'D':
                 review_request.status = 'P'
                 review_request.public = False
+
             review_request.save()
 
         diff_form = UploadDiffForm(repository, data={

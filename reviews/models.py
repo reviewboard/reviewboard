@@ -13,6 +13,17 @@ from reviewboard.utils.fields import ModificationTimestampField
 from utils.templatetags.htmlutils import thumbnail
 
 
+class InvalidChangeNumberError(Exception):
+    def __init__(self):
+        Exception.__init__(self, None)
+
+
+class ChangeNumberInUseError(Exception):
+    def __init__(self, review_request=None):
+        Exception.__init__(self, None)
+        self.review_request = review_request
+
+
 class Group(models.Model):
     name = models.CharField(maxlength=64)
     display_name = models.CharField(maxlength=64)
@@ -64,6 +75,98 @@ class Screenshot(models.Model):
         list_display_links = ('thumb', 'caption')
 
 
+class ReviewRequestManager(models.Manager):
+    """
+    A manager for review requests. Provides specialized queries to retrieve
+    review requests with specific targets or origins, and to create review
+    requests based on certain data.
+    """
+
+    def create(self, user, repository, changenum=None):
+        """
+        Creates a new review request, optionally filling in fields based off
+        a change number.
+        """
+        if changenum:
+            try:
+                review_request = self.get(changenum=changenum,
+                                          repository=repository)
+                raise ChangeNumberInUseError(review_request)
+            except ReviewRequest.DoesNotExist:
+                pass
+
+        review_request = ReviewRequest(repository=repository)
+
+        if changenum:
+            review_request.update_from_changenum(changenum)
+
+        diffset_history = DiffSetHistory()
+        diffset_history.save()
+
+        review_request.diffset_history = diffset_history
+        review_request.submitter = user
+        review_request.status = 'P'
+        review_request.public = False
+        review_request.save()
+
+        return review_request
+
+    def public(self, user=None, status='P'):
+        return self._query(user, status)
+
+    def to_group(self, group_name, user=None, status='P'):
+        return self._query(user, status, Q(target_groups__name=group_name))
+
+    def to_user_groups(self, username, user=None, status='P'):
+        return self._query(user, status,
+                           Q(target_groups__users__username=username))
+
+    def to_user_directly(self, username, user=None, status='P'):
+        return self._query(user, status, Q(target_people__username=username))
+
+    def to_user(self, username, user=None, status='P'):
+        # Using an OR query inside the extra_query field like this:
+        # Q(target_people__username=username) |
+        #     Q(target_groups__users__username=username))
+        # does not work.  I haven't exactly figured out why.
+
+        # This is disgusting, but it actually works =P
+        # FIXME: it might be useful to cache this and invalidate the cache every
+        #        time the status on a review request changes.
+        results = []
+        def add_if_unique(requests):
+            for request in requests:
+                found = False
+                for result in results:
+                    if request.id == result.id:
+                        found = True
+                if not found:
+                    results.append(request)
+
+        add_if_unique(self.to_user_groups(username, user, status))
+        add_if_unique(self.to_user_directly(username, user, status))
+        results.sort(lambda a, b: cmp(a.last_updated, b.last_updated),
+                     reverse=True)
+        return results
+
+    def from_user(self, username, user=None, status='P'):
+        return self._query(user, status, Q(submitter__username=username))
+
+    def _query(self, user, status, extra_query=None):
+        query = Q(public=True)
+
+        if user and user.is_authenticated():
+            query = query | Q(submitter=user)
+
+        if status:
+            query = query & Q(status=status)
+
+        if extra_query:
+            query = query & extra_query
+
+        return self.filter(query).distinct()
+
+
 class ReviewRequest(models.Model):
     STATUSES = (
         ('P', 'Pending Review'),
@@ -104,6 +207,11 @@ class ReviewRequest(models.Model):
     inactive_screenshots = models.ManyToManyField(Screenshot,
         related_name="inactive_review_request", core=False, blank=True)
 
+
+    # Set this up with the ReviewRequestManager
+    objects = ReviewRequestManager()
+
+
     def get_bug_list(self):
         bugs = re.split(r"[, ]+", self.bugs_closed)
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
@@ -123,6 +231,18 @@ class ReviewRequest(models.Model):
 
         return self.review_set.get_empty_query_set()
 
+    def update_from_changenum(self, changenum):
+        changeset = self.repository.get_scmtool().get_changeset(changenum)
+
+        if not changeset:
+            raise InvalidChangeNumberError()
+
+        self.changenum = changenum
+        self.summary = changeset.summary
+        self.description = changeset.description
+        self.testing_done = changeset.testing_done
+        self.branch = changeset.branch
+        self.bugs_closed = ','.join(changeset.bugs_closed)
 
     @permalink
     def get_absolute_url(self):

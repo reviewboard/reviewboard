@@ -7,12 +7,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson
 
 from djblets.util.decorators import blocktag
-from reviewboard.accounts.models import ReviewRequestVisit
-from reviewboard.reviews.db import get_all_review_requests, \
-                                   get_review_requests_from_user, \
-                                   get_review_requests_to_user, \
-                                   get_review_requests_to_user_directly, \
-                                   get_review_requests_to_group
+from reviewboard.accounts.models import ReviewRequest, ReviewRequestVisit
 from reviewboard.reviews.models import ReviewRequestDraft, ScreenshotComment
 from reviewboard.utils.templatetags.htmlutils import humanize_list
 
@@ -328,16 +323,16 @@ def dashboard_entry(context, level, text, view, group=None):
     user = context.get('user', None)
 
     if view == 'all':
-        review_requests = get_all_review_requests(user)
+        review_requests = ReviewRequest.objects.public(user)
     elif view == 'outgoing':
-        review_requests = get_review_requests_from_user(user.username, user)
+        review_requests = ReviewRequest.objects.from_user(user.username, user)
     elif view == 'incoming':
-        review_requests = get_review_requests_to_user(user.username, user)
+        review_requests = ReviewRequest.objects.to_user(user.username, user)
     elif view == 'to-me':
-        review_requests = get_review_requests_to_user_directly(user.username,
-                                                               user)
+        review_requests = ReviewRequest.objects.to_user_directly(user.username,
+                                                                 user)
     elif view == 'to-group':
-        review_requests = get_review_requests_to_group(group.name, user)
+        review_requests = ReviewRequest.objects.to_group(group.name, user)
     else:
         raise template.TemplateSyntaxError, \
             "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
