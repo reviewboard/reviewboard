@@ -314,15 +314,10 @@
   font-weight: bold;
   left: -10px;
   margin-bottom: 8px;
-  padding: 4px 8px 4px 4px;
+  padding: 4px 8px;
   position: relative;
-  width: 6.5em;
+  width: 4.5em;
   top: -8px;
-  -moz-border-radius: 0px 0px 10px 0px;
-}
-
-.review .shipit img {
-  vertical-align: middle;
 }
 
 
