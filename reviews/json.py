@@ -20,11 +20,12 @@ from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply, mail_diff_update
 from reviewboard.reviews.forms import UploadScreenshotForm
-from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
+from reviewboard.reviews.models import ChangeNumberInUseError, \
+                                       InvalidChangeNumberError, \
+                                       ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.models import Repository
-import reviewboard.reviews.db as reviews_db
 import reviewboard.scmtools as scmtools
 
 
@@ -337,17 +338,17 @@ def new_review_request(request):
 
         repository = Repository.objects.get(path=repository_path)
 
-        review_request = reviews_db.create_review_request(
+        review_request = ReviewRequest.objects.create(
             request.user, repository, request.POST.get('changenum', None))
 
         return JsonResponse(request, {'review_request': review_request})
     except Repository.DoesNotExist, e:
         return JsonResponseError(request, INVALID_REPOSITORY,
                                  {'repository_path': repository_path})
-    except reviews_db.ChangeNumberInUseError, e:
+    except ChangeNumberInUseError, e:
         return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
                                  {'review_request': e.review_request})
-    except reviews_db.InvalidChangeNumberError:
+    except InvalidChangeNumberError:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
 
 
@@ -640,9 +641,8 @@ def review_request_draft_update_from_changenum(request, review_request_id):
     changeset = tool.get_changeset(review_request.changenum)
 
     try:
-        reviews_db.update_review_request_from_changenum(
-            review_request, review_request.changenum)
-    except reviews_db.InvalidChangeNumberError:
+        review_request.update_from_changenum(review_request.changenum)
+    except InvalidChangeNumberError:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER,
                                  {'changenum': review_request.changenum})
 

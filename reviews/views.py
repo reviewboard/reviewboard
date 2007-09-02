@@ -13,7 +13,6 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
-from django.utils.encoding import smart_unicode
 from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 from djblets.auth.util import login_required
@@ -33,7 +32,6 @@ from reviewboard.reviews.email import mail_review_request, \
                                       mail_diff_update
 from reviewboard.scmtools.models import Repository
 from reviewboard.utils.views import sortable_object_list
-import reviewboard.reviews.db as reviews_db
 
 
 @simple_decorator
@@ -182,7 +180,7 @@ def review_list(request, queryset, template_name, default_filter=True,
 @check_login_required
 def all_review_requests(request, template_name='reviews/review_list.html'):
     return review_list(request,
-        queryset=reviews_db.get_all_review_requests(request.user, status=None),
+        queryset=ReviewRequest.objects.public(request.user, status=None),
         template_name=template_name)
 
 
@@ -218,25 +216,25 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
     if view == 'outgoing':
         review_requests = \
-            reviews_db.get_review_requests_from_user(request.user.username,
-                                                     request.user)
+            ReviewRequest.objects.from_user(request.user.username,
+                                            request.user)
         title = "All Outgoing Review Requests"
     elif view == 'to-me':
-        review_requests = reviews_db.get_review_requests_to_user_directly(
+        review_requests = ReviewRequest.objects.to_user_directly(
             request.user.username, request.user)
         title = "Incoming Review Requests to Me"
     elif view == 'to-group':
         if group != "":
-            review_requests = reviews_db.get_review_requests_to_group(
-                group, request.user)
-            title = u"Incoming Review Requests to %s" % group
+            review_requests = ReviewRequest.objects.to_group(group,
+                                                             request.user)
+            title = "Incoming Review Requests to %s" % group
         else:
-            review_requests = reviews_db.get_review_requests_to_user_groups(
+            review_requests = ReviewRequest.objects.to_user_groups(
                 request.user.username, request.user)
             title = "All Incoming Review Requests to My Groups"
     else: # "incoming" or invalid
-        review_requests = reviews_db.get_review_requests_to_user(
-            request.user.username, request.user)
+        review_requests = ReviewRequest.objects.to_user(request.user.username,
+                                                        request.user)
         title = "All Incoming Review Requests"
 
     class BogusQuerySet:
@@ -260,8 +258,8 @@ def dashboard(request, template_name='reviews/dashboard.html'):
                     reverse = False
 
                 try:
-                    a_value = smart_unicode(getattr(a, field))
-                    b_value = smart_unicode(getattr(b, field))
+                    a_value = str(getattr(a, field))
+                    b_value = str(getattr(b, field))
 
                     if reverse:
                         i = cmp(b_value, a_value)
@@ -301,7 +299,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 @check_login_required
 def group(request, name, template_name='reviews/review_list.html'):
     return review_list(request,
-        queryset=reviews_db.get_review_requests_to_group(name, status=None),
+        queryset=ReviewRequest.objects.to_group(name, status=None),
         template_name=template_name,
         extra_context={
             'source': name,
@@ -311,8 +309,7 @@ def group(request, name, template_name='reviews/review_list.html'):
 @check_login_required
 def submitter(request, username, template_name='reviews/review_list.html'):
     return review_list(request,
-        queryset=reviews_db.get_review_requests_from_user(username,
-                                                          status=None),
+        queryset=ReviewRequest.objects.from_user(username, status=None),
         template_name=template_name,
         extra_context={
             'source': username + "'s",

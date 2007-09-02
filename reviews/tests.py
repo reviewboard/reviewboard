@@ -8,7 +8,6 @@ from django.test import TestCase
 
 from djblets.util.testing import TagTest
 
-import reviewboard.reviews.db as reviews_db
 import reviewboard.reviews.templatetags.emailtags as emailtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
@@ -133,7 +132,7 @@ class DbQueryTests(TestCase):
     def testAllReviewRequests(self):
         """Testing get_all_review_requests"""
         self.assertValidSummaries(
-            reviews_db.get_all_review_requests(
+            ReviewRequest.objects.public(
                 User.objects.get(username="doc")),
             ["Comments Improvements",
              "Update for cleaned_data changes",
@@ -142,7 +141,7 @@ class DbQueryTests(TestCase):
              "Error dialog"])
 
         self.assertValidSummaries(
-            reviews_db.get_all_review_requests(status=None),
+            ReviewRequest.objects.public(status=None),
             ["Update for cleaned_data changes",
              "Add permission checking for JSON API",
              "Made e-mail improvements",
@@ -150,7 +149,7 @@ class DbQueryTests(TestCase):
              "Improved login form"])
 
         self.assertValidSummaries(
-            reviews_db.get_all_review_requests(
+            ReviewRequest.objects.public(
                 User.objects.get(username="doc"), status=None),
             ["Comments Improvements",
              "Update for cleaned_data changes",
@@ -163,27 +162,27 @@ class DbQueryTests(TestCase):
     def testReviewRequestsToGroup(self):
         """Testing get_review_requests_to_group"""
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_group("privgroup"),
+            ReviewRequest.objects.to_group("privgroup"),
             ["Add permission checking for JSON API"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_group("privgroup", status=None),
+            ReviewRequest.objects.to_group("privgroup", status=None),
             ["Add permission checking for JSON API"])
 
     def testReviewRequestsToUserGroups(self):
         """Testing get_review_requests_to_user_groups"""
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user_groups("doc"),
+            ReviewRequest.objects.to_user_groups("doc"),
             ["Update for cleaned_data changes",
              "Add permission checking for JSON API"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user_groups("doc", status=None),
+            ReviewRequest.objects.to_user_groups("doc", status=None),
             ["Update for cleaned_data changes",
              "Add permission checking for JSON API"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user_groups("doc",
+            ReviewRequest.objects.to_user_groups("doc",
                 User.objects.get(username="doc")),
             ["Comments Improvements",
              "Update for cleaned_data changes",
@@ -192,18 +191,18 @@ class DbQueryTests(TestCase):
     def testReviewRequestsToUserDirectly(self):
         """Testing get_review_requests_to_user_directly"""
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user_directly("doc"),
+            ReviewRequest.objects.to_user_directly("doc"),
             ["Add permission checking for JSON API",
              "Made e-mail improvements"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user_directly("doc", status=None),
+            ReviewRequest.objects.to_user_directly("doc", status=None),
             ["Add permission checking for JSON API",
              "Made e-mail improvements",
              "Improved login form"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user_directly("doc",
+            ReviewRequest.objects.to_user_directly("doc",
                 User.objects.get(username="doc"), status=None),
             ["Add permission checking for JSON API",
              "Made e-mail improvements",
@@ -213,14 +212,14 @@ class DbQueryTests(TestCase):
     def testReviewRequestsFromUser(self):
         """Testing get_review_requests_from_user"""
         self.assertValidSummaries(
-            reviews_db.get_review_requests_from_user("doc"), [])
+            ReviewRequest.objects.from_user("doc"), [])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_from_user("doc", status=None),
+            ReviewRequest.objects.from_user("doc", status=None),
             ["Improved login form"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_from_user("doc",
+            ReviewRequest.objects.from_user("doc",
                 user=User.objects.get(username="doc"), status=None),
             ["Comments Improvements",
              "Added interdiff support",
@@ -229,20 +228,20 @@ class DbQueryTests(TestCase):
     def testReviewRequestsToUser(self):
         """Testing get_review_requests_to_user"""
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user("doc"),
+            ReviewRequest.objects.to_user("doc"),
             ["Update for cleaned_data changes",
              "Add permission checking for JSON API",
              "Made e-mail improvements"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user("doc", status=None),
+            ReviewRequest.objects.to_user("doc", status=None),
             ["Update for cleaned_data changes",
              "Add permission checking for JSON API",
              "Made e-mail improvements",
              "Improved login form"])
 
         self.assertValidSummaries(
-            reviews_db.get_review_requests_to_user("doc",
+            ReviewRequest.objects.to_user("doc",
                 User.objects.get(username="doc"), status=None),
             ["Comments Improvements",
              "Update for cleaned_data changes",
