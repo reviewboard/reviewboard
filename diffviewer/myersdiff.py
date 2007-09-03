@@ -58,6 +58,7 @@ class MyersDiffer:
         a_line = b_line = 0
         last_group = None
 
+        # Go through the entire set of lines on both the old and new files
         while a_line < self.a_data.length or b_line < self.b_data.length:
             a_start = a_line
             b_start = b_line
@@ -73,11 +74,18 @@ class MyersDiffer:
                 b_line += 1
             else:
                 # Deleted, inserted or replaced
+
+                # Count every old line that's been modified, and the
+                # remainder of old lines if we've reached the end of the new
+                # file.
                 while a_line < self.a_data.length and \
                       (b_line >= self.b_data.length or \
                        self.a_data.is_modified(a_line)):
                     a_line += 1
 
+                # Count every new line that's been modified, and the
+                # remainder of new lines if we've reached the end of the old
+                # file.
                 while b_line < self.b_data.length and \
                       (a_line >= self.a_data.length or \
                        self.b_data.is_modified(b_line)):
@@ -122,6 +130,10 @@ class MyersDiffer:
         yield last_group
 
     def _gen_diff_data(self):
+        """
+        Generate all the diff data needed to return opcodes or the diff ratio.
+        This is only called once during the liftime of a MyersDiffer instance.
+        """
         if self.a_data and self.b_data:
             return
 
@@ -166,6 +178,7 @@ class MyersDiffer:
             if self.code_table.has_key(line):
                 code = self.code_table[line]
             else:
+                # This is a new, unrecorded line, so mark it and store it.
                 self.last_code += 1
                 code = self.last_code
                 self.code_table[line] = code
@@ -174,7 +187,7 @@ class MyersDiffer:
 
         return codes
 
-    def _findSMS(self, a_lower, a_upper, b_lower, b_upper, find_minimal):
+    def _find_sms(self, a_lower, a_upper, b_lower, b_upper, find_minimal):
         """
         Finds the Shortest Middle Snake.
         """
@@ -186,7 +199,6 @@ class MyersDiffer:
         odd_delta = (down_k - up_k) % 2 != 0
 
         down_vector[self.downoff + down_k] = a_lower
-
         up_vector[self.upoff + up_k] = a_upper
 
         dmin = a_lower - b_upper
@@ -426,7 +438,8 @@ class MyersDiffer:
         else:
             # Find the middle snake and length of an optimal path for A and B
             x, y, low_minimal, high_minimal = \
-                self._findSMS(a_lower, a_upper, b_lower, b_upper, find_minimal)
+                self._find_sms(a_lower, a_upper, b_lower, b_upper,
+                               find_minimal)
 
             self._lcs(a_lower, x, b_lower, y, low_minimal)
             self._lcs(x, a_upper, y, b_upper, high_minimal)
@@ -673,7 +686,6 @@ class MyersDiffer:
 
     def _very_approx_sqrt(self, i):
         result = 1
-        foo = i
         i /= 4
         while i > 0:
             i /= 4
