@@ -570,13 +570,13 @@ class MyersDiffer:
                 if j >= 8 and discard == self.DISCARD_FOUND:
                     break
 
-                if discard == self.DISCARD_CANCEL:
-                    consec = 0
-                    discards[index] = self.DISCARD_NONE
-                elif discard == self.DISCARD_NONE:
-                    consec = 0
-                else:
+                if discard == self.DISCARD_FOUND:
                     consec += 1
+                else:
+                    consec = 0
+
+                    if discard == self.DISCARD_CANCEL:
+                        discards[index] = self.DISCARD_NONE
 
                 if consec == 3:
                     break
