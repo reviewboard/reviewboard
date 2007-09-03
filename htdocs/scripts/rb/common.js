@@ -1,5 +1,11 @@
 RB = {utils: {}}
 
+
+// Constants
+var STAR_ON_IMG = "/images/star_on.png";
+var STAR_OFF_IMG = "/images/star_off.png";
+
+
 RB.utils.String = function() {};
 RB.utils.String.prototype = {
 	strip: function() {
@@ -128,3 +134,36 @@ var asyncJsonRequest = function(method, url, callbacks, postData) {
         }
     }, postData || "dummy");
 };
+
+
+/*
+ * Toggles whether an object is starred. Right now, we support
+ * "reviewrequests" and "groups" types.
+ *
+ * @param {HTMLElement} el     The star img element.
+ * @param {string}      type   The type used for constructing the path.
+ * @param {string}      objid  The object ID to star/unstar.
+ */
+function toggleStar(el, type, objid) {
+  var isStarred = (el.src.indexOf(STAR_ON_IMG) != -1);
+  var url = "/api/json/" + type + "/" + objid + "/";
+
+  if (isStarred) {
+    url += "unstar/";
+  } else {
+    url += "star/";
+  }
+
+  asyncJsonRequest("GET", url, {
+    success: function(rsp) {
+      if (isStarred) {
+        el.src = STAR_OFF_IMG;
+      } else {
+        el.src = STAR_ON_IMG;
+      }
+    },
+    failure: function(errmsg) {
+      alert(errmsg);
+    }
+  });
+}

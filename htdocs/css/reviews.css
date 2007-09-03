@@ -111,6 +111,11 @@
   margin: 5px;
 }
 
+.review-request .star {
+  float: left;
+  margin-right: 10px;
+}
+
 .review-request #details {
   border-bottom: 1px #c2c1b0 solid;
   border-spacing: 8px;
@@ -158,6 +163,10 @@
 .review-request #summary_wrapper {
   margin-right: 10em;
   padding: 0px;
+}
+
+.review-request #summary_wrapper label {
+  font-size: 130%;
 }
 
 .review-request #topcontrols {

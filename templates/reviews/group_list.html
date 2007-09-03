@@ -3,22 +3,33 @@
 {% load htmlutils %}
 {% block title %}Groups{% endblock %}
 
+{% block extrahead %}
+<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="/scripts/rb/common.js"></script>
+{% endblock %}
+
 {% block content %}
 {% box "grouplist" %}
 <h1 class="title">All groups</h1>
 <div class="main">
-{% if object_list %}
+{% if group_list %}
 <table class="list">
  <colgroup>
-  <col class="name" />
+  <col class="star" width="0%" />
+  <col class="name" width="100%" />
   <col class="reviewcount" width="1*" />
  </colgroup>
  <tr class="headers">
+  <th><img src="/images/star_on.png" width="16" height="15" alt="Starred" /></th>
   <th>Name</th>
   <th>Pending Reviews</th>
  </tr>
-{% for group in object_list %}
+{% for group in group_list %}
  <tr class="{% cycle odd,even %}">
+  <td>{% star group %}</td>
   <td><a href="{{group}}">{{group}}</a></td>
   <td>{% pendingreviewcount group %}</td>
  </tr>

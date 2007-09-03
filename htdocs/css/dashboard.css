@@ -38,12 +38,13 @@
   font-weight: bold;
 }
 
-#dashboard-navbar .sub-item {
-  padding-left: 25px;
+#dashboard-navbar .header {
+  font-weight: bold;
+  padding-top: 15px;
 }
 
-#dashboard-navbar .sub-sub-item {
-  padding-left: 45px;
+#dashboard-navbar .sub-item {
+  padding-left: 25px;
 }
 
 #dashboard-navbar tr,
@@ -53,4 +54,11 @@
 
 #dashboard-navbar tr.selected {
   background: #b2ceec;
+}
+
+#dashboard-navbar td img {
+  vertical-align: bottom;
+}
+
+#dashboard-navbar tbody {
 }

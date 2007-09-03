@@ -274,12 +274,16 @@ ul.errorlist li {
   top: -23px;
 }
 
+.box .star {
+  cursor: pointer;
+}
+
 .box h1.title,
 .box .titlebox {
   background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   margin: 0;
-  padding: 5px 10px;
+  padding: 5px 10px 5px 5px;
 }
 
 .box h1.title {

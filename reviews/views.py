@@ -197,15 +197,17 @@ def submitter_list(request, template_name='reviews/submitter_list.html'):
 
 
 @check_login_required
-def group_list(request, template_name='reviews/group_list.html'):
+def group_list(request, queryset=None, extra_context={},
+               template_name='reviews/group_list.html'):
     return object_list(request,
-        queryset=Group.objects.all(),
+        queryset=queryset or Group.objects.all(),
         template_name=template_name,
+        template_object_name='group',
         paginate_by=50,
         allow_empty=True,
-        extra_context={
+        extra_context=dict({
             'app_path': request.path,
-        })
+        }, **extra_context))
 
 
 @login_required
@@ -213,28 +215,40 @@ def group_list(request, template_name='reviews/group_list.html'):
 def dashboard(request, template_name='reviews/dashboard.html'):
     view = request.GET.get('view', 'incoming')
     group = request.GET.get('group', "")
+    user = request.user
 
     if view == 'outgoing':
-        review_requests = \
-            ReviewRequest.objects.from_user(request.user.username,
-                                            request.user)
+        review_requests = ReviewRequest.objects.from_user(user.username, user)
         title = "All Outgoing Review Requests"
     elif view == 'to-me':
-        review_requests = ReviewRequest.objects.to_user_directly(
-            request.user.username, request.user)
+        review_requests = \
+            ReviewRequest.objects.to_user_directly(user.username, user)
         title = "Incoming Review Requests to Me"
     elif view == 'to-group':
         if group != "":
-            review_requests = ReviewRequest.objects.to_group(group,
-                                                             request.user)
+            review_requests = ReviewRequest.objects.to_group(group, user)
             title = "Incoming Review Requests to %s" % group
         else:
-            review_requests = ReviewRequest.objects.to_user_groups(
-                request.user.username, request.user)
+            review_requests = \
+                ReviewRequest.objects.to_user_groups(user.username, user)
             title = "All Incoming Review Requests to My Groups"
+    elif view == 'starred':
+        review_requests = \
+            user.get_profile().starred_review_requests.public(user)
+        title = "Starred Review Requests"
+    elif view == 'watched-groups':
+        # This is special. We want to return a list of groups, not
+        # review requests.
+        return group_list(request,
+            queryset=user.get_profile().starred_groups.all(),
+            template_name=template_name,
+            extra_context={
+                'title': "Watched Groups",
+                'view': view,
+                'group': group,
+            })
     else: # "incoming" or invalid
-        review_requests = ReviewRequest.objects.to_user(request.user.username,
-                                                        request.user)
+        review_requests = ReviewRequest.objects.to_user(user.username, user)
         title = "All Incoming Review Requests"
 
     class BogusQuerySet:
@@ -303,6 +317,7 @@ def group(request, name, template_name='reviews/review_list.html'):
         template_name=template_name,
         extra_context={
             'source': name,
+            'group': get_object_or_none(Group, name=name),
         })
 
 

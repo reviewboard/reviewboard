@@ -68,6 +68,9 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         for address in get_email_addresses_for_group(group):
             recipient_table[address] = 1
 
+    for profile in review_request.starred_by.all():
+        recipient_table[get_email_address_for_user(profile.user)] = 1
+
     if extra_recipients:
         for recipient in extra_recipients:
             recipient_table[get_email_address_for_user(recipient)] = 1

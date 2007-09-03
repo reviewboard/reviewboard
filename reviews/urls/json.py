@@ -26,6 +26,12 @@ urlpatterns = never_cache_patterns('reviewboard.reviews.json',
     # Repositories
     (r'^repositories/$', 'repository_list'),
 
+    # Review groups
+    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$',
+     'group_star'),
+    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/unstar/$',
+     'group_unstar'),
+
     # Review request lists
     (r'^reviewrequests/all/$', 'review_request_list',
      {'func': ReviewRequest.objects.public}),
@@ -60,6 +66,11 @@ urlpatterns = never_cache_patterns('reviewboard.reviews.json',
 
     (r'^reviewrequests/repository/(P<repository_id>[0-9]+)/changenum/(?P<changenum>[0-9]+)/$',
      'review_request_by_changenum'),
+
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/star/$',
+     'review_request_star'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/unstar/$',
+     'review_request_unstar'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/delete/$',
      'review_request_delete'),

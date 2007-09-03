@@ -5,10 +5,12 @@ from django.template import resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
 from django.utils import simplejson
-
 from djblets.util.decorators import blocktag
-from reviewboard.accounts.models import ReviewRequest, ReviewRequestVisit
-from reviewboard.reviews.models import ReviewRequestDraft, ScreenshotComment
+from djblets.util.misc import get_object_or_none
+
+from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.reviews.models import Group, ReviewRequest, \
+                                       ReviewRequestDraft, ScreenshotComment
 from reviewboard.utils.templatetags.htmlutils import humanize_list
 
 register = template.Library()
@@ -321,6 +323,9 @@ def reply_section(context, review, comment, context_type, context_id):
 @register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
 def dashboard_entry(context, level, text, view, group=None):
     user = context.get('user', None)
+    starred = False
+    show_count = True
+    count = 0
 
     if view == 'all':
         review_requests = ReviewRequest.objects.public(user)
@@ -333,14 +338,22 @@ def dashboard_entry(context, level, text, view, group=None):
                                                                  user)
     elif view == 'to-group':
         review_requests = ReviewRequest.objects.to_group(group.name, user)
+    elif view == 'starred':
+        review_requests = \
+            user.get_profile().starred_review_requests.public(user)
+        starred = True
+    elif view == 'watched-groups':
+        starred = True
+        show_count = False
     else:
         raise template.TemplateSyntaxError, \
             "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
 
-    if type(review_requests) == QuerySet:
-        count = review_requests.count()
-    else:
-        count = len(review_requests)
+    if show_count:
+        if type(review_requests) == QuerySet:
+            count = review_requests.count()
+        else:
+            count = len(review_requests)
 
     return {
         'level': level,
@@ -348,7 +361,9 @@ def dashboard_entry(context, level, text, view, group=None):
         'view': view,
         'group': group,
         'count': count,
+        'show_count': show_count,
         'user': user,
+        'starred': starred,
         'selected': context.get('view', None) == view and \
                     (not group or context.get('group', None) == group.name),
     }
@@ -368,3 +383,41 @@ def bug_url(bug_id, review_request):
         return review_request.repository.bug_tracker % bug_id
 
     return None
+
+
+@register.inclusion_tag('reviews/star.html', takes_context=True)
+def star(context, obj):
+    user = context.get('user', None)
+
+    if user.is_anonymous():
+        return None
+
+    try:
+        profile = user.get_profile()
+    except Profile.DoesNotExist:
+        return None
+
+    if isinstance(obj, ReviewRequest):
+        obj_info = {
+            'type': 'reviewrequests',
+            'id': obj.id
+        }
+
+        starred = bool(get_object_or_none(profile.starred_review_requests,
+                                          pk=obj.id))
+    elif isinstance(obj, Group):
+        obj_info = {
+            'type': 'groups',
+            'id': obj.name
+        }
+
+        starred = bool(get_object_or_none(profile.starred_groups, pk=obj.id))
+    else:
+        raise template.TemplateSyntaxError, \
+            "star tag received an incompatible object type (%s)" % type(obj)
+
+    return {
+        'object': obj_info,
+        'starred': starred,
+        'user': user,
+    }

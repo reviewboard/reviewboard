@@ -15,6 +15,7 @@ from django.utils import simplejson
 from django.views.decorators.http import require_POST
 
 from djblets.util.decorators import simple_decorator
+from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
@@ -326,6 +327,36 @@ def repository_list(request):
 
 
 @json_login_required
+def group_star(request, group_name):
+    try:
+        group = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+    profile.starred_groups.add(group)
+    profile.save()
+
+    return JsonResponse(request)
+
+
+@json_login_required
+def group_unstar(request, group_name):
+    try:
+        group = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+
+    if not profile_is_new:
+        profile.starred_groups.remove(group)
+        profile.save()
+
+    return JsonResponse(request)
+
+
+@json_login_required
 @require_POST
 def new_review_request(request):
     try:
@@ -378,6 +409,36 @@ def review_request_by_changenum(request, repository_id, changenum):
         return JsonResponse(request, {'review_request': review_request})
     except ReviewRequest.DoesNotExist:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER)
+
+
+@json_login_required
+def review_request_star(request, review_request_id):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+    profile.starred_review_requests.add(review_request)
+    profile.save()
+
+    return JsonResponse(request)
+
+
+@json_login_required
+def review_request_unstar(request, review_request_id):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return JsonResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+
+    if not profile_is_new:
+        profile.starred_review_requests.remove(review_request)
+        profile.save()
+
+    return JsonResponse(request)
 
 
 @json_permission_required('reviews.delete_reviewrequest')

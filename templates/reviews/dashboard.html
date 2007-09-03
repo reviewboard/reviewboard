@@ -24,20 +24,29 @@
    <col class="count" />
   </colgroup>
   <tbody>
+{% dashboard_entry "main-item" "Starred Reviews"  "starred" %}
 {% dashboard_entry "main-item" "Outgoing Reviews" "outgoing" %}
 {% dashboard_entry "main-item" "Incoming Reviews" "incoming" %}
 {% dashboard_entry "sub-item"  "To Me"            "to-me" %}
 {% for g in user.group_set.all %}
 {%  dashboard_entry "sub-item" g.name "to-group" g %}
 {% endfor %}
+{% ifnotequal user.get_profile.starred_groups.count 0 %}
+{%  dashboard_entry "main-item" "Watched Groups" "watched-groups" %}
+{%  for g in user.get_profile.starred_groups.all %}
+{%   dashboard_entry "sub-item" g.name "to-group" g %}
+{%  endfor %}
   </tbody>
+{% endifnotequal %}
  </table>
  <div id="dashboard-main" class="clearfix">
   <h1 class="title">{{title}}</h1>
   <div class="main">
    <table class="list" id="dashboard-list">
+{% if review_request_list %}
     <colgroup>
      <col class="convo" width="0%" />
+     <col class="star" width="0%" />
      <col class="summary" width="100%" />
      <col class="submitter" width="0%" />
      <col class="posted" width="0%" />
@@ -45,7 +54,8 @@
     </colgroup>
     <thead>
      <tr class="headers">
-      <th><img src='/images/convo.png' width='18' height='16' alt='' /></th>
+      <th><img src="/images/convo.png" width="18" height="16" alt="New Replies" /></th>
+      <th><img src="/images/star_on.png" width="16" height="15" alt="Starred" /></th>
       {% column_header "summary"      "Summary"      %}
       {% column_header "submitter"    "Submitter"    %}
       {% column_header "time_added"   "Posted"       %}
@@ -56,6 +66,7 @@
 {% for review_request in review_request_list %}
      <tr class="{% cycle odd,even %}">
       <td>{% ifnewreviews review_request %}<img src="/images/convo.png" width="18" height="16" alt="" />{% endifnewreviews %}</td>
+      <td>{% star review_request %}</td>
       <td class="summary" onclick="javascript:window.location='{{review_request.get_absolute_url}}'; return false;"><a href="{{review_request.get_absolute_url}}">{% reviewsummary review_request %}</a></td>
       <td><a href="{{review_request.submitter.get_absolute_url}}">{{review_request.submitter}}</a></td>
       <td class="{% ageid review_request.time_added %}">{{review_request.time_added|date:"F jS, Y, P"}}</td>
@@ -63,6 +74,31 @@
      </tr>
 {% endfor %}
     </tbody>
+{% else %}
+{%  if group_list %}
+    <colgroup>
+     <col class="star" width="0%" />
+     <col class="name" width="100%" />
+     <col class="reviewcount" width="1*" />
+    </colgroup>
+	<thead>
+     <tr class="headers">
+      <th><img src="/images/star_on.png" width="16" height="15" alt="Starred" /></th>
+      <th>Name</th>
+      <th>Pending Reviews</th>
+     </tr>
+	</thead>
+	<tbody>
+{% for group in group_list %}
+     <tr class="{% cycle odd,even %}">
+      <td>{% star group %}</td>
+      <td><a href=".?view=to-group&group={{group}}">{{group}}</a></td>
+      <td>{% pendingreviewcount group %}</td>
+     </tr>
+{% endfor %}
+    </tbody>
+{%  endif %}
+{% endif %}
    </table>
 {% if is_paginated %}
 {%  paginator %}
