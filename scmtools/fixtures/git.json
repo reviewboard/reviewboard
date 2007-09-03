@@ -1,17 +1,10 @@
 [{
     "pk": "4",
-    "model": "scmtools.tool",
-    "fields": {
-        "name": "Git",
-        "class_name": "reviewboard.scmtools.git.GitTool"
-    }
-}, {
-    "pk": "4",
     "model": "scmtools.repository",
     "fields": {
         "username": "",
         "name": "Git test repo",
-        "tool": 4,
+        "tool": 5,
         "bug_tracker": "",
         "path": "scmtools/testdata/git_repo",
         "password": ""

@@ -1,12 +1,5 @@
 [{
     "pk": "4",
-    "model": "scmtools.tool",
-    "fields": {
-        "name": "Mercurial",
-        "class_name": "reviewboard.scmtools.hg.HgTool"
-    }
-}, {
-    "pk": "4",
     "model": "scmtools.repository",
     "fields": {
         "username": "",
