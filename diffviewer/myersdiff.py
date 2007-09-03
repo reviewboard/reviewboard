@@ -4,6 +4,10 @@ class MyersDiffer:
     """
     SNAKE_LIMIT = 20
 
+    DISCARD_NONE = 0
+    DISCARD_FOUND = 1
+    DISCARD_CANCEL = 2
+
     # The Myers diff algorithm effectively turns the diff problem into a graph
     # search.  It works by finding the "shortest middle snake," which
 
@@ -552,9 +556,9 @@ class MyersDiffer:
                     num_matches = counts[item]
 
                     if num_matches == 0:
-                        discards[i] = 1
+                        discards[i] = self.DISCARD_FOUND
                     elif num_matches > many:
-                        discards[i] = 2
+                        discards[i] = self.DISCARD_CANCEL
 
         def scan_run(discards, i, length, index_func):
             consec = 0
@@ -563,13 +567,13 @@ class MyersDiffer:
                 index = index_func(i, j)
                 discard = discards[index]
 
-                if j >= 8 and discard == 1:
+                if j >= 8 and discard == self.DISCARD_FOUND:
                     break
 
-                if discard == 2:
+                if discard == self.DISCARD_CANCEL:
                     consec = 0
-                    discards[index] = 0
-                elif discard == 0:
+                    discards[index] = self.DISCARD_NONE
+                elif discard == self.DISCARD_NONE:
                     consec = 0
                 else:
                     consec += 1
@@ -582,9 +586,9 @@ class MyersDiffer:
             while i < data.length:
                 # Cancel the provisional discards that are not in the middle
                 # of a run of discards
-                if discards[i] == 2:
-                    discards[i] = 0
-                elif discards[i] != 0:
+                if discards[i] == self.DISCARD_CANCEL:
+                    discards[i] = self.DISCARD_NONE
+                elif discards[i] == self.DISCARD_FOUND:
                     # We found a provisional discard
                     provisional = 0
 
@@ -593,15 +597,15 @@ class MyersDiffer:
                     #for j in xrange(i, data.length):
                     j = i
                     while j < data.length:
-                        if discards[j] == 0:
+                        if discards[j] == self.DISCARD_NONE:
                             break
-                        elif discards[j] == 2:
+                        elif discards[j] == self.DISCARD_CANCEL:
                             provisional += 1
                         j += 1
 
                     # Cancel the provisional discards at the end and shrink
                     # the run.
-                    while j > i and discards[j - 1] == 2:
+                    while j > i and discards[j - 1] == self.DISCARD_CANCEL:
                         j -= 1
                         discards[j] = 0
                         provisional -= 1
@@ -613,10 +617,9 @@ class MyersDiffer:
                     if provisional * 4 > length:
                         while j > i:
                             j -= 1
-                            if discards[j] == 2:
-                                discards[j] = 0
+                            if discards[j] == self.DISCARD_CANCEL:
+                                discards[j] = self.DISCARD_NONE
                     else:
-                        #minimum = 1 + self._very_approx_sqrt(length / 4)
                         minimum = 1
                         temp = length >> 2
                         temp >>= 2
@@ -629,14 +632,14 @@ class MyersDiffer:
                         j = 0
                         consec = 0
                         while j < length:
-                            if discards[i + j] != 2:
+                            if discards[i + j] != self.DISCARD_CANCEL:
                                 consec = 0
                             else:
                                 consec += 1
                                 if minimum == consec:
                                     j -= consec
                                 elif minimum < consec:
-                                    discards[i + j] = 0
+                                    discards[i + j] = self.DISCARD_NONE
 
                             j += 1
 
@@ -649,7 +652,7 @@ class MyersDiffer:
         def discard_lines(data, discards):
             j = 0
             for i, item in enumerate(data.data):
-                if self.minimal_diff or discards[i] == 0:
+                if self.minimal_diff or discards[i] == self.DISCARD_NONE:
                     data.undiscarded[j] = item
                     data.real_indexes[j] = i
                     j += 1
