@@ -5,6 +5,9 @@ RB = {utils: {}}
 var STAR_ON_IMG = "/images/star_on.png";
 var STAR_OFF_IMG = "/images/star_off.png";
 
+// State variables
+var gStars = {};
+
 
 RB.utils.String = function() {};
 RB.utils.String.prototype = {
@@ -140,12 +143,13 @@ var asyncJsonRequest = function(method, url, callbacks, postData) {
  * Toggles whether an object is starred. Right now, we support
  * "reviewrequests" and "groups" types.
  *
- * @param {HTMLElement} el     The star img element.
- * @param {string}      type   The type used for constructing the path.
- * @param {string}      objid  The object ID to star/unstar.
+ * @param {HTMLElement} el        The star img element.
+ * @param {string}      type      The type used for constructing the path.
+ * @param {string}      objid     The object ID to star/unstar.
+ * @param {bool}        default_  The default value.
  */
-function toggleStar(el, type, objid) {
-  var isStarred = (el.src.indexOf(STAR_ON_IMG) != -1);
+function toggleStar(el, type, objid, default_) {
+  var isStarred = gStars[el] == undefined ? default_ : gStars[el];
   var url = "/api/json/" + type + "/" + objid + "/";
 
   if (isStarred) {
@@ -161,6 +165,8 @@ function toggleStar(el, type, objid) {
       } else {
         el.src = STAR_ON_IMG;
       }
+
+      gStars[el] = !isStarred;
     },
     failure: function(errmsg) {
       alert(errmsg);

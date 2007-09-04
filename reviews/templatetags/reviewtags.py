@@ -418,6 +418,6 @@ def star(context, obj):
 
     return {
         'object': obj_info,
-        'starred': starred,
+        'starred': int(starred),
         'user': user,
     }
