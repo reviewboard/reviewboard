@@ -19,6 +19,11 @@ table.sidebyside .commentflag,
   margin-right: 10px;
 }
 
+/* There's a double border on IE, so remove the top header on columns. */
+table.list tr.headers th {
+  border-top: 0;
+}
+
 /* Line number column and side-by-side divider borders. */
 table.sidebyside tr td {
   border-left: 1px #C0C0C0 solid;
@@ -59,6 +64,15 @@ table.sidebyside th.controls {
   padding: 0 1px 0 0;
 }
 
+/* IE can't seem to do fixed height for the two columns, so force a minimum. */
+#dashboard-main .main {
+  height: 35em;
+}
+
 #navbar-outer {
   width: 99.9%;
+}
+
+* html .clearfix {
+  display: inline-block !important;
 }
