@@ -315,6 +315,7 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
         }
 
         this.errorEl.dom.innerHTML = text;
+        alert("Set error");
 
         for (b in this.buttons) {
             this.buttons[b].enable();
@@ -325,6 +326,7 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
      * Clears all displayed errors from the dialog.
      */
     clearErrors: function() {
+        alert("Clearing errors");
         if (this.errorEl) {
             this.errorEl.remove();
             this.errorEl = null;
