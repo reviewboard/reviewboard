@@ -12,7 +12,7 @@ RB.dialogs.BaseDialog = function(config) {
 
     var dh = YAHOO.ext.DomHelper;
 
-	/* The actual dialog element. By default, this is hidden. */
+    /* The actual dialog element. By default, this is hidden. */
     this.el = dh.append(document.body, {
         tag: 'div',
         style: 'visibility: hidden; position: absolute; top: 0px;',
@@ -24,7 +24,7 @@ RB.dialogs.BaseDialog = function(config) {
         }]
     }, true);
 
-	/* The main content of the dialog */
+    /* The main content of the dialog */
     this.bodyEl = dh.append(this.el.dom, {
         tag: 'div',
         cls: 'ydlg-bd'
@@ -41,43 +41,43 @@ RB.dialogs.BaseDialog = function(config) {
 
     this.addKeyListener(27, this.hide, this);
 
-	this.buttons = [];
+    this.buttons = [];
 
     if (this.buttonlist) {
         for (var i = this.buttonlist.length - 1; i >= 0; i--) {
             var button = this.addButton(this.buttonlist[i].text,
-				this.onButtonPressed.createDelegate(this,
-				                                    [this.buttonlist[i].cb]));
+                this.onButtonPressed.createDelegate(this,
+                                                    [this.buttonlist[i].cb]));
 
             if (this.buttonlist[i].is_default) {
                 this.setDefaultButton(button);
             }
 
-			this.buttons.push(button);
+            this.buttons.push(button);
         }
     }
 }
 
 YAHOO.extendX(RB.dialogs.BaseDialog, YAHOO.ext.BasicDialog, {
-	/*
-	 * Callback handler for when a button is pressed.
-	 */
-	onButtonPressed: function(cb) {
-		var should_hide = true;
+    /*
+     * Callback handler for when a button is pressed.
+     */
+    onButtonPressed: function(cb) {
+        var should_hide = true;
 
-		if (cb) {
-			/*
-			 * We want to hide unless the callback specifically
-			 * returns false. If it doesn't return, assume we should
-			 * hide the dialog.
-			 */
-			should_hide = (cb() != false);
-		}
+        if (cb) {
+            /*
+             * We want to hide unless the callback specifically
+             * returns false. If it doesn't return, assume we should
+             * hide the dialog.
+             */
+            should_hide = (cb() != false);
+        }
 
-		if (should_hide) {
-			this.hide();
-		}
-	}
+        if (should_hide) {
+            this.hide();
+        }
+    }
 });
 
 
@@ -105,10 +105,10 @@ YAHOO.extendX(RB.dialogs.MessageDialog, RB.dialogs.BaseDialog);
  * A dialog displaying a form for input.
  */
 RB.dialogs.FormDialog = function(config) {
-	/*
-	 * Form dialogs only need two buttons: A confirmation button, and a
-	 * cancel button.
-	 */
+    /*
+     * Form dialogs only need two buttons: A confirmation button, and a
+     * cancel button.
+     */
     config.buttons = [{
         text: config.confirmButton || "OK",
         cb: this.submit.createDelegate(this)
@@ -117,15 +117,15 @@ RB.dialogs.FormDialog = function(config) {
         is_default: true
     }];
 
-    config.dialogClass = "formdlg"
+    config.dialogClass = "formdlg";
 
     RB.dialogs.FormDialog.superclass.constructor.call(this, config);
 
     this.on('hide', function() {
-		/*
-		 * When we hide the dialog, we want to reset the dialog by clearing
-		 * all fields and all displayed errors.
-		 */
+        /*
+         * When we hide the dialog, we want to reset the dialog by clearing
+         * all fields and all displayed errors.
+         */
         this.clearErrors();
         if (this.formEl) {
             this.formEl.dom.reset();
@@ -133,43 +133,43 @@ RB.dialogs.FormDialog = function(config) {
     }, this, true);
 
 
-	/*
-	 * The actual <form>
-	 */
+    /*
+     * The actual <form>
+     */
     this.formEl = dh.append(this.bodyEl.dom, {
         tag: 'form',
-        action: config.action || ".",
+        action: config.action || "."
     }, true);
 
 
-	/*
-	 * The table containing the fields and labels.
-	 */
+    /*
+     * The table containing the fields and labels.
+     */
     this.tableEl = dh.append(this.formEl.dom, {
-        tag: 'table'
+        tag: 'table',
+        children: [{
+            tag: 'tbody'
+        }]
     }, true);
 
-
-    var tbody = dh.append(this.tableEl.dom, {
-        tag: 'tbody'
-    }, true);
+    var tbody = this.tableEl.dom.firstChild;
 
 
-	/*
-	 * A dictionary containing information on each field, for future reference.
-	 * The dictionary is in the following format:
-	 *
-	 * fieldname: {
-	 *    'field': {
-	 *        'name':   string,  // Field name,
-	 *        'hidden': bool,    // Indicates if this is hidden
-	 *        'label':  string,  // The displayed field label
-	 *        'widget': string   // HTML describing the field widget
-	 *    },
-	 *    'row':      element,   // Table row element for the field
-	 *    'errorRow': element    // Table row element for the field's error
-	 * }
-	 */
+    /*
+     * A dictionary containing information on each field, for future reference.
+     * The dictionary is in the following format:
+     *
+     * fieldname: {
+     *    'field': {
+     *        'name':   string,  // Field name,
+     *        'hidden': bool,    // Indicates if this is hidden
+     *        'label':  string,  // The displayed field label
+     *        'widget': string   // HTML describing the field widget
+     *    },
+     *    'row':      element,   // Table row element for the field
+     *    'errorRow': element    // Table row element for the field's error
+     * }
+     */
     this.fieldInfo = {};
 
     for (var i = 0; i < config.fields.length; i++) {
@@ -179,7 +179,7 @@ RB.dialogs.FormDialog = function(config) {
         if (field.hidden) {
             dh.insertHtml("beforeEnd", this.formEl.dom, field.widget);
         } else {
-            this.fieldInfo[field.name].row = dh.append(tbody.dom, {
+            this.fieldInfo[field.name].row = dh.append(tbody, {
                 tag: 'tr',
                 children: [{
                     tag: 'td',
@@ -191,7 +191,7 @@ RB.dialogs.FormDialog = function(config) {
                 }]
             }, true);
 
-            this.fieldInfo[field.name].errorRow = dh.append(tbody.dom, {
+            this.fieldInfo[field.name].errorRow = dh.append(tbody, {
                 tag: 'tr'
             }, true);
         }
@@ -199,17 +199,17 @@ RB.dialogs.FormDialog = function(config) {
 }
 
 YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
-	/*
-	 * Submits the form data to the server. Invoked by pressing the confirm
-	 * button.
-	 *
-	 * @return {bool} false
-	 */
+    /*
+     * Submits the form data to the server. Invoked by pressing the confirm
+     * button.
+     *
+     * @return {bool} false
+     */
     submit: function() {
-		/* We don't want to stack errors, so get rid of any existing ones. */
+        /* We don't want to stack errors, so get rid of any existing ones. */
         this.clearErrors();
 
-		/* Don't let the user press any buttons while we're doing this. */
+        /* Don't let the user press any buttons while we're doing this. */
         for (b in this.buttons) {
             this.buttons[b].disable();
         }
@@ -217,10 +217,10 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
         var spinnerDiv = null;
 
         if (this.upload) {
-			/*
-			 * We're uploading, so indicate this with a spinner and
-			 * "Uploading..." text in the bottom-left of the dialog.
-			 */
+            /*
+             * We're uploading, so indicate this with a spinner and
+             * "Uploading..." text in the bottom-left of the dialog.
+             */
             spinnerDiv = dh.insertBefore(this.buttons[0].el.dom, {
                 tag: 'div',
                 cls: 'spinner',
@@ -240,10 +240,10 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
         YAHOO.util.Connect.setForm(this.formEl.dom, this.upload);
         asyncJsonRequest("POST", this.path, {
             success: function(rsp) {
-				/*
-				 * Things went well, so remove the spinner and hide the
-				 * dialog.
-				 */
+                /*
+                 * Things went well, so remove the spinner and hide the
+                 * dialog.
+                 */
                 if (spinnerDiv) {
                     spinnerDiv.remove();
                 }
@@ -252,10 +252,10 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
             }.createDelegate(this),
 
             failure: function(errmsg, rsp) {
-				/*
-				 * Things went badly, oh noes! Remove the spinner and show
-				 * the errors.
-				 */
+                /*
+                 * Things went badly, oh noes! Remove the spinner and show
+                 * the errors.
+                 */
                 if (spinnerDiv) {
                     spinnerDiv.remove();
                 }
@@ -264,17 +264,17 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
             }.createDelegate(this)
         }, ""); // The "" prevents the "dummy" value from being sent
 
-		// Prevent the dialog from closing just yet. The callbacks will do it.
+        // Prevent the dialog from closing just yet. The callbacks will do it.
         return false;
     },
 
-	/*
-	 * Shows the errors in the form as returned by the resulting
-	 * JSON error response.
-	 *
-	 * @param {String} text  The main error text.
-	 * @param {dict}   rsp   The JSON response possibly containing the errors.
-	 */
+    /*
+     * Shows the errors in the form as returned by the resulting
+     * JSON error response.
+     *
+     * @param {String} text  The main error text.
+     * @param {dict}   rsp   The JSON response possibly containing the errors.
+     */
     showError: function(text, rsp) {
         if (rsp && rsp.fields) {
             for (var fieldName in rsp.fields) {
@@ -321,9 +321,9 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
         }
     },
 
-	/*
-	 * Clears all displayed errors from the dialog.
-	 */
+    /*
+     * Clears all displayed errors from the dialog.
+     */
     clearErrors: function() {
         if (this.errorEl) {
             this.errorEl.remove();
@@ -331,8 +331,9 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
         }
 
         for (var fieldName in this.fieldInfo) {
-            if (this.fieldInfo[fieldName].errorRow) {
-                this.fieldInfo[fieldName].errorRow.dom.innerHTML = "";
+            var errorRow = this.fieldInfo[fieldName].errorRow.dom;
+            while (errorRow.cells.length > 0) {
+                errorRow.deleteCell(0);
             }
         }
     }
