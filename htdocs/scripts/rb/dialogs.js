@@ -138,9 +138,16 @@ RB.dialogs.FormDialog = function(config) {
      */
     this.formEl = dh.append(this.bodyEl.dom, {
         tag: 'form',
-        action: config.action || "."
+        action: config.action || ".",
+        children: [{
+            tag: 'div',
+            cls: 'error'
+        }]
     }, true);
 
+    this.errorEl = getEl(this.formEl.dom.firstChild);
+    this.errorEl.enableDisplayMode();
+    this.errorEl.hide();
 
     /*
      * The table containing the fields and labels.
@@ -307,15 +314,8 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
             }
         }
 
-        if (!this.errorEl) {
-            this.errorEl = dh.insertBefore(this.tableEl.dom, {
-                tag: 'div',
-                cls: 'error'
-            }, true);
-        }
-
+        this.errorEl.show();
         this.errorEl.dom.innerHTML = text;
-        alert("Set error");
 
         for (b in this.buttons) {
             this.buttons[b].enable();
@@ -326,11 +326,8 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
      * Clears all displayed errors from the dialog.
      */
     clearErrors: function() {
-        alert("Clearing errors");
-        if (this.errorEl) {
-            this.errorEl.remove();
-            this.errorEl = null;
-        }
+        this.errorEl.dom.innerHTML = "";
+        this.errorEl.hide();
 
         for (var fieldName in this.fieldInfo) {
             var errorRow = this.fieldInfo[fieldName].errorRow.dom;
