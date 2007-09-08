@@ -1,0 +1,3 @@
+Code Review Requests Posted
+{% for request in review_requests %}• {{request}} ({{domain_method}}://{{domain}}{{request.get_absolute_url}})
+{% endfor %}

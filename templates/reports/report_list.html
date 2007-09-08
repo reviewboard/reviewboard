@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+{% box "reports" %}
+ <h1>Choose a report</h1>
+ {% for report_id, report in reports.items %}
+ {{report.name}}
+ <ul>
+  {% for template_id, template in report.templates.items %}
+   <li><a href="{{user.username}}/{{report_id}}/{{template_id}}/">{{template.name}}</a></li>
+  {% endfor %}
+ </ul>
+ {% endfor %}
+{% endbox %}
+{% endblock %}

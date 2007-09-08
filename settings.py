@@ -77,6 +77,7 @@ INSTALLED_APPS = (
     'djblets.util',
     'reviewboard.accounts',
     'reviewboard.diffviewer',
+    'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',
     'reviewboard.utils',

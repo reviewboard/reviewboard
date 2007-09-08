@@ -1,0 +1,3 @@
+== Code Reviews Done ==
+{% for review in reviews %} . [{{domain_method}}://{{domain}}{{review.get_absolute_url}} {{review.review_request.summary}} by {{review.review_request.submitter}}]
+{% endfor %}

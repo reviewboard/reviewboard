@@ -24,6 +24,7 @@ atom_feeds = {
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
     (r'^api/json/', include('reviewboard.reviews.urls.json')),
+    (r'^reports/', include('reviewboard.reports.urls')),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
      {'url': '/dashboard/'}),
