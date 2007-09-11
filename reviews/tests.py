@@ -261,3 +261,164 @@ class DbQueryTests(TestCase):
             self.assert_(summary in r_summaries,
                          u'summary "%s" not found in review request list' %
                          summary)
+
+
+class ViewTests(TestCase):
+    """Tests for views in reviewboard.reviews.views"""
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def testReviewDetail0(self):
+        """Testing review_detail redirect"""
+        response = self.client.get('/r/1')
+        self.assertEqual(response.status_code, 301)
+
+    def testReviewDetail1(self):
+        """Testing review_detail view (1)"""
+        response = self.client.get('/r/1/')
+        self.assertEqual(response.status_code, 200)
+
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+        request = context['review_request']
+
+        self.assertEqual(request.submitter.username, 'doc')
+        self.assertEqual(request.summary, 'Comments Improvements')
+        self.assertEqual(request.description, '')
+        self.assertEqual(request.testing_done, '')
+
+        self.assertEqual(request.target_people.count(), 0)
+        self.assertEqual(request.target_groups.count(), 1)
+        self.assertEqual(request.target_groups.all()[0].name, 'devgroup')
+        self.assertEqual(request.bugs_closed, '')
+        self.assertEqual(request.status, 'P')
+
+        # TODO - diff
+
+    def testReviewDetail2(self):
+        """Testing review_detail view (3)"""
+        # Make sure this request is made while logged in, to catch the
+        # login-only pieces of the review_detail view.
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get('/r/3/')
+        print response.content
+        self.assertEqual(response.status_code, 200)
+
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+        request = context['review_request']
+
+        self.assertEqual(request.submitter.username, 'admin')
+        self.assertEqual(request.summary, 'Add permission checking for JSON API')
+        self.assertEqual(request.description,
+                         'Added some user permissions checking for JSON API functions.')
+        self.assertEqual(request.testing_done, 'Tested some functions.')
+
+        self.assertEqual(request.target_people.count(), 2)
+        self.assertEqual(request.target_people.all()[0].username, 'doc')
+        self.assertEqual(request.target_people.all()[1].username, 'dopey')
+
+        self.assertEqual(request.target_groups.count(), 1)
+        self.assertEqual(request.target_groups.all()[0].name, 'privgroup')
+
+        self.assertEqual(request.bugs_closed, '1234, 5678, 8765, 4321')
+        self.assertEqual(request.status, 'P')
+
+        # TODO - diff
+        # TODO - reviews
+
+        self.client.logout()
+
+    def testNewReviewRequest0(self):
+        """Testing new_review_request view (basic responses)"""
+        response = self.client.get('/r/new')
+        self.assertEqual(response.status_code, 301)
+
+        response = self.client.get('/r/new/')
+        self.assertEqual(response.status_code, 302)
+
+        self.client.login(username='grumpy', password='grumpy')
+
+        response = self.client.get('/r/new/')
+        self.assertEqual(response.status_code, 200)
+
+        self.client.logout()
+
+    # TODO - test the rest of that form
+
+    def testReviewList(self):
+        """Testing review_list view"""
+        self.client.login(username='grumpy', password='grumpy')
+
+        response = self.client.get('/r/')
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+        self.client.logout()
+
+    def testSubmitterList(self):
+        """Testing submitter_list view"""
+        response = self.client.get('/users/')
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+    def testGroupList(self):
+        """Testing group_list view"""
+        response = self.client.get('/groups/')
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+    def testDashboard1(self):
+        """Testing dashboard view (incoming)"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get('/dashboard/', {'view': 'incoming'})
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+        self.client.logout()
+
+    def testDashboard2(self):
+        """Testing dashboard view (outgoing)"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get('/dashboard/', {'view': 'outgoing'})
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+        self.client.logout()
+
+
+    def testDashboard3(self):
+        """Testing dashboard view (to-me)"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get('/dashboard/', {'view': 'to-me'})
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+        self.client.logout()
+
+
+    def testDashboard4(self):
+        """Testing dashboard view (to-group devgroup)"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get('/dashboard/',
+                                   {'view': 'to-group',
+                                    'group': 'devgroup'})
+        self.assertEqual(response.status_code, 200)
+
+        # TODO - verify contents
+
+        self.client.logout()
