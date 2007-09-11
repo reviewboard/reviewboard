@@ -34,11 +34,11 @@ from django.test.utils import create_test_db, destroy_test_db
 
 import reviewboard
 
-def runner(module_list, verbosity=1, interactive=False, extra_tests=[]):
+def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     setup_test_environment()
     settings.DEBUG = False
     old_name = settings.DATABASE_NAME
-    create_test_db(verbosity)
+    create_test_db(verbosity, autoclobber=not interactive)
     management.call_command('syncdb', verbosity=verbosity, interactive=interactive)
 
     # Nose uses all local modules, which is really silly.  These were getting
