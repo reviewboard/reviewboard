@@ -25,7 +25,7 @@ class EmailTests(TestCase):
         mail.outbox = []
 
     def testNewReviewRequestEmail(self):
-        """Testing sending an e-mail when creating a new review request."""
+        """Testing sending an e-mail when creating a new review request"""
         review_request = ReviewRequest.objects.get(
             summary="Made e-mail improvements")
         mail_review_request(review_request.submitter, review_request)
@@ -36,7 +36,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["grumpy", "doc"], [])
 
     def testReviewEmail(self):
-        """Testing sending an e-mail when replying to a review request."""
+        """Testing sending an e-mail when replying to a review request"""
         review_request = ReviewRequest.objects.get(
             summary="Add permission checking for JSON API")
         review = Review.objects.get(review_request=review_request,
@@ -52,7 +52,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["admin", "doc", "dopey", "grumpy"], [])
 
     def testReviewReplyEmail(self):
-        """Testing sending an e-mail when replying to a review."""
+        """Testing sending an e-mail when replying to a review"""
         review_request = ReviewRequest.objects.get(
             summary="Add permission checking for JSON API")
         base_review = Review.objects.get(review_request=review_request,
@@ -69,7 +69,7 @@ class EmailTests(TestCase):
         self.assertValidRecipients(["admin", "doc", "dopey", "admin"], [])
 
     def testUpdateReviewRequestEmail(self):
-        """Testing sending an e-mail when updating a review request."""
+        """Testing sending an e-mail when updating a review request"""
         review_request = ReviewRequest.objects.get(
             summary="Update for cleaned_data changes")
         review_request.email_message_id = "junk"
