@@ -3,7 +3,7 @@ import traceback
 try:
     import pygments
 except ImportError:
-    pass
+    pygments = None
 
 from django import newforms as forms
 from django.conf import settings
