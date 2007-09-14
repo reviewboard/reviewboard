@@ -403,10 +403,10 @@ def raw_diff(request, review_request_id, revision=None):
 
 
 @check_login_required
-def diff_fragment(request, object_id, revision, filediff_id,
+def diff_fragment(request, review_request_id, revision, filediff_id,
                   interdiffset_id=None, chunkindex=None,
                   template_name='diffviewer/diff_file_fragment.html'):
-    review_request = get_object_or_404(ReviewRequest, pk=object_id)
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
         draft = review_request.reviewrequestdraft_set.get()

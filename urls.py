@@ -24,6 +24,7 @@ atom_feeds = {
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
     (r'^api/json/', include('reviewboard.reviews.urls.json')),
+    (r'^r/', include('reviewboard.reviews.urls.reviews')),
     (r'^reports/', include('reviewboard.reports.urls')),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
@@ -31,59 +32,6 @@ urlpatterns = patterns('',
 
     # Review request browsing
     (r'^dashboard/$', 'reviewboard.reviews.views.dashboard'),
-
-    (r'^r/$', 'reviewboard.reviews.views.all_review_requests'),
-
-    # Review request creation
-    (r'^r/new/$', 'reviewboard.reviews.views.new_review_request'),
-
-    # Review request detail
-    (r'^r/(?P<review_request_id>[0-9]+)/$',
-     'reviewboard.reviews.views.review_detail',
-     {'template_name': 'reviews/review_detail.html'}),
-
-    # Review request diffs
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/$',
-     'reviewboard.reviews.views.diff'),
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$',
-     'reviewboard.reviews.views.diff'),
-
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/raw/$',
-     'reviewboard.reviews.views.raw_diff'),
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/raw/$',
-     'reviewboard.reviews.views.raw_diff'),
-
-    (r'^r/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
-     'reviewboard.reviews.views.diff_fragment'),
-    (r'^r/(?P<object_id>[0-9]+)/diff/(?P<revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
-     'reviewboard.reviews.views.diff_fragment'),
-
-    # Review request interdiffs
-    (r'^r/(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/$',
-     'reviewboard.reviews.views.diff'),
-
-
-    # Review request modification
-    (r'^r/(?P<review_request_id>[0-9]+)/publish/$',
-     'reviewboard.reviews.views.publish'),
-
-    (r'^r/(?P<review_request_id>[0-9]+)/(?P<action>(discard|submitted|reopen))/$',
-     'reviewboard.reviews.views.setstatus'),
-
-    # Screenshots
-    (r'^r/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',
-     'reviewboard.reviews.views.view_screenshot'),
-
-    (r'^r/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/delete/$',
-     'reviewboard.reviews.views.delete_screenshot'),
-
-    # E-mail previews
-    (r'^r/(?P<review_request_id>[0-9]+)/preview-email/$',
-     'reviewboard.reviews.views.preview_review_request_email'),
-    (r'^r/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/preview-email/$',
-     'reviewboard.reviews.views.preview_review_email'),
-    (r'^r/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/(?P<reply_id>[0-9]+)/preview-email/$',
-     'reviewboard.reviews.views.preview_reply_email'),
 
     # Users
     (r'^users/$', 'reviewboard.reviews.views.submitter_list'),
