@@ -163,6 +163,29 @@ def sort_indicator(sort_list, field_name):
     return ""
 
 
+@register.simple_tag
+def crop_image(file, x, y, width, height):
+    if file.find(".") != -1:
+        basename, format = file.rsplit('.', 1)
+        new_name = '%s_%s_%s_%s_%s.%s' % (basename, x, y, width, height, format)
+    else:
+        basename = file
+        new_name = '%s_%s_%s_%s_%s' % (basename, x, y, width, height)
+
+    new_path = os.path.join(settings.MEDIA_ROOT, new_name)
+    new_url = os.path.join(settings.MEDIA_URL, new_name)
+
+    if not os.path.exists(new_path):
+        try:
+            image = Image.open(os.path.join(settings.MEDIA_ROOT, file))
+            image = image.crop((x, y, x + width, y + height))
+            image.save(new_path, image.format)
+        except IOError:
+            return ""
+
+    return new_url
+
+
 @register.tag
 @blocktag
 def ifuserorperm(context, nodelist, user, perm):

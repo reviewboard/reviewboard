@@ -70,14 +70,16 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
    <dl class="diff-comments">
 {% for comment in review.screenshot_comments.all %}
     <dt>
-     <span class="filename">
-      Screenshot:
-      <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image|basename}}{% endif %}</a>
-     </span>
+     <div class="screenshot">
+      <span class="filename">
+       <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image|basename}}{% endif %}</a>
+      </span>
+      {{comment.image}}
+     </div>
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
-         {% reply_section review comment "screenshot_comment" "rc" %}
+     {% reply_section review comment "screenshot_comment" "rc" %}
     </dd>
 {% endfor %}
 {% for comment in review.ordered_comments %}

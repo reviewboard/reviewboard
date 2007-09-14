@@ -264,6 +264,22 @@
   text-decoration: underline;
 }
 
+.review .diff-comments .screenshot {
+  background: #F0F0F0;
+  border: 1px #C0C0C0 solid;
+  font-size: 120%;
+}
+
+.review .diff-comments .screenshot .filename {
+  display: block;
+  margin: 0;
+  padding: 5px 10px;
+}
+
+.review .diff-comments .screenshot img {
+  padding: 5px;
+}
+
 .review .header {
   padding: 2px 4px;
 }

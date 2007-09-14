@@ -10,7 +10,7 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.utils.fields import ModificationTimestampField
-from utils.templatetags.htmlutils import thumbnail
+from utils.templatetags.htmlutils import crop_image, thumbnail
 
 
 class InvalidChangeNumberError(Exception):
@@ -436,6 +436,11 @@ class ScreenshotComment(models.Model):
                                        Q(review__user=user))
         else:
             return self.replies.filter(review__public=True)
+
+    def image(self):
+        url = crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
+        return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
+            (url, self.w, self.h, self.text)
 
     def __unicode__(self):
         return self.text
