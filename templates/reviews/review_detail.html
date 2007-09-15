@@ -22,10 +22,11 @@
 <script type="text/javascript" src="/scripts/rb/widgets.js"></script>
 <script type="text/javascript" src="/scripts/reviews.js"></script>
 <script type="text/javascript">
-var gUserURL = "{{user.get_absolute_url}}";
-var gUserFullName = "{% firstof user.get_full_name user.username %}";
-var gReviewRequestId = "{{review_request.id}}";
-var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
+  var gReviewRequestPath = '{{review_request.get_absolute_url}}';
+  var gUserURL = "{{user.get_absolute_url}}";
+  var gUserFullName = "{% firstof user.get_full_name user.username %}";
+  var gReviewRequestId = "{{review_request.id}}";
+  var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 </script>
 {% endblock %}
 

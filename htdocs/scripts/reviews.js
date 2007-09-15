@@ -215,7 +215,7 @@ function showDiscardBanner() {
 }
 
 function discardReview() {
-	window.location = normalizeURL(window.location.href) + "/discard/";
+	window.location = normalizeURL(gReviewRequestPath) + "/discard/";
 }
 
 function showCommentForm(review_id, section_id) {
@@ -426,7 +426,7 @@ function publishDraft() {
 		alert("There must be at least one reviewer before this review " +
 		      "request can be published.");
 	} else {
-		window.location = normalizeURL(window.location.href) + "/publish/";
+		window.location = normalizeURL(gReviewRequestPath) + "/publish/";
 	}
 }
 
