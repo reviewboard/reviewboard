@@ -105,7 +105,7 @@ var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 {% forchunkswithlines comment.filediff comment.first_line comment.num_lines %}
       <tbody class="{{chunk.change}}">
 {% for line in chunk.lines %}
-       <tr>
+       <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
         <th>{{line.0}}</td>
         <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
         <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
