@@ -8,7 +8,7 @@ from django.utils import simplejson
 from djblets.util.decorators import blocktag
 from djblets.util.misc import get_object_or_none
 
-from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, ScreenshotComment
 from reviewboard.utils.templatetags.htmlutils import humanize_list

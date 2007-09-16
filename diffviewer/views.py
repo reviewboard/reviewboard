@@ -5,20 +5,16 @@ try:
 except ImportError:
     pygments = None
 
-from django import newforms as forms
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
-from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import DiffSet, FileDiff, DiffSetHistory
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.diffutils import UserVisibleError, get_diff_files
-from reviewboard.scmtools.models import Repository
-import reviewboard.scmtools as scmtools
 
 
 def get_enable_highlighting(user):

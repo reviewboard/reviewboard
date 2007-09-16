@@ -1,7 +1,6 @@
 from datetime import datetime
 from urllib import quote
 
-from django import newforms as forms
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User
@@ -28,8 +27,7 @@ from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
                                        ScreenshotComment
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm
-from reviewboard.reviews.email import mail_review_request, \
-                                      mail_diff_update
+from reviewboard.reviews.email import mail_review_request
 from reviewboard.scmtools.models import Repository
 from reviewboard.utils.views import sortable_object_list
 

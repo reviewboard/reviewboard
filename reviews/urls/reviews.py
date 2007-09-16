@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls.defaults import patterns
 
 urlpatterns = patterns('reviewboard.reviews.views',
     (r'^$', 'all_review_requests'),

@@ -3,7 +3,7 @@ from django.contrib.syndication.feeds import Feed
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.feedgenerator import Atom1Feed
 
-from reviewboard.reviews.models import Group
+from reviewboard.reviews.models import Group, ReviewRequest
 
 class BaseReviewFeed(Feed):
     title_template = "feeds/reviews_title.html"
