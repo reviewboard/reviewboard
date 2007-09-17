@@ -26,6 +26,7 @@ urlpatterns = patterns('',
     (r'^api/json/', include('reviewboard.reviews.urls.json')),
     (r'^r/', include('reviewboard.reviews.urls.reviews')),
     (r'^reports/', include('reviewboard.reports.urls')),
+    (r'^iphone/', include('reviewboard.iphone.urls')),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
      {'url': '/dashboard/'}),

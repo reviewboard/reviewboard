@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+ <head>
+  <title>Review Board</title>
+  <link rel="stylesheet" type="text/css" href="/css/iui.css" />
+  <link rel="stylesheet" type="text/css" href="/css/iphone.css" />
+  <link rel="stylesheet" type="text/css" href="/css/syntax.css" />
+  <script type="application/x-javascript" src="/scripts/iui.js"></script>
+  <meta id="viewport" name="viewport" content="width=320; initial-scale=1.0; minimum-scale=1.0; maximum-scale=1.0; user-scalable=0;" />
+ </head>
+ <body>
+  <div class="toolbar">
+   <h1 id="pageTitle"></h1>
+   <a id="backButton" class="button" href="#"></a>
+{% if user.is_authenticated %}
+   <a class="button" href="account/">Account</a>
+{% else %}
+   <a class="button" href="account/login/">Log In</a>
+{% endif %}
+  </div>
+
+  <ul id="home" title="Review Board" selected="true">
+   <li><a href="dashboard/">Dashboard</a></li>
+   <li><a href="r/">All Review Requests</a></li>
+   <li><a href="groups/">Groups</a></li>
+   <li><a href="users/">Submitters</a></li>
+  </ul>
+ </body>
+</html>

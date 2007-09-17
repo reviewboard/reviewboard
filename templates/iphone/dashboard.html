@@ -1,0 +1,16 @@
+<ul id="dashboard" title="Dashboard">
+ <li><a href="dashboard/list/?view=starred">Starred Reviews</a></li>
+ <li><a href="dashboard/list/?view=outgoing">Outgoing Reviews</a></li>
+ <li class="group">Incoming Reviews</li>
+ <li><a href="dashboard/list/?view=incoming">All</a></li>
+ <li><a href="dashboard/list/?view=to-me">To Me</a></li>
+{% for group in user.group_set.all %}
+ <li><a href="dashboard/list/?view=to-group&group={{group}}">{{group}}</a></li>
+{% endfor %}
+{% ifnotequal user.get_profile.starred_groups.count 0 %}
+ <li class="group">Watched Groups</li>
+{%  for group in user.get_profile.starred_groups.all %}
+ <li><a href="dashboard/list/?view=to-group&group={{group}}">{{group}}</a></li>
+{%  endfor %}
+{% endifnotequal %}
+</ul>

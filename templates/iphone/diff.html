@@ -1,0 +1,50 @@
+{% load difftags %}
+{% load htmlutils %}
+<div id="diff" title="{{file.basename}}">
+{% if standalone and error %}
+{{error}}
+{% else %}
+ <table class="sidebyside">
+  <colgroup>
+   <col class="line" />
+   <col class="left" />
+   <col class="right" />
+  </colgroup>
+  <thead>
+   <tr>
+    <th rowspan="2" >&nbsp;</th>
+    <th colspan="2">{{ file.depot_filename }}</th>
+   </tr>
+   <tr>
+    <th class="rev">{{file.revision}}</th>
+    <th class="rev">New Change</th>
+   </tr>
+  </thead>
+{% for chunk in file.chunks %}
+{%  if not chunk.collapsable or not collapseall %}
+  <tbody{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% endifnotequal %}>
+{% for line in chunk.lines %}
+   <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
+    <th>{{line.0}}</th>
+{% ifequal chunk.change "replace" %}
+    <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
+    <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
+{% else %}
+    <td><pre>{{ line.1|showextrawhitespace }}</pre></td>
+    <td><pre>{{ line.3|showextrawhitespace }}</pre></td>
+{% endifequal %}
+   </tr>
+{% endfor %}
+  </tbody>
+{% else %}
+  <tbody class="collapsed">
+   <tr>
+    <th>...</th>
+    <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden</td>
+   </tr>
+  </tbody>
+{% endif %}
+{% endfor %}
+ </table>
+{% endif %}
+</div>

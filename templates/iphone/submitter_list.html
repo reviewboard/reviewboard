@@ -1,0 +1,5 @@
+<ul id="submitters" title="Submitters">
+{% for submitter in object_list %}
+ <li><a href="users/{{submitter}}/">{{submitter}}</a></li>
+{% endfor %}
+</ul>

@@ -79,6 +79,7 @@ INSTALLED_APPS = (
     'djblets.util',
     'reviewboard.accounts',
     'reviewboard.diffviewer',
+    'reviewboard.iphone',
     'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',

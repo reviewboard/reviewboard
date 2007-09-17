@@ -1,0 +1,130 @@
+{% load difftags %}
+{% load htmlutils %}
+{% load reviewtags %}
+
+<div id="reviewrequest" class="panel" title="Review">
+ <fieldset>
+  <div class="summary">
+   <h3>{{review_request.summary}}</h3>
+   <a href="/iphone/users/{{review_request.submitter}}/">{% firstof review_request.submitter.get_full_name review_request.submitter.username %}</a>
+  </div>
+  <div class="row">
+   <label>Added</label>
+   <div>{{review_request_details.time_added}}</div>
+  </div>
+  <div class="row">
+   <label>Updated</label>
+   <div>{{review_request_details.last_updated|timesince}} ago</div>
+  </div>
+  <div class="row">
+   <label>Reviewers</label>
+   <div>
+{% for group in review_request_details.target_groups.all %}
+<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+{% endfor %}
+{% if review_request_details.target_groups.count and review_request_details.target_people.count %}<br />{% endif %}
+{% for person in review_request_details.target_people.all %}
+<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+{% endfor %}
+   </div>
+  </div>
+{% if review_request_details.bugs_closed %}
+  <div class="row">
+   <label>Bugs</label>
+   <div>
+{% for bug in review_request_details.get_bug_list %}
+{%  if review_request.repository.bug_tracker %}<a href={{bug|bug_url:review_request}} target="_self">{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
+{% endfor %}
+   </div>
+  </div>
+{% endif %}
+{% if review_request_details.branch %}
+  <div class="row">
+   <label>Branch</label>
+   <div>{{review_request_details.branch}}</div>
+  </div>
+{% endif %}
+  <div class="row">
+   <label>Repository</label>
+   <div>{{review_request.repository}}</div>
+  </div>
+{% if review_request.changenum %}
+  <div class="row">
+   <label>Change Number</label>
+   <div>{{review_request.changenum}}</div>
+  </div>
+{% endif %}
+  <div class="row descriptionRow">
+   <label>Description</label>
+   <div>{{review_request_details.description|escape}}</div>
+  </div>
+  <div class="row">
+   <label>Testing</label>
+   <div>{{review_request_details.testing_done|escape}}</div>
+  </div>
+ </fieldset>
+
+ <div class="controls">
+  <a class="whiteButton">Screenshots</a>
+  <a class="whiteButton" href="/iphone/r/{{review_request.id}}/diff/">Diff</a>
+ </div>
+
+{% ifnotequal reviews|length 0 %}
+ <h2>Reviews</h2>
+{%  for review in reviews %}
+ <fieldset class="review">
+  <div class="summary">
+   <a href="/iphone/users/{{review.user}}/">{% firstof review.user.get_full_name review.user.username %}</a>
+   {% if review.ship_it %}- <div class="shipit">Ship it!</div>{% endif %}
+   <br />
+   Posted {{review.timestamp}}
+  </div>
+  <div class="body">
+{% if review.body_top %}
+  <div>{{review.body_top|escape}}</div>
+  {% reply_section review "" "body_top" "rcbt" %}
+{% endif %}
+
+  <dl class="diff-comments">
+{% for comment in review.ordered_comments %}
+   <dt>
+    <table class="sidebyside">
+     <colgroup>
+      <col class="line" />
+      <col class="left" />
+      <col class="right" />
+     </colgroup>
+     <thead>
+      <tr>
+       <th colspan="3" class="filename">{{comment.filediff.dest_file}}</th>
+      </tr>
+     </thead>
+{%  forchunkswithlines comment.filediff comment.first_line comment.num_lines %}
+     <tbody class="{{chunk.change}}">
+{%   for line in chunk.lines %}
+      <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
+       <th>{{line.0}}</th>
+       <td><pre>{{line.1|highlightregion:line.2|showextrawhitespace}}</pre></td>
+       <td><pre>{{line.3|highlightregion:line.4|showextrawhitespace}}</pre></td>
+      </tr>
+{%   endfor %}
+     </tbody>
+{%  endforchunkswithlines %}
+    </table>
+   </dt>
+   <dd>
+    <pre>{{comment.text|escape}}</pre>
+    {% reply_section review comment "comment" "rc" %}
+   </dd>
+{% endfor %}
+  </dl>
+
+{% if review.body_bottom %}
+  <div>{{review.body_bottom|escape}}</div>
+  {% reply_section review "" "body_bottom" "rcbb" %}
+{% endif %}
+  </div>
+ </fieldset>
+{%  endfor %}
+{% endifnotequal %}
+</div>
