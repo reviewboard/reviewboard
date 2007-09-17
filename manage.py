@@ -3,8 +3,13 @@
 import imp
 import sys
 import os
+from os.path import abspath, dirname
 
 from django.core.management import execute_manager
+
+# Add the parent directory of 'manage.py' to the python path, so manage.py can
+# be run from any directory.  From http://www.djangosnippets.org/snippets/281/
+sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
 try:
     import settings # Assumed to be in the same directory.
