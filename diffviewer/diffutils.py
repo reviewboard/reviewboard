@@ -369,8 +369,19 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
         else:
             revision = "Revision %s" % revision
 
+        i = filediff.source_file.rfind('/')
+
+        if i != -1:
+            basepath = filediff.source_file[:i]
+            basename = filediff.source_file[i + 1:]
+        else:
+            basepath = ""
+            basename = filediff.source_file
+
         files.append({
             'depot_filename': filediff.source_file,
+            'basename': basename,
+            'basepath': basepath,
             'revision': revision,
             'chunks': chunks,
             'filediff': filediff,

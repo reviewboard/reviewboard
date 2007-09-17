@@ -355,7 +355,8 @@ def _query_for_diff(review_request, revision, query_extra=None):
 
 
 @check_login_required
-def diff(request, review_request_id, revision=None, interdiff_revision=None):
+def diff(request, review_request_id, revision=None, interdiff_revision=None,
+         template_name='diffviewer/view_diff.html'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
 
@@ -385,7 +386,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None):
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
-    })
+    }, template_name)
 
 
 @check_login_required
@@ -404,7 +405,7 @@ def raw_diff(request, review_request_id, revision=None):
 
 @check_login_required
 def diff_fragment(request, review_request_id, revision, filediff_id,
-                  interdiffset_id=None, chunkindex=None,
+                  interdiffset_id=None, chunkindex=None, collapseall=False,
                   template_name='diffviewer/diff_file_fragment.html'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
@@ -417,7 +418,8 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     diffset = _query_for_diff(review_request, revision, query_extra)
 
     return view_diff_fragment(request, diffset.id, filediff_id,
-                              interdiffset_id, chunkindex, template_name)
+                              interdiffset_id, chunkindex, collapseall,
+                              template_name)
 
 
 @login_required

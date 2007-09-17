@@ -30,15 +30,15 @@ def get_enable_highlighting(user):
            user_syntax_highlighting and pygments
 
 
-def render_diff_fragment(request, file, context,
-                         template_name='diffviewer/diff_file_fragment.html'):
+def render_diff_fragment(request, file, context, template_name):
     context['file'] = file
 
     return render_to_string(template_name, RequestContext(request, context))
 
 
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
-                        context):
+                        context,
+                        template_name='diffviewer/diff_file_fragment.html'):
     key = 'diff-fragment-%s' % file['filediff'].id
 
     if chunkindex:
@@ -52,11 +52,14 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
 
     if collapseall:
         key += '-collapsed'
+        context['collapseall'] = True
+
     if highlighting:
         key += '-highlighting'
 
     return cache_memoize(key, lambda: render_diff_fragment(request, file,
-                                                           context))
+                                                           context,
+                                                           template_name))
 
 
 def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
@@ -80,7 +83,6 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         context = {
             'diffset': diffset,
             'interdiffset': interdiffset,
-            'collapseall': collapseall,
         }
         context.update(extra_context)
 
@@ -108,7 +110,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
 
 def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
-                       chunkindex=None,
+                       chunkindex=None, collapseall=False,
                        template_name='diffviewer/diff_file_fragment.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
     filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
@@ -128,8 +130,8 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
 
             return HttpResponse(build_diff_fragment(request, file,
                                                     chunkindex,
-                                                    highlighting, False,
-                                                    context))
+                                                    highlighting, collapseall,
+                                                    context, template_name))
         raise UserVisibleError(
             _(u"Internal error. Unable to locate file record for filediff %s") % \
             filediff.id)
