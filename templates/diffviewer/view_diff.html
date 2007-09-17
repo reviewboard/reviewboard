@@ -1,8 +1,9 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load reviewtags %}
 {% load htmlutils %}
 
-{% block title %}{{review_request_details.summary}} | Diff Viewer{% endblock %}
+{% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="/css/reviews.css" />
@@ -35,7 +36,7 @@
 {% ifneatnumber review_request.id %}
 {%  box "yay" %}
  <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
- <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
+ <h1>{% blocktrans with review_request.submitter|realname as name %}{{name}} got review request #{{review_request.id}}!{% endblocktrans %}</h1>
 {%  endbox %}
 {% endifneatnumber %}
 
@@ -47,11 +48,11 @@
 <a name="index_header"></a>
 {% include "diffviewer/changeindex.html" %}
 <ul class="controls">
- <li><a href="raw/"> Download Patch</a></li>
+ <li><a href="raw/"> {% trans "Download Patch" %}</a></li>
 {% if collapseall %}
- <li><a href=".?expand=1"><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> Expand changes</a></li>
+ <li><a href=".?expand=1"><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
 {% else %}
- <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> Collapse changes</a></li>
+ <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
 {% endif %}
 </ul>
 {% endbox %}
@@ -71,9 +72,9 @@
 </div>
 
 <div id="comment-dlg" style="visibility:hidden;position:absolute;top:0px;">
- <div class="ydlg-hd">Comments</div>
+ <div class="ydlg-hd">{% trans "Comments" %}</div>
  <div class="ydlg-bd">
-  <div id="tab-comments" class="ydlg-tab" title="Comments">
+  <div id="tab-comments" class="ydlg-tab" title="{% trans "Comments" %}">
    <div id="existing-comments"></div>
    <form id="commentform" class="comment draft" method="post" action="comments/">
 	<input type="hidden" name="action" id="id_comment_action" value="" />
@@ -83,14 +84,14 @@
    </form>
   </div>
  </div>
- <div id="tab-review" class="ydlg-tab" title="Review">
+ <div id="tab-review" class="ydlg-tab" title="{% trans "Review" %}">
   <form id="reviewform" method="post">
    <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
-   <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review.shipit %}checked="checked" {% endif %}/>Ship It!<br />
-   <label for="id_body_top">Review Body:</label>
+   <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review.shipit %}checked="checked" {% endif %}/>{% trans "Ship It!" %}<br />
+   <label for="id_body_top">{% trans "Review Body:" %}</label>
    <div id="review-body">
     <textarea id="id_body_top" name="body_top" rows="5" cols="20">{% if review %}{{review.body_top|escape}}{% endif %}</textarea>
-    <div id="all-review-comments"><i>Comments will be displayed here</i></div>
+    <div id="all-review-comments"><i>{% trans "Comments will be displayed here" %}</i></div>
     <textarea id="id_body_bottom" name="body_bottom" rows="5" cols="20">{% if review %}{{review.body_bottom|escape}}{% endif %}</textarea>
    </div>
   </form>

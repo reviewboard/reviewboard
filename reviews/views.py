@@ -12,8 +12,10 @@ from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.utils.translation import ugettext as _
 from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
+
 from djblets.auth.util import login_required
 from djblets.util.decorators import simple_decorator
 from djblets.util.misc import get_object_or_none
@@ -217,23 +219,23 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
     if view == 'outgoing':
         review_requests = ReviewRequest.objects.from_user(user.username, user)
-        title = "All Outgoing Review Requests"
+        title = _(u"All Outgoing Review Requests")
     elif view == 'to-me':
         review_requests = \
             ReviewRequest.objects.to_user_directly(user.username, user)
-        title = "Incoming Review Requests to Me"
+        title = _(u"Incoming Review Requests to Me")
     elif view == 'to-group':
         if group != "":
             review_requests = ReviewRequest.objects.to_group(group, user)
-            title = "Incoming Review Requests to %s" % group
+            title = _(u"Incoming Review Requests to %s") % group
         else:
             review_requests = \
                 ReviewRequest.objects.to_user_groups(user.username, user)
-            title = "All Incoming Review Requests to My Groups"
+            title = _(u"All Incoming Review Requests to My Groups")
     elif view == 'starred':
         review_requests = \
             user.get_profile().starred_review_requests.public(user)
-        title = "Starred Review Requests"
+        title = _(u"Starred Review Requests")
     elif view == 'watched-groups':
         # This is special. We want to return a list of groups, not
         # review requests.
@@ -241,13 +243,13 @@ def dashboard(request, template_name='reviews/dashboard.html'):
             queryset=user.get_profile().starred_groups.all(),
             template_name=template_name,
             extra_context={
-                'title': "Watched Groups",
+                'title': _(u"Watched Groups"),
                 'view': view,
                 'group': group,
             })
     else: # "incoming" or invalid
         review_requests = ReviewRequest.objects.to_user(user.username, user)
-        title = "All Incoming Review Requests"
+        title = _(u"All Incoming Review Requests")
 
     class BogusQuerySet:
         """

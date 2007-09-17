@@ -1,28 +1,26 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load htmlutils %}
-{% block title %}Log in{% endblock %}
+{% block title %}{% trans "Log in" %}{% endblock %}
 
 {% block content %}
 {% box "important" %}
 {% if BUILTIN_AUTH %}
- <h1>New user?</h1>
+<h1>{% trans "New user?" %}</h1>
  <p>
-  If you don't yet have an account, you'll need to
-  <a href="/account/register/">register</a> one. It will only take a
-  minute.
+ {% blocktrans %}If you don't yet have an account, you'll need to <a href="/account/register/">register</a> one. It will only take a minute.{% endblocktrans %}
  </p>
 {% else %}
- <h1>Log in with your standard username and password</h1>
+<h1>{% trans "Log in with your standard username and password" %}</h1>
  <p>
-  There's no need to register a new account. Your standard username and
-  password should work fine.
+ {% blocktrans %}There's no need to register a new account. Your standard username and password should work fine.{% endblocktrans %}
  </p>
 {% endif %}
 {% endbox %}
 
 {% box "loginform" %}
 <form method="post" action=".">
- <h1 class="title">Log In</h1>
+ <h1 class="title">{% trans "Log In" %}</h1>
  <div class="main">
  {% if error %}
  {%  errorbox %}
@@ -32,16 +30,16 @@
  <input type="hidden" name="next_page" value="{{next_page}}"></input>
  <table>
   <tr>
-   <td class="label"><label for="id_username">Username:</label></td>
+   <td class="label"><label for="id_username">{% trans "Username:" %}</label></td>
    <td class="field"><input type="text" name="username" id="id_username" /></td>
   </tr>
   <tr>
-   <td class="label"><label for="id_password">Password:</label></td>
+   <td class="label"><label for="id_password">{% trans "Password:" %}</label></td>
    <td class="field"><input type="password" name="password" id="id_password" /></td>
   </tr>
   <tr>
    <td>&nbsp;</td>
-   <td class="field"><input type="submit" value="Log in" /></td>
+   <td class="field"><input type="submit" value="{% trans "Log in" %}" /></td>
   </tr>
  </table>
  </div>

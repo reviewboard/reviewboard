@@ -1,3 +1,4 @@
+{% load i18n %}
 {% load difftags %}
 {% load htmlutils %}
 {% if standalone and error %}
@@ -19,7 +20,7 @@
   </tr>
   <tr>
    <th class="rev">{{file.revision}}</th>
-   <th class="rev">New Change</th>
+   <th class="rev">{% trans "New Change" %}</th>
   </tr>
  </thead>
 {% endif %}
@@ -27,7 +28,7 @@
  <tbody class="binary">
   <tr>
    <td colspan="2">&nbsp;</td>
-   <td colspan="2">This is a binary file. The content cannot be displayed.</td>
+   <td colspan="2">{% trans "This is a binary file. The content cannot be displayed." %}</td>
   </tr>
  </tbody>
 {% else %}
@@ -57,7 +58,7 @@
   <tr>
    <th class="controls">&nbsp;</th>
    <th>...</th>
-   <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{forloop.counter0}}', 'collapsed-chunk{{file.index}}.{{forloop.counter0}}'); return false;">Expand</a>]</td>
+   <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{forloop.counter0}}', 'collapsed-chunk{{file.index}}.{{forloop.counter0}}'); return false;">{% trans "Expand" %}</a>]</td>
   </tr>
  </tbody>
 {% endif %}

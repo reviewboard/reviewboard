@@ -4,7 +4,6 @@ import os
 import sys
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
     ('Example Joe', 'admin@example.com')
@@ -21,6 +20,8 @@ TIME_ZONE = 'US/Pacific'
 # http://blogs.law.harvard.edu/tech/stories/storyReader$15
 LANGUAGE_CODE = 'en-us'
 
+# This should match the ID of the Site object in the database.  This is used to
+# figure out URLs to stick in e-mails and related pages.
 SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
@@ -41,9 +42,10 @@ TEMPLATE_LOADERS = (
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.doc.XViewMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.middleware.doc.XViewMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -144,3 +146,5 @@ try:
     from settings_local import *
 except ImportError:
     dependency_error('Unable to read settings_local.py.')
+
+TEMPLATE_DEBUG = DEBUG

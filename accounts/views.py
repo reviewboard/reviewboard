@@ -4,6 +4,8 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
+from django.utils.translation import ugettext as _
+
 from djblets.auth.util import login_required
 
 from reviewboard.accounts.models import Profile
@@ -17,7 +19,7 @@ class PreferencesForm(forms.Form):
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
     syntax_highlighting = forms.BooleanField(required=False,
-        label="Enable syntax highlighting in the diff viewer")
+        label=_("Enable syntax highlighting in the diff viewer"))
 
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)

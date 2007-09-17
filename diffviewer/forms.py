@@ -2,6 +2,7 @@ import os
 
 from django import newforms as forms
 from django.utils.encoding import smart_unicode
+from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -13,8 +14,8 @@ class EmptyDiffError(ValueError):
 
 
 class UploadDiffForm(forms.Form):
-    basedir = forms.CharField(label="Base directory")
-    path = forms.CharField(label="Diff path", widget=forms.FileInput())
+    basedir = forms.CharField(label=_("Base directory"))
+    path = forms.CharField(label=_("Diff path"), widget=forms.FileInput())
 
     # Extensions used for intelligent sorting of header files
     # before implementation files.
@@ -36,7 +37,7 @@ class UploadDiffForm(forms.Form):
         files = tool.get_parser(file["content"]).parse()
 
         if len(files) == 0:
-            raise EmptyDiffError("The diff file is empty")
+            raise EmptyDiffError(_("The diff file is empty"))
 
         # Check that we can actually get all these files.
         if tool.get_diffs_use_absolute_paths():

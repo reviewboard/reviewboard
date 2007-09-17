@@ -10,6 +10,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
+from django.utils.translation import ugettext as _
+
 from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
@@ -42,7 +44,7 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
     if chunkindex:
         chunkindex = int(chunkindex)
         if chunkindex < 0 or chunkindex >= len(file['chunks']):
-            raise UserVisibleError("Invalid chunk index %s specified." % \
+            raise UserVisibleError(_(u"Invalid chunk index %s specified.") % \
                                    chunkindex)
 
         file['chunks'] = [file['chunks'][chunkindex]]
@@ -129,7 +131,7 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
                                                     highlighting, False,
                                                     context))
         raise UserVisibleError(
-            u"Internal error. Unable to locate file record for filediff %s" % \
+            _(u"Internal error. Unable to locate file record for filediff %s") % \
             filediff.id)
     except Exception, e:
         context = { 'error': e, 'standalone': True, }

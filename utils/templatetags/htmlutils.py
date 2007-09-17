@@ -287,6 +287,15 @@ def basename(value):
     return os.path.basename(value)
 
 
+@register.filter
+def realname(user):
+    full_name = user.get_full_name()
+    if full_name == '':
+        return user.username
+    else:
+        return full_name
+
+
 @register.simple_tag
 def form_dialog_fields(form):
     s = ''

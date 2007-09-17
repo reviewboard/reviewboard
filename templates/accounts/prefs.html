@@ -1,17 +1,17 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% load htmlutils %}
-{% block title %}My Account{% endblock %}
+{% block title %}{% trans "My Account" %}{% endblock %}
 
 {% block content %}
 {% if must_configure %}
 {% box "important" %}
- <h1>Apologies for the interruption, but please read this.</h1>
+<h1>{% trans "Apologies for the interruption, but please read this." %}</h1>
  <p>
-  Before you can continue to use Review Board, you'll need to set a few
-  things. This will help us get to know each other better.
+  {% trans "Before you can continue to use Review Board, you'll need to set a few things. This will help us get to know each other better." %}
  </p>
  <p>
-  At a minimum, make sure you have joined one or more groups.
+  {% trans "At a minimum, make sure you have joined one or more groups." %}
  </p>
 </div>
 {% endbox %}
@@ -20,11 +20,11 @@
 <form method="post" action=".">
  {{form.redirect_to}}
 {% box "prefsuser" %}
- <h1 class="title">User Preferences</h1>
+ <h1 class="title">{% trans "User Preferences" %}</h1>
  <div class="main">
   <table>
    <tr>
-    <td><label for="id_first_name">First Name:</label></td>
+    <td><label for="id_first_name">{% trans "First Name:" %}</label></td>
     <td>{{form.first_name}}</td>
    </tr>
    <tr>

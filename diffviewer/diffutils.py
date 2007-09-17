@@ -13,6 +13,8 @@ except ImportError:
 
 from django.conf import settings
 from django.utils.html import escape
+from django.utils.translation import ugettext as _
+
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.myersdiff import MyersDiffer
@@ -27,6 +29,10 @@ class UserVisibleError(Exception):
     pass
 
 
+class DiffCompatError(Exception):
+    pass
+
+
 def Differ(a, b, ignore_space=False,
            compat_version=DEFAULT_DIFF_COMPAT_VERSION):
     """
@@ -38,8 +44,9 @@ def Differ(a, b, ignore_space=False,
     elif compat_version == 1:
         return MyersDiffer(a, b, ignore_space)
     else:
-        raise Exception("Invalid diff compat version (%s) passed to Differ" %
-                        (compat_version))
+        raise DiffCompatError(
+            "Invalid diff compatibility version (%s) passed to Differ" %
+                (compat_version))
 
 
 def patch(diff, file, filename):
@@ -75,9 +82,9 @@ def patch(diff, file, filename):
     if failure:
         # FIXME: This doesn't provide any useful error report on why the patch
         # failed to apply, which makes it hard to debug.
-        raise Exception(("The patch to '%s' didn't apply cleanly. The temporary " +
-                         "files have been left in '%s' for debugging purposes.\n" +
-                         "`patch` returned: %s") %
+        raise Exception(_("The patch to '%s' didn't apply cleanly. The temporary " +
+                          "files have been left in '%s' for debugging purposes.\n" +
+                          "`patch` returned: %s") %
                         (filename, tempfile.tempdir, p.stdout.read()))
 
     f = open(newfile, "r")
@@ -149,7 +156,7 @@ def convert_to_utf8(s):
             return u
         except UnicodeError:
             u = unicode(s, 'iso-8859-15')
-            return u.encode('utf-8') 
+            return u.encode('utf-8')
     else:
         raise TypeError("Value to convert is unexpected type %s", type(s))
 

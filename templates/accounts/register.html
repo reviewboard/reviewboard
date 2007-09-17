@@ -1,35 +1,35 @@
 {% extends "base.html" %}
 {% load htmlutils %}
-{% block title %}Register account{% endblock %}
+{% block title %}{% trans "Register account" %}{% endblock %}
 
 {% block content %}
 {% box "registerform" %}
 <form method="post" action=".">
- <h1 class="title">Register</h1>
+	<h1 class="title">{% trans "Register" %}</h1>
  <div class="main">
   <table id="login_form">
    <tr>
-    <td class="label"><label for="id_username">Username:</label></td>
+    <td class="label"><label for="id_username">{% trans "Username:" %}</label></td>
     <td class="field">{{form.username}}</td>
     <td class="errorbox">{{form.errors.username}}</td>
    </tr>
    <tr>
-    <td class="label"><label for="id_password1">Password:</label></td>
+    <td class="label"><label for="id_password1">{% trans "Password:" %}</label></td>
     <td class="field">{{form.password1}}</td>
     <td class="errorbox">{{form.errors.password1}}</td>
    </tr>
    <tr>
-    <td class="label"><label for="id_password2">Password (repeat):</label></td>
+    <td class="label"><label for="id_password2">{% trans "Password (repeat):" %}</label></td>
     <td class="field">{{form.password2}}</td>
     <td class="errorbox">{{form.errors.password2}}</td>
    </tr>
    <tr>
-    <td class="label"><label for="id_email">E-mail address:</label></td>
+    <td class="label"><label for="id_email">{% trans "E-mail address:" %}</label></td>
     <td class="field">{{form.email}}</td>
     <td class="errorbox">{{form.errors.email}}</td>
    </tr>
    <tr>
-    <td><input type="submit" value="Register" /></td>
+    <td><input type="submit" value="{% trans "Register" %}" /></td>
     <td>&nbsp;</td>
    </tr>
   </table>
