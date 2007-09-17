@@ -351,13 +351,29 @@ class ViewTests(TestCase):
     # TODO - test the rest of that form
 
     def testReviewList(self):
-        """Testing review_list view"""
+        """Testing all_review_requests view"""
         self.client.login(username='grumpy', password='grumpy')
 
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+
+        review_requests = context['object_list']
+        self.assertEqual(len(review_requests), 5)
+        self.assertEqual(review_requests[0].summary,
+                         'Made e-mail improvements')
+        self.assertEqual(review_requests[1].summary,
+                         'Improved login form')
+        self.assertEqual(review_requests[2].summary,
+                         'Error dialog')
+        self.assertEqual(review_requests[3].summary,
+                         'Update for cleaned_data changes')
+        self.assertEqual(review_requests[4].summary,
+                         'Add permission checking for JSON API')
 
         self.client.logout()
 
@@ -377,12 +393,26 @@ class ViewTests(TestCase):
 
     def testDashboard1(self):
         """Testing dashboard view (incoming)"""
-        self.client.login(username='admin', password='admin')
+        self.client.login(username='doc', password='doc')
 
         response = self.client.get('/dashboard/', {'view': 'incoming'})
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+
+        review_requests = context['review_request_list']
+        self.assertEqual(len(review_requests), 4)
+        self.assertEqual(review_requests[0].summary,
+                         'Made e-mail improvements')
+        self.assertEqual(review_requests[1].summary,
+                         'Update for cleaned_data changes')
+        self.assertEqual(review_requests[2].summary,
+                         'Comments Improvements')
+        self.assertEqual(review_requests[3].summary,
+                         'Add permission checking for JSON API')
 
         self.client.logout()
 
@@ -393,32 +423,58 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'outgoing'})
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+
+        review_requests = context['review_request_list']
+        self.assertEqual(len(review_requests), 1)
+        self.assertEqual(review_requests[0].summary,
+                         'Add permission checking for JSON API')
 
         self.client.logout()
 
 
     def testDashboard3(self):
         """Testing dashboard view (to-me)"""
-        self.client.login(username='admin', password='admin')
+        self.client.login(username='doc', password='doc')
 
         response = self.client.get('/dashboard/', {'view': 'to-me'})
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+
+        review_requests = context['review_request_list']
+        self.assertEqual(len(review_requests), 2)
+        self.assertEqual(review_requests[0].summary, 'Made e-mail improvements')
+        self.assertEqual(review_requests[1].summary,
+                         'Add permission checking for JSON API')
 
         self.client.logout()
 
 
     def testDashboard4(self):
         """Testing dashboard view (to-group devgroup)"""
-        self.client.login(username='admin', password='admin')
+        self.client.login(username='doc', password='doc')
 
         response = self.client.get('/dashboard/',
                                    {'view': 'to-group',
                                     'group': 'devgroup'})
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0] # Since multiple templates were used to
+                                      # render the page, this is a list with one
+                                      # element.  I dunno, ask the django
+                                      # developers why.
+
+        review_requests = context['review_request_list']
+        self.assertEqual(len(review_requests), 2)
+        self.assertEqual(review_requests[0].summary,
+                         'Update for cleaned_data changes')
+        self.assertEqual(review_requests[1].summary, 'Comments Improvements')
 
         self.client.logout()
