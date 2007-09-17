@@ -39,7 +39,7 @@ def render_diff_fragment(request, file, context, template_name):
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                         context,
                         template_name='diffviewer/diff_file_fragment.html'):
-    key = 'diff-fragment-%s' % file['filediff'].id
+    key = template_name + '-%s' % file['filediff'].id
 
     if chunkindex:
         chunkindex = int(chunkindex)
