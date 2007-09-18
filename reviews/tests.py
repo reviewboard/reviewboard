@@ -306,10 +306,7 @@ class ViewTests(TestCase):
         print response.content
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
+        context = response.context[0]
         request = context['review_request']
 
         self.assertEqual(request.submitter.username, 'admin')
@@ -357,12 +354,9 @@ class ViewTests(TestCase):
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
-
+        context = response.context[0]
         review_requests = context['object_list']
+
         self.assertEqual(len(review_requests), 5)
         self.assertEqual(review_requests[0].summary,
                          'Made e-mail improvements')
@@ -382,14 +376,28 @@ class ViewTests(TestCase):
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0]
+        users = context['object_list']
+
+        self.assertEqual(len(users), 4)
+        self.assertEqual(users[0].username, 'admin')
+        self.assertEqual(users[1].username, 'doc')
+        self.assertEqual(users[2].username, 'dopey')
+        self.assertEqual(users[3].username, 'grumpy')
 
     def testGroupList(self):
         """Testing group_list view"""
         response = self.client.get('/groups/')
         self.assertEqual(response.status_code, 200)
 
-        # TODO - verify contents
+        context = response.context[0]
+        groups = context['group_list']
+
+        self.assertEqual(len(groups), 4)
+        self.assertEqual(groups[0].name, 'devgroup')
+        self.assertEqual(groups[1].name, 'emptygroup')
+        self.assertEqual(groups[2].name, 'newgroup')
+        self.assertEqual(groups[3].name, 'privgroup')
 
     def testDashboard1(self):
         """Testing dashboard view (incoming)"""
@@ -398,12 +406,9 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'incoming'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
-
+        context = response.context[0]
         review_requests = context['review_request_list']
+
         self.assertEqual(len(review_requests), 4)
         self.assertEqual(review_requests[0].summary,
                          'Made e-mail improvements')
@@ -423,12 +428,9 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'outgoing'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
-
+        context = response.context[0]
         review_requests = context['review_request_list']
+
         self.assertEqual(len(review_requests), 1)
         self.assertEqual(review_requests[0].summary,
                          'Add permission checking for JSON API')
@@ -443,12 +445,9 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'to-me'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
-
+        context = response.context[0]
         review_requests = context['review_request_list']
+
         self.assertEqual(len(review_requests), 2)
         self.assertEqual(review_requests[0].summary, 'Made e-mail improvements')
         self.assertEqual(review_requests[1].summary,
@@ -466,12 +465,9 @@ class ViewTests(TestCase):
                                     'group': 'devgroup'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
-
+        context = response.context[0]
         review_requests = context['review_request_list']
+
         self.assertEqual(len(review_requests), 2)
         self.assertEqual(review_requests[0].summary,
                          'Update for cleaned_data changes')
