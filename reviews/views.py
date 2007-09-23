@@ -251,54 +251,8 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         review_requests = ReviewRequest.objects.to_user(user.username, user)
         title = _(u"All Incoming Review Requests")
 
-    class BogusQuerySet:
-        """
-        Simple class to fool the object_list generic view into thinking a
-        list is a QuerySet.
-        """
-        def __init__(self, list):
-            self.list = list
-
-        def order_by(self, *field_names):
-            return BogusQuerySet(sorted(self.list,
-                lambda a,b: self._sort_func(a, b, field_names)))
-
-        def _sort_func(self, a, b, field_list):
-            for field in field_list:
-                if field[0] == "-":
-                    reverse = True
-                    field = field[1:]
-                else:
-                    reverse = False
-
-                try:
-                    a_value = str(getattr(a, field))
-                    b_value = str(getattr(b, field))
-
-                    if reverse:
-                        i = cmp(b_value, a_value)
-                    else:
-                        i = cmp(a_value, b_value)
-
-                    if i != 0:
-                        return i
-                except AttributeError:
-                    # The field doesn't exist, so just ignore it.
-                    pass
-
-            # They're equal, so compare the objects themselves to "sort" it out.
-            return cmp(a, b)
-
-        def _clone(self):
-            return self.list
-
-    if isinstance(review_requests, list):
-        queryset = BogusQuerySet(review_requests)
-    else:
-        queryset = review_requests
-
     return review_list(request,
-        queryset=queryset,
+        queryset=review_requests,
         template_name=template_name,
         default_filter=False,
         template_object_name='review_request',

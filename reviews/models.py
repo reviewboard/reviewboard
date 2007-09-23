@@ -5,7 +5,9 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
+
 from djblets.util.misc import get_object_or_none
+from djblets.util.db import QLeftOuterJoins
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
@@ -126,29 +128,9 @@ class ReviewRequestManager(models.Manager):
         return self._query(user, status, Q(target_people__username=username))
 
     def to_user(self, username, user=None, status='P'):
-        # Using an OR query inside the extra_query field like this:
-        # Q(target_people__username=username) |
-        #     Q(target_groups__users__username=username))
-        # does not work.  I haven't exactly figured out why.
-
-        # This is disgusting, but it actually works =P
-        # FIXME: it might be useful to cache this and invalidate the cache every
-        #        time the status on a review request changes.
-        results = []
-        def add_if_unique(requests):
-            for request in requests:
-                found = False
-                for result in results:
-                    if request.id == result.id:
-                        found = True
-                if not found:
-                    results.append(request)
-
-        add_if_unique(self.to_user_groups(username, user, status))
-        add_if_unique(self.to_user_directly(username, user, status))
-        results.sort(lambda a, b: cmp(a.last_updated, b.last_updated),
-                     reverse=True)
-        return results
+        query = QLeftOuterJoins(Q(target_groups__users__username=username) |
+                                Q(target_people__username=username))
+        return self._query(user, status, query)
 
     def from_user(self, username, user=None, status='P'):
         return self._query(user, status, Q(submitter__username=username))
