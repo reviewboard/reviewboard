@@ -4,6 +4,7 @@ from django.db.models.query import QuerySet
 from django.template import resolve_variable
 from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
+from django.template.defaultfilters import escape
 from django.utils import simplejson
 from djblets.util.decorators import blocktag
 from djblets.util.misc import get_object_or_none
@@ -32,20 +33,20 @@ class ReviewSummary(template.Node):
             try:
                 draft = review_request.reviewrequestdraft_set.get()
                 return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       draft.summary
+                       escape(draft.summary)
             except ReviewRequestDraft.DoesNotExist:
                 pass
 
             if not review_request.public:
                 # XXX Do we want to say "Draft?"
                 return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       review_request.summary
+                       escape(review_request.summary)
 
         if review_request.status == 'S':
             return "<span class=\"draftlabel\">[Submitted]</span> " + \
                    review_request.summary
 
-        return review_request.summary
+        return escape(review_request.summary)
 
 
 @register.tag
