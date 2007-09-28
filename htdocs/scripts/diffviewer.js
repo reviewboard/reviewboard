@@ -112,13 +112,11 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
         var commentLabel = getEl('id_comment_label');
 
         if (this.commentBlock.localNumLines == 1) {
-            commentLabel.dom.innerHTML = "Your comment for line " +
-                                        this.commentBlock.linenum;
+            commentLabel.dom.innerHTML = "Your comment";
         } else {
-            commentLabel.dom.innerHTML = "Your comment for lines " +
-                                         this.commentBlock.linenum + " - " +
-                                         (this.commentBlock.linenum +
-                                          this.commentBlock.localNumLines - 1);
+            commentLabel.dom.innerHTML = "Your comment (" +
+                                         this.commentBlock.localNumLines +
+                                         " lines)";
         }
     },
 
@@ -239,7 +237,7 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
 });
 
 
-CommentBlock = function(fileid, lineNumCell, linenum, comments) {
+CommentBlock = function(fileid, row, linenum, comments) {
     this.discard = function() {
         delete gCommentBlocks[this.el.id];
 
@@ -251,7 +249,7 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
     };
 
     this.updatePosition = function() {
-        this.el.setTop(getEl(this.lineNumCell).getY());
+        this.el.setTop(getEl(this.row).getY());
     };
 
     this.setCount = function(count) {
@@ -285,10 +283,13 @@ CommentBlock = function(fileid, lineNumCell, linenum, comments) {
     this.filediffid = gFileAnchorToId[fileid];
     this.comments = comments;
     this.linenum = linenum;
-    this.lineNumCell = lineNumCell;
+    this.row = row;
     this.localComment = "";
     this.localNumLines = 1;
     this.hasDraft = false;
+
+    // Get the first line number cell.
+    var lineNumCell = getFirstLineNumCell(row);
 
     this.el = dh.append(lineNumCell, {
         tag: 'span',
@@ -375,22 +376,17 @@ function onPageResize(evt) {
     }
 }
 
-function findLineNumCell(table, linenum) {
-    var cell = null;
+function findLineNumRow(table, linenum) {
+    var row = null;
     var found = false;
     var row_offset = 1; // Get past the headers.
 
     if (table.rows.length - row_offset > linenum) {
-        var norm_row = row_offset + linenum;
-        var row = table.rows[row_offset + linenum];
+        row = table.rows[row_offset + linenum];
 
         // Account for the "x lines hidden" row.
-        if (row != null && row.cells.length > 3) {
-            cell = (row.cells.length == 4 ? row.cells[1] : row.cells[0]);
-
-            if (parseInt(cell.innerHTML) == linenum) {
-                return cell;
-            }
+        if (row != null && parseInt(row.getAttribute('line')) == linenum) {
+            return row;
         }
     }
 
@@ -398,24 +394,23 @@ function findLineNumCell(table, linenum) {
     var low = 1;
     var high = table.rows.length;
 
-    if (cell != null) {
+    if (row != null) {
         /*
          * We collapsed the rows (unless someone mucked with the DB),
          * so the desired row is less than the row number retrieved.
          */
-        high = parseInt(cell.innerHTML);
+        high = parseInt(row.getAttribute('line'))
     }
 
     for (var i = Math.round((low + high) / 2); low < high - 1;) {
-        var row = table.rows[row_offset + i];
+        row = table.rows[row_offset + i];
 
         if (!row) {
             high--;
             continue;
         }
 
-        cell = (row.cells.length == 4 ? row.cells[1] : row.cells[0]);
-        var value = parseInt(cell.innerHTML);
+        var value = parseInt(row.getAttribute('line'))
 
         if (!value) {
             i++;
@@ -430,7 +425,7 @@ function findLineNumCell(table, linenum) {
         } else if (value < linenum) {
             low = i;
         } else {
-            return cell;
+            return row;
         }
 
         /*
@@ -449,12 +444,12 @@ function findLineNumCell(table, linenum) {
 }
 
 function isLineNumCell(cell) {
-    var content = cell.innerHTML;
+    return (cell.tagName == "TH" && cell.parentNode.hasAttribute('line') &&
+            cell.className != "controls");
+}
 
-    return (cell.tagName == "TH" &&
-            cell.parentNode.parentNode.tagName == "TBODY" &&
-            cell.className != "controls" && content != "..." &&
-            parseInt(content) != NaN);
+function getFirstLineNumCell(row) {
+    return row.cells[row.cells.length - 4];
 }
 
 function onLineMouseDown(e, unused, table) {
@@ -470,8 +465,10 @@ function onLineMouseDown(e, unused, table) {
         var row = node.parentNode;
 
         gSelection.table    = table;
-        gSelection.begin    = gSelection.end    = node;
-        gSelection.beginNum = gSelection.endNum = parseInt(node.innerHTML);
+        gSelection.begin    = gSelection.end    = row;
+        gSelection.beginNum = gSelection.endNum =
+            parseInt(row.getAttribute('line'));
+
         gSelection.lastSeenIndex = row.rowIndex;
         getEl(row).addClass("selected");
 
@@ -514,8 +511,8 @@ function onLineMouseUp(e, unused, table, fileid) {
     if (gSelection.begin != null) {
         var rows = gSelection.table.dom.rows;
 
-        for (var i = gSelection.begin.parentNode.rowIndex;
-             i <= gSelection.end.parentNode.rowIndex;
+        for (var i = gSelection.begin.rowIndex;
+             i <= gSelection.end.rowIndex;
              i++) {
 
             getEl(rows[i]).removeClass("selected");
@@ -536,35 +533,36 @@ function onLineMouseUp(e, unused, table, fileid) {
 function onLineMouseOver(e, unused, table, fileid) {
     var node = getEl(e.target || e.srcElement);
 
+    /* Check if we're hovering over a comment flag. */
     if (node.hasClass("commentflag")) {
         if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
             node = gGhostCommentFlagRow;
-            getEl(node.dom.parentNode).addClass("selected");
+            getEl(row).addClass("selected");
         } else {
             node = getEl(node.dom.parentNode);
         }
     }
 
+    var row = node.dom.parentNode;
+
     if (isLineNumCell(node.dom)) {
         node.setStyle("cursor", "pointer");
 
         if (gSelection.table == table) {
-            var linenum = parseInt(node.dom.innerHTML);
+            var linenum = parseInt(row.getAttribute('line'));
 
             if (linenum >= gSelection.beginNum) {
-                var row = node.dom.parentNode;
-
                 for (var i = gSelection.lastSeenIndex;
                      i <= row.rowIndex;
                      i++) {
                     getEl(table.dom.rows[i]).addClass("selected");
                 }
 
-                gSelection.end = node.dom;
+                gSelection.end = row;
                 gSelection.endNum = linenum;
                 gSelection.lastSeenIndex = row.rowIndex;
             }
-        } else if (node.dom.childNodes.length == 1) {
+        } else if (getFirstLineNumCell(row).childNodes.length <= 1) {
             if (!gGhostCommentFlag) {
                 gGhostCommentFlag = dh.append(document.body, {
                     id: 'ghost-commentflag',
@@ -589,13 +587,21 @@ function onLineMouseOver(e, unused, table, fileid) {
                 onLineMouseOver.createDelegate(this, [table, fileid], true));
             gGhostCommentFlagRow = node;
 
-            getEl(node.dom.parentNode).addClass("selected");
-        } else if (node.dom.childNodes.length > 1 &&
-                   getEl(node.dom.childNodes[1]).hasClass("commentflag")) {
-            getEl(node.dom.parentNode).addClass("selected");
+            getEl(row).addClass("selected");
+        } else {
+            /* See if we have a comment flag in here. */
+            var lineNumCell = getFirstLineNumCell(row);
+            for (var i = 0; i < lineNumCell.childNodes.length; i++) {
+                var childNode = lineNumCell.childNodes[i];
+                if (childNode.nodeType == 1 &&
+                    getEl(childNode).hasClass("commentflag")) {
+                    getEl(row).addClass("selected");
+                    break;
+                }
+            }
         }
     } else if (gGhostCommentFlagRow != null && node != gGhostCommentFlagRow) {
-        getEl(node.dom.parentNode).removeClass("selected");
+        getEl(row).removeClass("selected");
     }
 }
 
@@ -620,7 +626,7 @@ function onLineMouseOut(e, unused, table) {
         if (isLineNumCell(relTarget)) {
             var destRowIndex = relTarget.parentNode.rowIndex;
 
-            if (destRowIndex >= gSelection.begin.parentNode.rowIndex) {
+            if (destRowIndex >= gSelection.begin.rowIndex) {
                 for (var i = gSelection.lastSeenIndex;
                      i > relTarget.parentNode.rowIndex; i--) {
                     getEl(table.dom.rows[i]).removeClass("selected");
@@ -641,10 +647,10 @@ function addCommentFlags(fileid, table, lines) {
 
     for (var linenum in lines) {
         linenum = parseInt(linenum);
-        var cell = findLineNumCell(table.dom, linenum);
+        var row = findLineNumRow(table.dom, linenum);
 
-        if (cell != null) {
-            new CommentBlock(fileid, cell, linenum, lines[linenum]);
+        if (row != null) {
+            new CommentBlock(fileid, row, linenum, lines[linenum]);
         } else {
             remaining[linenum] = lines[linenum];
         }

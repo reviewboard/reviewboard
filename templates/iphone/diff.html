@@ -25,13 +25,15 @@
   <tbody{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% endifnotequal %}>
 {% for line in chunk.lines %}
    <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
-    <th>{{line.0}}</th>
+    <th>{{line.1}}</th>
 {% ifequal chunk.change "replace" %}
-    <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
-    <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
+    <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
+    <th>{{line.4}}</th>
+    <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
 {% else %}
-    <td><pre>{{ line.1|showextrawhitespace }}</pre></td>
-    <td><pre>{{ line.3|showextrawhitespace }}</pre></td>
+    <td><pre>{{ line.2|showextrawhitespace }}</pre></td>
+    <th>{{line.4}}</th>
+    <td><pre>{{ line.5|showextrawhitespace }}</pre></td>
 {% endifequal %}
    </tr>
 {% endfor %}

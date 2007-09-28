@@ -10,25 +10,25 @@
   <col class="controls" />
   <col class="line" />
   <col class="left" />
+  <col class="line" />
   <col class="right" />
  </colgroup>
  <thead>
   <tr onClick="gotoAnchor('{{file.index}}');">
-   <th rowspan="2" class="controls">&nbsp;</th>
-   <th rowspan="2" >&nbsp;</th>
-   <th colspan="2">{{ file.depot_filename }}</th>
+   <th class="controls">&nbsp;</th>
+   <th colspan="4">{{ file.depot_filename }}</th>
   </tr>
   <tr>
-   <th class="rev">{{file.revision}}</th>
-   <th class="rev">{% trans "New Change" %}</th>
+   <th colspan="3" class="rev">{{file.revision}}</th>
+   <th colspan="2" class="rev">{% trans "New Change" %}</th>
   </tr>
  </thead>
 {% endif %}
 {% if file.binary %}
  <tbody class="binary">
   <tr>
-   <td colspan="2">&nbsp;</td>
-   <td colspan="2">{% trans "This is a binary file. The content cannot be displayed." %}</td>
+   <td>&nbsp;</td>
+   <td colspan="4">{% trans "This is a binary file. The content cannot be displayed." %}</td>
   </tr>
  </tbody>
 {% else %}
@@ -36,19 +36,21 @@
 {%  if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
 {% for line in chunk.lines %}
-  <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
+  <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
 {% if forloop.first %}
    <th class="controls">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</th>
-   <th>{{line.0}}</th>
+   <th>{{line.1}}</th>
 {% else %}
-   <th colspan="2">{{line.0}}</th>
+   <th colspan="2">{{line.1}}</th>
 {% endif %}
 {% ifequal chunk.change "replace" %}
-   <td><pre>{{ line.1|highlightregion:line.2|showextrawhitespace }}</pre></td>
-   <td><pre>{{ line.3|highlightregion:line.4|showextrawhitespace }}</pre></td>
+   <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
+   <th>{{line.4}}</th>
+   <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
 {% else %}
-   <td><pre>{{ line.1|showextrawhitespace }}</pre></td>
-   <td><pre>{{ line.3|showextrawhitespace }}</pre></td>
+   <td><pre>{{ line.2|showextrawhitespace }}</pre></td>
+   <th>{{line.4}}</th>
+   <td><pre>{{ line.5|showextrawhitespace }}</pre></td>
 {% endifequal %}
   </tr>
 {% endfor %}
@@ -58,7 +60,7 @@
   <tr>
    <th class="controls">&nbsp;</th>
    <th>...</th>
-   <td colspan="2">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{forloop.counter0}}', 'collapsed-chunk{{file.index}}.{{forloop.counter0}}'); return false;">{% trans "Expand" %}</a>]</td>
+   <td colspan="3">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{forloop.counter0}}', 'collapsed-chunk{{file.index}}.{{forloop.counter0}}'); return false;">{% trans "Expand" %}</a>]</td>
   </tr>
  </tbody>
 {% endif %}

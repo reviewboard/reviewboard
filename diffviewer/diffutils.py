@@ -185,13 +185,16 @@ def get_patched_file(buffer, filediff):
 
 
 def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
-    def diff_line(linenum, oldline, newline, oldmarkup, newmarkup):
-        if not oldline or not newline:
-            return [linenum, oldmarkup or '', [], newmarkup or '', []]
+    def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
+                  oldmarkup, newmarkup):
+        if oldline and newline:
+            oldregion, newregion = get_line_changed_regions(oldline, newline)
+        else:
+            oldregion = newregion = []
 
-        oldregion, newregion = get_line_changed_regions(oldline, newline)
-
-        return [linenum, oldmarkup, oldregion, newmarkup, newregion]
+        return [vlinenum,
+                oldlinenum or '', oldmarkup or '', oldregion,
+                newlinenum or '', newmarkup or '', newregion]
 
     def new_chunk(lines, numlines, tag, collapsable=False):
         return {
@@ -268,7 +271,8 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
         numlines = max(len(oldlines), len(newlines))
 
         lines = map(diff_line,
-                    range(linenum, linenum + numlines),
+                    xrange(linenum, linenum + numlines),
+                    xrange(i1 + 1, i2 + 1), xrange(j1 + 1, j2 + 1),
                     a[i1:i2], b[j1:j2], oldlines, newlines)
         linenum += numlines
 

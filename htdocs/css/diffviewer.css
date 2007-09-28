@@ -70,7 +70,7 @@ table.sidebyside tbody.delete {
 }
 
 table.sidebyside tbody.delete th {
-  background: #ffc5ce;
+  background: #ebb1ba;
 }
 
 table.sidebyside tbody.delete tr.selected * {
@@ -82,7 +82,7 @@ table.sidebyside tbody.insert {
 }
 
 table.sidebyside tbody.insert th {
-  background: #c5ffc4;
+  background: #b1ebb0;
 }
 
 table.sidebyside tbody.insert tr.selected * {
@@ -94,7 +94,7 @@ table.sidebyside tbody.replace {
 }
 
 table.sidebyside tbody.replace th {
-  background: #fdfebc;
+  background: #e9eaa8;
 }
 
 table.sidebyside tbody.replace tr.selected * {
