@@ -9,10 +9,17 @@ class CVSTool(SCMTool):
     regex_rev = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
 
     def __init__(self, repository):
-        try:
+        if ':' in repository.path:
             self.repopath = repository.path.split(':')[1]
-            self.CVSROOT = ":pserver:%s@%s" % (repository.username, repository.path)
-        except IndexError:
+            if repository.username:
+                if repository.password:
+                    auth = '%s:%s@' % (repository.username, repository.password)
+                else:
+                    auth = '%s@' % (repository.username)
+            else:
+                auth = ''
+            self.CVSROOT = ":pserver:%s%s" % (auth, repository.path)
+        else:
             self.repopath = self.CVSROOT = repository.path
         self.client = CVSClient(self.CVSROOT)
 
@@ -72,7 +79,7 @@ class CVSDiffParser(DiffParser):
         else:
             raise DiffParserError('Unable to find RCS line', linenum)
 
-        if self.lines[linenum].startswith('retrieving '):
+        while self.lines[linenum].startswith('retrieving '):
             linenum += 1
 
         if self.lines[linenum].startswith('diff '):
@@ -105,6 +112,31 @@ class CVSClient:
         errmsg = p.stderr.read()
         failure = p.wait()
 
-        if failure:
-            raise FileNotFoundError(errmsg)
+        # Unfortunately, CVS is not consistent about exiting non-zero on
+        # errors.  If the file is not found at all, then CVS will print an
+        # error message on stderr, but it doesn't set an exit code with
+        # pservers.  If the file is found but an invalid revision is requested,
+        # then cvs exits zero and nothing is printed at all. (!)
+        #
+        # But, when it is successful, cvs will print a header on stderr like
+        # so:
+        #
+        # ===================================================================
+        # Checking out foobar
+        # RCS: /path/to/repo/foobar,v
+        # VERS: 1.1
+        # ***************
+
+        # So, if nothing is in errmsg, or errmsg has a specific recognized
+        # message, call it FileNotFound.
+        if not errmsg or \
+           errmsg.startswith('cvs checkout: cannot find module') or \
+           errmsg.startswith('cvs checkout: could not read RCS file')):
+            raise FileNotFoundError(filename, revision)
+
+        # Otherwise, if there's an exit code, or errmsg doesn't look like
+        # successful header, then call it a generic SCMError.
+        if failure or not errmsg.startswith('=========='):
+            raise SCMError(errmsg)
+
         return contents

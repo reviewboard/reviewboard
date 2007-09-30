@@ -50,11 +50,13 @@ class CVSTests(unittest.TestCase):
         expected = "test content\n"
         file = 'test/testfile'
         rev = Revision('1.1')
+        badrev = Revision('2.1')
 
         self.assertEqual(self.tool.get_file(file, rev), expected)
 
         self.assert_(self.tool.file_exists('test/testfile'))
         self.assert_(not self.tool.file_exists('test/testfile2'))
+        self.assert_(not self.tool.file_exists('test/testfile', badrev))
 
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file(''))
@@ -127,6 +129,35 @@ class CVSTests(unittest.TestCase):
         self.assertEqual(file.newFile, 'newfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:11:45 -0000')
         self.assertEqual(file.data, diff)
+
+    def testInterRevisionDiff(self):
+        """Testing parsing CVS inter-revision diff"""
+        diff = "Index: testfile\n==========================================" + \
+               "=========================\nRCS file: %s/test/testfile,v\nre" + \
+               "trieving revision 1.1\nretrieving revision 1.2\ndiff -u -p " + \
+               "-r1.1 -r1.2\n--- testfile    26 Jul 2007 08:50:30 -0000    " + \
+               "  1.1\n+++ testfile    27 Sep 2007 22:57:16 -0000      1.2"  + \
+               "\n@@ -1 +1,2 @@\n-test content\n+updated test content\n+add" + \
+               "ed info\n"
+        diff = diff % self.cvs_repo_path
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'test/testfile')
+        self.assertEqual(file.origInfo, '26 Jul 2007 08:50:30 -0000      1.1')
+        self.assertEqual(file.newFile, 'testfile')
+        self.assertEqual(file.newInfo, '27 Sep 2007 22:57:16 -0000      1.2')
+        self.assertEqual(file.data, diff)
+
+    def testBadRoot(self):
+        """Testing a bad CVSROOT"""
+        file = 'test/testfile'
+        rev = Revision('1.1')
+        badrepo = Repository(name='CVS',
+                             path=self.cvs_repo_path + '2',
+                             tool=Tool.objects.get(name='CVS'))
+        badtool = badrepo.get_scmtool()
+
+        self.assertRaises(SCMError, lambda: badtool.get_file(file, rev))
 
 
 class SubversionTests(unittest.TestCase):
