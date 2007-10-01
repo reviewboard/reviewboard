@@ -634,10 +634,15 @@ function onLineMouseOut(e, unused, table) {
             }
         }
     } else if (gSelection.table == null) {
-        var fromNode = getEl(e.originalTarget);
+        // Opera seems to generate lots of spurious mouse-out events, which will
+        // cause us to get all sorts of errors in here unless we check the
+        // target.
+        if (e.originalTarget != null) {
+            var fromNode = getEl(e.originalTarget);
 
-        if (isLineNumCell(e.originalTarget)) {
-            getEl(e.originalTarget.parentNode).removeClass("selected");
+            if (isLineNumCell(e.originalTarget)) {
+                getEl(e.originalTarget.parentNode).removeClass("selected");
+            }
         }
     }
 }
