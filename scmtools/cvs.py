@@ -131,7 +131,7 @@ class CVSClient:
         # message, call it FileNotFound.
         if not errmsg or \
            errmsg.startswith('cvs checkout: cannot find module') or \
-           errmsg.startswith('cvs checkout: could not read RCS file')):
+           errmsg.startswith('cvs checkout: could not read RCS file'):
             raise FileNotFoundError(filename, revision)
 
         # Otherwise, if there's an exit code, or errmsg doesn't look like
