@@ -60,7 +60,6 @@ ROOT_URLCONF = 'reviewboard.urls'
 
 REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
-TEMPLATE_ROOT = '/var/www/reviewboard'
 HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
 MEDIA_ROOT = HTDOCS_ROOT
 MEDIA_URL = '/'
