@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import tempfile
 from difflib import SequenceMatcher
@@ -241,8 +242,8 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
     old = convert_to_utf8(old)
     new = convert_to_utf8(new)
 
-    a = (old or '').split("\n")
-    b = (new or '').split("\n")
+    a = re.split(r"\r?\n", old or '')
+    b = re.split(r"\r?\n", new or '')
     a_num_lines = len(a)
     b_num_lines = len(b)
 
@@ -260,6 +261,8 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
     if not markup_a or not markup_b:
         markup_a = escape(old).split("\n")
         markup_b = escape(new).split("\n")
+        markup_a = re.split(r"\r?\n", escape(old))
+        markup_b = re.split(r"\r?\n", escape(new))
 
     chunks = []
     linenum = 1
