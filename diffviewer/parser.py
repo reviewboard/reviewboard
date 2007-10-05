@@ -1,3 +1,6 @@
+import re
+
+
 class File:
     def __init__(self):
         self.origFile = None
@@ -133,14 +136,34 @@ class DiffParser(object):
             # file and extra info.
             try:
                 info['origFile'], info['origInfo'] = \
-                    self.lines[linenum].split(None, 2)[1:]
+                    self.parse_filename_header(self.lines[linenum][4:],
+                                               linenum)
                 linenum += 1
 
                 info['newFile'], info['newInfo'] = \
-                    self.lines[linenum].split(None, 2)[1:]
+                    self.parse_filename_header(self.lines[linenum][4:],
+                                               linenum)
                 linenum += 1
             except ValueError:
                 raise DiffParserError("The diff file is missing revision " +
                                       "information", linenum)
 
         return linenum
+
+    def parse_filename_header(self, s, linenum):
+        if "\t" in s:
+            # There's a \t separating the filename and info. This is the
+            # best case scenario, since it allows for filenames with spaces
+            # without much work.
+            return s.split("\t", 1)
+
+        # There's spaces being used to separate the filename and info.
+        # This is technically wrong, so all we can do is assume that
+        # 1) the filename won't have multiple consecutive spaces, and
+        # 2) there's at least 2 spaces separating the filename and info.
+        if "  " in s:
+            return re.split(r"  +", s, 1)
+
+        raise DiffParserError("No valid separator after the filename was " +
+                              "found in the diff header",
+                              linenum)
