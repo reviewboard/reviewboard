@@ -497,8 +497,8 @@ class PerforceClient(SCMClient):
 
                 timestamp = m.group(1)
 
-                dl[0] = "--- %s  %s#%s\n" % (local_path, depot_path, revision)
-                dl[1] = "+++ %s  %s\n" % (local_path, timestamp)
+                dl[0] = "--- %s\t%s#%s\n" % (local_path, depot_path, revision)
+                dl[1] = "+++ %s\t%s\n" % (local_path, timestamp)
 
             diff_lines += dl
 
