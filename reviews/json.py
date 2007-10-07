@@ -995,7 +995,7 @@ def new_diff(request, review_request_id):
                               review_request.diffset_history)
     except scmtools.FileNotFoundError, e:
         return JsonResponseError(request, REPO_FILE_NOT_FOUND, {
-            'file': e.filename,
+            'file': e.path,
             'revision': e.revision
         })
     except EmptyDiffError, e:
