@@ -8,7 +8,8 @@
 #
 #   $ ./contrib/db/load-db.py dbdump.json
 
-import sys, os
+import os
+import sys
 
 sys.path.append(os.getcwd())
 
@@ -47,6 +48,11 @@ totalobjs = 0
 for model in models:
     totalobjs += model.objects.count()
 
+prev_pct = -1
+i = 0
+
+sys.stderr.write("Backing up database. This may take a while...\n")
+
 print "# dbdump v1 - %s objects" % totalobjs
 
 for model in models:
@@ -56,3 +62,13 @@ for model in models:
 
         if value != "[]":
             print value[1:-1] # Skip the "[" and "]"
+
+        i += 1
+        pct = (i * 100 / totalobjs)
+        if pct != prev_pct:
+            sys.stderr.write("  [%s%%]\r" % pct)
+            sys.stderr.flush()
+            prev_pct = pct
+
+sys.stderr.write("\n")
+sys.stderr.write("Done.\n")
