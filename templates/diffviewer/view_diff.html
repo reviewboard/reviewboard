@@ -48,6 +48,7 @@
 <a name="index_header"></a>
 {% include "diffviewer/changeindex.html" %}
 <ul class="controls">
+ <li><a href="#" onClick="showReviewDlg();" id="review-link">{% trans "Review" %}</a></li>
  <li><a href="raw/"> {% trans "Download Patch" %}</a></li>
 {% if collapseall %}
  <li><a href=".?expand=1"><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>

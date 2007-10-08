@@ -98,25 +98,51 @@ DiffCommentDialog = function(el) {
 
 
 YAHOO.extendX(DiffCommentDialog, CommentDialog, {
+    /*
+     * setCommentBlock --
+     *
+     *      Updates the comments dialog to point to a new block of code in the
+     *      diff.  This function has two modes:
+     *
+     *      Block mode: occurs when commentBlock is not null.  In this case, the
+     *      existing comments for the block are populated into the "Comments"
+     *      tab and that tab is shown by default.
+     *
+     *      Review mode: when commentBlock is null.  This mode shows only the
+     *      "Review" tab, and is here to make it easier for people who just want
+     *      to add general comments on the entire request.
+     */
     setCommentBlock: function(commentBlock) {
-        if (this.commentBlock != commentBlock) {
-            this.checkEmptyCommentBlock();
-        }
+        if (commentBlock) {
+            if (this.commentBlock != commentBlock) {
+                this.checkEmptyCommentBlock();
+            }
 
-        this.commentBlock = commentBlock;
-        this.updateCommentsList();
-        this.updateReviewCommentsList();
-        this.newCommentField.dom.value = this.commentBlock.localComment;
-        getEl('id_num_lines').dom.value = this.commentBlock.localNumLines;
+            this.commentBlock = commentBlock;
+            this.updateCommentsList();
+            this.updateReviewCommentsList();
+            this.newCommentField.dom.value = this.commentBlock.localComment;
+            getEl('id_num_lines').dom.value = this.commentBlock.localNumLines;
 
-        var commentLabel = getEl('id_comment_label');
+            var commentLabel = getEl('id_comment_label');
 
-        if (this.commentBlock.localNumLines == 1) {
-            commentLabel.dom.innerHTML = "Your comment";
+            if (this.commentBlock.localNumLines == 1) {
+                commentLabel.dom.innerHTML = "Your comment";
+            } else {
+                commentLabel.dom.innerHTML = "Your comment (" +
+                                             this.commentBlock.localNumLines +
+                                             " lines)";
+            }
+            this.tabs.unhideTab('tab-comments')
+            this.tabs.activate('tab-comments');
         } else {
-            commentLabel.dom.innerHTML = "Your comment (" +
-                                         this.commentBlock.localNumLines +
-                                         " lines)";
+            if (this.commentBlock) {
+                this.checkEmptyCommentBlock();
+            }
+            this.commentBlock = null;
+            this.updateReviewCommentsList();
+            this.tabs.hideTab('tab-comments')
+            this.tabs.activate('tab-review');
         }
     },
 
@@ -319,6 +345,25 @@ CommentBlock = function(fileid, row, linenum, comments) {
 
     gCommentBlocks[this.el.id] = this;
 };
+
+
+/*
+ * showReviewDlg --
+ *
+ *      Shows the comments dialog in "review" mode.  In this mode, the dialog
+ *      has no associated blocks of code, and shows only the "Review" tab.
+ */
+function showReviewDlg() {
+    if (gCommentDlg == null) {
+        gCommentDlg = new DiffCommentDialog("comment-dlg");
+    }
+
+    gCommentDlg.setCommentBlock(null);
+    if (gCommentDlg.isVisible()) {
+        gCommentDlg.hide();
+    }
+    gCommentDlg.show(getEl('review-link'));
+}
 
 
 function onKeyPress(evt) {
