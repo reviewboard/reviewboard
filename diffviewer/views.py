@@ -30,12 +30,6 @@ def get_enable_highlighting(user):
            user_syntax_highlighting and pygments
 
 
-def render_diff_fragment(request, file, context, template_name):
-    context['file'] = file
-
-    return render_to_string(template_name, RequestContext(request, context))
-
-
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                         context,
                         template_name='diffviewer/diff_file_fragment.html'):
@@ -57,9 +51,11 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
     if highlighting:
         key += '-highlighting'
 
-    return cache_memoize(key, lambda: render_diff_fragment(request, file,
-                                                           context,
-                                                           template_name))
+    context['file'] = file
+
+    return cache_memoize(key,
+        lambda: render_to_string(template_name,
+                                 RequestContext(request, context)))
 
 
 def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
