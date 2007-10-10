@@ -10,6 +10,7 @@
 
 import os
 import sys
+import gc
 
 sys.path.append(os.getcwd())
 
@@ -24,6 +25,7 @@ except ImportError:
 
 # This must be done before we import any models
 from django.core.management import setup_environ
+settings.DEBUG = False
 setup_environ(settings)
 
 from django.core import serializers
@@ -42,6 +44,8 @@ models = (scmtools.Tool, scmtools.Repository,
           reviews.ReviewRequestDraft, reviews.Review,
           accounts.Profile)
 
+OBJECT_LIMIT = 150
+
 serializer = serializers.get_serializer("json")()
 
 totalobjs = 0
@@ -56,19 +60,24 @@ sys.stderr.write("Backing up database. This may take a while...\n")
 print "# dbdump v1 - %s objects" % totalobjs
 
 for model in models:
-    for obj in model.objects.all():
-        serializer.serialize([obj])
-        value = serializer.getvalue()
+    count = model.objects.count()
+    j = 0
 
-        if value != "[]":
-            print value[1:-1] # Skip the "[" and "]"
+    while j < count:
+        for obj in model.objects.all()[j:j+OBJECT_LIMIT].iterator():
+            value = serializer.serialize([obj])
 
-        i += 1
-        pct = (i * 100 / totalobjs)
-        if pct != prev_pct:
-            sys.stderr.write("  [%s%%]\r" % pct)
-            sys.stderr.flush()
-            prev_pct = pct
+            if value != "[]":
+                print value[1:-1] # Skip the "[" and "]"
+
+            i += 1
+            pct = (i * 100 / totalobjs)
+            if pct != prev_pct:
+                sys.stderr.write("  [%s%%]\r" % pct)
+                sys.stderr.flush()
+                prev_pct = pct
+
+        j += OBJECT_LIMIT
 
 sys.stderr.write("\n")
 sys.stderr.write("Done.\n")
