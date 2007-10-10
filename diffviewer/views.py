@@ -97,12 +97,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         return response
 
     except Exception, e:
-        context = { 'error': e, }
-        if e.__class__ is not UserVisibleError:
-            context['trace'] = traceback.format_exc()
-
-        return render_to_response(template_name,
-                                  RequestContext(request, context))
+        return exception_traceback(request, e, template_name)
 
 
 def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
@@ -132,9 +127,15 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
             _(u"Internal error. Unable to locate file record for filediff %s") % \
             filediff.id)
     except Exception, e:
-        context = { 'error': e, 'standalone': True, }
-        if e.__class__ is not UserVisibleError:
-            context['trace'] = traceback.format_exc()
+        return exception_traceback(request, e, template_name,
+                                   {'standalone': True})
 
-        return render_to_response(template_name,
-                                  RequestContext(request, context))
+
+def exception_traceback(request, e, template_name, extra_context={}):
+    context = { 'error': e }
+    context.update(extra_context)
+    if e.__class__ is not UserVisibleError:
+        context['trace'] = traceback.format_exc()
+
+    return render_to_response(template_name,
+                              RequestContext(request, context))
