@@ -317,42 +317,89 @@ class ReviewRequestDraft(models.Model):
                 screenshot.save()
                 draft.screenshots.add(screenshot)
 
-            if review_request.diffset_history.diffset_set.count() > 0:
-                draft.diffset = review_request.diffset_history.diffset_set.latest()
-
         return draft
 
     def save_draft(self):
+        """Save this draft into the assocated ReviewRequest object.
+
+        This returns a dict of changed fields, which is used by the e-mail
+        template to tell people what's new and interesting.
+
+        The possible keys inside the changes dict are:
+            'summary'
+            'description'
+            'testing_done'
+            'bugs_closed'
+            'branch'
+            'target_groups'
+            'target_people'
+            'screenshots'
+            'diff'
+        Each of these keys will have an associated boolean value.
+
+        """
         request = self.review_request
 
-        request.summary = self.summary
-        request.description = self.description
-        request.testing_done = self.testing_done
-        request.bugs_closed = self.bugs_closed
-        request.branch = self.branch
+        changes = {}
 
-        request.target_groups.clear()
-        map(request.target_groups.add, self.target_groups.all())
+        def update_field(a, b, name):
+            # Apparently django models don't have __getattr__ or __setattr__, so
+            # we have to update __dict__ directly.  Sigh.
+            value = b.__dict__[name]
+            if a.__dict__[name] != value:
+                changes[name] = True
+                a.__dict__[name] = value
+            else:
+                changes[name] = False
 
-        request.target_people.clear()
-        map(request.target_people.add, self.target_people.all())
+        def update_list(a, b, name):
+            aset = set([x.id for x in a.all()])
+            bset = set([x.id for x in b.all()])
+            changes[name] = bool(aset.symmetric_difference(bset))
 
+            a.clear()
+            map(a.add, b.all())
+
+        update_field(request, self, 'summary')
+        update_field(request, self, 'description')
+        update_field(request, self, 'testing_done')
+        update_field(request, self, 'bugs_closed')
+        update_field(request, self, 'branch')
+
+        update_list(request.target_groups, self.target_groups, 'target_groups')
+        update_list(request.target_people, self.target_people, 'target_people')
+
+        # Screenshots are a bit special.  The list of associated screenshots can
+        # change, but so can captions within each screenshot.
         screenshots = self.screenshots.all()
+        screenshots_changed = False
         for s in request.screenshots.all():
             if s in screenshots:
-                s.caption = s.draft_caption
-                s.save()
-        request.screenshots.clear()
-        map(request.screenshots.add, self.screenshots.all())
+                if s.caption != s.draft_caption:
+                    screenshots_changed = True
+                    s.caption = s.draft_caption
+                    s.save()
+        update_list(request.screenshots, self.screenshots, 'screenshots')
 
+        # If a caption changed, screenshots will always be changed regardless of
+        # whether the list of associated screenshots changed.
+        if screenshots_changed:
+            changes['screenshots'] = True
+
+        # There's no change notification required for this field.
         request.inactive_screenshots.clear()
         map(request.inactive_screenshots.add, self.inactive_screenshots.all())
 
         if self.diffset:
+            changes['diff'] = True
             self.diffset.history = request.diffset_history
             self.diffset.save()
+        else:
+            changes['diff'] = False
 
         request.save()
+
+        return changes
 
     class Admin:
         list_display = ('summary', '_submitter', 'last_updated')

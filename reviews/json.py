@@ -19,7 +19,7 @@ from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
-                                      mail_reply, mail_diff_update
+                                      mail_reply
 from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.models import ChangeNumberInUseError, \
                                        InvalidChangeNumberError, \
@@ -565,11 +565,11 @@ def review_request_draft_save(request, review_request_id):
     if review_request.submitter != request.user:
         return JsonResponseError(request, PERMISSION_DENIED)
 
-    draft.save_draft()
+    changes = draft.save_draft()
     draft.delete()
 
-    if settings.SEND_REVIEW_MAIL:
-        mail_review_request(request.user, review_request)
+    if settings.SEND_REVIEW_MAIL and changes:
+        mail_review_request(request.user, review_request, changes)
 
     return JsonResponse(request)
 
@@ -1018,16 +1018,13 @@ def new_diff(request, review_request_id):
 
         if draft.diffset and draft.diffset != diffset:
             draft.diffset.delete()
-
-        draft.diffset = diffset
-        draft.save()
     except ReviewRequestDraft.DoesNotExist:
-        diffset.history = review_request.diffset_history
-        diffset.save()
+        draft = _prepare_draft(request, review_request)
 
-        # Only e-mail this if not in a draft.
-        if settings.SEND_REVIEW_MAIL:
-            mail_diff_update(request.user, review_request)
+    draft.diffset = diffset
+    draft.save()
+
+    # E-mail gets sent when the draft is saved.
 
     return JsonResponse(request, {'diffset_id': diffset.id})
 

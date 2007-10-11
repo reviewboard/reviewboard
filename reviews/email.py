@@ -116,10 +116,19 @@ def harvest_people_from_review_request(review_request):
               for u in harvest_people_from_review(review)]
 
 
-def mail_review_request(user, review_request):
+def mail_review_request(user, review_request, changes=None):
+    """Send an e-mail representing the supplied review request.
+
+    The "changes" argument is an optional list of strings which refer to fields
+    within the review request which have been updated.  This is created when
+    saving a draft on a public review request, and will be None when publishing
+    initially.  This is used by the template to add contextual (updated) flags
+    to inform people what changed.
+
     """
-    Sends an e-mail representing the supplied review request.
-    """
+
+    # If the review request is not yet public or has been discarded, don't send
+    # any mail.
     if not review_request.public or review_request.status == 'D':
         return
 
@@ -127,6 +136,7 @@ def mail_review_request(user, review_request):
     reply_message_id = None
 
     if review_request.email_message_id:
+        # Fancy quoted "replies"
         subject = "Re: " + subject
         reply_message_id = review_request.email_message_id
         extra_recipients = harvest_people_from_review_request(review_request)
@@ -136,29 +146,13 @@ def mail_review_request(user, review_request):
     review_request.time_emailed = datetime.now()
     review_request.email_message_id = \
         send_review_mail(user, review_request, subject, reply_message_id,
-                         extra_recipients, 'reviews/review_request_email.txt')
-    review_request.save()
-
-
-def mail_diff_update(user, review_request):
-    """
-    Sends an e-mail informing users that the diff has been updated.
-    """
-    if not review_request.public or review_request.status == 'D':
-        return
-
-    send_review_mail(user, review_request,
-                     u"Re: Review Request: %s" % review_request.summary,
-                     review_request.email_message_id,
-                     harvest_people_from_review_request(review_request),
-                     'reviews/diff_update.txt')
+                         extra_recipients, 'reviews/review_request_email.txt',
+                         {'changes': changes})
     review_request.save()
 
 
 def mail_review(user, review):
-    """
-    Sends an e-mail representing the supplied review.
-    """
+    """Sends an e-mail representing the supplied review."""
     if not review.review_request.public:
         return
 
