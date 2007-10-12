@@ -125,11 +125,14 @@ class ReviewRequestManager(models.Manager):
                            Q(target_groups__users__username=username))
 
     def to_user_directly(self, username, user=None, status='P'):
-        return self._query(user, status, Q(target_people__username=username))
+        query = QLeftOuterJoins(Q(target_people__username=username) |
+                                Q(starred_by__user__username=username))
+        return self._query(user, status, query)
 
     def to_user(self, username, user=None, status='P'):
         query = QLeftOuterJoins(Q(target_groups__users__username=username) |
-                                Q(target_people__username=username))
+                                Q(target_people__username=username) |
+                                Q(starred_by__user__username=username))
         return self._query(user, status, query)
 
     def from_user(self, username, user=None, status='P'):
