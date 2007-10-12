@@ -13,7 +13,7 @@
 
 
 {% for comment in reply.screenshot_comments.all %}
-> On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+> On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
 > > Screenshot: {{ comment.screenshot.caption }}
 > > <{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
 > >
