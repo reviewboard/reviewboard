@@ -1,5 +1,8 @@
 import traceback
 
+# This makes sure that the "pygments" identifier exists.  If the pygments
+# library is not available, it will be None.  Otherwise, it will be the module
+# object.
 try:
     import pygments
 except ImportError:
