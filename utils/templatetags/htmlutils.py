@@ -278,6 +278,8 @@ def thumbnail(file, size='400x100'):
             image.save(miniature_filename, image.format)
         except IOError:
             return ""
+        except KeyError:
+            return ""
 
     return miniature_url
 
