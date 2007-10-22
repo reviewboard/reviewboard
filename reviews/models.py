@@ -183,15 +183,19 @@ class ReviewRequest(models.Model):
                                         blank=True)
     branch = models.CharField("Branch", maxlength=300, blank=True)
     target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
-                                           core=False, blank=True)
+                                           core=False, blank=True,
+                                           filter_interface=models.HORIZONTAL)
     target_people = models.ManyToManyField(User, verbose_name="Target People",
                                            related_name="directed_review_requests",
-                                           core=False, blank=True)
+                                           core=False, blank=True,
+                                           filter_interface=models.HORIZONTAL)
     screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
                                          related_name="review_request",
-                                         core=False, blank=True)
+                                         core=False, blank=True,
+                                         filter_interface=models.VERTICAL)
     inactive_screenshots = models.ManyToManyField(Screenshot,
-        related_name="inactive_review_request", core=False, blank=True)
+        related_name="inactive_review_request", core=False, blank=True,
+        filter_interface=models.VERTICAL)
 
 
     # Set this up with the ReviewRequestManager
