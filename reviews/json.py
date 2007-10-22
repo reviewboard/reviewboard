@@ -1004,7 +1004,7 @@ def new_diff(request, review_request_id):
                 'path': [str(e)]
             }
         })
-    except e:
+    except Exception, e:
         # This could be very wrong, but at least they'll see the error.
         # We probably want a new error type for this.
         return JsonResponseError(request, INVALID_FORM_DATA, {
