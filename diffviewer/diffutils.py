@@ -305,30 +305,18 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
 
 
 def add_navigation_cues(files):
-    """Add index, nextid and previd data to a list of files/chunks"""
+    """Add index and changed_chunks to a list of files and their chunks"""
     # FIXME: this modifies in-place right now, which is kind of ugly
-    interesting = []
-    indices = []
     for i, file in enumerate(files):
         file['index'] = i
-        k = 1
+        file['changed_chunks'] = []
+
         for j, chunk in enumerate(file['chunks']):
+            chunk['index'] = j
             if chunk['change'] != 'equal':
-                interesting.append(chunk)
-                indices.append((i, k))
-                k += 1
+                file['changed_chunks'].append(chunk)
 
-        file['num_changes'] = k - 1
-
-    for chunk, previous, current, next in zip(interesting,
-                                              [None] + indices[:-1],
-                                              indices,
-                                              indices[1:] + [None]):
-        chunk['index'] = current[1]
-        if previous:
-            chunk['previd'] = '%d.%d' % previous
-        if next:
-            chunk['nextid'] = '%d.%d' % next
+        file['num_changes'] = len(file['changed_chunks'])
 
 
 def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):

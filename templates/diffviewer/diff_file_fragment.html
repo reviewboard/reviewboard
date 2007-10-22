@@ -38,7 +38,7 @@
 {% for line in chunk.lines %}
   <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
 {% if forloop.first %}
-   <th class="controls">{% ifnotequal chunk.index None %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</th>
+   <th class="controls">{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}&nbsp;</th>
    <th>{{line.1}}</th>
 {% else %}
    <th colspan="2">{{line.1}}</th>
