@@ -1022,6 +1022,7 @@ def new_diff(request, review_request_id):
         draft = _prepare_draft(request, review_request)
 
     draft.diffset = diffset
+    draft.add_default_reviewers();
     draft.save()
 
     # E-mail gets sent when the draft is saved.

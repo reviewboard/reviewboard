@@ -48,6 +48,22 @@ class Group(models.Model):
         ordering = ['name']
 
 
+class DefaultReviewer(models.Model):
+    name = models.CharField(maxlength=64)
+    file_regex = models.CharField(maxlength=256)
+    groups = models.ManyToManyField(Group, verbose_name="Default Groups",
+                                    core=False, blank=True)
+    people = models.ManyToManyField(User, verbose_name="Default People",
+                                    related_name="default_review_paths",
+                                    core=False, blank=True)
+
+    def __unicode__(self):
+        return self.name
+
+    class Admin:
+        pass
+
+
 class Screenshot(models.Model):
     caption = models.CharField(maxlength=256, blank=True)
     draft_caption = models.CharField(maxlength=256, blank=True)
@@ -329,6 +345,46 @@ class ReviewRequestDraft(models.Model):
                 draft.screenshots.add(screenshot)
 
         return draft
+
+    def add_default_reviewers(self):
+        """Add default reviewers to this draft based on the diffset.
+
+        This method goes through the DefaultReviewer objects in the database and
+        adds any missing reviewers based on regular expression comparisons with
+        the set of files in the diff.
+
+        """
+
+        if not self.diffset:
+            return
+
+        people = set()
+        groups = set()
+
+        # TODO: This is kind of inefficient, and could maybe be optimized in
+        # some fancy way.  Certainly the most superficial optimization that
+        # could be made would be to cache the compiled regexes somewhere.
+        files = self.diffset.files.all()
+        for default in DefaultReviewer.objects.all():
+            regex = re.compile(default.file_regex)
+
+            for filediff in files:
+                if regex.match(filediff.source_file or filediff.dest_file):
+                    for person in default.people.all():
+                        people.add(person)
+                    for group in default.groups.all():
+                        groups.add(group)
+                    break
+
+        existing_people = self.target_people.all()
+        for person in people:
+            if person not in existing_people:
+                self.target_people.add(person)
+
+        existing_groups = self.target_groups.all()
+        for group in groups:
+            if group not in existing_groups:
+                self.target_groups.add(group)
 
     def save_draft(self):
         """Save this draft into the assocated ReviewRequest object.
