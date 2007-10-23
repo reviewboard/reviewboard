@@ -654,7 +654,7 @@ def tempt_fate(server, tool, changenum, files, diff_content=None):
 
     print 'Review request posted.'
     print
-    print 'URL: %s/%s/' % (urljoin(server.url, "r"), review_request['id'])
+    print '%s/%s/' % (urljoin(server.url, "r"), review_request['id'])
     sys.exit(0)
 
 
