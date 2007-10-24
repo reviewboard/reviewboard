@@ -344,6 +344,11 @@ class ReviewRequestDraft(models.Model):
                 screenshot.save()
                 draft.screenshots.add(screenshot)
 
+            for screenshot in review_request.inactive_screenshots.all():
+                screenshot.draft_caption = screenshot.caption
+                screenshot.save()
+                draft.inactive_screenshots.add(screenshot)
+
         return draft
 
     def add_default_reviewers(self):
