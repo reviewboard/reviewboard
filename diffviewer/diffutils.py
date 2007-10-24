@@ -258,10 +258,10 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
         except ValueError:
             pass
 
-    if not markup_a or not markup_b:
-        markup_a = escape(old).split("\n")
-        markup_b = escape(new).split("\n")
+    if not markup_a:
         markup_a = re.split(r"\r?\n", escape(old))
+
+    if not markup_b:
         markup_b = re.split(r"\r?\n", escape(new))
 
     chunks = []
