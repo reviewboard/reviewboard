@@ -242,8 +242,22 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
     old = convert_to_utf8(old)
     new = convert_to_utf8(new)
 
+    # Normalize the input so that if there isn't a trailing newline, we add
+    # it.
+    if old and old[-1] != '\n':
+        old += '\n'
+
+    if new and new[-1] != '\n':
+        new += '\n'
+
     a = re.split(r"\r?\n", old or '')
     b = re.split(r"\r?\n", new or '')
+
+    # Remove the trailing newline, now that we've split this. This will
+    # prevent a duplicate line number at the end of the diff.
+    del(a[-1])
+    del(b[-1])
+
     a_num_lines = len(a)
     b_num_lines = len(b)
 
