@@ -52,8 +52,8 @@
  <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="/images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
 {% endif %}
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
-{%  if review_request_details.public %}
-{%    ifequal review_request_details.status 'P' %}
+{%  if review_request.public %}
+{%    ifequal review_request.status 'P' %}
  <li><a href="{{review_request.get_absolute_url}}submitted/">Set Submitted</a></li>
  <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%    else %}
