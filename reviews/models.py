@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
+from django.utils.html import escape
 
 from djblets.util.misc import get_object_or_none
 from djblets.util.db import QLeftOuterJoins
@@ -541,7 +542,7 @@ class ScreenshotComment(models.Model):
     def image(self):
         url = crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
         return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
-            (url, self.w, self.h, self.text)
+            (url, self.w, self.h, escape(self.text))
 
     def __unicode__(self):
         return self.text
