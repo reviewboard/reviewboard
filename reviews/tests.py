@@ -337,7 +337,7 @@ class ViewTests(TestCase):
         """Testing review_detail view with site-wide login enabled"""
         settings.REQUIRE_SITEWIDE_LOGIN = True
         response = self.client.get('/r/1/')
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 302)
 
     def testNewReviewRequest0(self):
         """Testing new_review_request view (basic responses)"""
@@ -384,7 +384,7 @@ class ViewTests(TestCase):
         """Testing all_review_requests view with site-wide login enabled"""
         settings.REQUIRE_SITEWIDE_LOGIN = True
         response = self.client.get('/r/')
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 302)
 
     def testSubmitterList(self):
         """Testing submitter_list view"""
@@ -404,7 +404,7 @@ class ViewTests(TestCase):
         """Testing submitter_list view with site-wide login enabled"""
         settings.REQUIRE_SITEWIDE_LOGIN = True
         response = self.client.get('/users/')
-        self.assertEqual(response.status_code, 301)
+        self.assertEqual(response.status_code, 302)
 
     def testGroupList(self):
         """Testing group_list view"""
@@ -424,8 +424,7 @@ class ViewTests(TestCase):
         """Testing group_list view with site-wide login enabled"""
         settings.REQUIRE_SITEWIDE_LOGIN = True
         response = self.client.get('/groups/')
-        self.assertEqual(response.status_code, 301)
-
+        self.assertEqual(response.status_code, 302)
 
     def testDashboard1(self):
         """Testing dashboard view (incoming)"""

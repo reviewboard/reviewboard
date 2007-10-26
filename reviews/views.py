@@ -55,7 +55,7 @@ def valid_prefs_required(view_func):
 def check_login_required(view_func):
     def _check(*args, **kwargs):
         if settings.REQUIRE_SITEWIDE_LOGIN:
-            return login_required(view_func, *args, **kwargs)
+            return login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)
 
