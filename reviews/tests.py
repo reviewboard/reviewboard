@@ -267,6 +267,9 @@ class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
+    def setUp(self):
+        settings.REQUIRE_SITEWIDE_LOGIN = False
+
     def testReviewDetail0(self):
         """Testing review_detail redirect"""
         response = self.client.get('/r/1')
@@ -330,6 +333,12 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
+    def testReviewDetailSitewideLogin(self):
+        """Testing review_detail view with site-wide login enabled"""
+        settings.REQUIRE_SITEWIDE_LOGIN = True
+        response = self.client.get('/r/1/')
+        self.assertEqual(response.status_code, 301)
+
     def testNewReviewRequest0(self):
         """Testing new_review_request view (basic responses)"""
         response = self.client.get('/r/new')
@@ -371,6 +380,12 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
+    def testReviewListSitewideLogin(self):
+        """Testing all_review_requests view with site-wide login enabled"""
+        settings.REQUIRE_SITEWIDE_LOGIN = True
+        response = self.client.get('/r/')
+        self.assertEqual(response.status_code, 301)
+
     def testSubmitterList(self):
         """Testing submitter_list view"""
         response = self.client.get('/users/')
@@ -385,6 +400,12 @@ class ViewTests(TestCase):
         self.assertEqual(users[2].username, 'dopey')
         self.assertEqual(users[3].username, 'grumpy')
 
+    def testSubmitterListSitewideLogin(self):
+        """Testing submitter_list view with site-wide login enabled"""
+        settings.REQUIRE_SITEWIDE_LOGIN = True
+        response = self.client.get('/users/')
+        self.assertEqual(response.status_code, 301)
+
     def testGroupList(self):
         """Testing group_list view"""
         response = self.client.get('/groups/')
@@ -398,6 +419,13 @@ class ViewTests(TestCase):
         self.assertEqual(groups[1].name, 'emptygroup')
         self.assertEqual(groups[2].name, 'newgroup')
         self.assertEqual(groups[3].name, 'privgroup')
+
+    def testGroupListSitewideLogin(self):
+        """Testing group_list view with site-wide login enabled"""
+        settings.REQUIRE_SITEWIDE_LOGIN = True
+        response = self.client.get('/groups/')
+        self.assertEqual(response.status_code, 301)
+
 
     def testDashboard1(self):
         """Testing dashboard view (incoming)"""
