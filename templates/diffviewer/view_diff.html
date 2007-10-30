@@ -36,7 +36,7 @@
 {% ifneatnumber review_request.id %}
 {%  box "yay" %}
  <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
- <h1>{% blocktrans with review_request.submitter|realname as name %}{{name}} got review request #{{review_request.id}}!{% endblocktrans %}</h1>
+ <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
 
