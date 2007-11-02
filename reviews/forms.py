@@ -108,5 +108,6 @@ class UploadScreenshotForm(forms.Form):
         draft = ReviewRequestDraft.create(review)
         review.screenshots.add(screenshot)
         draft.screenshots.add(screenshot)
+        draft.save()
 
         return screenshot
