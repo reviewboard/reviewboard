@@ -39,7 +39,7 @@ class SVNTool(SCMTool):
                                          # probably a really crappy way to
                                          # express that, but oh well.
 
-            \(rev(?:ision)?\ (\d+)\)$    # svnlook uses 'rev 0' while svn diff
+            \([Rr]ev(?:ision)?\ (\d+)\)$ # svnlook uses 'rev 0' while svn diff
                                          # uses 'revision 0'
             """, re.VERBOSE)
 
