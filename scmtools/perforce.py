@@ -69,9 +69,14 @@ class PerforceTool(SCMTool):
         else:
             file = '%s#%s' % (path, revision)
 
-        p = subprocess.Popen(
-            ['p4', '-p', self.p4.port, '-u', self.p4.user, 'print', '-q', file],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmdline = ['p4', '-p', self.p4.port]
+        if self.p4.user:
+            cmdline.extend(['-u', self.p4.user])
+        if self.p4.password:
+            cmdline.extend(['-P', self.p4.password])
+        cmdline.extend(['print', '-q', file])
+
+        p = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         (res, errdata) = p.communicate()
         failure = p.poll()
