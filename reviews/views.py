@@ -266,6 +266,9 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
 @check_login_required
 def group(request, name, template_name='reviews/review_list.html'):
+    # Make sure the group exists
+    get_object_or_404(Group, name=name)
+
     return review_list(request,
         queryset=ReviewRequest.objects.to_group(name, status=None),
         template_name=template_name,
@@ -277,6 +280,9 @@ def group(request, name, template_name='reviews/review_list.html'):
 
 @check_login_required
 def submitter(request, username, template_name='reviews/review_list.html'):
+    # Make sure the user exists
+    get_object_or_404(User, username=username)
+
     return review_list(request,
         queryset=ReviewRequest.objects.from_user(username, status=None),
         template_name=template_name,
