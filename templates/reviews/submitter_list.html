@@ -19,7 +19,7 @@
  </tr>
 {% for submitter in object_list %}
  <tr class="{% cycle odd,even %}">
-  <td><a href="{{submitter}}">{{submitter}}</a></td>
+  <td><a href="{{submitter}}/">{{submitter}}</a></td>
   <td>{% pendingreviewcount submitter %}</td>
  </tr>
 {% endfor %}

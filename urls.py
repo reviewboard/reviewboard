@@ -35,7 +35,7 @@ urlpatterns = patterns('',
 
     # Users
     (r'^users/$', 'reviewboard.reviews.views.submitter_list'),
-    (r'^users/(?P<username>[A-Za-z0-9_-]+)/$',
+    (r'^users/(?P<username>[A-Za-z0-9_\-\.]+)/$',
      'reviewboard.reviews.views.submitter'),
 
     # Groups

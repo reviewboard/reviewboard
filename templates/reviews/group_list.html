@@ -30,7 +30,7 @@
 {% for group in group_list %}
  <tr class="{% cycle odd,even %}">
   <td>{% star group %}</td>
-  <td><a href="{{group}}">{{group}}</a></td>
+  <td><a href="{{group}}/">{{group}}</a></td>
   <td>{% pendingreviewcount group %}</td>
  </tr>
 {% endfor %}
