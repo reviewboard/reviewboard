@@ -13,7 +13,7 @@ from djblets.util.db import QLeftOuterJoins
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.utils.fields import ModificationTimestampField
-from utils.templatetags.htmlutils import crop_image, thumbnail
+from reviewboard.utils.templatetags.htmlutils import crop_image, thumbnail
 
 
 class InvalidChangeNumberError(Exception):
