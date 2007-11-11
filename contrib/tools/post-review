@@ -197,12 +197,16 @@ class ReviewBoardServer:
         """
         return self.process_json(self.http_get(path))
 
-    def http_post(self, path, fields, files={}):
+    def http_post(self, path, fields, files=None):
         """
         Performs an HTTP POST on the specified path, storing any cookies that
         were set.
         """
-        debug_fields = fields.copy()
+        if fields:
+            debug_fields = fields.copy()
+        else:
+            debug_fields = {}
+
         if 'password' in debug_fields:
             debug_fields["password"] = "**************"
         debug('HTTP POSTing to %s: %s' % (path, debug_fields))
@@ -231,7 +235,7 @@ class ReviewBoardServer:
             die("Unable to access %s (%s). The host path may be invalid\n%s" % \
                 (url, e.code, e.read()))
 
-    def api_post(self, path, fields={}, files={}):
+    def api_post(self, path, fields=None, files=None):
         """
         Performs an API call using HTTP POST at the specified path.
         """
@@ -243,6 +247,9 @@ class ReviewBoardServer:
         """
         BOUNDARY = mimetools.choose_boundary()
         content = ""
+
+        fields = fields or {}
+        files = files or {}
 
         for key in fields:
             content += "--" + BOUNDARY + "\r\n"
