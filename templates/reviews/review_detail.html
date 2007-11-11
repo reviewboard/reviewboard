@@ -145,7 +145,7 @@
       <thead>
        <tr>
         <th colspan="4" class="filename">
-         <a href="diff/{{review.reviewed_diffset.revision}}#file{{comment.filediff.id}}line{{comment.first_line}}">{{comment.filediff.dest_file}}</a>
+         <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a> <span class="diffrevision">(Diff revision {{comment.filediff.diffset.revision}})</span>
         </th>
        </tr>
       </thead>

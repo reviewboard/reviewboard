@@ -506,6 +506,14 @@ class Comment(models.Model):
         else:
             return self.replies.filter(review__public=True)
 
+    def get_absolute_url(self):
+        revision_path = str(self.filediff.diffset.revision)
+
+        return "%sdiff/%s/#file%sline%s" % \
+            (self.review_set.get().review_request.get_absolute_url(),
+             revision_path, self.filediff.id, self.first_line)
+
+
     def __unicode__(self):
         return self.text
 

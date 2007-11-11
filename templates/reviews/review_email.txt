@@ -16,7 +16,7 @@ Screenshot: {{ comment.screenshot.caption }}
 {% endfor %}{% for comment in review.ordered_comments %}
 
 {{ comment.filediff.source_file }}
-<{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}>
+<{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
 
 {{ comment.text|indent }}
 

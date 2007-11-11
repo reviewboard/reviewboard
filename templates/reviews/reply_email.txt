@@ -29,7 +29,7 @@
 {% for comment in reply.comments.all %}
 > On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
 > > {{comment.filediff.source_file}}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
-> > <{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}diff/{{review.reviewed_diffset.revision}}/#file{{comment.filediff.id}}line{{comment.first_line}}>
+> > <{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
 > >
 {{comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
