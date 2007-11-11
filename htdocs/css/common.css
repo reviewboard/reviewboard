@@ -412,6 +412,42 @@ form table td {
 
 
 /****************************************************************************
+ * Paginator
+ ****************************************************************************/
+
+.paginator {
+  padding: 8px 4px 4px 4px;
+}
+
+.paginator .current-page {
+  font-weight: bold;
+  padding: 2px 6px;
+}
+
+.paginator .page-count {
+  color: #444444;
+  margin-left: 10px;
+}
+
+.paginator a {
+  border: 1px solid #CCCCCC;
+  color: black;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+
+.paginator a:hover {
+  background: #9BC0F2;
+  border-color: #003366;
+  color: black;
+}
+
+.paginator a:visited {
+  color: black;
+}
+
+
+/****************************************************************************
  * Account page
  ****************************************************************************/
 .prefsbuttons {
@@ -517,37 +553,6 @@ form table td {
 
 #navbar .newreviewrequest {
   text-align: right;
-}
-
-#paginator {
-  padding: 8px 4px 4px 4px;
-}
-
-#paginator .current-page {
-  font-weight: bold;
-  padding: 2px 6px;
-}
-
-#paginator .page-count {
-  color: #444444;
-  margin-left: 10px;
-}
-
-#paginator a {
-  border: 1px solid #CCCCCC;
-  color: black;
-  padding: 2px 6px;
-  text-decoration: none;
-}
-
-#paginator a:hover {
-  background: #9BC0F2;
-  border-color: #003366;
-  color: black;
-}
-
-#paginator a:visited {
-  color: black;
 }
 
 #title {
