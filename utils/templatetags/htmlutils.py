@@ -180,7 +180,7 @@ def crop_image(file, x, y, width, height):
             image = Image.open(os.path.join(settings.MEDIA_ROOT, file))
             image = image.crop((x, y, x + width, y + height))
             image.save(new_path, image.format)
-        except IOError:
+        except (IOError, KeyError):
             return ""
 
     return new_url
