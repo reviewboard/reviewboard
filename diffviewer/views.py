@@ -15,6 +15,13 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 
+try:
+    from django.utils.safestring import mark_safe
+except ImportError:
+    # XXX This version of Django doesn't include support for mark_safe.
+    #     Remove this check when we decide to bump the required version.
+    mark_safe = lambda s: s
+
 from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
@@ -88,9 +95,11 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         # XXX We can probably make this even more awesome and completely skip
         #     the get_diff_files call, caching basically the entire context.
         for file in files:
-            file['fragment'] = build_diff_fragment(request, file, None,
-                                                   highlighting, collapseall,
-                                                   context)
+            file['fragment'] = mark_safe(build_diff_fragment(request,
+                                                             file, None,
+                                                             highlighting,
+                                                             collapseall,
+                                                             context))
 
         context['files'] = files
 

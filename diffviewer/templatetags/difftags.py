@@ -160,6 +160,7 @@ def highlightregion(value, regions):
         s += value[i + 1:]
 
     return s
+highlightregion.is_safe = True
 
 
 extraWhitespace = re.compile(r'(\s+$| +\t)')
@@ -169,3 +170,4 @@ def showextrawhitespace(value):
     return extraWhitespace.sub(
         lambda m: "<span class=\"ew\">%s</span>" % m.group(0),
         value)
+showextrawhitespace.is_safe = True
