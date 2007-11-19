@@ -367,7 +367,9 @@ def new_review_request(request):
         if repository_path == None and repository_id == None:
             return JsonResponseError(request, MISSING_REPOSITORY)
 
-        repository = Repository.objects.get(path=repository_path)
+        repository = Repository.objects.get(
+            Q(path=repository_path) |
+            Q(mirror_path=repository_path))
 
         review_request = ReviewRequest.objects.create(
             request.user, repository, request.POST.get('changenum', None))
