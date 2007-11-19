@@ -13,14 +13,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-
-try:
-    from django.utils.safestring import mark_safe
-except ImportError:
-    # XXX This version of Django doesn't include support for mark_safe.
-    #     Remove this check when we decide to bump the required version.
-    mark_safe = lambda s: s
 
 from djblets.util.misc import cache_memoize, get_object_or_none
 

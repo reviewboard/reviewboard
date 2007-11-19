@@ -1,4 +1,4 @@
-{% load htmlutils %}{% load emailtags %}
+{% autoescape off %}{% load htmlutils %}{% load emailtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review.get_absolute_url}}
@@ -28,3 +28,4 @@ Screenshot: {{ comment.screenshot.caption }}
 
 On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
 {% quoted_email reviews/review_request_email.txt %}
+{% endautoescape %}

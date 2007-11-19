@@ -14,14 +14,8 @@ except ImportError:
 
 from django.conf import settings
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-
-try:
-    from django.utils.safestring import mark_safe
-except ImportError:
-    # XXX This version of Django doesn't include support for mark_safe.
-    #     Remove this check when we decide to bump the required version.
-    mark_safe = lambda s: s
 
 from djblets.util.misc import cache_memoize
 

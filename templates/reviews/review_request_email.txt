@@ -1,4 +1,4 @@
-{% load reviewtags %}{% load htmlutils %}{% load emailtags %}
+{% autoescape off %}{% load reviewtags %}{% load htmlutils %}{% load emailtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review_request.get_absolute_url}}
@@ -48,3 +48,4 @@ Thanks,
 
 {% ifnotequal review_request.submitter.first_name "" %}{{review_request.submitter.first_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %}
 {% endcondense %}
+{% endautoescape %}

@@ -31,9 +31,11 @@ def check_dependencies():
     try:
         import django
         if django.VERSION[0] == 0 and django.VERSION[1] < 97:
-            dependency_error('Django 0.97 or newer is required.')
+            raise ImportError
+
+        from django.utils.safestring import mark_safe
     except ImportError:
-        dependency_error('Django 0.97 or newer is required.')
+        dependency_error("Django > 0.97 (or SVN >= r6671) is required.")
 
     # PIL
     try:
