@@ -425,8 +425,8 @@ class PerforceClient(SCMClient):
                 die("The change number %s is not pending." % changenum)
 
         # Get the file list
-        lines = execute('p4 -c %s opened -c %s' %
-                        (client, changenum)).splitlines()
+        lines = execute('p4 -c %s opened -c %s' % (client, changenum),
+                        split_lines=True)
         cwd = os.getcwd()
         diff_lines = []
 
@@ -482,8 +482,8 @@ class PerforceClient(SCMClient):
                 self._write_file(new_depot_path, tmpfile2)
                 new_file = tmpfile2
 
-            dl = execute('diff -urNp "%s" "%s"' %
-                         (old_file, new_file)).splitlines()
+            dl = execute('diff -urNp "%s" "%s"' % (old_file, new_file),
+                         split_lines=True)
 
             if local_name.startswith(cwd):
                 local_path = local_name[len(cwd) + 1:]
@@ -550,14 +550,20 @@ def make_tempfile():
     return tmpfile
 
 
-def execute(command):
+def execute(command, split_lines=False):
     """
     Utility function to execute a command and return the output.
     """
     f = os.popen(command, 'r')
-    data = f.read()
+
+    if split_lines:
+        result = f.readlines()
+    else:
+        result = f.read()
+
     f.close()
-    return data
+
+    return result
 
 
 def die(msg=None):
