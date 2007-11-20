@@ -229,9 +229,11 @@ class ReviewRequest(models.Model):
         Returns any new reviews since the user last viewed the review request.
         """
         if user.is_authenticated():
-            visit = get_object_or_none(self.visits, user=user)
+            query = self.visits.filter(user=user)
 
-            if visit:
+            if query.count() > 0:
+                visit = query[0]
+
                 return self.review_set.filter(
                     public=True,
                     timestamp__gt=visit.timestamp).exclude(user=user)
