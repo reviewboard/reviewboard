@@ -6,6 +6,7 @@ from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
 from django.template.loader import render_to_string
 from django.template.defaultfilters import escape
 from django.utils import simplejson
+from django.utils.html import conditional_escape
 from djblets.util.decorators import blocktag
 from djblets.util.misc import get_object_or_none
 
@@ -29,24 +30,26 @@ class ReviewSummary(template.Node):
                 "Invalid variable %s passed to reviewsummary tag." % \
                 self.review_request
 
+        summary = conditional_escape(review_request.summary)
+
         if review_request.submitter == context.get('user', None):
             try:
                 draft = review_request.reviewrequestdraft_set.get()
                 return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       escape(draft.summary)
+                       summary
             except ReviewRequestDraft.DoesNotExist:
                 pass
 
             if not review_request.public:
                 # XXX Do we want to say "Draft?"
                 return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       escape(review_request.summary)
+                       summary
 
         if review_request.status == 'S':
             return "<span class=\"draftlabel\">[Submitted]</span> " + \
-                   review_request.summary
+                   summary
 
-        return escape(review_request.summary)
+        return summary
 
 
 @register.tag

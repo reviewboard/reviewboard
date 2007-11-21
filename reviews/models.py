@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
 
 from djblets.util.misc import get_object_or_none
 from djblets.util.db import QLeftOuterJoins
@@ -72,7 +73,7 @@ class Screenshot(models.Model):
 
     def thumb(self):
         url = thumbnail(self.image)
-        return '<img src="%s" alt="%s" />' % (url, self.caption)
+        return mark_safe('<img src="%s" alt="%s" />' % (url, self.caption))
     thumb.allow_tags = True
 
     def __unicode__(self):
