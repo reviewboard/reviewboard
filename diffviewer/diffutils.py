@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import re
 import subprocess
@@ -281,7 +282,15 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
 
     chunks = []
     linenum = 1
-    differ = Differ(a, b, ignore_space=True, compat_version=diffset.diffcompat)
+
+    ignore_space = True
+    for pattern in settings.DIFF_INCLUDE_SPACE_PATTERNS:
+        if fnmatch.fnmatch(file, pattern):
+            ignore_space = False
+            break
+
+    differ = Differ(a, b, ignore_space=ignore_space,
+                    compat_version=diffset.diffcompat)
 
     for tag, i1, i2, j1, j2 in differ.get_opcodes():
         oldlines = markup_a[i1:i2]

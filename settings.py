@@ -109,6 +109,16 @@ TEST_RUNNER = 'reviewboard.test.runner'
 DIFF_CONTEXT_NUM_LINES = 5
 DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
 
+# List of file patterns that will show whitespace-only changes. The
+# default behavior for diffs is to hide lines showing only leading
+# whitespace changes.
+#
+# For example:
+#
+#    DIFF_INCLUDE_SPACE_PATTERNS = ["*.py", "*.txt"]
+#
+DIFF_INCLUDE_SPACE_PATTERNS = []
+
 # When enabled, this will send e-mails for all review requests and comments
 # out to the e-mail addresses defined for the group.
 SEND_REVIEW_MAIL = False
