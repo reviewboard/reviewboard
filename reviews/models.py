@@ -450,11 +450,10 @@ class ReviewRequestDraft(models.Model):
         screenshots = self.screenshots.all()
         screenshots_changed = False
         for s in request.screenshots.all():
-            if s in screenshots:
-                if s.caption != s.draft_caption:
-                    screenshots_changed = True
-                    s.caption = s.draft_caption
-                    s.save()
+            if s in screenshots and s.caption != s.draft_caption:
+                screenshots_changed = True
+                s.caption = s.draft_caption
+                s.save()
         update_list(request.screenshots, self.screenshots, 'screenshots')
 
         # If a caption changed, screenshots will always be changed regardless of

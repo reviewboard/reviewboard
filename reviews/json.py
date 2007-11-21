@@ -643,11 +643,8 @@ def review_request_draft_set_field(request, review_request_id, field_name):
                                      {'attribute': field_name})
 
         draft = _prepare_draft(request, review_request)
-
-        data = request.POST['value']
-        screenshot.draft_caption = data
+        screenshot.draft_caption = data = request.POST['value']
         screenshot.save()
-
         draft.save()
 
         return JsonResponse(request, {field_name: data})
