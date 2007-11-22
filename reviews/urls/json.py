@@ -26,6 +26,12 @@ urlpatterns = never_cache_patterns('reviewboard.reviews.json',
     # Repositories
     (r'^repositories/$', 'repository_list'),
 
+    # Users
+    (r'^users/$', 'user_list'),
+
+    # Groups
+    (r'^groups/$', 'group_list'),
+
     # Review groups
     (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$',
      'group_star'),

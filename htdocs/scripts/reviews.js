@@ -58,6 +58,23 @@ function registerCommaListEditor(field, onComplete) {
 	var editor = new RB.widgets.InlineCommaListEditor({
 		el: field,
 		cls: field + '-editor',
+                autocomplete: false,
+		showEditIcon: true,
+		useEditIconOnly: true,
+		notifyUnchangedCompletion: true
+	});
+
+	editor.on('complete', function(editor, value) {
+		onEditComplete(field, value, onComplete);
+	});
+}
+
+function registerAutoCompleteCommaListEditor(field, onComplete, url, columns) {
+	var myDataSource = new YAHOO.widget.DS_XHR(url, columns);
+	var editor = new RB.widgets.InlineCommaListEditor({
+		el: field,
+		cls: field + '-editor',
+		autocomplete: myDataSource,
 		showEditIcon: true,
 		useEditIconOnly: true,
 		notifyUnchangedCompletion: true

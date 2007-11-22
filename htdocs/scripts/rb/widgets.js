@@ -52,13 +52,64 @@ RB.widgets.InlineEditor = function(config) {
         this.saveButton = block.createChild(saveButton);
         this.cancelButton = block.createChild(cancelButton);
     } else {
-        this.field = this.form.createChild({
-            tag: 'input',
-            type: 'text'
-        });
+        if (this.autocomplete) {
+            var auto_id = 'autoComplete_' + this.cls;
+            var autoinput_id = 'autoInput_' + this.cls;
+            var container_id = "ysearchcontainer_" + this.cls;
 
-        this.saveButton = this.form.createChild(saveButton);
-        this.cancelButton = this.form.createChild(cancelButton);
+            this.skin = this.form.createChild({
+                tag: 'div',
+                cls: 'yui-skin-sam'
+            });
+
+            this.autodiv = this.skin.createChild({
+                tag: 'div',
+                id:  auto_id,
+                cls: 'yui-ac'
+            });
+
+            this.field = this.autodiv.createChild({
+                tag:  'input',
+                type: 'text',
+                id:   autoinput_id,
+                cls:  'yui-ac-input'
+            });
+
+            this.autodiv.createChild({
+                tag: 'div',
+                id:  container_id,
+                cls: 'yui-ac-container'
+            });
+
+            this.left = this.skin.createChild({
+                tag:   'div',
+                style: 'float: right;'
+            });
+            this.saveButton = this.left.createChild(saveButton);
+            this.cancelButton = this.left.createChild(cancelButton);
+
+            var autoComp = new YAHOO.widget.AutoComplete(autoinput_id,
+                                                         container_id,
+                                                         this.autocomplete, {
+                animVert: false,
+                animHoriz: false,
+                typeAhead: true,
+                allowBrowserAutocomplete: false,
+                prehighlightClassName: "yui-ac-prehighlight",
+                delimChar: [",", " "],
+                minQueryLength: 1,
+                queryDelay: 0,
+                useShadow: true
+            });
+            autoComp.setFooter("Press Tab to auto-complete.");
+        } else {
+            this.field = this.form.createChild({
+                tag: 'input',
+                type: 'text'
+            });
+            this.saveButton = this.form.createChild(saveButton);
+            this.cancelButton = this.form.createChild(cancelButton);
+        }
     }
 
     this.saveButton.enableDisplayMode();
@@ -386,3 +437,5 @@ YAHOO.extendX(RB.widgets.AutosizeTextArea, YAHOO.ext.util.Observable, {
         return this.size + this.resizeStep;
     }
 });
+
+// vim: set et:

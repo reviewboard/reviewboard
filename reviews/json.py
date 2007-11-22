@@ -325,6 +325,32 @@ def repository_list(request):
         'repositories': Repository.objects.all(),
     })
 
+@json_login_required
+def user_list(request):
+    query = request.GET.get('query', None)
+    columns = ['username', 'first_name', 'last_name']
+    if not query:
+        u = User.objects.filter(is_active__exact=True).values(*columns)
+    else:
+        u = User.objects.filter(is_active__exact=True,
+                                username__startswith=query).values(*columns)
+
+    return JsonResponse(request, {
+        'users': u,
+    })
+
+@json_login_required
+def group_list(request):
+    query = request.GET.get('query', None)
+    columns = ['display_name', 'name']
+    if not query:
+        u = Group.objects.values(*columns)
+    else:
+        u = Group.objects.filter(name__startswith=query).values(*columns)
+
+    return JsonResponse(request, {
+        'groups': u,
+    })
 
 @json_login_required
 def group_star(request, group_name):

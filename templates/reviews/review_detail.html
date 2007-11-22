@@ -13,6 +13,7 @@
 <script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/animation/animation-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/autocomplete/autocomplete-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
 <script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
@@ -153,10 +154,10 @@
       <tbody class="{{chunk.change}}">
 {% for line in chunk.lines %}
        <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
-        <th>{{line.1}}</td>
-        <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
-        <th>{{line.4}}</td>
-        <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
+         <th>{{line.1}}</td>
+         <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
+         <th>{{line.4}}</td>
+         <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
        </tr>
 {% endfor %}
       </tbody>
@@ -186,8 +187,14 @@
   registerEditor('description', true);
   registerEditor('testing_done', true);
   registerCommaListEditor('bugs_closed', onBugsChanged);
-  registerCommaListEditor('target_groups', onTargetGroupsChanged);
-  registerCommaListEditor('target_people', onTargetPeopleChanged);
+  registerAutoCompleteCommaListEditor('target_groups',
+                                      onTargetGroupsChanged,
+                                      "/api/json/groups/",
+                                      ["groups", "name"]);
+  registerAutoCompleteCommaListEditor('target_people',
+                                      onTargetPeopleChanged,
+                                      "/api/json/users/",
+                                      ["users", "username"]);
 
 {% for image in review_request_details.screenshots.all %}
   registerEditor('screenshot_{{image.id}}_caption', false);

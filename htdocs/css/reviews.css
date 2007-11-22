@@ -415,6 +415,91 @@
   visibility: hidden;
 }
 
+
+/****************************************************************************
+ * Auto-complete widget
+ ****************************************************************************/
+/* Widget */
+.yui-skin-sam .yui-ac
+{
+  position: relative;
+}
+
+/* Input field */
+.yui-skin-sam .yui-ac-input
+{
+  position: absolute;
+}
+
+/* Results container */
+.yui-skin-sam .yui-ac-container
+{
+  position: absolute;
+  top: 1.6em;
+  width: 100%;
+}
+
+/* Content container wrapper */
+.yui-skin-sam .yui-ac-content
+{
+  background: #ffffff;
+  border: 1px solid #808080;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+  z-index: 9050;
+}
+
+/* Footer */
+.yui-skin-sam .yui-ac-ft {
+  background: #ECECEC;
+  border-top: 1px #C0C0C0 solid;
+  padding: 3px 6px;
+}
+
+/* Container shadow */
+.yui-skin-sam .yui-ac-shadow
+{
+  background: #000;
+  filter: alpha(opacity=10);
+  margin: 0.3em;
+  -moz-opacity: 0.10;
+  opacity: .10;
+  position: absolute;
+  width: 100%;
+  z-index: 9049;
+}
+
+/* Results list */
+.yui-skin-sam .yui-ac-content ul
+{
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Result item */
+.yui-skin-sam .yui-ac-content li
+{
+  cursor: pointer;
+  margin: 0;
+  padding: 3px 6px;
+  white-space: nowrap;
+}
+
+/* Pre-highlighted result item */
+.yui-skin-sam .yui-ac-content li.yui-ac-prehighlight
+{
+  background: #e5c899;
+}
+
+/* Highlighted result item */
+.yui-skin-sam .yui-ac-content li.yui-ac-highlight
+{
+  background: #cd943c;
+  color: #FFF;
+}
+
 /* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
 .clearfix:after {
   clear: both;
