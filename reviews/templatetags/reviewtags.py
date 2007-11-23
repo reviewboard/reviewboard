@@ -1,8 +1,8 @@
 from django import template
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from django.template import resolve_variable
-from django.template import NodeList, TemplateSyntaxError, VariableDoesNotExist
+from django.template import NodeList, TemplateSyntaxError, Variable, \
+                            VariableDoesNotExist
 from django.template.loader import render_to_string
 from django.template.defaultfilters import escape
 from django.utils import simplejson
@@ -21,11 +21,11 @@ register = template.Library()
 
 class ReviewSummary(template.Node):
     def __init__(self, review_request):
-        self.review_request = review_request
+        self.review_request = Variable(review_request)
 
     def render(self, context):
         try:
-            review_request = resolve_variable(self.review_request, context)
+            review_request = self.review_request.resolve(context)
         except VariableDoesNotExist:
             raise template.TemplateSyntaxError, \
                 "Invalid variable %s passed to reviewsummary tag." % \
@@ -134,19 +134,19 @@ def ifnewreviews(context, nodelist, review_request):
 
 class CommentCounts(template.Node):
     def __init__(self, filediff, interfilediff):
-        self.filediff = filediff
-        self.interfilediff = interfilediff
+        self.filediff = Variable(filediff)
+        self.interfilediff = Variable(interfilediff)
 
     def render(self, context):
         try:
-            filediff = resolve_variable(self.filediff, context)
+            filediff = self.filediff.resolve(context)
         except VariableDoesNotExist:
             raise template.TemplateSyntaxError, \
                 "Invalid variable %s passed to commentcounts tag." % \
                 self.filediff
 
         try:
-            interfilediff = resolve_variable(self.interfilediff, context)
+            interfilediff = self.interfilediff.resolve(context)
         except VariableDoesNotExist:
             interfilediff = None
 
@@ -191,11 +191,11 @@ def commentcounts(parser, token):
 
 class ScreenshotCommentCounts(template.Node):
     def __init__(self, screenshot):
-        self.screenshot = screenshot
+        self.screenshot = Variable(screenshot)
 
     def render(self, context):
         try:
-            screenshot = resolve_variable(self.screenshot, context)
+            screenshot = self.screenshot.resolve(context)
         except VariableDoesNotExist:
             raise template.TemplateSyntaxError, \
                 "Invalid variable %s passed to screenshotcommentcounts tag." % \
@@ -240,10 +240,10 @@ def screenshotcommentcounts(parser, token):
 
 class ReplyList(template.Node):
     def __init__(self, review, comment, context_type, context_id):
-        self.review = review
-        self.comment = comment
-        self.context_type = context_type
-        self.context_id = context_id
+        self.review = Variable(review)
+        self.comment = Variable(comment)
+        self.context_type = Variable(context_type)
+        self.context_id = Variable(context_id)
 
     def render(self, context):
         def generate_reply_html(reply, timestamp, text):
@@ -271,13 +271,13 @@ class ReplyList(template.Node):
             return s
 
         if self.review != "":
-            review = resolve_variable(self.review, context)
+            review = self.review.resolve(context)
 
         if self.comment != "":
-            comment = resolve_variable(self.comment, context)
+            comment = self.comment.resolve(context)
 
-        context_type = resolve_variable(self.context_type, context)
-        context_id = resolve_variable(self.context_id, context)
+        context_type = self.context_type.resolve(context)
+        context_id = self.context_id.resolve(context)
 
         user = context.get('user', None)
         if user.is_anonymous():

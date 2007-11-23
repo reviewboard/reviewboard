@@ -1,8 +1,7 @@
 import re
 
 from django import template
-from django.template import resolve_variable
-from django.template import NodeList, VariableDoesNotExist
+from django.template import NodeList
 from djblets.util.decorators import blocktag
 
 from reviewboard.diffviewer.views import get_diff_files, \

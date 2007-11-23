@@ -4,8 +4,7 @@ import os
 
 from django import template
 from django.conf import settings
-from django.template import resolve_variable
-from django.template import VariableDoesNotExist
+from django.template import Variable, VariableDoesNotExist
 from djblets.util.decorators import blocktag
 
 
@@ -19,7 +18,7 @@ class ColumnHeader(template.Node):
 
     def render(self, context):
         try:
-            temp = resolve_variable('sort_list', context)
+            temp = Variable('sort_list').resolve(context)
 
             if temp:
                 sort_list = list(temp)
