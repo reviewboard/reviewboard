@@ -55,6 +55,10 @@ class ReviewSummary(template.Node):
 
 @register.tag
 def reviewsummary(parser, token):
+    """
+    Returns the summary of a review, showing draft or submitted labels
+    if need be.
+    """
     try:
         tag_name, review_request = token.split_contents()
     except ValueError:
@@ -66,12 +70,22 @@ def reviewsummary(parser, token):
 
 @register.simple_tag
 def pendingreviewcount(obj):
+    """
+    Returns the pending review count in a list of review requests belonging
+    to the specified object.
+    """
     return str(obj.reviewrequest_set.filter(public=True, status='P').count())
 
 
 @register.tag
 @blocktag
 def forcomment(context, nodelist, filediff, review=None):
+    """
+    Loops over a list of comments beloning to a filediff.
+
+    This will populate a special ``comment`` variable for use in the content.
+    This is of the type :model:`reviews.Comment`.
+    """
     new_nodelist = NodeList()
     context.push()
 
@@ -93,6 +107,14 @@ def forcomment(context, nodelist, filediff, review=None):
 @register.tag
 @blocktag
 def ifneatnumber(context, nodelist, rid):
+    """
+    Returns whether or not the specified number is a "neat" number.
+    This is a number with a special property, such as being a
+    palindrome or having trailing zeroes.
+
+    If the number is a neat number, the contained content is rendered,
+    and two variables, ``milestone`` and ``palindrome`` are defined.
+    """
     if rid == None or rid < 1000:
         return ""
 
@@ -126,6 +148,10 @@ def ifneatnumber(context, nodelist, rid):
 @register.tag
 @blocktag
 def ifnewreviews(context, nodelist, review_request):
+    """
+    Renders content if a review request has new reviews that the current
+    user has not seen.
+    """
     if review_request.get_new_reviews(context["user"]).count() > 0:
         return nodelist.render(context)
 
@@ -180,6 +206,18 @@ class CommentCounts(template.Node):
 
 @register.tag
 def commentcounts(parser, token):
+    """
+    Returns a JSON array of current comments for a filediff.
+
+    Each entry in the array has a dictionary containing the following keys:
+
+      =========== ==================================================
+      Key         Description
+      =========== ==================================================
+      text        The text of the comment
+      localdraft  True if this is the current user's draft comment
+      =========== ==================================================
+    """
     try:
         tag_name, filediff, interfilediff = token.split_contents()
     except ValueError:
@@ -229,6 +267,22 @@ class ScreenshotCommentCounts(template.Node):
 
 @register.tag
 def screenshotcommentcounts(parser, token):
+    """
+    Returns a JSON array of current comments for a screenshot.
+
+    Each entry in the array has a dictionary containing the following keys:
+
+      =========== ==================================================
+      Key         Description
+      =========== ==================================================
+      text        The text of the comment
+      localdraft  True if this is the current user's draft comment
+      x           The X location of the comment's region
+      y           The Y location of the comment's region
+      w           The width of the comment's region
+      h           The height of the comment's region
+      =========== ==================================================
+    """
     try:
         tag_name, screenshot = token.split_contents()
     except ValueError:
@@ -311,6 +365,25 @@ class ReplyList(template.Node):
 
 @register.tag
 def reply_list(parser, token):
+    """
+    Renders a list of comments of a specified type.
+
+    This is a complex, confusing function accepts lots of inputs in order
+    to display replies to a type of object. In each case, the replies will
+    be rendered using the template :template:`reviews/review_reply.html`.
+
+    If ``context_type`` is ``"comment"`` or ``"screenshot_comment"``,
+    the generated list of replies are to ``comment``.
+
+    If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
+    the generated list of replies are to ``review``. Depending on the
+    ``context_type``, these will either be replies to the top of the
+    review body or to the bottom.
+
+    The ``context_id`` parameter has to do with the internal IDs used by
+    the JavaScript code for storing and categorizing the comments.
+    """
+
     try:
         tag_name, review, comment, context_type, context_id = \
             token.split_contents()
@@ -324,6 +397,14 @@ def reply_list(parser, token):
 @register.inclusion_tag('reviews/review_reply_section.html',
                         takes_context=True)
 def reply_section(context, review, comment, context_type, context_id):
+    """
+    Renders a template for displaying a reply.
+
+    This takes the same parameters as :tag:`reply_list`. The template
+    rendered by this function, :template:`reviews/review_reply_section.html`,
+    is responsible for invoking :tag:`reply_list` and as such passes these
+    variables through. It does not make use of them itself.
+    """
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
@@ -340,6 +421,13 @@ def reply_section(context, review, comment, context_type, context_id):
 
 @register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
 def dashboard_entry(context, level, text, view, group=None):
+    """
+    Renders an entry in the dashboard sidebar.
+
+    This includes the name of the entry and the list of review requests
+    associated with it. The entry is rendered by the template
+    :template:`reviews/dashboard_entry.html`.
+    """
     user = context.get('user', None)
     starred = False
     show_count = True
@@ -389,6 +477,9 @@ def dashboard_entry(context, level, text, view, group=None):
 
 @register.simple_tag
 def reviewer_list(review_request):
+    """
+    Returns a humanized list of target reviewers in a review request.
+    """
     return humanize_list([group.display_name or group.name \
                           for group in review_request.target_groups.all()] + \
                          [user.get_full_name() or user.username \
@@ -397,6 +488,12 @@ def reviewer_list(review_request):
 
 @register.filter
 def bug_url(bug_id, review_request):
+    """
+    Returns the URL based on a bug number on the specified review request.
+
+    If the repository the review request belongs to doesn't have an
+    associated bug tracker, this returns None.
+    """
     if review_request.repository.bug_tracker:
         return review_request.repository.bug_tracker % bug_id
 
@@ -477,6 +574,16 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
 
 @register.inclusion_tag('reviews/star.html', takes_context=True)
 def star(context, obj):
+    """
+    Renders the code for displaying a star used for starring items.
+
+    The rendered code should handle click events so that the user can
+    toggle the star. The star is rendered by the template
+    :template:`reviews/star.html`.
+
+    The passed object must be either a :model:`reviews.ReviewRequest` or
+    a :model:`reviews.Group`.
+    """
     user = context.get('user', None)
 
     if user.is_anonymous():

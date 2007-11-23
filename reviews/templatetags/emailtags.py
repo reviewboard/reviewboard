@@ -43,17 +43,6 @@ def condense(context, nodelist):
     return text
 
 
-@register.simple_tag
-def reviewer_list(review_request):
-    """
-    Returns a humanized list of target reviewers in a review request.
-    """
-    return humanize_list([group.display_name or group.name \
-                          for group in review_request.target_groups.all()] + \
-                         [user.get_full_name() or user.username \
-                          for user in review_request.target_people.all()])
-
-
 @register.filter
 def quote_text(text, level=1):
     """
