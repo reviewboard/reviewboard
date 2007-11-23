@@ -10,7 +10,7 @@
 <script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
 <script type="text/javascript">
 var fields = ["changenum", "basedir", "diff_path"];
-var visible = {{fields}};
+var visible = {{fields|safe}};
 function updateFormDisplay() {
     var selection = getEl("id_repository").dom;
     var selectedID = selection.options[selection.selectedIndex].value;
