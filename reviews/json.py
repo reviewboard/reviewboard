@@ -13,8 +13,9 @@ from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.utils import simplejson
 from django.views.decorators.http import require_POST
-
 from djblets.util.decorators import simple_decorator
+from djblets.util.misc import get_object_or_none
+
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -174,13 +175,13 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'body_top': o.body_top,
                 'body_bottom': o.body_bottom,
                 'comments': o.comments.all(),
-                'reviewed_diffset': o.reviewed_diffset,
             }
         elif isinstance(o, Comment):
             review = o.review_set.get()
             return {
                 'id': o.id,
                 'filediff': o.filediff,
+                'interfilediff': o.interfilediff,
                 'text': o.text,
                 'timestamp': o.timestamp,
                 'timesince': timesince(o.timestamp),
@@ -762,8 +763,7 @@ def review_draft_save(request, review_request_id, publish=False):
         user=request.user,
         review_request=review_request,
         public=False,
-        base_reply_to__isnull=True,
-        reviewed_diffset=diffset)
+        base_reply_to__isnull=True)
     review.ship_it     = request.POST.has_key('shipit')
     review.body_top    = request.POST['body_top']
     review.body_bottom = request.POST['body_bottom']
@@ -800,8 +800,7 @@ def review_draft_delete(request, review_request_id):
         review = Review.objects.get(user=request.user,
                                     review_request=review_request,
                                     public=False,
-                                    base_reply_to__isnull=True,
-                                    reviewed_diffset=diffset)
+                                    base_reply_to__isnull=True)
         review.delete()
         return JsonResponse(request)
     except Review.DoesNotExist:
@@ -828,8 +827,7 @@ def review_draft_comments(request, review_request_id):
         review = Review.objects.get(user=request.user,
                                     review_request=review_request,
                                     public=False,
-                                    base_reply_to__isnull=True,
-                                    reviewed_diffset=diffset)
+                                    base_reply_to__isnull=True)
         comments = review.comments.all()
         screenshot_comments = review.screenshot_comments.all()
     except Review.DoesNotExist:
@@ -858,8 +856,7 @@ def review_reply_draft(request, review_request_id, review_id):
         review_request=source_review.review_request,
         user=request.user,
         public=False,
-        base_reply_to=source_review,
-        reviewed_diffset=source_review.reviewed_diffset)
+        base_reply_to=source_review)
 
     if reply_is_new:
         reply.save()
@@ -1082,12 +1079,21 @@ def new_screenshot(request, review_request_id):
 
 
 @json_login_required
-def diff_line_comments(request, review_request_id, diff_revision,
-                       filediff_id, line):
+def diff_line_comments(request, review_request_id, line, diff_revision,
+                       filediff_id, interdiff_revision=None,
+                       interfilediff_id=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     filediff = get_object_or_404(FileDiff,
         pk=filediff_id, diffset__history=review_request.diffset_history,
         diffset__revision=diff_revision)
+
+    if interdiff_revision is not None and interfilediff_id is not None:
+        interfilediff = get_object_or_none(FileDiff,
+            pk=interfilediff_id,
+            diffset__history=review_request.diffset_history,
+            diffset__revision=interdiff_revision)
+    else:
+        interfilediff = None
 
     if request.POST:
         text = request.POST['text']
@@ -1101,14 +1107,14 @@ def diff_line_comments(request, review_request_id, diff_revision,
                 review_request=review_request,
                 user=request.user,
                 public=False,
-                base_reply_to__isnull=True,
-                reviewed_diffset=filediff.diffset)
+                base_reply_to__isnull=True)
 
             if review_is_new:
                 review.save()
 
             comment, comment_is_new = review.comments.get_or_create(
                 filediff=filediff,
+                interfilediff=interfilediff,
                 first_line=line)
 
             comment.text = text
@@ -1123,12 +1129,17 @@ def diff_line_comments(request, review_request_id, diff_revision,
             review = get_object_or_404(Review,
                 review_request=review_request,
                 user=request.user,
-                public=False,
-                reviewed_diffset=filediff.diffset)
+                public=False)
 
             try:
-                comment = review.comments.get(filediff=filediff,
-                                              first_line=line)
+                q = Q(filediff=filediff, first_line=line)
+
+                if interfilediff:
+                    q = q & Q(interfilediff=interfilediff)
+                else:
+                    q = q & Q(interfilediff__isnull=True)
+
+                comment = review.comments.get(q)
                 comment.delete()
             except Comment.DoesNotExist:
                 pass
@@ -1142,10 +1153,17 @@ def diff_line_comments(request, review_request_id, diff_revision,
             return JsonResponseError(request, INVALID_ACTION,
                                      {'action': action})
 
+    comments_query = filediff.comment_set.filter(
+        Q(review__public=True) | Q(review__user=request.user),
+        first_line=line)
+
+    if interfilediff:
+        comments_query = comments_query.filter(interfilediff=interfilediff)
+    else:
+        comments_query = comments_query.filter(interfilediff__isnull=True)
+
     return JsonResponse(request, {
-        'comments': filediff.comment_set.filter(
-            Q(review__public=True) | Q(review__user=request.user),
-            first_line=line)
+        'comments': comments_query
     })
 
 @json_login_required
@@ -1172,8 +1190,7 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                 review_request=review_request,
                 user=request.user,
                 public=False,
-                base_reply_to__isnull=True,
-                reviewed_diffset=diffset)
+                base_reply_to__isnull=True)
 
             if review_is_new:
                 review.save()

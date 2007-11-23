@@ -4,7 +4,8 @@ var gReviewCommentTmpl = new YAHOO.ext.DomHelper.Template(
       "<dl>" +
         "<dt>" +
           "<span class=\"filename\">{filename}</span> " +
-          "<span class=\"lines\">{lines}</span>" +
+          "<span class=\"lines\">{lines},</span> " +
+          "<span class=\"revisions\">{revisions}</span> " +
         "</dt>" +
         "<dd><pre>{text}</pre></dd>" +
       "</dl>" +
@@ -228,16 +229,29 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
                 });
             }
             for (var commentnum in rsp.comments) {
+                /* TODO: Try to merge this with the code in diffviewer.js */
                 var comment = rsp.comments[commentnum];
+                var lines;
+                var revisions;
+
                 if (comment.num_lines == 1) {
                     lines = "line " + comment.first_line;
                 } else {
                     lines = "lines " + comment.first_line + " - " +
                             (comment.num_lines + comment.first_line - 1);
                 }
+
+                if (comment.interfilediff) {
+                    revisions = "diffs r" + comment.filediff.diffset.revision +
+                                "-r" + comment.interfilediff.diffset.revision;
+                } else {
+                    revisions = "diff r" + comment.filediff.diffset.revision;
+                }
+
                 gReviewCommentTmpl.append(ol.dom, {
                     'filename': comment.filediff.source_file,
                     'lines': lines,
+                    'revisions': revisions,
                     'text': comment.text.htmlEncode().replace(/\n/g, "<br />")
                 });
             }

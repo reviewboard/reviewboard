@@ -11,7 +11,8 @@ var gLineCommentTmpl = new YAHOO.ext.DomHelper.Template(
         "<dt>" +
           "<a href=\"{user_url}\">{user_fullname}</a> " +
           "<span class=\"timestamp\">{timesince} ago.</span> " +
-          "<span class=\"lines\">{lines}</span>" +
+          "<span class=\"lines\">{lines},</span> " +
+          "<span class=\"revisions\">{revisions}</span> " +
         "</dt>" +
         "<dd><pre>{text}</pre></dd>" +
       "</dl>" +
@@ -25,7 +26,8 @@ var gLineCommentDraftTmpl = new YAHOO.ext.DomHelper.Template(
           "<label for=\"id_yourcomment\">" +
             "<a href=\"{user_url}\">{user_fullname}</a> " +
             "<span class=\"timestamp\">{timesince} ago.</span> " +
-            "<span class=\"lines\">{lines}</span>" +
+            "<span class=\"lines\">{lines},</span> " +
+            "<span class=\"revisions\">{revisions}</span> " +
           "</label>" +
         "</dt>" +
         "<dd id=\"id_yourcomment\"><pre>{text}</pre></dd>" +
@@ -74,6 +76,7 @@ var gActions = [
 var gSelectedAnchor = INVALID;
 var gCurrentAnchor = 0;
 var gFileAnchorToId = {};
+var gInterdiffFileAnchorToId = {};
 var gAnchors = [];
 var gCommentDlg = null;
 var gCommentBlocks = {};
@@ -153,6 +156,9 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
         }, true);
         for (var commentnum in rsp.comments) {
             var comment = rsp.comments[commentnum];
+            var lines;
+            var revisions;
+
             if (comment.num_lines == 1) {
                 lines = "line " + comment.first_line;
             } else {
@@ -160,9 +166,17 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
                         (comment.num_lines + comment.first_line - 1);
             }
 
+            if (comment.interfilediff) {
+                revisions = "diffs r" + comment.filediff.diffset.revision +
+                            "-r" + comment.interfilediff.diffset.revision;
+            } else {
+                revisions = "diff r" + comment.filediff.diffset.revision;
+            }
+
             var tmplData = {
                 'user_url': comment.user.url,
                 'lines': lines,
+                'revisions': revisions,
                 'timesince': comment.timesince,
                 'text': comment.text.htmlEncode().replace(/\n/g, "<br />"),
                 'user_fullname': (comment.user.fullname != ""
@@ -251,8 +265,20 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
     },
 
     getCommentActionURL: function() {
-        return this.getBaseURL() + '/diff/' + gRevision + '/file/' +
-               this.commentBlock.filediffid + '/line/' +
+        var revision;
+        var filediffid;
+
+        if (gInterdiffRevision == null) {
+            revision = gRevision;
+            filediffid = this.commentBlock.filediffid;
+        } else {
+            revision = gRevision + "-" + gInterdiffRevision;
+            filediffid = this.commentBlock.filediffid + "-" +
+                         this.commentBlock.interfilediffid;
+        }
+
+        return this.getBaseURL() + '/diff/' + revision + '/file/' +
+               filediffid + '/line/' +
                this.commentBlock.linenum + '/comments/';
     },
 
@@ -307,6 +333,7 @@ CommentBlock = function(fileid, row, linenum, comments) {
 
     this.fileid = fileid;
     this.filediffid = gFileAnchorToId[fileid];
+    this.interfilediffid = gInterdiffFileAnchorToId[fileid];
     this.comments = comments;
     this.linenum = linenum;
     this.row = row;

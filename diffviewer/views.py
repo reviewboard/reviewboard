@@ -37,7 +37,13 @@ def get_enable_highlighting(user):
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                         context,
                         template_name='diffviewer/diff_file_fragment.html'):
-    key = template_name + '-%s' % file['filediff'].id
+    key = template_name + '-'
+
+    if file['interfilediff']:
+        key += 'interdiff-%s-%s' % (file['filediff'].id,
+                                    file['interfilediff'].id)
+    else:
+        key += str(file['filediff'].id)
 
     if chunkindex:
         chunkindex = int(chunkindex)
@@ -83,6 +89,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         context = {
             'diffset': diffset,
             'interdiffset': interdiffset,
+            'diffset_pair': (diffset, interdiffset),
         }
         context.update(extra_context)
 

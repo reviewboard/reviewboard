@@ -164,13 +164,15 @@ def convert_to_utf8(s):
         raise TypeError("Value to convert is unexpected type %s", type(s))
 
 
-def get_original_file(diffset, file, revision):
+def get_original_file(filediff):
     """Get a file either from the cache or the SCM.  SCM exceptions are
        passed back to the caller."""
 
-    tool = diffset.repository.get_scmtool()
+    tool = filediff.diffset.repository.get_scmtool()
+    file = filediff.source_file
+    revision = filediff.source_revision
 
-    key = "%s:%s:%s" % (diffset.repository.path, file, revision)
+    key = "%s:%s:%s" % (filediff.diffset.repository.path, file, revision)
 
     # We wrap the result of get_file in a list and then return the first
     # element after getting the result from the cache. This prevents the
@@ -187,7 +189,8 @@ def get_patched_file(buffer, filediff):
     return patch(filediff.diff, buffer, filediff.dest_file)
 
 
-def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
+def get_chunks(diffset, filediff, interfilediff, force_interdiff,
+               enable_syntax_highlighting):
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
                   oldmarkup, newmarkup):
         if oldline and newline:
@@ -229,17 +232,57 @@ def get_chunks(diffset, filediff, interfilediff, enable_syntax_highlighting):
         return pygments.highlight(data, lexer, HtmlFormatter()).splitlines()
 
 
+    # There are three ways this function is called:
+    #
+    #     1) filediff, no interfilediff
+    #        - Returns chunks for a single filediff. This is the usual way
+    #          people look at diffs in the diff viewer.
+    #
+    #          In this mode, we get the original file based on the filediff
+    #          and then patch it to get the resulting file.
+    #
+    #          This is also used for interdiffs where the source revision
+    #          has no equivalent modified file but the interdiff revision
+    #          does. It's no different than a standard diff.
+    #
+    #     2) filediff, interfilediff
+    #        - Returns chunks showing the changes between a source filediff
+    #          and the interdiff.
+    #
+    #          This is the typical mode used when showing the changes
+    #          between two diffs. It requires that the file is included in
+    #          both revisions of a diffset.
+    #
+    #     3) filediff, no interfilediff, force_interdiff
+    #        - Returns chunks showing the changes between a source
+    #          diff and an unmodified version of the diff.
+    #
+    #          This is used when the source revision in the diffset contains
+    #          modifications to a file which have then been reverted in the
+    #          interdiff revision. We don't actually have an interfilediff
+    #          in this case, so we have to indicate that we are indeed in
+    #          interdiff mode so that we can special-case this and not
+    #          grab a patched file for the interdiff version.
+
+    assert filediff
+
     file = filediff.source_file
     revision = filediff.source_revision
     old = ""
 
     if revision != scmtools.PRE_CREATION:
-        old = get_original_file(diffset, file, revision)
+        old = get_original_file(filediff)
 
     new = get_patched_file(old, filediff)
 
     if interfilediff:
-        old, new = new, get_patched_file(old, interfilediff)
+        old = new
+        new = get_patched_file(get_original_file(interfilediff), interfilediff)
+    elif force_interdiff:
+        # Basically, revert the change.
+        temp = old
+        old = new
+        new = temp
 
     old = convert_to_utf8(old)
     new = convert_to_utf8(new)
@@ -343,50 +386,115 @@ def add_navigation_cues(files):
         file['num_changes'] = len(file['changed_chunks'])
 
 
+def get_revision_str(revision):
+    if revision == scmtools.HEAD:
+        return "HEAD"
+    elif revision == scmtools.PRE_CREATION:
+        return "Pre-creation"
+    else:
+        return "Revision %s" % revision
+
+
 def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
     if filediff:
         filediffs = [filediff]
     else:
         filediffs = diffset.files.all()
 
+    # A map used to quickly look up the equivalent interfilediff given a
+    # source file.
+    interdiff_map = {}
+    if interdiffset:
+        for interfilediff in interdiffset.files.all():
+            if not filediff or \
+               filediff.source_file == interfilediff.source_file:
+                interdiff_map[interfilediff.source_file] = interfilediff
+
     key_prefix = "diff-sidebyside-"
 
     if enable_syntax_highlighting:
         key_prefix += "hl-"
 
-    files = []
+
+    # In order to support interdiffs properly, we need to display diffs
+    # on every file in the union of both diffsets. Iterating over one diffset
+    # or the other doesn't suffice.
+    #
+    # We build a list of parts containing the source filediff, the interdiff
+    # filediff (if specified), and whether to force showing an interdiff
+    # (in the case where a file existed in the source filediff but was
+    # reverted in the interdiff).
+    filediff_parts = []
+
     for filediff in filediffs:
+        interfilediff = None
+
+        if filediff.source_file in interdiff_map:
+            interfilediff = interdiff_map[filediff.source_file]
+            del(interdiff_map[filediff.source_file])
+
+        filediff_parts.append((filediff, interfilediff, interdiffset != None))
+
+
+    if interdiffset:
+        # We've removed everything in the map that we've already found.
+        # What's left are interdiff files that are new. They have no file
+        # to diff against.
+        #
+        # The end result is going to be a view that's the same as when you're
+        # viewing a standard diff. As such, we can pretend the interdiff is
+        # the source filediff and not specify an interdiff. Keeps things
+        # simple, code-wise, since we really have no need to special-case
+        # this.
+        for interdiff in interdiff_map.values():
+            filediff_parts.append((interdiff, None, False))
+
+
+    files = []
+    for parts in filediff_parts:
+        filediff, interfilediff, force_interdiff = parts
+
         if filediff.binary:
             chunks = []
         else:
-            interfilediff = None
-
-            if interdiffset:
-                # XXX This is slow. We should optimize this.
-                for filediff2 in interdiffset.files.all():
-                    if filediff2.source_file == filediff.source_file:
-                        interfilediff = filediff2
-                        break
-
             key = key_prefix
 
-            if interfilediff:
-                key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
-            else:
+            if not interfilediff:
                 key += str(filediff.id)
-
+            else:
+                key += "interdiff-%s-%s" % (filediff.id,
+                                            interfilediff.id)
             chunks = cache_memoize(key,
-                lambda: get_chunks(diffset, filediff, interfilediff,
+                lambda: get_chunks(filediff.diffset,
+                                   filediff, interfilediff,
+                                   force_interdiff,
                                    enable_syntax_highlighting))
 
-        revision = filediff.source_revision
+        if interdiffset:
+            # In the case of interdiffs, don't show any unmodified files
+            has_changes = False
 
-        if revision == scmtools.HEAD:
-            revision = "HEAD"
-        elif revision == scmtools.PRE_CREATION:
-            revision = "Pre-creation"
+            for chunk in chunks:
+                if chunk['change'] != 'equal':
+                    has_changes = True
+                    break
+
+            if not has_changes:
+                continue
+
+        filediff_revision_str = get_revision_str(filediff.source_revision)
+
+        if interdiffset:
+            source_revision = "Diff Revision %s" % diffset.revision
+
+            if not interfilediff and force_interdiff:
+                dest_revision = "Diff Revision %s - File Reverted" % \
+                                interdiffset.revision
+            else:
+                dest_revision = "Diff Revision %s" % interdiffset.revision
         else:
-            revision = "Revision %s" % revision
+            source_revision = get_revision_str(filediff.source_revision)
+            dest_revision = "New Change"
 
         i = filediff.source_file.rfind('/')
 
@@ -401,9 +509,11 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
             'depot_filename': filediff.source_file,
             'basename': basename,
             'basepath': basepath,
-            'revision': revision,
+            'revision': source_revision,
+            'dest_revision': dest_revision,
             'chunks': chunks,
             'filediff': filediff,
+            'interfilediff': interfilediff,
             'binary': filediff.binary,
         })
 

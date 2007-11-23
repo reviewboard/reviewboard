@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load i18n %}
+{% load difftags %}
 {% load reviewtags %}
 {% load htmlutils %}
 
@@ -21,6 +22,11 @@
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gReviewRequestId = '{{review_request.id}}';
   var gRevision = '{{diffset.revision}}';
+{% if interdiffset %}
+  var gInterdiffRevision = '{{interdiffset.revision}}';
+{% else %}
+  var gInterdiffRevision = null;
+{% endif %}
   var gUserAuthenticated = {{user.is_authenticated|lower}};
 </script>
 {% endblock %}
@@ -44,9 +50,95 @@
 <ul id="topcontrols">
  <li onclick="javascript:window.location='{{review_request.get_absolute_url}}';"><a href="{{review_request.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
 </ul>
+<div class="main">
 {% include "reviews/review_request_box.html" %}
+
+<div id="diff-details">
 <a name="index_header"></a>
+{% with review_request.diffset_history.diffset_set.latest.revision as latest_revision %}
+{% with diffset.revision as revision %}
+<div class="main">
+{%  if interdiffset %}
+ <h1>{% blocktrans with interdiffset.revision as interdiff_revision %}Changes between revision {{revision}} and {{interdiff_revision}}{% endblocktrans %}</h1>
+{%  else %}
+{%   ifequal diffset.revision latest_revision %}
+ <h1>{% blocktrans %}Diff revision {{revision}} (Latest){% endblocktrans %}</h1>
+{%   else %}
+ <h1>{% blocktrans %}Diff revision {{revision}}{% endblocktrans %}</h1>
+ <p>
+{%    blocktrans with diffset.revision as revision and review_request.get_absolute_url as review_request_url%}
+  This is not the most recent revision of the diff. The
+  <a href="{{review_request_url}}diff/">latest diff</a> is revision
+  {{latest_revision}}.
+  <a href="{{review_request_url}}diff/{{revision}}-{{latest_revision}}/">See what's changed.</a>
+{%    endblocktrans %}
+ </p>
+{%   endifequal %}
+{%  endif %}
+{%  if review|has_comments_in_diffsets_excluding:diffset_pair %}
+{%   box "important" %}
+ <h1>{% trans "You have unpublished comments on other revisions" %}</h1>
+ <p>
+  {% trans "Your review consists of comments on the following revisions:" %}
+ </p>
+ <ul>
+{%    for diffset_info in review|diffsets_with_comments:diffset_pair %}
+{%     if diffset_info.is_current %}
+  <li><b>Revision {{diffset_info.diffset.revision}}</b></li>
+{%     else %}
+  <li><a href="{{review_request.get_absolute_url}}diff/{{diffset_info.diffset.revision}}/#index_header">Revision {{diffset_info.diffset.revision}}</a></li>
+{%     endif %}
+{%    endfor %}
+{%    for pair in review|interdiffs_with_comments:diffset_pair %}
+{%     if pair.is_current %}
+  <li><b>Interdiff revision {{pair.diffset.revision}} - {{pair.interdiff.revision}}</b></li>
+{%     else %}
+  <li><a href="{{review_request.get_absolute_url}}diff/{{pair.diffset.revision}}-{{pair.interdiff.revision}}/">Interdiff revision {{pair.diffset.revision}} - {{pair.interdiff.revision}}</a></li>
+{%     endif %}
+{%    endfor %}
+ </ul>
+ {%  endbox %}
+{%  endif %}
+
+{%  ifnotequal review_request.diffset_history.diffset_set.count 1 %}
+ <table class="revision-selector">
+  <tr>
+   <th><label for="jump_to_revision">Jump to revision:<label></th>
+   <td>
+    <div id="jump_to_revision" class="paginator">
+{%  for item in review_request.diffset_history|revision_link_list:diffset_pair %}
+{%   if item.is_current %}
+     <span class="current-page">{{item.revision}}</span>
+{%   else %}
+     <a href="{{review_request.get_absolute_url}}diff/{{item.revision}}/#index_header">{{item.revision}}</a>
+{%   endif %}
+{%  endfor %}
+    </div>
+   </td>
+  </tr>
+  <tr>
+   <th><label for="show_interdiff">Changes between r{{revision}} and:</label></th>
+   <td>
+    <div id="show_interdiff" class="paginator">
+{%  for item in review_request.diffset_history|interdiff_link_list:diffset_pair %}
+{%   if item.is_current %}
+     <span class="current-page">{{item.revision}}</span>
+{%   else %}
+     <a href="{{review_request.get_absolute_url}}diff/{{item.path}}/#index_header">{{item.revision}}</a>
+{%   endif %}
+{%  endfor %}
+    </div>
+   </td>
+  </tr>
+ </table>
+{% endifnotequal %}
+
+ <p><label>Files Changed:</label></p>
 {% include "diffviewer/changeindex.html" %}
+  </div>
+ </div>
+</div>
+
 <ul class="controls">
  <li><a href="#" onClick="showReviewDlg();" id="review-link">{% trans "Review" %}</a></li>
  <li><a href="raw/"> {% trans "Download Patch" %}</a></li>
@@ -56,7 +148,9 @@
  <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
 {% endif %}
 </ul>
-{% endbox %}
+{% endwith %}
+{% endwith %}
+{%  endbox %}
 
 <div id="diffs">
 {% for file in files %}
@@ -64,7 +158,10 @@
 {{ file.fragment }}
 <script type="text/javascript">
   gFileAnchorToId["file{{file.index}}"] = {{file.filediff.id}};
-  addComments("file{{file.index}}", {% commentcounts file.filediff %});
+{% if file.interfilediff %}
+  gInterdiffFileAnchorToId["file{{file.index}}"] = {{file.interfilediff.id}};
+{% endif %}
+  addComments("file{{file.index}}", {% commentcounts file.filediff file.interfilediff %});
 </script>
 {% endfor %}
 <a name="index_footer"></a>
@@ -87,6 +184,9 @@
  <div id="tab-review" class="ydlg-tab" title="{% trans "Review" %}">
   <form id="reviewform" method="post">
    <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
+{% if interdiffset %}
+   <input type="hidden" name="interdiff_revision" value="{{interdiffset.revision}}" />
+{% endif %}
    <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review.shipit %}checked="checked" {% endif %}/>{% trans "Ship It!" %}<br />
    <label for="id_body_top">{% trans "Review Body:" %}</label>
    <div id="review-body">

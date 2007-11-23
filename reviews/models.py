@@ -486,6 +486,10 @@ class ReviewRequestDraft(models.Model):
 
 class Comment(models.Model):
     filediff = models.ForeignKey(FileDiff, verbose_name='File')
+    interfilediff = models.ForeignKey(FileDiff,
+                                      verbose_name='interdiff file',
+                                      blank=True, null=True,
+                                      related_name="interdiff_comments")
     reply_to = models.ForeignKey("self", blank=True, null=True,
                                  related_name="replies")
     timestamp = models.DateTimeField('Timestamp', default=datetime.now)
@@ -510,6 +514,8 @@ class Comment(models.Model):
 
     def get_absolute_url(self):
         revision_path = str(self.filediff.diffset.revision)
+        if self.interfilediff:
+            revision_path += "-%s" % self.interfilediff.diffset.revision
 
         return "%sdiff/%s/#file%sline%s" % \
             (self.review_set.get().review_request.get_absolute_url(),
@@ -593,6 +599,8 @@ class Review(models.Model):
         ScreenshotComment,
         verbose_name="Screenshot Comments",
         core=False, blank=True, filter_interface=models.VERTICAL)
+
+    # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
                                          blank=True, null=True)
 

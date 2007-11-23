@@ -137,10 +137,15 @@ urlpatterns = never_cache_patterns('reviewboard.reviews.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',
      'new_screenshot'),
 
-    # Comments
+    # Diff comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',
      'diff_line_comments'),
 
+    # Interdiff comments
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)-(?P<interfilediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',
+     'diff_line_comments'),
+
+    # Screenshot comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/comments/(?P<w>[0-9]+)x(?P<h>[0-9]+)\+(?P<x>[0-9]+)\+(?P<y>[0-9]+)/$',
      'screenshot_comments'),
 )

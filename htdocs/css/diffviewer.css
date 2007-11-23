@@ -303,7 +303,8 @@ table.sidebyside .ew {
   font-weight: bold;
 }
 
-#comment-dlg #review-body #all-review-comments dt .lines {
+#comment-dlg #review-body #all-review-comments dt .lines,
+#comment-dlg #review-body #all-review-comments dt .revisions {
   color: #487858;
 }
 
@@ -316,4 +317,44 @@ table.sidebyside .ew {
 #comment-dlg #tab-review label {
   display: block;
   padding-top: 10px;
+}
+
+
+/****************************************************************************
+ * Diff information
+ ****************************************************************************/
+#diff-details {
+  border-spacing: 8px;
+  border-top: 1px #c2c1b0 solid;
+  margin-top: 20px;
+  padding: 5px 0px;
+  width: 100%;
+}
+
+.revision-selector {
+  margin-bottom: 6px;
+}
+
+.revision-select td {
+  padding: 4px;
+  margin: 4px;
+}
+
+.revision-selector th {
+  padding: 4px 6px;
+  text-align: right;
+  vertical-align: bottom;
+  margin: 4px;
+}
+
+.revision-selector .paginator {
+  padding: 0;
+}
+
+.revision-selector .paginator a {
+  border-color: #999999;
+}
+
+.revision-selector .paginator a:hover {
+  background: #E7E0A2;
 }

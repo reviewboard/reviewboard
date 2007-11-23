@@ -99,7 +99,7 @@
        <th colspan="3" class="filename">{{comment.filediff.dest_file}}</th>
       </tr>
      </thead>
-{%  forchunkswithlines comment.filediff comment.first_line comment.num_lines %}
+{%  forchunkswithlines comment.filediff None comment.first_line comment.num_lines %}
      <tbody class="{{chunk.change}}">
 {%   for line in chunk.lines %}
       <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>

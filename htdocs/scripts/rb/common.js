@@ -114,6 +114,13 @@ var asyncJsonRequest = function(method, url, callbacks, postData) {
                  * purposes.
                  */
                 callbacks.failure("Unable to parse the server response");
+
+                if (console) {
+                    console.error("Unable to parse the server response.");
+                    console.group("Response text");
+                    console.debug(res.responseText);
+                    console.groupEnd();
+                }
             }
             return;
         }

@@ -54,7 +54,8 @@ class DiffSet(models.Model):
     def save(self):
         if self.revision == 0 and self.history != None:
             if self.history.diffset_set.count() == 0:
-                self.revision = 0
+                # Start on revision 1. It's more human-grokable.
+                self.revision = 1
             else:
                 self.revision = self.history.diffset_set.latest().revision + 1
 

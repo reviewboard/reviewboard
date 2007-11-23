@@ -9,8 +9,10 @@ from reviewboard.diffviewer.views import get_diff_files, \
 register = template.Library()
 
 class ForChunksWithLines(template.Node):
-    def __init__(self, filediff, first_line, num_lines, nodelist_loop):
+    def __init__(self, filediff, interfilediff, first_line,
+                 num_lines, nodelist_loop):
         self.filediff = filediff
+        self.interfilediff = interfilediff
         self.first_line = first_line
         self.num_lines = num_lines
         self.nodelist_loop = nodelist_loop
@@ -25,13 +27,19 @@ class ForChunksWithLines(template.Node):
 
     def render(self, context):
         filediff = self.get_variable(self.filediff, context)
+        interfilediff = self.get_variable(self.interfilediff, context)
+        interdiffset = None
 
         key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
+
+        if interfilediff:
+            key += "_%s" % (interfilediff.id)
+            interdiffset = interfilediff.diffset
 
         if key in context:
             files = context[key]
         else:
-            files = get_diff_files(filediff.diffset, filediff, None,
+            files = get_diff_files(filediff.diffset, filediff, interdiffset,
                                    get_enable_highlighting(context['user']))
             context[key] = files
 
@@ -84,15 +92,53 @@ class ForChunksWithLines(template.Node):
 @register.tag
 def forchunkswithlines(parser, token):
     try:
-        tag_name, filediff, first_line, num_lines = token.contents.split()
+        tag_name, filediff, interfilediff, first_line, num_lines = \
+            token.contents.split()
     except ValueError:
         raise template.TemplateSyntaxError, \
-            "%r tag requires a filediff, first line and number of lines"
+            "%r tag requires a filediff, interfilediff, first line and " + \
+            "number of lines"
 
     nodelist_loop = parser.parse(('endforchunkswithlines'),)
     parser.delete_first_token()
 
-    return ForChunksWithLines(filediff, first_line, num_lines, nodelist_loop)
+    return ForChunksWithLines(filediff, interfilediff, first_line,
+                              num_lines, nodelist_loop)
+
+
+@register.filter
+def revision_link_list(history, current_pair):
+    """
+    Returns a list of revisions in the specified diffset history, indicating
+    which of the revisions is already selected, as determined by the current
+    diffset pair.
+    """
+    for diffset in history.diffset_set.all():
+        yield {
+            'revision': diffset.revision,
+            'is_current': current_pair[0] == diffset and
+                          current_pair[1] == None
+        }
+
+
+@register.filter
+def interdiff_link_list(history, current_pair):
+    """
+    Returns a list of revisions in the specified diffset history based on
+    the passed interdiff pair.
+    """
+    for diffset in history.diffset_set.all():
+        if current_pair[0].revision < diffset.revision:
+            path = "%s-%s" % (current_pair[0].revision, diffset.revision)
+        else:
+            path = "%s-%s" % (diffset.revision, current_pair[0].revision)
+
+        yield {
+            'revision': diffset.revision,
+            'path': path,
+            'is_current': current_pair[0] == diffset or
+                          current_pair[1] == diffset
+        }
 
 
 @register.filter

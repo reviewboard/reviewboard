@@ -47,7 +47,9 @@
  <li onclick="javascript:window.location='diff/#index_header';"><a href="diff/#index_header"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
 {% endif %}
 </ul>
+<div class="main">
 {% include "reviews/review_request_box.html" %}
+</div>
 <ul class="controls">
 {% if perms.reviews.delete_reviewrequest %}
  <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="/images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
@@ -146,11 +148,18 @@
       <thead>
        <tr>
         <th colspan="4" class="filename">
-         <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a> <span class="diffrevision">(Diff revision {{comment.filediff.diffset.revision}})</span>
+         <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
+		 <span class="diffrevision">
+{% if comment.interfilediff %}
+          (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
+{% else %}
+		  (Diff revision {{comment.filediff.diffset.revision}})
+{% endif %}
+		 </span>
         </th>
        </tr>
       </thead>
-{% forchunkswithlines comment.filediff comment.first_line comment.num_lines %}
+{% forchunkswithlines comment.filediff comment.interfilediff comment.first_line comment.num_lines %}
       <tbody class="{{chunk.change}}">
 {% for line in chunk.lines %}
        <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>

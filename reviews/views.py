@@ -294,12 +294,13 @@ def submitter(request, username, template_name='reviews/review_list.html'):
 def _query_for_diff(review_request, revision, query_extra=None):
     # Either the diff is part of a draft, or part of the history
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
-    if draft and draft.diffset:
+    if draft and draft.diffset and \
+       (revision is None or draft.diffset.revision == revision):
         return draft.diffset
 
     query = Q(history=review_request.diffset_history)
 
-    if revision:
+    if revision is not None:
         query = query & Q(revision=revision)
 
     if query_extra:
@@ -317,7 +318,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
 
-    if interdiff_revision:
+    if interdiff_revision and interdiff_revision != revision:
         interdiffset = _query_for_diff(review_request, interdiff_revision)
         interdiffset_id = interdiffset.id
     else:
@@ -328,8 +329,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
                                     user=request.user,
                                     review_request=review_request,
                                     public=False,
-                                    base_reply_to__isnull=True,
-                                    reviewed_diffset=diffset)
+                                    base_reply_to__isnull=True)
     else:
         review = None
 

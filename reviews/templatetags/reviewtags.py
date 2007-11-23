@@ -11,7 +11,8 @@ from djblets.util.decorators import blocktag
 from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.models import Profile
-from reviewboard.reviews.models import Group, ReviewRequest, \
+from reviewboard.diffviewer.models import DiffSet
+from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
                                        ReviewRequestDraft, ScreenshotComment
 from reviewboard.utils.templatetags.htmlutils import humanize_list
 
@@ -132,8 +133,9 @@ def ifnewreviews(context, nodelist, review_request):
 
 
 class CommentCounts(template.Node):
-    def __init__(self, filediff):
+    def __init__(self, filediff, interfilediff):
         self.filediff = filediff
+        self.interfilediff = interfilediff
 
     def render(self, context):
         try:
@@ -143,10 +145,22 @@ class CommentCounts(template.Node):
                 "Invalid variable %s passed to commentcounts tag." % \
                 self.filediff
 
+        try:
+            interfilediff = resolve_variable(self.interfilediff, context)
+        except VariableDoesNotExist:
+            interfilediff = None
+
         comments = {}
         user = context.get('user', None)
 
-        for comment in filediff.comment_set.all():
+        if interfilediff:
+            query = Comment.objects.filter(filediff=filediff,
+                                           interfilediff=interfilediff)
+        else:
+            query = Comment.objects.filter(filediff=filediff,
+                                           interfilediff__isnull=True)
+
+        for comment in query:
             if comment.review_set.count() > 0:
                 review = comment.review_set.get()
                 if review.public or review.user == user:
@@ -167,12 +181,12 @@ class CommentCounts(template.Node):
 @register.tag
 def commentcounts(parser, token):
     try:
-        tag_name, filediff = token.split_contents()
+        tag_name, filediff, interfilediff = token.split_contents()
     except ValueError:
         raise template.TemplateSyntaxError, \
-            "%r tag requires a filediff"
+            "%r tag requires a filediff and interfilediff"
 
-    return CommentCounts(filediff)
+    return CommentCounts(filediff, interfilediff)
 
 
 class ScreenshotCommentCounts(template.Node):
@@ -387,6 +401,78 @@ def bug_url(bug_id, review_request):
         return review_request.repository.bug_tracker % bug_id
 
     return None
+
+
+@register.filter
+def diffsets_with_comments(review, current_pair):
+    """
+    Returns a list of diffsets in the review that contain draft comments.
+    """
+    diffsets = DiffSet.objects.filter(
+        files__comment__review=review,
+        files__comment__interfilediff__isnull=True).distinct()
+
+    for diffset in diffsets:
+        yield {
+            'diffset': diffset,
+            'is_current': current_pair[0] == diffset and
+                          current_pair[1] == None,
+        }
+
+
+@register.filter
+def interdiffs_with_comments(review, current_pair):
+    """
+    Returns a list of interdiffs in the review that contain draft comments.
+    """
+    diffsets = DiffSet.objects.filter(
+        files__comment__review=review,
+        files__comment__interfilediff__isnull=False).distinct()
+
+    for diffset in diffsets:
+        interdiffs = DiffSet.objects.filter(
+            files__interdiff_comments__filediff__diffset=diffset).distinct()
+
+        for interdiff in interdiffs:
+            yield {
+                'diffset': diffset,
+                'interdiff': interdiff,
+                'is_current': current_pair[0] == diffset and
+                              current_pair[1] == interdiff,
+            }
+
+
+@register.filter
+def has_comments_in_diffsets_excluding(review, diffset_pair):
+    """
+    Returns whether or not the specified review has any comments that
+    aren't in the specified diffset or interdiff.
+    """
+    current_diffset, interdiff = diffset_pair
+
+    # See if there are any diffsets with comments on them in this review.
+    q = DiffSet.objects.filter(
+        files__comment__review=review,
+        files__comment__interfilediff__isnull=True).distinct()
+
+    if not interdiff:
+        # The user is browsing a standard diffset, so filter it out.
+        q = q.exclude(pk=current_diffset.id)
+
+    if q.count() > 0:
+        return True
+
+    # See if there are any interdiffs with comments on them in this review.
+    q = DiffSet.objects.filter(
+        files__comment__review=review,
+        files__comment__interfilediff__isnull=False)
+
+    if interdiff:
+        # The user is browsing an interdiff, so filter it out.
+        q = q.exclude(pk=current_diffset.id,
+                      files__comment__interfilediff__diffset=interdiff)
+
+    return q.count() > 0
 
 
 @register.inclusion_tag('reviews/star.html', takes_context=True)
