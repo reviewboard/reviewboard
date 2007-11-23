@@ -150,6 +150,12 @@ def interdiff_link_list(history, current_pair):
 
 @register.filter
 def highlightregion(value, regions):
+    """
+    Highlights the specified regions of text.
+
+    This is used to insert ``<span class="hl">...</span>`` tags in the
+    text as specified by the ``regions`` variable.
+    """
     if not regions:
         return value
 
@@ -220,6 +226,12 @@ extraWhitespace = re.compile(r'(\s+$| +\t)')
 
 @register.filter
 def showextrawhitespace(value):
+    """
+    Marks up any extra whitespace in the specified text.
+
+    Any trailing whitespace or tabs following one or more spaces are
+    marked up by inserted ``<span class="ew">...</span>`` tags.
+    """
     return extraWhitespace.sub(
         lambda m: "<span class=\"ew\">%s</span>" % m.group(0),
         value)
