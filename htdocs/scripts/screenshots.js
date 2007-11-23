@@ -428,6 +428,7 @@ function addComments(regions) {
 
 function onPageLoaded(evt) {
     YAHOO.util.Event.on(window, 'resize', onPageResize);
+    onPageResize();
 }
 
 function onPageResize(evt) {
