@@ -2,24 +2,27 @@ import re
 
 from django import template
 from django.template.loader import render_to_string
+from djblets.util.decorators import blocktag
 
 from reviewboard.reviews.templatetags.reviewtags import humanize_list
-from djblets.util.decorators import blocktag
 
 
 register = template.Library()
 
 
-class QuotedEmail(template.Node):
-    def __init__(self, template_name):
-        self.template_name = template_name
-
-    def render(self, context):
-        return quote_text(render_to_string(self.template_name, context))
-
-
 @register.tag
 def quoted_email(parser, token):
+    """
+    Renders a specified template as a quoted reply, using the current context.
+    """
+
+    class QuotedEmail(template.Node):
+        def __init__(self, template_name):
+            self.template_name = template_name
+
+        def render(self, context):
+            return quote_text(render_to_string(self.template_name, context))
+
     try:
         tag_name, template_name = token.split_contents()
     except ValueError:
@@ -31,6 +34,10 @@ def quoted_email(parser, token):
 @register.tag
 @blocktag
 def condense(context, nodelist):
+    """
+    Condenses a block of text so that there are never more than three
+    consecutive newlines.
+    """
     text = nodelist.render(context).strip()
     text = re.sub("\n{4,}", "\n\n\n", text)
     return text
@@ -38,6 +45,9 @@ def condense(context, nodelist):
 
 @register.simple_tag
 def reviewer_list(review_request):
+    """
+    Returns a humanized list of target reviewers in a review request.
+    """
     return humanize_list([group.display_name or group.name \
                           for group in review_request.target_groups.all()] + \
                          [user.get_full_name() or user.username \
@@ -45,7 +55,10 @@ def reviewer_list(review_request):
 
 
 @register.filter
-def quote_text(text, level = 1):
+def quote_text(text, level=1):
+    """
+    Quotes a block of text the specified number of times.
+    """
     lines = text.split("\n")
     quoted = ""
 
