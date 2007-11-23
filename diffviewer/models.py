@@ -2,19 +2,29 @@ import base64
 from datetime import datetime
 
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
+
 from reviewboard.scmtools.models import Repository
 
 
 class FileDiff(models.Model):
-    diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
-                                related_name='files')
+    """
+    A diff of a single file.
 
-    source_file = models.CharField("Source File", maxlength=256, core=True)
-    dest_file = models.CharField("Destination File", maxlength=256, core=True)
-    source_revision = models.CharField("Source File Revision", maxlength=512)
-    dest_detail = models.CharField("Destination File Details", maxlength=512)
-    diff_base64 = models.TextField("Diff (Base64)")
-    binary = models.BooleanField("Binary file", default=False)
+    This contains the patch and information needed to produce original and
+    patched versions of a single file in a repository.
+    """
+    diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
+                                related_name='files',
+                                verbose_name=_("diff set"))
+
+    source_file = models.CharField(_("source file"), maxlength=256, core=True)
+    dest_file = models.CharField(_("destination file"), maxlength=256,
+                                 core=True)
+    source_revision = models.CharField(_("source file revision"), maxlength=512)
+    dest_detail = models.CharField(_("destination file details"), maxlength=512)
+    diff_base64 = models.TextField(_("diff (Base64)"))
+    binary = models.BooleanField(_("binary file"), default=False)
 
     def _set_diff(self, data):
         self.diff_base64 = base64.encodestring(data)
@@ -42,16 +52,30 @@ class FileDiff(models.Model):
 
 
 class DiffSet(models.Model):
-    name = models.CharField('Name', maxlength=256, core=True)
-    revision = models.IntegerField("Revision", core=True)
-    timestamp = models.DateTimeField("Timestamp", default=datetime.now)
+    """
+    A revisioned collection of FileDiffs.
+    """
+    name = models.CharField(_('name'), maxlength=256, core=True)
+    revision = models.IntegerField(_("revision"), core=True)
+    timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
-                                edit_inline=models.STACKED)
-    repository = models.ForeignKey(Repository)
-    diffcompat = models.IntegerField('Differ compatibility version',
-                                     default=0)
+                                edit_inline=models.STACKED,
+                                verbose_name=_("diff set history"))
+    repository = models.ForeignKey(Repository, verbose_name=_("repository"))
+    diffcompat = models.IntegerField(
+        _('differ compatibility version'),
+        default=0,
+        help_text=_("The diff generator compatibility version to use. " +
+                    "This can and should be ignored."))
 
     def save(self):
+        """
+        Saves this diffset.
+
+        This will set an initial revision of 1 if this is the first diffset
+        in the history, and will set it to on more than the most recent
+        diffset otherwise.
+        """
         if self.revision == 0 and self.history != None:
             if self.history.diffset_set.count() == 0:
                 # Start on revision 1. It's more human-grokable.
@@ -72,8 +96,14 @@ class DiffSet(models.Model):
 
 
 class DiffSetHistory(models.Model):
-    name = models.CharField('Name', maxlength=256)
-    timestamp = models.DateTimeField("Timestamp", default=datetime.now)
+    """
+    A collection of diffsets.
+
+    This gives us a way to store and keep track of multiple revisions of
+    diffsets belonging to an object.
+    """
+    name = models.CharField(_('name'), maxlength=256)
+    timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
 
     def __unicode__(self):
         return u'Diff Set History (%s revisions)' % (self.diffset_set.count())

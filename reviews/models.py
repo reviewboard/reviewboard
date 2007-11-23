@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import Q, permalink
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.misc import get_object_or_none
 from djblets.util.db import QLeftOuterJoins
@@ -29,11 +30,21 @@ class ChangeNumberInUseError(Exception):
 
 
 class Group(models.Model):
-    name = models.SlugField(maxlength=64)
-    display_name = models.CharField(maxlength=64)
-    mailing_list = models.EmailField(blank=True)
+    """
+    A group of reviewers identified by a name. This is usually used to
+    separate teams at a company or components of a project.
+
+    Each group can have an e-mail address associated with it, sending
+    all review requests and replies to that address.
+    """
+    name = models.SlugField(_("name"), maxlength=64)
+    display_name = models.CharField(_("display name"), maxlength=64)
+    mailing_list = models.EmailField(_("mailing list"), blank=True,
+        help_text=_("The mailing list review requests and discussions " +
+                    "are sent to."))
     users = models.ManyToManyField(User, core=False, blank=True,
-                                   filter_interface=models.HORIZONTAL)
+                                   filter_interface=models.HORIZONTAL,
+                                   verbose_name=_("users"))
 
     def __unicode__(self):
         return self.name
@@ -46,16 +57,30 @@ class Group(models.Model):
         list_display = ('name', 'display_name', 'mailing_list')
 
     class Meta:
-        verbose_name = "review group"
+        verbose_name = _("review group")
         ordering = ['name']
 
 
 class DefaultReviewer(models.Model):
-    name = models.CharField(maxlength=64)
-    file_regex = models.CharField(maxlength=256)
-    groups = models.ManyToManyField(Group, verbose_name="Default Groups",
+    """
+    A default reviewer entry automatically adds default reviewers to a
+    review request when the diff modifies a file matching the ``file_regex``
+    pattern specified.
+
+    This is useful when different groups own different parts of a codebase.
+    Adding DefaultReviewer entries ensures that the right people will always
+    see the review request and discussions.
+
+    A ``file_regex`` of ``".*"`` will add the specified reviewers by
+    default for every review request.
+    """
+    name = models.CharField(_("name"), maxlength=64)
+    file_regex = models.CharField(_("file regex"), maxlength=256,
+        help_text=_("File paths are matched against this regular expression " +
+                    "to determine if these reviewers should be added."))
+    groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
                                     core=False, blank=True)
-    people = models.ManyToManyField(User, verbose_name="Default People",
+    people = models.ManyToManyField(User, verbose_name=_("default people"),
                                     related_name="default_review_paths",
                                     core=False, blank=True)
 
@@ -67,11 +92,23 @@ class DefaultReviewer(models.Model):
 
 
 class Screenshot(models.Model):
-    caption = models.CharField(maxlength=256, blank=True)
-    draft_caption = models.CharField(maxlength=256, blank=True)
-    image = models.ImageField(upload_to=os.path.join('images', 'uploaded'))
+    """
+    A screenshot associated with a review request.
+
+    Like diffs, a screenshot can have comments associated with it.
+    These comments are of type :model:`reviews.ScreenshotComment`.
+    """
+    caption = models.CharField(_("caption"), maxlength=256, blank=True)
+    draft_caption = models.CharField(_("draft caption"),
+                                     maxlength=256, blank=True)
+    image = models.ImageField(_("image"),
+                              upload_to=os.path.join('images', 'uploaded'))
 
     def thumb(self):
+        """
+        Creates a thumbnail of this screenshot and returns the HTML
+        output embedding the thumbnail.
+        """
         url = thumbnail(self.image)
         return mark_safe('<img src="%s" alt="%s" />' % (url, self.caption))
     thumb.allow_tags = True
@@ -172,47 +209,68 @@ class ReviewRequestManager(models.Manager):
 
 
 class ReviewRequest(models.Model):
+    """
+    A review request.
+
+    This is one of the primary models in Review Board. Most everything
+    is associated with a review request.
+
+    The ReviewRequest model contains detailed information on a review
+    request. Some fields are user-modifiable, while some are used for
+    internal state.
+    """
     STATUSES = (
         ('P', 'Pending Review'),
         ('S', 'Submitted'),
         ('D', 'Discarded'),
     )
 
-    submitter = models.ForeignKey(User, verbose_name="Submitter")
-    time_added = models.DateTimeField("Time Added", default=datetime.now)
-    last_updated = ModificationTimestampField("Last Updated")
-    status = models.CharField(maxlength=1, choices=STATUSES)
-    public = models.BooleanField("Public", default=False)
-    changenum = models.PositiveIntegerField("Change Number", blank=True,
+    submitter = models.ForeignKey(User, verbose_name=_("submitter"))
+    time_added = models.DateTimeField(_("time added"), default=datetime.now)
+    last_updated = ModificationTimestampField(_("last updated"))
+    status = models.CharField(_("status"), maxlength=1, choices=STATUSES)
+    public = models.BooleanField(_("public"), default=False)
+    changenum = models.PositiveIntegerField(_("change number"), blank=True,
                                             null=True, db_index=True)
-    repository = models.ForeignKey(Repository)
-    email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
+    repository = models.ForeignKey(Repository, verbose_name=_("repository"))
+    email_message_id = models.CharField(_("e-mail message ID"), maxlength=255,
                                         blank=True, null=True)
-    time_emailed = models.DateTimeField("Time E-Mailed", null=True,
+    time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)
 
-    summary = models.CharField("Summary", maxlength=300, core=True)
-    description = models.TextField("Description", blank=True)
-    testing_done = models.TextField("Testing Done", blank=True)
-    bugs_closed = models.CommaSeparatedIntegerField("Bugs",
+    summary = models.CharField(_("summary"), maxlength=300, core=True)
+    description = models.TextField(_("description"), blank=True)
+    testing_done = models.TextField(_("testing done"), blank=True)
+    bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     maxlength=300, blank=True)
     diffset_history = models.ForeignKey(DiffSetHistory,
-                                        verbose_name='diff set history',
+                                        verbose_name=_('diff set history'),
                                         blank=True)
-    branch = models.CharField("Branch", maxlength=300, blank=True)
-    target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
-                                           core=False, blank=True,
-                                           filter_interface=models.HORIZONTAL)
-    target_people = models.ManyToManyField(User, verbose_name="Target People",
-                                           related_name="directed_review_requests",
-                                           core=False, blank=True,
-                                           filter_interface=models.HORIZONTAL)
-    screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
-                                         related_name="review_request",
-                                         core=False, blank=True,
-                                         filter_interface=models.VERTICAL)
+    branch = models.CharField(_("branch"), maxlength=300, blank=True)
+    target_groups = models.ManyToManyField(
+        Group,
+        verbose_name=_("target groups"),
+        core=False, blank=True,
+        filter_interface=models.HORIZONTAL)
+    target_people = models.ManyToManyField(
+        User,
+        verbose_name=_("target people"),
+        related_name="directed_review_requests",
+        core=False, blank=True,
+        filter_interface=models.HORIZONTAL)
+    screenshots = models.ManyToManyField(
+        Screenshot,
+        verbose_name=_("screenshots"),
+        related_name="review_request",
+        core=False, blank=True,
+        filter_interface=models.VERTICAL)
     inactive_screenshots = models.ManyToManyField(Screenshot,
-        related_name="inactive_review_request", core=False, blank=True,
+        verbose_name=_("inactive screenshots"),
+        help_text=_("A list of screenshots that used to be but are no " +
+                    "longer associated with this review request."),
+        related_name="inactive_review_request",
+        core=False,
+        blank=True,
         filter_interface=models.VERTICAL)
 
 
@@ -221,6 +279,9 @@ class ReviewRequest(models.Model):
 
 
     def get_bug_list(self):
+        """
+        Returns a sorted list of bugs associated with this review request.
+        """
         bugs = re.split(r"[, ]+", self.bugs_closed)
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
         return bugs
@@ -242,6 +303,10 @@ class ReviewRequest(models.Model):
         return self.review_set.get_empty_query_set()
 
     def update_from_changenum(self, changenum):
+        """
+        Updates this review request from the specified changeset's contents
+        on the server.
+        """
         changeset = self.repository.get_scmtool().get_changeset(changenum)
 
         if not changeset:
@@ -287,32 +352,50 @@ class ReviewRequest(models.Model):
 
 
 class ReviewRequestDraft(models.Model):
+    """
+    A draft of a review request.
+
+    When a review request is being modified, a special draft copy of it is
+    created containing all the details of the review request. This copy can
+    be modified and eventually saved or discarded. When saved, the new
+    details are copied back over to the originating ReviewRequest.
+    """
     review_request = models.ForeignKey(ReviewRequest,
-                                       verbose_name="Review Request", core=True)
-    last_updated = ModificationTimestampField("Last Updated")
-    summary = models.CharField("Summary", maxlength=300, core=True)
-    description = models.TextField("Description")
-    testing_done = models.TextField("Testing Done")
-    bugs_closed = models.CommaSeparatedIntegerField("Bugs",
+                                       verbose_name=_("review request"),
+                                       core=True)
+    last_updated = ModificationTimestampField(_("last updated"))
+    summary = models.CharField(_("summary"), maxlength=300, core=True)
+    description = models.TextField(_("description"))
+    testing_done = models.TextField(_("testing done"))
+    bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     maxlength=300, blank=True)
-    diffset = models.ForeignKey(DiffSet, verbose_name='diff set', blank=True,
-                                null=True, core=False)
-    branch = models.CharField("Branch", maxlength=300, blank=True)
-    target_groups = models.ManyToManyField(Group, verbose_name="Target Groups",
+    diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
+                                blank=True, null=True, core=False)
+    branch = models.CharField(_("branch"), maxlength=300, blank=True)
+    target_groups = models.ManyToManyField(Group,
+                                           verbose_name=_("target groups"),
                                            core=False, blank=True,
                                            filter_interface=models.HORIZONTAL)
-    target_people = models.ManyToManyField(User, verbose_name="Target People",
+    target_people = models.ManyToManyField(User,
+                                           verbose_name=_("target people"),
                                            related_name="directed_drafts",
                                            core=False, blank=True,
                                            filter_interface=models.HORIZONTAL)
-    screenshots = models.ManyToManyField(Screenshot, verbose_name="Screenshots",
+    screenshots = models.ManyToManyField(Screenshot,
+                                         verbose_name=_("screenshots"),
                                          core=False, blank=True,
                                          filter_interface=models.VERTICAL)
     inactive_screenshots = models.ManyToManyField(Screenshot,
+        verbose_name=_("inactive screenshots"),
         related_name="inactive_drafts", core=False, blank=True,
         filter_interface=models.VERTICAL)
 
+    submitter = property(lambda self: self.review_request.submitter)
+
     def get_bug_list(self):
+        """
+        Returns a sorted list of bugs associated with this review request.
+        """
         bugs = re.split(r"[, ]+", self.bugs_closed)
         bugs.sort(cmp=lambda x,y: int(x) - int(y))
         return bugs
@@ -320,15 +403,19 @@ class ReviewRequestDraft(models.Model):
     def __unicode__(self):
         return self.summary
 
-    def _submitter(self):
-        return self.review_request.submitter
-
     def save(self):
         self.bugs_closed = self.bugs_closed.strip()
         super(ReviewRequestDraft, self).save()
 
     @staticmethod
     def create(review_request):
+        """
+        Creates a draft based on a review request.
+
+        This will copy over all the details of the review request that
+        we care about. If a draft already exists for the review request,
+        the draft will be returned.
+        """
         draft, draft_is_new = \
             ReviewRequestDraft.objects.get_or_create(
                 review_request=review_request,
@@ -356,12 +443,12 @@ class ReviewRequestDraft(models.Model):
         return draft
 
     def add_default_reviewers(self):
-        """Add default reviewers to this draft based on the diffset.
+        """
+        Add default reviewers to this draft based on the diffset.
 
         This method goes through the DefaultReviewer objects in the database and
         adds any missing reviewers based on regular expression comparisons with
         the set of files in the diff.
-
         """
 
         if not self.diffset:
@@ -396,7 +483,8 @@ class ReviewRequestDraft(models.Model):
                 self.target_groups.add(group)
 
     def save_draft(self):
-        """Save this draft into the assocated ReviewRequest object.
+        """
+        Save this draft into the assocated ReviewRequest object.
 
         This returns a dict of changed fields, which is used by the e-mail
         template to tell people what's new and interesting.
@@ -412,7 +500,6 @@ class ReviewRequestDraft(models.Model):
             'screenshots'
             'diff'
         Each of these keys will have an associated boolean value.
-
         """
         request = self.review_request
 
@@ -477,7 +564,7 @@ class ReviewRequestDraft(models.Model):
         return changes
 
     class Admin:
-        list_display = ('summary', '_submitter', 'last_updated')
+        list_display = ('summary', 'submitter', 'last_updated')
         list_filter = ('last_updated',)
 
     class Meta:
@@ -485,27 +572,37 @@ class ReviewRequestDraft(models.Model):
 
 
 class Comment(models.Model):
-    filediff = models.ForeignKey(FileDiff, verbose_name='File')
+    """
+    A comment made on a diff.
+
+    A comment can belong to a single filediff or to an interdiff between
+    two filediffs. It can also have multiple replies.
+    """
+    filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'))
     interfilediff = models.ForeignKey(FileDiff,
-                                      verbose_name='interdiff file',
+                                      verbose_name=_('interdiff file'),
                                       blank=True, null=True,
                                       related_name="interdiff_comments")
     reply_to = models.ForeignKey("self", blank=True, null=True,
-                                 related_name="replies")
-    timestamp = models.DateTimeField('Timestamp', default=datetime.now)
-    text = models.TextField("Comment Text")
+                                 related_name="replies",
+                                 verbose_name=_("reply to"))
+    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    text = models.TextField(_("comment text"))
 
     # A null line number applies to an entire diff.  Non-null line numbers are
     # the line within the entire file, starting at 1.
-    first_line = models.PositiveIntegerField("First Line", blank=True,
+    first_line = models.PositiveIntegerField(_("first line"), blank=True,
                                              null=True)
-    num_lines = models.PositiveIntegerField("Number of lines", blank=True,
+    num_lines = models.PositiveIntegerField(_("number of lines"), blank=True,
                                             null=True)
 
-    def last_line(self):
-        return self.first_line + self.num_lines - 1
+    last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     def public_replies(self, user=None):
+        """
+        Returns a list of public replies to this comment, optionally
+        specifying the user replying.
+        """
         if user:
             return self.replies.filter(Q(review__public=True) |
                                        Q(review__user=user))
@@ -535,20 +632,28 @@ class Comment(models.Model):
 
 
 class ScreenshotComment(models.Model):
-    screenshot = models.ForeignKey(Screenshot, verbose_name='Screenshot')
+    """
+    A comment on a screenshot.
+    """
+    screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'))
     reply_to = models.ForeignKey('self', blank=True, null=True,
-                                 related_name='replies')
-    timestamp = models.DateTimeField('Timestamp', default=datetime.now)
-    text = models.TextField('Comment Text')
+                                 related_name='replies',
+                                 verbose_name=_("reply to"))
+    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    text = models.TextField(_('comment text'))
 
     # This is a sub-region of the screenshot.  Null X indicates the entire
     # image.
-    x = models.PositiveSmallIntegerField("Sub-image X", null=True)
-    y = models.PositiveSmallIntegerField("Sub-image Y")
-    w = models.PositiveSmallIntegerField("Sub-image width")
-    h = models.PositiveSmallIntegerField("Sub-image height")
+    x = models.PositiveSmallIntegerField(_("sub-image X"), null=True)
+    y = models.PositiveSmallIntegerField(_("sub-image Y"))
+    w = models.PositiveSmallIntegerField(_("sub-image width"))
+    h = models.PositiveSmallIntegerField(_("sub-image height"))
 
     def public_replies(self, user=None):
+        """
+        Returns a list of public replies to this comment, optionally
+        specifying the user replying.
+        """
         if user:
             return self.replies.filter(Q(review__public=True) |
                                        Q(review__user=user))
@@ -556,6 +661,10 @@ class ScreenshotComment(models.Model):
             return self.replies.filter(review__public=True)
 
     def image(self):
+        """
+        Generates the cropped part of the screenshot referenced by this
+        comment and returns the HTML markup embedding it.
+        """
         url = crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
         return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
             (url, self.w, self.h, escape(self.text))
@@ -572,49 +681,84 @@ class ScreenshotComment(models.Model):
 
 
 class Review(models.Model):
-    review_request = models.ForeignKey(ReviewRequest)
-    user = models.ForeignKey(User)
-    timestamp = models.DateTimeField('Timestamp', default=datetime.now)
-    public = models.BooleanField("Public", default=False)
-    ship_it = models.BooleanField("Ship It", default=False)
-    base_reply_to = models.ForeignKey("self", blank=True, null=True,
-                                      related_name="replies")
-    email_message_id = models.CharField("E-Mail Message ID", maxlength=255,
+    """
+    A review of a review request.
+    """
+    review_request = models.ForeignKey(ReviewRequest,
+                                       verbose_name=_("review request"))
+    user = models.ForeignKey(User, verbose_name=_("user"))
+    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    public = models.BooleanField(_("public"), default=False)
+    ship_it = models.BooleanField(_("ship it"), default=False,
+        help_text=_("Indicates whether the reviewer thinks this code is " +
+                    "ready to ship."))
+    base_reply_to = models.ForeignKey(
+        "self", blank=True, null=True,
+        related_name="replies",
+        verbose_name=_("Base reply to"),
+        help_text=_("The top-most review in the discussion thread for " +
+                    "this review reply."))
+    email_message_id = models.CharField(_("e-mail message ID"), maxlength=255,
                                         blank=True, null=True)
-    time_emailed = models.DateTimeField("Time E-Mailed", null=True,
+    time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)
 
-    body_top = models.TextField("Body (Top)", blank=True)
-    body_bottom = models.TextField("Body (Bottom)", blank=True)
+    body_top = models.TextField(_("body (top)"), blank=True,
+        help_text=_("The review text shown above the diff and screenshot " +
+                    "comments."))
+    body_bottom = models.TextField(_("body (bottom)"), blank=True,
+        help_text=_("The review text shown below the diff and screenshot " +
+                    "comments."))
 
-    body_top_reply_to = models.ForeignKey("self", blank=True, null=True,
-                                          related_name="body_top_replies")
-    body_bottom_reply_to = models.ForeignKey("self", blank=True, null=True,
-                                             related_name="body_bottom_replies")
+    body_top_reply_to = models.ForeignKey(
+        "self", blank=True, null=True,
+        related_name="body_top_replies",
+        verbose_name=_("body (top) reply to"),
+        help_text=_("The review that the body (top) field is in reply to."))
+    body_bottom_reply_to = models.ForeignKey(
+        "self", blank=True, null=True,
+        related_name="body_bottom_replies",
+        verbose_name=_("body (bottom) reply to"),
+        help_text=_("The review that the body (bottom) field is in reply to."))
 
-    comments = models.ManyToManyField(Comment, verbose_name="Comments",
+    comments = models.ManyToManyField(Comment, verbose_name=_("comments"),
                                       core=False, blank=True,
                                       filter_interface=models.VERTICAL)
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
-        verbose_name="Screenshot Comments",
+        verbose_name=_("screenshot comments"),
         core=False, blank=True, filter_interface=models.VERTICAL)
 
     # XXX Deprecated. This will be removed in a future release.
-    reviewed_diffset = models.ForeignKey(DiffSet, verbose_name="Reviewed Diff",
-                                         blank=True, null=True)
+    reviewed_diffset = models.ForeignKey(
+        DiffSet, verbose_name="Reviewed Diff",
+        blank=True, null=True,
+        help_text=_("This field is unused and will be removed in a future " +
+                    "version."))
 
     def __unicode__(self):
         return "Review of '%s'" % self.review_request
 
     def is_reply(self):
+        """
+        Returns whether or not this review is a reply to another review.
+        """
         return self.base_reply_to != None
     is_reply.boolean = True
 
     def public_replies(self):
+        """
+        Returns a list of public replies to this review.
+        """
         return self.replies.filter(public=True)
 
     def publish(self):
+        """
+        Publishes this review.
+
+        This will make the review public and update the timestamps of all
+        contained comments.
+        """
         self.timestamp = datetime.now()
         self.public = True
         self.save()
@@ -628,6 +772,11 @@ class Review(models.Model):
             comment.save()
 
     def delete(self):
+        """
+        Deletes this review.
+
+        This will enforce that all contained comments are also deleted.
+        """
         for comment in self.comments.all():
             comment.delete()
 
