@@ -3,107 +3,114 @@ import re
 from django import template
 from django.template import resolve_variable
 from django.template import NodeList, VariableDoesNotExist
+from djblets.util.decorators import blocktag
+
 from reviewboard.diffviewer.views import get_diff_files, \
                                          get_enable_highlighting
 
 register = template.Library()
 
-class ForChunksWithLines(template.Node):
-    def __init__(self, filediff, interfilediff, first_line,
-                 num_lines, nodelist_loop):
-        self.filediff = filediff
-        self.interfilediff = interfilediff
-        self.first_line = first_line
-        self.num_lines = num_lines
-        self.nodelist_loop = nodelist_loop
-
-    def get_variable(self, var, context):
-        try:
-            return resolve_variable(var, context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid variable '%s' passed to 'forchunkswithlines' tag." % \
-                var
-
-    def render(self, context):
-        filediff = self.get_variable(self.filediff, context)
-        interfilediff = self.get_variable(self.interfilediff, context)
-        interdiffset = None
-
-        key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
-
-        if interfilediff:
-            key += "_%s" % (interfilediff.id)
-            interdiffset = interfilediff.diffset
-
-        if key in context:
-            files = context[key]
-        else:
-            files = get_diff_files(filediff.diffset, filediff, interdiffset,
-                                   get_enable_highlighting(context['user']))
-            context[key] = files
-
-        if files:
-            assert len(files) == 1
-            return self.render_file(files[0], context)
-
-        return "Missing lines"
-
-    def render_file(self, file, context):
-        first_line = int(self.get_variable(self.first_line, context))
-        num_lines = int(self.get_variable(self.num_lines, context))
-
-        nodelist = NodeList()
-        context.push()
-
-        for chunk in file['chunks']:
-            lines = chunk['lines']
-            if first_line >= lines[0][0] and \
-               first_line <= lines[-1][0]:
-                start_index = first_line - lines[0][0]
-
-                if first_line + num_lines <= lines[-1][0]:
-                    last_index = start_index + num_lines
-                else:
-                    last_index = len(lines)
-
-                new_chunk = {
-                    'lines': chunk['lines'][start_index:last_index],
-                    'numlines': last_index - start_index,
-                    'change': chunk['change'],
-                }
-
-                context['chunk'] = new_chunk
-
-                for node in self.nodelist_loop:
-                    nodelist.append(node.render(context))
-
-                first_line += new_chunk['numlines']
-                num_lines -= new_chunk['numlines']
-
-                assert num_lines >= 0
-                if num_lines == 0:
-                    break
-
-        context.pop()
-        return nodelist.render(context)
-
 
 @register.tag
-def forchunkswithlines(parser, token):
-    try:
-        tag_name, filediff, interfilediff, first_line, num_lines = \
-            token.contents.split()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires a filediff, interfilediff, first line and " + \
-            "number of lines"
+@blocktag
+def forchunkswithlines(context, nodelist, filediff, interfilediff, first_line,
+                       num_lines):
+    """
+    Loops over a range of lines in the specified file diff/interfilediff.
 
-    nodelist_loop = parser.parse(('endforchunkswithlines'),)
-    parser.delete_first_token()
+    This is a block tag used for displaying chunks of a diff. It renders
+    and caches the content for each chunk in the file. This content will
+    have access to the following special variables:
 
-    return ForChunksWithLines(filediff, interfilediff, first_line,
-                              num_lines, nodelist_loop)
+      =================== ==================================================
+      Variable            Description
+      =================== ==================================================
+      ``chunk.change``    The change type ("equal", "replace", "insert",
+                          "delete")
+      ``chunk.numlines``  The number of lines in the chunk.
+      ``chunk.lines``     The list of lines in the chunk.
+      =================== ==================================================
+
+
+    Each line in the list of lines is an array with the following data:
+
+      ======== =============================================================
+      Index    Description
+      ======== =============================================================
+      0        Virtual line number (union of the original and patched files)
+      1        Real line number in the original file
+      2        HTML markup of the original file
+      3        Changed regions of the original line (for "replace" chunks)
+      4        Real line number in the patched file
+      5        HTML markup of the patched file
+      6        Changed regions of the patched line (for "replace" chunks)
+      ======== =============================================================
+
+    Example::
+
+        {% forchunkswithlines filediff interfilediff first_line num_lines %}
+          Change: {{chunk.change}}<br />
+          Number of lines: {{chunk.numlines}}<br />
+          {% for line in chunk.lines %}
+            ...
+          {% endfor %}
+        {% endforchunkswithlines %}
+    """
+
+
+    interdiffset = None
+
+    key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
+
+    if interfilediff:
+        key += "_%s" % (interfilediff.id)
+        interdiffset = interfilediff.diffset
+
+    if key in context:
+        files = context[key]
+    else:
+        files = get_diff_files(filediff.diffset, filediff, interdiffset,
+                               get_enable_highlighting(context['user']))
+        context[key] = files
+
+    if not files:
+        return "Missing lines"
+
+    assert len(files) == 1
+
+    new_nodelist = NodeList()
+    context.push()
+
+    for chunk in files[0]['chunks']:
+        lines = chunk['lines']
+        if lines[-1][0] >= first_line >= lines[0][0]:
+            start_index = first_line - lines[0][0]
+
+            if first_line + num_lines <= lines[-1][0]:
+                last_index = start_index + num_lines
+            else:
+                last_index = len(lines)
+
+            new_chunk = {
+                'lines': chunk['lines'][start_index:last_index],
+                'numlines': last_index - start_index,
+                'change': chunk['change'],
+            }
+
+            context['chunk'] = new_chunk
+
+            for node in nodelist:
+                new_nodelist.append(node.render(context))
+
+            first_line += new_chunk['numlines']
+            num_lines -= new_chunk['numlines']
+
+            assert num_lines >= 0
+            if num_lines == 0:
+                break
+
+    context.pop()
+    return new_nodelist.render(context)
 
 
 @register.filter
