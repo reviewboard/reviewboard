@@ -73,6 +73,9 @@ class ColumnHeader(template.Node):
         for key in request.GET:
             url_prefix += "%s=%s&" % (key, request.GET[key])
 
+        # XXX I'm not too excited about this function hard-coding
+        #     image filenames and HTML. This should probably move out to
+        #     an included template at some point.
         url = "%ssort=%s" % (url_prefix, ','.join(sort_list))
         s  = '<th onclick="javascript:window.location = \'%s\'">' % url
         s += '<a href="%s">%s' % (url, self.text)
@@ -92,6 +95,13 @@ class ColumnHeader(template.Node):
 
 @register.tag
 def column_header(parser, token):
+    """
+    Displays a sortable column header.
+
+    The column header will include the current sort indicator, if it belongs
+    in the sort list. It will also be made clickable in order to modify
+    the sort order appropriately.
+    """
     try:
         tag_name, field_name, text = token.split_contents()
     except ValueError:
@@ -104,6 +114,9 @@ def column_header(parser, token):
 @register.tag
 @blocktag
 def box(context, nodelist, classname=None):
+    """
+    Displays a box container around content, with an optional class name.
+    """
     output = "<div class=\"box-container\">"
     output += "<div class=\"box"
     if classname:
@@ -122,6 +135,9 @@ def box(context, nodelist, classname=None):
 @register.tag
 @blocktag
 def errorbox(context, nodelist, div_id=None):
+    """
+    Displays an error box around content, with an optional ID.
+    """
     output = "<div class=\"errorbox\""
     if div_id:
         output += " id=\"%s\"" % div_id
@@ -134,6 +150,23 @@ def errorbox(context, nodelist, div_id=None):
 
 @register.simple_tag
 def ageid(timestamp):
+    """
+    Returns an ID based on the difference between a timestamp and the
+    current time.
+
+    The ID is returned based on the following differences in days:
+
+      ========== ====
+      Difference ID
+      ========== ====
+      0          age1
+      1          age2
+      2          age3
+      3          age4
+      4 or more  age5
+      ========== ====
+    """
+
     # Convert datetime.date into datetime.datetime
     if timestamp.__class__ is not datetime.datetime:
         timestamp = datetime.datetime(timestamp.year, timestamp.month,
@@ -157,13 +190,11 @@ def ageid(timestamp):
 
 
 @register.simple_tag
-def sort_indicator(sort_list, field_name):
-
-    return ""
-
-
-@register.simple_tag
 def crop_image(file, x, y, width, height):
+    """
+    Crops an image at the specified coordinates and dimensions, returning the
+    resulting URL of the cropped image.
+    """
     if file.find(".") != -1:
         basename, format = file.rsplit('.', 1)
         new_name = '%s_%s_%s_%s_%s.%s' % (basename, x, y, width, height, format)
@@ -188,6 +219,20 @@ def crop_image(file, x, y, width, height):
 @register.tag
 @blocktag
 def ifuserorperm(context, nodelist, user, perm):
+    """
+    Renders content depending on whether the logged in user is the specified
+    user or has the specified permission.
+
+    This is useful when you want to restrict some code to the owner of a
+    review request or to a privileged user that has the abilities of the
+    owner.
+
+    Example::
+
+        {% ifuserorperm myobject.user "myobject.can_change_status" %}
+        Owner-specific content here...
+        {% endifuserorperm %}
+    """
     req_user = context.get('user', None)
     if user == req_user or req_user.has_perm(perm):
         return nodelist.render(context)
@@ -198,6 +243,9 @@ def ifuserorperm(context, nodelist, user, perm):
 @register.tag
 @blocktag
 def attr(context, nodelist, attrname):
+    """
+    Sets an HTML attribute to a value if the value is not an empty string.
+    """
     content = nodelist.render(context)
 
     if content.strip() == "":
@@ -210,6 +258,9 @@ def attr(context, nodelist, attrname):
 # http://www.djangosnippets.org/snippets/73/
 @register.inclusion_tag('paginator.html', takes_context=True)
 def paginator(context, adjacent_pages=3):
+    """
+    Renders a paginator used for jumping between pages of results.
+    """
     page_nums = range(max(1, context['page'] - adjacent_pages),
                       min(context['pages'], context['page'] + adjacent_pages)
                       + 1)
@@ -231,11 +282,26 @@ def paginator(context, adjacent_pages=3):
 
 @register.filter
 def escapespaces(value):
+    """
+    HTML-escapes all spaces with ``&nbsp;`` and newlines with ``<br />``.
+    """
     return value.replace('  ', '&nbsp; ').replace('\n', '<br />')
 
 
 @register.filter
 def humanize_list(value):
+    """
+    Humanizes a list of values, inserting commands and "and" where appropriate.
+
+      ========================= ======================
+      Example List              Resulting string
+      ========================= ======================
+      ``["a"]``                 ``"a"``
+      ``["a", "b"]``            ``"a and b"``
+      ``["a", "b", "c"]``       ``"a, b and c"``
+      ``["a", "b", "c", "d"]``  ``"a, b, c, and d"``
+      ========================= ======================
+    """
     if len(value) == 0:
         return ""
     elif len(value) == 1:
@@ -251,6 +317,9 @@ def humanize_list(value):
 
 @register.filter
 def indent(value, numspaces=4):
+    """
+    Indents a string by the specified number of spaces.
+    """
     indent_str = " " * numspaces
     return indent_str + value.replace("\n", "\n" + indent_str)
 
@@ -258,6 +327,10 @@ def indent(value, numspaces=4):
 # From http://www.djangosnippets.org/snippets/192
 @register.filter
 def thumbnail(file, size='400x100'):
+    """
+    Creates a thumbnail of an image with the specified size, returning
+    the URL of the thumbnail.
+    """
     x, y = [int(x) for x in size.split('x')]
 
     if file.find(".") != -1:
@@ -285,11 +358,20 @@ def thumbnail(file, size='400x100'):
 
 @register.filter
 def basename(value):
+    """
+    Returns the basename of a path.
+    """
     return os.path.basename(value)
 
 
 @register.filter
 def realname(user):
+    """
+    Returns the real name of a user, if available, or the username.
+
+    If the user has a full name set, this will return the full name.
+    Otherwise, this returns the username.
+    """
     full_name = user.get_full_name()
     if full_name == '':
         return user.username
@@ -299,6 +381,11 @@ def realname(user):
 
 @register.simple_tag
 def form_dialog_fields(form):
+    """
+    Translates a Django Form object into a JavaScript list of fields.
+    The resulting list of fields can be used to represent the form
+    dynamically.
+    """
     s = ''
 
     for field in form:
