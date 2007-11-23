@@ -40,7 +40,7 @@ class Group(models.Model):
     name = models.SlugField(_("name"), maxlength=64)
     display_name = models.CharField(_("display name"), maxlength=64)
     mailing_list = models.EmailField(_("mailing list"), blank=True,
-        help_text=_("The mailing list review requests and discussions " +
+        help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
     users = models.ManyToManyField(User, core=False, blank=True,
                                    filter_interface=models.HORIZONTAL,
@@ -76,7 +76,7 @@ class DefaultReviewer(models.Model):
     """
     name = models.CharField(_("name"), maxlength=64)
     file_regex = models.CharField(_("file regex"), maxlength=256,
-        help_text=_("File paths are matched against this regular expression " +
+        help_text=_("File paths are matched against this regular expression "
                     "to determine if these reviewers should be added."))
     groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
                                     core=False, blank=True)
@@ -266,7 +266,7 @@ class ReviewRequest(models.Model):
         filter_interface=models.VERTICAL)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
-        help_text=_("A list of screenshots that used to be but are no " +
+        help_text=_("A list of screenshots that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
         core=False,
@@ -690,13 +690,13 @@ class Review(models.Model):
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     public = models.BooleanField(_("public"), default=False)
     ship_it = models.BooleanField(_("ship it"), default=False,
-        help_text=_("Indicates whether the reviewer thinks this code is " +
+        help_text=_("Indicates whether the reviewer thinks this code is "
                     "ready to ship."))
     base_reply_to = models.ForeignKey(
         "self", blank=True, null=True,
         related_name="replies",
         verbose_name=_("Base reply to"),
-        help_text=_("The top-most review in the discussion thread for " +
+        help_text=_("The top-most review in the discussion thread for "
                     "this review reply."))
     email_message_id = models.CharField(_("e-mail message ID"), maxlength=255,
                                         blank=True, null=True)
@@ -704,10 +704,10 @@ class Review(models.Model):
                                         default=None, blank=True)
 
     body_top = models.TextField(_("body (top)"), blank=True,
-        help_text=_("The review text shown above the diff and screenshot " +
+        help_text=_("The review text shown above the diff and screenshot "
                     "comments."))
     body_bottom = models.TextField(_("body (bottom)"), blank=True,
-        help_text=_("The review text shown below the diff and screenshot " +
+        help_text=_("The review text shown below the diff and screenshot "
                     "comments."))
 
     body_top_reply_to = models.ForeignKey(
@@ -733,7 +733,7 @@ class Review(models.Model):
     reviewed_diffset = models.ForeignKey(
         DiffSet, verbose_name="Reviewed Diff",
         blank=True, null=True,
-        help_text=_("This field is unused and will be removed in a future " +
+        help_text=_("This field is unused and will be removed in a future "
                     "version."))
 
     def __unicode__(self):

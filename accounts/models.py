@@ -30,20 +30,20 @@ class Profile(models.Model):
     # people to fix their real name and join groups.
     first_time_setup_done = models.BooleanField(default=False,
         verbose_name=_("first time setup done"),
-        help_text=_("Indicates whether the user has already gone through " +
-                    "the first time setup process by saving their user " +
+        help_text=_("Indicates whether the user has already gone through "
+                    "the first time setup process by saving their user "
                     "preferences."))
 
     collapsed_diffs = models.BooleanField(default=True,
         verbose_name=_("collapsed diffs"),
-        help_text=_("Indicates whether diffs should be shown in their " +
+        help_text=_("Indicates whether diffs should be shown in their "
                     "collapsed state by default."))
     wordwrapped_diffs = models.BooleanField(default=True,
-        help_text=_("This field is unused and will be removed in a future " +
+        help_text=_("This field is unused and will be removed in a future "
                     "version."))
     syntax_highlighting = models.BooleanField(default=True,
         verbose_name=_("syntax highlighting"),
-        help_text=_("Indicates whether the user wishes to see " +
+        help_text=_("Indicates whether the user wishes to see "
                     "syntax highlighting in the diffs."))
 
     # Indicate whether submitted review requests should appear in the

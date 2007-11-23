@@ -65,7 +65,7 @@ class DiffSet(models.Model):
     diffcompat = models.IntegerField(
         _('differ compatibility version'),
         default=0,
-        help_text=_("The diff generator compatibility version to use. " +
+        help_text=_("The diff generator compatibility version to use. "
                     "This can and should be ignored."))
 
     def save(self):
