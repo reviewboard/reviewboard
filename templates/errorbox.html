@@ -1,0 +1,4 @@
+{% load htmlutils %}
+<div class="errorbox"{% attr "id" %}{{box_id}}{% endattr %}>
+{{content|safe}}
+</div>

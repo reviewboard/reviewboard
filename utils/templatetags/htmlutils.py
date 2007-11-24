@@ -5,6 +5,7 @@ import os
 from django import template
 from django.conf import settings
 from django.template import Variable, VariableDoesNotExist
+from django.template.loader import render_to_string
 from djblets.util.decorators import blocktag
 
 
@@ -103,35 +104,22 @@ def box(context, nodelist, classname=None):
     """
     Displays a box container around content, with an optional class name.
     """
-    output = "<div class=\"box-container\">"
-    output += "<div class=\"box"
-    if classname:
-        output += " " + classname
-
-    output += "\">\n"
-    output += "<div class=\"box-inner\">"
-    output += nodelist.render(context)
-
-    output += "</div>"
-    output += "</div>"
-    output += "</div>\n"
-    return output
+    return render_to_string('box.html', {
+        'classname': classname or "",
+        'content': nodelist.render(context)
+    })
 
 
 @register.tag
 @blocktag
-def errorbox(context, nodelist, div_id=None):
+def errorbox(context, nodelist, box_id=None):
     """
     Displays an error box around content, with an optional ID.
     """
-    output = "<div class=\"errorbox\""
-    if div_id:
-        output += " id=\"%s\"" % div_id
-
-    output += ">\n"
-    output += nodelist.render(context)
-    output += "</div>"
-    return output
+    return render_to_string('errorbox.html', {
+        'box_id': box_id or "",
+        'content': nodelist.render(context)
+    })
 
 
 @register.simple_tag
