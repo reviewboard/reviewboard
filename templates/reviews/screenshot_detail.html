@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load htmlutils %}
+{% load i18n %}
 {% load reviewtags %}
 
 {% block title %}Screenshot{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
@@ -12,6 +13,7 @@
 <script language="javascript" src="/scripts/rb/common.js"></script>
 <script language="javascript" src="/scripts/rb/widgets.js"></script>
 <script language="javascript" src="/scripts/comments.js"></script>
+<script type="text/javascript" src="/scripts/diffviewer.js"></script>
 <script language="javascript" src="/scripts/screenshots.js"></script>
 <script language="javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
@@ -34,6 +36,9 @@
 {% include "reviews/screenshotindex.html" %}
   </div>
  </div>
+ <ul class="controls">
+  <li><a href="#" onClick="showReviewDlg();" id="review-link">{% trans "Review" %}</a></li>
+ </ul>
 {% endbox %}
 
 {% spaceless %}
@@ -47,30 +52,6 @@
 </script>
 
 {% include "reviews/screenshotindex.html" %}
+{% include "diffviewer/comments_dlg.html" %}
 
-<div id="comment-dlg" style="visibility:hidden;position:absolute;top:0px;">
- <div class="ydlg-hd">Comments</div>
- <div class="ydlg-bd">
-  <div id="tab-comments" class="ydlg-tab" title="Comments">
-   <div id="existing-comments"></div>
-   <form id="commentform" class="comment draft" method="post" action="comments/">
-    <input type="hidden" name="action" id="id_comment_action" value="" />
-    <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
-    <label id="id_comment_label" for="id_comment">Your comment:</label><br />
-	<textarea id="id_comment" name="text" rows="4" cols="20"></textarea>
-   </form>
- </div>
- <div id="tab-review" class="ydlg-tab" title="Review">
-  <form id="reviewform" method="post">
-   <input type="hidden" name="diff_revision" value="{{diffset.revision}}" />
-   <input id="id_shipit" type="checkbox" name="shipit" value="shipit" {% if review and review_request.shipit %}checked="checked" {% endif %}/>Ship It!<br />
-   <label for="id_body_top">Review Body:</label>
-   <div id="review-body">
-    <textarea id="id_body_top" name="body_top" rows="5" cols="20">{% if review %}{{review_request.body_top|escape}}{% endif %}</textarea>
-    <div id="all-review-comments"><i>Comments will be displayed here</i></div>
-    <textarea id="id_body_bottom" name="body_bottom" rows="5" cols="20">{% if review %}{{review_request.body_bottom|escape}}{% endif %}</textarea>
-   </div>
-  </form>
- </div>
-</div>
 {% endblock %}
