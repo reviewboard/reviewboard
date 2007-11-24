@@ -1,0 +1,13 @@
+{% load i18n %}
+<th onclick="javascript:window.location = '{{sort_url}}';">
+ <a href="{{sort_url}}">{{column_text}}
+{% if in_sort %}
+  <img src="/images/sort_{% if sort_ascending %}asc{% else %}desc{% endif %}_{% if sort_primary %}primary{% else %}secondary{% endif %}.png"
+   alt="({% if sort_ascending %}{% trans "Ascending" %}{% else %}{% trans "Descending" %}{% endif %})"
+   width="9" height="5" border="0" />
+ </a>
+ <a class="unsort" href="{{unsort_url}}">
+  <img src="/images/unsort.png" width="7" height="7" border="0" alt="{% trans "Unsort" %}" />
+{% endif %}
+ </a>
+</th>

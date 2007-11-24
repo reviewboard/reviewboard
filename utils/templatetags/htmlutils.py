@@ -11,90 +11,8 @@ from djblets.util.decorators import blocktag
 register = template.Library()
 
 
-class ColumnHeader(template.Node):
-    def __init__(self, field_name, text):
-        self.field_name = field_name
-        self.text = text
-
-    def render(self, context):
-        try:
-            temp = Variable('sort_list').resolve(context)
-
-            if temp:
-                sort_list = list(temp)
-            else:
-                sort_list = None
-        except VariableDoesNotExist:
-            sort_list = None
-
-        sort_text = ""
-        sort_img = ""
-
-        if sort_list:
-            rev_field_name = "-%s" % self.field_name
-            new_field_name = self.field_name
-
-            try:
-                i = sort_list.index(self.field_name)
-                sort_text = "(Ascending)"
-
-                if i == 0:
-                    sort_img = "sort_asc_primary.png"
-                    new_field_name = rev_field_name
-                else:
-                    sort_img = "sort_asc_secondary.png"
-                    new_field_name = self.field_name
-            except ValueError:
-                try:
-                    i = sort_list.index(rev_field_name)
-                    sort_text = "(Descending)"
-
-                    if i == 0:
-                        sort_img = "sort_desc_primary.png"
-                        new_field_name = self.field_name
-                    else:
-                        sort_img = "sort_desc_secondary.png"
-                        new_field_name = rev_field_name
-                except ValueError:
-                    i = -1
-
-            if i != -1:
-                del(sort_list[i])
-            else:
-                sort_list = sort_list[:2]
-
-            sort_list.insert(0, new_field_name)
-        else:
-            sort_list = [self.field_name]
-
-        request = context['request']
-        url_prefix = "?"
-
-        for key in request.GET:
-            url_prefix += "%s=%s&" % (key, request.GET[key])
-
-        # XXX I'm not too excited about this function hard-coding
-        #     image filenames and HTML. This should probably move out to
-        #     an included template at some point.
-        url = "%ssort=%s" % (url_prefix, ','.join(sort_list))
-        s  = '<th onclick="javascript:window.location = \'%s\'">' % url
-        s += '<a href="%s">%s' % (url, self.text)
-
-        if sort_text:
-            s += ' <img src="/images/%s" alt="%s"' % (sort_img, sort_text)
-            s += ' width="9" height="5" border="0" /></a>'
-            s += (' <a class="unsort" href="%ssort=%s">' +
-                  '<img src="/images/unsort.png" width="7" height="7" ' +
-                  'border="0" alt="Unsort" />') % \
-                 (url_prefix, ','.join(sort_list[1:]))
-
-        s += '</a></th>'
-
-        return s
-
-
-@register.tag
-def column_header(parser, token):
+@register.inclusion_tag('column_header.html', takes_context=True)
+def column_header(context, field_name, text):
     """
     Displays a sortable column header.
 
@@ -102,13 +20,81 @@ def column_header(parser, token):
     in the sort list. It will also be made clickable in order to modify
     the sort order appropriately.
     """
-    try:
-        tag_name, field_name, text = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag required a field name and column text"
+    sort_list = None
 
-    return ColumnHeader(field_name.strip('"'), text.strip('"'))
+    try:
+        temp = Variable('sort_list').resolve(context)
+
+        if temp:
+            # Make a copy of the list so that we don't modify the one in
+            # the context.
+            sort_list = list(temp)
+    except VariableDoesNotExist:
+        pass
+
+    in_sort = False
+    sort_ascending = False
+    sort_primary = False
+
+    if sort_list:
+        rev_field_name = "-%s" % field_name
+        new_field_name = field_name
+        cur_field_name = ""
+
+        if field_name in sort_list:
+            # This column is currently being sorted in ascending order.
+            sort_ascending = True
+            cur_field_name = field_name
+            new_field_name = rev_field_name
+        elif rev_field_name in sort_list:
+            # This column is currently being sorted in descending order.
+            sort_ascending = False
+            cur_field_name = rev_field_name
+            new_field_name = field_name
+
+        if cur_field_name:
+            in_sort = True
+            sort_primary = (sort_list[0] == cur_field_name)
+
+            if not sort_primary:
+                # If this is not the primary column, we want to keep the
+                # sort order intact.
+                new_field_name = cur_field_name
+
+            # Remove this column from the current location in the list
+            # so we can move it to the front of the list.
+            sort_list.remove(cur_field_name)
+
+        # Insert the column name into the beginning of the sort list.
+        sort_list.insert(0, new_field_name)
+    else:
+        # There's no sort list to begin with. Make this column the only
+        # entry.
+        sort_list = [field_name]
+
+    # We can only support two entries in the sort list, so truncate this.
+    del(sort_list[2:])
+
+    request = context['request']
+    url_prefix = "?"
+
+    for key in request.GET:
+        if key != "sort":
+            url_prefix += "%s=%s&" % (key, request.GET[key])
+
+    url_prefix += "sort="
+
+    unsort_url = url_prefix + ','.join(sort_list[1:])
+    sort_url   = url_prefix + ','.join(sort_list)
+
+    return {
+        'column_text': text,
+        'in_sort': in_sort,
+        'sort_ascending': sort_ascending,
+        'sort_primary': sort_primary,
+        'sort_url': sort_url,
+        'unsort_url': unsort_url,
+    }
 
 
 @register.tag
