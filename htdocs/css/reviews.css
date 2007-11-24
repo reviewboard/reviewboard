@@ -179,6 +179,9 @@
 
 .review-request #topcontrols a {
   color: black;
+  cursor: pointer;
+  display: block;
+  padding: 5px 10px;
   text-decoration: none;
 }
 
@@ -189,9 +192,7 @@
 .review-request #topcontrols li {
   background-color: #B6CCE3;
   border: 1px #3465A4 solid;
-  cursor: pointer;
   font-size: 120%;
-  padding: 5px 10px;
 }
 
 .review-request #updated_time,

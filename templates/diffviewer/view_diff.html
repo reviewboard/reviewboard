@@ -48,7 +48,7 @@
 
 {% box "review-request" %}
 <ul id="topcontrols">
- <li onclick="javascript:window.location='{{review_request.get_absolute_url}}';"><a href="{{review_request.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+ <li><a href="{{review_request.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
 </ul>
 <div class="main">
 {% include "reviews/review_request_box.html" %}
