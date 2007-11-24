@@ -394,7 +394,7 @@ function showReviewDlg() {
 
 
 function onKeyPress(evt) {
-    if (evt.shiftKey || evt.altKey || evt.ctrlKey || evt.metaKey) {
+    if (evt.altKey || evt.ctrlKey || evt.metaKey) {
         return;
     }
 
