@@ -13,6 +13,9 @@ class VMwarePerforceTool(PerforceTool):
     def parse_change_desc(changedesc, changenum):
         changeset = PerforceTool.parse_change_desc(changedesc, changenum)
 
+        if not changeset:
+            return None
+
         # VMware's perforce changeset template is just the basic perforce one
         # with a bunch of extra fields at the end of the description.  We
         # leave the summary and file list as-is, and process the description

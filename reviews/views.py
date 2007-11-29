@@ -74,7 +74,7 @@ def new_review_request(request,
                                              request.FILES['diff_path'])
                 return HttpResponseRedirect(review_request.get_absolute_url())
             except:
-                # XXX - OwnershipError?
+                # XXX - OwnershipError or ChangeSetError?
                 #
                 # We're preventing an exception from being thrown here so that
                 # we can display the errors that form.create() sets in

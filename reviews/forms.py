@@ -10,6 +10,10 @@ from reviewboard.reviews.models import ReviewRequest, \
 from reviewboard.scmtools.models import Repository
 
 
+class ChangeSetError(ValueError):
+    pass
+
+
 class OwnershipError(ValueError):
     pass
 
@@ -41,6 +45,12 @@ class NewReviewRequestForm(forms.Form):
         if changenum:
             try:
                 changeset = repository.get_scmtool().get_changeset(changenum)
+                if not changeset:
+                    self.errors['changenum'] = forms.util.ErrorList([
+                        'This change number does not represent a valid '
+                        'changeset.'])
+                    raise ChangeSetError()
+
                 if user.username != changeset.username:
                     self.errors['changenum'] = forms.util.ErrorList([
                         'This change number is owned by another user.'])

@@ -110,6 +110,9 @@ class PerforceTool(SCMTool):
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):
+        if not changedesc:
+            return None
+
         changeset = ChangeSet()
         changeset.changenum = changenum
 
