@@ -24,6 +24,7 @@ except ImportError:
 from django.core.management import setup_environ
 setup_environ(settings)
 
+from django import db
 from django.core import serializers
 from django.db import transaction
 
@@ -85,6 +86,8 @@ try:
                     obj.save()
             elif line[0] != "#":
                 sys.stderr.write("Junk data on line %s" % i)
+
+            db.reset_queries()
 
             i += 1
             pct = (i * 100 / totalobjs)
