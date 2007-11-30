@@ -383,24 +383,22 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
 def publish(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    # If a draft exists, save it before publishing.  Without this, further
-    # updates to the review request will get saved to the wrong draft and appear
-    # not to work.
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
-        draft.save_draft()
-        draft.delete()
-    except ReviewRequestDraft.DoesNotExist:
-        pass
-
     if review_request.submitter == request.user:
-        review_request.public = True
-
         if not review_request.target_groups and \
            not review_request.target_people:
             pass # FIXME show an error
 
-        review_request.save()
+        review_request.public = True
+
+        try:
+            draft = review_request.reviewrequestdraft_set.get()
+            # This will in turn save the review request, so we'll be done.
+            draft.save_draft()
+            draft.delete()
+        except ReviewRequestDraft.DoesNotExist:
+            # The draft didn't exist, so we must save the review request
+            # ourselves.
+            review_request.save()
 
         if settings.SEND_REVIEW_MAIL:
             mail_review_request(request.user, review_request)
