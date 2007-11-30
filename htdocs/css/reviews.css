@@ -491,13 +491,13 @@
 /* Pre-highlighted result item */
 .yui-skin-sam .yui-ac-content li.yui-ac-prehighlight
 {
-  background: #e5c899;
+  background: #9cc2eb;
 }
 
 /* Highlighted result item */
 .yui-skin-sam .yui-ac-content li.yui-ac-highlight
 {
-  background: #cd943c;
+  background: #71a5db;
   color: #FFF;
 }
 
