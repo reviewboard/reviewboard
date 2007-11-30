@@ -24,6 +24,8 @@ class FileNotFoundError(Exception):
         else:
             msg = "The file '%s' (r%s) could not be found in the repository" \
                 % (path, revision)
+        if detail:
+            msg += ': ' + detail
         Exception.__init__(self, msg)
 
         self.revision = revision
