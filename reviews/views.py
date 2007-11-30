@@ -392,8 +392,14 @@ def publish(request, review_request_id):
 
         try:
             draft = review_request.reviewrequestdraft_set.get()
+
             # This will in turn save the review request, so we'll be done.
             draft.save_draft()
+
+            # Make sure we have the draft's copy of the review request.
+            review_request = draft.review_request
+
+            # We don't need this anymore.
             draft.delete()
         except ReviewRequestDraft.DoesNotExist:
             # The draft didn't exist, so we must save the review request
