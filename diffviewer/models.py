@@ -92,7 +92,8 @@ class DiffSet(models.Model):
         list_display = ('__unicode__', 'revision', 'timestamp')
 
     class Meta:
-        get_latest_by = 'timestamp'
+        get_latest_by = 'revision'
+        ordering = ['revision', 'timestamp']
 
 
 class DiffSetHistory(models.Model):
