@@ -1,8 +1,6 @@
 from datetime import datetime
-from urllib import quote
 
 from django.conf import settings
-from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.db.models import Q
@@ -17,9 +15,10 @@ from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 
 from djblets.auth.util import login_required
-from djblets.util.decorators import simple_decorator
 from djblets.util.misc import get_object_or_none
 
+from reviewboard.accounts.decorators import check_login_required, \
+                                            valid_prefs_required
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
@@ -34,37 +33,14 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.utils.views import sortable_object_list
 
 
-@simple_decorator
-def valid_prefs_required(view_func):
-    def _check_valid_prefs(request, *args, **kwargs):
-        try:
-            profile = request.user.get_profile()
-            if profile.first_time_setup_done:
-                return view_func(request, *args, **kwargs)
-        except Profile.DoesNotExist:
-            pass
-
-        return HttpResponseRedirect("/account/preferences/?%s=%s" %
-                                    (REDIRECT_FIELD_NAME,
-                                     quote(request.get_full_path())))
-
-    return _check_valid_prefs
-
-
-@simple_decorator
-def check_login_required(view_func):
-    def _check(*args, **kwargs):
-        if settings.REQUIRE_SITEWIDE_LOGIN:
-            return login_required(view_func)(*args, **kwargs)
-        else:
-            return view_func(*args, **kwargs)
-
-    return _check
-
-
 @login_required
 def new_review_request(request,
                        template_name='reviews/new_review_request.html'):
+    """
+    Displays a New Review Request form and handles the creation of a
+    review request based on either an existing changeset or the provided
+    information.
+    """
     if request.method == 'POST':
         form = NewReviewRequestForm(request.POST, request.FILES)
 
@@ -103,6 +79,10 @@ def new_review_request(request,
 @check_login_required
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_detail(request, review_request_id, template_name):
+    """
+    Main view for review requests. This covers the review request information
+    and all the reviews on it.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
@@ -137,6 +117,11 @@ def review_detail(request, review_request_id, template_name):
 
 def review_list(request, queryset, template_name, default_filter=True,
                 allow_hide_submitted=True, extra_context={}, **kwargs):
+    """
+    Convenience function for listing several reviwe requests, taking into
+    account sort orders, the Show Submitted flag, and changes to either
+    of these.
+    """
     profile = None
     sort_columns = "-last_updated"
     show_submitted = True
@@ -179,6 +164,9 @@ def review_list(request, queryset, template_name, default_filter=True,
 
 @check_login_required
 def all_review_requests(request, template_name='reviews/review_list.html'):
+    """
+    Displays a list of all review requests.
+    """
     return review_list(request,
         queryset=ReviewRequest.objects.public(request.user, status=None),
         template_name=template_name)
@@ -186,6 +174,9 @@ def all_review_requests(request, template_name='reviews/review_list.html'):
 
 @check_login_required
 def submitter_list(request, template_name='reviews/submitter_list.html'):
+    """
+    Displays a list of all users.
+    """
     return object_list(request,
         queryset=User.objects.filter(),
         template_name=template_name,
@@ -199,6 +190,9 @@ def submitter_list(request, template_name='reviews/submitter_list.html'):
 @check_login_required
 def group_list(request, queryset=None, extra_context={},
                template_name='reviews/group_list.html'):
+    """
+    Displays a list of all review groups.
+    """
     return object_list(request,
         queryset=queryset or Group.objects.all(),
         template_name=template_name,
@@ -213,6 +207,19 @@ def group_list(request, queryset=None, extra_context={},
 @login_required
 @valid_prefs_required
 def dashboard(request, template_name='reviews/dashboard.html'):
+    """
+    The dashboard view, showing review requests organized by a variety of
+    lists, depending on the 'view' parameter.
+
+    Valid 'view' parameters are:
+
+        * 'outgoing'
+        * 'to-me'
+        * 'to-group'
+        * 'starred'
+        * 'watched-groups'
+        * 'incoming'
+    """
     view = request.GET.get('view', 'incoming')
     group = request.GET.get('group', "")
     user = request.user
@@ -266,6 +273,9 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
 @check_login_required
 def group(request, name, template_name='reviews/review_list.html'):
+    """
+    A list of review requests belonging to a particular group.
+    """
     # Make sure the group exists
     get_object_or_404(Group, name=name)
 
@@ -280,6 +290,9 @@ def group(request, name, template_name='reviews/review_list.html'):
 
 @check_login_required
 def submitter(request, username, template_name='reviews/review_list.html'):
+    """
+    A list of review requests owned by a particular user.
+    """
     # Make sure the user exists
     get_object_or_404(User, username=username)
 
@@ -292,7 +305,15 @@ def submitter(request, username, template_name='reviews/review_list.html'):
 
 
 def _query_for_diff(review_request, revision, query_extra=None):
-    # Either the diff is part of a draft, or part of the history
+    """
+    Queries for a diff based on several parameters.
+
+    If the draft does not exist, this throws an Http404 exception.
+    """
+
+    # This will try to grab the diff associated with a draft if the review
+    # request has an associated draft and is either the revision being
+    # requested or no revision is being requested.
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
     if draft and draft.diffset and \
        (revision is None or draft.diffset.revision == revision):
@@ -300,9 +321,11 @@ def _query_for_diff(review_request, revision, query_extra=None):
 
     query = Q(history=review_request.diffset_history)
 
+    # Grab a revision if requested.
     if revision is not None:
         query = query & Q(revision=revision)
 
+    # Anything else the caller wants.
     if query_extra:
         query = query & query_extra
 
@@ -315,23 +338,31 @@ def _query_for_diff(review_request, revision, query_extra=None):
 @check_login_required
 def diff(request, review_request_id, revision=None, interdiff_revision=None,
          template_name='diffviewer/view_diff.html'):
+    """
+    A wrapper around diffviewer.views.view_diff that handles querying for
+    diffs owned by a review request,taking into account interdiffs and
+    providing the user's current review of the diff if it exists.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
 
+    interdiffset_id = None
+    review = None
+
     if interdiff_revision and interdiff_revision != revision:
+        # An interdiff revision was specified. Try to find a matching
+        # diffset.
         interdiffset = _query_for_diff(review_request, interdiff_revision)
         interdiffset_id = interdiffset.id
-    else:
-        interdiffset_id = None
 
     if request.user.is_authenticated():
+        # Try to find an existing pending review of this diff from the
+        # current user.
         review = get_object_or_none(Review,
                                     user=request.user,
                                     review_request=review_request,
                                     public=False,
                                     base_reply_to__isnull=True)
-    else:
-        review = None
 
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
     repository = review_request.repository
@@ -348,12 +379,14 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
 
 @check_login_required
 def raw_diff(request, review_request_id, revision=None):
+    """
+    Displays a raw diff of all the filediffs in a diffset for the
+    given review request.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, revision)
 
-    data = ''
-    for filediff in diffset.files.all():
-        data += filediff.diff
+    data = ''.join([filediff.diff for filediff in diffset.files.all()])
 
     resp = HttpResponse(data, mimetype='text/x-patch')
     resp['Content-Disposition'] = 'inline; filename=%s' % diffset.name
@@ -364,6 +397,14 @@ def raw_diff(request, review_request_id, revision=None):
 def diff_fragment(request, review_request_id, revision, filediff_id,
                   interdiffset_id=None, chunkindex=None, collapseall=False,
                   template_name='diffviewer/diff_file_fragment.html'):
+    """
+    Wrapper around diffviewer.views.view_diff_fragment that takes a review
+    request.
+
+    Displays just a fragment of a diff or interdiff owned by the given
+    review request. The fragment is identified by the chunk index in the
+    diff.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
@@ -381,6 +422,10 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
 
 @login_required
 def publish(request, review_request_id):
+    """
+    Publishes a new review request or the changes on a draft for a review
+    request.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if review_request.submitter == request.user:
@@ -416,6 +461,22 @@ def publish(request, review_request_id):
 
 @login_required
 def setstatus(request, review_request_id, action):
+    """
+    Sets the status of the review request based on the specified action.
+
+    Valid actions are:
+
+        * 'discard'
+        * 'submitted'
+        * 'reopen'
+
+    If a review request was discarded and action is 'reopen', this will
+    reset the review request's public state to False.
+
+    If the user is not the owner of this review request and does not have
+    the 'reviews.can_change_status' permission, they will get an
+    HTTP Forbidden error.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if request.user != review_request.submitter and \
@@ -447,7 +508,12 @@ def setstatus(request, review_request_id, action):
 def preview_review_request_email(
         request, review_request_id,
         template_name='reviews/review_request_email.txt'):
+    """
+    Previews the e-mail message that would be sent for an initial
+    review request or an update.
 
+    This is mainly used for debugging.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     return HttpResponse(render_to_string(template_name,
@@ -463,6 +529,12 @@ def preview_review_request_email(
 @check_login_required
 def preview_review_email(request, review_request_id, review_id,
                          template_name='reviews/review_email.txt'):
+    """
+    Previews the e-mail message that would be sent for a review of a
+    review request.
+
+    This is mainly used for debugging.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
@@ -484,6 +556,12 @@ def preview_review_email(request, review_request_id, review_id,
 @check_login_required
 def preview_reply_email(request, review_request_id, review_id, reply_id,
                         template_name='reviews/reply_email.txt'):
+    """
+    Previews the e-mail message that would be sent for a reply to a
+    review of a review request.
+
+    This is mainly used for debugging.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
@@ -503,6 +581,10 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
 @login_required
 def delete_screenshot(request, review_request_id, screenshot_id):
+    """
+    Deletes a screenshot from a review request and redirects back to the
+    review request page.
+    """
     request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     s = Screenshot.objects.get(id=screenshot_id)
