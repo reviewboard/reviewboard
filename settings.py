@@ -77,6 +77,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'djblets.util',
     'reviewboard.accounts',
+    'reviewboard.datagrid',
     'reviewboard.diffviewer',
     'reviewboard.iphone',
     'reviewboard.reports',

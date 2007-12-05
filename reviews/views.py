@@ -20,6 +20,7 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.datagrid.views import sortable_object_list
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
@@ -30,7 +31,6 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.email import mail_review_request
 from reviewboard.scmtools.models import Repository
-from reviewboard.utils.views import sortable_object_list
 
 
 @login_required
