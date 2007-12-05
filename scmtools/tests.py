@@ -552,7 +552,7 @@ class MercurialTests(DjangoTestCase):
 
     def testInterface(self):
         """Testing basic HgTool API"""
-        self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
+        self.assert_(self.tool.get_diffs_use_absolute_paths())
 
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_changeset(1))

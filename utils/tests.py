@@ -2,9 +2,14 @@ import datetime
 import unittest
 
 from django.template import Token, TOKEN_TEXT, TemplateSyntaxError
+from django.utils.html import strip_spaces_between_tags
 from djblets.util.testing import TagTest
 
 from reviewboard.utils.templatetags import htmlutils
+
+
+def normalize_html(s):
+    return strip_spaces_between_tags(s).strip()
 
 
 class BoxTest(TagTest):
@@ -14,9 +19,10 @@ class BoxTest(TagTest):
                              Token(TOKEN_TEXT, 'box'))
         context = {}
 
-        self.assertEqual(node.render(context),
-                         '<div class="box-container"><div class="box">\n' +
-                         '<div class="box-inner">content</div></div></div>\n')
+        self.assertEqual(normalize_html(node.render(context)),
+                         '<div class="box-container"><div class="box">' +
+                         '<div class="box-inner">\ncontent\n  ' +
+                         '</div></div></div>')
 
     def testClass(self):
         """Testing box tag (with extra class)"""
@@ -24,9 +30,10 @@ class BoxTest(TagTest):
                              Token(TOKEN_TEXT, 'box "class"'))
         context = {}
 
-        self.assertEqual(node.render(context),
-                         '<div class="box-container"><div class="box class">\n' +
-                         '<div class="box-inner">content</div></div></div>\n')
+        self.assertEqual(normalize_html(node.render(context)),
+                         '<div class="box-container"><div class="box class">' +
+                         '<div class="box-inner">\ncontent\n  ' +
+                         '</div></div></div>')
 
     def testError(self):
         """Testing box tag (invalid usage)"""
@@ -44,8 +51,8 @@ class ErrorBoxTest(TagTest):
 
         context = {}
 
-        self.assertEqual(node.render(context),
-                         '<div class="errorbox">\ncontent</div>')
+        self.assertEqual(normalize_html(node.render(context)),
+                         '<div class="errorbox">\ncontent\n</div>')
 
     def testId(self):
         """Testing errorbox tag (with id)"""
@@ -54,8 +61,8 @@ class ErrorBoxTest(TagTest):
 
         context = {}
 
-        self.assertEqual(node.render(context),
-                         '<div class="errorbox" id="id">\ncontent</div>')
+        self.assertEqual(normalize_html(node.render(context)),
+                         '<div class="errorbox" id="id">\ncontent\n</div>')
 
 
     def testError(self):
