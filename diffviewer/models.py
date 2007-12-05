@@ -18,11 +18,11 @@ class FileDiff(models.Model):
                                 related_name='files',
                                 verbose_name=_("diff set"))
 
-    source_file = models.CharField(_("source file"), maxlength=256, core=True)
-    dest_file = models.CharField(_("destination file"), maxlength=256,
+    source_file = models.CharField(_("source file"), max_length=256, core=True)
+    dest_file = models.CharField(_("destination file"), max_length=256,
                                  core=True)
-    source_revision = models.CharField(_("source file revision"), maxlength=512)
-    dest_detail = models.CharField(_("destination file details"), maxlength=512)
+    source_revision = models.CharField(_("source file revision"), max_length=512)
+    dest_detail = models.CharField(_("destination file details"), max_length=512)
     diff_base64 = models.TextField(_("diff (Base64)"))
     binary = models.BooleanField(_("binary file"), default=False)
 
@@ -55,7 +55,7 @@ class DiffSet(models.Model):
     """
     A revisioned collection of FileDiffs.
     """
-    name = models.CharField(_('name'), maxlength=256, core=True)
+    name = models.CharField(_('name'), max_length=256, core=True)
     revision = models.IntegerField(_("revision"), core=True)
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
@@ -103,7 +103,7 @@ class DiffSetHistory(models.Model):
     This gives us a way to store and keep track of multiple revisions of
     diffsets belonging to an object.
     """
-    name = models.CharField(_('name'), maxlength=256)
+    name = models.CharField(_('name'), max_length=256)
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
 
     def __unicode__(self):

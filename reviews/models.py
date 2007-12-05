@@ -37,8 +37,8 @@ class Group(models.Model):
     Each group can have an e-mail address associated with it, sending
     all review requests and replies to that address.
     """
-    name = models.SlugField(_("name"), maxlength=64)
-    display_name = models.CharField(_("display name"), maxlength=64)
+    name = models.SlugField(_("name"), max_length=64)
+    display_name = models.CharField(_("display name"), max_length=64)
     mailing_list = models.EmailField(_("mailing list"), blank=True,
         help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
@@ -74,8 +74,8 @@ class DefaultReviewer(models.Model):
     A ``file_regex`` of ``".*"`` will add the specified reviewers by
     default for every review request.
     """
-    name = models.CharField(_("name"), maxlength=64)
-    file_regex = models.CharField(_("file regex"), maxlength=256,
+    name = models.CharField(_("name"), max_length=64)
+    file_regex = models.CharField(_("file regex"), max_length=256,
         help_text=_("File paths are matched against this regular expression "
                     "to determine if these reviewers should be added."))
     groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
@@ -98,9 +98,9 @@ class Screenshot(models.Model):
     Like diffs, a screenshot can have comments associated with it.
     These comments are of type :model:`reviews.ScreenshotComment`.
     """
-    caption = models.CharField(_("caption"), maxlength=256, blank=True)
+    caption = models.CharField(_("caption"), max_length=256, blank=True)
     draft_caption = models.CharField(_("draft caption"),
-                                     maxlength=256, blank=True)
+                                     max_length=256, blank=True)
     image = models.ImageField(_("image"),
                               upload_to=os.path.join('images', 'uploaded'))
 
@@ -228,25 +228,25 @@ class ReviewRequest(models.Model):
     submitter = models.ForeignKey(User, verbose_name=_("submitter"))
     time_added = models.DateTimeField(_("time added"), default=datetime.now)
     last_updated = ModificationTimestampField(_("last updated"))
-    status = models.CharField(_("status"), maxlength=1, choices=STATUSES)
+    status = models.CharField(_("status"), max_length=1, choices=STATUSES)
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
                                             null=True, db_index=True)
     repository = models.ForeignKey(Repository, verbose_name=_("repository"))
-    email_message_id = models.CharField(_("e-mail message ID"), maxlength=255,
+    email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)
 
-    summary = models.CharField(_("summary"), maxlength=300, core=True)
+    summary = models.CharField(_("summary"), max_length=300, core=True)
     description = models.TextField(_("description"), blank=True)
     testing_done = models.TextField(_("testing done"), blank=True)
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
-                                                    maxlength=300, blank=True)
+                                                    max_length=300, blank=True)
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         verbose_name=_('diff set history'),
                                         blank=True)
-    branch = models.CharField(_("branch"), maxlength=300, blank=True)
+    branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(
         Group,
         verbose_name=_("target groups"),
@@ -364,14 +364,14 @@ class ReviewRequestDraft(models.Model):
                                        verbose_name=_("review request"),
                                        core=True)
     last_updated = ModificationTimestampField(_("last updated"))
-    summary = models.CharField(_("summary"), maxlength=300, core=True)
+    summary = models.CharField(_("summary"), max_length=300, core=True)
     description = models.TextField(_("description"))
     testing_done = models.TextField(_("testing done"))
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
-                                                    maxlength=300, blank=True)
+                                                    max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
                                 blank=True, null=True, core=False)
-    branch = models.CharField(_("branch"), maxlength=300, blank=True)
+    branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
                                            verbose_name=_("target groups"),
                                            core=False, blank=True,
@@ -698,7 +698,7 @@ class Review(models.Model):
         verbose_name=_("Base reply to"),
         help_text=_("The top-most review in the discussion thread for "
                     "this review reply."))
-    email_message_id = models.CharField(_("e-mail message ID"), maxlength=255,
+    email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)

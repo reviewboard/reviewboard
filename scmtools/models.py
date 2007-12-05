@@ -2,8 +2,8 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
 class Tool(models.Model):
-    name = models.CharField(maxlength=32, unique=True)
-    class_name = models.CharField(maxlength=128, unique=True)
+    name = models.CharField(max_length=32, unique=True)
+    class_name = models.CharField(max_length=128, unique=True)
 
     def __unicode__(self):
         return self.name
@@ -13,11 +13,11 @@ class Tool(models.Model):
 
 
 class Repository(models.Model):
-    name = models.CharField(maxlength=64, unique=True)
-    path = models.CharField(maxlength=128, unique=True)
-    mirror_path = models.CharField(maxlength=128, blank=True)
-    username = models.CharField(maxlength=32, blank=True)
-    password = models.CharField(maxlength=128, blank=True)
+    name = models.CharField(max_length=64, unique=True)
+    path = models.CharField(max_length=128, unique=True)
+    mirror_path = models.CharField(max_length=128, blank=True)
+    username = models.CharField(max_length=32, blank=True)
+    password = models.CharField(max_length=128, blank=True)
     tool = models.ForeignKey(Tool)
     bug_tracker = models.URLField(verify_exists=False, blank=True)
 
