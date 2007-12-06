@@ -53,13 +53,6 @@ def check_dependencies():
             dependency_error('The Pygments library is required when ' +
                              'DIFF_SYNTAX_HIGHLIGHTING is enabled.')
 
-    # patchutils
-    try:
-        subprocess.call(['lsdiff', '--version'],
-                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    except OSError:
-        dependency_error('Patchutils not found.')
-
     # The following checks are non-fatal warnings, since these dependencies are
     # merely recommended, not required.
     def dependency_warning(string):
