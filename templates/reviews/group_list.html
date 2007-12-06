@@ -19,19 +19,22 @@
 {% if group_list %}
 <table class="list">
  <colgroup>
-  <col class="star" width="0%" />
-  <col class="name" width="100%" />
-  <col class="reviewcount" width="1*" />
+  <col class="star" />
+  <col class="name" width="25%" />
+  <col class="name" width="75%" />
+  <col class="reviewcount" />
  </colgroup>
  <tr class="headers">
   <th><img src="/images/star_on.png" width="16" height="15" alt="Starred" /></th>
   <th>Name</th>
+  <th>Description</th>
   <th>Pending Reviews</th>
  </tr>
 {% for group in group_list %}
  <tr class="{% cycle odd,even %}">
   <td>{% star group %}</td>
   <td><a href="{{group}}/">{{group}}</a></td>
+  <td><a href="{{group}}/">{{group.display_name}}</a></td>
   <td>{% pendingreviewcount group %}</td>
  </tr>
 {% endfor %}
