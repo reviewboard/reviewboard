@@ -516,7 +516,7 @@ function findLineNumRow(table, linenum) {
 }
 
 function isLineNumCell(cell) {
-    return (cell.tagName == "TH" && cell.parentNode.hasAttribute('line') &&
+    return (cell.tagName == "TH" && cell.parentNode.getAttribute('line') &&
             cell.className != "controls");
 }
 
