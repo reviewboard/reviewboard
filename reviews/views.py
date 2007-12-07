@@ -433,12 +433,11 @@ def publish(request, review_request_id):
            not review_request.target_people:
             pass # FIXME show an error
 
-        review_request.public = True
-
         try:
             draft = review_request.reviewrequestdraft_set.get()
 
             # This will in turn save the review request, so we'll be done.
+            draft.review_request.public = True
             draft.save_draft()
 
             # Make sure we have the draft's copy of the review request.
@@ -449,6 +448,7 @@ def publish(request, review_request_id):
         except ReviewRequestDraft.DoesNotExist:
             # The draft didn't exist, so we must save the review request
             # ourselves.
+            review_request.public = True
             review_request.save()
 
         if settings.SEND_REVIEW_MAIL:
