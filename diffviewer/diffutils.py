@@ -277,7 +277,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     if interfilediff:
         old = new
-        new = get_patched_file(get_original_file(interfilediff), interfilediff)
+
+        if interfilediff.source_revision != scmtools.PRE_CREATION:
+            interdiff_orig = get_original_file(interfilediff)
+        else:
+            interdiff_orig = ""
+
+        new = get_patched_file(interdiff_orig, interfilediff)
     elif force_interdiff:
         # Basically, revert the change.
         temp = old
