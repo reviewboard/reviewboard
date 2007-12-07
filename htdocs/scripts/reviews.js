@@ -3,11 +3,15 @@ var commentTemplate = null;
 
 // Dialogs
 var gDeleteReviewRequestDlg = null;
+var gDiscardReviewRequestDlg = null;
 
 // State variables
 var gCommentSections = {};
 var gYourComments = {};
 var gReviews = {};
+var gEditors = [];
+var gPublishing = true;
+var gSavedFieldCount = 0;
 
 function getApiPath() {
     return '/api/json/reviewrequests/' + gReviewRequestId;
@@ -34,8 +38,20 @@ function onEditComplete(field, value, callback) {
                     callback(getEl(field), rsp[field]);
                 }
                 showDraftBanner();
+
+                if (gPublishing) {
+                    gSavedFieldCount++;
+                    checkReadyForPublish();
+                }
+            }.createDelegate(this),
+
+            failure: function(errmsg) {
+                /* No way we're publishing now. */
+                gPublishing = false;
+                showServerError('Saving the draft has failed due to a ' +
+                                'server error:' + errmsg);
+                enableDraftButtons();
             }.createDelegate(this)
-            // TODO: Handle errors
         },
         "value=" + encodeURIComponent(value)
     );
@@ -52,13 +68,15 @@ function registerEditor(field, multiline) {
     editor.on('complete',
         function(editor, value) { onEditComplete(field, value); },
         this, true);
+
+    gEditors.push(editor);
 }
 
 function registerCommaListEditor(field, onComplete) {
     var editor = new RB.widgets.InlineCommaListEditor({
         el: field,
         cls: field + '-editor',
-                autocomplete: false,
+        autocomplete: false,
         showEditIcon: true,
         useEditIconOnly: true,
         notifyUnchangedCompletion: true
@@ -67,6 +85,8 @@ function registerCommaListEditor(field, onComplete) {
     editor.on('complete', function(editor, value) {
         onEditComplete(field, value, onComplete);
     });
+
+    gEditors.push(editor);
 }
 
 function registerAutoCompleteCommaListEditor(field, onComplete, url, columns) {
@@ -83,65 +103,42 @@ function registerAutoCompleteCommaListEditor(field, onComplete, url, columns) {
     editor.on('complete', function(editor, value) {
         onEditComplete(field, value, onComplete);
     });
+
+    gEditors.push(editor);
 }
 
 function onBugsChanged(el, list) {
-    var str = "";
-
-    for (var i = 0; i < list.length; i++) {
-        if (gBugTrackerURL != "") {
-            var url = gBugTrackerURL.replace("%s", list[i]);
-            str += '<a href="' + url + '">' + list[i] + '</a>';
-        } else {
-            str += list[i];
-        }
-
-        if (i < list.length - 1) {
-            str += ", ";
-        }
+    if (gBugTrackerURL == "") {
+        el.dom.innerHTML = RB.utils.urlizeList(list);
+    } else {
+        el.dom.innerHTML = RB.utils.urlizeList(list, function(item) {
+            return gBugTrackerURL.replace("%s", item);
+        });
     }
-
-    el.dom.innerHTML = str;
 }
 
 function onTargetPeopleChanged(el, list) {
-    var str = "";
-
-    for (var i = 0; i < list.length; i++) {
-        str += "<a href=\"" + list[i].url + "\">";
-        str += list[i].username + "</a>";
-
-        if (i < list.length - 1) {
-            str += ", ";
-        }
-    }
-
-    el.dom.innerHTML = str;
+    el.dom.innerHTML = RB.utils.urlizeList(list,
+        function(item) { return item.url },
+        function(item) { return item.username }
+    );
 }
 
 function onTargetGroupsChanged(el, list) {
-    var str = "";
-
-    for (var i = 0; i < list.length; i++) {
-        str += "<a href=\"" + list[i].url + "\">";
-        str += list[i].name + "</a>";
-
-        if (i < list.length - 1) {
-            str += ", ";
-        }
-    }
-
-    el.dom.innerHTML = str;
+    el.dom.innerHTML = RB.utils.urlizeList(list,
+        function(item) { return item.url },
+        function(item) { return item.name }
+    );
 }
 
 function disableDraftButtons() {
-    getEl('btn-draft-save').dom.setAttribute('disabled', 'true');
-    getEl('btn-draft-revert').dom.setAttribute('disabled', 'true');
+    getEl('btn-draft-publish').dom.setAttribute('disabled', 'true');
+    getEl('btn-draft-discard').dom.setAttribute('disabled', 'true');
 }
 
 function enableDraftButtons() {
-    getEl('btn-draft-save').dom.removeAttribute('disabled');
-    getEl('btn-draft-revert').dom.removeAttribute('disabled');
+    getEl('btn-draft-publish').dom.removeAttribute('disabled');
+    getEl('btn-draft-discard').dom.removeAttribute('disabled');
 }
 
 var errorID = 0;
@@ -150,7 +147,10 @@ function showError(text) {
     var closeHandler = "hideError('" + id + "');";
 
     dh.append(getEl('error').dom, {
-        tag: 'div', id: id, children: [
+        tag: 'div',
+        cls: 'banner',
+        id: id,
+        children: [
             {tag: 'h1', html: 'Error: '},
             {html: text},
             {tag: 'input', type: 'submit',
@@ -173,66 +173,94 @@ function hideError(error) {
     }
 }
 
-function submitDraft() {
-    disableDraftButtons();
-    asyncJsonRequest('POST', getApiPath() + '/draft/save/', {
-        success: hideDraftBanner,
-        failure: function(errmsg) {
-            showServerError('Saving the draft has failed due to a server error:' + errmsg);
-            enableDraftButtons();
+
+/*
+ * Publishes the draft to the server.
+ */
+function publishDraft() {
+    /* First save all the fields. */
+    gSavedFieldCount = 0;
+    gPublishing = true;
+
+    for (var i = 0; i < gEditors.length; i++) {
+        if (gEditors[i].editing) {
+            gEditors[i].save();
+        } else {
+            gSavedFieldCount++;
         }
-    });
+    }
+
+    checkReadyForPublish();
 }
 
-function revertDraft() {
+/*
+ * Checks if we're ready to publish a draft.
+ *
+ * This compares the saved field count to the number of fields to determine
+ * if we've successfully saved all pending fields before we publish.
+ */
+function checkReadyForPublish() {
+    if (gPublishing && gSavedFieldCount == gEditors.length) {
+        publishDraftFinal();
+    }
+}
+
+
+/*
+ * The final step in publishing the draft to the server.
+ *
+ * Checks all the fields to make sure we have the information we need
+ * and then redirects the user to the publish URL.
+ */
+function publishDraftFinal() {
+    var target_groups = document.getElementById("target_groups");
+    var target_people = document.getElementById("target_people");
+    var summary = document.getElementById("summary");
+    var description = document.getElementById("description");
+
+    if (target_groups.innerHTML.strip() == "" &&
+        target_people.innerHTML.strip() == "") {
+        alert("There must be at least one reviewer before this review " +
+              "request can be published.");
+    } else if (summary.innerHTML.strip() == "") {
+        alert("The draft must have a summary.");
+    } else if (description.innerHTML.strip() == "") {
+        alert("The draft must have a description.");
+    } else {
+        window.location = normalizeURL(gReviewRequestPath) + "/publish/";
+    }
+}
+
+
+/*
+ * Discards the draft.
+ */
+function discardDraft() {
     disableDraftButtons();
     asyncJsonRequest('POST', getApiPath() + '/draft/discard/', {
         success: function() { window.location.reload(); },
         failure: function(errmsg) {
-            showServerError('Reverting the draft has failed due to a server error:' + errmsg);
+            showServerError('Reverting the draft has failed due to a server error:' +
+                      errmsg);
             enableDraftButtons();
         }
     });
 }
 
+
+/*
+ * Displays the draft banner to the user.
+ */
 function showDraftBanner() {
-    if (getEl('draft') == null) {
-        dh.append(getEl('main-banner').dom, {
-            tag: 'div', id: 'draft', children: [
-                {tag: 'h1', html: 'This review request is a draft.'},
-                {tag: 'span', html: 'Be sure to save when finished.'},
-                {tag: 'input', type: 'submit', id: 'btn-draft-save',
-                 value: 'Save', onClick: 'submitDraft();'},
-                {tag: 'input', type: 'submit', id: 'btn-draft-revert',
-                 value: 'Revert', onClick: 'revertDraft();'}
-            ]
-        });
-    }
+    getEl('draft-banner').show();
 }
 
+
+/*
+ * Hides the draft banner from the user.
+ */
 function hideDraftBanner() {
-    var node = getEl('draft') || getEl('discard');
-
-    if (node != null) {
-        node.remove();
-    }
-}
-
-function showDiscardBanner() {
-    dh.append(getEl('main-banner').dom, {
-        tag: 'div', id: 'discard', children: [
-            {tag: 'h1', html: 'Confirm Discard?'},
-            {html:' This cannot be undone.'},
-            {tag: 'input', type: 'submit', value: 'Confirm',
-             onClick: 'discardReview();'},
-            {tag: 'input', type: 'submit', value: 'Cancel',
-             onClick: 'hideDraftBanner();'}
-        ]
-    });
-}
-
-function discardReview() {
-    window.location = normalizeURL(gReviewRequestPath) + "/discard/";
+    getEl('draft-banner').hide();
 }
 
 function showCommentForm(review_id, section_id) {
@@ -366,12 +394,15 @@ function registerCommentSection(reviewid, section_id, context_id, context_type) 
 
 function showReplyDraftBanner(review_id) {
     if (getEl(review_id + '-draft') == null) {
-        dh.append(getEl(review_id + '-banner').dom, {
-            tag: 'div', id: review_id + '-draft', children: [
+        dh.append(getEl(review_id + '-banners').dom, {
+            tag: 'div',
+            cls: 'banner',
+            id: review_id + '-draft',
+            children: [
                 {tag: 'h1', html: 'This reply is a draft.'},
                 {html: ' Be sure to publish when finished.'},
                 {tag: 'input', type: 'submit',
-                 id: review_id + '-btn-draft-save',
+                 id: review_id + '-btn-draft-publish',
                  value: 'Publish',
                  onClick: "submitReplyDraft('" + review_id + "');"},
                 {tag: 'input', type: 'submit',
@@ -408,12 +439,12 @@ function discardReplyDraft(review_id) {
 }
 
 function disableReplyDraftButtons(review_id) {
-    getEl(review_id + '-btn-draft-save').dom.setAttribute('disabled', 'true');
+    getEl(review_id + '-btn-draft-publish').dom.setAttribute('disabled', 'true');
     getEl(review_id + '-btn-draft-discard').dom.setAttribute('disabled', 'true');
 }
 
 function enableReplyDraftButtons(review_id) {
-    getEl(review_id + '-btn-draft-save').dom.removeAttribute('disabled');
+    getEl(review_id + '-btn-draft-publish').dom.removeAttribute('disabled');
     getEl(review_id + '-btn-draft-discard').dom.removeAttribute('disabled');
 }
 
@@ -433,20 +464,34 @@ function autosetAddCommentVisibility(section_id) {
     }
 }
 
-function publishDraft() {
-    var target_groups = document.getElementById("target_groups");
-    var target_people = document.getElementById("target_people");
 
-    if (target_groups.innerHTML.strip() == "" &&
-        target_people.innerHTML.strip() == "") {
-
-        alert("There must be at least one reviewer before this review " +
-              "request can be published.");
-    } else {
-        window.location = normalizeURL(gReviewRequestPath) + "/publish/";
+/*
+ * Asks the user if they're sure they want to discard the review request.
+ * If the user confirms the operation, the review request is discarded.
+ */
+function discardReviewRequest() {
+    if (!gDiscardReviewRequestDlg) {
+        gDiscardReviewRequestDlg = new RB.dialogs.MessageDialog({
+            title: "Confirm Discard",
+            summary: "Are you sure you want to discard this review request?",
+            buttons: [{
+                text: "Discard",
+                cb: onDiscardReviewRequestConfirmed
+            }, {
+                text: "Cancel",
+                is_default: true
+            }]
+        });
     }
+
+    gDiscardReviewRequestDlg.show(getEl("discard-review-request-link"));
 }
 
+
+/*
+ * Asks the user if they're sure they want to delete the review request.
+ * If the user confirms the operation, the review request is deleteed.
+ */
 function deleteReviewRequest() {
     if (!gDeleteReviewRequestDlg) {
         gDeleteReviewRequestDlg = new RB.dialogs.MessageDialog({
@@ -466,6 +511,21 @@ function deleteReviewRequest() {
     gDeleteReviewRequestDlg.show(getEl("delete-review-request-link"));
 }
 
+/*
+ * Callback function for when the user confirms they want to discard the
+ * review request. Performs the discard operation and loads the base
+ * Review Board URL.
+ */
+function onDiscardReviewRequestConfirmed() {
+    window.location = normalizeURL(gReviewRequestPath) + "/discard/";
+}
+
+
+/*
+ * Callback function for when the user confirms they want to delete the
+ * review request. Performs the deletion operation and loads the base
+ * Review Board URL.
+ */
 function onDeleteReviewRequestConfirmed() {
     asyncJsonRequest("POST", getApiPath() + '/delete/', {
         success: function(rsp) {

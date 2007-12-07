@@ -18,20 +18,6 @@ RB.widgets.InlineEditor = function(config) {
     }, true);
     this.form.enableDisplayMode();
 
-    var saveButton = {
-        tag: 'input',
-        type: 'submit',
-        value: 'OK',
-        cls: 'save'
-    };
-
-    var cancelButton = {
-        tag: 'input',
-        type: 'submit',
-        value: 'Cancel',
-        cls: 'cancel'
-    };
-
     /*
      * Rather than animating on IE, the icon just simply disappears and
      * never comes back. So disable animations.
@@ -42,78 +28,88 @@ RB.widgets.InlineEditor = function(config) {
     if (this.multiline) {
         this.field = this.form.createChild({
             tag: 'textarea',
-            html: this.value || '',
-            wrap: 'none',
-            rows: 10,
-            cols: 80
+            html: this.value || ''
+        });
+
+        var autoSizeArea = new RB.widgets.AutosizeTextArea(this.field, {
+            autoGrowVertical: true
         });
 
         block = this.form.createChild({tag: 'div'});
-        this.saveButton = block.createChild(saveButton);
-        this.cancelButton = block.createChild(cancelButton);
+        this.saveButton = block.createChild({
+            tag: 'input',
+            type: 'submit',
+            value: 'OK',
+            cls: 'save'
+        });
+
+        this.cancelButton = block.createChild({
+            tag: 'input',
+            type: 'submit',
+            value: 'Cancel',
+            cls: 'cancel'
+        });
+
+        this.saveButton.enableDisplayMode();
+        this.cancelButton.enableDisplayMode();
+
+        this.saveButton.on('click', this.save, this, true);
+        this.cancelButton.on('click', this.cancel, this, true);
+
+    } else if (this.autocomplete) {
+        var auto_id = 'autoComplete_' + this.cls;
+        var autoinput_id = 'autoInput_' + this.cls;
+        var container_id = "ysearchcontainer_" + this.cls;
+
+        this.skin = this.form.createChild({
+            tag: 'div',
+            cls: 'yui-skin-sam'
+        });
+
+        this.autodiv = this.skin.createChild({
+            tag: 'div',
+            id:  auto_id,
+            cls: 'yui-ac'
+        });
+
+        this.field = this.autodiv.createChild({
+            tag:  'input',
+            type: 'text',
+            id:   autoinput_id,
+            cls:  'yui-ac-input'
+        });
+
+        this.autodiv.createChild({
+            tag: 'div',
+            id:  container_id,
+            cls: 'yui-ac-container'
+        });
+
+        this.left = this.skin.createChild({
+            tag:   'div',
+            style: 'float: right;'
+        });
+
+        var autoComp = new YAHOO.widget.AutoComplete(autoinput_id,
+                                                     container_id,
+                                                     this.autocomplete, {
+            animVert: false,
+            animHoriz: false,
+            typeAhead: true,
+            allowBrowserAutocomplete: false,
+            prehighlightClassName: "yui-ac-prehighlight",
+            delimChar: [",", " "],
+            minQueryLength: 1,
+            queryDelay: 0,
+            useShadow: true
+        });
+        autoComp.setFooter("Press Tab to auto-complete.");
     } else {
-        if (this.autocomplete) {
-            var auto_id = 'autoComplete_' + this.cls;
-            var autoinput_id = 'autoInput_' + this.cls;
-            var container_id = "ysearchcontainer_" + this.cls;
-
-            this.skin = this.form.createChild({
-                tag: 'div',
-                cls: 'yui-skin-sam'
-            });
-
-            this.autodiv = this.skin.createChild({
-                tag: 'div',
-                id:  auto_id,
-                cls: 'yui-ac'
-            });
-
-            this.field = this.autodiv.createChild({
-                tag:  'input',
-                type: 'text',
-                id:   autoinput_id,
-                cls:  'yui-ac-input'
-            });
-
-            this.autodiv.createChild({
-                tag: 'div',
-                id:  container_id,
-                cls: 'yui-ac-container'
-            });
-
-            this.left = this.skin.createChild({
-                tag:   'div',
-                style: 'float: right;'
-            });
-            this.saveButton = this.left.createChild(saveButton);
-            this.cancelButton = this.left.createChild(cancelButton);
-
-            var autoComp = new YAHOO.widget.AutoComplete(autoinput_id,
-                                                         container_id,
-                                                         this.autocomplete, {
-                animVert: false,
-                animHoriz: false,
-                typeAhead: true,
-                allowBrowserAutocomplete: false,
-                prehighlightClassName: "yui-ac-prehighlight",
-                delimChar: [",", " "],
-                minQueryLength: 1,
-                queryDelay: 0,
-                useShadow: true
-            });
-            autoComp.setFooter("Press Tab to auto-complete.");
-        } else {
-            this.field = this.form.createChild({
-                tag: 'input',
-                type: 'text'
-            });
-            this.saveButton = this.form.createChild(saveButton);
-            this.cancelButton = this.form.createChild(cancelButton);
-        }
+        this.field = this.form.createChild({
+            tag: 'input',
+            type: 'text'
+        });
     }
-
-    this.saveButton.enableDisplayMode();
-    this.cancelButton.enableDisplayMode();
 
     if (this.showEditIcon) {
         var img = {
@@ -149,9 +145,6 @@ RB.widgets.InlineEditor = function(config) {
     if (!this.useEditIconOnly) {
         this.el.on('click', this.startEdit, this, true);
     }
-
-    this.saveButton.on('click', this.save, this, true);
-    this.cancelButton.on('click', this.cancel, this, true);
 
     this.field.addKeyMap([
         {
@@ -249,15 +242,13 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
             this.editicon.hide(this.animateIcon);
         }
 
-        if (!this.hideButtons) {
-            this.saveButton.show();
-            this.cancelButton.show();
-        }
-
         this.el.hide();
         this.form.show();
 
         if (this.multiline) {
+            this.saveButton.show();
+            this.cancelButton.show();
+
             this.el.beginMeasure();
             var elHeight = this.el.getHeight();
             this.el.endMeasure();
@@ -273,8 +264,6 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
     },
 
     hide: function() {
-        this.saveButton.hide();
-        this.cancelButton.hide();
         this.field.blur();
 
         if (this.editicon) {
@@ -282,6 +271,9 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         }
 
         if (this.multiline && this.editing) {
+            this.saveButton.hide();
+            this.cancelButton.hide();
+
             this.field.setStyle("overflow", "hidden");
             this.el.beginMeasure();
             var elHeight = this.el.getBox(true, true).height;
@@ -340,20 +332,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
                           this.el.getBorderWidth("lr");
             this.el.endMeasure();
 
-            this.saveButton.beginMeasure();
-            this.cancelButton.beginMeasure();
-            var saveButtonX = this.saveButton.getX() -
-                              this.saveButton.getPadding("lr") -
-                              this.saveButton.getBorderWidth("lr");
-            var x2 = this.cancelButton.getX() +
-                     this.cancelButton.getBox(true, true).width +
-                     this.cancelButton.getPadding("lr") +
-                     this.cancelButton.getBorderWidth("lr");
-            var buttonsWidth = x2 - saveButtonX;
-            this.cancelButton.endMeasure();
-            this.saveButton.endMeasure();
-
-            this.field.setWidth(elWidth - buttonsWidth);
+            this.field.setWidth(elWidth);
         }
     },
 

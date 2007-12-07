@@ -39,8 +39,48 @@
  <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
-<div class="banner" id="error"></div>
-<div class="banner" id="main-banner"></div>
+
+{% ifequal review_request.status 'S' %}
+<div class="banner" id="submitted-banner">
+ <h1>{% trans "This change has been marked as submitted." %}</h1>
+{% ifequal request.user review_request.submitter %}
+ <input type="submit" id="btn-reopen"
+  value="{% trans "Reopen for Review" %}" onclick="location = '{{review_request.get_absolute_url}}reopen/'" />
+{% endifequal %}
+</div>
+{% else %}
+{%  ifequal review_request.status 'D' %}
+<div class="banner" id="discard-banner">
+ <h1>{% trans "This change has been discarded." %}</h1>
+{% ifequal request.user review_request.submitter %}
+ <input type="submit" id="btn-reopen"
+  value="{% trans "Reopen for Review" %}" onclick="location = '{{review_request.get_absolute_url}}reopen/'" />
+{% endifequal %}
+</div>
+{%  else %}
+{%   ifequal request.user review_request.submitter %}
+<div class="banner" id="draft-banner" style="display:none;">
+{%    if review_request.public %}
+ <h1>{% trans "This review request is a draft." %}</h1>
+ {% trans "Be sure to publish when finished." %}
+ <input type="submit" id="btn-draft-publish"
+  value="{% trans "Publish Changes" %}" onclick="publishDraft();" />
+ <input type="submit" id="btn-draft-discard"
+  value="{% trans "Discard Draft" %}" onclick="discardDraft();" />
+{%    else %}
+ <h1>{% trans "This review request is not yet public." %}</h1>
+ {% trans "Be sure to publish when finished." %}
+ <input type="submit" id="btn-draft-publish"
+  value="{% trans "Publish" %}" onclick="publishDraft();" />
+ <input type="submit" id="btn-draft-discard"
+  value="{% trans "Discard Review Request" %}" onclick="discardReviewRequest();" />
+{%    endif %}
+{%   endifequal %}
+</div>
+{%  endifequal %}
+{% endifequal %}
+
+<div id="error"></div>
 
 {% box "review-request" %}
 <ul id="topcontrols">
@@ -59,13 +99,8 @@
 {%  if review_request.public %}
 {%    ifequal review_request.status 'P' %}
  <li><a href="{{review_request.get_absolute_url}}submitted/">Set Submitted</a></li>
- <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
-{%    else %}
- <li><a href="{{review_request.get_absolute_url}}reopen/">Reopen for Review</a></li>
+ <li><a href="#" onClick="discardReviewRequest();" id="discard-review-request-link">Discard</a></li>
 {%    endifequal %}
-{%  else %}
- <li><a href="#" onClick="publishDraft();">Publish</a></li>
- <li><a href="#" onClick="showDiscardBanner();">Discard</a></li>
 {%  endif %}
 {% endifuserorperm %}
 {% ifequal request.user review_request.submitter %}
@@ -110,7 +145,7 @@
 {% endif %}
 {% box "review" %}
 <div class="main">
- <div class="banner" id="{{review.id}}-banner"></div>
+ <div id="{{review.id}}-banners"></div>
  <div class="header">
   {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
@@ -191,6 +226,7 @@
 {% endfor %}
 
 {% ifequal request.user review_request.submitter %}
+{% ifequal review_request.status 'P' %}
 <script type="text/javascript">
   registerEditor('summary', false);
   registerEditor('branch', false);
@@ -210,11 +246,12 @@
   registerEditor('screenshot_{{image.id}}_caption', false);
 {% endfor %}
 
-{% if draft %}
+{% if draft or not review_request.public %}
   showDraftBanner();
 {% else %}
   hideDraftBanner();
 {% endif %}
 </script>
+{% endifequal %}
 {% endifequal %}
 {% endblock %}

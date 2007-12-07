@@ -45,6 +45,8 @@
 
 .review-request textarea {
   border: 1px #b8b5a0 solid;
+  height: 1.5em;
+  overflow: hidden;
 }
 
 .review-request .box-inner {
@@ -418,18 +420,21 @@
 
 
 /****************************************************************************
+ * Banners
+ ****************************************************************************/
+#discard-banner,
+#submitted-banner {
+  background: #E0E0E0;
+}
+
+
+/****************************************************************************
  * Auto-complete widget
  ****************************************************************************/
 /* Widget */
 .yui-skin-sam .yui-ac
 {
   position: relative;
-}
-
-/* Input field */
-.yui-skin-sam .yui-ac-input
-{
-  position: absolute;
 }
 
 /* Results container */

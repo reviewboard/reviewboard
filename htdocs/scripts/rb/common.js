@@ -180,3 +180,37 @@ function toggleStar(el, type, objid, default_) {
     }
   });
 }
+
+
+/*
+ * Converts an array of items to a list of hyperlinks.
+ *
+ * By default, this will use the item as the URL and as the hyperlink text.
+ * By overriding urlFunc and textFunc, the URL and text can be customized.
+ *
+ * @param {array}    list     The list of items.
+ * @param {function} urlFunc  A function to return the URL for an item in
+ *                            the list.
+ * @param {function} textFunc A function to return the text for an item in
+ *                            the list.
+ *
+ * @return A string containing the HTML markup for the list of hyperlinks.
+ */
+RB.utils.urlizeList = function(list, urlFunc, textFunc) {
+    var str = "";
+
+    for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        str += '<a href="';
+        str += (urlFunc ? urlFunc(item) : item);
+        str += '">';
+        str += (textFunc ? textFunc(item) : item);
+        str += '</a>';
+
+        if (i < list.length - 1) {
+            str += ", ";
+        }
+    }
+
+    return str;
+}
