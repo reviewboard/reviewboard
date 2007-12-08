@@ -39,7 +39,8 @@ import reviewboard.scmtools.models as scmtools
 models = (scmtools.Tool, scmtools.Repository,
           diffviewer.DiffSetHistory, diffviewer.DiffSet,
           diffviewer.FileDiff,
-          reviews.Group, reviews.Screenshot, reviews.ScreenshotComment,
+          reviews.DefaultReviewer, reviews.Group,
+          reviews.Screenshot, reviews.ScreenshotComment,
           reviews.Comment, reviews.ReviewRequest,
           reviews.ReviewRequestDraft, reviews.Review,
           accounts.Profile)
