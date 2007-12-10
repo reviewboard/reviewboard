@@ -74,7 +74,6 @@ def check_dependencies():
     except OSError:
         dependency_error('p4 command not found.  Perforce integration will not work.')
 
-
     try:
         imp.find_module('mercurial')
     except ImportError:

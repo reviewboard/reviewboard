@@ -1,0 +1,21 @@
+rbdir = $(pyexecdir)/reviewboard/reviews
+nobase_rb_PYTHON =			\
+	__init__.py			\
+	email.py			\
+	feeds.py			\
+	forms.py			\
+	json.py				\
+	models.py			\
+	tests.py			\
+	views.py			\
+	templatetags/__init__.py	\
+	templatetags/emailtags.py	\
+	templatetags/reviewtags.py	\
+	urls/__init__.py		\
+	urls/json.py			\
+	urls/reviews.py
+
+nobase_rb_DATA =				\
+	fixtures/test_reviewrequests.json
+
+EXTRA_DIST = $(nobase_rb_DATA)
