@@ -67,8 +67,13 @@ def check_dependencies():
 
     try:
         imp.find_module('p4')
+        subprocess.call(['p4', '-h'],
+                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     except ImportError:
         dependency_warning('p4python not found.  Perforce integration will not work.')
+    except OSError:
+        dependency_error('p4 command not found.  Perforce integration will not work.')
+
 
     try:
         imp.find_module('mercurial')
