@@ -305,6 +305,9 @@ class SCMClient(object):
     def diff(self, changenum, files):
         return None
 
+    def diff_between_revisions(self, revision_range):
+        return None
+
     def add_options(self, parser):
         """
         Adds options to an OptionParser.
@@ -374,6 +377,12 @@ class SVNClient(SCMClient):
         Performs a diff across all modified files in a Subversion repository.
         """
         return execute('svn diff %s' % ' '.join(files))
+
+    def diff_between_revisions(self, revision_range):
+        """
+        Performs a diff between 2 revisions of a Subversion repository.
+        """
+        return execute('svn diff -r %s' % revision_range)
 
 
 class PerforceClient(SCMClient):
@@ -609,16 +618,11 @@ def load_config_file(filename):
     return config
 
 
-def tempt_fate(server, tool, changenum, files, diff_content=None):
+def tempt_fate(server, tool, changenum, files=None, diff_content=None):
     """
     Attempts to create a review request on a Review Board server and upload
     a diff. On success, the review request path is displayed.
     """
-    if not diff_content:
-        diff_content = tool.diff(changenum, files)
-
-        if diff_content.strip() == "":
-            die("The generated diff is empty!")
 
     try:
         save_draft = False
@@ -636,6 +640,11 @@ def tempt_fate(server, tool, changenum, files, diff_content=None):
         if options.target_people:
             server.set_review_request_field(review_request, 'target_people',
                                             options.target_people)
+            save_draft = True
+
+        if options.summary:
+            server.set_review_request_field(review_request, 'summary',
+                                            options.summary)
             save_draft = True
 
         if save_draft:
@@ -671,7 +680,7 @@ def tempt_fate(server, tool, changenum, files, diff_content=None):
     sys.exit(0)
 
 
-def parse_options(tool, repository_info):
+def parse_options(tool, repository_info, args):
     parser = OptionParser(usage="%prog [-p] [-o] changenum",
                           version="%prog " + VERSION)
 
@@ -704,6 +713,13 @@ def parse_options(tool, repository_info):
                       default=None,
                       help="names of the people who will perform " +
                            "the review")
+    parser.add_option("--summary", dest="summary",
+                      default=None,
+                      help="summary of the review ")
+    parser.add_option("--revision-range", dest="revision_range",
+                      default=None,
+                      help="generate the diff for review based on given " +
+                           "revision range")
     parser.add_option("-r", "--review-request-id", dest="rid", metavar="ID",
                       default=None,
                       help="existing review request ID to update")
@@ -721,12 +737,12 @@ def parse_options(tool, repository_info):
     parser.add_option("-d", "--debug", action="store_true",
                       dest="debug", default=False, help="display debug output")
 
-    (globals()["options"], args) = parser.parse_args()
+    (globals()["options"], args) = parser.parse_args(args)
 
     return args
 
 
-def main():
+def main(args):
     # Load the config file
     globals()['user_config'] = \
         load_config_file(os.path.join(homepath, ".reviewboardrc"))
@@ -741,7 +757,7 @@ def main():
         if repository_info:
             break
 
-    args = parse_options(tool, repository_info)
+    args = parse_options(tool, repository_info, args)
 
     if not repository_info:
         print "The current directory does not contain a checkout from a"
@@ -772,8 +788,13 @@ def main():
         changenum = None
         files = args
 
+    if options.revision_range:
+        diff = tool.diff_between_revisions(options.revision_range)
+    else:
+        diff = tool.diff(changenum, files)
+
     if options.output_diff_only:
-        print tool.diff(changenum, files)
+        print diff
         sys.exit(0)
 
     # Let's begin.
@@ -782,8 +803,8 @@ def main():
     except IOError:
         server.login()
 
-    tempt_fate(server, tool, changenum, files)
+    tempt_fate(server, tool, changenum, files, diff_content=diff)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
