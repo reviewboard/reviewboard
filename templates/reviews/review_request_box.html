@@ -24,7 +24,7 @@
   </tr>
   <tr>
    <td class="label"><label for="branch">Branch:</label></td>
-   <td class="value"><span id="branch">{{review_request_details.branch}}</span></td>
+   <td class="value"><span id="branch">{{review_request_details.branch|safe}}</span></td>
    <td class="indented label"><label for="target_groups">Groups:</label></td>
    <td class="value"><span id="target_groups">
 {%  for group in review_request_details.target_groups.all %}
