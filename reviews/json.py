@@ -1112,10 +1112,16 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
             if review_is_new:
                 review.save()
 
-            comment, comment_is_new = review.comments.get_or_create(
-                filediff=filediff,
-                interfilediff=interfilediff,
-                first_line=line)
+            if interfilediff:
+                comment, comment_is_new = review.comments.get_or_create(
+                    filediff=filediff,
+                    interfilediff=interfilediff,
+                    first_line=line)
+            else:
+                comment, comment_is_new = review.comments.get_or_create(
+                    filediff=filediff,
+                    interfilediff__isnull=True,
+                    first_line=line)
 
             comment.text = text
             comment.num_lines = num_lines
