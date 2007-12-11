@@ -48,7 +48,11 @@ def check_dependencies():
     # pygments
     if settings.DIFF_SYNTAX_HIGHLIGHTING:
         try:
-            imp.find_module('pygments')
+            import pygments
+            if float(pygments.__version__) < 0.9:
+                dependency_error('Pygments is installed, but is an old version. '
+                                 'Versions prior to 0.9 are known to have '
+                                 'serious problems.')
         except ImportError:
             dependency_error('The Pygments library is required when ' +
                              'DIFF_SYNTAX_HIGHLIGHTING is enabled.')
