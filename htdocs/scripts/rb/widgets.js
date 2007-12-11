@@ -52,6 +52,8 @@ RB.widgets.InlineEditor = function(config) {
 
         this.saveButton.enableDisplayMode();
         this.cancelButton.enableDisplayMode();
+        this.saveButton.hide();
+        this.cancelButton.hide();
 
         this.saveButton.on('click', this.save, this, true);
         this.cancelButton.on('click', this.cancel, this, true);
@@ -246,8 +248,10 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         this.form.show();
 
         if (this.multiline) {
-            this.saveButton.show();
-            this.cancelButton.show();
+            if (!this.hideButtons) {
+                this.saveButton.show();
+                this.cancelButton.show();
+            }
 
             this.el.beginMeasure();
             var elHeight = this.el.getHeight();
