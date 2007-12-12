@@ -17,6 +17,6 @@ nobase_rb_SCRIPTS =			\
 	i18n/unique-messages.py		\
 	tools/post-review
 
-EXTRA_DIST = 			\
+EXTRA_DIST =			\
 	$(nobase_rb_DATA)	\
 	$(nobase_rb_SCRIPTS)
