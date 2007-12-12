@@ -1180,14 +1180,6 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
     if request.POST:
         text = request.POST['text']
         action = request.POST['action']
-        diff_revision = request.POST['diff_revision']
-
-        try:
-            diffset = review_request.diffset_history.diffset_set.get(
-                revision=diff_revision)
-        except DiffSet.DoesNotExist:
-            return JsonResponseError(request, INVALID_DIFF_REVISION,
-                                     {'diff_revision': diff_revision})
 
         # TODO: Sanity check the fields
 
