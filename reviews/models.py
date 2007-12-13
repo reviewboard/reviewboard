@@ -440,6 +440,8 @@ class ReviewRequestDraft(models.Model):
                 screenshot.save()
                 draft.inactive_screenshots.add(screenshot)
 
+            draft.save();
+
         return draft
 
     def add_default_reviewers(self):
