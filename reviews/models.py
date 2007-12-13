@@ -37,7 +37,7 @@ class Group(models.Model):
     Each group can have an e-mail address associated with it, sending
     all review requests and replies to that address.
     """
-    name = models.SlugField(_("name"), max_length=64)
+    name = models.SlugField(_("name"), max_length=64, blank=False)
     display_name = models.CharField(_("display name"), max_length=64)
     mailing_list = models.EmailField(_("mailing list"), blank=True,
         help_text=_("The mailing list review requests and discussions "
