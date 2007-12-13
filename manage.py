@@ -49,7 +49,8 @@ def check_dependencies():
     if settings.DIFF_SYNTAX_HIGHLIGHTING:
         try:
             import pygments
-            if float(pygments.__version__) < 0.9:
+            version = pygments.__version__.split(".")
+            if version[0] == 0 and version[1] < 9:
                 dependency_error('Pygments is installed, but is an old version. '
                                  'Versions prior to 0.9 are known to have '
                                  'serious problems.')
