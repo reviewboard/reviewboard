@@ -19,7 +19,7 @@ def never_cache_patterns(prefix, *args):
     return pattern_list
 
 
-urlpatterns = never_cache_patterns('reviewboard.reviews.json',
+urlpatterns = never_cache_patterns('reviewboard.webapi.json',
     # Accounts
     (r'^accounts/login/$', 'account_login'),
 

@@ -84,6 +84,7 @@ INSTALLED_APPS = (
     'reviewboard.reviews',
     'reviewboard.scmtools',
     'reviewboard.utils',
+    'reviewboard.webapi',
 )
 
 # Whether to use django's built-in system for users.  This turns on certain

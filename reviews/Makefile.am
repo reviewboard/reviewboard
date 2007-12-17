@@ -8,13 +8,11 @@ nobase_rb_PYTHON = \
 	json.py \
 	models.py \
 	tests.py \
+	urls.py \
 	views.py \
 	templatetags/__init__.py \
 	templatetags/emailtags.py \
-	templatetags/reviewtags.py \
-	urls/__init__.py \
-	urls/json.py \
-	urls/reviews.py
+	templatetags/reviewtags.py
 
 nobase_rb_DATA = \
 	fixtures/test_reviewrequests.json

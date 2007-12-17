@@ -10,7 +10,8 @@ SUBDIRS =		\
 	reviews		\
 	scmtools	\
 	templates	\
-	utils
+	utils		\
+	webapi
 
 rbdir = $(pyexecdir)/reviewboard
 rb_PYTHON =		\

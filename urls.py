@@ -23,8 +23,8 @@ atom_feeds = {
 
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
-    (r'^api/json/', include('reviewboard.reviews.urls.json')),
-    (r'^r/', include('reviewboard.reviews.urls.reviews')),
+    (r'^api/json/', include('reviewboard.webapi.urls')),
+    (r'^r/', include('reviewboard.reviews.urls')),
     (r'^reports/', include('reviewboard.reports.urls')),
 
     (r'^$', 'django.views.generic.simple.redirect_to',
