@@ -26,7 +26,6 @@ nobase_rb_DATA =				\
 	iphone/user_prefs.html			\
 	reports/report_list.html		\
 	reports/review-moinmoin.txt		\
-	reports/review_request_listview.html	\
 	reports/review_request-moinmoin.txt	\
 	reports/review_request-text.txt		\
 	reports/review-text.txt			\
@@ -43,6 +42,7 @@ nobase_rb_DATA =				\
 	reviews/review_reply_section.html	\
 	reviews/review_request_box.html		\
 	reviews/review_request_email.txt	\
+	reviews/review_request_listview.html	\
 	reviews/screenshot_detail.html		\
 	reviews/screenshotindex.html		\
 	reviews/star.html
