@@ -364,18 +364,19 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         context = response.context[0]
-        review_requests = context['object_list']
+        datagrid = context['datagrid']
+        rows = list(datagrid.rows())
 
-        self.assertEqual(len(review_requests), 5)
-        self.assertEqual(review_requests[0].summary,
+        self.assertEqual(len(rows), 5)
+        self.assertEqual(rows[0]['object'].summary,
                          'Made e-mail improvements')
-        self.assertEqual(review_requests[1].summary,
+        self.assertEqual(rows[1]['object'].summary,
                          'Improved login form')
-        self.assertEqual(review_requests[2].summary,
+        self.assertEqual(rows[2]['object'].summary,
                          'Error dialog')
-        self.assertEqual(review_requests[3].summary,
+        self.assertEqual(rows[3]['object'].summary,
                          'Update for cleaned_data changes')
-        self.assertEqual(review_requests[4].summary,
+        self.assertEqual(rows[4]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -392,13 +393,14 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         context = response.context[0]
-        users = context['object_list']
+        datagrid = context['datagrid']
+        rows = list(datagrid.rows())
 
-        self.assertEqual(len(users), 4)
-        self.assertEqual(users[0].username, 'admin')
-        self.assertEqual(users[1].username, 'doc')
-        self.assertEqual(users[2].username, 'dopey')
-        self.assertEqual(users[3].username, 'grumpy')
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(rows[0]['object'].username, 'admin')
+        self.assertEqual(rows[1]['object'].username, 'doc')
+        self.assertEqual(rows[2]['object'].username, 'dopey')
+        self.assertEqual(rows[3]['object'].username, 'grumpy')
 
     def testSubmitterListSitewideLogin(self):
         """Testing submitter_list view with site-wide login enabled"""
@@ -434,16 +436,17 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         context = response.context[0]
-        review_requests = context['review_request_list']
+        datagrid = context['datagrid']
+        rows = list(datagrid.rows())
 
-        self.assertEqual(len(review_requests), 4)
-        self.assertEqual(review_requests[0].summary,
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(rows[0]['object'].summary,
                          'Made e-mail improvements')
-        self.assertEqual(review_requests[1].summary,
+        self.assertEqual(rows[1]['object'].summary,
                          'Update for cleaned_data changes')
-        self.assertEqual(review_requests[2].summary,
+        self.assertEqual(rows[2]['object'].summary,
                          'Comments Improvements')
-        self.assertEqual(review_requests[3].summary,
+        self.assertEqual(rows[3]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -456,10 +459,11 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         context = response.context[0]
-        review_requests = context['review_request_list']
+        datagrid = context['datagrid']
+        rows = list(datagrid.rows())
 
-        self.assertEqual(len(review_requests), 1)
-        self.assertEqual(review_requests[0].summary,
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -473,11 +477,12 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         context = response.context[0]
-        review_requests = context['review_request_list']
+        datagrid = context['datagrid']
+        rows = list(datagrid.rows())
 
-        self.assertEqual(len(review_requests), 2)
-        self.assertEqual(review_requests[0].summary, 'Made e-mail improvements')
-        self.assertEqual(review_requests[1].summary,
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]['object'].summary, 'Made e-mail improvements')
+        self.assertEqual(rows[1]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -493,11 +498,12 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         context = response.context[0]
-        review_requests = context['review_request_list']
+        datagrid = context['datagrid']
+        rows = list(datagrid.rows())
 
-        self.assertEqual(len(review_requests), 2)
-        self.assertEqual(review_requests[0].summary,
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]['object'].summary,
                          'Update for cleaned_data changes')
-        self.assertEqual(review_requests[1].summary, 'Comments Improvements')
+        self.assertEqual(rows[1]['object'].summary, 'Comments Improvements')
 
         self.client.logout()

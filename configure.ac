@@ -13,7 +13,6 @@ AC_OUTPUT([
 Makefile
 accounts/Makefile
 contrib/Makefile
-datagrid/Makefile
 diffviewer/Makefile
 htdocs/Makefile
 iphone/Makefile

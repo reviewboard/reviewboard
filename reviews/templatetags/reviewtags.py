@@ -6,7 +6,6 @@ from django.template import NodeList, TemplateSyntaxError, Variable, \
 from django.template.loader import render_to_string
 from django.template.defaultfilters import escape
 from django.utils import simplejson
-from django.utils.html import conditional_escape
 from djblets.util.decorators import blocktag
 from djblets.util.misc import get_object_or_none
 
@@ -17,64 +16,6 @@ from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
 from reviewboard.utils.templatetags.htmlutils import humanize_list
 
 register = template.Library()
-
-
-class ReviewSummary(template.Node):
-    def __init__(self, review_request):
-        self.review_request = Variable(review_request)
-
-    def render(self, context):
-        try:
-            review_request = self.review_request.resolve(context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid variable %s passed to reviewsummary tag." % \
-                self.review_request
-
-        summary = conditional_escape(review_request.summary)
-
-        if review_request.submitter == context.get('user', None):
-            try:
-                draft = review_request.reviewrequestdraft_set.get()
-                return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       summary
-            except ReviewRequestDraft.DoesNotExist:
-                pass
-
-            if not review_request.public:
-                # XXX Do we want to say "Draft?"
-                return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       summary
-
-        if review_request.status == 'S':
-            return "<span class=\"draftlabel\">[Submitted]</span> " + \
-                   summary
-
-        return summary
-
-
-@register.tag
-def reviewsummary(parser, token):
-    """
-    Returns the summary of a review, showing draft or submitted labels
-    if need be.
-    """
-    try:
-        tag_name, review_request = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires a timestamp"
-
-    return ReviewSummary(review_request)
-
-
-@register.simple_tag
-def pendingreviewcount(obj):
-    """
-    Returns the pending review count in a list of review requests belonging
-    to the specified object.
-    """
-    return str(obj.reviewrequest_set.filter(public=True, status='P').count())
 
 
 @register.tag
@@ -143,19 +84,6 @@ def ifneatnumber(context, nodelist, rid):
     s = nodelist.render(context)
     context.pop()
     return s
-
-
-@register.tag
-@blocktag
-def ifnewreviews(context, nodelist, review_request):
-    """
-    Renders content if a review request has new reviews that the current
-    user has not seen.
-    """
-    if review_request.get_new_reviews(context["user"]).count() > 0:
-        return nodelist.render(context)
-
-    return ""
 
 
 class CommentCounts(template.Node):
@@ -572,8 +500,20 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
     return q.count() > 0
 
 
-@register.inclusion_tag('reviews/star.html', takes_context=True)
-def star(context, obj):
+class StarNode(template.Node):
+    def __init__(self, obj):
+        self.obj = Variable(obj)
+
+    def render(self, context):
+        user = context.get('user', None)
+        if user.is_anonymous():
+            return ""
+
+        return render_star(user, self.obj.resolve(context))
+
+
+@register.tag
+def star(parser, token):
     """
     Renders the code for displaying a star used for starring items.
 
@@ -584,15 +524,24 @@ def star(context, obj):
     The passed object must be either a :model:`reviews.ReviewRequest` or
     a :model:`reviews.Group`.
     """
-    user = context.get('user', None)
+    try:
+        tag_name, obj = token.split_contents()
+    except ValueError:
+        raise template.TemplateSyntaxError, \
+            "%r tag requires an object" % tag_name
 
-    if user.is_anonymous():
-        return None
+    return StarNode(obj)
 
+
+def render_star(user, obj):
+    """
+    Does the actual work of rendering the star. The star tag is a wrapper
+    around this.
+    """
     try:
         profile = user.get_profile()
     except Profile.DoesNotExist:
-        return None
+        return ""
 
     if isinstance(obj, ReviewRequest):
         obj_info = {
@@ -608,13 +557,15 @@ def star(context, obj):
             'id': obj.name
         }
 
-        starred = bool(get_object_or_none(profile.starred_groups, pk=obj.id))
+        starred = bool(get_object_or_none(profile.starred_groups,
+                                          pk=obj.id))
     else:
         raise template.TemplateSyntaxError, \
-            "star tag received an incompatible object type (%s)" % type(obj)
+            "star tag received an incompatible object type (%s)" % \
+            type(obj)
 
-    return {
+    return render_to_string('reviews/star.html', {
         'object': obj_info,
         'starred': int(starred),
         'user': user,
-    }
+    })

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% load htmlutils %}
+{% block title %}{{datagrid.title}}{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" type="text/css" href="/css/datagrid.css" />
+<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="/scripts/rb/common.js"></script>
+{% endblock %}
+
+{% block content %}
+{% box %}
+{{datagrid.render_listview}}
+{% endbox %}
+{% endblock %}

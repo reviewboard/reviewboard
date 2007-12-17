@@ -31,167 +31,8 @@ span.draftlabel {
   font-size: x-small;
 }
 
-table.list {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-table.list td {
-  padding: 4px;
-  line-height: 1.4em;
-}
-
 table td.label {
   text-align: right;
-}
-
-table.list td.summary {
-  cursor: pointer;
-}
-
-table.list td a {
-  color: black;
-  text-decoration: none;
-}
-
-table.list th {
-  padding: 4px;
-  text-align: left;
-  white-space: nowrap;
-}
-
-table.list th.day {
-  background: #E9E9E9;
-  border-bottom: 1px #999999 solid;
-}
-
-table.list tr {
-  background-color: white;
-}
-
-table.list tr.even {
-  background: #F2F2F2;
-}
-
-table.list tr:hover {
-  background-color: #d4e0f3;
-}
-
-table.list tr.month {
-  background: #E9E9E9;
-}
-
-table.list tr.headers th {
-  background: url("/images/ui/header_bg.png") repeat-x bottom left;
-  border-top: 1px #999999 solid;
-  border-bottom: 1px #999999 solid;
-  border-right: 1px #CCCCCC solid;
-  color: #444444;
-  cursor: pointer;
-}
-
-table.list tr.headers th a {
-  color: black;
-  text-decoration: none;
-}
-
-table.list tr.headers th a.unsort {
-  color: #444444;
-}
-
-table.list tr.headers th a:hover {
-  text-decoration: underline;
-}
-
-table.list tr:hover.headers {
-  background-color: transparent;
-}
-
-table.list tr.headers th:hover {
-  background: url("/images/ui/header_bg_primary.png") repeat-x bottom left;
-}
-
-table.list tr.headers th:hover a {
-  text-decoration: underline;
-}
-
-table.list tr.headers img {
-  vertical-align: middle;
-}
-
-table.list .age1 {
-  background: #beedbc;
-  border-left: 1px #8bbd5c solid;
-  border-right: 1px #8bbd5c solid;
-  white-space: nowrap;
-}
-
-table.list tr.even .age1 {
-  background: #b4e3b2;
-}
-
-table.list .age2 {
-  background: #ddfa8e;
-  border-left: 1px #a3e266 solid;
-  border-right: 1px #a3e266 solid;
-  white-space: nowrap;
-}
-
-table.list tr.even .age2 {
-  background: #d3f084;
-}
-
-table.list .age3 {
-  background: #fdf18c;
-  border-left: 1px #d8c158 solid;
-  border-right: 1px #d8c158 solid;
-  white-space: nowrap;
-}
-
-table.list tr.even .age3 {
-  background: #f3e782;
-}
-
-table.list .age4 {
-  background: #fed3a9;
-  border-left: 1px #d49659 solid;
-  border-right: 1px #d49659 solid;
-  white-space: nowrap;
-}
-
-table.list tr.even .age4 {
-  background: #f4c99f;
-}
-
-table.list .age5 {
-  background: #fab6b6;
-  border-left: 1px #f56363 solid;
-  border-right: 1px #f56363 solid;
-  white-space: nowrap;
-}
-
-table.list tr.even .age5 {
-  background: #f0acac;
-}
-
-table.list tr:hover .age1 {
-  background: #a1cb9f;
-}
-
-table.list tr:hover .age2 {
-  background: #bcd675;
-}
-
-table.list tr:hover .age3 {
-  background: #d9ce74;
-}
-
-table.list tr:hover .age4 {
-  background: #dab38e;
-}
-
-table.list tr:hover .age5 {
-  background: #d69999;
 }
 
 ul.errorlist {
@@ -278,8 +119,7 @@ ul.errorlist li {
   cursor: pointer;
 }
 
-.box h1.title,
-.box .titlebox {
+.box h1.title {
   background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   margin: 0;
@@ -288,27 +128,6 @@ ul.errorlist li {
 
 .box h1.title {
   font-size: 120%;
-}
-
-.box .titlebox h1 {
-  display: inline;
-  font-size: 120%;
-  padding-right: 10px;
-}
-
-.box .titlebox ul {
-  list-style: none;
-  display: inline;
-  margin: 0;
-  padding: 0;
-}
-
-.box .titlebox ul li {
-  display: inline;
-}
-
-.box .titlebox ul li a {
-  color: #0000CC;
 }
 
 .box .main {
@@ -412,42 +231,6 @@ form table td {
 
 
 /****************************************************************************
- * Paginator
- ****************************************************************************/
-
-.paginator {
-  padding: 8px 4px 4px 4px;
-}
-
-.paginator .current-page {
-  font-weight: bold;
-  padding: 2px 6px;
-}
-
-.paginator .page-count {
-  color: #444444;
-  margin-left: 10px;
-}
-
-.paginator a {
-  border: 1px solid #CCCCCC;
-  color: black;
-  padding: 2px 6px;
-  text-decoration: none;
-}
-
-.paginator a:hover {
-  background: #9BC0F2;
-  border-color: #003366;
-  color: black;
-}
-
-.paginator a:visited {
-  color: black;
-}
-
-
-/****************************************************************************
  * Account page
  ****************************************************************************/
 .prefsbuttons {
@@ -460,12 +243,6 @@ form table td {
   list-style: none;
   padding-left: 0;
   margin: 5px;
-}
-
-.reviewlist .main,
-.grouplist .main,
-.submitterlist .main {
-  padding: 0px;
 }
 
 .section {

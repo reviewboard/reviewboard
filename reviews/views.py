@@ -20,16 +20,20 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
-from reviewboard.datagrid.views import sortable_object_list
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
+from reviewboard.reviews.datagrids import DashboardDataGrid, \
+                                          GroupDataGrid, \
+                                          ReviewRequestDataGrid, \
+                                          SubmitterDataGrid, \
+                                          WatchedGroupDataGrid
+from reviewboard.reviews.email import mail_review_request
+from reviewboard.reviews.forms import NewReviewRequestForm, \
+                                      UploadScreenshotForm
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
                                        Review, Group, Screenshot, \
                                        ScreenshotComment
-from reviewboard.reviews.forms import NewReviewRequestForm, \
-                                      UploadScreenshotForm
-from reviewboard.reviews.email import mail_review_request
 from reviewboard.scmtools.models import Repository
 
 
@@ -115,93 +119,31 @@ def review_detail(request, review_request_id, template_name):
     }))
 
 
-def review_list(request, queryset, template_name, default_filter=True,
-                allow_hide_submitted=True, extra_context={}, **kwargs):
-    """
-    Convenience function for listing several reviwe requests, taking into
-    account sort orders, the Show Submitted flag, and changes to either
-    of these.
-    """
-    profile = None
-    sort_columns = "-last_updated"
-    show_submitted = True
-
-    if request.user.is_authenticated():
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-        sort_columns = profile.sort_review_request_columns or sort_columns
-        show_submitted = profile.show_submitted
-
-    if default_filter:
-        queryset = queryset.filter(Q(status='P') |
-                                   Q(status='S')).order_by('-last_updated')
-
-    sort = request.GET.get('sort', sort_columns)
-    show_submitted = int(request.GET.get('show_submitted', show_submitted))
-
-    extra_context['show_submitted'] = show_submitted
-
-    if allow_hide_submitted and not show_submitted:
-        queryset = queryset.exclude(Q(status='S'))
-
-    response = sortable_object_list(request,
-        queryset=queryset,
-        default_sort=sort_columns,
-        template_name=template_name,
-        extra_context=extra_context,
-        **kwargs)
-
-    if profile and \
-       (profile.sort_review_request_columns != sort or \
-        profile.show_submitted != show_submitted):
-        # Something in the profile changed, so save the change.
-        profile.sort_review_request_columns = sort
-        profile.show_submitted = show_submitted
-        profile.save()
-
-    return response
-
-
 @check_login_required
-def all_review_requests(request, template_name='reviews/review_list.html'):
+def all_review_requests(request, template_name='reviews/datagrid.html'):
     """
     Displays a list of all review requests.
     """
-    return review_list(request,
-        queryset=ReviewRequest.objects.public(request.user, status=None),
-        template_name=template_name)
+    datagrid = ReviewRequestDataGrid(request,
+        ReviewRequest.objects.public(request.user, status=None),
+        _("All review requests"))
+    return datagrid.render_to_response(template_name)
 
 
 @check_login_required
-def submitter_list(request, template_name='reviews/submitter_list.html'):
+def submitter_list(request, template_name='reviews/datagrid.html'):
     """
     Displays a list of all users.
     """
-    return object_list(request,
-        queryset=User.objects.filter(),
-        template_name=template_name,
-        paginate_by=50,
-        allow_empty=True,
-        extra_context={
-            'app_path': request.path,
-        })
+    return SubmitterDataGrid(request).render_to_response(template_name)
 
 
 @check_login_required
-def group_list(request, queryset=None, extra_context={},
-               template_name='reviews/group_list.html'):
+def group_list(request, template_name='reviews/datagrid.html'):
     """
     Displays a list of all review groups.
     """
-    return object_list(request,
-        queryset=queryset or Group.objects.all(),
-        template_name=template_name,
-        template_object_name='group',
-        paginate_by=50,
-        allow_empty=True,
-        extra_context=dict({
-            'app_path': request.path,
-        }, **extra_context))
+    return GroupDataGrid(request).render_to_response(template_name)
 
 
 @login_required
@@ -220,88 +162,46 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         * 'watched-groups'
         * 'incoming'
     """
-    view = request.GET.get('view', 'incoming')
-    group = request.GET.get('group', "")
-    user = request.user
+    view = request.GET.get('view', None)
 
-    if view == 'outgoing':
-        review_requests = ReviewRequest.objects.from_user(user.username, user)
-        title = _(u"All Outgoing Review Requests")
-    elif view == 'to-me':
-        review_requests = \
-            ReviewRequest.objects.to_user_directly(user.username, user)
-        title = _(u"Incoming Review Requests to Me")
-    elif view == 'to-group':
-        if group != "":
-            review_requests = ReviewRequest.objects.to_group(group, user)
-            title = _(u"Incoming Review Requests to %s") % group
-        else:
-            review_requests = \
-                ReviewRequest.objects.to_user_groups(user.username, user)
-            title = _(u"All Incoming Review Requests to My Groups")
-    elif view == 'starred':
-        review_requests = \
-            user.get_profile().starred_review_requests.public(user)
-        title = _(u"Starred Review Requests")
-    elif view == 'watched-groups':
+    if view == "watched-groups":
         # This is special. We want to return a list of groups, not
         # review requests.
-        return group_list(request,
-            queryset=user.get_profile().starred_groups.all(),
-            template_name=template_name,
-            extra_context={
-                'title': _(u"Watched Groups"),
-                'view': view,
-                'group': group,
-            })
-    else: # "incoming" or invalid
-        review_requests = ReviewRequest.objects.to_user(user.username, user)
-        title = _(u"All Incoming Review Requests")
+        grid = WatchedGroupDataGrid(request)
+    else:
+        grid = DashboardDataGrid(request)
 
-    return review_list(request,
-        queryset=review_requests,
-        template_name=template_name,
-        default_filter=False,
-        template_object_name='review_request',
-        allow_hide_submitted=False,
-        extra_context={
-            'title': title,
-            'view': view,
-            'group': group,
-        })
+    return grid.render_to_response(template_name)
 
 
 @check_login_required
-def group(request, name, template_name='reviews/review_list.html'):
+def group(request, name, template_name='reviews/datagrid.html'):
     """
     A list of review requests belonging to a particular group.
     """
     # Make sure the group exists
     get_object_or_404(Group, name=name)
 
-    return review_list(request,
-        queryset=ReviewRequest.objects.to_group(name, status=None),
-        template_name=template_name,
-        extra_context={
-            'source': name,
-            'group': get_object_or_none(Group, name=name),
-        })
+    datagrid = ReviewRequestDataGrid(request,
+        ReviewRequest.objects.to_group(name, status=None),
+        _("Review requests for %s") % name)
+
+    return datagrid.render_to_response(template_name)
 
 
 @check_login_required
-def submitter(request, username, template_name='reviews/review_list.html'):
+def submitter(request, username, template_name='reviews/datagrid.html'):
     """
     A list of review requests owned by a particular user.
     """
     # Make sure the user exists
     get_object_or_404(User, username=username)
 
-    return review_list(request,
-        queryset=ReviewRequest.objects.from_user(username, status=None),
-        template_name=template_name,
-        extra_context={
-            'source': username + "'s",
-        })
+    datagrid = ReviewRequestDataGrid(request,
+        ReviewRequest.objects.from_user(username, status=None),
+        _("%s's review requests") % username)
+
+    return datagrid.render_to_response(template_name)
 
 
 def _query_for_diff(review_request, revision, query_extra=None):

@@ -3,7 +3,6 @@
 SUBDIRS =		\
 	accounts	\
 	contrib		\
-	datagrid	\
 	diffviewer	\
 	htdocs		\
 	iphone		\
@@ -26,16 +25,22 @@ rb_SCRIPTS =		\
 	server.sh
 
 djbletsdir = $(pyexecdir)
-nobase_djblets_PYTHON =			\
-	djblets/__init__.py		\
-	djblets/auth/__init__.py	\
-	djblets/auth/forms.py		\
-	djblets/auth/util.py		\
-	djblets/auth/views.py		\
-	djblets/util/__init__.py	\
-	djblets/util/db.py		\
-	djblets/util/decorators.py	\
-	djblets/util/misc.py		\
+nobase_djblets_PYTHON = \
+	djblets/__init__.py \
+	djblets/auth/__init__.py \
+	djblets/auth/forms.py \
+	djblets/auth/util.py \
+	djblets/datagrid/__init__.py
+	djblets/datagrid/grids.py \
+	djblets/datagrid/templates/paginator.html \
+	djblets/datagrid/templates/column_header.html \
+	djblets/datagrid/templates/listview.html \
+	djblets/datagrid/templatetags/__init__.py \
+	djblets/datagrid/templatetags/datagrid.py \
+	djblets/util/__init__.py \
+	djblets/util/db.py \
+	djblets/util/decorators.py \
+	djblets/util/misc.py \
 	djblets/util/testing.py
 
 EXTRA_DIST = $(rb_SCRIPTS)

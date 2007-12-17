@@ -50,13 +50,15 @@ class Profile(models.Model):
     # review request lists (excluding the dashboard).
     show_submitted = models.BooleanField(default=True)
 
-    sort_review_request_columns = models.CharField(max_length=128, blank=True)
-    sort_submitter_columns = models.CharField(max_length=128, blank=True)
-    sort_group_columns = models.CharField(max_length=128, blank=True)
+    sort_review_request_columns = models.CharField(max_length=256, blank=True)
+    sort_dashboard_columns = models.CharField(max_length=256, blank=True)
+    sort_submitter_columns = models.CharField(max_length=256, blank=True)
+    sort_group_columns = models.CharField(max_length=256, blank=True)
 
-    #review_request_columns = models.CharField(max_length=128, blank=True)
-    #submitter_columns = models.CharField(max_length=128, blank=True)
-    #group_columns = models.CharField(max_length=128, blank=True)
+    review_request_columns = models.CharField(max_length=256, blank=True)
+    dashboard_columns = models.CharField(max_length=256, blank=True)
+    submitter_columns = models.CharField(max_length=256, blank=True)
+    group_columns = models.CharField(max_length=256, blank=True)
 
     # A list of starred review requests. This allows users to monitor a
     # review request and receive e-mails on updates without actually being

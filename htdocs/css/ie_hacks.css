@@ -20,7 +20,7 @@ table.sidebyside .commentflag,
 }
 
 /* There's a double border on IE, so remove the top header on columns. */
-table.list tr.headers th {
+.datagrid-headers th {
   border-top: 0;
 }
 
