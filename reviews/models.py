@@ -302,6 +302,12 @@ class ReviewRequest(models.Model):
 
         return self.review_set.get_empty_query_set()
 
+    def get_public_reviews(self):
+        """
+        Returns all public top-level reviews for this review request.
+        """
+        return self.review_set.filter(public=True, base_reply_to__isnull=True)
+
     def update_from_changenum(self, changenum):
         """
         Updates this review request from the specified changeset's contents

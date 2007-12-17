@@ -90,8 +90,8 @@ def review_detail(request, review_request_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     draft = get_object_or_none(review_request.reviewrequestdraft_set)
-    reviews = review_request.review_set.filter(public=True,
-                                               base_reply_to__isnull=True)
+    reviews = review_request.get_public_reviews()
+
     for review in reviews:
         review.ordered_comments = \
             review.comments.order_by('filediff', 'first_line')

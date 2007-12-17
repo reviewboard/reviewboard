@@ -85,7 +85,7 @@ class SummaryColumn(Column):
         return summary
 
 
-class PendingReviewColumn(Column):
+class PendingCountColumn(Column):
     """
     A column used to show the pending number of review requests for a
     group or user.
@@ -96,6 +96,23 @@ class PendingReviewColumn(Column):
     def render_data(self, obj):
         return str(obj.reviewrequest_set.filter(public=True,
                                                 status='P').count())
+
+
+class ReviewCountColumn(Column):
+    """
+    A column showing the number of reviews for a review request.
+    """
+    def __init__(self, label=_("Reviews"), *args, **kwargs):
+        Column.__init__(self, label=label, *kwargs, **kwargs)
+        self.shrink = True
+        self.link = True
+        self.link_func = self.link_to_object
+
+    def render_data(self, review_request):
+        return str(review_request.get_public_reviews().count())
+
+    def link_to_object(self, review_request, value):
+        return "%s#last-review" % review_request.get_absolute_url()
 
 
 class ReviewRequestDataGrid(DataGrid):
@@ -123,6 +140,8 @@ class ReviewRequestDataGrid(DataGrid):
     last_updated_since = DateTimeSinceColumn(_("Last Updated"),
         field_name="last_updated", shrink=True,
         css_class=lambda r: ageid(r.last_updated))
+
+    review_count = ReviewCountColumn()
 
     def __init__(self, request, queryset, title):
         DataGrid.__init__(self, request, queryset, title)
@@ -210,10 +229,10 @@ class SubmitterDataGrid(DataGrid):
     """
     A datagrid showing a list of submitters.
     """
-    username        = Column(_("Username"), link=True, sortable=True)
-    fullname        = Column(_("Full Name"), field_name="get_full_name",
-                             link=True, expand=True)
-    pending_reviews = PendingReviewColumn(_("Pending Reviews"), shrink=True)
+    username      = Column(_("Username"), link=True, sortable=True)
+    fullname      = Column(_("Full Name"), field_name="get_full_name",
+                           link=True, expand=True)
+    pending_count = PendingCountColumn(_("Pending Reviews"), shrink=True)
 
     def __init__(self, request):
         DataGrid.__init__(self, request, User.objects.all(),
@@ -230,11 +249,11 @@ class GroupDataGrid(DataGrid):
     """
     A datagrid showing a list of review groups.
     """
-    star            = StarColumn()
-    name            = Column(_("Group ID"), link=True, sortable=True)
-    displayname     = Column(_("Group Name"), field_name="display_name",
-                             link=True, expand=True)
-    pending_reviews = PendingReviewColumn(_("Pending Reviews"), shrink=True)
+    star          = StarColumn()
+    name          = Column(_("Group ID"), link=True, sortable=True)
+    displayname   = Column(_("Group Name"), field_name="display_name",
+                           link=True, expand=True)
+    pending_count = PendingCountColumn(_("Pending Reviews"), shrink=True)
 
     def __init__(self, request, title=_("All groups")):
         DataGrid.__init__(self, request, Group.objects.all(), title)
