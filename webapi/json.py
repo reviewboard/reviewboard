@@ -632,6 +632,11 @@ def _set_draft_field_data(draft, field_name, data):
         invalid_entries = []
 
         for value in values:
+            # Prevent problems if the user leaves a trailing comma,
+            # generating an empty value.
+            if not value:
+                continue
+
             try:
                 if field_name == "target_groups":
                     obj = Group.objects.get(Q(name__iexact=value) |
