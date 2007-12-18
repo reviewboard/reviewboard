@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from djblets.util.db import ConcurrencyManager
+
 from reviewboard.reviews.models import Group, ReviewRequest
 
 
@@ -19,6 +21,12 @@ class ReviewRequestVisit(models.Model):
     user = models.ForeignKey(User, related_name="review_request_visits")
     review_request = models.ForeignKey(ReviewRequest, related_name="visits")
     timestamp = models.DateTimeField(_('last visited'), default=datetime.now)
+
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
+
+    class Meta:
+        unique_together = ("user", "review_request")
 
 
 class Profile(models.Model):

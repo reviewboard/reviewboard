@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.misc import get_object_or_none
-from djblets.util.db import QLeftOuterJoins
+from djblets.util.db import ConcurrencyManager, QLeftOuterJoins
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
@@ -37,7 +37,7 @@ class Group(models.Model):
     Each group can have an e-mail address associated with it, sending
     all review requests and replies to that address.
     """
-    name = models.SlugField(_("name"), max_length=64, blank=False)
+    name = models.SlugField(_("name"), max_length=64, blank=False, unique=True)
     display_name = models.CharField(_("display name"), max_length=64)
     mailing_list = models.EmailField(_("mailing list"), blank=True,
         help_text=_("The mailing list review requests and discussions "
@@ -133,7 +133,7 @@ class Screenshot(models.Model):
         list_display_links = ('thumb', 'caption')
 
 
-class ReviewRequestManager(models.Manager):
+class ReviewRequestManager(ConcurrencyManager):
     """
     A manager for review requests. Provides specialized queries to retrieve
     review requests with specific targets or origins, and to create review
@@ -231,7 +231,8 @@ class ReviewRequest(models.Model):
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
-                                            null=True, db_index=True)
+                                            null=True, db_index=True,
+                                            unique=True)
     repository = models.ForeignKey(Repository, verbose_name=_("repository"))
     email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
@@ -368,7 +369,7 @@ class ReviewRequestDraft(models.Model):
     """
     review_request = models.ForeignKey(ReviewRequest,
                                        verbose_name=_("review request"),
-                                       core=True)
+                                       core=True, unique=True)
     last_updated = ModificationTimestampField(_("last updated"))
     summary = models.CharField(_("summary"), max_length=300, core=True)
     description = models.TextField(_("description"))
@@ -397,6 +398,9 @@ class ReviewRequestDraft(models.Model):
         filter_interface=models.VERTICAL)
 
     submitter = property(lambda self: self.review_request.submitter)
+
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
 
     def get_bug_list(self):
         """
