@@ -158,8 +158,9 @@ class ReviewRequestDataGrid(DataGrid):
         if profile:
             self.show_submitted = profile.show_submitted
 
-        self.show_submitted = int(self.request.GET.get('show_submitted',
-                                                       self.show_submitted))
+        self.show_submitted = \
+            int(self.request.GET.get('show_submitted',
+                                     self.show_submitted)) != 0
 
         if self.show_submitted:
             self.queryset = self.queryset.filter(Q(status='P') | Q(status='S'))
