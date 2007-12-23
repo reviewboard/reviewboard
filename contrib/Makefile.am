@@ -2,10 +2,15 @@
 # embed the prefix into them so that a user can just point their web server at
 # the desired config file and it'll all work.
 rbdir = $(pyexecdir)/reviewboard/contrib
-nobase_rb_DATA =			\
-	conf/apache-fastcgi.conf	\
-	conf/apache-modpython.conf	\
-	conf/lighttpd.conf
+data_in_files =				\
+	conf/apache-fastcgi.conf.in	\
+	conf/apache-modpython.conf.in	\
+	conf/lighttpd.conf.in
+
+nobase_rb_DATA = $(data_in_files:.conf.in=.conf)
+%.conf:	%.conf.in
+	mkdir -p `dirname $@`
+	@sed -e "s|\@pythondir\@|$(pythondir)|g" -e "s|\@djangodir\@|$(DJANGO_PATH)|g" $< > $@
 
 # I decided, for now, *not* to include "development" scripts such as db2wiki.py
 # or django profiling tools.  We may change this later.
@@ -18,5 +23,11 @@ nobase_rb_SCRIPTS =			\
 	tools/post-review
 
 EXTRA_DIST =			\
-	$(nobase_rb_DATA)	\
+	$(data_in_files)	\
 	$(nobase_rb_SCRIPTS)
+
+BUILT_SOURCES =				\
+	conf/apache-fastcgi.conf	\
+	conf/apache-modpython.conf	\
+	conf/lighttpd.conf
+CLEANFILES = $(BUILT_SOURCES)

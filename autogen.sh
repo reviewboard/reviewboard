@@ -2,6 +2,7 @@
 
 DIE=0
 PACKAGE=reviewboard
+ACLOCAL_FLAGS="-I m4 $ACLOCAL_FLAGS"
 
 echo "Generating configuration files for $PACKAGE, please wait..."
 

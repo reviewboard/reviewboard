@@ -5,7 +5,6 @@ nobase_rb_PYTHON = \
 	email.py \
 	feeds.py \
 	forms.py \
-	json.py \
 	models.py \
 	tests.py \
 	urls.py \

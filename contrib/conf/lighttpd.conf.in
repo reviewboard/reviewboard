@@ -1,8 +1,3 @@
-#
-# lighttpd -D -f conf/lighttpd.conf
-# ./manage.py runfcgi daemonize=false socket=/var/run/reviewboard/django.sock pidfile=/var/run/reviewboard/django.pid
-#
-
 server.modules = (
     "mod_access",
     "mod_accesslog",
@@ -13,7 +8,7 @@ server.modules = (
 )
 
 # This is not used directly, it is superceded by our aliases below.
-server.document-root = "/root/reviewboard/htdocs"
+server.document-root = "@pythondir@/reviewboard/htdocs"
 server.errorlog      = "/var/log/reviewboard/lighttpd-error.log"
 accesslog.filename   = "/var/log/reviewboard/lighttpd-access.log"
 server.pid-file      = "/var/run/reviewboard/lighttpd.pid"
@@ -21,17 +16,18 @@ server.pid-file      = "/var/run/reviewboard/lighttpd.pid"
 fastcgi.server = (
     "/reviewboard.fcgi" => (
         "main" => (
-            "socket" => "/var/run/reviewboard/django.sock",
-            "check-local" => "disable",
+	    "host" => "127.0.0.1",
+	    "port" => 3033,
         )
     ),
 )
 
 alias.url = (
-    "/media" => "/usr/lib/python2.4/site-packages/django/contrib/admin/media",
-    "/css" => "/root/reviewboard/htdocs/css",
-    "/images" => "/root/reviewboard/htdocs/images",
-    "/scripts" => "/root/reviewboard/htdocs/scripts",
+    "/media" => "@djangodir@/contrib/admin/media",
+    "/css" => "@pythondir@/reviewboard/htdocs/css",
+    "/images" => "@pythondir@/reviewboard/htdocs/images",
+    "/scripts" => "@pythondir@/reviewboard/htdocs/scripts",
+    "/errordocs" => "@pythondir@/reviewboard/htdocs/errordocs",
 )
 
 url.rewrite-once = (
@@ -39,6 +35,7 @@ url.rewrite-once = (
     "^(/images/.*)$" => "$1",
     "^(/scripts/.*)$" => "$1",
     "^(/media/.*)$" => "$1",
+    "^(/errordocs/.*)$" => "$1",
     "^(/.*)$" => "/reviewboard.fcgi$1",
 )
 
