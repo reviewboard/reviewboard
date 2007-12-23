@@ -2,7 +2,7 @@
 	ServerName example.com
 	DocumentRoot @pythondir@/reviewboard/htdocs
 
-	# Errer handlers
+	# Error handlers
 	ErrorDocument 500 /errordocs/500.html
 
 	# Serve django pages
@@ -29,5 +29,5 @@
 	Alias /css @pythondir@/reviewboard/htdocs/css
 	Alias /images @pythondir@/reviewboard/htdocs/images
 	Alias /scripts @pythondir@/reviewboard/htdocs/scripts
-	Alias /errordocs/ @pythondir@/reviewboard/htdocs/errordocs
+	Alias /errordocs @pythondir@/reviewboard/htdocs/errordocs
 </VirtualHost>

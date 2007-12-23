@@ -1,29 +1,32 @@
 # TODO: locale isn't distributed yet, since we don't have any localizations
 # right now.  Once those are added, we should add it to here
-SUBDIRS =		\
-	accounts	\
-	contrib		\
-	diffviewer	\
-	htdocs		\
-	iphone		\
-	reports		\
-	reviews		\
-	scmtools	\
-	templates	\
-	utils		\
+SUBDIRS = \
+	accounts \
+	contrib \
+	diffviewer \
+	htdocs \
+	iphone \
+	reports \
+	reviews \
+	scmtools \
+	templates \
+	utils \
 	webapi
 
 rbdir = $(pyexecdir)/reviewboard
-rb_PYTHON =		\
-	__init__.py	\
-	settings.py	\
-	test.py		\
+rb_PYTHON = \
+	__init__.py \
+	settings.py \
+	test.py \
 	urls.py
 
-rb_SCRIPTS =		\
-	devserver.sh	\
-	manage.py	\
+rb_SCRIPTS = \
+	devserver.sh \
+	manage.py \
 	server.sh
+
+rb_DATA = \
+	settings_local.py.tmpl
 
 djbletsdir = $(pyexecdir)
 nobase_djblets_PYTHON = \
@@ -31,11 +34,9 @@ nobase_djblets_PYTHON = \
 	djblets/auth/__init__.py \
 	djblets/auth/forms.py \
 	djblets/auth/util.py \
-	djblets/datagrid/__init__.py
+	djblets/auth/views.py \
+	djblets/datagrid/__init__.py \
 	djblets/datagrid/grids.py \
-	djblets/datagrid/templates/paginator.html \
-	djblets/datagrid/templates/column_header.html \
-	djblets/datagrid/templates/listview.html \
 	djblets/datagrid/templatetags/__init__.py \
 	djblets/datagrid/templatetags/datagrid.py \
 	djblets/util/__init__.py \
@@ -44,4 +45,12 @@ nobase_djblets_PYTHON = \
 	djblets/util/misc.py \
 	djblets/util/testing.py
 
-EXTRA_DIST = $(rb_SCRIPTS)
+nobase_djblets_DATA = \
+	djblets/datagrid/templates/datagrid/paginator.html \
+	djblets/datagrid/templates/datagrid/column_header.html \
+	djblets/datagrid/templates/datagrid/listview.html
+
+EXTRA_DIST = \
+	$(rb_SCRIPTS) \
+	$(rb_DATA) \
+	$(nobase_djblets_DATA)
