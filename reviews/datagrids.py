@@ -124,8 +124,9 @@ class ReviewRequestDataGrid(DataGrid):
     """
     star         = StarColumn()
     summary      = SummaryColumn(expand=True, link=True, css_class="summary")
-    submitter    = Column(_("Submitter"), shrink=True, sortable=True,
-                          link=True, link_func=DataGrid.link_to_value)
+    submitter    = Column(_("Submitter"), db_field="auth_user.username",
+                          shrink=True, sortable=True, link=True,
+                          link_func=DataGrid.link_to_value)
 
     time_added   = DateTimeColumn(_("Posted"),
         format="F jS, Y, P", shrink=True,
