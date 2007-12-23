@@ -303,6 +303,48 @@ class ReviewRequest(models.Model):
 
         return self.review_set.get_empty_query_set()
 
+    def add_default_reviewers(self):
+        """
+        Add default reviewers to this review request based on the diffset.
+
+        This method goes through the DefaultReviewer objects in the database and
+        adds any missing reviewers based on regular expression comparisons with
+        the set of files in the diff.
+        """
+
+        if self.diffset_history.diffset_set.count() != 1:
+            return
+
+        diffset = self.diffset_history.diffset_set.get()
+
+        people = set()
+        groups = set()
+
+        # TODO: This is kind of inefficient, and could maybe be optimized in
+        # some fancy way.  Certainly the most superficial optimization that
+        # could be made would be to cache the compiled regexes somewhere.
+        files = diffset.files.all()
+        for default in DefaultReviewer.objects.all():
+            regex = re.compile(default.file_regex)
+
+            for filediff in files:
+                if regex.match(filediff.source_file or filediff.dest_file):
+                    for person in default.people.all():
+                        people.add(person)
+                    for group in default.groups.all():
+                        groups.add(group)
+                    break
+
+        existing_people = self.target_people.all()
+        for person in people:
+            if person not in existing_people:
+                self.target_people.add(person)
+
+        existing_groups = self.target_groups.all()
+        for group in groups:
+            if group not in existing_groups:
+                self.target_groups.add(group)
+
     def get_public_reviews(self):
         """
         Returns all public top-level reviews for this review request.

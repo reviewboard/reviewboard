@@ -95,6 +95,8 @@ class NewReviewRequestForm(forms.Form):
             self.errors['diff_path'] = forms.util.ErrorList([e])
             raise
 
+        review_request.add_default_reviewers()
+        review_request.save()
         return review_request
 
 

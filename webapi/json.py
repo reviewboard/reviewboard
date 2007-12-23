@@ -1049,7 +1049,12 @@ def new_diff(request, review_request_id):
         draft = _prepare_draft(request, review_request)
 
     draft.diffset = diffset
-    draft.add_default_reviewers();
+
+    # We only want to add default reviewers the first time.  Was bug 318.
+    print review_request.diffset_history.diffset_set.count()
+    if review_request.diffset_history.diffset_set.count() == 0:
+        draft.add_default_reviewers();
+
     draft.save()
 
     # E-mail gets sent when the draft is saved.
