@@ -66,10 +66,9 @@ def patch(diff, file, filename):
         return file
 
     # Prepare the temporary directory if none is available
-    if not tempfile.tempdir:
-        tempfile.tempdir = tempfile.mkdtemp(prefix='reviewboard.')
+    tempdir = tempfile.mkdtemp(prefix='reviewboard.')
 
-    (fd, oldfile) = tempfile.mkstemp()
+    (fd, oldfile) = tempfile.mkstemp(dir=tempdir)
     f = os.fdopen(fd, "w+b")
     f.write(convert_line_endings(file))
     f.close()
@@ -84,11 +83,12 @@ def patch(diff, file, filename):
 
     if failure:
         # FIXME: This doesn't provide any useful error report on why the patch
-        # failed to apply, which makes it hard to debug.
+        # failed to apply, which makes it hard to debug.  We might also want to
+        # have it clean up if DEBUG=False
         raise Exception(_("The patch to '%s' didn't apply cleanly. The temporary " +
                           "files have been left in '%s' for debugging purposes.\n" +
                           "`patch` returned: %s") %
-                        (filename, tempfile.tempdir, p.stdout.read()))
+                        (filename, tempdir, p.stdout.read()))
 
     f = open(newfile, "r")
     data = f.read()
@@ -96,6 +96,7 @@ def patch(diff, file, filename):
 
     os.unlink(oldfile)
     os.unlink(newfile)
+    os.rmdir(tempdir)
 
     return data
 
