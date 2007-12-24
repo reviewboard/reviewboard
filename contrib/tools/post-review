@@ -21,7 +21,8 @@ VERSION = "0.6"
 # Was it you?
 # >:(
 if 'USERPROFILE' in os.environ:
-    homepath = os.path.join(os.environ["USERPROFILE"], "UserData")
+    homepath = os.path.join(os.environ["USERPROFILE"], "Local Settings",
+                            "Application Data")
 else:
     homepath = os.environ["HOME"]
 
