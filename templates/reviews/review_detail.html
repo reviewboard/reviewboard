@@ -152,10 +152,8 @@
   <div class="posted_time">Posted {{review.timestamp|timesince}} ago ({{review.timestamp|date:"F jS, Y, P"}})</div>
  </div>
  <div class="body">
-  {% if review.body_top %}
    <pre class="body_top">{{review.body_top|escape}}</pre>
    {% reply_section review "" "body_top" "rcbt" %}
-  {% endif %}
 {% if review.comments.all or review.screenshot_comments.all %}
    <dl class="diff-comments">
 {% for comment in review.screenshot_comments.all %}
