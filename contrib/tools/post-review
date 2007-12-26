@@ -210,7 +210,7 @@ class ReviewBoardServer:
 
         if 'password' in debug_fields:
             debug_fields["password"] = "**************"
-        url = urljoin(self.url, path)
+        url = 'http://%s%s' % (self.url, path)
         debug('HTTP POSTing to %s: %s' % (url, debug_fields))
 
         content_type, body = self._encode_multipart_formdata(fields, files)
@@ -220,7 +220,7 @@ class ReviewBoardServer:
         }
 
         try:
-            r = urllib2.Request(urljoin(self.url, path), body, headers)
+            r = urllib2.Request(url, body, headers)
             data = urllib2.urlopen(r).read()
             cj.save(cookiefile)
             return data
@@ -460,7 +460,7 @@ class PerforceClient(SCMClient):
 
             where_info = execute('p4 -c %s where "%s"' % (client, depot_path))
 
-            m = re.match(r'%s \/\/.+ (.+)$' % depot_path, where_info)
+            m = re.match(r'\+?%s \/\/.+ (.+)$' % depot_path, where_info)
             if not m:
                 die("Unsupported line from p4 where: %s" % where_info)
 
@@ -499,6 +499,15 @@ class PerforceClient(SCMClient):
                 local_path = local_name[len(cwd) + 1:]
             else:
                 local_path = local_name
+
+            # Special handling for the output of the diff tool on binary files:
+            #     diff outputs "Files a and b differ"
+            # and the code below expects the outptu to start with
+            #     "Binary files "
+            if len(dl) == 1 and
+               dl[0] == 'Files %s and %s differ'% (old_file, new_file)
+                dl = ['Binary files %s and %s differ'% (old_file, new_file)]
+
 
             if dl == [] or dl[0].startswith("Binary files "):
                 if dl == []:
@@ -675,10 +684,12 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None):
             die("Your review request still exists, but the diff is not " +
                 "attached.")
 
+    review_url = 'http://%s/%s/%s/' % (server.url, "r", review_request['id'])
     print 'Review request posted.'
     print
-    print '%s/%s/' % (urljoin(server.url, "r"), review_request['id'])
-    sys.exit(0)
+    print review_url
+
+    return review_url
 
 
 def parse_options(tool, repository_info, args):
@@ -689,9 +700,10 @@ def parse_options(tool, repository_info, args):
     #parser.add_option("-p", "--publish",
     #                  action="store_true", dest="publish", default=False,
     #                  help="publish the review request immediately after submitting")
-    #parser.add_option("-o", "--open",
-    #                  action="store_true", dest="open_browser", default=False,
-    #                  help="open a web browser to the review request page")
+
+    parser.add_option("-o", "--open",
+                      action="store_true", dest="open_browser", default=False,
+                      help="open a web browser to the review request page")
 
     parser.add_option("--output-diff",
                       action="store_true", dest="output_diff_only",
@@ -804,7 +816,21 @@ def main(args):
     except IOError:
         server.login()
 
-    tempt_fate(server, tool, changenum, files, diff_content=diff)
+    review_url = tempt_fate(server, tool, changenum, files, diff_content=diff)
+
+    # Load the review up in the browser if requested to:
+    if options.open_browser == True:
+        try:
+            import webbrowser
+            if 'open_new_tab' in dir(webbrowser):
+                # open_new_tab is only in python 2.5+
+                webbrowser.open_new_tab(reviewUrl)
+            elif 'open_new' in dir(webbrowser):
+                webbrowser.open_new(reviewUrl)
+            else:
+                os.system( 'start %s' % reviewUrl )
+        except:
+            print 'Error opening review URL: %s' % reviewUrl
 
 
 if __name__ == "__main__":
