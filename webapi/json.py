@@ -127,7 +127,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
             }
         elif isinstance(o, ReviewRequest):
             if o.bugs_closed:
-                bugs_closed = [int(b.strip()) for b in o.bugs_closed.split(',')]
+                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
             else:
                 bugs_closed = ''
 
@@ -150,7 +150,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
             }
         elif isinstance(o, ReviewRequestDraft):
             if o.bugs_closed:
-                bugs_closed = [int(b.strip()) for b in o.bugs_closed.split(',')]
+                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
             else:
                 bugs_closed = ''
 
@@ -656,7 +656,7 @@ def _set_draft_field_data(draft, field_name, data):
             if data == '':
                 data = []
             else:
-                data = map(int, data.split(","))
+                data = [b.strip() for b in data.split(',')]
 
         return data, None
 
