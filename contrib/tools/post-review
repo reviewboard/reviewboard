@@ -504,8 +504,8 @@ class PerforceClient(SCMClient):
             #     diff outputs "Files a and b differ"
             # and the code below expects the outptu to start with
             #     "Binary files "
-            if len(dl) == 1 and
-               dl[0] == 'Files %s and %s differ'% (old_file, new_file)
+            if len(dl) == 1 and \
+               dl[0] == ('Files %s and %s differ'% (old_file, new_file)):
                 dl = ['Binary files %s and %s differ'% (old_file, new_file)]
 
 
