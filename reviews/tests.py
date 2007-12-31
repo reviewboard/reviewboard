@@ -270,6 +270,13 @@ class ViewTests(TestCase):
     def setUp(self):
         settings.REQUIRE_SITEWIDE_LOGIN = False
 
+    def getContextVar(self, response, varname):
+        for context in response.context:
+            if varname in context:
+                return context[varname]
+
+        return None
+
     def testReviewDetail0(self):
         """Testing review_detail redirect"""
         response = self.client.get('/r/1')
@@ -280,12 +287,7 @@ class ViewTests(TestCase):
         response = self.client.get('/r/1/')
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0] # Since multiple templates were used to
-                                      # render the page, this is a list with one
-                                      # element.  I dunno, ask the django
-                                      # developers why.
-        request = context['review_request']
-
+        request = self.getContextVar(response, 'review_request')
         self.assertEqual(request.submitter.username, 'doc')
         self.assertEqual(request.summary, 'Comments Improvements')
         self.assertEqual(request.description, '')
@@ -309,9 +311,7 @@ class ViewTests(TestCase):
         print response.content
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        request = context['review_request']
-
+        request = self.getContextVar(response, 'review_request')
         self.assertEqual(request.submitter.username, 'admin')
         self.assertEqual(request.summary, 'Add permission checking for JSON API')
         self.assertEqual(request.description,
@@ -363,20 +363,17 @@ class ViewTests(TestCase):
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        datagrid = context['datagrid']
-        rows = list(datagrid.rows())
-
-        self.assertEqual(len(rows), 5)
-        self.assertEqual(rows[0]['object'].summary,
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Made e-mail improvements')
-        self.assertEqual(rows[1]['object'].summary,
+        self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Improved login form')
-        self.assertEqual(rows[2]['object'].summary,
+        self.assertEqual(datagrid.rows[2]['object'].summary,
                          'Error dialog')
-        self.assertEqual(rows[3]['object'].summary,
+        self.assertEqual(datagrid.rows[3]['object'].summary,
                          'Update for cleaned_data changes')
-        self.assertEqual(rows[4]['object'].summary,
+        self.assertEqual(datagrid.rows[4]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -392,15 +389,12 @@ class ViewTests(TestCase):
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        datagrid = context['datagrid']
-        rows = list(datagrid.rows())
-
-        self.assertEqual(len(rows), 4)
-        self.assertEqual(rows[0]['object'].username, 'admin')
-        self.assertEqual(rows[1]['object'].username, 'doc')
-        self.assertEqual(rows[2]['object'].username, 'dopey')
-        self.assertEqual(rows[3]['object'].username, 'grumpy')
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 4)
+        self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
+        self.assertEqual(datagrid.rows[1]['object'].username, 'doc')
+        self.assertEqual(datagrid.rows[2]['object'].username, 'dopey')
+        self.assertEqual(datagrid.rows[3]['object'].username, 'grumpy')
 
     def testSubmitterListSitewideLogin(self):
         """Testing submitter_list view with site-wide login enabled"""
@@ -413,14 +407,12 @@ class ViewTests(TestCase):
         response = self.client.get('/groups/')
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        groups = context['group_list']
-
-        self.assertEqual(len(groups), 4)
-        self.assertEqual(groups[0].name, 'devgroup')
-        self.assertEqual(groups[1].name, 'emptygroup')
-        self.assertEqual(groups[2].name, 'newgroup')
-        self.assertEqual(groups[3].name, 'privgroup')
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 4)
+        self.assertEqual(datagrid.rows[0]['object'].name, 'devgroup')
+        self.assertEqual(datagrid.rows[1]['object'].name, 'emptygroup')
+        self.assertEqual(datagrid.rows[2]['object'].name, 'newgroup')
+        self.assertEqual(datagrid.rows[3]['object'].name, 'privgroup')
 
     def testGroupListSitewideLogin(self):
         """Testing group_list view with site-wide login enabled"""
@@ -435,18 +427,15 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'incoming'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        datagrid = context['datagrid']
-        rows = list(datagrid.rows())
-
-        self.assertEqual(len(rows), 4)
-        self.assertEqual(rows[0]['object'].summary,
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 4)
+        self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Made e-mail improvements')
-        self.assertEqual(rows[1]['object'].summary,
+        self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Update for cleaned_data changes')
-        self.assertEqual(rows[2]['object'].summary,
+        self.assertEqual(datagrid.rows[2]['object'].summary,
                          'Comments Improvements')
-        self.assertEqual(rows[3]['object'].summary,
+        self.assertEqual(datagrid.rows[3]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -458,16 +447,12 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'outgoing'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        datagrid = context['datagrid']
-        rows = list(datagrid.rows())
-
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]['object'].summary,
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
-
 
     def testDashboard3(self):
         """Testing dashboard view (to-me)"""
@@ -476,17 +461,14 @@ class ViewTests(TestCase):
         response = self.client.get('/dashboard/', {'view': 'to-me'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        datagrid = context['datagrid']
-        rows = list(datagrid.rows())
-
-        self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]['object'].summary, 'Made e-mail improvements')
-        self.assertEqual(rows[1]['object'].summary,
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 2)
+        self.assertEqual(datagrid.rows[0]['object'].summary,
+                         'Made e-mail improvements')
+        self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
-
 
     def testDashboard4(self):
         """Testing dashboard view (to-group devgroup)"""
@@ -497,13 +479,11 @@ class ViewTests(TestCase):
                                     'group': 'devgroup'})
         self.assertEqual(response.status_code, 200)
 
-        context = response.context[0]
-        datagrid = context['datagrid']
-        rows = list(datagrid.rows())
-
-        self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]['object'].summary,
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(len(datagrid.rows), 2)
+        self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Update for cleaned_data changes')
-        self.assertEqual(rows[1]['object'].summary, 'Comments Improvements')
+        self.assertEqual(datagrid.rows[1]['object'].summary,
+                         'Comments Improvements')
 
         self.client.logout()
