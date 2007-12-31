@@ -2,7 +2,7 @@ import re
 
 from django import template
 from django.template.loader import render_to_string
-from djblets.util.decorators import blocktag
+from djblets.util.decorators import basictag, blocktag
 
 from reviewboard.reviews.templatetags.reviewtags import humanize_list
 
@@ -11,24 +11,12 @@ register = template.Library()
 
 
 @register.tag
-def quoted_email(parser, token):
+@basictag(takes_context=True)
+def quoted_email(context, template_name):
     """
     Renders a specified template as a quoted reply, using the current context.
     """
-
-    class QuotedEmail(template.Node):
-        def __init__(self, template_name):
-            self.template_name = template_name
-
-        def render(self, context):
-            return quote_text(render_to_string(self.template_name, context))
-
-    try:
-        tag_name, template_name = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, "%r tag requires a template name"
-
-    return QuotedEmail(template_name)
+    return quote_text(render_to_string(template_name, context))
 
 
 @register.tag

@@ -6,7 +6,7 @@ from django.template import NodeList, TemplateSyntaxError, Variable, \
 from django.template.loader import render_to_string
 from django.template.defaultfilters import escape
 from django.utils import simplejson
-from djblets.util.decorators import blocktag
+from djblets.util.decorators import basictag, blocktag
 from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.models import Profile
@@ -86,54 +86,9 @@ def ifneatnumber(context, nodelist, rid):
     return s
 
 
-class CommentCounts(template.Node):
-    def __init__(self, filediff, interfilediff):
-        self.filediff = Variable(filediff)
-        self.interfilediff = Variable(interfilediff)
-
-    def render(self, context):
-        try:
-            filediff = self.filediff.resolve(context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid variable %s passed to commentcounts tag." % \
-                self.filediff
-
-        try:
-            interfilediff = self.interfilediff.resolve(context)
-        except VariableDoesNotExist:
-            interfilediff = None
-
-        comments = {}
-        user = context.get('user', None)
-
-        if interfilediff:
-            query = Comment.objects.filter(filediff=filediff,
-                                           interfilediff=interfilediff)
-        else:
-            query = Comment.objects.filter(filediff=filediff,
-                                           interfilediff__isnull=True)
-
-        for comment in query:
-            if comment.review_set.count() > 0:
-                review = comment.review_set.get()
-                if review.public or review.user == user:
-                    line = comment.first_line
-
-                    if not comments.has_key(line):
-                        comments[line] = []
-
-                    comments[line].append({
-                        'text': comment.text,
-                        'localdraft': review.user == user and \
-                                      not review.public,
-                    })
-
-        return simplejson.dumps(comments)
-
-
 @register.tag
-def commentcounts(parser, token):
+@basictag(takes_context=True)
+def commentcounts(context, filediff, interfilediff=None):
     """
     Returns a JSON array of current comments for a filediff.
 
@@ -146,55 +101,37 @@ def commentcounts(parser, token):
       localdraft  True if this is the current user's draft comment
       =========== ==================================================
     """
-    try:
-        tag_name, filediff, interfilediff = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires a filediff and interfilediff"
+    comments = {}
+    user = context.get('user', None)
 
-    return CommentCounts(filediff, interfilediff)
+    if interfilediff:
+        query = Comment.objects.filter(filediff=filediff,
+                                       interfilediff=interfilediff)
+    else:
+        query = Comment.objects.filter(filediff=filediff,
+                                       interfilediff__isnull=True)
 
+    for comment in query:
+        if comment.review_set.count() > 0:
+            review = comment.review_set.get()
+            if review.public or review.user == user:
+                line = comment.first_line
 
-class ScreenshotCommentCounts(template.Node):
-    def __init__(self, screenshot):
-        self.screenshot = Variable(screenshot)
+                if not comments.has_key(line):
+                    comments[line] = []
 
-    def render(self, context):
-        try:
-            screenshot = self.screenshot.resolve(context)
-        except VariableDoesNotExist:
-            raise template.TemplateSyntaxError, \
-                "Invalid variable %s passed to screenshotcommentcounts tag." % \
-                self.screenshot
+                comments[line].append({
+                    'text': comment.text,
+                    'localdraft': review.user == user and \
+                                  not review.public,
+                })
 
-        comments = {}
-        user = context.get('user', None)
-
-        for comment in screenshot.screenshotcomment_set.all():
-            if comment.review_set.count() > 0:
-                review = comment.review_set.get()
-                if review.public or review.user == user:
-                    position = '%dx%d+%d+%d' % (comment.w, comment.h, \
-                                                comment.x, comment.y)
-
-                    if not comments.has_key(position):
-                        comments[position] = []
-
-                    comments[position].append({
-                        'text': comment.text,
-                        'localdraft' : review.user == user and \
-                                       not review.public,
-                        'x' : comment.x,
-                        'y' : comment.y,
-                        'w' : comment.w,
-                        'h' : comment.h,
-                    })
-
-        return simplejson.dumps(comments)
+    return simplejson.dumps(comments)
 
 
 @register.tag
-def screenshotcommentcounts(parser, token):
+@basictag(takes_context=True)
+def screenshotcommentcounts(context, screenshot):
     """
     Returns a JSON array of current comments for a screenshot.
 
@@ -211,88 +148,35 @@ def screenshotcommentcounts(parser, token):
       h           The height of the comment's region
       =========== ==================================================
     """
-    try:
-        tag_name, screenshot = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires a screenshot"
+    comments = {}
+    user = context.get('user', None)
 
-    return ScreenshotCommentCounts(screenshot)
+    for comment in screenshot.screenshotcomment_set.all():
+        if comment.review_set.count() > 0:
+            review = comment.review_set.get()
+            if review.public or review.user == user:
+                position = '%dx%d+%d+%d' % (comment.w, comment.h, \
+                                            comment.x, comment.y)
 
+                if not comments.has_key(position):
+                    comments[position] = []
 
-class ReplyList(template.Node):
-    def __init__(self, review, comment, context_type, context_id):
-        self.review = Variable(review)
-        self.comment = Variable(comment)
-        self.context_type = Variable(context_type)
-        self.context_id = Variable(context_id)
+                comments[position].append({
+                    'text': comment.text,
+                    'localdraft' : review.user == user and \
+                                   not review.public,
+                    'x' : comment.x,
+                    'y' : comment.y,
+                    'w' : comment.w,
+                    'h' : comment.h,
+                })
 
-    def render(self, context):
-        def generate_reply_html(reply, timestamp, text):
-            return render_to_string('reviews/review_reply.html', {
-                'context_id': context_id,
-                'id': reply.id,
-                'review': review,
-                'timestamp': timestamp,
-                'text': text,
-                'reply_user': reply.user,
-                'draft': not reply.public
-            })
-
-        def process_body_replies(queryset, attrname, user):
-            if user.is_anonymous():
-                queryset = queryset.filter(Q(public=True))
-            else:
-                queryset = queryset.filter(Q(public=True) | Q(user=user))
-
-            s = ""
-            for reply_comment in queryset:
-                s += generate_reply_html(reply, reply.timestamp,
-                                         getattr(reply, attrname))
-
-            return s
-
-        if self.review != "":
-            review = self.review.resolve(context)
-
-        if self.comment != "":
-            comment = self.comment.resolve(context)
-
-        context_type = self.context_type.resolve(context)
-        context_id = self.context_id.resolve(context)
-
-        user = context.get('user', None)
-        if user.is_anonymous():
-            user = None
-
-        s = ""
-
-        if context_type == "comment" or context_type == "screenshot_comment":
-            for reply_comment in comment.public_replies(user):
-                s += generate_reply_html(reply_comment.review_set.get(),
-                                         reply_comment.timestamp,
-                                         reply_comment.text)
-        elif context_type == "body_top" or context_type == "body_bottom":
-            q = Q(public=True)
-
-            if user:
-                q = q | Q(user=user)
-
-            replies = getattr(review, "%s_replies" % context_type).filter(q)
-
-            for reply in replies:
-                s += generate_reply_html(reply, reply.timestamp,
-                                         getattr(reply, context_type))
-
-            return s
-        else:
-            raise TemplateSyntaxError, "Invalid context type passed"
-
-        return s
+    return simplejson.dumps(comments)
 
 
 @register.tag
-def reply_list(parser, token):
+@basictag(takes_context=True)
+def reply_list(context, review, comment, context_type, context_id):
     """
     Renders a list of comments of a specified type.
 
@@ -311,15 +195,58 @@ def reply_list(parser, token):
     The ``context_id`` parameter has to do with the internal IDs used by
     the JavaScript code for storing and categorizing the comments.
     """
+    def generate_reply_html(reply, timestamp, text):
+        return render_to_string('reviews/review_reply.html', {
+            'context_id': context_id,
+            'id': reply.id,
+            'review': review,
+            'timestamp': timestamp,
+            'text': text,
+            'reply_user': reply.user,
+            'draft': not reply.public
+        })
 
-    try:
-        tag_name, review, comment, context_type, context_id = \
-            token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag is missing one or more parameters"
+    def process_body_replies(queryset, attrname, user):
+        if user.is_anonymous():
+            queryset = queryset.filter(Q(public=True))
+        else:
+            queryset = queryset.filter(Q(public=True) | Q(user=user))
 
-    return ReplyList(review, comment, context_type, context_id)
+        s = ""
+        for reply_comment in queryset:
+            s += generate_reply_html(reply, reply.timestamp,
+                                     getattr(reply, attrname))
+
+        return s
+
+    user = context.get('user', None)
+    if user.is_anonymous():
+        user = None
+
+    s = ""
+
+    if context_type == "comment" or context_type == "screenshot_comment":
+        for reply_comment in comment.public_replies(user):
+            s += generate_reply_html(reply_comment.review_set.get(),
+                                     reply_comment.timestamp,
+                                     reply_comment.text)
+    elif context_type == "body_top" or context_type == "body_bottom":
+        q = Q(public=True)
+
+        if user:
+            q = q | Q(user=user)
+
+        replies = getattr(review, "%s_replies" % context_type).filter(q)
+
+        for reply in replies:
+            s += generate_reply_html(reply, reply.timestamp,
+                                     getattr(reply, context_type))
+
+        return s
+    else:
+        raise TemplateSyntaxError, "Invalid context type passed"
+
+    return s
 
 
 @register.inclusion_tag('reviews/review_reply_section.html',
@@ -500,20 +427,9 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
     return q.count() > 0
 
 
-class StarNode(template.Node):
-    def __init__(self, obj):
-        self.obj = Variable(obj)
-
-    def render(self, context):
-        user = context.get('user', None)
-        if user.is_anonymous():
-            return ""
-
-        return render_star(user, self.obj.resolve(context))
-
-
 @register.tag
-def star(parser, token):
+@basictag(takes_context=True)
+def star(context, obj):
     """
     Renders the code for displaying a star used for starring items.
 
@@ -524,13 +440,7 @@ def star(parser, token):
     The passed object must be either a :model:`reviews.ReviewRequest` or
     a :model:`reviews.Group`.
     """
-    try:
-        tag_name, obj = token.split_contents()
-    except ValueError:
-        raise template.TemplateSyntaxError, \
-            "%r tag requires an object" % tag_name
-
-    return StarNode(obj)
+    return render_star(context.get('user', None), obj)
 
 
 def render_star(user, obj):
@@ -538,6 +448,9 @@ def render_star(user, obj):
     Does the actual work of rendering the star. The star tag is a wrapper
     around this.
     """
+    if user.is_anonymous():
+        return ""
+
     try:
         profile = user.get_profile()
     except Profile.DoesNotExist:
