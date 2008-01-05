@@ -318,6 +318,7 @@ def dashboard_entry(context, level, text, view, group=None):
             count = len(review_requests)
 
     return {
+        'MEDIA_URL': settings.MEDIA_URL,
         'level': level,
         'text': text,
         'view': view,
