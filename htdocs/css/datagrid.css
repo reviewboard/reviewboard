@@ -34,7 +34,7 @@
 }
 
 .datagrid-header {
-  background: url("/images/ui/header_bg.png") repeat-x bottom left;
+  background: url("/images/djblets/datagrid/header_bg.png") repeat-x bottom left;
   border-top: 1px #999999 solid;
   border-bottom: 1px #999999 solid;
   border-right: 1px #CCCCCC solid;
@@ -69,7 +69,7 @@
 }
 
 .datagrid-header:hover {
-  background: url("/images/ui/header_bg_primary.png") repeat-x bottom left;
+  background: url("/images/djblets/datagrid/header_bg_primary.png") repeat-x bottom left;
 }
 
 .datagrid-header:hover a {
