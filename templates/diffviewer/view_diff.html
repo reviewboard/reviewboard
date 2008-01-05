@@ -6,18 +6,18 @@
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 {% block extrahead %}
-<link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
-<link rel="stylesheet" type="text/css" href="/css/reviews.css" />
-<link rel="stylesheet" type="text/css" href="/css/syntax.css" />
-<script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
-<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
-<script type="text/javascript" src="/scripts/rb/common.js"></script>
-<script type="text/javascript" src="/scripts/rb/dialogs.js"></script>
-<script type="text/javascript" src="/scripts/rb/widgets.js"></script>
-<script type="text/javascript" src="/scripts/comments.js"></script>
-<script type="text/javascript" src="/scripts/diffviewer.js"></script>
-<script type="text/javascript" src="/scripts/reviews.js"></script>
-<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/diffviewer.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/reviews.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/syntax.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/yui-ui.css" />
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/utilities/utilities.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/common.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/dialogs.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/widgets.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/comments.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/diffviewer.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/reviews.js"></script>
 <script type="text/javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gReviewRequestId = '{{review_request.id}}';
@@ -41,14 +41,14 @@
 
 {% ifneatnumber review_request.id %}
 {%  box "yay" %}
- <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
+ <img src="{{MEDIA_URL}}images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
  <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
 
 {% box "review-request" %}
 <ul id="topcontrols">
- <li><a href="{{review_request.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+ <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
 </ul>
 <div class="main">
 {% include "reviews/review_request_box.html" %}
@@ -143,9 +143,9 @@
 {% if user.is_authenticated %}<li><a href="#" onClick="showReviewDlg();" id="review-link">{% trans "Review" %}</a></li>{% endif %}
  <li><a href="raw/"> {% trans "Download Patch" %}</a></li>
 {% if collapseall %}
- <li><a href=".?expand=1"><img src="/images/expand.png" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
+ <li><a href=".?expand=1"><img src="{{MEDIA_URL}}images/expand.png" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
 {% else %}
- <li><a href=".?collapse=1"><img src="/images/collapse.png" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
+ <li><a href=".?collapse=1"><img src="{{MEDIA_URL}}images/collapse.png" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
 {% endif %}
 </ul>
 {% endwith %}

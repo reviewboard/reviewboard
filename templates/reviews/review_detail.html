@@ -7,22 +7,22 @@
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 {% block extrahead %}
 <meta content="no-cache" http-equiv="pragma" />
-<link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
-<link rel="stylesheet" type="text/css" href="/css/reviews.css" />
-<link rel="stylesheet" type="text/css" href="/css/syntax.css" />
-<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
-<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/animation/animation-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/autocomplete/autocomplete-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
-<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
-<script type="text/javascript" src="/scripts/rb/common.js"></script>
-<script type="text/javascript" src="/scripts/rb/dialogs.js"></script>
-<script type="text/javascript" src="/scripts/rb/widgets.js"></script>
-<script type="text/javascript" src="/scripts/reviews.js"></script>
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/diffviewer.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/reviews.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/syntax.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/yui-ui.css" />
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/animation/animation-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/autocomplete/autocomplete-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/utilities/utilities.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/common.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/dialogs.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/widgets.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/reviews.js"></script>
 <script type="text/javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gUserURL = "{{user.get_absolute_url}}";
@@ -35,7 +35,7 @@
 {% block content %}
 {% ifneatnumber review_request.id %}
 {%  box "yay" %}
- <img src="/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
+ <img src="{{MEDIA_URL}}images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
  <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
@@ -85,7 +85,7 @@
 {% box "review-request" %}
 <ul id="topcontrols">
 {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %}
- <li><a href="diff/#index_header"><img src="/images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+ <li><a href="diff/#index_header"><img src="{{MEDIA_URL}}images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
 {% endif %}
 </ul>
 <div class="main">
@@ -93,7 +93,7 @@
 </div>
 <ul class="controls">
 {% if perms.reviews.delete_reviewrequest %}
- <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="/images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
+ <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="{{MEDIA_URL}}images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
 {% endif %}
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
 {%  if review_request.public %}
@@ -104,11 +104,11 @@
 {%  endif %}
 {% endifuserorperm %}
 {% ifequal request.user review_request.submitter %}
- <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %} {% trans "Update Attached Diff" %}{% else %} Attach Diff{% endif %}</a></li>
- <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="/images/upload.png" width="14" height="14" border="0" alt="" /> Attach Screenshot</a></li>
+ <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %} {% trans "Update Attached Diff" %}{% else %} Attach Diff{% endif %}</a></li>
+ <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="{{MEDIA_URL}}images/upload.png" width="14" height="14" border="0" alt="" /> Attach Screenshot</a></li>
 {% endifequal %}
 {% ifequal request.user review_request.submitter %}
- <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="/images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
+ <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="{{MEDIA_URL}}images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
 {% endifequal %}
 </ul>
 {% ifequal request.user review_request.submitter %}

@@ -5,16 +5,16 @@
 
 {% block title %}Screenshot{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
 {% block extrahead %}
-<link rel="stylesheet" type="text/css" href="/css/yui-ui.css" />
-<link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
-<link rel="stylesheet" type="text/css" href="/css/reviews.css" />
-<script type="text/javascript" src="/scripts/yui/utilities/utilities.js"></script>
-<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
-<script language="javascript" src="/scripts/rb/common.js"></script>
-<script language="javascript" src="/scripts/rb/widgets.js"></script>
-<script language="javascript" src="/scripts/comments.js"></script>
-<script type="text/javascript" src="/scripts/diffviewer.js"></script>
-<script language="javascript" src="/scripts/screenshots.js"></script>
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/yui-ui.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/diffviewer.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/reviews.css" />
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/utilities/utilities.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui-ext/yui-ext.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}scripts/rb/common.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}scripts/rb/widgets.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}scripts/comments.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/diffviewer.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}scripts/screenshots.js"></script>
 <script language="javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gReviewRequestId = '{{review_request.id}}';
@@ -27,7 +27,7 @@
 {% block content %}
 {% box "review-request"%}
  <ul id="topcontrols">
-  <li><a href="{{review_request.get_absolute_url}}"><img src="/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+  <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
  </ul>
  <div class="main">
   <h1 id="summary"><a href="{{review_request.get_absolute_url}}">{{review_request.summary}}</a></h1>

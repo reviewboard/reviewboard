@@ -2,12 +2,12 @@
 {% load htmlutils %}
 {% block title %}New Review Request{% endblock %}
 {% block extrahead %}
-<link rel="stylesheet" type="text/css" href="/css/diffviewer.css" />
-<link rel="stylesheet" type="text/css" href="/css/reviews.css" />
-<script type="text/javascript" src="/scripts/yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/event/event-min.js"></script>
-<script type="text/javascript" src="/scripts/yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="/scripts/yui-ext/yui-ext.js"></script>
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/diffviewer.css" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/reviews.css" />
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/event/event-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}scripts/yui-ext/yui-ext.js"></script>
 <script type="text/javascript">
 var fields = ["changenum", "basedir", "diff_path"];
 var visible = {{fields|safe}};
