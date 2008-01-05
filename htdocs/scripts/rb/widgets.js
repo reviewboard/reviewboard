@@ -97,7 +97,7 @@ RB.widgets.InlineEditor = function(config) {
                                                      this.autocomplete, {
             animVert: false,
             animHoriz: false,
-            typeAhead: true,
+            typeAhead: false,
             allowBrowserAutocomplete: false,
             prehighlightClassName: "yui-ac-prehighlight",
             delimChar: [",", " "],
