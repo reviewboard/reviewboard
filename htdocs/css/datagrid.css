@@ -16,12 +16,6 @@
   text-decoration: none;
 }
 
-.datagrid th {
-  padding: 4px;
-  text-align: left;
-  white-space: nowrap;
-}
-
 .datagrid th.day {
   background: #E9E9E9;
   border-bottom: 1px #999999 solid;
@@ -39,25 +33,34 @@
   background-color: #d4e0f3;
 }
 
-.datagrid-headers th {
+.datagrid-header {
   background: url("/images/ui/header_bg.png") repeat-x bottom left;
   border-top: 1px #999999 solid;
   border-bottom: 1px #999999 solid;
   border-right: 1px #CCCCCC solid;
   color: black;
   cursor: pointer;
+  font-weight: bold;
+  padding: 4px;
+  text-align: left;
+  white-space: nowrap;
 }
 
-.datagrid-headers th a {
+.datagrid-header-drag {
+  border: 1px #999999 solid;
+  border-top: 0;
+}
+
+.datagrid-header a {
   color: black;
   text-decoration: none;
 }
 
-.datagrid-headers th a.unsort {
+.datagrid-header a.unsort {
   color: #444444;
 }
 
-.datagrid-headers th a:hover {
+.datagrid-header a:hover {
   text-decoration: underline;
 }
 
@@ -65,16 +68,20 @@
   background-color: transparent;
 }
 
-.datagrid-headers th:hover {
+.datagrid-header:hover {
   background: url("/images/ui/header_bg_primary.png") repeat-x bottom left;
 }
 
-.datagrid-headers th:hover a {
+.datagrid-header:hover a {
   text-decoration: underline;
 }
 
-.datagrid-headers img {
+.datagrid-header img {
   vertical-align: middle;
+}
+
+.edit-columns {
+  width: 1.2em;
 }
 
 
@@ -230,4 +237,42 @@
 
 .datagrid td.summary {
   cursor: pointer;
+}
+
+.datagrid-menu {
+  background: #F0F0F0;
+  border-left: 1px #303030 solid;
+  border-bottom: 1px #303030 solid;
+  margin: 0;
+  padding: 2px 4px;
+}
+
+.datagrid-menu td {
+  margin: 2px;
+}
+
+.datagrid-menu td a {
+  color: black;
+  text-decoration: none;
+}
+
+.datagrid-menu td img {
+  vertical-align: bottom;
+}
+
+.datagrid-menu-checkbox {
+  border: 1px #C0C0C0 solid;
+  font-size: 120%;
+  height: 1.2em;
+  text-align: center;
+  width: 1.2em;
+}
+
+.datagrid-menu tr:hover .datagrid-menu-checkbox {
+  background: #E0E0E0;
+  cursor: pointer;
+}
+
+.datagrid-menu tr:hover .datagrid-menu-label {
+  text-decoration: underline;
 }

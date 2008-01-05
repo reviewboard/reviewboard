@@ -24,6 +24,7 @@ class StarColumn(Column):
         self.image_width = 16
         self.image_height = 15
         self.image_alt = "Starred"
+        self.detailed_label = "Starred"
         self.shrink = True
 
     def render_data(self, obj):
@@ -41,6 +42,7 @@ class NewUpdatesColumn(Column):
         self.image_width = 18
         self.image_height = 16
         self.image_alt = "New Updates"
+        self.detailed_label = "New Updates"
         self.shrink = True
 
     def render_data(self, review_request):
@@ -102,8 +104,11 @@ class ReviewCountColumn(Column):
     """
     A column showing the number of reviews for a review request.
     """
-    def __init__(self, label=_("Reviews"), *args, **kwargs):
-        Column.__init__(self, label=label, *kwargs, **kwargs)
+    def __init__(self, label=_("Reviews"),
+                 detailed_label=_("Number of Reviews"),
+                 *args, **kwargs):
+        Column.__init__(self, label=label, detailed_label=detailed_label,
+                        *kwargs, **kwargs)
         self.shrink = True
         self.link = True
         self.link_func = self.link_to_object
@@ -129,6 +134,7 @@ class ReviewRequestDataGrid(DataGrid):
                           link_func=DataGrid.link_to_value)
 
     time_added   = DateTimeColumn(_("Posted"),
+        detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
         css_class=lambda r: ageid(r.time_added))
     last_updated = DateTimeColumn(_("Last Updated"),
@@ -136,9 +142,11 @@ class ReviewRequestDataGrid(DataGrid):
         css_class=lambda r: ageid(r.last_updated))
 
     time_added_since = DateTimeSinceColumn(_("Posted"),
+        detailed_label=_("Posted Time (Relative)"),
         field_name="time_added", shrink=True,
         css_class=lambda r: ageid(r.time_added))
     last_updated_since = DateTimeSinceColumn(_("Last Updated"),
+        detailed_label=_("Last Updated (Relative)"),
         field_name="last_updated", shrink=True,
         css_class=lambda r: ageid(r.last_updated))
 
