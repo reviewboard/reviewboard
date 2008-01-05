@@ -32,6 +32,29 @@ class StarColumn(Column):
         return render_star(self.datagrid.request.user, obj)
 
 
+class ShipItColumn(Column):
+    """
+    A column used to indicate whether someone has marked this review request
+    as "Ship It!"
+    """
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, *args, **kwargs)
+        self.image_url = settings.MEDIA_URL + "images/shipit.png"
+        self.image_width = 16
+        self.image_height = 16
+        self.image_alt = "Ship It!"
+        self.detailed_label = "Ship It!"
+        self.shrink = True
+
+    def render_data(self, review_request):
+        if review_request.get_public_reviews().filter(ship_it=True).count() > 0:
+            return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
+                (self.image_url, self.image_width, self.image_height,
+                 self.image_alt)
+
+        return ""
+
+
 class NewUpdatesColumn(Column):
     """
     A column used to indicate whether the review request has any new updates
@@ -129,6 +152,7 @@ class ReviewRequestDataGrid(DataGrid):
     submitted review requests to be filtered out or displayed.
     """
     star         = StarColumn()
+    ship_it      = ShipItColumn()
     summary      = SummaryColumn(expand=True, link=True, css_class="summary")
     submitter    = Column(_("Submitter"), db_field="auth_user.username",
                           shrink=True, sortable=True, link=True,
