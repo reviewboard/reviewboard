@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.template import Template
@@ -20,7 +21,7 @@ class StarColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = "/images/star_on.png"
+        self.image_url = settings.MEDIA_URL + "images/star_on.png"
         self.image_width = 16
         self.image_height = 15
         self.image_alt = "Starred"
@@ -38,7 +39,7 @@ class NewUpdatesColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = "/images/convo.png"
+        self.image_url = settings.MEDIA_URL + "images/convo.png"
         self.image_width = 18
         self.image_height = 16
         self.image_alt = "New Updates"

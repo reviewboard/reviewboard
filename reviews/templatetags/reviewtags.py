@@ -1,4 +1,5 @@
 from django import template
+from django.conf import settings
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.template import NodeList, TemplateSyntaxError, Variable, \
@@ -481,4 +482,5 @@ def render_star(user, obj):
         'object': obj_info,
         'starred': int(starred),
         'user': user,
+        'MEDIA_URL': settings.MEDIA_URL,
     })
