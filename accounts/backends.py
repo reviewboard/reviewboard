@@ -18,6 +18,8 @@ class NISBackend:
             if original_crypted == new_crypted:
                 return self.get_or_create_user(username, passwd)
         except nis.error:
+            # FIXME I'm not sure under what situations this would fail (maybe if
+            # their NIS server is down), but it'd be nice to inform the user.
             pass
 
     def get_or_create_user(self, username, passwd=None):
