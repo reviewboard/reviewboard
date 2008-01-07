@@ -210,7 +210,9 @@ class ReviewBoardServer:
 
         if 'password' in debug_fields:
             debug_fields["password"] = "**************"
-        url = 'http://%s%s' % (self.url, path)
+        url = '%s%s' % (self.url, path)
+        if url[0:4] != 'http':
+            url = 'http://%s' % url
         debug('HTTP POSTing to %s: %s' % (url, debug_fields))
 
         content_type, body = self._encode_multipart_formdata(fields, files)
