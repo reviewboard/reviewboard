@@ -5,7 +5,8 @@ rbdir = $(pyexecdir)/reviewboard/contrib
 data_in_files =				\
 	conf/apache-fastcgi.conf.in	\
 	conf/apache-modpython.conf.in	\
-	conf/lighttpd.conf.in
+	conf/lighttpd.conf.in		\
+	conf/search-cron.conf.in
 
 nobase_rb_DATA = $(data_in_files:.conf.in=.conf)
 %.conf:	%.conf.in
@@ -29,5 +30,6 @@ EXTRA_DIST =			\
 BUILT_SOURCES =				\
 	conf/apache-fastcgi.conf	\
 	conf/apache-modpython.conf	\
-	conf/lighttpd.conf
+	conf/lighttpd.conf		\
+	conf/search-cron.conf
 CLEANFILES = $(BUILT_SOURCES)

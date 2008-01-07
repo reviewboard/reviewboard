@@ -37,18 +37,26 @@
      <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">{% trans "Report bug" %}</a></li>
     </ul>
    </div>
-   <div id="navbar-outer">
-    <ul id="navbar">
+   <form method="get" action="/r/search">
+    <div id="navbar-outer">
+     <ul id="navbar">
 {% if user.is_authenticated %}
-     <li><a href="/dashboard/">{% trans "My Dashboard" %}</a></li>
-     <li><a href="/r/new/">{% trans "New Review Request" %}</a></li>
-     <li>-</li>
+      <li><a href="/dashboard/">{% trans "My Dashboard" %}</a></li>
+      <li><a href="/r/new/">{% trans "New Review Request" %}</a></li>
+      <li>-</li>
 {% endif %}
-     <li><a href="/r/">{% trans "All review requests" %}</a></li>
-     <li><a href="/groups/">{% trans "Groups" %}</a></li>
-     <li><a href="/users/">{% trans "Submitters" %}</a></li>
-    </ul>
-   </div>
+      <li><a href="/r/">{% trans "All review requests" %}</a></li>
+      <li><a href="/groups/">{% trans "Groups" %}</a></li>
+      <li><a href="/users/">{% trans "Submitters" %}</a></li>
+      {% ifsettings "ENABLE_SEARCH" %}
+      <li id="searchbar">
+      <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
+       <input type="submit" value="Search" />
+      </li>
+      {% endifsettings %}
+     </ul>
+    </div>
+   </form>
    <div id="content">
 {% block content %}{% endblock %}
    </div>

@@ -528,3 +528,45 @@ def view_screenshot(request, review_request_id, screenshot_id,
         'diffset': diffset,
         'comments': comments,
     }))
+
+def search(request, template_name='reviews/search.html'):
+    query = request.GET.get('q', '')
+
+    if not settings.ENABLE_SEARCH:
+        # FIXME: show something useful
+        raise Http404
+
+    if not query:
+        # FIXME: I'm not super thrilled with this
+        return HttpResponseRedirect('/')
+
+    import lucene
+
+    # We may have already initialized lucene
+    try:
+        lucene.initVM(lucene.CLASSPATH)
+    except ValueError:
+        pass
+
+    store = lucene.FSDirectory.getDirectory(settings.SEARCH_INDEX, False)
+    try:
+        searcher = lucene.IndexSearcher(store)
+    except lucene.JavaError, e:
+        # FIXME: show a useful error
+        raise e
+
+    parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
+    result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id')) \
+                  for hit in searcher.search(parser.parse(query))]
+
+    searcher.close()
+
+    results = ReviewRequest.objects.filter(id__in=result_ids)
+
+    return object_list(request=request,
+                       queryset=results,
+                       paginate_by=10,
+                       template_name=template_name,
+                       extra_context={'query': query,
+                                      'extra_query': 'q=%s' % query,
+                                     })

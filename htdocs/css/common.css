@@ -328,6 +328,12 @@ form table td {
   text-decoration: none;
 }
 
+#searchbar {
+  position: absolute;
+  right: 0;
+  margin-top: -3px;
+}
+
 #navbar .newreviewrequest {
   text-align: right;
 }

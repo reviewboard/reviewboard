@@ -58,6 +58,14 @@ def check_dependencies():
             dependency_error('The Pygments library is required when ' +
                              'DIFF_SYNTAX_HIGHLIGHTING is enabled.')
 
+    # PyLucene
+    if settings.ENABLE_SEARCH:
+        try:
+            import lucene
+        except ImportError:
+            dependency_error('PyLucene (with JCC) is required when '
+                             'ENABLE_SEARCH is set.')
+
     # The following checks are non-fatal warnings, since these dependencies are
     # merely recommended, not required.
     def dependency_warning(string):

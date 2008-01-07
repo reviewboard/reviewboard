@@ -137,6 +137,11 @@ DOMAIN_METHOD = "http"
 # a login.
 REQUIRE_SITEWIDE_LOGIN = False
 
+# Enable search. See the comment in settings_local.py for more information on
+# what's required to get this working.
+ENABLE_SEARCH = False
+SEARCH_INDEX = os.path.join(REVIEWBOARD_ROOT, 'search-index')
+
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
