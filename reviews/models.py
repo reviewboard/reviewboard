@@ -231,8 +231,7 @@ class ReviewRequest(models.Model):
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
-                                            null=True, db_index=True,
-                                            unique=True)
+                                            null=True, db_index=True)
     repository = models.ForeignKey(Repository, verbose_name=_("repository"))
     email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
