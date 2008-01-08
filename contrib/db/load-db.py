@@ -83,7 +83,11 @@ try:
         for line in f.xreadlines():
             if line[0] == "{":
                 for obj in serializers.deserialize("json", "[%s]" % line):
-                    obj.save()
+                    try:
+                        obj.save()
+                    except Exception, e:
+                        sys.stderr.write("Error: %s\n" % e)
+                        sys.stderr.write("Line %s: '%s'" % (i, line))
             elif line[0] != "#":
                 sys.stderr.write("Junk data on line %s" % i)
 
