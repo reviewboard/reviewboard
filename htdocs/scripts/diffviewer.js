@@ -61,6 +61,16 @@ var gActions = [
         onPress: function() { scrollToAnchor(gSelectedAnchor); }
     },
 
+    { // Previous comment
+        keys: "[",
+        onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD, true)); }
+    },
+
+    { // Next comment
+        keys: "]",
+        onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD, true)); }
+    },
+
     { // Go to header
         keys: "gu;",
         onPress: function() {}
@@ -795,7 +805,7 @@ function scrollToAnchor(anchor, noscroll) {
     return true;
 }
 
-function GetNextAnchor(dir) {
+function GetNextAnchor(dir, commentAnchors) {
     for (var anchor = gSelectedAnchor + dir; ; anchor = anchor + dir) {
         if (anchor < 0 || anchor >= gAnchors.length) {
             return INVALID;
@@ -805,7 +815,8 @@ function GetNextAnchor(dir) {
 
         if (name == "index_header" || name == "index_footer") {
             return INVALID;
-        } else if (name.substr(0, 4) != "file") {
+        } else if ((!commentAnchors && name.substr(0, 4) != "file") ||
+                   (commentAnchors && name.substr(0, 4) == "file")) {
             return anchor;
         }
     }
