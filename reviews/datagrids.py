@@ -251,7 +251,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
                 self.title = _(u"All Incoming Review Requests to My Groups")
         elif view == 'starred':
             self.queryset = \
-                user.get_profile().starred_self.queryset.public(user)
+                user.get_profile().starred_review_requests.public(user)
             self.title = _(u"Starred Review Requests")
         else: # "incoming" or invalid
             self.queryset = ReviewRequest.objects.to_user(user.username, user)
