@@ -24,7 +24,7 @@ function normalizeURL(url) {
         url = url.substring(0, i);
     }
 
-    if (url[url.length - 1] == "/") {
+    if (url.charAt(url.length - 1) == "/") {
         url = url.substring(0, url.length - 1);
     }
 
