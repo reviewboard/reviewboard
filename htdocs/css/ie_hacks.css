@@ -65,7 +65,7 @@ table.sidebyside th.controls {
 }
 
 /* IE can't seem to do fixed height for the two columns, so force a minimum. */
-#dashboard-main .main {
+#dashboard-main .datagrid-main {
   height: 35em;
 }
 
