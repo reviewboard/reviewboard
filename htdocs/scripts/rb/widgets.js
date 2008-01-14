@@ -7,6 +7,19 @@ RB.widgets = {}
 RB.widgets.InlineEditor = function(config) {
     YAHOO.ext.util.Config.apply(this, config);
 
+    /* Define our keymap so we can register it later. */
+    keymap = [{
+            key: [10, 13],
+            fn: this.onEnter,
+            scope: this
+        },
+        {
+            key: 27,
+            fn: this.onEscape,
+            scope: this
+        }
+    ];
+
     var dh = YAHOO.ext.DomHelper;
 
     this.el = getEl(this.el);
@@ -92,6 +105,12 @@ RB.widgets.InlineEditor = function(config) {
             style: 'float: right;'
         });
 
+        /*
+         * Do this before creating the AutoComplete so we can listen to
+         * the key presses first.
+         */
+        this.field.addKeyMap(keymap);
+
         var autoComp = new YAHOO.widget.AutoComplete(autoinput_id,
                                                      container_id,
                                                      this.autocomplete, {
@@ -111,6 +130,8 @@ RB.widgets.InlineEditor = function(config) {
             tag: 'input',
             type: 'text'
         });
+
+        this.field.addKeyMap(keymap);
     }
 
     if (this.showEditIcon) {
@@ -148,19 +169,6 @@ RB.widgets.InlineEditor = function(config) {
         this.el.on('click', this.startEdit, this, true);
     }
 
-    this.field.addKeyMap([
-        {
-            key: [10, 13],
-            fn: this.onEnter,
-            scope: this
-        },
-        {
-            key: 27,
-            fn: this.onEscape,
-            scope: this
-        }
-    ]);
-
     YAHOO.ext.EventManager.onWindowResize(this.fitWidthToParent, this, true);
 
     this.hide();
@@ -169,7 +177,7 @@ RB.widgets.InlineEditor = function(config) {
 YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
     onEnter: function(k, e) {
         if (!this.multiline || e.ctrlKey) {
-            this.save();
+            this.save(e);
         }
     },
 
