@@ -142,17 +142,6 @@ def attr(context, nodelist, attrname):
     return ' %s="%s"' % (attrname, content)
 
 
-@register.tag
-@blocktag
-def ifsettings(context, nodelist, setting):
-    """
-    Shows the enclosed value if the associated settings key evaluates to True.
-    """
-    if getattr(settings, setting, False):
-        return nodelist.render(context)
-    return ''
-
-
 @register.filter
 def escapespaces(value):
     """

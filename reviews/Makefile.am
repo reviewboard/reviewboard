@@ -9,6 +9,9 @@ nobase_rb_PYTHON = \
 	tests.py \
 	urls.py \
 	views.py \
+	management/__init__.py \
+	management/commands/__init__.py \
+	management/commands/index.py \
 	templatetags/__init__.py \
 	templatetags/emailtags.py \
 	templatetags/reviewtags.py

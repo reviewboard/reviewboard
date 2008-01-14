@@ -48,12 +48,12 @@
       <li><a href="/r/">{% trans "All review requests" %}</a></li>
       <li><a href="/groups/">{% trans "Groups" %}</a></li>
       <li><a href="/users/">{% trans "Submitters" %}</a></li>
-      {% ifsettings "ENABLE_SEARCH" %}
+      {% if settings.ENABLE_SEARCH %}
       <li id="searchbar">
       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
        <input type="submit" value="Search" />
       </li>
-      {% endifsettings %}
+      {% endif %}
      </ul>
     </div>
    </form>
