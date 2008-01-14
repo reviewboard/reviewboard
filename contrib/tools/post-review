@@ -158,6 +158,14 @@ class ReviewBoardServer:
                             {'path': {'filename': 'diff',
                                       'content': diff_content}})
 
+    def publish(self, review_request):
+        """
+        Publishes a review request.
+        """
+        debug("Publishing")
+        self.http_post(path='/r/%s/publish/' % review_request['id'],
+                       fields = {})
+
     def process_json(self, data):
         """
         Loads in a JSON file and returns the data if successful. On failure,
@@ -686,6 +694,9 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None):
             die("Your review request still exists, but the diff is not " +
                 "attached.")
 
+    if options.publish:
+        server.publish(review_request)
+
     review_url = 'http://%s/%s/%s/' % (server.url, "r", review_request['id'])
     print 'Review request posted.'
     print
@@ -698,15 +709,13 @@ def parse_options(tool, repository_info, args):
     parser = OptionParser(usage="%prog [-p] [-o] changenum",
                           version="%prog " + VERSION)
 
-    # TODO: Implement these options.
-    #parser.add_option("-p", "--publish",
-    #                  action="store_true", dest="publish", default=False,
-    #                  help="publish the review request immediately after submitting")
-
+    parser.add_option("-p", "--publish",
+                      action="store_true", dest="publish", default=False,
+                      help="publish the review request immediately after " +
+                           "submitting")
     parser.add_option("-o", "--open",
                       action="store_true", dest="open_browser", default=False,
                       help="open a web browser to the review request page")
-
     parser.add_option("--output-diff",
                       action="store_true", dest="output_diff_only",
                       default=False,
