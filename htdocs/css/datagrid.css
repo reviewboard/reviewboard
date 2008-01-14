@@ -262,10 +262,14 @@
 
 .datagrid-menu-checkbox {
   border: 1px #C0C0C0 solid;
-  font-size: 120%;
-  height: 1.2em;
-  text-align: center;
-  width: 1.2em;
+  height: 1.4em;
+  width: 1.4em;
+}
+
+.datagrid-menu-checkbox img {
+  display: block;
+  margin: 0 auto;
+  margin-top: 0.4em;
 }
 
 .datagrid-menu tr:hover .datagrid-menu-checkbox {
