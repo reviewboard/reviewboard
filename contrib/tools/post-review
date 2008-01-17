@@ -697,7 +697,11 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None):
     if options.publish:
         server.publish(review_request)
 
-    review_url = 'http://%s/%s/%s/' % (server.url, "r", review_request['id'])
+    review_url = '%s/%s/%s/' % (server.url, "r", review_request['id'])
+
+    if not review_url.startswith('http'):
+        review_url = 'http://%s' % review_url
+
     print 'Review request posted.'
     print
     print review_url
