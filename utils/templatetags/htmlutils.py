@@ -152,23 +152,6 @@ def escapespaces(value):
 
 
 @register.filter
-def linkify(value):
-    """
-    Creates hyperlinks from any URLs in the text.
-
-    Note that this does a blind search for URLs, and so is not safe to use on
-    text which may already have <a> tags.
-    """
-    def repl(match):
-        url = match.group(0)
-        return '<a href="%s">%s</a>' % (url, url)
-
-    return re.sub(r'((https?|ftp):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)',
-                  repl,
-                  value)
-
-
-@register.filter
 def humanize_list(value):
     """
     Humanizes a list of values, inserting commands and "and" where appropriate.
