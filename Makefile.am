@@ -47,9 +47,11 @@ nobase_djblets_PYTHON = \
 	djblets/util/testing.py
 
 nobase_djblets_DATA = \
-	djblets/datagrid/templates/datagrid/paginator.html \
+	djblets/datagrid/templates/datagrid/cell.html \
 	djblets/datagrid/templates/datagrid/column_header.html \
 	djblets/datagrid/templates/datagrid/listview.html \
+	djblets/datagrid/templates/datagrid/paginator.html \
+	djblets/media/images/datagrid/checkmark.png \
 	djblets/media/images/datagrid/header_bg.png \
 	djblets/media/images/datagrid/header_bg_primary.png \
 	djblets/media/images/datagrid/sort_asc_primary.png \
@@ -59,8 +61,10 @@ nobase_djblets_DATA = \
 	djblets/media/images/datagrid/unsort.png \
 	djblets/media/js/datagrid.js
 
-
 EXTRA_DIST = \
 	$(rb_SCRIPTS) \
 	$(rb_DATA) \
 	$(nobase_djblets_DATA)
+
+install-data-local:
+	mkdir -p -m 1777 ${DESTDIR}${rbdir}/search-index

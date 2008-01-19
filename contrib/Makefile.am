@@ -1,6 +1,3 @@
-# TODO: I'd like to make these .conf.in, and then process them with autoconf to
-# embed the prefix into them so that a user can just point their web server at
-# the desired config file and it'll all work.
 rbdir = $(pyexecdir)/reviewboard/contrib
 data_in_files =				\
 	conf/apache-fastcgi.conf.in	\

@@ -15,15 +15,15 @@ nobase_rb_PYTHON =			\
 nobase_rb_DATA =				\
 	testdata/foo				\
 	testdata/orig_src/foo.c			\
-	testdata/orig_src/README		\
 	testdata/orig_src/nuke_me		\
+	testdata/orig_src/README		\
 	testdata/orig_src/README.crlf		\
-	testdata/diffs/context/nuke_me.diff	\
 	testdata/diffs/context/foo.c.diff	\
+	testdata/diffs/context/nuke_me.diff	\
 	testdata/diffs/context/README.diff	\
 	testdata/diffs/context/README.crlf.diff	\
-	testdata/diffs/unified/nuke_me.diff	\
 	testdata/diffs/unified/foo.c.diff	\
+	testdata/diffs/unified/nuke_me.diff	\
 	testdata/diffs/unified/README.diff	\
 	testdata/diffs/unified/README.crlf.diff	\
 	testdata/new_src/foo.c			\
