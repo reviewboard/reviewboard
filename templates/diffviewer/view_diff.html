@@ -46,6 +46,8 @@
 {%  endbox %}
 {% endifneatnumber %}
 
+{% include "reviews/review_header.html" %}
+
 {% box "review-request" %}
 <ul id="topcontrols">
  <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
