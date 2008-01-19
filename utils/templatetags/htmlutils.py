@@ -1,6 +1,7 @@
 import datetime
 import Image
 import os
+import re
 
 from django import template
 from django.conf import settings
@@ -148,6 +149,23 @@ def escapespaces(value):
     HTML-escapes all spaces with ``&nbsp;`` and newlines with ``<br />``.
     """
     return value.replace('  ', '&nbsp; ').replace('\n', '<br />')
+
+
+@register.filter
+def linkify(value):
+    """
+    Creates hyperlinks from any URLs in the text.
+
+    Note that this does a blind search for URLs, and so is not safe to use on
+    text which may already have <a> tags.
+    """
+    def repl(match):
+        url = match.group(0)
+        return '<a href="%s">%s</a>' % (url, url)
+
+    return re.sub(r'((https?|ftp):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)',
+                  repl,
+                  value)
 
 
 @register.filter
