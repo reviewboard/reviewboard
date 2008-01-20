@@ -66,6 +66,10 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
             tag: 'ol',
             id: 'comments-list'
         }, true);
+        var dol = dh.overwrite(this.draftComment.dom, {
+            tag: 'ol',
+            id: 'draft-comments-list'
+        }, true);
         for (var commentnum in rsp.comments) {
             var comment = rsp.comments[commentnum];
 
@@ -81,7 +85,7 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
             if (comment.public) {
                 gRegionCommentTmpl.append(ol.dom, tmplData);
             } else {
-                gRegionCommentDraftTmpl.append(ol.dom, tmplData);
+                gRegionCommentDraftTmpl.append(dol.dom, tmplData);
             }
         }
         this.updateCommentCount();
@@ -161,8 +165,10 @@ YAHOO.extendX(ScreenshotCommentDialog, CommentDialog, {
 
     getCommentActionURL: function() {
         return this.getBaseURL() + '/s/' + gScreenshotId + '/comments/' +
-               this.commentBlock.w + 'x' + this.commentBlock.h + '+' +
-               this.commentBlock.x + '+' + this.commentBlock.y + '/';
+               Math.floor(this.commentBlock.w) + 'x' +
+               Math.floor(this.commentBlock.h) + '+' +
+               Math.floor(this.commentBlock.x) + '+' +
+               Math.floor(this.commentBlock.y) + '/';
     },
 
     closeDlg: function() {

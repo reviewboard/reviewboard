@@ -254,6 +254,45 @@ table.sidebyside .ew {
   color: #4e9a06;
 }
 
+#comment-dlg #draft-comments-list {
+  font-size: 90%;
+  margin: 0px;
+  padding: 0px;
+}
+
+#comment-dlg #draft-comments-list dd {
+  padding: 1em 0;
+}
+
+#comment-dlg #draft-comments-list dt {
+  margin-top: 0.5em;
+}
+
+#comment-dlg #draft-comments-list dt a {
+  color: #AB5603;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#comment-dlg #draft-comments-list dt span {
+  color: #487858;
+  font-weight: normal;
+}
+
+#comment-dlg #draft-comments-list li.comment {
+  border-top: 1px #cccccc solid;
+  margin-bottom: 0.4em;
+}
+
+#comment-dlg #draft-comments-list li.comment:first-child {
+  border-top: 0px;
+}
+
+#comment-dlg #draft-comments-list .draft dt a {
+  color: #4e9a06;
+}
+
 #comment-dlg #comment-status {
   color: black;
   float: left;

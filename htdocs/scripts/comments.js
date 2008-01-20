@@ -74,7 +74,7 @@ CommentDialog = function(el) {
 
     this.newCommentField = getEl('id_comment');
     this.commentActionField = getEl('id_comment_action');
-    this.existingComments = getEl('existing-comments');
+    this.draftComment = getEl('draft-comment');
     this.inlineEditor = null;
 
     this.commentButtons = [
@@ -102,6 +102,13 @@ CommentDialog = function(el) {
     this.bodyBottom = new RB.widgets.AutosizeTextArea('id_body_bottom', {
         autoGrowVertical: true
     });
+
+
+    /*
+     * Discussion Tab
+     */
+    this.discussionTab = tabs.getTab('tab-discussion');
+    this.existingComments = getEl('existing-comments');
 
 
     /*
@@ -284,10 +291,14 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
     },
 
     updateCommentCount: function() {
-        var count = this.existingComments.getChildrenByClassName("comment",
-                                                                 "li").length;
-        this.commentBlock.setCount(count);
-        this.commentsTab.setText("Comments (" + count + ")");
+        var existing =
+            this.existingComments.getChildrenByClassName("comment",
+                                                         "li").length
+        var draft =
+            this.draftComment.getChildrenByClassName("comment",
+                                                     "li").length;
+        this.commentBlock.setCount(existing + draft);
+        this.discussionTab.setText("Discussion (" + existing + ")");
     },
 
     postComment: function() {

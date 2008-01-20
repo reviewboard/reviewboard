@@ -146,16 +146,18 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
                                              this.commentBlock.localNumLines +
                                              " lines)";
             }
-            this.tabs.unhideTab('tab-comments')
+            this.tabs.unhideTab('tab-comments');
             this.tabs.activate('tab-comments');
+            this.tabs.unhideTam('tab-discussion');
         } else {
             if (this.commentBlock) {
                 this.checkEmptyCommentBlock();
             }
             this.commentBlock = null;
             this.updateReviewCommentsList();
-            this.tabs.hideTab('tab-comments')
+            this.tabs.hideTab('tab-comments');
             this.tabs.activate('tab-review');
+            this.tabs.hideTab('tab-discussion');
         }
     },
 
@@ -163,6 +165,10 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
         var ol = dh.overwrite(this.existingComments.dom, {
             tag: 'ol',
             id: 'comments-list'
+        }, true);
+        var dol = dh.overwrite(this.draftComment.dom, {
+            tag: 'ol',
+            id: 'draft-comments-list'
         }, true);
         for (var commentnum in rsp.comments) {
             var comment = rsp.comments[commentnum];
@@ -197,7 +203,7 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
             if (comment.public) {
                 gLineCommentTmpl.append(ol.dom, tmplData);
             } else {
-                gLineCommentDraftTmpl.append(ol.dom, tmplData);
+                gLineCommentDraftTmpl.append(dol.dom, tmplData);
             }
         }
         this.updateCommentCount();

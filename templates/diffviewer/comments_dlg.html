@@ -3,7 +3,7 @@
  <div class="ydlg-hd">{% trans "Comments" %}</div>
  <div class="ydlg-bd">
   <div id="tab-comments" class="ydlg-tab" title="{% trans "Comments" %}">
-   <div id="existing-comments"></div>
+   <div id="draft-comment"></div>
    <form id="commentform" class="comment draft" method="post" action="comments/">
 	<input type="hidden" name="action" id="id_comment_action" value="" />
 	<input type="hidden" name="num_lines" id="id_num_lines" value="" />
@@ -26,5 +26,9 @@
     <textarea id="id_body_bottom" name="body_bottom" rows="5" cols="20">{% if review %}{{review.body_bottom|escape}}{% endif %}</textarea>
    </div>
   </form>
+ </div>
+ <div id="tab-discussion" class="ydlg-tab" title="{% trans "Discussion" %}">
+  <div id="reply-hint"><i>{% trans "To reply to these comments, use 'Add Comment' on the Review Request page" %}</i></div>
+  <div id="existing-comments"></div>
  </div>
 </div>
