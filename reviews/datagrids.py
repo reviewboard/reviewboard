@@ -91,6 +91,8 @@ class SummaryColumn(Column):
 
     def render_data(self, review_request):
         summary = conditional_escape(review_request.summary)
+        if not summary:
+            summary = '&nbsp;<i>No Summary</i>'
 
         if review_request.submitter == self.datagrid.request.user:
             try:
