@@ -148,7 +148,7 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
             }
             this.tabs.unhideTab('tab-comments');
             this.tabs.activate('tab-comments');
-            this.tabs.unhideTam('tab-discussion');
+            this.tabs.unhideTab('tab-discussion');
         } else {
             if (this.commentBlock) {
                 this.checkEmptyCommentBlock();
