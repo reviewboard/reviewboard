@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.template import Template
 from django.template.context import RequestContext
+from django.template.defaultfilters import date, timesince
 from django.template.loader import render_to_string
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
@@ -144,6 +145,38 @@ class ReviewCountColumn(Column):
         return "%s#last-review" % review_request.get_absolute_url()
 
 
+class LastUpdatedColumn(DateTimeColumn):
+    """
+    A column which shows the date of the last change to the review request,
+    including reviews.
+    """
+
+    def find_date(self, review_request):
+        update = review_request.last_updated
+
+        reviews = review_request.get_public_reviews().order_by('-timestamp')
+        print update
+        for review in reviews:
+            print review, review.timestamp
+        if reviews.count() > 0:
+            review_date = reviews[0].timestamp
+            if review_date > update:
+                update = review_date
+        return update
+
+    def render_data(self, review_request):
+        return date(self.find_date(review_request), self.format)
+
+
+class LastUpdatedSinceColumn(LastUpdatedColumn):
+    """
+    A column which shows the date of the last change to the review request,
+    including reviews.
+    """
+    def render_data(self, review_request):
+        return _("%s ago") % timesince(self.find_date(review_request))
+
+
 class ReviewRequestDataGrid(DataGrid):
     """
     A datagrid that displays a list of review requests.
@@ -162,16 +195,23 @@ class ReviewRequestDataGrid(DataGrid):
         detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
         css_class=lambda r: ageid(r.time_added))
-    last_updated = DateTimeColumn(_("Last Updated"),
+    last_updated = LastUpdatedColumn(_("Last Updated"),
         format="F jS, Y, P", shrink=True,
+        css_class=lambda r: ageid(r.last_updated))
+    diff_updated = DateTimeColumn(_("Diff Updated"),
+        format="F jS, Y, P", shrink=True,
+        field_name="last_updated",
         css_class=lambda r: ageid(r.last_updated))
 
     time_added_since = DateTimeSinceColumn(_("Posted"),
         detailed_label=_("Posted Time (Relative)"),
         field_name="time_added", shrink=True,
         css_class=lambda r: ageid(r.time_added))
-    last_updated_since = DateTimeSinceColumn(_("Last Updated"),
-        detailed_label=_("Last Updated (Relative)"),
+    last_updated_since = LastUpdatedSinceColumn(_("Last Updated"),
+        detailed_label=_("Last Updated (Relative)"), shrink=True,
+        css_class=lambda r: ageid(r.last_updated))
+    diff_updated_since = DateTimeSinceColumn(_("Diff Updated"),
+        detailed_label=_("Diff Updated (Relative)"),
         field_name="last_updated", shrink=True,
         css_class=lambda r: ageid(r.last_updated))
 

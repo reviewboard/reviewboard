@@ -20,6 +20,11 @@
   var gReviewRequestId = '{{review_request.id}}';
   var gScreenshotId = '{{screenshot.id}}';
   {% if diffset %}var gRevision = '{{diffset.revision}}';{% else %}var gRevision = 'None';{% endif %}
+  {% if interdiffset %}
+   var gInterdiffRevision = '{{interdiffset.revision}}';
+  {% else %}
+   var gInterdiffRevision = null;
+  {% endif %}
   var gUserAuthenticated = {{user.is_authenticated|lower}};
 </script>
 {% endblock %}
