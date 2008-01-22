@@ -157,9 +157,6 @@ class LastUpdatedColumn(DateTimeColumn):
         update = review_request.last_updated
 
         reviews = review_request.get_public_reviews().order_by('-timestamp')
-        print update
-        for review in reviews:
-            print review, review.timestamp
         if reviews.count() > 0:
             review_date = reviews[0].timestamp
             if review_date > update:
