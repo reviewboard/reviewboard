@@ -16,7 +16,8 @@ class FileDiff(models.Model):
     """
     diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
                                 related_name='files',
-                                verbose_name=_("diff set"))
+                                verbose_name=_("diff set"),
+                                raw_id_admin=True)
 
     source_file = models.CharField(_("source file"), max_length=256, core=True)
     dest_file = models.CharField(_("destination file"), max_length=256,
@@ -59,7 +60,7 @@ class DiffSet(models.Model):
     revision = models.IntegerField(_("revision"), core=True)
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
-                                edit_inline=models.STACKED,
+                                raw_id_admin=True,
                                 verbose_name=_("diff set history"))
     repository = models.ForeignKey(Repository, verbose_name=_("repository"))
     diffcompat = models.IntegerField(

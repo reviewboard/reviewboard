@@ -245,7 +245,7 @@ class ReviewRequest(models.Model):
                                                     max_length=300, blank=True)
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         verbose_name=_('diff set history'),
-                                        blank=True)
+                                        blank=True, raw_id_admin=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(
         Group,
@@ -418,7 +418,8 @@ class ReviewRequestDraft(models.Model):
     """
     review_request = models.ForeignKey(ReviewRequest,
                                        verbose_name=_("review request"),
-                                       core=True, unique=True)
+                                       core=True, unique=True,
+                                       raw_id_admin=True)
     last_updated = ModificationTimestampField(_("last updated"))
     summary = models.CharField(_("summary"), max_length=300, core=True)
     description = models.TextField(_("description"))
@@ -426,7 +427,8 @@ class ReviewRequestDraft(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
-                                blank=True, null=True, core=False)
+                                blank=True, null=True, core=False,
+                                raw_id_admin=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
                                            verbose_name=_("target groups"),
@@ -639,14 +641,15 @@ class Comment(models.Model):
     A comment can belong to a single filediff or to an interdiff between
     two filediffs. It can also have multiple replies.
     """
-    filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'))
+    filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
+                                 raw_id_admin=True)
     interfilediff = models.ForeignKey(FileDiff,
                                       verbose_name=_('interdiff file'),
-                                      blank=True, null=True,
+                                      blank=True, null=True, raw_id_admin=True,
                                       related_name="interdiff_comments")
     reply_to = models.ForeignKey("self", blank=True, null=True,
                                  related_name="replies",
-                                 verbose_name=_("reply to"))
+                                 verbose_name=_("reply to"), raw_id_admin=True)
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     text = models.TextField(_("comment text"))
 
@@ -683,9 +686,15 @@ class Comment(models.Model):
     def __unicode__(self):
         return self.text
 
+    def truncate_text(self):
+        if len(self.text) > 60:
+            return self.text[0:57] + "..."
+        else:
+            return self.text
+
     class Admin:
-        list_display = ('text', 'filediff', 'first_line', 'num_lines',
-                        'timestamp')
+        list_display = ('truncate_text', 'filediff', 'first_line',
+                        'num_lines', 'timestamp')
         list_filter = ('timestamp',)
 
     class Meta:
@@ -696,10 +705,12 @@ class ScreenshotComment(models.Model):
     """
     A comment on a screenshot.
     """
-    screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'))
+    screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
+                                   raw_id_admin=True)
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
-                                 verbose_name=_("reply to"))
+                                 verbose_name=_("reply to"),
+                                 raw_id_admin=True)
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     text = models.TextField(_('comment text'))
 
