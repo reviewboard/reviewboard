@@ -425,6 +425,7 @@
 #discard-banner,
 #submitted-banner {
   background: #E0E0E0;
+  border: 1px #808080 solid;
 }
 
 
