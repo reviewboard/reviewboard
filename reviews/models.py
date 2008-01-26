@@ -458,7 +458,15 @@ class ReviewRequestDraft(models.Model):
         Returns a sorted list of bugs associated with this review request.
         """
         bugs = re.split(r"[, ]+", self.bugs_closed)
-        bugs.sort(cmp=lambda x,y: int(x) - int(y))
+
+        # First try a numeric sort, to show the best results for the majority
+        # case of bug trackers with numeric IDs.  If that fails, sort
+        # alphabetically.
+        try:
+            bugs.sort(cmp=lambda x,y: int(x) - int(y))
+        except ValueError:
+            bugs.sort()
+
         return bugs
 
     def __unicode__(self):
