@@ -8,6 +8,7 @@ try:
 except ImportError:
     pass
 
+from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
                                       Revision, HEAD, PRE_CREATION, \
@@ -242,6 +243,22 @@ class SubversionTests(unittest.TestCase):
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'binfile')
         self.assertEqual(file.binary, True)
+
+    def testKeywordDiff(self):
+        """Testing parsing SVN diff with keywords"""
+        # 'svn cat' will expand special variables in svn:keywords,
+        # but 'svn diff' doesn't expand anything.  This causes the
+        # patch to fail if those variables appear in the patch context.
+        diff = "Index: Makefile\n==========================================" + \
+               "=========================\n--- Makefile    (revision 3)\n++" + \
+               "+ Makefile    (working copy)\n@@ -1,4 +1,5 @@\n # $Id$\n+# " + \
+               "foo\n include ../tools/Makefile.base-vars\n NAME = misc-doc" + \
+               "s\n OUTNAME = svn-misc-docs\n"
+
+        filename = 'trunk/doc/misc-docs/Makefile'
+        rev = Revision('3')
+        file = self.tool.get_file(filename, rev)
+        newfile = patch(diff, file, filename) # Throws an exception!
 
 
 class PerforceTests(unittest.TestCase):
