@@ -97,10 +97,12 @@ CommentDialog = function(el) {
     ];
 
     this.bodyTop = new RB.widgets.AutosizeTextArea('id_body_top', {
-        autoGrowVertical: true
+        autoGrowVertical: true,
+        size: 10
     });
     this.bodyBottom = new RB.widgets.AutosizeTextArea('id_body_bottom', {
-        autoGrowVertical: true
+        autoGrowVertical: true,
+        size: 100
     });
 
 

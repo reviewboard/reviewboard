@@ -7,6 +7,8 @@ RB.widgets = {}
 RB.widgets.InlineEditor = function(config) {
     YAHOO.ext.util.Config.apply(this, config);
 
+    this.extraHeight = this.extraHeight || 100;
+
     /* Define our keymap so we can register it later. */
     keymap = [{
             key: [10, 13],
@@ -44,7 +46,7 @@ RB.widgets.InlineEditor = function(config) {
             html: this.value || ''
         });
 
-        var autoSizeArea = new RB.widgets.AutosizeTextArea(this.field, {
+        this.autoSizeArea = new RB.widgets.AutosizeTextArea(this.field, {
             autoGrowVertical: true
         });
 
@@ -265,11 +267,14 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
             var elHeight = this.el.getHeight();
             this.el.endMeasure();
 
+            var newHeight = elHeight + this.extraHeight;
+
             this.field.setStyle("overflow", "hidden");
             this.fitWidthToParent();
+            this.autoSizeArea.minHeight = newHeight;
             this.field.setHeight(elHeight);
-            this.field.setHeight(elHeight + 100, true, 0.35,
-            this.finishShow.createDelegate(this));
+            this.field.setHeight(newHeight, true, 0.35,
+                this.finishShow.createDelegate(this));
         } else {
             this.finishShow();
         }
@@ -377,14 +382,27 @@ YAHOO.extendX(RB.widgets.InlineCommaListEditor, RB.widgets.InlineEditor, {
 });
 
 
+/**
+ * A class designed to auto-size the specified text area to make room for
+ * the content. If requested, it will do this on every keyup event.
+ */
 RB.widgets.AutosizeTextArea = function(el, config) {
     YAHOO.ext.util.Config.apply(this, config);
 
     this.el = getEl(el);
     this.el.setStyle("overflow", "hidden");
 
-    this.size = parseFloat(this.el.getStyle('height') || '100');
-    this.resizeStep = this.resizeStep || 10;
+    /*
+     * This proxy element is used to measure the size of the content from
+     * our text area. We position it off the screen so that it's not visible,
+     * and we update it whenever we need to auto-size this text area.
+     * See autoSize() below for more information.
+     */
+    this.proxyEl = this.el.createProxy({tag: 'pre'}, this.el.dom.parentNode);
+    this.proxyEl.setAbsolutePositioned();
+    this.proxyEl.moveTo(-10000, -10000);
+
+    this.size = parseFloat(this.el.getStyle('height')) || 100;
     this.minHeight = this.minHeight || this.size;
 
     this.events = {
@@ -392,40 +410,38 @@ RB.widgets.AutosizeTextArea = function(el, config) {
     };
 
     if (this.autoGrowVertical) {
-        this.el.on('keyup', this.autoGrow, this, true);
-        this.autoGrow();
+        this.el.on('keyup', this.autoSize, this, true);
+        this.autoSize();
     }
 }
 
 YAHOO.extendX(RB.widgets.AutosizeTextArea, YAHOO.ext.util.Observable, {
-    autoGrow: function() {
-        this.shrink();
-        this.grow();
+    /**
+     * Auto-sizes this text area to match the content.
+     *
+     * This works by setting our proxy element to match the exact width
+     * of our text area and then filling it with text. The proxy element
+     * will grow to accommodate the content. We then set our text area
+     * to the resulting height.
+     */
+    autoSize: function() {
+        this.el.beginMeasure();
+        this.proxyEl.setWidth(this.el.getWidth(true));
+        this.el.endMeasure();
+
+        this.proxyEl.dom.innerHTML =
+            this.el.dom.value.htmlEncode().replace(/[\n]/g, "<br />&nbsp;");
+
+        this.proxyEl.beginMeasure();
+        var newHeight = Math.max(this.minHeight,
+                                 this.proxyEl.getHeight(true)
+                                 + this.el.getBorderWidth('tb')
+                                 + this.el.getPadding('tb'));
+        this.proxyEl.endMeasure();
+
+        this.el.setHeight(newHeight);
+
         this.fireEvent('resize', this);
-    },
-
-    shrink: function() {
-        if (this.size <= this.minHeight + this.resizeStep) {
-            return;
-        }
-
-        if (this.el.dom.scrollHeight <= this.el.dom.clientHeight) {
-            this.size -= 2;
-            this.el.setHeight(this.getHeight());
-            this.shrink();
-        }
-    },
-
-    grow: function() {
-        if (this.el.dom.scrollHeight > this.el.dom.clientHeight) {
-            this.size += 2;
-            this.el.setHeight(this.getHeight());
-            this.grow();
-        }
-    },
-
-    getHeight: function() {
-        return this.size + this.resizeStep;
     }
 });
 
