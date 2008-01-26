@@ -1040,22 +1040,26 @@ def new_diff(request, review_request_id):
             }
         })
 
+    discarded_diffset = None
+
     try:
         draft = review_request.reviewrequestdraft_set.get()
 
         if draft.diffset and draft.diffset != diffset:
-            draft.diffset.delete()
+            discarded_diffset = draft.diffset
     except ReviewRequestDraft.DoesNotExist:
         draft = _prepare_draft(request, review_request)
 
     draft.diffset = diffset
 
     # We only want to add default reviewers the first time.  Was bug 318.
-    print review_request.diffset_history.diffset_set.count()
     if review_request.diffset_history.diffset_set.count() == 0:
         draft.add_default_reviewers();
 
     draft.save()
+
+    if discarded_diffset:
+        discarded_diffset.delete()
 
     # E-mail gets sent when the draft is saved.
 
