@@ -1,5 +1,8 @@
+import time
+from sha import sha
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth.models import get_hexdigest
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
@@ -22,9 +25,17 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         form = PreferencesForm(request.POST)
 
         if form.is_valid():
+            if settings.BUILTIN_AUTH:
+                if form.cleaned_data['password1']:
+                    salt = sha(str(time.time())).hexdigest()[:5]
+                    hash = sha(salt + form.cleaned_data['password1'])
+                    newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
+                    request.user.password = newpassword
+
+                request.user.first_name = form.cleaned_data['first_name']
+                request.user.last_name = form.cleaned_data['last_name']
+                request.user.email = form.cleaned_data['email']
             request.user.group_set = form.cleaned_data['groups']
-            request.user.first_name = form.cleaned_data['first_name']
-            request.user.last_name = form.cleaned_data['last_name']
             request.user.save()
 
             profile.first_time_setup_done = True
@@ -36,9 +47,11 @@ def user_preferences(request, template_name='accounts/prefs.html'):
 
     else:
         form = PreferencesForm({
+            'settings': settings,
             'redirect_to': redirect_to,
             'first_name': request.user.first_name,
             'last_name': request.user.last_name,
+            'email': request.user.email,
             'syntax_highlighting': profile.syntax_highlighting,
             'groups': [g.id for g in request.user.group_set.all()],
         })

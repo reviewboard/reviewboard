@@ -23,6 +23,7 @@
  <h1 class="title">{% trans "User Preferences" %}</h1>
  <div class="main">
   <table>
+   {% if settings.BUILTIN_AUTH %}
    <tr>
     <td><label for="id_first_name">{% trans "First Name:" %}</label></td>
     <td>{{form.first_name}}</td>
@@ -31,6 +32,19 @@
     <td><label for="id_last_name">Last Name:</label></td>
     <td>{{form.last_name}}</td>
    </tr>
+   <tr>
+    <td><label for="id_email">Email:</label></td>
+    <td>{{form.email}} {{form.errors.email}}</td>
+   </tr>
+   <tr>
+    <td><label for="id_password">Change Password:</label></td>
+    <td>{{form.password1}}</td>
+   </tr>
+   <tr>
+    <td><label for="id_password2">Verify New Password:</label></td>
+    <td>{{form.password2}} {{form.errors.password2}}</td>
+   </tr>
+   {% endif %}
 {% if settings.DIFF_SYNTAX_HIGHLIGHTING %}
    <tr>
     <td></td>
