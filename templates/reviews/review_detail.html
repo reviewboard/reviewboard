@@ -118,6 +118,7 @@
    <dl class="diff-comments">
 {% for comment in review.screenshot_comments.all %}
     <dt>
+     <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
       <span class="filename">
        <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image|basename}}{% endif %}</a>
@@ -132,6 +133,7 @@
 {% endfor %}
 {% for comment in review.ordered_comments %}
     <dt>
+     <a name="comment{{comment.id}}"></a>
      <table class="sidebyside">
       <colgroup>
        <col class="line" />

@@ -11,12 +11,12 @@ Ship it!
 {% endif %}{% for comment in review.screenshot_comments.all %}
 
 Screenshot: {{ comment.screenshot.caption }}
-<{{domain_method}}://{{domain}}/{{comment.screenshot.get_absolute_url}}>
+<{{domain_method}}://{{domain}}/{{comment.get_review_url}}>
 {{ comment.text|indent }}
 {% endfor %}{% for comment in review.ordered_comments %}
 
 {{ comment.filediff.source_file }}
-<{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
+<{{domain_method}}://{{domain}}{{comment.get_review_url}}>
 
 {{ comment.text|indent }}
 

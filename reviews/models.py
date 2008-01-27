@@ -687,9 +687,13 @@ class Comment(models.Model):
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
         return "%sdiff/%s/#file%sline%s" % \
-            (self.review_set.get().review_request.get_absolute_url(),
-             revision_path, self.filediff.id, self.first_line)
+             (self.review_set.get().review_request.get_absolute_url(),
+              revision_path, self.filediff.id, self.first_line)
 
+    def get_review_url(self):
+        return "%s#comment%d" % \
+            (self.review_set.get().review_request.get_absolute_url(),
+             self.id)
 
     def __unicode__(self):
         return self.text
@@ -748,6 +752,11 @@ class ScreenshotComment(models.Model):
         url = crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
         return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
             (url, self.w, self.h, escape(self.text))
+
+    def get_review_url(self):
+        return "%s#scomment%d" % \
+            (self.review_set.get().review_request.get_absolute_url(),
+             self.id)
 
     def __unicode__(self):
         return self.text
