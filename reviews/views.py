@@ -318,15 +318,18 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     if interdiff_revision is not None:
         interdiffset = _query_for_diff(review_request, interdiff_revision,
                                        query_extra)
+        interdiffset_id = interdiffset.id
         # Only the interdiff should have an extra query for the draft.
         # It's going to be the most recent diff (generally). We should be
         # smarter and check.
         query_extra = None
+    else:
+        interdiffset_id = None
 
     diffset = _query_for_diff(review_request, revision, query_extra)
 
     return view_diff_fragment(request, diffset.id, filediff_id,
-                              interdiffset.id, chunkindex, collapseall,
+                              interdiffset_id, chunkindex, collapseall,
                               template_name)
 
 
