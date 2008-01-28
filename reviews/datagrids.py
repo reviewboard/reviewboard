@@ -152,6 +152,8 @@ class LastUpdatedColumn(DateTimeColumn):
     A column which shows the date of the last change to the review request,
     including reviews.
     """
+    def __init__(self, label, db_field="last_updated", *args, **kwargs):
+        DateTimeColumn.__init__(self, label, db_field=db_field, *args, **kwargs)
 
     def find_date(self, review_request):
         update = review_request.last_updated
@@ -161,6 +163,7 @@ class LastUpdatedColumn(DateTimeColumn):
             review_date = reviews[0].timestamp
             if review_date > update:
                 update = review_date
+
         return update
 
     def render_data(self, review_request):
