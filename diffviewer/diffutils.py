@@ -466,11 +466,13 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
         else:
             key = key_prefix
 
-            if not interfilediff:
+            if not force_interdiff:
                 key += str(filediff.id)
+            elif interfilediff:
+                key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
             else:
-                key += "interdiff-%s-%s" % (filediff.id,
-                                            interfilediff.id)
+                key += "interdiff-%s-none" % filediff.id
+
             chunks = cache_memoize(key,
                 lambda: get_chunks(filediff.diffset,
                                    filediff, interfilediff,
@@ -521,6 +523,7 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
             'chunks': chunks,
             'filediff': filediff,
             'interfilediff': interfilediff,
+            'force_interdiff': force_interdiff,
             'binary': filediff.binary,
         })
 

@@ -39,9 +39,12 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                         template_name='diffviewer/diff_file_fragment.html'):
     key = template_name + '-'
 
-    if file['interfilediff']:
-        key += 'interdiff-%s-%s' % (file['filediff'].id,
-                                    file['interfilediff'].id)
+    if file['force_interdiff']:
+        if file['interfilediff']:
+            key += 'interdiff-%s-%s' % (file['filediff'].id,
+                                        file['interfilediff'].id)
+        else:
+            key += 'interdiff-%s-none' % file['filediff'].id
     else:
         key += str(file['filediff'].id)
 
