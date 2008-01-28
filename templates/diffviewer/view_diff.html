@@ -107,10 +107,10 @@
   <tr>
    <th><label for="jump_to_revision">Jump to revision:<label></th>
    <td>
-    <div id="jump_to_revision" class="paginator">
+    <div id="jump_to_revision" class="revisions">
 {%  for item in review_request.diffset_history|revision_link_list:diffset_pair %}
 {%   if item.is_current %}
-     <span class="current-page">{{item.revision}}</span>
+     <span class="current">{{item.revision}}</span>
 {%   else %}
      <a href="{{review_request.get_absolute_url}}diff/{{item.revision}}/#index_header">{{item.revision}}</a>
 {%   endif %}
@@ -121,10 +121,10 @@
   <tr>
    <th><label for="show_interdiff">Changes between r{{revision}} and:</label></th>
    <td>
-    <div id="show_interdiff" class="paginator">
+    <div id="show_interdiff" class="revisions">
 {%  for item in review_request.diffset_history|interdiff_link_list:diffset_pair %}
 {%   if item.is_current %}
-     <span class="current-page">{{item.revision}}</span>
+     <span class="current">{{item.revision}}</span>
 {%   else %}
      <a href="{{review_request.get_absolute_url}}diff/{{item.path}}/#index_header">{{item.revision}}</a>
 {%   endif %}

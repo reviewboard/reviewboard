@@ -386,14 +386,28 @@ table.sidebyside .ew {
   margin: 4px;
 }
 
-.revision-selector .paginator {
+.revision-selector .revisions {
   padding: 0;
 }
 
-.revision-selector .paginator a {
-  border-color: #999999;
+.revision-selector .revisions .current {
+  font-weight: bold;
+  padding: 2px 6px;
 }
 
-.revision-selector .paginator a:hover {
+.revision-selector .revisions a {
+  border: 1px #999999 solid;
+  color: black;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+
+.revision-selector .revisions a:hover {
   background: #E7E0A2;
+  border-color: #003366;
+  color: black;
+}
+
+.revision-selector .revisions a:visited {
+  color: black;
 }
