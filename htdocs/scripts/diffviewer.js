@@ -275,8 +275,8 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
         this.commentBlock = null;
         this.bodyTop.el.dom.value = "";
         this.bodyBottom.el.dom.value = "";
-        this.bodyTop.autoGrow();
-        this.bodyBottom.autoGrow();
+        this.bodyTop.autoSize();
+        this.bodyBottom.autoSize();
         getEl("id_shipit").dom.checked = false;
     },
 
