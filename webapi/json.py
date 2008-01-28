@@ -727,24 +727,28 @@ def review_request_draft_set(request, review_request_id):
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    #draft = _prepare_draft(request, review_request)
+    draft = _prepare_draft(request, review_request)
 
     tool = review_request.repository.get_scmtool()
     changeset = tool.get_changeset(review_request.changenum)
 
     try:
-        review_request.update_from_changenum(review_request.changenum)
+        draft.update_from_changenum(review_request.changenum)
     except InvalidChangeNumberError:
         return JsonResponseError(request, INVALID_CHANGE_NUMBER,
                                  {'changenum': review_request.changenum})
 
+    draft.save()
+
     if review_request.status == 'D':
         review_request.status = 'P'
         review_request.public = False
+        review_request.save()
 
-    review_request.save()
-
-    return JsonResponse(request, {'review_request': review_request})
+    return JsonResponse(request, {
+        'draft': draft,
+        'review_request': review_request,
+    })
 
 
 @json_login_required

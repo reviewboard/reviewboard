@@ -29,6 +29,24 @@ class ChangeNumberInUseError(Exception):
         self.review_request = review_request
 
 
+def update_obj_with_changenum(obj, repository, changenum):
+    """
+    Utility helper to update a review request or draft from the
+    specified changeset's contents on the server.
+    """
+    changeset = repository.get_scmtool().get_changeset(changenum)
+
+    if not changeset:
+        raise InvalidChangeNumberError()
+
+    obj.changenum = changenum
+    obj.summary = changeset.summary
+    obj.description = changeset.description
+    obj.testing_done = changeset.testing_done
+    obj.branch = changeset.branch
+    obj.bugs_closed = ','.join(changeset.bugs_closed)
+
+
 class Group(models.Model):
     """
     A group of reviewers identified by a name. This is usually used to
@@ -363,17 +381,7 @@ class ReviewRequest(models.Model):
         Updates this review request from the specified changeset's contents
         on the server.
         """
-        changeset = self.repository.get_scmtool().get_changeset(changenum)
-
-        if not changeset:
-            raise InvalidChangeNumberError()
-
-        self.changenum = changenum
-        self.summary = changeset.summary
-        self.description = changeset.description
-        self.testing_done = changeset.testing_done
-        self.branch = changeset.branch
-        self.bugs_closed = ','.join(changeset.bugs_closed)
+        update_obj_with_changenum(self, self.repository, changenum)
 
     @permalink
     def get_absolute_url(self):
@@ -633,6 +641,14 @@ class ReviewRequestDraft(models.Model):
         request.save()
 
         return changes
+
+    def update_from_changenum(self, changenum):
+        """
+        Updates this draft from the specified changeset's contents on
+        the server.
+        """
+        update_obj_with_changenum(self, self.review_request.repository,
+                                  changenum)
 
     class Admin:
         list_display = ('summary', 'submitter', 'last_updated')
