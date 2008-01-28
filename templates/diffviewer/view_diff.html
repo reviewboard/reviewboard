@@ -159,11 +159,11 @@
 <a name="{{file.index}}"></a>
 {{ file.fragment }}
 <script type="text/javascript">
-  gFileAnchorToId["file{{file.index}}"] = {{file.filediff.id}};
+  gFileAnchorToId["file{{file.filediff.id}}"] = {{file.filediff.id}};
 {% if file.interfilediff %}
-  gInterdiffFileAnchorToId["file{{file.index}}"] = {{file.interfilediff.id}};
+  gInterdiffFileAnchorToId["file{{file.filediff.id}}"] = {{file.interfilediff.id}};
 {% endif %}
-  addComments("file{{file.index}}", {% commentcounts file.filediff file.interfilediff %});
+  addComments("file{{file.filediff.id}}", {% commentcounts file.filediff file.interfilediff %});
 </script>
 {% endfor %}
 <a name="index_footer"></a>
