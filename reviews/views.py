@@ -296,7 +296,8 @@ def raw_diff(request, review_request_id, revision=None):
 
 @check_login_required
 def diff_fragment(request, review_request_id, revision, filediff_id,
-                  interdiffset_id=None, chunkindex=None, collapseall=False,
+                  interdiff_revision=None,
+                  chunkindex=None, collapseall=False,
                   template_name='diffviewer/diff_file_fragment.html'):
     """
     Wrapper around diffviewer.views.view_diff_fragment that takes a review
@@ -314,10 +315,18 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     except ReviewRequestDraft.DoesNotExist:
         query_extra = None
 
+    if interdiff_revision is not None:
+        interdiffset = _query_for_diff(review_request, interdiff_revision,
+                                       query_extra)
+        # Only the interdiff should have an extra query for the draft.
+        # It's going to be the most recent diff (generally). We should be
+        # smarter and check.
+        query_extra = None
+
     diffset = _query_for_diff(review_request, revision, query_extra)
 
     return view_diff_fragment(request, diffset.id, filediff_id,
-                              interdiffset_id, chunkindex, collapseall,
+                              interdiffset.id, chunkindex, collapseall,
                               template_name)
 
 

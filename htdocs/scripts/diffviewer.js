@@ -766,7 +766,13 @@ function addComments(fileid, lines) {
 }
 
 function expandChunk(fileid, filediff_id, chunk_index, tbody_id) {
-    var url = '/r/' + gReviewRequestId + '/diff/' + gRevision +
+    var revision = gRevision;
+
+    if (gInterdiffRevision != null) {
+      revision += "-" + gInterdiffRevision;
+    }
+
+    var url = '/r/' + gReviewRequestId + '/diff/' + revision +
               '/fragment/' + filediff_id + '/chunk/' + chunk_index + '/';
     YAHOO.util.Connect.asyncRequest("GET", url, {
         success: function(res) {
