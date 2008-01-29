@@ -194,7 +194,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                enable_syntax_highlighting):
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
                   oldmarkup, newmarkup):
-        if oldline and newline:
+        if oldline and newline and oldline != newline:
             oldregion, newregion = get_line_changed_regions(oldline, newline)
         else:
             oldregion = newregion = []
