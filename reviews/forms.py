@@ -27,7 +27,7 @@ class NewReviewRequestForm(forms.Form):
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
         self.fields['repository'].choices = \
-            [(repo.id, repo.name) for repo in Repository.objects.all()]
+            [(repo.id, repo.name) for repo in Repository.objects.order_by('name')]
 
     @staticmethod
     def create_from_list(data, constructor, error):
