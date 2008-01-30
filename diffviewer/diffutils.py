@@ -15,6 +15,7 @@ except ImportError:
 
 from django.conf import settings
 from django.utils.html import escape
+from django.utils.http import urlquote
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
@@ -173,7 +174,8 @@ def get_original_file(filediff):
     file = filediff.source_file
     revision = filediff.source_revision
 
-    key = "%s:%s:%s" % (filediff.diffset.repository.path, file, revision)
+    key = "%s:%s:%s" % (filediff.diffset.repository.path, urlquote(file),
+                        revision)
 
     # We wrap the result of get_file in a list and then return the first
     # element after getting the result from the cache. This prevents the
