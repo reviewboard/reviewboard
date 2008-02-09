@@ -10,7 +10,7 @@ var gCommentSections = {};
 var gYourComments = {};
 var gReviews = {};
 var gEditors = [];
-var gPublishing = true;
+var gPublishing = false;
 var gSavedFieldCount = 0;
 
 function getApiPath() {
