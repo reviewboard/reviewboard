@@ -808,7 +808,8 @@ def main(args):
 
     if repository_info.supports_changesets:
         if len(args) != 1:
-            parser.error("specify the change number of a pending changeset")
+            print "specify the change number of a pending changeset"
+            sys.exit(1)
 
         changenum = args[0]
         files = None
