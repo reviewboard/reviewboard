@@ -78,6 +78,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'djblets.datagrid',
     'djblets.util',
+    'djblets.webapi',
     'reviewboard.accounts',
     'reviewboard.diffviewer',
     'reviewboard.iphone',
@@ -86,6 +87,11 @@ INSTALLED_APPS = (
     'reviewboard.scmtools',
     'reviewboard.utils',
     'reviewboard.webapi',
+)
+
+WEB_API_ENCODERS = (
+    'djblets.webapi.core.BasicAPIEncoder',
+    'reviewboard.webapi.json.ReviewBoardAPIEncoder',
 )
 
 # Whether to use django's built-in system for users.  This turns on certain

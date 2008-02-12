@@ -5,16 +5,19 @@ import re
 from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
-from django.core.serializers.json import DateTimeAwareJSONEncoder
 from django.db.models import Q
-from django.db.models.query import QuerySet
 from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
-from django.utils import simplejson
 from django.views.decorators.http import require_POST
 from djblets.util.decorators import simple_decorator
 from djblets.util.misc import get_object_or_none
+from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
+                                WebAPIResponseError, \
+                                WebAPIResponseFormError
+from djblets.webapi.decorators import webapi_login_required, \
+                                      webapi_permission_required
+from djblets.webapi.errors import WebAPIError
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
@@ -31,94 +34,28 @@ from reviewboard.scmtools.models import Repository
 import reviewboard.scmtools as scmtools
 
 
-class JsonError:
-    """
-    A JSON error, containing an error code and human readable message.
-    """
-    def __init__(self, code, msg):
-        self.code = code
-        self.msg = msg
-
-
 #
 # Standard error messages
 #
-NO_ERROR                  = JsonError(0,   "If you see this, yell at " +
-                                           "the developers")
-
-DOES_NOT_EXIST            = JsonError(100, "Object does not exist")
-PERMISSION_DENIED         = JsonError(101, "You don't have permission " +
-                                           "for this")
-INVALID_ATTRIBUTE         = JsonError(102, "Invalid attribute")
-NOT_LOGGED_IN             = JsonError(103, "You are not logged in")
-LOGIN_FAILED              = JsonError(104, "The username or password was " +
-                                           "not correct")
-INVALID_FORM_DATA         = JsonError(105, "One or more fields had errors")
-
-UNSPECIFIED_DIFF_REVISION = JsonError(200, "Diff revision not specified")
-INVALID_DIFF_REVISION     = JsonError(201, "Invalid diff revision")
-INVALID_ACTION            = JsonError(202, "Invalid action specified")
-INVALID_CHANGE_NUMBER     = JsonError(203, "The change number specified " +
-                                           "could not be found")
-CHANGE_NUMBER_IN_USE      = JsonError(204, "The change number specified " +
-                                           "has already been used")
-MISSING_REPOSITORY        = JsonError(205, "A repository path must be " +
-                                           "specified")
-INVALID_REPOSITORY        = JsonError(206, "The repository path specified " +
-                                           "is not in the list of known " +
-                                           "repositories")
-REPO_FILE_NOT_FOUND       = JsonError(207, "The file was not found in the " +
-                                           "repository")
+UNSPECIFIED_DIFF_REVISION = WebAPIError(200, "Diff revision not specified")
+INVALID_DIFF_REVISION     = WebAPIError(201, "Invalid diff revision")
+INVALID_ACTION            = WebAPIError(202, "Invalid action specified")
+INVALID_CHANGE_NUMBER     = WebAPIError(203, "The change number specified " +
+                                             "could not be found")
+CHANGE_NUMBER_IN_USE      = WebAPIError(204, "The change number specified " +
+                                             "has already been used")
+MISSING_REPOSITORY        = WebAPIError(205, "A repository path must be " +
+                                             "specified")
+INVALID_REPOSITORY        = WebAPIError(206, "The repository path specified " +
+                                             "is not in the list of known " +
+                                             "repositories")
+REPO_FILE_NOT_FOUND       = WebAPIError(207, "The file was not found in the " +
+                                             "repository")
 
 
-@simple_decorator
-def json_login_required(view_func):
-    """
-    Checks that the user is logged in before invoking the view. If the user
-    is not logged in, a NOT_LOGGED_IN error is returned.
-    """
-    def _checklogin(request, *args, **kwargs):
-        if request.user.is_authenticated():
-            return view_func(request, *args, **kwargs)
-        else:
-            return JsonResponseError(request, NOT_LOGGED_IN)
-
-    return _checklogin
-
-
-def json_permission_required(perm):
-    """
-    Checks that the user is logged in and has the appropriate permissions
-    to access this view. A PERMISSION_DENIED error is returned if the user
-    does not have the proper permissions.
-    """
-    def _dec(view_func):
-        def _checkpermissions(request, *args, **kwargs):
-            if not request.user.is_authenticated():
-                return JsonResponseError(request, NOT_LOGGED_IN)
-            elif not request.user.has_perm(perm):
-                return JsonResponseError(request, PERMISSION_DENIED)
-
-            return view_func(request, *args, **kwargs)
-
-        return _checkpermissions
-
-    return _dec
-
-
-class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
-    def default(self, o):
-        if isinstance(o, QuerySet):
-            return list(o)
-        elif isinstance(o, User):
-            return {
-                'id': o.id,
-                'username': o.username,
-                'fullname': o.get_full_name(),
-                'email': o.email,
-                'url': o.get_absolute_url(),
-            }
-        elif isinstance(o, Group):
+class ReviewBoardAPIEncoder(WebAPIEncoder):
+    def encode(self, o):
+        if isinstance(o, Group):
             return {
                 'id': o.id,
                 'name': o.name,
@@ -234,47 +171,7 @@ class ReviewBoardJSONEncoder(DateTimeAwareJSONEncoder):
                 'tool': o.tool.name
             }
         else:
-            return super(ReviewBoardJSONEncoder, self).default(o)
-
-
-class JsonResponse(HttpResponse):
-    def __init__(self, request, obj={}, stat='ok'):
-        json = {'stat': stat}
-        json.update(obj)
-        content = simplejson.dumps(json, cls=ReviewBoardJSONEncoder)
-
-        callback = request.GET.get('callback', None)
-
-        if callback != None:
-            content = callback + "(" + content + ");"
-
-        super(JsonResponse, self).__init__(content, mimetype='text/plain')
-        #super(JsonResponse, self).__init__(content, mimetype='application/json')
-
-
-class JsonResponseError(JsonResponse):
-    def __init__(self, request, err, extra_params={}):
-        errdata = {
-            'err': {
-                'code': err.code,
-                'msg': err.msg
-            }
-        }
-        errdata.update(extra_params)
-
-        JsonResponse.__init__(self, request, errdata, "fail")
-
-
-class JsonResponseFormError(JsonResponseError):
-    def __init__(self, request, form):
-        fields = {}
-
-        for field in form.errors:
-            fields[field] = list(form.errors[field])
-
-        JsonResponseError.__init__(self, request, INVALID_FORM_DATA, {
-            'fields': fields
-        })
+            return super(ReviewBoardAPIEncoder, self).default(o)
 
 
 def status_to_string(status):
@@ -303,30 +200,13 @@ def string_to_status(status):
         raise "Invalid status '%s'" % status
 
 
-@require_POST
-def account_login(request):
-    username = request.POST.get('username', None)
-    password = request.POST.get('password', None)
-
-    user = auth.authenticate(username=username, password=password)
-
-    if not user or not user.is_active:
-        return JsonResponseError(request, LOGIN_FAILED)
-
-    auth.login(request, user)
-    user.last_login = datetime.now()
-    user.save()
-
-    return JsonResponse(request)
-
-
-@json_login_required
+@webapi_login_required
 def repository_list(request):
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'repositories': Repository.objects.all(),
     })
 
-@json_login_required
+@webapi_login_required
 def user_list(request):
     query = request.GET.get('query', None)
     columns = ['username', 'first_name', 'last_name']
@@ -336,11 +216,11 @@ def user_list(request):
         u = User.objects.filter(is_active__exact=True,
                                 username__startswith=query).values(*columns)
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'users': u,
     })
 
-@json_login_required
+@webapi_login_required
 def group_list(request):
     query = request.GET.get('query', None)
     columns = ['display_name', 'name']
@@ -349,30 +229,30 @@ def group_list(request):
     else:
         u = Group.objects.filter(name__startswith=query).values(*columns)
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'groups': u,
     })
 
-@json_login_required
+@webapi_login_required
 def group_star(request, group_name):
     try:
         group = Group.objects.get(name=group_name)
     except Group.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
     profile.starred_groups.add(group)
     profile.save()
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 def group_unstar(request, group_name):
     try:
         group = Group.objects.get(name=group_name)
     except Group.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
 
@@ -380,10 +260,10 @@ def group_unstar(request, group_name):
         profile.starred_groups.remove(group)
         profile.save()
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def new_review_request(request):
     try:
@@ -392,7 +272,7 @@ def new_review_request(request):
         repository_id = request.POST.get('repository_id', None)
 
         if repository_path == None and repository_id == None:
-            return JsonResponseError(request, MISSING_REPOSITORY)
+            return WebAPIResponseError(request, MISSING_REPOSITORY)
 
         if repository_path:
             repository = Repository.objects.get(
@@ -404,18 +284,18 @@ def new_review_request(request):
         review_request = ReviewRequest.objects.create(
             request.user, repository, request.POST.get('changenum', None))
 
-        return JsonResponse(request, {'review_request': review_request})
+        return WebAPIResponse(request, {'review_request': review_request})
     except Repository.DoesNotExist, e:
-        return JsonResponseError(request, INVALID_REPOSITORY,
+        return WebAPIResponseError(request, INVALID_REPOSITORY,
                                  {'repository_path': repository_path})
     except ChangeNumberInUseError, e:
-        return JsonResponseError(request, CHANGE_NUMBER_IN_USE,
+        return WebAPIResponseError(request, CHANGE_NUMBER_IN_USE,
                                  {'review_request': e.review_request})
     except InvalidChangeNumberError:
-        return JsonResponseError(request, INVALID_CHANGE_NUMBER)
+        return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
 
 
-@json_login_required
+@webapi_login_required
 def review_request(request, review_request_id):
     """
     Returns the review request with the specified ID.
@@ -423,12 +303,12 @@ def review_request(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not review_request.public and review_request.submitter != request.user:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    return JsonResponse(request, {'review_request': review_request})
+    return WebAPIResponse(request, {'review_request': review_request})
 
 
-@json_login_required
+@webapi_login_required
 def review_request_by_changenum(request, repository_id, changenum):
     try:
         review_request = ReviewRequest.objects.get(changenum=changenum,
@@ -436,33 +316,33 @@ def review_request_by_changenum(request, repository_id, changenum):
 
         if not review_request.public and \
            review_request.submitter != request.user:
-            return JsonResponseError(request, PERMISSION_DENIED)
+            return WebAPIResponseError(request, PERMISSION_DENIED)
 
-        return JsonResponse(request, {'review_request': review_request})
+        return WebAPIResponse(request, {'review_request': review_request})
     except ReviewRequest.DoesNotExist:
-        return JsonResponseError(request, INVALID_CHANGE_NUMBER)
+        return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
 
 
-@json_login_required
+@webapi_login_required
 def review_request_star(request, review_request_id):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
     except ReviewRequest.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
     profile.starred_review_requests.add(review_request)
     profile.save()
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 def review_request_unstar(request, review_request_id):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
     except ReviewRequest.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
 
@@ -470,32 +350,32 @@ def review_request_unstar(request, review_request_id):
         profile.starred_review_requests.remove(review_request)
         profile.save()
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_permission_required('reviews.delete_reviewrequest')
+@webapi_permission_required('reviews.delete_reviewrequest')
 def review_request_delete(request, review_request_id):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         review_request.delete()
     except ReviewRequest.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 def review_request_list(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'review_requests': func(user=request.user, status=status, **kwargs)
     })
 
 
-@json_login_required
+@webapi_login_required
 def count_review_requests(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'count': func(user=request.user, status=status, **kwargs).count()
     })
 
@@ -508,19 +388,19 @@ def _get_and_validate_review(request, review_request_id, review_id):
         raise Http404()
 
     if not review.public and review.user != request.user:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     return review
 
 
-@json_login_required
+@webapi_login_required
 def review(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
-    return JsonResponse(request, {'review': review})
+    return WebAPIResponse(request, {'review': review})
 
 
 def _get_reviews(review_request):
@@ -528,46 +408,46 @@ def _get_reviews(review_request):
                                             base_reply_to__isnull=True)
 
 
-@json_login_required
+@webapi_login_required
 def review_list(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'reviews': _get_reviews(review_request)
     })
 
 
-@json_login_required
+@webapi_login_required
 def count_review_list(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'reviews': _get_reviews(review_request).count()
     })
 
 
-@json_login_required
+@webapi_login_required
 def review_comments_list(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'comments': review.comments.all(),
         'screenshot_comments': review.screenshot_comments.all(),
     })
 
 
-@json_login_required
+@webapi_login_required
 def count_review_comments(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
-    return JsonResponse(request, {'count': review.comments.count()})
+    return WebAPIResponse(request, {'count': review.comments.count()})
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_request_draft_discard(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -575,27 +455,27 @@ def review_request_draft_discard(request, review_request_id):
     try:
         draft = ReviewRequestDraft.objects.get(review_request=review_request)
     except ReviewRequestDraft.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     if review_request.submitter != request.user:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     draft.delete()
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_request_draft_save(request, review_request_id):
     try:
         draft = ReviewRequestDraft.objects.get(review_request=review_request_id)
         review_request = draft.review_request
     except ReviewRequestDraft.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     if review_request.submitter != request.user:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     changes = draft.save_draft()
     draft.delete()
@@ -603,7 +483,7 @@ def review_request_draft_save(request, review_request_id):
     if settings.SEND_REVIEW_MAIL and changes:
         mail_review_request(request.user, review_request, changes)
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
 def find_user(username):
@@ -622,7 +502,7 @@ def find_user(username):
 
 def _prepare_draft(request, review_request):
     if request.user != review_request.submitter:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
     return ReviewRequestDraft.create(review_request)
 
 
@@ -664,7 +544,7 @@ def _set_draft_field_data(draft, field_name, data):
         return data, None
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -674,7 +554,7 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         try:
             screenshot = Screenshot.objects.get(id=int(m.group('id')))
         except:
-            return JsonResponseError(request, INVALID_ATTRIBUTE,
+            return WebAPIResponseError(request, INVALID_ATTRIBUTE,
                                      {'attribute': field_name})
 
         draft = _prepare_draft(request, review_request)
@@ -682,10 +562,10 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         screenshot.save()
         draft.save()
 
-        return JsonResponse(request, {field_name: data})
+        return WebAPIResponse(request, {field_name: data})
 
     if not hasattr(review_request, field_name):
-        return JsonResponseError(request, INVALID_ATTRIBUTE,
+        return WebAPIResponseError(request, INVALID_ATTRIBUTE,
                                  {'attribute': field_name})
 
 
@@ -697,7 +577,7 @@ def review_request_draft_set_field(request, review_request_id, field_name):
 
     draft.save()
 
-    return JsonResponse(request, result)
+    return WebAPIResponse(request, result)
 
 
 mutable_review_request_fields = [
@@ -705,7 +585,7 @@ mutable_review_request_fields = [
     'bugs_closed', 'branch', 'target_groups', 'target_people'
 ]
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_request_draft_set(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -723,10 +603,10 @@ def review_request_draft_set(request, review_request_id):
 
     result['draft'] = draft
 
-    return JsonResponse(request, result)
+    return WebAPIResponse(request, result)
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -738,7 +618,7 @@ def review_request_draft_update_from_changenum(request, review_request_id):
     try:
         draft.update_from_changenum(review_request.changenum)
     except InvalidChangeNumberError:
-        return JsonResponseError(request, INVALID_CHANGE_NUMBER,
+        return WebAPIResponseError(request, INVALID_CHANGE_NUMBER,
                                  {'changenum': review_request.changenum})
 
     draft.save()
@@ -748,19 +628,19 @@ def review_request_draft_update_from_changenum(request, review_request_id):
         review_request.public = False
         review_request.save()
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'draft': draft,
         'review_request': review_request,
     })
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_draft_save(request, review_request_id, publish=False):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not request.POST.has_key('diff_revision'):
-        return JsonResponseError(request, UNSPECIFIED_DIFF_REVISION)
+        return WebAPIResponseError(request, UNSPECIFIED_DIFF_REVISION)
 
     diff_revision = request.POST['diff_revision']
 
@@ -768,7 +648,7 @@ def review_draft_save(request, review_request_id, publish=False):
         diffset = review_request.diffset_history.diffset_set.get(
             revision=diff_revision)
     except DiffSet.DoesNotExist:
-        return JsonResponseError(request, INVALID_DIFF_REVISION,
+        return WebAPIResponseError(request, INVALID_DIFF_REVISION,
                                  {'diff_revision': diff_revision})
 
     review, review_is_new = Review.objects.get_or_create(
@@ -788,16 +668,16 @@ def review_draft_save(request, review_request_id, publish=False):
     if publish and settings.SEND_REVIEW_MAIL:
         mail_review(request.user, review)
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_draft_delete(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not request.POST.has_key('diff_revision'):
-        return JsonResponseError(request, UNSPECIFIED_DIFF_REVISION)
+        return WebAPIResponseError(request, UNSPECIFIED_DIFF_REVISION)
 
     diff_revision = request.POST['diff_revision']
 
@@ -805,7 +685,7 @@ def review_draft_delete(request, review_request_id):
         diffset = review_request.diffset_history.diffset_set.get(
             revision=diff_revision)
     except DiffSet.DoesNotExist:
-        return JsonResponseError(request, INVALID_DIFF_REVISION,
+        return WebAPIResponseError(request, INVALID_DIFF_REVISION,
                                  {'diff_revision': diff_revision})
 
     try:
@@ -814,25 +694,25 @@ def review_draft_delete(request, review_request_id):
                                     public=False,
                                     base_reply_to__isnull=True)
         review.delete()
-        return JsonResponse(request)
+        return WebAPIResponse(request)
     except Review.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
-@json_login_required
+@webapi_login_required
 def review_draft_comments(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     diff_revision = request.GET.get('diff_revision', None)
 
     if diff_revision == None:
-        return JsonResponseError(request, UNSPECIFIED_DIFF_REVISION)
+        return WebAPIResponseError(request, UNSPECIFIED_DIFF_REVISION)
 
     try:
         diffset = review_request.diffset_history.diffset_set.get(
             revision=diff_revision)
     except DiffSet.DoesNotExist:
-        return JsonResponseError(request, INVALID_DIFF_REVISION,
+        return WebAPIResponseError(request, INVALID_DIFF_REVISION,
                                  {'diff_revision': diff_revision})
 
     try:
@@ -846,18 +726,18 @@ def review_draft_comments(request, review_request_id):
         comments = []
         screenshot_comments = []
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'comments': comments,
         'screenshot_comments': screenshot_comments,
     })
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_reply_draft(request, review_request_id, review_id):
     source_review = _get_and_validate_review(request, review_request_id,
                                              review_id)
-    if isinstance(source_review, JsonResponseError):
+    if isinstance(source_review, WebAPIResponseError):
         return source_review
 
     context_type = request.POST['type']
@@ -949,14 +829,14 @@ def review_reply_draft(request, review_request_id, review_id):
     else:
         reply.save()
 
-    return JsonResponse(request)
+    return WebAPIResponse(request)
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_reply_draft_save(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
     try:
@@ -967,73 +847,73 @@ def review_reply_draft_save(request, review_request_id, review_id):
         if settings.SEND_REVIEW_MAIL:
             mail_reply(request.user, reply)
 
-        return JsonResponse(request)
+        return WebAPIResponse(request)
     except Review.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def review_reply_draft_discard(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
     try:
         reply = Review.objects.get(base_reply_to=review, public=False,
                                    user=request.user)
         reply.delete()
-        return JsonResponse(request)
+        return WebAPIResponse(request)
     except Review.DoesNotExist:
-        return JsonResponseError(request, DOES_NOT_EXIST)
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
-@json_login_required
+@webapi_login_required
 def review_replies_list(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'replies': review.replies.filter(public=True)
     })
 
 
-@json_login_required
+@webapi_login_required
 def count_review_replies(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
-    if isinstance(review, JsonResponseError):
+    if isinstance(review, WebAPIResponseError):
         return review
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'count': review.replies.filter(public=True).count()
     })
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def new_diff(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if review_request.submitter != request.user:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()
     form = UploadDiffForm(review_request.repository, form_data, request.FILES)
 
     if not form.is_valid():
-        return JsonResponseFormError(request, form)
+        return WebAPIResponseFormError(request, form)
 
     try:
         diffset = form.create(request.FILES['path'],
                               review_request.diffset_history)
     except scmtools.FileNotFoundError, e:
-        return JsonResponseError(request, REPO_FILE_NOT_FOUND, {
+        return WebAPIResponseError(request, REPO_FILE_NOT_FOUND, {
             'file': e.path,
             'revision': e.revision
         })
     except EmptyDiffError, e:
-        return JsonResponseError(request, INVALID_FORM_DATA, {
+        return WebAPIResponseError(request, INVALID_FORM_DATA, {
             'fields': {
                 'path': [str(e)]
             }
@@ -1041,7 +921,7 @@ def new_diff(request, review_request_id):
     except Exception, e:
         # This could be very wrong, but at least they'll see the error.
         # We probably want a new error type for this.
-        return JsonResponseError(request, INVALID_FORM_DATA, {
+        return WebAPIResponseError(request, INVALID_FORM_DATA, {
             'fields': {
                 'path': [str(e)]
             }
@@ -1070,36 +950,36 @@ def new_diff(request, review_request_id):
 
     # E-mail gets sent when the draft is saved.
 
-    return JsonResponse(request, {'diffset_id': diffset.id})
+    return WebAPIResponse(request, {'diffset_id': diffset.id})
 
 
-@json_login_required
+@webapi_login_required
 @require_POST
 def new_screenshot(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if review_request.submitter != request.user:
-        return JsonResponseError(request, PERMISSION_DENIED)
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()
     form = UploadScreenshotForm(form_data, request.FILES)
 
     if not form.is_valid():
-        return JsonResponseFormError(request, form)
+        return WebAPIResponseFormError(request, form)
 
     try:
         screenshot = form.create(request.FILES['path'], review_request)
     except ValueError, e:
-        return JsonResponseError(request, INVALID_FORM_DATA, {
+        return WebAPIResponseError(request, INVALID_FORM_DATA, {
             'fields': {
                 'path': [str(e)],
             },
         })
 
-    return JsonResponse(request, {'screenshot_id': screenshot.id})
+    return WebAPIResponse(request, {'screenshot_id': screenshot.id})
 
 
-@json_login_required
+@webapi_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
                        interfilediff_id=None):
@@ -1177,7 +1057,7 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
                review.screenshot_comments.count() == 0:
                 review.delete()
         else:
-            return JsonResponseError(request, INVALID_ACTION,
+            return WebAPIResponseError(request, INVALID_ACTION,
                                      {'action': action})
 
     comments_query = filediff.comment_set.filter(
@@ -1189,11 +1069,11 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
     else:
         comments_query = comments_query.filter(interfilediff__isnull=True)
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'comments': comments_query
     })
 
-@json_login_required
+@webapi_login_required
 def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
@@ -1244,10 +1124,10 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                review.screenshot_comments.count() == 0:
                 review.delete()
         else:
-            return JsonResponseError(request, INVALID_ACTION,
+            return WebAPIResponseError(request, INVALID_ACTION,
                                      {'action': action})
 
-    return JsonResponse(request, {
+    return WebAPIResponse(request, {
         'comments': screenshot.screenshotcomment_set.filter(
             Q(review__public=True) | Q(review__user=request.user),
             x=x, y=y, w=w, h=h)
