@@ -639,18 +639,6 @@ def review_request_draft_update_from_changenum(request, review_request_id):
 def review_draft_save(request, review_request_id, publish=False):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if not request.POST.has_key('diff_revision'):
-        return WebAPIResponseError(request, UNSPECIFIED_DIFF_REVISION)
-
-    diff_revision = request.POST['diff_revision']
-
-    try:
-        diffset = review_request.diffset_history.diffset_set.get(
-            revision=diff_revision)
-    except DiffSet.DoesNotExist:
-        return WebAPIResponseError(request, INVALID_DIFF_REVISION,
-                                 {'diff_revision': diff_revision})
-
     review, review_is_new = Review.objects.get_or_create(
         user=request.user,
         review_request=review_request,
