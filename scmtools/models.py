@@ -20,7 +20,7 @@ class Repository(models.Model):
     password = models.CharField(max_length=128, blank=True)
     tool = models.ForeignKey(Tool)
     bug_tracker = models.URLField(verify_exists=False, blank=True)
-
+    encoding = models.CharField(max_length=32, blank=True)
 
     def get_scmtool(self):
         path = self.tool.class_name

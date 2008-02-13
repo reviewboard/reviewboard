@@ -147,11 +147,13 @@ def get_line_changed_regions(oldline, newline):
     return (oldchanges, newchanges)
 
 
-def convert_to_utf8(s):
+def convert_to_utf8(s, enc):
     """
     Returns the passed string as a unicode string. If conversion to UTF-8
-    fails, we try to convert to iso-8859-15 and then to utf-8, which works
-    in most case (thanks to Trac for this).
+    fails, we try the user-specified encoding, which defaults to ISO 8859-15.
+    This can be overridden by users inside the repository configuration, which
+    gives users repository-level control over file encodings (file-level control
+    is really, really hard).
     """
     if isinstance(s, unicode):
         return s
@@ -160,7 +162,7 @@ def convert_to_utf8(s):
             u = unicode(s, 'utf-8')
             return u
         except UnicodeError:
-            u = unicode(s, 'iso-8859-15')
+            u = unicode(s, enc)
             return u.encode('utf-8')
     else:
         raise TypeError("Value to convert is unexpected type %s", type(s))
@@ -293,8 +295,9 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         old = new
         new = temp
 
-    old = convert_to_utf8(old)
-    new = convert_to_utf8(new)
+    encoding = diffset.repository.encoding or 'iso-8859-15'
+    old = convert_to_utf8(old, encoding)
+    new = convert_to_utf8(new, encoding)
 
     # Normalize the input so that if there isn't a trailing newline, we add
     # it.
