@@ -44,7 +44,12 @@ nobase_djblets_PYTHON = \
 	djblets/util/db.py \
 	djblets/util/decorators.py \
 	djblets/util/misc.py \
-	djblets/util/testing.py
+	djblets/util/testing.py \
+	djblets/webapi/__init__.py \
+	djblets/webapi/auth.py \
+	djblets/webapi/core.py \
+	djblets/webapi/decorators.py \
+	djblets/webapi/errors.py
 
 nobase_djblets_DATA = \
 	djblets/datagrid/templates/datagrid/cell.html \
