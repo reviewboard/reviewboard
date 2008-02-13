@@ -414,7 +414,7 @@ class PerforceClient(SCMClient):
             hostname, port = repository_path.split(":")
             info = socket.gethostbyaddr(hostname)
             repository_path = "%s:%s" % (info[0], port)
-        except socket.gaierror:
+        except (socket.gaierror, socket.herror):
             pass
 
         return RepositoryInfo(path=repository_path, supports_changesets=True)
