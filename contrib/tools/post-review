@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import cookielib
-import httplib
 import mimetools
-import mimetypes
 import os
 import getpass
 import re
@@ -119,28 +117,28 @@ class ReviewBoardServer:
         """
         Sets a field in a review request to the specified value.
         """
-        id = review_request['id']
+        rid = review_request['id']
 
         debug("Attempting to set field '%s' to '%s' for review request '%s'" %
-              (field, value, id))
+              (field, value, rid))
 
-        self.api_post('/api/json/reviewrequests/%s/draft/set/' % id, {
+        self.api_post('/api/json/reviewrequests/%s/draft/set/' % rid, {
             field: value,
         })
 
-    def get_review_request(self, id):
+    def get_review_request(self, rid):
         """
         Returns the review request with the specified ID.
         """
-        rsp = self.api_get('/api/json/reviewrequests/%s/' % id)
+        rsp = self.api_get('/api/json/reviewrequests/%s/' % rid)
         return rsp['review_request']
 
     def save_draft(self, review_request):
         """
         Saves a draft of a review request.
         """
-        rsp = self.api_post("/api/json/reviewrequests/%s/draft/save/" %
-                            review_request['id'])
+        self.api_post("/api/json/reviewrequests/%s/draft/save/" %
+                      review_request['id'])
         debug("Review request draft saved")
 
     def upload_diff(self, review_request, diff_content):
@@ -153,10 +151,10 @@ class ReviewBoardServer:
         if self.info.base_path:
             fields['basedir'] = self.info.base_path
 
-        rsp = self.api_post('/api/json/reviewrequests/%s/diff/new/' %
-                            review_request['id'], fields,
-                            {'path': {'filename': 'diff',
-                                      'content': diff_content}})
+        self.api_post('/api/json/reviewrequests/%s/diff/new/' %
+                      review_request['id'], fields,
+                      {'path': {'filename': 'diff',
+                                'content': diff_content}})
 
     def publish(self, review_request):
         """
@@ -863,7 +861,7 @@ def main(args):
     review_url = tempt_fate(server, tool, changenum, files, diff_content=diff)
 
     # Load the review up in the browser if requested to:
-    if options.open_browser == True:
+    if options.open_browser:
         try:
             import webbrowser
             if 'open_new_tab' in dir(webbrowser):
