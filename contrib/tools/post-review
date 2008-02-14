@@ -770,6 +770,34 @@ def parse_options(tool, repository_info, args):
     return args
 
 
+class MercurialClient(SCMClient):
+    """
+    A wrapper around the hg Mercurial tool that fetches repository
+    information and generates compatible diffs.
+    """
+    def get_repository_info(self):
+        data = execute('hg root')
+        if data.startswith('abort:'):
+            # hg aborted => no mercurial repository here.
+            return None
+
+        # Elsewhere, hg root output give us the repository path.
+        return RepositoryInfo(path=data.strip(), base_path='/')
+
+    def diff(self, changenum, files):
+        """
+        Performs a diff across all modified files in a Mercurial repository.
+        """
+        return execute('hg diff %s' % ' '.join(files))
+
+    def diff_between_revisions(self, revision_range):
+        """
+        Performs a diff between 2 revisions of a Mercurial repository.
+        """
+        r1, r2 = revision_range.split(':')
+        return execute('hg diff -r %s -r %s' % (r1, r2))
+
+
 def main(args):
     # Load the config file
     globals()['user_config'] = \
@@ -779,7 +807,7 @@ def main(args):
     repository_info = None
     tool = None
 
-    for tool in (SVNClient(), PerforceClient()):
+    for tool in (SVNClient(), PerforceClient(), MercurialClient()):
         repository_info = tool.get_repository_info()
 
         if repository_info:
