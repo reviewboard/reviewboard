@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% load i18n %}
 {% load difftags %}
-{% load htmlutils %}
+{% load djblets_deco %}
+{% load djblets_utils %}
+{% load djblets_js %}
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}

@@ -25,6 +25,7 @@
 
 import sys
 
+import djblets
 import nose
 
 from django.conf import settings
@@ -33,6 +34,7 @@ from django.test.utils import setup_test_environment, teardown_test_environment
 from django.test.utils import create_test_db, destroy_test_db
 
 import reviewboard
+
 
 def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     setup_test_environment()
@@ -48,12 +50,14 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
                           'create_test_db',
                           'destroy_test_db'])
 
-    covers = ','.join(['reviewboard'])
-
     nose_argv=['test.py', '-v',
-               '--with-coverage', '--cover-package=' + covers,
+               '--with-coverage',
                '--with-doctest', '--doctest-extension=.txt',
                '-e', exclusion]
+
+    for cover in ['reviewboard', 'djblets']:
+        nose_argv += ['--cover-package=' + cover]
+
     if len(sys.argv) > 2:
         nose_argv += sys.argv[2:]
     nose.main(argv=nose_argv)

@@ -10,7 +10,6 @@ SUBDIRS = \
 	reviews \
 	scmtools \
 	templates \
-	utils \
 	webapi
 
 rbdir = $(pyexecdir)/reviewboard
@@ -39,12 +38,20 @@ nobase_djblets_PYTHON = \
 	djblets/datagrid/grids.py \
 	djblets/datagrid/templatetags/__init__.py \
 	djblets/datagrid/templatetags/datagrid.py \
+	djblets/util/templatetags/__init__.py \
+	djblets/util/templatetags/djblets_deco.py \
+	djblets/util/templatetags/djblets_email.py \
+	djblets/util/templatetags/djblets_images.py \
+	djblets/util/templatetags/djblets_js.py \
+	djblets/util/templatetags/djblets_utils.py \
 	djblets/util/__init__.py \
 	djblets/util/context_processors.py \
 	djblets/util/db.py \
 	djblets/util/decorators.py \
+	djblets/util/fields.py \
 	djblets/util/misc.py \
 	djblets/util/testing.py \
+	djblets/util/tests.py \
 	djblets/webapi/__init__.py \
 	djblets/webapi/auth.py \
 	djblets/webapi/core.py \

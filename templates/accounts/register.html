@@ -1,12 +1,12 @@
 {% extends "base.html" %}
+{% load djblets_deco %}
 {% load i18n %}
-{% load htmlutils %}
 {% block title %}{% trans "Register account" %}{% endblock %}
 
 {% block content %}
 {% box "registerform" %}
 <form method="post" action=".">
-	<h1 class="title">{% trans "Register" %}</h1>
+ <h1 class="title">{% trans "Register" %}</h1>
  <div class="main">
   <table id="login_form">
    <tr>

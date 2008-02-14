@@ -9,13 +9,13 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
-from djblets.util.misc import get_object_or_none
 from djblets.util.db import ConcurrencyManager, QLeftOuterJoins
+from djblets.util.fields import ModificationTimestampField
+from djblets.util.misc import get_object_or_none
+from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.scmtools.models import Repository
-from reviewboard.utils.fields import ModificationTimestampField
-from reviewboard.utils.templatetags.htmlutils import crop_image, thumbnail
 
 
 class InvalidChangeNumberError(Exception):

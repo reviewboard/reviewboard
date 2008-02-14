@@ -1,4 +1,4 @@
-{% autoescape off %}{% load htmlutils %}{% load emailtags %}
+{% autoescape off %}{% load djblets_email %}{% load djblets_utils %}
 
 {% condense %}
 {% ifnotequal reply.body_top "" %}

@@ -9,12 +9,13 @@ from django.template.defaultfilters import escape
 from django.utils import simplejson
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.misc import get_object_or_none
+from djblets.util.templatetags.djblets_utils import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
                                        ReviewRequestDraft, ScreenshotComment
-from reviewboard.utils.templatetags.htmlutils import humanize_list
+
 
 register = template.Library()
 

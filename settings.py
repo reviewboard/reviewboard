@@ -85,7 +85,6 @@ INSTALLED_APPS = (
     'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',
-    'reviewboard.utils',
     'reviewboard.webapi',
 )
 

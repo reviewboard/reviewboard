@@ -9,10 +9,10 @@ from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import Column, DateTimeColumn, \
                                    DateTimeSinceColumn, DataGrid
+from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.reviews.templatetags.reviewtags import render_star
-from reviewboard.utils.templatetags.htmlutils import ageid
 
 
 class StarColumn(Column):

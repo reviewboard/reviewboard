@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% load i18n %}
 {% load difftags %}
+{% load djblets_deco %}
+{% load i18n %}
 {% load reviewtags %}
-{% load htmlutils %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 {% block extrahead %}
