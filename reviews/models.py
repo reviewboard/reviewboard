@@ -383,6 +383,15 @@ class ReviewRequest(models.Model):
         """
         update_obj_with_changenum(self, self.repository, changenum)
 
+    def is_accessible_by(self, user):
+        "Returns true if the user can read this review request"
+        return self.public or self.is_mutable_by(user)
+
+    def is_mutable_by(self, user):
+        "Returns true if the user can modify this review request"
+        return self.submitter == user or \
+               user.has_perm('reviews.change_reviewrequest')
+
     @permalink
     def get_absolute_url(self):
         return ('reviewboard.reviews.views.review_detail', None, {
@@ -412,6 +421,7 @@ class ReviewRequest(models.Model):
         unique_together = (('changenum', 'repository'),)
         permissions = (
             ("can_change_status", "Can change status"),
+            ("can_submit_as_another_user", "Can submit as another user"),
         )
 
 

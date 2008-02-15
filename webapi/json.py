@@ -17,8 +17,9 @@ from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
                                 WebAPIResponseFormError
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
-from djblets.webapi.errors import WebAPIError
-
+from djblets.webapi.errors import WebAPIError, \
+                                  PERMISSION_DENIED, DOES_NOT_EXIST, \
+                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -51,6 +52,7 @@ INVALID_REPOSITORY        = WebAPIError(206, "The repository path specified " +
                                              "repositories")
 REPO_FILE_NOT_FOUND       = WebAPIError(207, "The file was not found in the " +
                                              "repository")
+INVALID_USER              = WebAPIError(208, "User does not exist")
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -270,6 +272,17 @@ def new_review_request(request):
         repository_path = request.POST.get('repository_path',
                                            settings.DEFAULT_REPOSITORY_PATH)
         repository_id = request.POST.get('repository_id', None)
+        submit_as = request.POST.get('submit_as')
+
+        if submit_as:
+            if not request.user.has_perm('reviews.can_submit_as_another_user'):
+                return WebAPIResponseError(request, PERMISSION_DENIED)
+            try:
+                user = User.objects.get(username=submit_as)
+            except User.DoesNotExist:
+                return WebAPIResponseError(request, INVALID_USER)
+        else:
+            user = request.user
 
         if repository_path == None and repository_id == None:
             return WebAPIResponseError(request, MISSING_REPOSITORY)
@@ -282,7 +295,7 @@ def new_review_request(request):
             repository = Repository.objects.get(id=repository_id)
 
         review_request = ReviewRequest.objects.create(
-            request.user, repository, request.POST.get('changenum', None))
+            user, repository, request.POST.get('changenum', None))
 
         return WebAPIResponse(request, {'review_request': review_request})
     except Repository.DoesNotExist, e:
@@ -302,7 +315,7 @@ def review_request(request, review_request_id):
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if not review_request.public and review_request.submitter != request.user:
+    if not review_request.is_accessible_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     return WebAPIResponse(request, {'review_request': review_request})
@@ -314,8 +327,7 @@ def review_request_by_changenum(request, repository_id, changenum):
         review_request = ReviewRequest.objects.get(changenum=changenum,
                                                    repository=repository_id)
 
-        if not review_request.public and \
-           review_request.submitter != request.user:
+        if not review_request.is_accessible_by(request.user):
             return WebAPIResponseError(request, PERMISSION_DENIED)
 
         return WebAPIResponse(request, {'review_request': review_request})
@@ -457,7 +469,7 @@ def review_request_draft_discard(request, review_request_id):
     except ReviewRequestDraft.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
-    if review_request.submitter != request.user:
+    if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     draft.delete()
@@ -474,7 +486,7 @@ def review_request_draft_save(request, review_request_id):
     except ReviewRequestDraft.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
-    if review_request.submitter != request.user:
+    if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     changes = draft.save_draft()
@@ -501,7 +513,7 @@ def find_user(username):
 
 
 def _prepare_draft(request, review_request):
-    if request.user != review_request.submitter:
+    if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
     return ReviewRequestDraft.create(review_request)
 
@@ -883,7 +895,7 @@ def count_review_replies(request, review_request_id, review_id):
 def new_diff(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if review_request.submitter != request.user:
+    if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()
@@ -946,7 +958,7 @@ def new_diff(request, review_request_id):
 def new_screenshot(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if review_request.submitter != request.user:
+    if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     form_data = request.POST.copy()

@@ -341,7 +341,7 @@ def publish(request, review_request_id):
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if review_request.submitter == request.user:
+    if review_request.is_mutable_by(request.user):
         if not review_request.target_groups and \
            not review_request.target_people:
             pass # FIXME show an error
@@ -392,7 +392,7 @@ def setstatus(request, review_request_id, action):
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if request.user != review_request.submitter and \
+    if not review_request.is_mutable_by(request.user) and \
        not request.user.has_perm("reviews.can_change_status"):
         raise HttpResponseForbidden()
 

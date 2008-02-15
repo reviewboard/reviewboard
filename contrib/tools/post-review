@@ -85,10 +85,14 @@ class ReviewBoardServer:
 
         debug("Logged in.")
 
-    def new_review_request(self, changenum):
+    def new_review_request(self, changenum, submit_as=None):
         """
         Creates a review request on a Review Board server, updating an
         existing one if the changeset number already exists.
+
+        If submit_as is provided, the specified user name will be recorded as
+        the submitter of the review request (given that the logged in user has
+        the appropriate permissions).
         """
         try:
             debug("Attempting to create review request for %s" % changenum)
@@ -96,6 +100,10 @@ class ReviewBoardServer:
 
             if changenum:
                 data['changenum'] = changenum
+
+            if submit_as:
+                debug("Submitting the review request as %s" % submit_as)
+                data['submit_as'] = submit_as
 
             rsp = self.api_post('/api/json/reviewrequests/new/', data)
         except APIError, e:
@@ -636,7 +644,8 @@ def load_config_file(filename):
     return config
 
 
-def tempt_fate(server, tool, changenum, files=None, diff_content=None):
+def tempt_fate(server, tool, changenum, files=None, diff_content=None,
+               submit_as=None):
     """
     Attempts to create a review request on a Review Board server and upload
     a diff. On success, the review request path is displayed.
@@ -648,7 +657,7 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None):
         if options.rid:
             review_request = server.get_review_request(options.rid)
         else:
-            review_request = server.new_review_request(changenum)
+            review_request = server.new_review_request(changenum, submit_as)
 
         if options.target_groups:
             server.set_review_request_field(review_request, 'target_groups',
@@ -671,7 +680,7 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None):
         rsp, = e.args
         if rsp['err']['code'] == 103: # Not logged in
             server.login()
-            tempt_fate(server, tool, changenum, files, diff_content)
+            tempt_fate(server, tool, changenum, files, diff_content, submit_as)
             return
 
         if options.rid:
@@ -749,6 +758,10 @@ def parse_options(tool, repository_info, args):
     parser.add_option("-r", "--review-request-id", dest="rid", metavar="ID",
                       default=None,
                       help="existing review request ID to update")
+    parser.add_option("--submit-as", dest="submit_as", metavar="USERNAME",
+                      default=None,
+                      help="user name to be recorded as the author of the "
+                           "review request, instead of the logged in user")
 
     if repository_info:
         if repository_info.supports_changesets:
@@ -858,7 +871,8 @@ def main(args):
     except IOError:
         server.login()
 
-    review_url = tempt_fate(server, tool, changenum, files, diff_content=diff)
+    review_url = tempt_fate(server, tool, changenum, files, diff_content=diff,
+                            submit_as=options.submit_as)
 
     # Load the review up in the browser if requested to:
     if options.open_browser:
