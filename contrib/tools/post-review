@@ -337,7 +337,7 @@ class SCMClient(object):
         elif 'TREES' in config:
             trees = config['TREES']
             if not isinstance(trees, dict):
-                die("Warning: 'TREES' in %s is not a dict!" % filename)
+                die("Warning: 'TREES' in config file is not a dict!")
 
             if repository_info.path in trees and \
                'REVIEWBOARD_URL' in trees[repository_info.path]:
@@ -880,13 +880,13 @@ def main(args):
             import webbrowser
             if 'open_new_tab' in dir(webbrowser):
                 # open_new_tab is only in python 2.5+
-                webbrowser.open_new_tab(reviewUrl)
+                webbrowser.open_new_tab(review_url)
             elif 'open_new' in dir(webbrowser):
-                webbrowser.open_new(reviewUrl)
+                webbrowser.open_new(review_url)
             else:
-                os.system( 'start %s' % reviewUrl )
+                os.system( 'start %s' % review_url )
         except:
-            print 'Error opening review URL: %s' % reviewUrl
+            print 'Error opening review URL: %s' % review_url
 
 
 if __name__ == "__main__":
