@@ -799,6 +799,10 @@ def review_reply_draft(request, review_request_id, review_id):
         public=False,
         base_reply_to=source_review)
 
+    result = {
+        'reply': reply,
+    }
+
     if reply_is_new:
         reply.save()
 
@@ -824,6 +828,7 @@ def review_reply_draft(request, review_request_id, review_id):
             comment.delete()
         else:
             comment.save()
+            result['comment'] = comment
 
             if comment_is_new:
                 reply.comments.add(comment)
@@ -852,6 +857,7 @@ def review_reply_draft(request, review_request_id, review_id):
             comment.delete()
         else:
             comment.save()
+            result['screenshot_comment'] = screenshot_comment
 
             if comment_is_new:
                 reply.screenshot_comments.add(comment)
@@ -880,9 +886,7 @@ def review_reply_draft(request, review_request_id, review_id):
     else:
         reply.save()
 
-    return WebAPIResponse(request, {
-        'reply': reply,
-    })
+    return WebAPIResponse(request, result)
 
 
 @webapi_login_required
