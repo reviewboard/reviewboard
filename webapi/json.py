@@ -61,6 +61,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
             return {
                 'id': o.id,
                 'name': o.name,
+                'display_name': o.display_name,
                 'mailing_list': o.mailing_list,
                 'url': o.get_absolute_url(),
             }
@@ -88,10 +89,10 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'target_people': o.target_people.all(),
             }
         elif isinstance(o, ReviewRequestDraft):
-            if o.bugs_closed:
+            if o.bugs_closed != "":
                 bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
             else:
-                bugs_closed = ''
+                bugs_closed = []
 
             return {
                 'id': o.id,
@@ -99,6 +100,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'last_updated': o.last_updated,
                 'summary': o.summary,
                 'description': o.description,
+                'testing_done': o.testing_done,
                 'bugs_closed': bugs_closed,
                 'branch': o.branch,
                 'target_groups': o.target_groups.all(),
@@ -204,19 +206,28 @@ def string_to_status(status):
 
 @webapi_login_required
 def repository_list(request):
+    """
+    Returns a list of all known repositories.
+    """
     return WebAPIResponse(request, {
         'repositories': Repository.objects.all(),
     })
 
+
 @webapi_login_required
 def user_list(request):
+    """
+    Returns a list of all users.
+
+    If the query parameter is passed, users with a username beginning with
+    the query value will be returned.
+    """
     query = request.GET.get('query', None)
-    columns = ['username', 'first_name', 'last_name']
     if not query:
-        u = User.objects.filter(is_active__exact=True).values(*columns)
+        u = User.objects.filter(is_active__exact=True)
     else:
         u = User.objects.filter(is_active__exact=True,
-                                username__startswith=query).values(*columns)
+                                username__startswith=query)
 
     return WebAPIResponse(request, {
         'users': u,
@@ -224,12 +235,17 @@ def user_list(request):
 
 @webapi_login_required
 def group_list(request):
+    """
+    Returns a list of all review groups.
+
+    If the query parameter is passed, groups with a name beginning with
+    the query value will be returned.
+    """
     query = request.GET.get('query', None)
-    columns = ['display_name', 'name']
     if not query:
-        u = Group.objects.values(*columns)
+        u = Group.objects.all()
     else:
-        u = Group.objects.filter(name__startswith=query).values(*columns)
+        u = Group.objects.filter(name__startswith=query)
 
     return WebAPIResponse(request, {
         'groups': u,
@@ -237,6 +253,9 @@ def group_list(request):
 
 @webapi_login_required
 def group_star(request, group_name):
+    """
+    Adds a group to the user's watched groups list.
+    """
     try:
         group = Group.objects.get(name=group_name)
     except Group.DoesNotExist:
@@ -251,6 +270,9 @@ def group_star(request, group_name):
 
 @webapi_login_required
 def group_unstar(request, group_name):
+    """
+    Removes a group from the user's watched groups list.
+    """
     try:
         group = Group.objects.get(name=group_name)
     except Group.DoesNotExist:
@@ -268,6 +290,40 @@ def group_unstar(request, group_name):
 @webapi_login_required
 @require_POST
 def new_review_request(request):
+    """
+    Creates a new review request.
+
+    Required parameters:
+
+      * repository_path: The repository to create the review request against.
+                         If not specified, the DEFAULT_REPOSITORY_PATH
+                         setting will be used.
+                         If both this and repository_id are set,
+                         repository_path's value takes precedence.
+      * repository_id:   The ID of the repository to create the review
+                         request against.
+
+
+    Optional parameters:
+
+      * submit_as:       The optional user to submit the review request as.
+                         This requires that the actual logged in user is
+                         either a superuser or has the
+                         "reviews.can_submit_as_another_user" property.
+      * changenum:       The optional changenumber to look up for the review
+                         request details. This only works with repositories
+                         that support changesets.
+
+    Returned keys:
+
+      * 'review_request': The resulting review request
+
+    Errors:
+
+      * INVALID_REPOSITORY
+      * CHANGE_NUMBER_IN_USE
+      * INVALID_CHANGE_NUMBER
+    """
     try:
         repository_path = request.POST.get('repository_path',
                                            settings.DEFAULT_REPOSITORY_PATH)
@@ -323,6 +379,9 @@ def review_request(request, review_request_id):
 
 @webapi_login_required
 def review_request_by_changenum(request, repository_id, changenum):
+    """
+    Returns a review request with the specified changenum.
+    """
     try:
         review_request = ReviewRequest.objects.get(changenum=changenum,
                                                    repository=repository_id)
@@ -378,6 +437,14 @@ def review_request_delete(request, review_request_id):
 
 @webapi_login_required
 def review_request_list(request, func, **kwargs):
+    """
+    Returns a list of review requests.
+
+    Optional parameters:
+
+      * status: The status of the returned review requests. This defaults
+                to "pending".
+    """
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
         'review_requests': func(user=request.user, status=status, **kwargs)
@@ -386,6 +453,14 @@ def review_request_list(request, func, **kwargs):
 
 @webapi_login_required
 def count_review_requests(request, func, **kwargs):
+    """
+    Returns the number of review requests.
+
+    Optional parameters:
+
+      * status: The status of the returned review requests. This defaults
+                to "pending".
+    """
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
         'count': func(user=request.user, status=status, **kwargs).count()
@@ -578,8 +653,7 @@ def review_request_draft_set_field(request, review_request_id, field_name):
 
     if not hasattr(review_request, field_name):
         return WebAPIResponseError(request, INVALID_ATTRIBUTE,
-                                 {'attribute': field_name})
-
+                                   {'attribute': field_name})
 
     draft = _prepare_draft(request, review_request)
     result = {}
@@ -676,18 +750,6 @@ def review_draft_save(request, review_request_id, publish=False):
 def review_draft_delete(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if not request.POST.has_key('diff_revision'):
-        return WebAPIResponseError(request, UNSPECIFIED_DIFF_REVISION)
-
-    diff_revision = request.POST['diff_revision']
-
-    try:
-        diffset = review_request.diffset_history.diffset_set.get(
-            revision=diff_revision)
-    except DiffSet.DoesNotExist:
-        return WebAPIResponseError(request, INVALID_DIFF_REVISION,
-                                 {'diff_revision': diff_revision})
-
     try:
         review = Review.objects.get(user=request.user,
                                     review_request=review_request,
@@ -702,18 +764,6 @@ def review_draft_delete(request, review_request_id):
 @webapi_login_required
 def review_draft_comments(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    diff_revision = request.GET.get('diff_revision', None)
-
-    if diff_revision == None:
-        return WebAPIResponseError(request, UNSPECIFIED_DIFF_REVISION)
-
-    try:
-        diffset = review_request.diffset_history.diffset_set.get(
-            revision=diff_revision)
-    except DiffSet.DoesNotExist:
-        return WebAPIResponseError(request, INVALID_DIFF_REVISION,
-                                 {'diff_revision': diff_revision})
 
     try:
         review = Review.objects.get(user=request.user,
