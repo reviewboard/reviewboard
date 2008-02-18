@@ -175,7 +175,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'tool': o.tool.name
             }
         else:
-            return super(ReviewBoardAPIEncoder, self).default(o)
+            return super(ReviewBoardAPIEncoder, self).encode(o)
 
 
 def status_to_string(status):
@@ -791,7 +791,6 @@ def review_reply_draft(request, review_request_id, review_id):
         return source_review
 
     context_type = request.POST['type']
-    context_id = request.POST['id']
     value = request.POST['value']
 
     reply, reply_is_new = Review.objects.get_or_create(
@@ -804,6 +803,7 @@ def review_reply_draft(request, review_request_id, review_id):
         reply.save()
 
     if context_type == "comment":
+        context_id = request.POST['id']
         context_comment = Comment.objects.get(pk=context_id)
 
         try:
@@ -829,6 +829,7 @@ def review_reply_draft(request, review_request_id, review_id):
                 reply.comments.add(comment)
 
     elif context_type == "screenshot_comment":
+        context_id = request.POST['id']
         context_comment = ScreenshotComment.objects.get(pk=context_id)
 
         try:
@@ -879,7 +880,9 @@ def review_reply_draft(request, review_request_id, review_id):
     else:
         reply.save()
 
-    return WebAPIResponse(request)
+    return WebAPIResponse(request, {
+        'reply': reply,
+    })
 
 
 @webapi_login_required
