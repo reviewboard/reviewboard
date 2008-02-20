@@ -5,12 +5,10 @@ nobase_rb_DATA = \
 	accounts/register.html \
 	base_feeds.html \
 	base.html \
-	box.html \
 	diffviewer/changeindex.html \
 	diffviewer/comments_dlg.html \
 	diffviewer/diff_file_fragment.html \
 	diffviewer/view_diff.html \
-	errorbox.html \
 	feeds/reviews_description.html \
 	feeds/reviews_title.html \
 	iphone/base.html \
