@@ -23,6 +23,5 @@ reports/Makefile
 reviews/Makefile
 scmtools/Makefile
 templates/Makefile
-utils/Makefile
 webapi/Makefile
 ])
