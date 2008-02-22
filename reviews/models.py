@@ -132,7 +132,7 @@ class Screenshot(models.Model):
     thumb.allow_tags = True
 
     def __unicode__(self):
-        return "%s (%s)" % (self.caption, self.image)
+        return u"%s (%s)" % (self.caption, self.image)
 
     @permalink
     def get_absolute_url(self):
@@ -852,7 +852,7 @@ class Review(models.Model):
                     "version."))
 
     def __unicode__(self):
-        return "Review of '%s'" % self.review_request
+        return u"Review of '%s'" % self.review_request
 
     def is_reply(self):
         """
