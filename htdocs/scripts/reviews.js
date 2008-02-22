@@ -339,12 +339,15 @@ function registerCommentEditor(review_id, section_id, yourcomment_id) {
         notifyUnchangedCompletion: true
     });
 
-    var cb = function(editor, value) {
+    editor.on('complete', function(editor, value) {
         onReplyEditComplete(value, section_id, yourcomment_id);
-    };
+    }, this, true);
 
-    editor.on('complete', cb, this, true);
-    editor.on('cancel', cb, this, true);
+    editor.on('cancel', function(editor, value) {
+        if (value.stripTags().strip() == "") {
+            removeCommentForm(review_id, section_id, yourcomment_id);
+        }
+    }, this, true);
 
     return editor;
 }
