@@ -19,11 +19,12 @@ def never_cache_patterns(prefix, *args):
     return pattern_list
 
 
-urlpatterns = never_cache_patterns('',
+urlpatterns = never_cache_patterns('djblets.webapi.auth',
     # Accounts
-    (r'^accounts/login/$', 'djblets.webapi.auth.account_login'),
-    (r'^accounts/logout/$', 'djblets.webapi.auth.account_logout'),
+    (r'^accounts/login/$', 'account_login'),
+    (r'^accounts/logout/$', 'account_logout'),
 )
+
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Repositories
