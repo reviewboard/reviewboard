@@ -316,6 +316,13 @@
 
 .review .reply-comments .reply-comment dl {
   border-left: 2px #D0D0D0 solid;
+
+  /*
+   * Set a border-bottom to prevent a bug in IE where, without a border-bottom,
+   * the content of the dl will shift left by the border-left size for every
+   * following item.
+   */
+  border-bottom: 1px #FAFAFA solid;
   margin: 0px;
   padding: 5px;
 }

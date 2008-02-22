@@ -401,11 +401,20 @@ RB.widgets.AutosizeTextArea = function(el, config) {
     this.proxyEl = this.el.createProxy({tag: 'pre'}, this.el.dom.parentNode);
     this.proxyEl.setAbsolutePositioned();
     this.proxyEl.moveTo(-10000, -10000);
-    this.proxyEl.setStyle("white-space", "pre-wrap");      // CSS 3
-    this.proxyEl.setStyle("white-space", "-moz-pre-wrap"); // Mozilla, 1999+
-    this.proxyEl.setStyle("white-space", "-pre-wrap");     // Opera 4-6
-    this.proxyEl.setStyle("white-space", "-o-pre-wrap");   // Opera 7
-    this.proxyEl.setStyle("word-wrap", "break-word");      // Opera 7
+
+    if (!YAHOO.ext.util.Browser.isIE) {
+        this.proxyEl.setStyle("white-space", "pre-wrap");      // CSS 3
+    }
+
+    if (YAHOO.ext.util.Browser.isGecko) {
+        this.proxyEl.setStyle("white-space", "-moz-pre-wrap"); // Mozilla, 1999+
+    }
+
+    if (YAHOO.ext.util.Browser.isOpera) {
+        this.proxyEl.setStyle("white-space", "-pre-wrap");     // Opera 4-6
+        this.proxyEl.setStyle("white-space", "-o-pre-wrap");   // Opera 7
+        this.proxyEl.setStyle("word-wrap", "break-word");      // Opera 7
+    }
 
     this.minHeight = this.minHeight || 100;
 
