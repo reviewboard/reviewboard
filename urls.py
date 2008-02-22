@@ -9,11 +9,13 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssGroupReviewsFeed, \
                                       AtomGroupReviewsFeed
 
+
 rss_feeds = {
     'r': RssReviewsFeed,
     'users': RssSubmitterReviewsFeed,
     'groups': RssGroupReviewsFeed,
 }
+
 
 atom_feeds = {
     'r': AtomReviewsFeed,
@@ -21,45 +23,56 @@ atom_feeds = {
     'groups': AtomGroupReviewsFeed,
 }
 
+
+# Main includes
 urlpatterns = patterns('',
     (r'^admin/', include('django.contrib.admin.urls')),
     (r'^api/json/', include('reviewboard.webapi.urls')),
     (r'^r/', include('reviewboard.reviews.urls')),
     (r'^reports/', include('reviewboard.reports.urls')),
+)
 
-    (r'^$', 'django.views.generic.simple.redirect_to',
-     {'url': '/dashboard/'}),
 
+# reviewboard.reviews.views
+urlpatterns += patterns('reviewboard.reviews.views',
     # Review request browsing
-    (r'^dashboard/$', 'reviewboard.reviews.views.dashboard'),
+    (r'^dashboard/$', 'dashboard'),
 
     # Users
-    (r'^users/$', 'reviewboard.reviews.views.submitter_list'),
-    (r'^users/(?P<username>[A-Za-z0-9_\-\.]+)/$',
-     'reviewboard.reviews.views.submitter'),
+    (r'^users/$', 'submitter_list'),
+    (r'^users/(?P<username>[A-Za-z0-9_\-\.]+)/$', 'submitter'),
 
     # Groups
-    (r'^groups/$', 'reviewboard.reviews.views.group_list'),
-    (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$', 'reviewboard.reviews.views.group'),
+    (r'^groups/$', 'group_list'),
+    (r'^groups/(?P<name>[A-Za-z0-9_-]+)/$', 'group'),
+)
 
-    # Feeds
-    (r'^feeds/rss/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
+
+# django.contrib
+urlpatterns += patterns('django.contrib',
+   # Feeds
+    (r'^feeds/rss/(?P<url>.*)/$', 'syndication.views.feed',
      {'feed_dict': rss_feeds}),
-    (r'^feeds/atom/(?P<url>.*)/$', 'django.contrib.syndication.views.feed',
+    (r'^feeds/atom/(?P<url>.*)/$', 'syndication.views.feed',
      {'feed_dict': atom_feeds}),
+    (r'^account/logout/$', 'auth.views.logout',
+     {'next_page': settings.LOGIN_URL}),
+)
+
+
+# And the rest ...
+urlpatterns += patterns('',
+    (r'^$', 'django.views.generic.simple.redirect_to', {'url': '/dashboard/'}),
 
     # Authentication and accounts
     (r'^account/login/$', 'djblets.auth.views.login',
      {'next_page': '/dashboard/',
       'extra_context': {'BUILTIN_AUTH': settings.BUILTIN_AUTH}}),
-    (r'^account/logout/$', 'django.contrib.auth.views.logout',
-     {'next_page': settings.LOGIN_URL}),
     (r'^account/preferences/$', 'reviewboard.accounts.views.user_preferences',),
 
     # This must be last.
     (r'^iphone/', include('reviewboard.iphone.urls')),
 )
-
 
 if settings.BUILTIN_AUTH:
     urlpatterns += patterns('',
@@ -72,21 +85,22 @@ else:
          'django.views.generic.simple.redirect_to',
          {'url': '/account/login/'}))
 
+
 # Add static media if running in DEBUG mode
 if settings.DEBUG:
     def htdocs_path(leaf):
         return os.path.join(settings.HTDOCS_ROOT, leaf)
 
-    urlpatterns += patterns('',
-        (r'^css/(?P<path>.*)$', 'django.views.static.serve', {
+    urlpatterns += patterns('django.views.static',
+        (r'^css/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
             'document_root': htdocs_path('css'),
             }),
-        (r'^images/(?P<path>.*)$', 'django.views.static.serve', {
+        (r'^images/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
             'document_root': htdocs_path('images'),
             }),
-        (r'^scripts/(?P<path>.*)$', 'django.views.static.serve', {
+        (r'^scripts/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
             'document_root': htdocs_path('scripts')
             }),
