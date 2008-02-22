@@ -674,6 +674,11 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None,
                                             options.summary)
             save_draft = True
 
+        if options.description:
+            server.set_review_request_field(review_request, 'description',
+                                            options.description)
+            save_draft = True
+
         if save_draft:
             server.save_draft(review_request)
     except APIError, e:
@@ -751,6 +756,9 @@ def parse_options(tool, repository_info, args):
     parser.add_option("--summary", dest="summary",
                       default=None,
                       help="summary of the review ")
+    parser.add_option("--description", dest="description",
+                      default=None,
+                      help="description of the review ")
     parser.add_option("--revision-range", dest="revision_range",
                       default=None,
                       help="generate the diff for review based on given " +
