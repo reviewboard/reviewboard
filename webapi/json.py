@@ -10,7 +10,6 @@ from django.http import HttpResponse, Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.views.decorators.http import require_POST
-from djblets.util.decorators import simple_decorator
 from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
                                 WebAPIResponseError, \

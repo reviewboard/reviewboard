@@ -1,7 +1,7 @@
 import os.path
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns, include
+from django.conf.urls.defaults import patterns, include, handler404, handler500
 
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \

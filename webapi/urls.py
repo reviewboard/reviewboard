@@ -1,22 +1,6 @@
-from django.conf.urls.defaults import url
-from django.core.urlresolvers import RegexURLPattern
-from django.views.decorators.cache import never_cache
+from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
-
-
-def never_cache_patterns(prefix, *args):
-    pattern_list = []
-    for t in args:
-        if isinstance(t, (list, tuple)):
-            t = url(prefix=prefix, *t)
-        elif isinstance(t, RegexURLPattern):
-            t.add_prefix(prefix)
-
-        t._callback = never_cache(t.callback)
-        pattern_list.append(t)
-
-    return pattern_list
 
 
 urlpatterns = never_cache_patterns('djblets.webapi.auth',

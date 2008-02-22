@@ -300,6 +300,9 @@ class ReviewRequest(models.Model):
         """
         Returns a sorted list of bugs associated with this review request.
         """
+        if self.bugs_closed == "":
+            return []
+
         bugs = re.split(r"[, ]+", self.bugs_closed)
 
         # First try a numeric sort, to show the best results for the majority
@@ -475,6 +478,9 @@ class ReviewRequestDraft(models.Model):
         """
         Returns a sorted list of bugs associated with this review request.
         """
+        if self.bugs_closed == "":
+            return []
+
         bugs = re.split(r"[, ]+", self.bugs_closed)
 
         # First try a numeric sort, to show the best results for the majority
