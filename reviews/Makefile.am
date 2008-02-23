@@ -14,7 +14,6 @@ nobase_rb_PYTHON = \
 	management/commands/fixscreenshots.py \
 	management/commands/index.py \
 	templatetags/__init__.py \
-	templatetags/emailtags.py \
 	templatetags/reviewtags.py
 
 nobase_rb_DATA = \
