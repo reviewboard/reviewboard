@@ -191,7 +191,7 @@ class ReviewBoardServer:
         """
         debug('HTTP GETting %s' % path)
 
-        url = urljoin(self.url, path)
+        url = self._make_url(path)
 
         try:
             rsp = urllib2.urlopen(url).read()
@@ -205,6 +205,13 @@ class ReviewBoardServer:
             except AttributeError:
                 pass
             die()
+
+    def _make_url(self, path):
+        """Given a path on the server returns a full http:// style url"""
+        url = urljoin(self.url, path)
+        if not url.startswith('http'):
+            url = 'http://%s' % url
+        return url
 
     def api_get(self, path):
         """
@@ -224,9 +231,7 @@ class ReviewBoardServer:
 
         if 'password' in debug_fields:
             debug_fields["password"] = "**************"
-        url = '%s%s' % (self.url, path)
-        if url[0:4] != 'http':
-            url = 'http://%s' % url
+        url = self._make_url(path)
         debug('HTTP POSTing to %s: %s' % (url, debug_fields))
 
         content_type, body = self._encode_multipart_formdata(fields, files)
