@@ -104,6 +104,8 @@ class LDAPBackend:
                 # ANON_BIND_UID and ANON_BIND_PASSWD are wrong, but I don't
                 # know how
                 pass
+            except ldap.NO_SUCH_OBJECT:
+                pass
             except ldap.LDAPError:
                 pass
         return user
