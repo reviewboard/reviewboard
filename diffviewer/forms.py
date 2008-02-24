@@ -47,7 +47,7 @@ class UploadDiffForm(forms.Form):
 
         for f in files:
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
-            filename = os.path.join(basedir, f2)
+            filename = os.path.join(basedir, f2).replace("\\", "/")
 
             # FIXME: this would be a good place to find permissions errors
             if revision != PRE_CREATION and revision != UNKNOWN and \
@@ -69,7 +69,7 @@ class UploadDiffForm(forms.Form):
         for f in files:
             filediff = FileDiff(diffset=diffset,
                                 source_file=f.origFile,
-                                dest_file=os.path.join(basedir, f.newFile),
+                                dest_file=os.path.join(basedir, f.newFile).replace("\\", "/"),
                                 source_revision=smart_unicode(f.origInfo),
                                 dest_detail=f.newInfo,
                                 diff=f.data,
