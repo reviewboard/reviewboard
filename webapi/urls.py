@@ -46,6 +46,13 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'count_review_requests',
      {'func': ReviewRequest.objects.to_user}),
 
+    (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/directly/$',
+     'review_request_list',
+     {'func': ReviewRequest.objects.to_user_directly}),
+    (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/directly/count/$',
+     'count_review_requests',
+     {'func': ReviewRequest.objects.to_user_directly}),
+
     (r'^reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/$',
      'review_request_list',
      {'func': ReviewRequest.objects.from_user}),

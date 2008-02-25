@@ -182,6 +182,34 @@ class WebAPITests(TestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_user("grumpy").count())
 
+    def testReviewRequestsToUserDirectly(self):
+        """Testing the reviewrequests/to/user/directly API"""
+        rsp = self.apiGet("reviewrequests/to/user/doc/directly")
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.to_user_directly("doc").count())
+
+    def testReviewRequestsToUserDirectlyWithStatus(self):
+        """Testing the reviewrequests/to/user/directly API with custom status"""
+        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
+                          {'status': 'submitted'})
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_user_directly("doc", status='S').count())
+
+        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
+                          {'status': 'discarded'})
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_user_directly("doc", status='D').count())
+
+    def testReviewRequestsToUserDirectlyCount(self):
+        """Testing the reviewrequests/to/user/directly/count API"""
+        rsp = self.apiGet("reviewrequests/to/user/doc/directly/count")
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         ReviewRequest.objects.to_user_directly("doc").count())
+
     def testReviewRequestsFromUser(self):
         """Testing the reviewrequests/from/user API"""
         rsp = self.apiGet("reviewrequests/from/user/grumpy")
