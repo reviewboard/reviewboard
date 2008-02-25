@@ -9,7 +9,31 @@ from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import \
     SCMError, FileNotFoundError, SCMTool, HEAD, PRE_CREATION, UNKNOWN
 
+
 class SVNTool(SCMTool):
+    AUTHOR_KEYWORDS   = ['Author', 'LastChangedBy']
+    DATE_KEYWORDS     = ['Date', 'LastChangedDate']
+    REVISION_KEYWORDS = ['Revision', 'LastChangedRevision', 'Rev']
+    URL_KEYWORDS      = ['HeadURL', 'URL']
+    ID_KEYWORDS       = ['Id']
+
+    # Mapping of keywords to known aliases
+    keywords = {
+        # Standard keywords
+        'Author':              AUTHOR_KEYWORDS,
+        'Date':                DATE_KEYWORDS,
+        'Revision':            REVISION_KEYWORDS,
+        'HeadURL':             URL_KEYWORDS,
+        'Id':                  ID_KEYWORDS,
+
+        # Aliases
+        'LastChangedBy':       AUTHOR_KEYWORDS,
+        'LastChangedDate':     DATE_KEYWORDS,
+        'LastChangedRevision': REVISION_KEYWORDS,
+        'Rev':                 REVISION_KEYWORDS,
+        'URL':                 URL_KEYWORDS,
+    }
+
     def __init__(self, repository):
         self.repopath = repository.path
         if self.repopath[-1] == '/':
@@ -49,8 +73,21 @@ class SVNTool(SCMTool):
             raise FileNotFoundError(path, revision)
 
         try:
-            return self.client.cat(self.__normalize_path(path),
-                                   self.__normalize_revision(revision))
+            normpath = self.__normalize_path(path)
+            normrev  = self.__normalize_revision(revision)
+
+            data = self.client.cat(normpath, normrev)
+
+            # Find out if this file has any keyword expansion set.
+            # If it does, collapse these keywords. This is because SVN
+            # will return the file expanded to us, which would break patching.
+            keywords = self.client.propget("svn:keywords", normpath, normrev,
+                                           recurse=True)
+
+            if normpath in keywords:
+                data = self.collapse_keywords(data, keywords[normpath])
+
+            return data
         except ClientError, e:
             stre = str(e)
             if 'File not found' in stre:
@@ -62,6 +99,35 @@ class SVNTool(SCMTool):
                     'for the user that reviewboard is running as.')
             else:
                 raise SCMError(e)
+
+    def collapse_keywords(self, data, keyword_str):
+        """
+        Collapse SVN keywords in string.
+
+        SVN allows for several keywords (such as $Id$ and $Revision$) to
+        be expanded, though these keywords are limited to a fixed set
+        (and associated aliases) and must be enabled per-file.
+
+        Keywords can take two forms: $Keyword$ and $Keyword::     $
+        The latter allows the field to take a fixed size when expanded.
+
+        When we cat a file on SVN, the keywords come back expanded, which
+        isn't good for us as we need to diff against the collapsed version.
+        This function makes that transformation.
+        """
+        def repl(m):
+            if m.group(2):
+                return "$%s::%s$" % (m.group(1), " " * len(m.group(3)))
+
+            return "$%s$" % m.group(1)
+
+        # Get any aliased keywords
+        keywords = [keyword
+                    for name in keyword_str.split(" ")
+                    for keyword in self.keywords.get(name, [])]
+
+        return re.sub(r"\$(%s):(:?)([^\$]+)\$" % '|'.join(keywords),
+                      repl, data)
 
 
     def parse_diff_revision(self, file_str, revision_str):

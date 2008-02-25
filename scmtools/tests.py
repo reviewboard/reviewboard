@@ -249,16 +249,24 @@ class SubversionTests(unittest.TestCase):
         # 'svn cat' will expand special variables in svn:keywords,
         # but 'svn diff' doesn't expand anything.  This causes the
         # patch to fail if those variables appear in the patch context.
-        diff = "Index: Makefile\n==========================================" + \
-               "=========================\n--- Makefile    (revision 3)\n++" + \
-               "+ Makefile    (working copy)\n@@ -1,4 +1,5 @@\n # $Id$\n+# " + \
-               "foo\n include ../tools/Makefile.base-vars\n NAME = misc-doc" + \
-               "s\n OUTNAME = svn-misc-docs\n"
+        diff = "Index: Makefile\n" \
+               "===========================================================" \
+               "========\n" \
+               "--- Makefile    (revision 4)\n" \
+               "+++ Makefile    (working copy)\n" \
+               "@@ -1,6 +1,7 @@\n" \
+               " # $Id$\n" \
+               " # $Rev$\n" \
+               " # $Revision::     $\n" \
+               "+# foo\n" \
+               " include ../tools/Makefile.base-vars\n" \
+               " NAME = misc-docs\n" \
+               " OUTNAME = svn-misc-docs\n"
 
         filename = 'trunk/doc/misc-docs/Makefile'
-        rev = Revision('3')
+        rev = Revision('4')
         file = self.tool.get_file(filename, rev)
-        newfile = patch(diff, file, filename) # Throws an exception!
+        patch(diff, file, filename)
 
 
 class PerforceTests(unittest.TestCase):
