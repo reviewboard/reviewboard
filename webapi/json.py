@@ -140,6 +140,10 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'timesince': timesince(o.timestamp),
                 'public': review.public,
                 'user': review.user,
+                'x': o.x,
+                'y': o.y,
+                'w': o.w,
+                'h': o.h,
             }
         elif isinstance(o, Screenshot):
             return {
@@ -1137,12 +1141,12 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
 
     if request.POST:
-        text = request.POST['text']
         action = request.POST['action']
 
         # TODO: Sanity check the fields
 
         if action == "set":
+            text = request.POST['text']
             review, review_is_new = Review.objects.get_or_create(
                 review_request=review_request,
                 user=request.user,
