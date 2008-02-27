@@ -1053,13 +1053,14 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
         interfilediff = None
 
     if request.POST:
-        text = request.POST['text']
         num_lines = request.POST['num_lines']
         action = request.POST['action']
 
         # TODO: Sanity check the fields
 
         if action == "set":
+            text = request.POST['text']
+
             review, review_is_new = Review.objects.get_or_create(
                 review_request=review_request,
                 user=request.user,
@@ -1128,6 +1129,7 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
     return WebAPIResponse(request, {
         'comments': comments_query
     })
+
 
 @webapi_login_required
 def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):

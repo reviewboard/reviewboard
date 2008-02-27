@@ -1,3 +1,4 @@
+import os
 import unittest
 
 from django.contrib.auth.models import User, Permission
@@ -7,10 +8,11 @@ from django.utils import simplejson
 from djblets.util.testing import TagTest
 
 import reviewboard.webapi.json as webapi
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
-                                       Comment, ScreenshotComment
-from reviewboard.scmtools.models import Repository
+                                       Comment, Screenshot, ScreenshotComment
+from reviewboard.scmtools.models import Repository, Tool
 
 
 class WebAPITests(TestCase):
@@ -18,6 +20,13 @@ class WebAPITests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
+        svn_repo_path = os.path.join(os.path.dirname(__file__),
+                                     '../scmtools/testdata/svn_repo')
+        self.repository = Repository(name='Subversion SVN',
+                                     path='file://' + svn_repo_path,
+                                     tool=Tool.objects.get(name='Subversion'))
+        self.repository.save()
+
         self.client.login(username="grumpy", password="grumpy")
         self.user = User.objects.get(username="grumpy")
 
@@ -28,6 +37,7 @@ class WebAPITests(TestCase):
         response = self.client.get("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, 200)
         rsp = simplejson.loads(response.content)
+        print "Response: %s" % rsp
         return rsp
 
     def apiPost(self, path, query={}):
@@ -35,6 +45,7 @@ class WebAPITests(TestCase):
         response = self.client.post("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, 200)
         rsp = simplejson.loads(response.content)
+        print "Response: %s" % rsp
         return rsp
 
     def testRepositoryList(self):
@@ -240,16 +251,16 @@ class WebAPITests(TestCase):
 
     def testNewReviewRequest(self):
         """Testing the reviewrequests/new API"""
-        repository = Repository.objects.all()[0]
         rsp = self.apiPost("reviewrequests/new", {
-            'repository_path': repository.path,
+            'repository_path': self.repository.path,
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review_request']['repository']['id'],
-                         repository.id)
+                         self.repository.id)
 
-        # See if we can fetch this.
-        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     def testReviewRequest(self):
         """Testing the reviewrequests/<id> API"""
@@ -321,7 +332,7 @@ class WebAPITests(TestCase):
         self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
 
         review_request_id = \
-            ReviewRequest.objects.filter(submitter=self.user)[0].id
+            ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertRaises(ReviewRequest.DoesNotExist,
@@ -355,7 +366,7 @@ class WebAPITests(TestCase):
         bugs = ""
 
         review_request_id = \
-            ReviewRequest.objects.filter(submitter=self.user)[0].id
+            ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPost("reviewrequests/%s/draft/set" % review_request_id, {
             'summary': summary,
             'description': description,
@@ -382,7 +393,7 @@ class WebAPITests(TestCase):
         """Testing the reviewrequests/draft/set/<field> API"""
         bugs_closed = '123,456'
         review_request_id = \
-            ReviewRequest.objects.filter(submitter=self.user)[0].id
+            ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
                            review_request_id, {
             'value': bugs_closed,
@@ -394,7 +405,7 @@ class WebAPITests(TestCase):
     def testReviewRequestDraftSetFieldInvalidName(self):
         """Testing the reviewrequests/draft/set/<field> API with invalid name"""
         review_request_id = \
-            ReviewRequest.objects.filter(submitter=self.user)[0].id
+            ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPost("reviewrequests/%s/draft/set/foobar" %
                            review_request_id, {
             'value': 'foo',
@@ -410,7 +421,7 @@ class WebAPITests(TestCase):
         self.testReviewRequestDraftSet()
 
         review_request_id = \
-            ReviewRequest.objects.filter(submitter=self.user)[0].id
+            ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id)
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -423,7 +434,7 @@ class WebAPITests(TestCase):
 
     def testReviewRequestDraftDiscard(self):
         """Testing the reviewrequests/draft/discard API"""
-        review_request = ReviewRequest.objects.filter(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
         summary = review_request.summary
         description = review_request.description
 
@@ -656,3 +667,136 @@ class WebAPITests(TestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
+
+    def testRepliesList(self):
+        """Testing the reviewrequests/reviews/replies API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.testReplyDraftSave()
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['replies']), len(review.public_replies()))
+
+        for reply in review.public_replies():
+            self.assertEqual(rsp['replies'][0]['id'], reply.id)
+            self.assertEqual(rsp['replies'][0]['body_top'], reply.body_top)
+            self.assertEqual(rsp['replies'][0]['body_bottom'],
+                             reply.body_bottom)
+
+    def testRepliesListCount(self):
+        """Testing the reviewrequests/reviews/replies/count API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.testReplyDraftSave()
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies/count" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], len(review.public_replies()))
+
+    def testNewDiff(self):
+        """Testing the reviewrequests/diff/new API"""
+        review_request = self.testNewReviewRequest()
+
+        f = open("scmtools/testdata/svn_makefile.diff", "r")
+        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
+            'path': f,
+            'basedir': "/trunk",
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        diffset = DiffSet.objects.get(pk=rsp['diffset_id'])
+
+    def testNewDiffInvalidFormData(self):
+        """Testing the reviewrequests/diff/new API with Invalid Form Data"""
+        review_request = self.testNewReviewRequest()
+
+        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.INVALID_FORM_DATA.code)
+        self.assert_('path' in rsp['fields'])
+        self.assert_('basedir' in rsp['fields'])
+
+    def testNewScreenshot(self):
+        """Testing the reviewrequests/screenshot/new API"""
+        review_request = self.testNewReviewRequest()
+
+        f = open("htdocs/images/trophy.png", "r")
+        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
+                           review_request.id, {
+            'path': f,
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot_id'])
+
+    def testDiffCommentsSet(self):
+        """Testing the reviewrequests/diff/file/line/comments set API"""
+        comment_text = "This is a test comment."
+
+        review_request = ReviewRequest.objects.public()[0]
+        review_request.review_set = []
+        diffset = review_request.diffset_history.diffset_set.latest()
+        filediff = diffset.files.all()[0]
+
+        rsp = self.apiPost(
+            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
+            (review_request.id, diffset.revision, filediff.id, 10),
+            {
+                'action': 'set',
+                'text': comment_text,
+                'num_lines': 5,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['comments']), 1)
+        self.assertEqual(rsp['comments'][0]['text'], comment_text)
+
+    def testDiffCommentsDelete(self):
+        """Testing the reviewrequests/diff/file/line/comments delete API"""
+        comment_text = "This is a test comment."
+
+        self.testDiffCommentsSet()
+
+        review_request = ReviewRequest.objects.public()[0]
+        diffset = review_request.diffset_history.diffset_set.latest()
+        filediff = diffset.files.all()[0]
+
+        rsp = self.apiPost(
+            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
+            (review_request.id, diffset.revision, filediff.id, 10),
+            {
+                'action': 'delete',
+                'num_lines': 5,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['comments']), 0)
+
+    def testDiffCommentsList(self):
+        """Testing the reviewrequests/diff/file/line/comments list API"""
+        self.testDiffCommentsSet()
+
+        review_request = ReviewRequest.objects.public()[0]
+        diffset = review_request.diffset_history.diffset_set.latest()
+        filediff = diffset.files.all()[0]
+
+        rsp = self.apiGet(
+            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
+            (review_request.id, diffset.revision, filediff.id, 10))
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comments = Comment.objects.filter(filediff=filediff)
+        self.assertEqual(len(rsp['comments']), comments.count())
+
+        for i in range(0, len(rsp['comments'])):
+            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
