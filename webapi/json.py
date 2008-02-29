@@ -860,7 +860,7 @@ def review_reply_draft(request, review_request_id, review_id):
             comment.delete()
         else:
             comment.save()
-            result['screenshot_comment'] = screenshot_comment
+            result['screenshot_comment'] = comment
 
             if comment_is_new:
                 reply.screenshot_comments.add(comment)
@@ -1187,7 +1187,7 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                 review.delete()
         else:
             return WebAPIResponseError(request, INVALID_ACTION,
-                                     {'action': action})
+                                       {'action': action})
 
     return WebAPIResponse(request, {
         'comments': screenshot.screenshotcomment_set.filter(
