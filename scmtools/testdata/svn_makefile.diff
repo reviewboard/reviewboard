@@ -1,0 +1,16 @@
+Index: doc/misc-docs/Makefile
+===================================================================
+--- doc/misc-docs/Makefile	(revision 4)
++++ doc/misc-docs/Makefile	(working copy)
+@@ -1,8 +1,10 @@
+ # $Id$
+-# $Rev$
+ # $Revision::     $
++
+ include ../tools/Makefile.base-vars
++
+ NAME = misc-docs
+ OUTNAME = svn-misc-docs
+ INSTALL_DIR = $(DESTDIR)/usr/share/doc/subversion
++
+ include ../tools/Makefile.base-rules
