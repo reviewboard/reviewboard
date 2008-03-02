@@ -128,10 +128,11 @@ class DiffParser(object):
         which can be multiple lines long.
         """
         if linenum + 1 < len(self.lines) and \
-           ((self.lines[linenum].startswith('--- ') and \
-             self.lines[linenum + 1].startswith('+++ ')) or \
-            (self.lines[linenum].startswith('*** ') and \
-             self.lines[linenum + 1].startswith('--- '))):
+           ((self.lines[linenum].startswith('--- ') and
+             self.lines[linenum + 1].startswith('+++ ')) or
+            (self.lines[linenum].startswith('*** ') and
+             self.lines[linenum + 1].startswith('--- ') and
+             not self.lines[linenum].endswith(" ****"))):
             # This is a unified or context diff header. Parse the
             # file and extra info.
             try:
