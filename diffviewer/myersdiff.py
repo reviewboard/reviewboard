@@ -620,15 +620,7 @@ class MyersDiffer:
                             if discards[j] == self.DISCARD_CANCEL:
                                 discards[j] = self.DISCARD_NONE
                     else:
-                        minimum = 1
-                        temp = length >> 2
-                        temp >>= 2
-                        while 0 < temp:
-                            temp >>= 2
-                            minimum <<= 1
-                        minimum += 1
-                        assert minimum == 1 + self._very_approx_sqrt(length / 4)
-
+                        minimum = 1 + self._very_approx_sqrt(length / 4)
                         j = 0
                         consec = 0
                         while j < length:
