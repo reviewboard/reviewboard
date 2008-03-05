@@ -227,10 +227,9 @@ def user_list(request):
     """
     query = request.GET.get('query', None)
     if not query:
-        u = User.objects.filter(is_active__exact=True)
+        u = User.objects.filter(is_active=True)
     else:
-        u = User.objects.filter(is_active__exact=True,
-                                username__startswith=query)
+        u = User.objects.filter(is_active=True, username__startswith=query)
 
     return WebAPIResponse(request, {
         'users': u,

@@ -312,7 +312,7 @@ class SubmitterDataGrid(DataGrid):
     pending_count = PendingCountColumn(_("Pending Reviews"), shrink=True)
 
     def __init__(self, request):
-        DataGrid.__init__(self, request, User.objects.all(),
+        DataGrid.__init__(self, request, User.objects.filter(is_active=True),
                           _("All submitters"))
         self.default_sort = ["username"]
         self.profile_sort_field = 'sort_submitter_columns'

@@ -42,7 +42,7 @@
    <td class="indented label"><label for="target_people">People:</label></td>
    <td class="value"><span id="target_people">
 {%  for person in review_request_details.target_people.all %}
-<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+<a href="{{person.get_absolute_url}}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
   </span></td>
   </tr>

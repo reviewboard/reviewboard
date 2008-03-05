@@ -25,7 +25,8 @@ def get_email_addresses_for_group(g):
             # attached to it, so just return their custom list as-is.
             return g.mailing_list
     else:
-        return [get_email_address_for_user(u) for u in g.users.all()]
+        return [get_email_address_for_user(u)
+                for u in g.users.filter(is_active=True)]
 
 
 class SpiffyEmailMessage(EmailMessage):
@@ -58,10 +59,12 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     recipient_table = {
         from_email: 1,
-        get_email_address_for_user(review_request.submitter): 1,
     }
 
-    for u in review_request.target_people.all():
+    if review_request.submitter.is_active:
+        recipient_table[get_email_address_for_user(review_request.submitter)] = 1
+
+    for u in review_request.target_people.filter(is_active=True):
         recipient_table[get_email_address_for_user(u)] = 1
 
     for group in review_request.target_groups.all():
@@ -69,11 +72,13 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             recipient_table[address] = 1
 
     for profile in review_request.starred_by.all():
-        recipient_table[get_email_address_for_user(profile.user)] = 1
+        if profile.user.is_active:
+            recipient_table[get_email_address_for_user(profile.user)] = 1
 
     if extra_recipients:
         for recipient in extra_recipients:
-            recipient_table[get_email_address_for_user(recipient)] = 1
+            if recipient.is_active:
+                recipient_table[get_email_address_for_user(recipient)] = 1
 
     recipient_list = recipient_table.keys()
     context['domain'] = current_site.domain

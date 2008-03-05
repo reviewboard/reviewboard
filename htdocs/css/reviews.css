@@ -142,6 +142,10 @@
   white-space: nowrap;
 }
 
+.review-request #details #target_people .inactive {
+  text-decoration: line-through;
+}
+
 .review-request #diff_revision {
   font-weight: bold;
   text-align: right;

@@ -9,6 +9,11 @@ from djblets.util.db import ConcurrencyManager
 from reviewboard.reviews.models import Group, ReviewRequest
 
 
+# Hack the admin display to include the is_active field
+User._meta.admin.list_display += ('is_active',)
+User._meta.admin.list_filter += ('is_active',)
+
+
 class ReviewRequestVisit(models.Model):
     """
     A recording of the last time a review request was visited by a user.
