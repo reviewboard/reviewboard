@@ -1,0 +1,19 @@
+Test data for a README file.
+
+There's a line here.
+
+A line there.
+
+And a new line here!
+
+We must have several lines to reproduce this problem.
+
+So that there's enough hidden context.
+
+And dividers so we can reproduce the bug.
+
+Which will a --- line at the end of one file due to the lack of newline,
+causing a parse error.
+
+And here.
+Yes, this is a good README file. Like most README files, this doesn't tell youanything you really didn't already know.

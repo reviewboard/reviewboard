@@ -58,6 +58,21 @@ def patch(diff, file, filename):
        except Larry Wall knows how to patch."""
 
     def convert_line_endings(data):
+        # Files without a trailing newline come out of Perforce (and possibly
+        # other systems) with a trailing \r. Diff will see the \r and
+        # add a "\ No newline at end of file" marker at the end of the file's
+        # contents, which patch understands and will happily apply this to
+        # a file with a trailing \r.
+        #
+        # The problem is that we normalize \r's to \n's, which breaks patch.
+        # Our solution to this is to just remove that last \r and not turn
+        # it into a \n.
+        #
+        # See http://code.google.com/p/reviewboard/issues/detail?id=386
+        # and http://reviews.review-board.org/r/286/
+        if data[-1] == "\r":
+            data = data[:-1]
+
         temp = data.replace('\r\n', '\n')
         temp = temp.replace('\r', '\n')
         return temp

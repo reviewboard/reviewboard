@@ -1,0 +1,24 @@
+*** orig_src/README.nonewline	2008-02-25 03:40:42.000000000 -0800
+--- new_src/README.nonewline	2008-02-25 03:40:55.000000000 -0800
+***************
+*** 1,6 ****
+--- 1,7 ----
+  Test data for a README file.
+  
+  There's a line here.
++ Here's a change!
+  
+  A line there.
+  
+***************
+*** 16,19 ****
+  causing a parse error.
+  
+  And here.
+! Yes, this is a good README file. Like most README files, this doesn't tell youanything you really didn't already know.
+\ No newline at end of file
+--- 17,20 ----
+  causing a parse error.
+  
+  And here.
+! Yes, this is a good README file. Like most README files, this doesn't tell youanything you really didn't already know.

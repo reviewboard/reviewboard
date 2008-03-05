@@ -92,7 +92,7 @@ class DiffParserTest(unittest.TestCase):
         return data
 
     def compareDiffs(self, files, testdir):
-        self.assertEqual(len(files), 4)
+        self.assertEqual(len(files), 5)
         for file in files:
             f = open("%s/diffs/%s/%s.diff" %
                      (self.PREFIX, testdir, os.path.basename(file.newFile)))
@@ -146,7 +146,7 @@ class DiffParserTest(unittest.TestCase):
         self.assertEqual(patched, old)
 
     def testPatchCRLFFileCRLFDiff(self):
-        """Testing patching a CRLF file with a CRLF diff."""
+        """Testing patching a CRLF file with a CRLF diff"""
         old = self._get_file('orig_src', 'README.crlf')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
@@ -154,7 +154,7 @@ class DiffParserTest(unittest.TestCase):
         self.assertEqual(patched, new)
 
     def testPatchCRFileCRLFDiff(self):
-        """Testing patching a CR file with a CRLF diff."""
+        """Testing patching a CR file with a CRLF diff"""
         old = self._get_file('orig_src', 'README')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
@@ -162,11 +162,21 @@ class DiffParserTest(unittest.TestCase):
         self.assertEqual(patched, new)
 
     def testPatchCRLFFileCRDiff(self):
-        """Testing patching a CRLF file with a CR diff."""
+        """Testing patching a CRLF file with a CR diff"""
         old = self._get_file('orig_src', 'README.crlf')
         new = self._get_file('new_src', 'README')
         diff = self._get_file('diffs', 'unified', 'README.diff')
         patched = diffutils.patch(diff, old, new)
+        self.assertEqual(patched, new)
+
+    def testPatchFileWithFakeNoNewline(self):
+        """Testing patching a file indicating no newline with a trailing \\r"""
+        old = self._get_file('orig_src', 'README.nonewline')
+        new = self._get_file('new_src', 'README.nonewline')
+        diff = self._get_file('diffs', 'unified', 'README.nonewline.diff')
+        files = diffparser.DiffParser(diff).parse()
+        patched = diffutils.patch(files[0].data, old, new)
+        self.assertEqual(diff, files[0].data)
         self.assertEqual(patched, new)
 
     def testInterline(self):
