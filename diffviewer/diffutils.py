@@ -70,6 +70,9 @@ def patch(diff, file, filename):
         #
         # See http://code.google.com/p/reviewboard/issues/detail?id=386
         # and http://reviews.review-board.org/r/286/
+        if data == "":
+            return ""
+
         if data[-1] == "\r":
             data = data[:-1]
 
