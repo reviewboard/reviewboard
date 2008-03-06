@@ -243,7 +243,8 @@ class ReviewRequest(models.Model):
         ('D', 'Discarded'),
     )
 
-    submitter = models.ForeignKey(User, verbose_name=_("submitter"))
+    submitter = models.ForeignKey(User, verbose_name=_("submitter"),
+                                  raw_id_admin=True)
     time_added = models.DateTimeField(_("time added"), default=datetime.now)
     last_updated = ModificationTimestampField(_("last updated"))
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
@@ -280,16 +281,13 @@ class ReviewRequest(models.Model):
         Screenshot,
         verbose_name=_("screenshots"),
         related_name="review_request",
-        core=False, blank=True,
-        filter_interface=models.VERTICAL)
+        core=False, blank=True, raw_id_admin=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
         help_text=_("A list of screenshots that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
-        core=False,
-        blank=True,
-        filter_interface=models.VERTICAL)
+        core=False, blank=True, raw_id_admin=True)
 
 
     # Set this up with the ReviewRequestManager
@@ -463,11 +461,11 @@ class ReviewRequestDraft(models.Model):
     screenshots = models.ManyToManyField(Screenshot,
                                          verbose_name=_("screenshots"),
                                          core=False, blank=True,
-                                         filter_interface=models.VERTICAL)
+                                         raw_id_admin=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
-        related_name="inactive_drafts", core=False, blank=True,
-        filter_interface=models.VERTICAL)
+        related_name="inactive_drafts",
+        core=False, blank=True, raw_id_admin=True)
 
     submitter = property(lambda self: self.review_request.submitter)
 
@@ -805,16 +803,17 @@ class Review(models.Model):
     """
     A review of a review request.
     """
-    review_request = models.ForeignKey(ReviewRequest,
+    review_request = models.ForeignKey(ReviewRequest, raw_id_admin=True,
                                        verbose_name=_("review request"))
-    user = models.ForeignKey(User, verbose_name=_("user"))
+    user = models.ForeignKey(User, verbose_name=_("user"),
+                             raw_id_admin=True)
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     public = models.BooleanField(_("public"), default=False)
     ship_it = models.BooleanField(_("ship it"), default=False,
         help_text=_("Indicates whether the reviewer thinks this code is "
                     "ready to ship."))
     base_reply_to = models.ForeignKey(
-        "self", blank=True, null=True,
+        "self", blank=True, null=True, raw_id_admin=True,
         related_name="replies",
         verbose_name=_("Base reply to"),
         help_text=_("The top-most review in the discussion thread for "
@@ -832,28 +831,28 @@ class Review(models.Model):
                     "comments."))
 
     body_top_reply_to = models.ForeignKey(
-        "self", blank=True, null=True,
+        "self", blank=True, null=True, raw_id_admin=True,
         related_name="body_top_replies",
         verbose_name=_("body (top) reply to"),
         help_text=_("The review that the body (top) field is in reply to."))
     body_bottom_reply_to = models.ForeignKey(
-        "self", blank=True, null=True,
+        "self", blank=True, null=True, raw_id_admin=True,
         related_name="body_bottom_replies",
         verbose_name=_("body (bottom) reply to"),
         help_text=_("The review that the body (bottom) field is in reply to."))
 
     comments = models.ManyToManyField(Comment, verbose_name=_("comments"),
                                       core=False, blank=True,
-                                      filter_interface=models.VERTICAL)
+                                      raw_id_admin=True)
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
         verbose_name=_("screenshot comments"),
-        core=False, blank=True, filter_interface=models.VERTICAL)
+        core=False, blank=True, raw_id_admin=True)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(
         DiffSet, verbose_name="Reviewed Diff",
-        blank=True, null=True,
+        blank=True, null=True, raw_id_admin=True,
         help_text=_("This field is unused and will be removed in a future "
                     "version."))
 
