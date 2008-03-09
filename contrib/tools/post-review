@@ -878,7 +878,27 @@ class MercurialClient(SCMClient):
             return None
 
         # Elsewhere, hg root output give us the repository path.
-        return RepositoryInfo(path=data.strip(), base_path='/')
+
+        # We save data here to use it as a fallback. See below
+        local_data = data.strip()
+
+        # We are going to search .hg/hgrc for the default path.
+        file_name = os.path.join(local_data,'.hg', 'hgrc')
+        if not  os.path.exists(file_name):
+            return RepositoryInfo(path=local_data, base_path='/')
+
+        f = open(file_name)
+        data = f.read()
+        f.close()
+
+        m = re.search(r'^default\s+=\s+(.+)$', data, re.M)
+        if not m:
+            # Return the local path, if no default value is found.
+            return RepositoryInfo(path=local_data, base_path='/')
+
+        path = m.group(1).strip()
+
+        return RepositoryInfo(path=path, base_path='')
 
     def diff(self, changenum, files):
         """
