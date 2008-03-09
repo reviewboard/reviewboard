@@ -90,7 +90,7 @@ class SVNTool(SCMTool):
             return data
         except ClientError, e:
             stre = str(e)
-            if 'File not found' in stre:
+            if 'File not found' in stre or 'path not found' in stre:
                 raise FileNotFoundError(path, revision, str(e))
             elif 'callback_ssl_server_trust_prompt required' in stre:
                 raise SCMError(
