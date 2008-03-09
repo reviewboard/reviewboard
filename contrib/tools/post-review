@@ -7,6 +7,7 @@ import getpass
 import re
 import simplejson
 import socket
+import subprocess
 import sys
 import urllib2
 from optparse import OptionParser
@@ -153,7 +154,7 @@ class ReviewBoardServer:
         """
         Uploads a diff to a Review Board server.
         """
-        debug("Uploading diff")
+        debug("Uploading diff, size: %d" % (len(diff_content),))
         fields = {}
 
         if self.info.base_path:
@@ -357,7 +358,7 @@ class SVNClient(SCMClient):
     information and generates compatible diffs.
     """
     def get_repository_info(self):
-        data = execute('svn info')
+        data = execute('svn info', ignore_errors=True)
 
         m = re.search(r'^Repository Root: (.+)$', data, re.M)
         if not m:
@@ -413,7 +414,7 @@ class PerforceClient(SCMClient):
     and generates compatible diffs.
     """
     def get_repository_info(self):
-        data = execute('p4 info')
+        data = execute('p4 info', ignore_errors=True)
 
         m = re.search(r'^Server address: (.+)$', data, re.M)
         if not m:
@@ -437,84 +438,109 @@ class PerforceClient(SCMClient):
         to take into account adds/deletes and to provide the necessary
         revision information.
         """
+        cl_is_pending = False
+
+        try:
+            changenum = int(changenum)
+        except ValueError:
+            die("You must enter a valid change number")
+
         debug("Generating diff for changenum %s" % changenum)
-        data = execute('p4 change -o %s' % changenum)
-        client = None
 
-        # Get the status and client of the change list.
-        m = re.search(r'^Client:\t(.+)$', data, re.M)
-        if m == None:
-            die("Unable to get the client for this change list.")
-        else:
-            client = m.group(1)
-
-        m = re.search(r'^Status:\t(.+)$', data, re.M)
-        if m == None:
-            die("Unable to get the status of this change list.")
-        else:
-            if m.group(1) != "pending":
-                die("The change number %s is not pending." % changenum)
+        description = execute('p4 describe -s %d' % changenum).splitlines()
+        if '*pending*' in description[0]:
+            cl_is_pending = True
 
         # Get the file list
-        lines = execute('p4 -c %s opened -c %s' % (client, changenum),
-                        split_lines=True)
+        for line_num, line in enumerate(description):
+            if 'Affected files ...' in line:
+                break
+        else:
+            # Got to the end of all the description lines and didn't find
+            # what we were looking for.
+            die("Couldn't find any affected files for this change.")
+
+        description = description[line_num+2:]
+
         cwd = os.getcwd()
         diff_lines = []
 
-        fd, empty_file = mkstemp()
-        os.close(fd)
 
-        fd, tmpfile1 = mkstemp()
-        os.close(fd)
+        empty_filename = make_tempfile()
+        tmp_diff_from_filename = make_tempfile()
+        tmp_diff_to_filename = make_tempfile()
 
-        fd, tmpfile2 = mkstemp()
-        os.close(fd)
+        for line in description:
+            line = line.strip()
+            if not line:
+                continue
 
-        for line in lines:
-            m = re.search(r'^([^#]+)#(\d+) - (\w+) (default )?change', line)
+            m = re.search(r'\.\.\. ([^#]+)#(\d+) (add|edit|delete|integrate|branch)', line)
             if not m:
                 die("Unsupported line from p4 opened: %s" % line)
 
             depot_path = m.group(1)
-            revision = m.group(2)
+            base_revision = int(m.group(2))
+            if not cl_is_pending:
+                # If the changelist is pending our base revision is the one that's
+                # currently in the depot. If we're not pending the base revision is
+                # actually the revision prior to this one
+                base_revision -= 1
+
             changetype = m.group(3)
 
-            where_info = execute('p4 -c %s where "%s"' % (client, depot_path))
-
-            m = re.match(r'\+?%s \/\/.+ (.+)$' % depot_path, where_info)
-            if not m:
-                die("Unsupported line from p4 where: %s" % where_info)
+            debug('Processing %s of %s' % (changetype, depot_path))
 
             local_name = m.group(1)
 
-            old_file = new_file = empty_file
+            old_file = new_file = empty_filename
             old_depot_path = new_depot_path = None
             changetype_short = None
 
             if changetype == 'edit' or changetype == 'integrate':
-                old_depot_path = "%s#%s" % (depot_path, revision)
-                new_file = local_name
+                # A big assumption
+                new_revision = base_revision + 1
+
+                # We have an old file, get p4 to take this old version from the
+                # depot and put it into a plain old temp file for us
+                old_depot_path = "%s#%s" % (depot_path, base_revision)
+                self._write_file(old_depot_path, tmp_diff_from_filename)
+                old_file = tmp_diff_from_filename
+
+                # Also print out the new file into a tmpfile
+                if cl_is_pending:
+                    new_file = self._depot_to_local(depot_path)
+                else:
+                    new_depot_path = "%s#%s" %(depot_path, new_revision)
+                    self._write_file(new_depot_path, tmp_diff_to_filename)
+                    new_file = tmp_diff_to_filename
+
                 changetype_short = "M"
+
             elif changetype == 'add' or changetype == 'branch':
-                new_file = local_name
+                # We have a new file, get p4 to put this new file into a pretty
+                # temp file for us. No old file to worry about here.
+                if cl_is_pending:
+                    new_file = self._depot_to_local(depot_path)
+                else:
+                    self._write_file(depot_path, tmp_diff_to_filename)
+                    new_file = tmp_diff_to_filename
                 changetype_short = "A"
+
             elif changetype == 'delete':
-                old_depot_path = "%s#%s" % (depot_path, revision)
+                # We've deleted a file, get p4 to put the deleted file into  a temp
+                # file for us. The new file remains the empty file.
+                old_depot_path = "%s#%s" % (depot_path, base_revision)
+                self._write_file(old_depot_path, tmp_diff_from_filename)
+                old_file = tmp_diff_from_filename
                 changetype_short = "D"
             else:
-                die("Unknown change type '%s' for %s" %
-                    (changetype, depot_path))
+                die("Unknown change type '%s' for %s" % (changetype, depot_path))
 
-            if old_depot_path:
-                self._write_file(old_depot_path, tmpfile1)
-                old_file = tmpfile1
 
-            if new_depot_path:
-                self._write_file(new_depot_path, tmpfile2)
-                new_file = tmpfile2
-
-            dl = execute('diff -urNp "%s" "%s"' % (old_file, new_file),
-                         split_lines=True)
+            diff_cmd = 'diff -urNp "%s" "%s"' % (old_file, new_file)
+            # Diff returns "1" if differences were found.
+            dl = execute(diff_cmd, extra_ignore_errors=(1,)).splitlines(True)
 
             if local_name.startswith(cwd):
                 local_path = local_name[len(cwd) + 1:]
@@ -536,26 +562,50 @@ class PerforceClient(SCMClient):
                         local_path
 
                 dl.insert(0, "==== %s#%s ==%s== %s ====\n" % \
-                    (depot_path, revision, changetype_short, local_path))
+                    (depot_path, base_revision, changetype_short, local_path))
             else:
+
                 m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
-                if not m:
-                    die("Unable to parse diff header: %s" % dl[1])
+                if m:
+                    timestamp = m.group(1)
+                else:
+                    # Thu Sep  3 11:24:48 2007
+                    m = re.search(r'(\w+)\s+(\w+)\s+(\d+)\s+(\d\d:\d\d:\d\d)\s+(\d\d\d\d)', dl[1])
+                    if not m:
+                        die("Unable to parse diff header: %s" % dl[1])
 
-                timestamp = m.group(1)
+                    month_map = {
+                        "Jan": "01",
+                        "Feb": "02",
+                        "Mar": "03",
+                        "Apr": "04",
+                        "May": "05",
+                        "Jun": "06",
+                        "Jul": "07",
+                        "Aug": "08",
+                        "Sep": "09",
+                        "Oct": "10",
+                        "Nov": "11",
+                        "Dec": "12",
+                    }
+                    month = month_map[m.group(2)]
+                    day = m.group(3)
+                    timestamp = m.group(4)
+                    year = m.group(5)
 
-                dl[0] = "--- %s\t%s#%s\n" % (local_path, depot_path, revision)
+                    timestamp = "%s-%s-%s %s" % (year, month, day, timestamp)
+
+                dl[0] = "--- %s\t%s#%s\n" % (local_path, depot_path, base_revision)
                 dl[1] = "+++ %s\t%s\n" % (local_path, timestamp)
 
             diff_lines += dl
 
 
-        os.unlink(empty_file)
-        os.unlink(tmpfile1)
-        os.unlink(tmpfile2)
+        os.unlink(empty_filename)
+        os.unlink(tmp_diff_from_filename)
+        os.unlink(tmp_diff_to_filename)
 
         return ''.join(diff_lines)
-
 
     def _write_file(self, depot_path, tmpfile):
         """
@@ -570,6 +620,23 @@ class PerforceClient(SCMClient):
         f.write(data)
         f.close()
 
+    def _depot_to_local(self, depot_path):
+        """
+        Given a path in the depot return the path on the local filesystem to
+        the same file.
+        """
+        # $ p4 where //user/bvanzant/main/testing
+        # //user/bvanzant/main/testing //bvanzant:test05:home/testing /home/bvanzant/home-versioned/testing
+        cmd = "p4 where '%s'" % (depot_path,)
+        where_output = execute(cmd).splitlines()
+        # Take only the last line from the where command.  If you have a
+        # multi-line view mapping with exclusions, Perforce will display
+        # the exclusions in order, with the last line showing the actual
+        # location.
+        last_line = where_output[-1]
+
+        # XXX: This breaks on filenames with spaces.
+        return last_line.split(' ')[2]
 
 def debug(s):
     """
@@ -590,20 +657,25 @@ def make_tempfile():
     return tmpfile
 
 
-def execute(command, split_lines=False):
+def execute(command, split_lines=False, ignore_errors=False, extra_ignore_errors=()):
     """
     Utility function to execute a command and return the output.
     """
-    f = os.popen(command, 'r')
-
+    p = subprocess.Popen(command,
+                         stdin=subprocess.PIPE,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT,
+                         shell=True,
+                         close_fds=True)
     if split_lines:
-        result = f.readlines()
+        data = p.stdout.readlines()
     else:
-        result = f.read()
+        data = p.stdout.read()
+    rc = p.wait()
+    if rc and not ignore_errors and rc not in extra_ignore_errors:
+        die('Failed to execute command: %s\n%s' % (command, data))
 
-    f.close()
-
-    return result
+    return data
 
 
 def die(msg=None):
