@@ -57,37 +57,35 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     from_email = get_email_address_for_user(user)
 
-    recipient_table = {
-        from_email: 1,
-    }
+    recipients = set([from_email])
 
     if review_request.submitter.is_active:
-        recipient_table[get_email_address_for_user(review_request.submitter)] = 1
+        recipients.add(get_email_address_for_user(review_request.submitter))
 
     for u in review_request.target_people.filter(is_active=True):
-        recipient_table[get_email_address_for_user(u)] = 1
+        recipients.add(get_email_address_for_user(u))
 
     for group in review_request.target_groups.all():
         for address in get_email_addresses_for_group(group):
-            recipient_table[address] = 1
+            recipients.add(address)
 
     for profile in review_request.starred_by.all():
         if profile.user.is_active:
-            recipient_table[get_email_address_for_user(profile.user)] = 1
+            recipients.add(get_email_address_for_user(profile.user))
 
     if extra_recipients:
         for recipient in extra_recipients:
             if recipient.is_active:
-                recipient_table[get_email_address_for_user(recipient)] = 1
+                recipients.add(get_email_address_for_user(recipient))
 
-    recipient_list = recipient_table.keys()
+    context['user'] = user
     context['domain'] = current_site.domain
     context['domain_method'] = settings.DOMAIN_METHOD
     context['review_request'] = review_request
     body = render_to_string(template_name, context)
 
     message = SpiffyEmailMessage(subject.strip(), body, from_email,
-                                 recipient_list, in_reply_to)
+                                 recipients, in_reply_to)
     message.send()
 
     return message.message_id
@@ -158,7 +156,9 @@ def mail_review_request(user, review_request, changes=None):
 
 def mail_review(user, review):
     """Sends an e-mail representing the supplied review."""
-    if not review.review_request.public:
+    review_request = review.review_request
+
+    if not review_request.public:
         return
 
     review.ordered_comments = \
@@ -166,10 +166,9 @@ def mail_review(user, review):
 
     review.email_message_id = \
         send_review_mail(user,
-                         review.review_request,
-                         u"Re: Review Request: %s" %
-                         review.review_request.summary,
-                         review.review_request.email_message_id,
+                         review_request,
+                         u"Re: Review Request: %s" % review_request.summary,
+                         review_request.email_message_id,
                          None,
                          'reviews/review_email.txt',
                          {'review': review})
@@ -182,15 +181,15 @@ def mail_reply(user, reply):
     Sends an e-mail representing the supplied reply to a review.
     """
     review = reply.base_reply_to
+    review_request = review.review_request
 
-    if not review.review_request.public:
+    if not review_request.public:
         return
 
     reply.email_message_id = \
         send_review_mail(user,
-                         review.review_request,
-                         u"Re: Review Request: %s" %
-                         review.review_request.summary,
+                         review_request,
+                         u"Re: Review Request: %s" % review_request.summary,
                          review.email_message_id,
                          harvest_people_from_review(review),
                          'reviews/reply_email.txt',
