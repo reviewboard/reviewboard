@@ -577,6 +577,8 @@ class WebAPITests(TestCase):
         screenshot = self.testNewScreenshot()
         review_request = screenshot.review_request.get()
         diffset = self.testNewDiff(review_request)
+        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
 
         self.postNewDiffComment(review_request, diff_comment_text)
         self.postNewScreenshotComment(review_request, screenshot,
@@ -910,14 +912,18 @@ class WebAPITests(TestCase):
         review_request = self.testNewReviewRequest()
 
         # Upload the first diff and publish the draft.
-        diffset = self.testNewDiff(review_request)
+        diffset_id = self.testNewDiff(review_request).id
         rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
 
         # Upload the second diff and publish the draft.
-        interdiffset = self.testNewDiff(review_request)
+        interdiffset_id = self.testNewDiff(review_request).id
         rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
+
+        # Reload the diffsets, now that they've been modified.
+        diffset = DiffSet.objects.get(pk=diffset_id)
+        interdiffset = DiffSet.objects.get(pk=interdiffset_id)
 
         # Get the interdiffs
         filediff = diffset.files.all()[0]

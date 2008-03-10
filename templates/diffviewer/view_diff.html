@@ -61,22 +61,36 @@
 {% with diffset.revision as revision %}
 <div class="main">
 {%  if interdiffset %}
+{#   We're showing an interdiff, so indicate the revision range. #}
  <h1>{% blocktrans with interdiffset.revision as interdiff_revision %}Changes between revision {{revision}} and {{interdiff_revision}}{% endblocktrans %}</h1>
 {%  else %}
 {%   ifequal diffset.revision latest_revision %}
  <h1>{% blocktrans %}Diff revision {{revision}} (Latest){% endblocktrans %}</h1>
 {%   else %}
+{#    This is not the most recent diff. See if we're showing a draft. #}
+{%    if is_draft_diff %}
+ <h1>{% trans "Draft diff" %}</h1>
+ <p>
+{%     blocktrans %}
+  This diff is part of your current draft. Other users will not see this
+  diff until you publish your draft.
+{%     endblocktrans %}
+{%    else %}
+{#     This is not a draft. Tell the user this is not the most recent. #}
  <h1>{% blocktrans %}Diff revision {{revision}}{% endblocktrans %}</h1>
  <p>
-{%    blocktrans with diffset.revision as revision and review_request.get_absolute_url as review_request_url%}
+{%     blocktrans with diffset.revision as revision and review_request.get_absolute_url as review_request_url%}
   This is not the most recent revision of the diff. The
   <a href="{{review_request_url}}diff/">latest diff</a> is revision
   {{latest_revision}}.
   <a href="{{review_request_url}}diff/{{revision}}-{{latest_revision}}/">See what's changed.</a>
-{%    endblocktrans %}
+{%     endblocktrans %}
+{%    endif %}
  </p>
 {%   endifequal %}
 {%  endif %}
+
+{#  Notify the user if they have unpublished comments in other diffs. #}
 {%  if review|has_comments_in_diffsets_excluding:diffset_pair %}
 {%   box "important" %}
  <h1>{% trans "You have unpublished comments on other revisions" %}</h1>
@@ -103,6 +117,7 @@
 {%  endif %}
 
 {%  ifnotequal review_request.diffset_history.diffset_set.count 1 %}
+{#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>
    <th><label for="jump_to_revision">Jump to revision:<label></th>
@@ -115,6 +130,14 @@
      <a href="{{review_request.get_absolute_url}}diff/{{item.revision}}/#index_header">{{item.revision}}</a>
 {%   endif %}
 {%  endfor %}
+{%  if draft and draft.diffset %}
+{#   There's a draft diff, so display it in the list. #}
+{%   if is_draft_diff %}
+     <span class="current">{{draft.diffset.revision}}</span>
+{%   else %}
+     <a href="{{review_request.get_absolute_url}}diff/{{draft.diffset.revision}}/#index_header">{{draft.diffset.revision}}</a>
+{%   endif %}
+{%  endif %}
     </div>
    </td>
   </tr>
@@ -129,6 +152,14 @@
      <a href="{{review_request.get_absolute_url}}diff/{{item.path}}/#index_header">{{item.revision}}</a>
 {%   endif %}
 {%  endfor %}
+{%  if draft and draft.diffset %}
+{#   There's a draft diff, so display it in the list. #}
+{%   if is_draft_diff or is_draft_interdiff %}
+     <span class="current">{{draft.diffset.revision}}</span>
+{%   else %}
+     <a href="{{review_request.get_absolute_url}}diff/{{diffset_pair.0}}-{{diffset_pair.1}}/#index_header">{{draft.diffset.revision}}</a>
+{%   endif %}
+{%  endif %}
     </div>
    </td>
   </tr>

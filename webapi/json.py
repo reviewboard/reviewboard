@@ -964,8 +964,20 @@ def new_diff(request, review_request_id):
         return WebAPIResponseFormError(request, form)
 
     try:
-        diffset = form.create(request.FILES['path'],
-                              review_request.diffset_history)
+        diffset = form.create(request.FILES['path'])
+
+        # Set the initial revision to be one newer than the most recent
+        # public revision, so we can reference it in the diff viewer.
+        #
+        # TODO: It would be nice to later consolidate this with the logic in
+        #       DiffSet.save.
+        public_diffsets = review_request.diffset_history.diffset_set
+
+        if public_diffsets:
+            diffset.revision = public_diffsets.latest().revision + 1
+            diffset.save()
+        else:
+            diffset.revision = 1
     except scmtools.FileNotFoundError, e:
         return WebAPIResponseError(request, REPO_FILE_NOT_FOUND, {
             'file': e.path,

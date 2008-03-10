@@ -204,20 +204,25 @@ def submitter(request, username, template_name='reviews/datagrid.html'):
     return datagrid.render_to_response(template_name)
 
 
-def _query_for_diff(review_request, revision, query_extra=None):
+def _query_for_diff(review_request, user, revision, query_extra=None):
     """
     Queries for a diff based on several parameters.
 
     If the draft does not exist, this throws an Http404 exception.
     """
 
-    # This will try to grab the diff associated with a draft if the review
-    # request has an associated draft and is either the revision being
-    # requested or no revision is being requested.
-    draft = get_object_or_none(review_request.reviewrequestdraft_set)
-    if draft and draft.diffset and \
-       (revision is None or draft.diffset.revision == revision):
-        return draft.diffset
+    # Normalize the revision, since it might come in as a string.
+    if revision:
+        revision = int(revision)
+
+    if user.is_authenticated() and review_request.submitter == user:
+        # This will try to grab the diff associated with a draft if the review
+        # request has an associated draft and is either the revision being
+        # requested or no revision is being requested.
+        draft = get_object_or_none(review_request.reviewrequestdraft_set)
+        if draft and draft.diffset and \
+           (revision is None or draft.diffset.revision == revision):
+            return draft.diffset
 
     query = Q(history=review_request.diffset_history)
 
@@ -244,15 +249,18 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     providing the user's current review of the diff if it exists.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    diffset = _query_for_diff(review_request, revision)
+    diffset = _query_for_diff(review_request, request.user, revision)
 
+    interdiffset = None
     interdiffset_id = None
     review = None
+    draft = None
 
     if interdiff_revision and interdiff_revision != revision:
         # An interdiff revision was specified. Try to find a matching
         # diffset.
-        interdiffset = _query_for_diff(review_request, interdiff_revision)
+        interdiffset = _query_for_diff(review_request, request.user,
+                                       interdiff_revision)
         interdiffset_id = interdiffset.id
 
     if request.user.is_authenticated():
@@ -263,15 +271,23 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
                                     review_request=review_request,
                                     public=False,
                                     base_reply_to__isnull=True)
+        draft = get_object_or_none(review_request.reviewrequestdraft_set,
+                                   review_request__submitter=request.user)
 
-    draft = get_object_or_none(review_request.reviewrequestdraft_set)
     repository = review_request.repository
+
+    has_draft_diff = draft and draft.diffset
+    is_draft_diff = has_draft_diff and draft.diffset == diffset
+    is_draft_interdiff = has_draft_diff and interdiffset and \
+                         draft.diffset == interdiffset
 
     return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,
         'review_request': review_request,
         'review_request_details': draft or review_request,
         'draft': draft,
+        'is_draft_diff': is_draft_diff,
+        'is_draft_interdiff': is_draft_interdiff,
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
@@ -285,7 +301,7 @@ def raw_diff(request, review_request_id, revision=None):
     given review request.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    diffset = _query_for_diff(review_request, revision)
+    diffset = _query_for_diff(review_request, request.user, revision)
 
     data = ''.join([filediff.diff for filediff in diffset.files.all()])
 
@@ -316,8 +332,8 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
         query_extra = None
 
     if interdiff_revision is not None:
-        interdiffset = _query_for_diff(review_request, interdiff_revision,
-                                       query_extra)
+        interdiffset = _query_for_diff(review_request, request.user,
+                                       interdiff_revision, query_extra)
         interdiffset_id = interdiffset.id
         # Only the interdiff should have an extra query for the draft.
         # It's going to be the most recent diff (generally). We should be
@@ -326,7 +342,8 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     else:
         interdiffset_id = None
 
-    diffset = _query_for_diff(review_request, revision, query_extra)
+    diffset = _query_for_diff(review_request, request.user, revision,
+                              query_extra)
 
     return view_diff_fragment(request, diffset.id, filediff_id,
                               interdiffset_id, chunkindex, collapseall,
