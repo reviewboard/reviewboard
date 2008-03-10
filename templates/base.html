@@ -30,7 +30,7 @@
 {% endif %}
      <li>- <a href="/account/logout/">{% trans "Log out" %}</a></li>
     {% else %}
-     <li><a href="/account/login/">{% trans "Log in" %}</a></li>
+     <li><a href="/account/login/?next_page={{request.path}}">{% trans "Log in" %}</a></li>
      {% if settings.BUILTIN_AUTH %}
      <li>- <a href="/account/register/">{% trans "Register" %}</a></li>
      {% endif %}
