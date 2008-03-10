@@ -18,7 +18,8 @@ from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
 from djblets.webapi.errors import WebAPIError, \
                                   PERMISSION_DENIED, DOES_NOT_EXIST, \
-                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA
+                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
+                                  MISSING_ATTRIBUTE
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -638,13 +639,17 @@ def _set_draft_field_data(draft, field_name, data):
 def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
+    if not request.POST['value']:
+        return WebAPIResponseError(request, MISSING_ATTRIBUTE,
+                                   {'attribute': field_name})
+
     m = re.match(r'screenshot_(?P<id>[0-9]+)_caption', field_name)
     if m:
         try:
             screenshot = Screenshot.objects.get(id=int(m.group('id')))
         except:
             return WebAPIResponseError(request, INVALID_ATTRIBUTE,
-                                     {'attribute': field_name})
+                                       {'attribute': field_name})
 
         draft = _prepare_draft(request, review_request)
         screenshot.draft_caption = data = request.POST['value']
