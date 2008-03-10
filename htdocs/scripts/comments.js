@@ -98,11 +98,11 @@ CommentDialog = function(el) {
 
     this.bodyTop = new RB.widgets.AutosizeTextArea('id_body_top', {
         autoGrowVertical: true,
-		minHeight: 50
+        minHeight: 50
     });
     this.bodyBottom = new RB.widgets.AutosizeTextArea('id_body_bottom', {
         autoGrowVertical: true,
-		minHeight: 50
+        minHeight: 50
     });
 
 
@@ -129,14 +129,7 @@ CommentDialog = function(el) {
     if (!gUserAuthenticated) {
         this.reviewTab.el.hide();
         this.commentForm.hide();
-
-        for (b in this.commentButtons) {
-            this.commentButtons[b].disable();
-        }
-
-        for (b in this.reviewButtons) {
-            this.reviewButtons[b].disable();
-        }
+        this.disableButtons();
     }
 
 
@@ -292,6 +285,32 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
         }
     },
 
+    /*
+     * Enables all the buttons in the dialog.
+     */
+    enableButtons: function() {
+        for (b in this.commentButtons) {
+            this.commentButtons[b].enable();
+        }
+
+        for (b in this.reviewButtons) {
+            this.reviewButtons[b].enable();
+        }
+    },
+
+    /*
+     * Disables all the buttons in the dialog.
+     */
+    disableButtons: function() {
+        for (b in this.commentButtons) {
+            this.commentButtons[b].disable();
+        }
+
+        for (b in this.reviewButtons) {
+            this.reviewButtons[b].disable();
+        }
+    },
+
     updateCommentCount: function() {
         var existing =
             this.existingComments.getChildrenByClassName("comment",
@@ -357,16 +376,19 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
     },
 
     reviewAction: function(action, onSuccess) {
+        this.disableButtons();
         YAHOO.util.Connect.setForm(this.reviewForm.dom);
         YAHOO.util.Connect.asyncRequest(
             "POST", this.getReviewActionURL() + action + '/', {
             success: function(res) {
+                this.enableButtons();
                 this.hideMessage();
                 this.hide(onSuccess);
             }.createDelegate(this),
 
             failure: function(res) {
                 this.showError(res.statusText);
+                this.enableButtons();
             }.createDelegate(this)
         });
     },
