@@ -568,7 +568,8 @@ function onLineMouseDown(e, unused, table) {
 function onLineMouseUp(e, unused, table, fileid) {
     var node = e.target || e.srcElement;
 
-    if (gGhostCommentFlag != null && node == gGhostCommentFlag.dom) {
+    if (gGhostCommentFlag != null && gGhostCommentFlagRow != null &&
+        node == gGhostCommentFlag.dom) {
         node = gGhostCommentFlagRow.dom;
     }
 
