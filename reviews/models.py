@@ -247,7 +247,8 @@ class ReviewRequest(models.Model):
                                   raw_id_admin=True)
     time_added = models.DateTimeField(_("time added"), default=datetime.now)
     last_updated = ModificationTimestampField(_("last updated"))
-    status = models.CharField(_("status"), max_length=1, choices=STATUSES)
+    status = models.CharField(_("status"), max_length=1, choices=STATUSES,
+                              db_index=True)
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
                                             null=True, db_index=True)
