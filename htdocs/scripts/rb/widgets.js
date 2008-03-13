@@ -441,6 +441,7 @@ YAHOO.extendX(RB.widgets.AutosizeTextArea, YAHOO.ext.util.Observable, {
         this.el.beginMeasure();
         this.proxyEl.setWidth(this.el.getWidth(true));
         this.el.endMeasure();
+        this.proxyEl.moveTo(-10000, -10000);
 
         this.proxyEl.dom.innerHTML =
             this.el.dom.value.htmlEncode().replace(/[\n]/g, "<br />&nbsp;");
