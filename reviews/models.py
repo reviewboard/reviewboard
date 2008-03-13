@@ -198,14 +198,16 @@ class ReviewRequestManager(ConcurrencyManager):
                            Q(target_groups__users__username=username))
 
     def to_user_directly(self, username, user=None, status='P'):
-        query = QLeftOuterJoins(Q(target_people__username=username) |
-                                Q(starred_by__user__username=username))
+        query_user = User.objects.get(username=username)
+        query = QLeftOuterJoins(Q(target_people=query_user) |
+                                Q(starred_by__user=query_user))
         return self._query(user, status, query)
 
     def to_user(self, username, user=None, status='P'):
-        query = QLeftOuterJoins(Q(target_groups__users__username=username) |
-                                Q(target_people__username=username) |
-                                Q(starred_by__user__username=username))
+        query_user = User.objects.get(username=username)
+        query = QLeftOuterJoins(Q(target_groups__users=query_user) |
+                                Q(target_people=query_user) |
+                                Q(starred_by__user=query_user))
         return self._query(user, status, query)
 
     def from_user(self, username, user=None, status='P'):
