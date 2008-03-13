@@ -978,7 +978,7 @@ def new_diff(request, review_request_id):
         #       DiffSet.save.
         public_diffsets = review_request.diffset_history.diffset_set
 
-        if public_diffsets:
+        if public_diffsets.count() > 0:
             diffset.revision = public_diffsets.latest().revision + 1
             diffset.save()
         else:
