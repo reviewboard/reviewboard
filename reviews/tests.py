@@ -3,11 +3,15 @@ import unittest
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.template import Context, Template, Token, TOKEN_TEXT
+from django.template.loader import render_to_string
+from django.template.context import RequestContext
 from django.test import TestCase
 
 from djblets.util.templatetags import djblets_email
 from djblets.util.testing import TagTest
 
+import reviewboard.reviews.templatetags.reviewtags as reviewtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \
@@ -456,3 +460,32 @@ class ViewTests(TestCase):
                          'Comments Improvements')
 
         self.client.logout()
+
+
+class IfNeatNumberTagTests(TestCase):
+    def testMilestones(self):
+        """Testing the ifneatnumber tag with milestone numbers"""
+        self.assertNeatNumberResult(100, "")
+        self.assertNeatNumberResult(1000, "milestone")
+        self.assertNeatNumberResult(10000, "milestone")
+        self.assertNeatNumberResult(20000, "milestone")
+        self.assertNeatNumberResult(20001, "")
+
+    def testPalindrome(self):
+        """Testing the ifneatnumber tag with palindrome numbers"""
+        self.assertNeatNumberResult(101, "")
+        self.assertNeatNumberResult(1001, "palindrome")
+        self.assertNeatNumberResult(12321, "palindrome")
+        self.assertNeatNumberResult(20902, "palindrome")
+        self.assertNeatNumberResult(912219, "palindrome")
+        self.assertNeatNumberResult(912218, "")
+
+    def assertNeatNumberResult(self, rid, expected):
+        t = Template(
+            "{% load reviewtags %}"
+            "{% ifneatnumber " + str(rid) + " %}"
+            "{%  if milestone %}milestone{% else %}"
+            "{%  if palindrome %}palindrome{% endif %}{% endif %}"
+            "{% endifneatnumber %}")
+
+        self.assertEqual(t.render(Context({})), expected)
