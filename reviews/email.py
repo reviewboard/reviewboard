@@ -85,7 +85,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     body = render_to_string(template_name, context)
 
     message = SpiffyEmailMessage(subject.strip(), body, from_email,
-                                 recipients, in_reply_to)
+                                 list(recipients), in_reply_to)
     message.send()
 
     return message.message_id
