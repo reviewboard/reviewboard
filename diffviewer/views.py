@@ -9,6 +9,7 @@ except ImportError:
     pygments = None
 
 from django.conf import settings
+from django.core.paginator import ObjectPaginator, InvalidPage
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -80,6 +81,27 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
     try:
         files = get_diff_files(diffset, None, interdiffset, highlighting)
 
+        # Break the list of files into pages
+        paginator = ObjectPaginator(files, settings.DIFFVIEWER_PAGINATE_BY,
+                                    orphans=settings.DIFFVIEWER_PAGINATE_ORPHANS)
+
+        page = int(request.GET.get('page', 1))
+
+        if request.GET.get('file', False):
+            file_id = int(request.GET['file'])
+            file_number = 0
+
+            for i, f in enumerate(files):
+                if f['filediff'].id == file_id:
+                    file_number = i
+                    break
+            for i in range(paginator.pages):
+                if paginator.last_on_page(i) > file_number:
+                    page = i + 1
+                    break
+
+        files = paginator.get_page(page - 1)
+
         if request.GET.get('expand', False):
             collapseall = False
         elif request.GET.get('collapse', False):
@@ -106,6 +128,16 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
                                                              context))
 
         context['files'] = files
+
+        # Add the pagination context
+        context['is_paginated'] = paginator.pages > 1
+        context['page'] = page
+        context['pages'] = paginator.pages
+        context['page_numbers'] = [n + 1 for n in range(paginator.pages)]
+        context['has_next'] = page < paginator.pages
+        context['next_page'] = page + 1
+        context['has_previous'] = page > 1
+        context['previous_page'] = page - 1
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))

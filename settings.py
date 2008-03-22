@@ -171,3 +171,9 @@ except ImportError:
     dependency_error('Unable to read settings_local.py.')
 
 TEMPLATE_DEBUG = DEBUG
+
+# The number of files to display per page in the diff viewer
+DIFFVIEWER_PAGINATE_BY = 10
+
+# The number of extra files required before adding another page
+DIFFVIEWER_PAGINATE_ORPHANS = 5

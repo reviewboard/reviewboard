@@ -21,3 +21,15 @@
  {% endif %}
 {% endfor %}
 </ol>
+{% if is_paginated %}
+ This diff has been split across {{ pages }} pages:
+ {% if has_previous %}<span class="paginate-previous"><a href="?page={{ previous_page }}" title="Previous Page">&lt;</a></span>{% endif %}
+ {% for num in page_numbers %}
+  {% ifequal num page %}
+   <span class="paginate-current" title="Current Page">{{ num }}</span>
+  {% else %}
+   <span class="paginate-link"><a href="?page={{ num }}" title="Page {{ num }}">{{ num }}</a></span>
+  {% endifequal %}
+ {% endfor %}
+ {% if has_next %}<span class="paginate-next"><a href="?page={{ next_page }}" title="Next Page">&gt;</a></span>{% endif %}
+{% endif %}

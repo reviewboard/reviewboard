@@ -411,3 +411,24 @@ table.sidebyside .ew {
 .revision-selector .revisions a:visited {
   color: black;
 }
+
+/****************************************************************************
+ * Pagination
+ ****************************************************************************/
+.paginate-previous, .paginate-next {
+  padding: 2px 3px;
+  border: 1px solid #ddd;
+}
+
+.paginate-link {
+  padding: 2px 4px;
+  border: 1px solid #ddd;
+}
+
+.paginate-current {
+  padding: 2px 4px;
+  border: 1px solid #ddd;
+  font-weight: bold;
+  background: #417690;
+  color: #f4f379;
+}

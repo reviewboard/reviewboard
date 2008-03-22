@@ -719,9 +719,9 @@ class Comment(models.Model):
         if self.interfilediff:
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
-        return "%sdiff/%s/#file%sline%s" % \
+        return "%sdiff/%s/?file=%s#file%sline%s" % \
              (self.review_set.get().review_request.get_absolute_url(),
-              revision_path, self.filediff.id, self.first_line)
+              revision_path, self.filediff.id, self.filediff.id, self.first_line)
 
     def get_review_url(self):
         return "%s#comment%d" % \
