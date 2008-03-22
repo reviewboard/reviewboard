@@ -2,8 +2,8 @@ RB = {utils: {}}
 
 
 // Constants
-var STAR_ON_IMG = "/images/star_on.png";
-var STAR_OFF_IMG = "/images/star_off.png";
+var STAR_ON_IMG = "../images/star_on.png";
+var STAR_OFF_IMG = "../images/star_off.png";
 
 // State variables
 var gStars = {};

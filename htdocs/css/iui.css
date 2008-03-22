@@ -30,14 +30,14 @@ body > *[selected="true"] {
 
 a[selected], a:active {
     background-color: #194fdb !important;
-    background-image: url(/images/iphone/listArrowSel.png), url(/images/iphone/selection.png) !important;
+    background-image: url(../images/iphone/listArrowSel.png), url(../images/iphone/selection.png) !important;
     background-repeat: no-repeat, repeat-x;
     background-position: right center, left top;
     color: #FFFFFF !important;
 }
 
 a[selected="progress"] {
-    background-image: url(/images/iphone/loading.gif), url(/images/iphone/selection.png) !important;
+    background-image: url(../images/iphone/loading.gif), url(../images/iphone/selection.png) !important;
 }
 
 /************************************************************************************************/
@@ -49,7 +49,7 @@ body > .toolbar {
     border-top: 1px solid #6d84a2;
     padding: 10px;
     height: 45px;
-    background: url(/images/iphone/toolbar.png) #6d84a2 repeat-x;
+    background: url(../images/iphone/toolbar.png) #6d84a2 repeat-x;
 }
 
 .toolbar > h1 {
@@ -93,11 +93,11 @@ body[orient="landscape"] > .toolbar > h1 {
     text-decoration: none;
     white-space: nowrap;
     background: none;
-    -webkit-border-image: url(/images/iphone/toolButton.png) 0 5 0 5;
+    -webkit-border-image: url(../images/iphone/toolButton.png) 0 5 0 5;
 }
 
 .blueButton {
-    -webkit-border-image: url(/images/iphone/blueButton.png) 0 5 0 5;
+    -webkit-border-image: url(../images/iphone/blueButton.png) 0 5 0 5;
     border-width: 0 5px;
 }
 
@@ -113,7 +113,7 @@ body[orient="landscape"] > .toolbar > h1 {
     padding: 0;
     max-width: 55px;
     border-width: 0 8px 0 14px;
-    -webkit-border-image: url(/images/iphone/backButton.png) 0 8 0 14;
+    -webkit-border-image: url(../images/iphone/backButton.png) 0 8 0 14;
 }
 
 .whiteButton,
@@ -129,12 +129,12 @@ body[orient="landscape"] > .toolbar > h1 {
 }
 
 .whiteButton {
-    -webkit-border-image: url(/images/iphone/whiteButton.png) 0 12 0 12;
+    -webkit-border-image: url(../images/iphone/whiteButton.png) 0 12 0 12;
     text-shadow: rgba(255, 255, 255, 0.7) 0 1px 0;
 }
 
 .grayButton {
-    -webkit-border-image: url(/images/iphone/grayButton.png) 0 12 0 12;
+    -webkit-border-image: url(../images/iphone/grayButton.png) 0 12 0 12;
     color: #FFFFFF;
 }
 
@@ -157,7 +157,7 @@ body > ul > li.group {
     border-top: 1px solid #7d7d7d;
     border-bottom: 1px solid #999999;
     padding: 1px 10px;
-    background: url(/images/iphone/listGroup.png) repeat-x;
+    background: url(../images/iphone/listGroup.png) repeat-x;
     font-size: 17px;
     font-weight: bold;
     text-shadow: rgba(0, 0, 0, 0.4) 0 1px 0;
@@ -175,7 +175,7 @@ body > ul > li > a {
     padding: 8px 32px 8px 10px;
     text-decoration: none;
     color: inherit;
-    background: url(/images/iphone/listArrow.png) no-repeat right center;
+    background: url(../images/iphone/listArrow.png) no-repeat right center;
 }
 
 a[target="_replace"] {
@@ -207,7 +207,7 @@ body > .dialog {
     border: none;
     border-top: 1px solid #6d84a2;
     padding: 10px 6px;
-    background: url(/images/iphone/toolbar.png) #7388a5 repeat-x;
+    background: url(../images/iphone/toolbar.png) #7388a5 repeat-x;
 }
 
 .dialog > fieldset > h1 {
@@ -241,7 +241,7 @@ input {
 body > .panel {
     box-sizing: border-box;
     padding: 10px;
-    background: #c8c8c8 url(/images/iphone/pinstripes.png);
+    background: #c8c8c8 url(../images/iphone/pinstripes.png);
 }
 
 .panel > fieldset {
@@ -294,7 +294,7 @@ fieldset > .row:last-child {
 .toggle {
     border: 1px solid #888888;
     -webkit-border-radius: 6px;
-    background: #FFFFFF url(/images/iphone/toggle.png) repeat-x;
+    background: #FFFFFF url(../images/iphone/toggle.png) repeat-x;
     font-size: 19px;
     font-weight: bold;
     line-height: 30px;
@@ -302,7 +302,7 @@ fieldset > .row:last-child {
 
 .toggle[toggled="true"] {
     border: 1px solid #143fae;
-    background: #194fdb url(/images/iphone/toggleOn.png) repeat-x;
+    background: #194fdb url(../images/iphone/toggleOn.png) repeat-x;
 }
 
 .toggleOn {
@@ -341,7 +341,7 @@ fieldset > .row:last-child {
     height: 28px;    
     border: 1px solid #888888;
     -webkit-border-radius: 6px;
-    background: #ffffff url(/images/iphone/thumb.png) repeat-x;
+    background: #ffffff url(../images/iphone/thumb.png) repeat-x;
 }
 
 .toggle[toggled="true"] > .thumb {
@@ -361,6 +361,6 @@ fieldset > .row:last-child {
 
 #preloader {
     display: none;
-    background-image: url(/images/iphone/loading.gif), url(/images/iphone/selection.png),
-        url(/images/iphone/blueButton.png), url(/images/iphone/listArrowSel.png), url(/images/iphone/listGroup.png);
+    background-image: url(../images/iphone/loading.gif), url(../images/iphone/selection.png),
+        url(../images/iphone/blueButton.png), url(../images/iphone/listArrowSel.png), url(../images/iphone/listGroup.png);
 }

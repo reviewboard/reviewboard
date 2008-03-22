@@ -656,7 +656,7 @@ function onLineMouseOver(e, unused, table, fileid) {
                 gGhostCommentFlag = dh.append(document.body, {
                     id: 'ghost-commentflag',
                     tag: 'img',
-                    src: '/images/comment-ghost.png'
+                    src: '../images/comment-ghost.png'
                 }, true);
                 gGhostCommentFlag.enableDisplayMode();
                 gGhostCommentFlag.setAbsolutePositioned();

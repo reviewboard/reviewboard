@@ -90,7 +90,7 @@
  ****************************************************************************/
 .datagrid-title,
 .datagrid-titlebox {
-  background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
+  background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 5px 10px 5px 5px;

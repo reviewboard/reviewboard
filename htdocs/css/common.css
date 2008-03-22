@@ -72,7 +72,7 @@ ul.errorlist li {
  * Box classes
  ****************************************************************************/
 .box {
-  background-image: url('/images/box_top_bg.png');
+  background-image: url('../images/box_top_bg.png');
   background-position: top left;
   background-repeat: repeat-x;
   border: 1px #888A85 solid;
@@ -80,19 +80,19 @@ ul.errorlist li {
 
 .box.important {
   background-color: #fdf2a0;
-  background-image: url('/images/gold_box_top_bg.png');
+  background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
 }
 
 .box.important .box-inner {
-  background: url("/images/important.png") no-repeat top left;
+  background: url("../images/important.png") no-repeat top left;
   padding: 0 0 0 50px;
 }
 
 .box.yay {
   background-color: #fdf2a0;
-  background-image: url('/images/gold_box_top_bg.png');
+  background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
 }
@@ -119,7 +119,7 @@ ul.errorlist li {
 }
 
 .box h1.title {
-  background: #a2bedc url('/images/title_box_top_bg.png') repeat-x top left;
+  background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 5px 10px 5px 5px;
@@ -140,7 +140,7 @@ ul.errorlist li {
 }
 
 .box-inner {
-  background-image: url('/images/box_bottom_bg.png');
+  background-image: url('../images/box_bottom_bg.png');
   background-position: bottom left;
   background-repeat: repeat-x;
   padding-bottom: 1px; /* IE wants this and it does no harm. */

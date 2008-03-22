@@ -233,7 +233,7 @@ YAHOO.extendX(RB.dialogs.FormDialog, RB.dialogs.BaseDialog, {
                 cls: 'spinner',
                 children: [{
                     tag: 'img',
-                    src: '/images/dlg-spinner.gif',
+                    src: '../images/dlg-spinner.gif',
                     width: 16,
                     height: 16,
                     alt: ""

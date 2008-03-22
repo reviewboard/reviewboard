@@ -3,7 +3,7 @@
  ****************************************************************************/
 .new-review-request {
   background-color: #fefadf;
-  background-image: url('/images/review_request_box_top_bg.png');
+  background-image: url('../images/review_request_box_top_bg.png');
 }
 
 .new-review-request label {
@@ -16,7 +16,7 @@
 }
 
 .new-review-request .box-inner {
-  background-image: url('/images/review_request_box_bottom_bg.png');
+  background-image: url('../images/review_request_box_bottom_bg.png');
 }
 
 
@@ -30,7 +30,7 @@
 
 .review-request {
   background-color: #fefadf;
-  background-image: url('/images/review_request_box_top_bg.png');
+  background-image: url('../images/review_request_box_top_bg.png');
 }
 
 .review-request label {
@@ -50,7 +50,7 @@
 }
 
 .review-request .box-inner {
-  background-image: url('/images/review_request_box_bottom_bg.png');
+  background-image: url('../images/review_request_box_bottom_bg.png');
 }
 
 .review-request .content {
@@ -218,7 +218,7 @@
  ****************************************************************************/
 .review {
   background-color: #e9edf5;
-  background-image: url('/images/review_box_top_bg.png');
+  background-image: url('../images/review_box_top_bg.png');
 }
 
 .review .body {
@@ -243,7 +243,7 @@
 }
 
 .review .box-inner {
-  background-image: url('/images/review_box_bottom_bg.png') !important;
+  background-image: url('../images/review_box_bottom_bg.png') !important;
 }
 
 .review .controls {

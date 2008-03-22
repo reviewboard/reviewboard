@@ -142,7 +142,7 @@ table.sidebyside th.controls {
 }
 
 table.sidebyside .commentflag {
-  background: url('/images/comment.png') no-repeat !important;
+  background: url('../images/comment.png') no-repeat !important;
   cursor: pointer;
   font-size: 90%;
   font-weight: normal;
@@ -162,7 +162,7 @@ table.sidebyside .commentflag {
 }
 
 table.sidebyside .commentflag.draft {
-  background: url('/images/comment-draft.png') no-repeat !important;
+  background: url('../images/comment-draft.png') no-repeat !important;
 }
 
 /* Extra whitespace highlight */
