@@ -321,6 +321,10 @@ class SubmitterDataGrid(DataGrid):
             "username", "fullname", "pending_reviews"
         ]
 
+    @staticmethod
+    def link_to_object(obj, value):
+        return settings.SITE_ROOT + obj.get_absolute_url()
+
 
 class GroupDataGrid(DataGrid):
     """

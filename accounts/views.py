@@ -14,7 +14,7 @@ from reviewboard.accounts.models import Profile
 
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, '/')
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.SITE_ROOT)
 
     profile, profile_is_new = \
         Profile.objects.get_or_create(user=request.user)

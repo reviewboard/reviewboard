@@ -18,21 +18,21 @@
 {% endblock %}
   <div id="container">
    <div id="headbar">
-    <h1 id="title"><a href="/">Review Board</a></h1>
+    <h1 id="title"><a href="{{SITE_ROOT}}">Review Board</a></h1>
     <h2 id="beta">beta</h2>
 
     <ul id="accountnav">
     {% if user.is_authenticated %}
      {% blocktrans with user|realname|escape as username %}<li>Welcome, <b>{{username}}</b></li>{% endblocktrans %}
-     <li>- <a href="/account/preferences/">{% trans "My account" %}</a></li>
+     <li>- <a href="{{SITE_ROOT}}account/preferences/">{% trans "My account" %}</a></li>
 {% if user.is_staff %}
-     <li>- <a href="/admin/">{% trans "Admin" %}</a></li>
+     <li>- <a href="{{SITE_ROOT}}admin/">{% trans "Admin" %}</a></li>
 {% endif %}
-     <li>- <a href="/account/logout/">{% trans "Log out" %}</a></li>
+     <li>- <a href="{{SITE_ROOT}}account/logout/">{% trans "Log out" %}</a></li>
     {% else %}
-     <li><a href="/account/login/?next_page={{request.path}}">{% trans "Log in" %}</a></li>
+     <li><a href="{{SITE_ROOT}}account/login/?next_page={{request.path}}">{% trans "Log in" %}</a></li>
      {% if settings.BUILTIN_AUTH %}
-     <li>- <a href="/account/register/">{% trans "Register" %}</a></li>
+     <li>- <a href="{{SITE_ROOT}}account/register/">{% trans "Register" %}</a></li>
      {% endif %}
     {% endif %}
      <li>- <a href="http://code.google.com/p/reviewboard/issues/list">{% trans "Bugs" %}</a></li>
@@ -40,17 +40,17 @@
     </ul>
    </div>
    {% if user.is_authenticated or not settings.REQUIRE_SITEWIDE_LOGIN %}
-   <form method="get" action="/r/search">
+   <form method="get" action="{{SITE_ROOT}}r/search/">
     <div id="navbar-outer">
      <ul id="navbar">
 {% if user.is_authenticated %}
-      <li><a href="/dashboard/">{% trans "My Dashboard" %}</a></li>
-      <li><a href="/r/new/">{% trans "New Review Request" %}</a></li>
+      <li><a href="{{SITE_ROOT}}dashboard/">{% trans "My Dashboard" %}</a></li>
+      <li><a href="{{SITE_ROOT}}r/new/">{% trans "New Review Request" %}</a></li>
       <li>-</li>
 {% endif %}
-      <li><a href="/r/">{% trans "All review requests" %}</a></li>
-      <li><a href="/groups/">{% trans "Groups" %}</a></li>
-      <li><a href="/users/">{% trans "Submitters" %}</a></li>
+      <li><a href="{{SITE_ROOT}}r/">{% trans "All review requests" %}</a></li>
+      <li><a href="{{SITE_ROOT}}groups/">{% trans "Groups" %}</a></li>
+      <li><a href="{{SITE_ROOT}}users/">{% trans "Submitters" %}</a></li>
       {% if settings.ENABLE_SEARCH %}
       <li id="searchbar">
       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />

@@ -28,10 +28,6 @@ SITE_ID = 1
 # to load the internationalization machinery.
 USE_I18N = True
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-# Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = '/media/'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
@@ -55,15 +51,25 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.media',
     'django.core.context_processors.request',
     'djblets.util.context_processors.settingsVars',
+    'djblets.util.context_processors.siteRoot',
 )
 
-ROOT_URLCONF = 'reviewboard.urls'
+SITE_ROOT_URLCONF = 'reviewboard.urls'
+ROOT_URLCONF = 'djblets.util.rooturl'
 
 REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
 HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
 MEDIA_ROOT = HTDOCS_ROOT
-MEDIA_URL = '/'
+
+# where is the site on your server ? - add the trailing slash.
+SITE_ROOT = '/'
+MEDIA_URL = SITE_ROOT
+
+# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
+# trailing slash.
+# Examples: "http://foo.com/media/", "/media/".
+ADMIN_MEDIA_PREFIX = SITE_ROOT + 'media/'
 
 TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
@@ -98,7 +104,7 @@ WEB_API_ENCODERS = (
 # reviewboard in to an existing authentication environment (such as NIS),
 # this data will come in from outside.
 BUILTIN_AUTH = True
-LOGIN_URL = '/account/login'
+LOGIN_URL = SITE_ROOT + 'account/login'
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
 # Default repository path to use for the source code.

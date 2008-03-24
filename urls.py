@@ -62,11 +62,11 @@ urlpatterns += patterns('django.contrib',
 
 # And the rest ...
 urlpatterns += patterns('',
-    (r'^$', 'django.views.generic.simple.redirect_to', {'url': '/dashboard/'}),
+    (r'^$', 'django.views.generic.simple.redirect_to', {'url': 'dashboard/'}),
 
     # Authentication and accounts
     (r'^account/login/$', 'djblets.auth.views.login',
-     {'next_page': '/dashboard/',
+     {'next_page': settings.SITE_ROOT + 'dashboard/',
       'extra_context': {'BUILTIN_AUTH': settings.BUILTIN_AUTH}}),
     (r'^account/preferences/$', 'reviewboard.accounts.views.user_preferences',),
 
@@ -77,13 +77,13 @@ urlpatterns += patterns('',
 if settings.BUILTIN_AUTH:
     urlpatterns += patterns('',
         (r'^account/register/$', 'djblets.auth.views.register',
-         {'next_page': '/dashboard/'}),
+         {'next_page': settings.SITE_ROOT + 'dashboard/'}),
     )
 else:
     urlpatterns += patterns('',
         (r'^account/register/$',
          'django.views.generic.simple.redirect_to',
-         {'url': '/account/login/'}))
+         {'url': settings.SITE_ROOT + 'account/login/'}))
 
 
 # Add static media if running in DEBUG mode

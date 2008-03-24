@@ -206,7 +206,7 @@ YAHOO.extendX(CommentDialog, YAHOO.ext.BasicDialog, {
     },
 
     getBaseURL: function() {
-        return '/api/json/reviewrequests/' + gReviewRequestId;
+        return gSiteRoot + 'api/json/reviewrequests/' + gReviewRequestId;
     },
 
     getReviewActionURL: function() {

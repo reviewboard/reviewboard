@@ -41,8 +41,9 @@ def valid_prefs_required(view_func):
         except Profile.DoesNotExist:
             pass
 
-        return HttpResponseRedirect("/account/preferences/?%s=%s" %
-                                    (REDIRECT_FIELD_NAME,
+        return HttpResponseRedirect("%saccount/preferences/?%s=%s" %
+                                    (settings.SITE_ROOT,
+                                     REDIRECT_FIELD_NAME,
                                      quote(request.get_full_path())))
 
     return _check_valid_prefs

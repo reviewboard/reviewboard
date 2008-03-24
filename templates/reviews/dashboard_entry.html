@@ -1,4 +1,4 @@
-    <tr onclick="javascript:window.location=&quot;/dashboard/?view={{view}}{% if group %}&amp;group={{group.name}}{% endif %}&quot;; return false;"{% if selected %} class="selected"{% endif %}>
-     <td class="summary {{level}}"><a href="/dashboard/?view={{view}}{% if group %}&amp;group={{group.name}}{% endif %}">{% if starred %}<img src="{{MEDIA_URL}}images/star_on.png" width="16" height="15" alt="" />{% endif %} {{text}}</a></td>
+    <tr onclick="javascript:window.location=&quot;{{SITE_ROOT}}dashboard/?view={{view}}{% if group %}&amp;group={{group.name}}{% endif %}&quot;; return false;"{% if selected %} class="selected"{% endif %}>
+     <td class="summary {{level}}"><a href="{{SITE_ROOT}}dashboard/?view={{view}}{% if group %}&amp;group={{group.name}}{% endif %}">{% if starred %}<img src="{{MEDIA_URL}}images/star_on.png" width="16" height="15" alt="" />{% endif %} {{text}}</a></td>
      <td>{% if show_count %}{{count}}{% endif %}</td>
     </tr>

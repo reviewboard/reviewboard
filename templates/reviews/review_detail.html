@@ -26,6 +26,7 @@
 <script type="text/javascript" src="{{MEDIA_URL}}scripts/rb/widgets.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}scripts/reviews.js"></script>
 <script type="text/javascript">
+  var gSiteRoot = "{{SITE_ROOT}}";
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gUserURL = "{{user.get_absolute_url}}";
   var gUserFullName = "{% firstof user.get_full_name user.username %}";
@@ -80,7 +81,7 @@
     confirmButton: "{% trans "Attach" %}",
     width: 400,
     height: 250,
-    path: '/api/json/reviewrequests/{{review_request.id}}/diff/new/',
+    path: '{{SITE_ROOT}}api/json/reviewrequests/{{review_request.id}}/diff/new/',
     upload: true,
     onSubmitted: function() { window.location.reload(); },
     fields: {% form_dialog_fields upload_diff_form %}
@@ -91,7 +92,7 @@
     confirmButton: "{% trans "Attach" %}",
     width: 350,
     height: 250,
-    path: '/api/json/reviewrequests/{{review_request.id}}/screenshot/new/',
+    path: '{{SITE_ROOT}}api/json/reviewrequests/{{review_request.id}}/screenshot/new/',
     upload: true,
     onSubmitted: function() { window.location.reload(); },
     fields: {% form_dialog_fields upload_screenshot_form %}
@@ -197,11 +198,11 @@
   registerCommaListEditor('bugs_closed', onBugsChanged);
   registerAutoCompleteCommaListEditor('target_groups',
                                       onTargetGroupsChanged,
-                                      "/api/json/groups/",
+                                      "{{SITE_ROOT}}api/json/groups/",
                                       ["groups", "name"]);
   registerAutoCompleteCommaListEditor('target_people',
                                       onTargetPeopleChanged,
-                                      "/api/json/users/",
+                                      "{{SITE_ROOT}}api/json/users/",
                                       ["users", "username"]);
 
 {% for image in review_request_details.screenshots.all %}

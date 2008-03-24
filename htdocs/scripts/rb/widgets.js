@@ -140,7 +140,7 @@ RB.widgets.InlineEditor = function(config) {
         var img = {
             tag: 'img',
             cls: 'editicon',
-            src: '../images/edit.png',
+            src: '../../images/edit.png',
             width: 20,
             height: 14
         };

@@ -13,8 +13,9 @@ var gEditors = [];
 var gPublishing = false;
 var gSavedFieldCount = 0;
 
+
 function getApiPath() {
-    return '/api/json/reviewrequests/' + gReviewRequestId;
+    return gSiteRoot + 'api/json/reviewrequests/' + gReviewRequestId;
 }
 
 function normalizeURL(url) {
@@ -49,7 +50,7 @@ function onEditComplete(field, value, callback) {
                 /* No way we're publishing now. */
                 gPublishing = false;
                 showServerError('Saving the draft has failed due to a ' +
-                                'server error:' + errmsg);
+                                'server error: ' + errmsg);
                 enableDraftButtons();
             }.createDelegate(this)
         },

@@ -429,7 +429,7 @@ def setstatus(request, review_request_id, action):
 
     review_request.save()
     if action == 'discard':
-        return HttpResponseRedirect('/dashboard/')
+        return HttpResponseRedirect(settings.SITE_ROOT + 'dashboard/')
     else:
         return HttpResponseRedirect(review_request.get_absolute_url())
 
