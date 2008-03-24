@@ -80,9 +80,11 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.markup',
     'django.contrib.sites',
     'django.contrib.sessions',
     'djblets.datagrid',
+    'djblets.docview',
     'djblets.util',
     'djblets.webapi',
     'reviewboard.accounts',
@@ -154,6 +156,12 @@ REQUIRE_SITEWIDE_LOGIN = False
 ENABLE_SEARCH = False
 SEARCH_INDEX = os.path.join(REVIEWBOARD_ROOT, 'search-index')
 
+# The number of files to display per page in the diff viewer
+DIFFVIEWER_PAGINATE_BY = 10
+
+# The number of extra files required before adding another page
+DIFFVIEWER_PAGINATE_ORPHANS = 5
+
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
@@ -177,9 +185,3 @@ except ImportError:
     dependency_error('Unable to read settings_local.py.')
 
 TEMPLATE_DEBUG = DEBUG
-
-# The number of files to display per page in the diff viewer
-DIFFVIEWER_PAGINATE_BY = 10
-
-# The number of extra files required before adding another page
-DIFFVIEWER_PAGINATE_ORPHANS = 5
