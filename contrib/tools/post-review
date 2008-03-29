@@ -648,6 +648,54 @@ class PerforceClient(SCMClient):
         return last_line.split(' ')[2]
 
 
+class MercurialClient(SCMClient):
+    """
+    A wrapper around the hg Mercurial tool that fetches repository
+    information and generates compatible diffs.
+    """
+    def get_repository_info(self):
+        data = execute('hg root', ignore_errors=True)
+        if data.startswith('abort:'):
+            # hg aborted => no mercurial repository here.
+            return None
+
+        # Elsewhere, hg root output give us the repository path.
+
+        # We save data here to use it as a fallback. See below
+        local_data = data.strip()
+
+        # We are going to search .hg/hgrc for the default path.
+        file_name = os.path.join(local_data,'.hg', 'hgrc')
+        if not  os.path.exists(file_name):
+            return RepositoryInfo(path=local_data, base_path='/')
+
+        f = open(file_name)
+        data = f.read()
+        f.close()
+
+        m = re.search(r'^default\s+=\s+(.+)$', data, re.M)
+        if not m:
+            # Return the local path, if no default value is found.
+            return RepositoryInfo(path=local_data, base_path='/')
+
+        path = m.group(1).strip()
+
+        return RepositoryInfo(path=path, base_path='')
+
+    def diff(self, files):
+        """
+        Performs a diff across all modified files in a Mercurial repository.
+        """
+        return execute('hg diff %s' % ' '.join(files))
+
+    def diff_between_revisions(self, revision_range):
+        """
+        Performs a diff between 2 revisions of a Mercurial repository.
+        """
+        r1, r2 = revision_range.split(':')
+        return execute('hg diff -r %s -r %s' % (r1, r2))
+
+
 class GitClient(SCMClient):
     """
     A wrapper around git that fetches repository information and generates
@@ -1001,54 +1049,6 @@ def parse_options(tool, repository_info, args):
     (globals()["options"], args) = parser.parse_args(args)
 
     return args
-
-
-class MercurialClient(SCMClient):
-    """
-    A wrapper around the hg Mercurial tool that fetches repository
-    information and generates compatible diffs.
-    """
-    def get_repository_info(self):
-        data = execute('hg root', ignore_errors=True)
-        if data.startswith('abort:'):
-            # hg aborted => no mercurial repository here.
-            return None
-
-        # Elsewhere, hg root output give us the repository path.
-
-        # We save data here to use it as a fallback. See below
-        local_data = data.strip()
-
-        # We are going to search .hg/hgrc for the default path.
-        file_name = os.path.join(local_data,'.hg', 'hgrc')
-        if not  os.path.exists(file_name):
-            return RepositoryInfo(path=local_data, base_path='/')
-
-        f = open(file_name)
-        data = f.read()
-        f.close()
-
-        m = re.search(r'^default\s+=\s+(.+)$', data, re.M)
-        if not m:
-            # Return the local path, if no default value is found.
-            return RepositoryInfo(path=local_data, base_path='/')
-
-        path = m.group(1).strip()
-
-        return RepositoryInfo(path=path, base_path='')
-
-    def diff(self, files):
-        """
-        Performs a diff across all modified files in a Mercurial repository.
-        """
-        return execute('hg diff %s' % ' '.join(files))
-
-    def diff_between_revisions(self, revision_range):
-        """
-        Performs a diff between 2 revisions of a Mercurial repository.
-        """
-        r1, r2 = revision_range.split(':')
-        return execute('hg diff -r %s -r %s' % (r1, r2))
 
 
 def main(args):
