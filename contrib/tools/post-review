@@ -325,7 +325,7 @@ class SCMClient(object):
 
         return None
 
-    def diff(self, changenum, files):
+    def diff(self, args):
         return None
 
     def diff_between_revisions(self, revision_range):
@@ -375,15 +375,18 @@ class SVNClient(SCMClient):
         return RepositoryInfo(path=path, base_path=base_path)
 
     def scan_for_server(self, repository_info):
-        def get_url_prop(path):
-            url = execute("svn propget reviewboard:url %s" % path).strip()
-            return url or None
-
         # Scan first for dot files, since it's faster and will cover the
         # user's $HOME/.reviewboardrc
         server_url = super(SVNClient, self).scan_for_server(repository_info)
         if server_url:
             return server_url
+
+        return self.scan_for_server_property(repository_info)
+
+    def scan_for_server_property(self, repository_info):
+        def get_url_prop(path):
+            url = execute("svn propget reviewboard:url %s" % path).strip()
+            return url or None
 
         for path in walk_parents(os.getcwd()):
             if not os.path.exists(os.path.join(path, ".svn")):
@@ -395,7 +398,7 @@ class SVNClient(SCMClient):
 
         return get_url_prop(repository_info.path)
 
-    def diff(self, changenum, files):
+    def diff(self, files):
         """
         Performs a diff across all modified files in a Subversion repository.
         """
@@ -432,12 +435,18 @@ class PerforceClient(SCMClient):
         return RepositoryInfo(path=repository_path, supports_changesets=True)
 
 
-    def diff(self, changenum, files):
+    def diff(self, args):
         """
         Goes through the hard work of generating a diff on Perforce in order
         to take into account adds/deletes and to provide the necessary
         revision information.
         """
+        if len(args) != 1:
+            print "Specify the change number of a pending changeset"
+            sys.exit(1)
+
+        changenum = args[0]
+
         cl_is_pending = False
 
         try:
@@ -638,6 +647,134 @@ class PerforceClient(SCMClient):
         # XXX: This breaks on filenames with spaces.
         return last_line.split(' ')[2]
 
+
+class GitClient(SCMClient):
+    """
+    A wrapper around git that fetches repository information and generates
+    compatible diffs. This will attempt to generate a diff suitable for the
+    remote repository, whether git, SVN or Perforce.
+    """
+    def get_repository_info(self):
+        git_dir = execute('git rev-parse --git-dir', ignore_errors=True).strip()
+
+        if git_dir.startswith("fatal:") or not os.path.isdir(git_dir):
+            return None
+
+        # We know we have something we can work with. Let's find out
+        # what it is. We'll try SVN first.
+        data = execute("git svn info", ignore_errors=True)
+
+        m = re.search(r'^Repository Root: (.+)$', data, re.M)
+        if m:
+            path = m.group(1)
+            m = re.search(r'^URL: (.+)$', data, re.M)
+
+            if m:
+                base_path = m.group(1)[len(path):]
+                self.type = "svn"
+                return RepositoryInfo(path=path, base_path=base_path)
+
+        # Okay, maybe Perforce.
+        # TODO
+
+        # Nope, it's git then.
+        # TODO
+        return None
+
+    def scan_for_server(self, repository_info):
+        # Scan first for dot files, since it's faster and will cover the
+        # user's $HOME/.reviewboardrc
+
+        # TODO: Maybe support a server per remote later? Is that useful?
+        url = execute("git config --get reviewboard.url").strip()
+        if url:
+            return url
+
+        if self.type == "svn":
+            # Try using the reviewboard:url property on the SVN repo, if it
+            # exists.
+            prop = SVNClient().scan_for_server_property(repository_info)
+
+            if prop:
+                return prop
+
+        return None
+
+    def diff(self, args):
+        """
+        Performs a diff across all modified files in the branch.
+        """
+        if len(args) == 0:
+            branch_against = "master"
+        elif len(args) == 1:
+            branch_against = args[0]
+        else:
+            print "No more than one branch can be supplied."
+            sys.exit(1)
+
+        diff_lines = execute("git diff --no-color --no-prefix -r -u %s.." %
+                             branch_against,
+                             split_lines=True)
+
+        if self.type == "svn":
+            return self.make_svn_diff(branch_against, diff_lines)
+
+        return None
+
+
+    def make_svn_diff(self, branch_against, diff_lines):
+        """
+        Formats the output of git diff such that it's in a form that
+        svn diff would generate. This is needed so the SVNTool in Review
+        Board can properly parse this diff.
+        """
+        rev = execute("git-svn find-rev %s" % branch_against).strip()
+
+        if not rev:
+            return None
+
+        diff_data = ""
+        filename = ""
+        revision = ""
+        newfile = False
+
+        for line in diff_lines:
+            if line.startswith("diff "):
+                # Grab the filename and then filter this out.
+                # This will be in the format of:
+                #
+                # diff --git a/path/to/file b/path/to/file
+                info = line.split(" ")
+                diff_data += "Index: %s\n" % info[2]
+                diff_data += "=" * 63
+                diff_data += "\n"
+            elif line.startswith("index "):
+                # Filter this out.
+                pass
+            elif line.strip() == "--- /dev/null":
+                # New file
+                newfile = True
+            elif line.startswith("--- "):
+                newfile = False
+                diff_data += "--- %s\t(revision %s)\n" % \
+                             (line[4:].strip(), rev)
+            elif line.startswith("+++ "):
+                filename = line[4:].strip()
+                if newfile:
+                    diff_data += "--- %s\t(revision 0)\n" % filename
+                    diff_data += "+++ %s\t(revision 0)\n" % filename
+                else:
+                    # We already printed the "--- " line.
+                    diff_data += "+++ %s\t(working copy)\n" % filename
+            else:
+                diff_data += line
+
+        return diff_data
+
+    def diff_between_revisions(self, revision_range):
+        pass
+
+
 def debug(s):
     """
     Prints debugging information if post-review was run with --debug
@@ -721,8 +858,7 @@ def load_config_file(filename):
     return config
 
 
-def tempt_fate(server, tool, changenum, files=None, diff_content=None,
-               submit_as=None):
+def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
     """
     Attempts to create a review request on a Review Board server and upload
     a diff. On success, the review request path is displayed.
@@ -762,7 +898,7 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None,
         rsp, = e.args
         if rsp['err']['code'] == 103: # Not logged in
             server.login()
-            tempt_fate(server, tool, changenum, files, diff_content, submit_as)
+            tempt_fate(server, tool, changenum, diff_content, submit_as)
             return
 
         if options.rid:
@@ -780,6 +916,7 @@ def tempt_fate(server, tool, changenum, files=None, diff_content=None,
             rsp, = e.args
             print "Error uploading diff: %s (%s)" % (rsp['err']['msg'],
                                                      rsp['err']['code'])
+            debug(rsp)
             die("Your review request still exists, but the diff is not " +
                 "attached.")
 
@@ -872,7 +1009,7 @@ class MercurialClient(SCMClient):
     information and generates compatible diffs.
     """
     def get_repository_info(self):
-        data = execute('hg root')
+        data = execute('hg root', ignore_errors=True)
         if data.startswith('abort:'):
             # hg aborted => no mercurial repository here.
             return None
@@ -900,7 +1037,7 @@ class MercurialClient(SCMClient):
 
         return RepositoryInfo(path=path, base_path='')
 
-    def diff(self, changenum, files):
+    def diff(self, files):
         """
         Performs a diff across all modified files in a Mercurial repository.
         """
@@ -923,7 +1060,7 @@ def main(args):
     repository_info = None
     tool = None
 
-    for tool in (SVNClient(), PerforceClient(), MercurialClient()):
+    for tool in (SVNClient(), MercurialClient(), GitClient(), PerforceClient()):
         repository_info = tool.get_repository_info()
 
         if repository_info:
@@ -951,20 +1088,14 @@ def main(args):
     server = ReviewBoardServer(server_url, repository_info)
 
     if repository_info.supports_changesets:
-        if len(args) != 1:
-            print "specify the change number of a pending changeset"
-            sys.exit(1)
-
         changenum = args[0]
-        files = None
     else:
         changenum = None
-        files = args
 
     if options.revision_range:
         diff = tool.diff_between_revisions(options.revision_range)
     else:
-        diff = tool.diff(changenum, files)
+        diff = tool.diff(args)
 
     if options.output_diff_only:
         print diff
@@ -976,7 +1107,7 @@ def main(args):
     except IOError:
         server.login()
 
-    review_url = tempt_fate(server, tool, changenum, files, diff_content=diff,
+    review_url = tempt_fate(server, tool, changenum, diff_content=diff,
                             submit_as=options.submit_as)
 
     # Load the review up in the browser if requested to:
