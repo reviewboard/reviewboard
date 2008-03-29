@@ -1,9 +1,12 @@
+import os
 import re
 import subprocess
+import tempfile
 
 from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
                                       SCMTool, HEAD, PRE_CREATION
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
+
 
 class CVSTool(SCMTool):
     regex_rev = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
@@ -101,9 +104,24 @@ class CVSDiffParser(DiffParser):
 
 class CVSClient:
     def __init__(self, repository):
+        self.tempdir = ""
+        self.currentdir = os.getcwd()
         self.repository = repository
 
+    def cleanup(self):
+        if self.currentdir != os.getcwd():
+            # Restore current working directory
+            os.chdir(self.currentdir)
+            # Remove temporary directory
+            if self.tempdir != "":
+                os.rmdir(self.tempdir)
+
     def cat_file(self, filename, revision):
+        # Somehow CVS sometimes seems to write .cvsignore files to current
+        # working directory even though we force stdout with -p.
+        self.tempdir = tempfile.mkdtemp()
+        os.chdir(self.tempdir)
+
         p = subprocess.Popen(['cvs', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -132,11 +150,14 @@ class CVSClient:
         if not errmsg or \
            errmsg.startswith('cvs checkout: cannot find module') or \
            errmsg.startswith('cvs checkout: could not read RCS file'):
+            self.cleanup()
             raise FileNotFoundError(filename, revision)
 
         # Otherwise, if there's an exit code, or errmsg doesn't look like
         # successful header, then call it a generic SCMError.
         if failure or not errmsg.startswith('=========='):
+            self.cleanup()
             raise SCMError(errmsg)
 
+        self.cleanup()
         return contents
