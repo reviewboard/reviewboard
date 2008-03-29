@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load djblets_deco %}
+
+{% block title %}{% trans "Manual server updates required" %}{% endblock %}
+
+{% block content %}
+{% box "important" %}
+ <h1>{% trans "Manual server updates required" %}</h1>
+ <p>
+{% blocktrans %}
+  A recent change requires manual updates to be made on this server. After
+  these changes are made, you should restart your server.
+{% endblocktrans %}
+ </p>
+ <p>
+{% blocktrans %}
+  To keep track of future updates, please visit the
+  <a href="http://code.google.com/p/reviewboard/wiki/RequiredServerUpdates">Required
+  Server Updates</a> page, or subscribe to the
+  <a href="http://groups.google.com/group/reviewboard">mailing list</a>.
+{% endblocktrans %}
+ </p>
+{% endbox %}
+{% for update in updates %}
+{% box %}
+{{update}}
+{% endbox %}
+{% endfor %}
+
+{% endblock %}

@@ -1,0 +1,31 @@
+{% load i18n %}
+<h1 class="title">{% trans "Media directory changes" %}</h1>
+<div class="main">
+ <p>
+{% blocktrans %}
+  Your Review Board installation does not have a {{MEDIA_ROOT}}/uploaded/images directory.
+{% endblocktrans %}
+ </p>
+ <h3>{% trans "If this is a new installation..." %}</h3>
+ <p>
+{% blocktrans %}
+  Create both <tt>{{MEDIA_ROOT}}/uploaded</tt> and
+  <tt>{{MEDIA_ROOT}}/uploaded/images</tt> on the server and make both directories writable by the web
+  server. You can do so with the following commands:
+{% endblocktrans %}
+ </p>
+ <pre>
+  $ cd {{MEDIA_ROOT}}
+  $ mkdir -p uploaded/images
+  $ sudo chown -R www-data.www-data uploaded
+ </pre>
+ <h3>{% trans "If this is an existing installation..." %}</h3>
+ <p>
+{% blocktrans %}
+  A recent update has changed the media setup on the server. This may require manual updates to
+  the web server configuration. Please see the "Media Changes" section on the
+  <a href="http://code.google.com/p/reviewboard/wiki/RequiredServerUpdates">Required Server
+  Updates</a> page for instructions on fixing your setup.
+{% endblocktrans %}
+ </p>
+</div>

@@ -3,6 +3,7 @@
 import os
 import sys
 
+
 DEBUG = True
 
 ADMINS = (
@@ -87,6 +88,7 @@ INSTALLED_APPS = (
     'djblets.util',
     'djblets.webapi',
     'reviewboard.accounts',
+    'reviewboard.admin',
     'reviewboard.diffviewer',
     'reviewboard.iphone',
     'reviewboard.reports',
