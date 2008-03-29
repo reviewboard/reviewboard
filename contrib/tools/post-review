@@ -547,7 +547,7 @@ class PerforceClient(SCMClient):
                 die("Unknown change type '%s' for %s" % (changetype, depot_path))
 
 
-            diff_cmd = 'diff -urNp "%s" "%s"' % (old_file, new_file)
+            diff_cmd = "diff -urNp '%s' '%s'" % (old_file, new_file)
             # Diff returns "1" if differences were found.
             dl = execute(diff_cmd, extra_ignore_errors=(1,)).splitlines(True)
 
@@ -623,7 +623,7 @@ class PerforceClient(SCMClient):
         a permissions bug on Windows.
         """
         debug('Writing "%s" to "%s"' % (depot_path, tmpfile))
-        data = execute('p4 print -q "%s"' % depot_path)
+        data = execute("p4 print -q '%s'" % depot_path)
 
         f = open(tmpfile, "w")
         f.write(data)
