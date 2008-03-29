@@ -402,13 +402,13 @@ class SVNClient(SCMClient):
         """
         Performs a diff across all modified files in a Subversion repository.
         """
-        return execute('svn diff %s' % ' '.join(files))
+        return execute('svn diff --diff-cmd=diff %s' % ' '.join(files))
 
     def diff_between_revisions(self, revision_range):
         """
         Performs a diff between 2 revisions of a Subversion repository.
         """
-        return execute('svn diff -r %s' % revision_range)
+        return execute('svn diff --diff-cmd=diff -r %s' % revision_range)
 
 
 class PerforceClient(SCMClient):
