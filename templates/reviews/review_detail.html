@@ -112,7 +112,7 @@
  <div class="header">
   {% if review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
-  <div class="posted_time">{% blocktrans %}Posted {{review.timestamp|timesince}} ago ({{review.timestamp|date:"F jS, Y, P"}}){% endblocktrans %}</div>
+  <div class="posted_time">{% blocktrans with review.timestamp|timesince as timestamp_since  and review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
  </div>
  <div class="body">
    <pre class="body_top">{{review.body_top|escape}}</pre>

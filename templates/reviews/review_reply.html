@@ -4,7 +4,7 @@
      <dt>
       {% if draft %}<label for="yourcomment_{{context_id}}-{{id}}">{% endif %}
       <a href="{{reply_user.get_absolute_url}}">{% firstof reply_user.get_full_name reply_user.username %}</a>
-      <span class="timestamp">{% blocktrans %}{{timestamp|timesince}} ago ({{timestamp|date:"F jS, Y, P"}}){% endblocktrans %}</span>
+      <span class="timestamp">{% blocktrans with timestamp|timesince as timestamp_since and timestamp|date:"F jS, Y, P" as timestamp_date %}{{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</span>
       {% if draft %}</label>{% endif %}
      </dt>
      <dd><pre{% if draft %} id="yourcomment_{{context_id}}-{{id}}"{% endif %}>{{text|escape}}</pre></dd>

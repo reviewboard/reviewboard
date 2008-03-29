@@ -6,7 +6,7 @@
   <div id="summary_wrapper"><label>{% trans "Summary" %}: </label><h1 id="summary">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">
    {{review_request.get_status_display}}<br />
-   {% blocktrans %}Updated {{review_request_details.last_updated|timesince}} ago {% endblocktrans %}
+   {% blocktrans  with review_request_details.last_updated|timesince as lastupdated %}Updated {{ lastupdated}} ago {% endblocktrans %}
   </p>
  </div>
  <table id="details">
