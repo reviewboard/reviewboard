@@ -1,14 +1,15 @@
 {% extends "datagrid/listview.html" %}
 {% load reviewtags %}
+{% load i18n %}
 
 {% block datagrid_title %}
 {% if datagrid.group %}{% star datagrid.group %}{% endif %}
 {{block.super}}
  <ul>
 {% if datagrid.show_submitted %}
-  <li><a href="?show_submitted=0">Hide submitted</a></li>
+  <li><a href="?show_submitted=0">{% trans "Hide submitted" %}</a></li>
 {% else %}
-  <li><a href="?show_submitted=1">Show submitted</a></li>
+  <li><a href="?show_submitted=1">{% trans "Show submitted" %}</a></li>
 {% endif %}
  </ul>
 {% endblock %}

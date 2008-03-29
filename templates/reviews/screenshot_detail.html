@@ -3,7 +3,7 @@
 {% load i18n %}
 {% load reviewtags %}
 
-{% block title %}Screenshot{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
+{% block title %}{% trans "Screenshot" %}{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/yui-ui.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/diffviewer.css" />
@@ -32,12 +32,12 @@
 {% block content %}
 {% box "review-request"%}
  <ul id="topcontrols">
-  <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+  <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> {% trans "View Review Request" %}</a></li>
  </ul>
  <div class="main">
   <h1 id="summary"><a href="{{review_request.get_absolute_url}}">{{review_request.summary}}</a></h1>
   <div class="content">
-  Screenshots:<br />
+  {% trans "Screenshots:" %}<br />
 {% include "reviews/screenshotindex.html" %}
   </div>
  </div>

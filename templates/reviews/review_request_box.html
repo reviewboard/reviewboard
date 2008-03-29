@@ -1,11 +1,12 @@
 {% load djblets_utils %}
+{% load i18n %}
 {% load reviewtags %}
  <div class="header">
   {% star review_request %}
-  <div id="summary_wrapper"><label>Summary: </label><h1 id="summary">{{review_request_details.summary|escape}}</h1></div>
+  <div id="summary_wrapper"><label>{% trans "Summary" %}: </label><h1 id="summary">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">
    {{review_request.get_status_display}}<br />
-   Updated {{review_request_details.last_updated|timesince}} ago
+   {% blocktrans %}Updated {{review_request_details.last_updated|timesince}} ago {% endblocktrans %}
   </p>
  </div>
  <table id="details">
@@ -18,14 +19,14 @@
    <col width="50%" />
   </colgroup>
   <tr>
-   <td class="label"><label for="submitter">Submitter:</label></td>
+   <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
    <td class="value"><a id="submitter" href="{{SITE_ROOT}}{{review_request.submitter.get_absolute_url}}">{% firstof review_request.submitter.get_full_name review_request.submitter.username %}</a></td>
-   <td class="caption" colspan="2">Reviewers</td>
+   <td class="caption" colspan="2">{% trans "Reviewers" %}</td>
   </tr>
   <tr>
-   <td class="label"><label for="branch">Branch:</label></td>
+   <td class="label"><label for="branch">{% trans "Branch" %}:</label></td>
    <td class="value"><span id="branch">{{review_request_details.branch|safe}}</span></td>
-   <td class="indented label"><label for="target_groups">Groups:</label></td>
+   <td class="indented label"><label for="target_groups">{% trans "Groups" %}:</label></td>
    <td class="value"><span id="target_groups">
 {%  for group in review_request_details.target_groups.all %}
 <a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
@@ -33,13 +34,13 @@
   </span></td>
   </tr>
   <tr>
-   <td class="label"><label for="bugs_closed">Bugs:</label></td>
+   <td class="label"><label for="bugs_closed">{% trans "Bugs" %}:</label></td>
    <td class="value"><span id="bugs_closed">
 {%  for bug in review_request_details.get_bug_list %}
 {%   if review_request.repository.bug_tracker %}<a href={{bug|bug_url:review_request}}>{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
 {%  endfor %}
   </span></td>
-   <td class="indented label"><label for="target_people">People:</label></td>
+   <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>
    <td class="value"><span id="target_people">
 {%  for person in review_request_details.target_people.all %}
 <a href="{[SITE_ROOT}}{{person.get_absolute_url}}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
@@ -47,30 +48,30 @@
   </span></td>
   </tr>
   <tr>
-   <td class="label"><label for="changenum">Change Number:</label></td>
+   <td class="label"><label for="changenum">{% trans "Change Number" %}:</label></td>
    <td class="value"><span id="changenum">{{review_request.changenum}}</span></td>
-   <td class="label"><label for="repository">Repository:</label></td>
+   <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
    <td class="value"><span id="repository">{{review_request.repository}}</span></td>
   </tr>
  </table>
  <div class="content">
-  <label for="description">Description:</label>
+  <label for="description">{% trans "Description" %}:</label>
   <pre id="description">{{review_request_details.description|escape}}</pre>
  </div>
  <div class="content">
-  <label for="testing_done">Testing Done:</label>
+  <label for="testing_done">{% trans "Testing Done" %}:</label>
   <pre id="testing_done">{{review_request_details.testing_done|escape}}</pre>
  </div>
  {% if review_request_details.screenshots.count %}
  <div class="content clearfix">
-  <label for="images">Screenshots:</label>
+  <label for="images">{% trans "Screenshots" %}:</label>
   {% for image in review_request_details.screenshots.all %}
    <div class="screenshot-container">
     <a href="{{image.get_absolute_url}}">{{image.thumb}}</a><br />
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
      {% ifequal request.user review_request.submitter %}
-      <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}images/delete.png" alt="Delete Screenshot" /></a>
+      <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}images/delete.png" alt="{% trans "Delete Screenshot" %}" /></a>
      {% endifequal %}
     </div>
    </div>

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load djblets_deco %}
-{% block title %}New Review Request{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "New Review Request" %}{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}css/reviews.css" />
@@ -33,11 +34,11 @@ YAHOO.util.Event.on(window, "load", function(e) {
 {% block content %}
 <form method="post" action="." enctype="multipart/form-data">
 {% box "new-review-request" %}
- <h1 class="title">New Review Request</h1>
+ <h1 class="title">{% trans "New Review Request" %}</h1>
  <div class="main">
   <table>
    <tr>
-    <td><label for="id_repository">Repository:</label></td>
+    <td><label for="id_repository">{% trans "Repository" %}:</label></td>
     {% spaceless %}<td>
      <select name="repository" id="id_repository" onchange="updateFormDisplay();">
       {% for repository in form.fields.repository.choices %}
@@ -51,17 +52,17 @@ YAHOO.util.Event.on(window, "load", function(e) {
     </td>{% endspaceless %}
    </tr>
    <tr id="row_changenum">
-    <td><label for="id_changenum">Change Number:</label></td>
+    <td><label for="id_changenum">{% trans "Change Number" %}:</label></td>
     <td>{{form.changenum}}</td>
     <td>{{form.changenum.errors}}</td>
    </tr>
    <tr id="row_basedir">
-    <td><label for="id_basedir">Base Diff Path:</label></td>
+    <td><label for="id_basedir">{% trans "Base Diff Path" %}:</label></td>
     <td>{{form.basedir}}</td>
     <td>{{form.basedir.errors}}</td>
    </tr>
    <tr id="row_diff_path">
-    <td><label for="id_diff_path">Diff:</label></td>
+    <td><label for="id_diff_path">{% trans "Diff" %}:</label></td>
     <td>{{form.diff_path}}</td>
     <td>{{form.diff_path.errors}}</td>
    </tr>
@@ -69,7 +70,7 @@ YAHOO.util.Event.on(window, "load", function(e) {
  </div>
 {% endbox %}
  <div class="prefsbuttons">
-  <input type="submit" value="Create Review Request" />
+  <input type="submit" value="{% trans "Create Review Request" %}" />
  </div>
 </form>
 

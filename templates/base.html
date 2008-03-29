@@ -54,7 +54,7 @@
       {% if settings.ENABLE_SEARCH %}
       <li id="searchbar">
       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
-       <input type="submit" value="Search" />
+       <input type="submit" value="{% trans "Search" %}" />
       </li>
       {% endif %}
      </ul>

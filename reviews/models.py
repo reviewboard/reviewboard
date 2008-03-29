@@ -240,9 +240,9 @@ class ReviewRequest(models.Model):
     internal state.
     """
     STATUSES = (
-        ('P', 'Pending Review'),
-        ('S', 'Submitted'),
-        ('D', 'Discarded'),
+        ('P', _('Pending Review')),
+        ('S', _('Submitted')),
+        ('D', _('Discarded')),
     )
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),

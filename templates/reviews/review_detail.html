@@ -48,7 +48,7 @@
 {% box "review-request" %}
 <ul id="topcontrols">
 {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %}
- <li><a href="diff/#index_header"><img src="{{MEDIA_URL}}images/diff.png" width="17" height="14" border="0" alt="" /> View Diff</a></li>
+ <li><a href="diff/#index_header"><img src="{{MEDIA_URL}}images/diff.png" width="17" height="14" border="0" alt="" /> {% trans "View Diff" %}</a></li>
 {% endif %}
 </ul>
 <div class="main">
@@ -56,22 +56,22 @@
 </div>
 <ul class="controls">
 {% if perms.reviews.delete_reviewrequest %}
- <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="{{MEDIA_URL}}images/delete.png" width="12" height="12" border="0" alt="" /> Delete</a></li>
+ <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="{{MEDIA_URL}}images/delete.png" width="12" height="12" border="0" alt="" /> {% trans "Delete" %}</a></li>
 {% endif %}
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
 {%  if review_request.public %}
 {%    ifequal review_request.status 'P' %}
- <li><a href="{{review_request.get_absolute_url}}submitted/">Set Submitted</a></li>
- <li><a href="#" onClick="discardReviewRequest();" id="discard-review-request-link">Discard</a></li>
+ <li><a href="{{review_request.get_absolute_url}}submitted/">{% trans "Set Submitted" %}</a></li>
+ <li><a href="#" onClick="discardReviewRequest();" id="discard-review-request-link">{% trans "Discard" %}</a></li>
 {%    endifequal %}
 {%  endif %}
 {% endifuserorperm %}
 {% ifequal request.user review_request.submitter %}
- <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %} {% trans "Update Attached Diff" %}{% else %} Attach Diff{% endif %}</a></li>
- <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="{{MEDIA_URL}}images/upload.png" width="14" height="14" border="0" alt="" /> Attach Screenshot</a></li>
+ <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %} {% trans "Update Attached Diff" %}{% else %} {% trans "Attach Diff" %}{% endif %}</a></li>
+ <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="{{MEDIA_URL}}images/upload.png" width="14" height="14" border="0" alt="" /> {% trans "Attach Screenshot" %}</a></li>
 {% endifequal %}
 {% ifequal request.user review_request.submitter %}
- <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="{{MEDIA_URL}}images/edit.png" width="14" height="14" border="0" alt="" /> Edit</a></li></noscript>
+ <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="{{MEDIA_URL}}images/edit.png" width="14" height="14" border="0" alt="" /> {% trans "Edit" %}</a></li></noscript>
 {% endifequal %}
 </ul>
 {% ifequal request.user review_request.submitter %}
@@ -110,9 +110,9 @@
 <div class="main">
  <div id="{{review.id}}-banners"></div>
  <div class="header">
-  {% if review.ship_it %}<div class="shipit">Ship it!</div>{% endif %}
+  {% if review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
-  <div class="posted_time">Posted {{review.timestamp|timesince}} ago ({{review.timestamp|date:"F jS, Y, P"}})</div>
+  <div class="posted_time">{% blocktrans %}Posted {{review.timestamp|timesince}} ago ({{review.timestamp|date:"F jS, Y, P"}}){% endblocktrans %}</div>
  </div>
  <div class="body">
    <pre class="body_top">{{review.body_top|escape}}</pre>

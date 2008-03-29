@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% load djblets_deco %}
-{% block title %}Reports{% endblock %}
+{% block title %}{% trans "Reports" %}{% endblock %}
 
 {% block content %}
 {% box "reports" %}
- <h1 class="title">Choose a report</h1>
+ <h1 class="title">{% trans "Choose a report" %}</h1>
  <div class="main">
 {% for report_id, report in reports.items %}
   <b>{{report.name}}</b>

@@ -526,7 +526,7 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
                 dest_revision = "Diff Revision %s" % interdiffset.revision
         else:
             source_revision = get_revision_str(filediff.source_revision)
-            dest_revision = "New Change"
+            dest_revision = _("New Change")
 
         i = filediff.source_file.rfind('/')
 

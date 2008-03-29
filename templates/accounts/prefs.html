@@ -29,19 +29,19 @@
     <td>{{form.first_name}}</td>
    </tr>
    <tr>
-    <td><label for="id_last_name">Last Name:</label></td>
+    <td><label for="id_last_name">{% trans "Last Name:" %}</label></td>
     <td>{{form.last_name}}</td>
    </tr>
    <tr>
-    <td><label for="id_email">Email:</label></td>
+    <td><label for="id_email">{% trans "Email:" %}</label></td>
     <td>{{form.email}} {{form.errors.email}}</td>
    </tr>
    <tr>
-    <td><label for="id_password">Change Password:</label></td>
+    <td><label for="id_password">{% trans "Change Password:" %}</label></td>
     <td>{{form.password1}}</td>
    </tr>
    <tr>
-    <td><label for="id_password2">Verify New Password:</label></td>
+    <td><label for="id_password2">{% trans "Verify New Password:" %}</label></td>
     <td>{{form.password2}} {{form.errors.password2}}</td>
    </tr>
    {% endif %}
@@ -55,14 +55,14 @@
  </div>
 {% endbox %}
 {% box "prefsgroup" %}
- <h1 class="title">Groups</h1>
+ <h1 class="title">{% trans "Groups" %}</h1>
  <div class="main">
-  <p>Which groups do you belong to or wish to watch?</p>
+  <p>{% trans "Which groups do you belong to or wish to watch?" %}</p>
   {{form.groups}}
  </div>
 {% endbox %}
  <div class="prefsbuttons">
-  <input type="submit" value="Save Preferences" />
+  <input type="submit" value="{% trans "Save Preferences" %}" />
  </div>
 </form>
 

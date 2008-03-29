@@ -1,16 +1,17 @@
+{% load i18n %}
 <ol class="index">
 {% for item in details.screenshots.all %}
  {% ifequal item.id screenshot.id %}
   {% if item.caption %}
    <li><b>{{item.caption}}</b></li>
   {% else %}
-   <li><b><i>No name</i></b></li>
+   <li><b><i>{% trans "No name" %}</i></b></li>
   {% endif %}
  {% else %}
   {% if item.caption %}
    <li><a href="{{item.get_absolute_url}}">{{item.caption}}</a></li>
   {% else %}
-   <li><i><a href="{{item.get_absolute_url}}">No name</a></i></li>
+   <li><i><a href="{{item.get_absolute_url}}">{% trans "No name" %}</a></i></li>
   {% endif %}
  {% endifequal %}
 {% endfor %}

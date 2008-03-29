@@ -51,7 +51,7 @@
 
 {% box "review-request" %}
 <ul id="topcontrols">
- <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> View Review Request</a></li>
+ <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}images/reviewrequest.png" width="16" height="16" border="0" alt="" /> {% trans "View Review Request" %}</a></li>
 </ul>
 <div class="main">
 {% include "reviews/review_request_box.html" %}
@@ -121,7 +121,7 @@
 {#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>
-   <th><label for="jump_to_revision">Jump to revision:<label></th>
+   <th><label for="jump_to_revision">{% trans "Jump to revision:" %}<label></th>
    <td>
     <div id="jump_to_revision" class="revisions">
 {%  for item in review_request.diffset_history|revision_link_list:diffset_pair %}
@@ -143,7 +143,7 @@
    </td>
   </tr>
   <tr>
-   <th><label for="show_interdiff">Changes between r{{revision}} and:</label></th>
+   <th><label for="show_interdiff">{% blocktrans %}Changes between r{{revision}} and:{% endblocktrans %}</label></th>
    <td>
     <div id="show_interdiff" class="revisions">
 {%  for item in review_request.diffset_history|interdiff_link_list:diffset_pair %}
@@ -167,7 +167,7 @@
  </table>
 {% endifnotequal %}
 
- <p><label>Files Changed:</label></p>
+ <p><label>{% trans "Files Changed:" %}</label></p>
 {% include "diffviewer/changeindex.html" %}
   </div>
  </div>

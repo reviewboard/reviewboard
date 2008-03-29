@@ -1,10 +1,11 @@
+{% load i18n %}
 {% load reviewtags %}
   <ol class="reply-comments" id="{{context_id}}-{{review.id}}">
    {% reply_list review comment context_type context_id %}
   </ol>
 {% if user.is_authenticated %}
   <ul class="controls">
-   <li><a href="#" id="add_comment_{{context_id}}-{{review.id}}" onclick="showCommentForm('{{review.id}}', '{{context_id}}-{{review.id}}'); return false;">Add comment</a></li>
+   <li><a href="#" id="add_comment_{{context_id}}-{{review.id}}" onclick="showCommentForm('{{review.id}}', '{{context_id}}-{{review.id}}'); return false;">{% trans "Add comment" %}</a></li>
   </ul>
   <script language="javascript">
   registerCommentSection("{{review.id}}", "{{context_id}}-{{review.id}}", "{% ifequal comment "" %}{{review.id}}{% else %}{{comment.id}}{% endifequal %}", "{{context_type}}");

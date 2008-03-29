@@ -1,6 +1,6 @@
 {% load datagrid %}
 {% extends "base.html" %}
-{% block title %}Search Review Requests{% endblock %}
+{% block title %}{% trans "Search Review Requests" %}{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="/css/search.css" />
 {% endblock %}
@@ -9,16 +9,16 @@
 
 {% block content %}
  {% ifequal hits 0 %}
- No review requests matching your query <b>{{ query }}</b>
+ {% trans "No review requests matching your query" %}<b>{{ query }}</b>
  {% else %}
- Results <b>{{ first_on_page }} - {{ last_on_page }}</b> of {{ hits }} for <b>{{ query }}</b>
+ {% trans "Results" %} <b>{{ first_on_page }} - {{ last_on_page }}</b> of {{ hits }} for <b>{{ query }}</b>
  {% endifequal %}
  <br /><br />
  {% for result in object_list %}
   <div class="searchresult">
    <h2><a href="{{ result.get_absolute_url }}">{{ result.summary }}</a></h2>
    <div class="excerpt">{{ result.description|truncatewords:30 }}</div>
-   <div class="by">{{ result.time_added|timesince }} ago by {% firstof result.submitter.get_full_name result.submitter.username %}</div>
+   <div class="by">{% blocktrans %}{{ result.time_added|timesince }} ago by {% firstof result.submitter.get_full_name result.submitter.username %}{% endblocktrans %}</div>
   </div>
  {% endfor %}
  {% if is_paginated %}
