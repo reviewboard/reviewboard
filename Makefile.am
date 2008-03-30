@@ -2,6 +2,7 @@
 # right now.  Once those are added, we should add it to here
 SUBDIRS = \
 	accounts \
+	admin \
 	contrib \
 	diffviewer \
 	htdocs \
@@ -50,6 +51,7 @@ nobase_djblets_PYTHON = \
 	djblets/util/decorators.py \
 	djblets/util/fields.py \
 	djblets/util/misc.py \
+	djblets/util/rooturl.py \
 	djblets/util/testing.py \
 	djblets/util/tests.py \
 	djblets/webapi/__init__.py \
@@ -71,7 +73,9 @@ nobase_djblets_DATA = \
 	djblets/media/images/datagrid/sort_desc_primary.png \
 	djblets/media/images/datagrid/sort_desc_secondary.png \
 	djblets/media/images/datagrid/unsort.png \
-	djblets/media/js/datagrid.js
+	djblets/media/js/datagrid.js \
+	djblets/util/templates/deco/box.html \
+	djblets/util/templates/deco/errorbox.html
 
 EXTRA_DIST = \
 	$(rb_SCRIPTS) \

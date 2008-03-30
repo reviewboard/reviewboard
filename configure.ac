@@ -15,6 +15,7 @@ AM_PATH_DJANGO
 AC_OUTPUT([
 Makefile
 accounts/Makefile
+admin/Makefile
 contrib/Makefile
 diffviewer/Makefile
 htdocs/Makefile
