@@ -320,6 +320,7 @@ def dashboard_entry(context, level, text, view, group=None):
 
     return {
         'MEDIA_URL': settings.MEDIA_URL,
+        'SITE_ROOT': settings.SITE_ROOT,
         'level': level,
         'text': text,
         'view': view,
