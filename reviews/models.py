@@ -2,6 +2,7 @@ import os
 import re
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
@@ -120,7 +121,7 @@ class Screenshot(models.Model):
     draft_caption = models.CharField(_("draft caption"),
                                      max_length=256, blank=True)
     image = models.ImageField(_("image"),
-                              upload_to=os.path.join('images', 'uploaded'))
+                              upload_to=os.path.join('uploaded', 'images'))
 
     def thumb(self):
         """
