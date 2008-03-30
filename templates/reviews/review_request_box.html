@@ -71,7 +71,7 @@
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
      {% ifequal request.user review_request.submitter %}
-      <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}images/delete.png" alt="{% trans "Delete Screenshot" %}" /></a>
+      <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}rb/images/delete.png" alt="{% trans "Delete Screenshot" %}" /></a>
      {% endifequal %}
     </div>
    </div>

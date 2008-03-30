@@ -11,11 +11,7 @@ FastCGIExternalServer @pythondir@/reviewboard/htdocs/reviewboard.fcgi -host 127.
 	DocumentRoot @pythondir@/reviewboard/htdocs/
 
 	# Alias static media requests to filesystem
-	Alias /media @djangodir@/contrib/admin/media
-	Alias /css @pythondir@/reviewboard/htdocs/images
-	Alias /images @pythondir@/reviewboard/htdocs/images
-	Alias /scripts @pythondir@/reviewboard/htdocs/scripts
-	Alias /errordocs @pythondir@/reviewboard/htdocs/errordocs
+	Alias /media @pythondir@/reviewboard/htdocs/media
 
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html

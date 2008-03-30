@@ -18,21 +18,10 @@ urlpatterns = patterns('',
 
 # Add static media if running in DEBUG mode
 if settings.DEBUG:
-    def htdocs_path(leaf):
-        return os.path.join(settings.HTDOCS_ROOT, leaf)
-
     urlpatterns += patterns('django.views.static',
-        (r'^css/(?P<path>.*)$', 'serve', {
+        (r'^media/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
-            'document_root': htdocs_path('css'),
-            }),
-        (r'^images/(?P<path>.*)$', 'serve', {
-            'show_indexes': True,
-            'document_root': htdocs_path('images'),
-            }),
-        (r'^scripts/(?P<path>.*)$', 'serve', {
-            'show_indexes': True,
-            'document_root': htdocs_path('scripts')
+            'document_root': os.path.join(settings.HTDOCS_ROOT, "media"),
             }),
     )
 

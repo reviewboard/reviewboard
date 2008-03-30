@@ -23,17 +23,11 @@ fastcgi.server = (
 )
 
 alias.url = (
-    "/media" => "@djangodir@/contrib/admin/media",
-    "/css" => "@pythondir@/reviewboard/htdocs/css",
-    "/images" => "@pythondir@/reviewboard/htdocs/images",
-    "/scripts" => "@pythondir@/reviewboard/htdocs/scripts",
+    "/media" => "@pythondir@/reviewboard/htdocs/media",
     "/errordocs" => "@pythondir@/reviewboard/htdocs/errordocs",
 )
 
 url.rewrite-once = (
-    "^(/css/.*)$" => "$1",
-    "^(/images/.*)$" => "$1",
-    "^(/scripts/.*)$" => "$1",
     "^(/media/.*)$" => "$1",
     "^(/errordocs/.*)$" => "$1",
     "^(/.*)$" => "/reviewboard.fcgi$1",

@@ -15,7 +15,7 @@ def check_updates_required():
     global _updates_required
     global _install_fine
 
-    if not _updates_required and not _install_fine and not True:
+    if not _updates_required and not _install_fine:
         # Check if there's a media/uploaded/images directory. If not, this is
         # either a new install or is using the old-style media setup and needs
         # to be manually upgraded.

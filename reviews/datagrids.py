@@ -22,7 +22,7 @@ class StarColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "images/star_on.png"
+        self.image_url = settings.MEDIA_URL + "rb/images/star_on.png"
         self.image_width = 16
         self.image_height = 15
         self.image_alt = "Starred"
@@ -40,7 +40,7 @@ class ShipItColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "images/shipit.png"
+        self.image_url = settings.MEDIA_URL + "rb/images/shipit.png"
         self.image_width = 16
         self.image_height = 16
         self.image_alt = "Ship It!"
@@ -63,7 +63,7 @@ class NewUpdatesColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "images/convo.png"
+        self.image_url = settings.MEDIA_URL + "rb/images/convo.png"
         self.image_width = 18
         self.image_height = 16
         self.image_alt = "New Updates"

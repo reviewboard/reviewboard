@@ -29,7 +29,6 @@ SITE_ID = 1
 # to load the internationalization machinery.
 USE_I18N = True
 
-
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.load_template_source',
@@ -61,16 +60,18 @@ ROOT_URLCONF = 'djblets.util.rooturl'
 REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
 HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
-MEDIA_ROOT = HTDOCS_ROOT
+MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
 
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
-MEDIA_URL = SITE_ROOT
 
-# URL prefix for admin media -- CSS, JavaScript and images. Make sure to use a
+# URL prefix for media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
+#
 # Examples: "http://foo.com/media/", "/media/".
-ADMIN_MEDIA_PREFIX = SITE_ROOT + 'media/'
+MEDIA_URL = SITE_ROOT + "media/"
+
+ADMIN_MEDIA_PREFIX = MEDIA_URL + 'admin/'
 
 TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.

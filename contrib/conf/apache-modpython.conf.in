@@ -20,14 +20,11 @@
 
 	# Serve static media without running it through mod_python
 	# (overrides the above)
-	<LocationMatch ^(/(media|css|images|scripts|errordocs))>
+	<LocationMatch ^(/(media|errordocs))>
 		SetHandler None
 	</LocationMatch>
 
 	# Alias static media requests to filesystem
-	Alias /media @djangodir@/contrib/admin/media
-	Alias /css @pythondir@/reviewboard/htdocs/css
-	Alias /images @pythondir@/reviewboard/htdocs/images
-	Alias /scripts @pythondir@/reviewboard/htdocs/scripts
+	Alias /media @pythondir@/reviewboard/htdocs/media
 	Alias /errordocs @pythondir@/reviewboard/htdocs/errordocs
 </VirtualHost>
