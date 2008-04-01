@@ -14,7 +14,51 @@ from optparse import OptionParser
 from tempfile import mkstemp
 from urlparse import urljoin, urlparse
 
-VERSION = "0.6"
+
+###
+# Default configuration -- user-settable variables follow.
+###
+
+# The following settings usually aren't needed, but if your Review
+# Board crew has specific preferences and doesn't want to express
+# them with command line switches, set them here and you're done.
+# In particular, setting the REVIEWBOARD_URL variable will allow
+# you to make it easy for people to submit reviews regardless of
+# their SCM setup.
+
+# Reviewboard URL.
+#
+# Set this if you wish to hard-code a default server to always use.
+# It's generally recommended to set this on your SCM repository instead
+# for those that support it (currently only SVN and Git).
+#
+# For example, on SVN:
+#   $ svn propset reviewboard:url http://reviewboard.example.com .
+#
+# Or with Git:
+#   $ git config reviewboard.url http://reviewboard.example.com
+#
+# If this is not a concern, setting the value here will let you get started
+# quickly.
+REVIEWBOARD_URL = None
+
+# Default submission arguments.  These are all optional; run this
+# script with --help for descriptions of each argument.
+TARGET_GROUPS   = None
+TARGET_PEOPLE   = None
+SUBMIT_AS       = None
+PUBLISH         = False
+OPEN_BROWSER    = False
+
+# Debugging.  For development...
+DEBUG           = False
+
+###
+# End user-settable variables.
+###
+
+
+VERSION = "0.7"
 
 user_config = None
 tempfiles = []
@@ -1080,67 +1124,71 @@ def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
 
 
 def parse_options(tool, repository_info, args):
-    parser = OptionParser(usage="%prog [-p] [-o] changenum",
+    parser = OptionParser(usage="%prog [-pond] [-r review_id] [changenum]",
                           version="%prog " + VERSION)
 
     parser.add_option("-p", "--publish",
-                      action="store_true", dest="publish", default=False,
+                      dest="publish", action="store_true", default=PUBLISH,
                       help="publish the review request immediately after " +
                            "submitting")
+    parser.add_option("-r", "--review-request-id",
+                      dest="rid", metavar="ID", default=None,
+                      help="existing review request ID to update")
     parser.add_option("-o", "--open",
-                      action="store_true", dest="open_browser", default=False,
+                      dest="open_browser", action="store_true",
+                      default=OPEN_BROWSER,
                       help="open a web browser to the review request page")
-    parser.add_option("--output-diff",
-                      action="store_true", dest="output_diff_only",
+    parser.add_option("-n", "--output-diff",
+                      dest="output_diff_only", action="store_true",
                       default=False,
                       help="outputs a diff to the console and exits. " +
                            "Does not post")
-    parser.add_option("--server", dest="server",
+    parser.add_option("--server",
+                      dest="server", default=REVIEWBOARD_URL,
                       metavar="SERVER",
                       help="specify a different Review Board server " +
                            "to use")
-    parser.add_option("--diff-only", dest="diff_only",
-                      action="store_true", default=False,
+    parser.add_option("--diff-only",
+                      dest="diff_only", action="store_true", default=False,
                       help="uploads a new diff, but does not update " +
                            "info from changelist")
-    parser.add_option("--target-groups", dest="target_groups",
-                      default=None,
+    parser.add_option("--target-groups",
+                      dest="target_groups", default=TARGET_GROUPS,
                       help="names of the groups who will perform " +
                            "the review")
-    parser.add_option("--target-people", dest="target_people",
-                      default=None,
+    parser.add_option("--target-people",
+                      dest="target_people", default=TARGET_PEOPLE,
                       help="names of the people who will perform " +
                            "the review")
-    parser.add_option("--summary", dest="summary",
-                      default=None,
+    parser.add_option("--summary",
+                      dest="summary", default=None,
                       help="summary of the review ")
-    parser.add_option("--description", dest="description",
-                      default=None,
+    parser.add_option("--description",
+                      dest="description", default=None,
                       help="description of the review ")
-    parser.add_option("--revision-range", dest="revision_range",
-                      default=None,
+    parser.add_option("--revision-range",
+                      dest="revision_range", default=None,
                       help="generate the diff for review based on given " +
                            "revision range")
-    parser.add_option("-r", "--review-request-id", dest="rid", metavar="ID",
-                      default=None,
-                      help="existing review request ID to update")
-    parser.add_option("--submit-as", dest="submit_as", metavar="USERNAME",
-                      default=None,
+    parser.add_option("--submit-as",
+                      dest="submit_as", default=SUBMIT_AS, metavar="USERNAME",
                       help="user name to be recorded as the author of the "
                            "review request, instead of the logged in user")
 
     if repository_info:
         if repository_info.supports_changesets:
-            parser.add_option("--change-only", dest="change_only",
-                              action="store_true", default=False,
+            parser.add_option("--change-only",
+                              dest="change_only", action="store_true",
+                              default=False,
                               help="updates info from changelist, but does " +
                                    "not upload a new diff")
 
         tool.add_options(parser)
 
 
-    parser.add_option("-d", "--debug", action="store_true",
-                      dest="debug", default=False, help="display debug output")
+    parser.add_option("-d", "--debug",
+                      action="store_true", dest="debug", default=DEBUG,
+                      help="display debug output")
 
     (globals()["options"], args) = parser.parse_args(args)
 
