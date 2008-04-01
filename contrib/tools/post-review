@@ -12,25 +12,9 @@ import sys
 import urllib2
 from optparse import OptionParser
 from tempfile import mkstemp
-from urlparse import urljoin
+from urlparse import urljoin, urlparse
 
 VERSION = "0.6"
-
-# Who stole the cookies from the cookie jar?
-# Was it you?
-# >:(
-if 'USERPROFILE' in os.environ:
-    homepath = os.path.join(os.environ["USERPROFILE"], "Local Settings",
-                            "Application Data")
-else:
-    homepath = os.environ["HOME"]
-
-cj = cookielib.MozillaCookieJar()
-cookiefile = os.path.join(homepath, ".post-review-cookies.txt")
-
-opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-opener.addheaders = [('User-agent', 'post-review/' + VERSION)]
-urllib2.install_opener(opener)
 
 user_config = None
 tempfiles = []
@@ -55,20 +39,68 @@ class RepositoryInfo:
             (self.path, self.base_path, self.supports_changesets)
 
 
+class ReviewBoardHTTPPasswordMgr(urllib2.HTTPPasswordMgr):
+    """
+    Adds HTTP authentication support for URLs.
+
+    Python 2.4's password manager has a bug in http authentication when the
+    target server uses a non-standard port.  This works around that bug on
+    Python 2.4 installs. This also allows post-review to prompt for passwords
+    in a consistent way.
+
+    See: http://bugs.python.org/issue974757
+    """
+    def __init__(self, reviewboard_url):
+        self.passwd  = {}
+        self.rb_url  = reviewboard_url
+        self.rb_user = None
+        self.rb_pass = None
+
+    def find_user_password(self, realm, uri):
+        if uri.startswith(self.rb_url):
+            if self.rb_user is None or self.rb_pass is None:
+                print "==> HTTP Authentication Required"
+                print 'Enter username and password for "%s" at %s' % \
+                    (realm, urlparse(uri)[1])
+                self.rb_user = raw_input('Username: ')
+                self.rb_pass = getpass.getpass('Password: ')
+
+            return self.rb_user, self.rb_pass
+        else:
+            # If this is an auth request for some other domain (since HTTP
+            # handlers are global), fall back to standard password management.
+            return urllib2.HTTPPasswordMgr.find_user_password(self, realm, uri)
+
+
 class ReviewBoardServer:
     """
     An instance of a Review Board server.
     """
-    def __init__(self, url, info):
+    def __init__(self, url, info, cookie_file):
         self.url = url
         self.info = info
+        self.cookie_file = cookie_file
+        self.cookie_jar  = cookielib.MozillaCookieJar(self.cookie_file)
+
+        # Set up the HTTP libraries to support all of the features we need.
+        cookie_handler = urllib2.HTTPCookieProcessor(self.cookie_jar)
+        password_mgr   = ReviewBoardHTTPPasswordMgr(self.url)
+        auth_handler   = urllib2.HTTPBasicAuthHandler(password_mgr)
+
+        opener = urllib2.build_opener(cookie_handler, auth_handler)
+        opener.addheaders = [('User-agent', 'post-review/' + VERSION)]
+        urllib2.install_opener(opener)
 
     def login(self):
         """
         Logs in to a Review Board server, prompting the user for login
-        information.
+        information if needed.
         """
-        print "You must log in the first time."
+        if self.has_valid_cookie():
+            return
+
+        print "==> Review Board Login Required"
+        print "Enter username and password for Review Board at %s" % self.url
         username = raw_input('Username: ')
         password = getpass.getpass('Password: ')
 
@@ -85,6 +117,40 @@ class ReviewBoardServer:
                                                rsp["err"]["code"]))
 
         debug("Logged in.")
+
+    def has_valid_cookie(self):
+        """
+        Load the user's cookie file and see if they have a valid
+        'sessionid' cookie for the current Review Board server.  Returns
+        true if so and false otherwise.
+        """
+        try:
+            parsed_url = urlparse(self.url)
+            host = parsed_url[1]
+            path = parsed_url[2] or '/'
+
+            # Cookie files don't store port numbers, unfortunately, so
+            # get rid of the port number if it's present.
+            host = host.split(":")[0]
+
+            debug("Looking for '%s %s' cookie in %s" % \
+                  (host, path, self.cookie_file))
+            self.cookie_jar.load(self.cookie_file, ignore_expires=True)
+
+            try:
+                cookie = self.cookie_jar._cookies[host][path]['sessionid']
+
+                if not cookie.is_expired():
+                    debug("Loaded valid cookie -- no login required")
+                    return True
+
+                debug("Cookie file loaded, but cookie has expired")
+            except KeyError:
+                debug("Cookie file loaded, but no cookie for this server")
+        except IOError, error:
+            debug("Couldn't load cookie file: %s" % error)
+
+        return False
 
     def new_review_request(self, changenum, submit_as=None):
         """
@@ -196,7 +262,7 @@ class ReviewBoardServer:
 
         try:
             rsp = urllib2.urlopen(url).read()
-            cj.save(cookiefile)
+            self.cookie_jar.save(self.cookie_file)
             return rsp
         except urllib2.HTTPError, e:
             print "Unable to access %s (%s). The host path may be invalid" % \
@@ -244,7 +310,7 @@ class ReviewBoardServer:
         try:
             r = urllib2.Request(url, body, headers)
             data = urllib2.urlopen(r).read()
-            cj.save(cookiefile)
+            self.cookie_jar.save(self.cookie_file)
             return data
         except urllib2.URLError, e:
             try:
@@ -1082,9 +1148,16 @@ def parse_options(tool, repository_info, args):
 
 
 def main(args):
-    # Load the config file
+    if 'USERPROFILE' in os.environ:
+        homepath = os.path.join(os.environ["USERPROFILE"], "Local Settings",
+                                "Application Data")
+    else:
+        homepath = os.environ["HOME"]
+
+    # Load the config and cookie files
     globals()['user_config'] = \
         load_config_file(os.path.join(homepath, ".reviewboardrc"))
+    cookie_file = os.path.join(homepath, ".post-review-cookies.txt")
 
     # Try to find the SCM Client we're going to be working with
     repository_info = None
@@ -1115,7 +1188,7 @@ def main(args):
         print "Unable to find a Review Board server for this source code tree."
         sys.exit(1)
 
-    server = ReviewBoardServer(server_url, repository_info)
+    server = ReviewBoardServer(server_url, repository_info, cookie_file)
 
     if repository_info.supports_changesets:
         changenum = args[0]
@@ -1132,10 +1205,7 @@ def main(args):
         sys.exit(0)
 
     # Let's begin.
-    try:
-        cj.load(cookiefile)
-    except IOError:
-        server.login()
+    server.login()
 
     review_url = tempt_fate(server, tool, changenum, diff_content=diff,
                             submit_as=options.submit_as)
