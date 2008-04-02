@@ -296,6 +296,6 @@ nobase_rb_DATA = \
 	errordocs/500.html
 
 install-data-local:
-	mkdir -p -m 1777 ${DESTDIR}${rbdir}/images/uploaded
+	mkdir -p -m 1777 ${DESTDIR}${rbdir}/media/uploaded/images
 
 EXTRA_DIST = $(nobase_rb_DATA)
