@@ -95,9 +95,11 @@ def patch(diff, file, filename):
     # XXX: catch exception if Popen fails?
     newfile = '%s-new' % oldfile
     p = subprocess.Popen(['patch', '-o', newfile, oldfile],
-                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+                         stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
     p.stdin.write(convert_line_endings(diff))
     p.stdin.close()
+    patch_output = p.stdout.read()
     failure = p.wait()
 
     if failure:
@@ -107,7 +109,7 @@ def patch(diff, file, filename):
         raise Exception(_("The patch to '%s' didn't apply cleanly. The temporary " +
                           "files have been left in '%s' for debugging purposes.\n" +
                           "`patch` returned: %s") %
-                        (filename, tempdir, p.stdout.read()))
+                        (filename, tempdir, patch_output))
 
     f = open(newfile, "r")
     data = f.read()
