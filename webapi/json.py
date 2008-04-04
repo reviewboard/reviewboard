@@ -53,6 +53,11 @@ INVALID_REPOSITORY        = WebAPIError(206, "The repository path specified " +
 REPO_FILE_NOT_FOUND       = WebAPIError(207, "The file was not found in the " +
                                              "repository")
 INVALID_USER              = WebAPIError(208, "User does not exist")
+REPO_NOT_IMPLEMENTED      = WebAPIError(209, "The specified repository is " +
+                                             "not able to perform this action")
+REPO_INFO_ERROR           = WebAPIError(210, "There was an error fetching " +
+                                             "extended information for this " +
+                                             "repository.")
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -217,6 +222,22 @@ def repository_list(request):
         'repositories': Repository.objects.all(),
     })
 
+
+@webapi_login_required
+def repository_info(request, repository_id):
+    try:
+        repository = Repository.objects.get(id=repository_id)
+    except Repository.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    try:
+        return WebAPIResponse(request, {
+            'info': repository.get_scmtool().get_repository_info()
+        })
+    except NotImplementedError:
+        return WebAPIResponseError(request, REPO_NOT_IMPLEMENTED)
+    except:
+        return WebAPIResponseError(request, REPO_INFO_ERROR)
 
 @webapi_login_required
 def user_list(request):

@@ -172,6 +172,18 @@ class SVNTool(SCMTool):
         else:
             assert False
 
+    def get_repository_info(self):
+        try:
+            info = self.client.info2( self.repopath, recurse=False )
+        except ClientError, e:
+            raise SCMError(e)
+
+        return {
+            'uuid': info[0][1].repos_UUID,
+            'root_url': info[0][1].repos_root_URL,
+            'url': info[0][1].URL
+        }
+
     def __normalize_revision(self, revision):
         if revision == HEAD:
             r = Revision(opt_revision_kind.head)

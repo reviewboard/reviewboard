@@ -85,6 +85,9 @@ class SCMTool:
     def get_filenames_in_revision(self, revision):
         raise NotImplementedError
 
+    def get_repository_info(self):
+        raise NotImplementedError
+
     def get_fields(self):
         # This is kind of a crappy mess in terms of OO design.  Oh well.
         # Return a list of fields which are valid for this tool in the "new
