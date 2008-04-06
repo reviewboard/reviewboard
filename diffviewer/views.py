@@ -9,7 +9,7 @@ except ImportError:
     pygments = None
 
 from django.conf import settings
-from django.core.paginator import ObjectPaginator, InvalidPage
+from django.core.paginator import Paginator, InvalidPage
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
@@ -82,25 +82,22 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         files = get_diff_files(diffset, None, interdiffset, highlighting)
 
         # Break the list of files into pages
-        paginator = ObjectPaginator(files, settings.DIFFVIEWER_PAGINATE_BY,
+        paginator = Paginator(files, settings.DIFFVIEWER_PAGINATE_BY,
                                     orphans=settings.DIFFVIEWER_PAGINATE_ORPHANS)
 
-        page = int(request.GET.get('page', 1))
+        page_num = int(request.GET.get('page', 1))
 
         if request.GET.get('file', False):
             file_id = int(request.GET['file'])
-            file_number = 0
 
             for i, f in enumerate(files):
                 if f['filediff'].id == file_id:
-                    file_number = i
-                    break
-            for i in range(paginator.pages):
-                if paginator.last_on_page(i) > file_number:
-                    page = i + 1
+                    page_num = i // paginator.per_page + 1
+                    if page_num > paginator.num_pages:
+                        page_num = paginator.num_pages
                     break
 
-        files = paginator.get_page(page - 1)
+        page = paginator.page(page_num)
 
         if request.GET.get('expand', False):
             collapseall = False
@@ -120,24 +117,24 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
         # XXX We can probably make this even more awesome and completely skip
         #     the get_diff_files call, caching basically the entire context.
-        for file in files:
+        for file in page.object_list:
             file['fragment'] = mark_safe(build_diff_fragment(request,
                                                              file, None,
                                                              highlighting,
                                                              collapseall,
                                                              context))
 
-        context['files'] = files
+        context['files'] = page.object_list
 
         # Add the pagination context
-        context['is_paginated'] = paginator.pages > 1
-        context['page'] = page
-        context['pages'] = paginator.pages
-        context['page_numbers'] = [n + 1 for n in range(paginator.pages)]
-        context['has_next'] = page < paginator.pages
-        context['next_page'] = page + 1
-        context['has_previous'] = page > 1
-        context['previous_page'] = page - 1
+        context['is_paginated'] = page.has_other_pages()
+        context['page'] = page.number
+        context['pages'] = paginator.num_pages
+        context['page_numbers'] = paginator.page_range
+        context['has_next'] = page.has_next()
+        context['next_page'] = page.next_page_number()
+        context['has_previous'] = page.has_previous()
+        context['previous_page'] = page.previous_page_number()
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))
