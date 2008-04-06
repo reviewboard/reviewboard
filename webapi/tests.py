@@ -803,7 +803,7 @@ class WebAPITests(TestCase):
         """Testing the reviewrequests/screenshot/new API"""
         review_request = self.testNewReviewRequest()
 
-        f = open("htdocs/images/trophy.png", "r")
+        f = open("htdocs/media/rb/images/trophy.png", "r")
         rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
                            review_request.id, {
             'path': f,
@@ -820,7 +820,7 @@ class WebAPITests(TestCase):
         review_request = ReviewRequest.objects.filter(public=True).\
             exclude(submitter=self.user)[0]
 
-        f = open("htdocs/images/trophy.png", "r")
+        f = open("htdocs/media/rb/images/trophy.png", "r")
         rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
                            review_request.id, {
             'path': f,
