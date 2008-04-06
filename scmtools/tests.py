@@ -606,13 +606,47 @@ class GitTests(DjangoTestCase):
             os.path.join(os.path.dirname(__file__), 'testdata/%s' % filename), \
             'r').read()
 
-    def _firstFileInDiff(self, diff):
-        return self.tool.get_parser(diff).parse()[0]
+    def _getFileInDiff(self, diff, filenum=0):
+        return self.tool.get_parser(diff).parse()[filenum]
+
+    def testFilemodeDiff(self):
+        """Testing parsing filemode changes Git diff"""
+        diff = self._readFixture('git_filemode.diff')
+        file = self._getFileInDiff(diff)
+        self.assertEqual(file.origFile, 'testing')
+        self.assertEqual(file.newFile, 'testing')
+        self.assertEqual(file.origInfo, 'e69de29')
+        self.assertEqual(file.newInfo, 'bcae657')
+        self.assertFalse(file.binary)
+        self.assertEqual(file.data.splitlines()[0],
+                         "diff --git a/testing b/testing")
+        self.assertEqual(file.data.splitlines()[-1], "+ADD")
+
+    def testFilemodeWithFollowingDiff(self):
+        """Testing parsing filemode changes with following Git diff"""
+        diff = self._readFixture('git_filemode2.diff')
+        file = self._getFileInDiff(diff)
+        self.assertEqual(file.origFile, 'testing')
+        self.assertEqual(file.newFile, 'testing')
+        self.assertEqual(file.origInfo, 'e69de29')
+        self.assertEqual(file.newInfo, 'bcae657')
+        self.assertFalse(file.binary)
+        self.assertEqual(file.data.splitlines()[0],
+                         "diff --git a/testing b/testing")
+        self.assertEqual(file.data.splitlines()[-1], "+ADD")
+        file = self._getFileInDiff(diff, 1)
+        self.assertEqual(file.origFile, 'cfg/testcase.ini')
+        self.assertEqual(file.newFile, 'cfg/testcase.ini')
+        self.assertEqual(file.origInfo, 'cc18ec8')
+        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertEqual(file.data.splitlines()[0], 
+                        "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+        self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
 
     def testSimpleDiff(self):
         """Testing parsing simple Git diff"""
         diff = self._readFixture('git_simple.diff')
-        file = self._firstFileInDiff(diff)
+        file = self._getFileInDiff(diff)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
         self.assertEqual(file.origInfo, 'cc18ec8')
@@ -626,7 +660,7 @@ class GitTests(DjangoTestCase):
     def testNewfileDiff(self):
         """Testing parsing Git diff with new file"""
         diff = self._readFixture('git_newfile.diff')
-        file = self._firstFileInDiff(diff)
+        file = self._getFileInDiff(diff)
         self.assertEqual(file.origFile, 'IAMNEW')
         self.assertEqual(file.newFile, 'IAMNEW')
         self.assertEqual(file.origInfo, PRE_CREATION)
@@ -636,11 +670,30 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
+    
+    def testNewfileNoContentDiff(self):
+        """Testing parsing Git diff new file, no content"""
+        diff = self._readFixture('git_newfile_nocontent.diff')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(self.tool.get_parser(diff).parse()), 0)
+    
+    def testNewfileNoContentWithFollowingDiff(self):
+        """Testing parsing Git diff new file, no content, with following"""
+        diff = self._readFixture('git_newfile_nocontent2.diff')
+        self.assertEqual(len(self.tool.get_parser(diff).parse()), 1)
+        file = self._getFileInDiff(diff)
+        self.assertEqual(file.origFile, 'cfg/testcase.ini')
+        self.assertEqual(file.newFile, 'cfg/testcase.ini')
+        self.assertEqual(file.origInfo, 'cc18ec8')
+        self.assertEqual(file.newInfo, '5e70b73')
+        self.assertEqual(file.data.splitlines()[0], 
+                        "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+        self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
 
     def testDelFileDiff(self):
         """Testing parsing Git diff with deleted file"""
         diff = self._readFixture('git_delfile.diff')
-        file = self._firstFileInDiff(diff)
+        file = self._getFileInDiff(diff)
         self.assertEqual(file.origFile, 'OLDFILE')
         self.assertEqual(file.newFile, 'OLDFILE')
         self.assertEqual(file.origInfo, '8ebcb01')
@@ -654,7 +707,7 @@ class GitTests(DjangoTestCase):
     def testBinaryDiff(self):
         """Testing parsing Git diff with binary"""
         diff = self._readFixture('git_binary.diff')
-        file = self._firstFileInDiff(diff)
+        file = self._getFileInDiff(diff)
         self.assertEqual(file.origFile, 'pysvn-1.5.1.tar.gz')
         self.assertEqual(file.newFile, 'pysvn-1.5.1.tar.gz')
         self.assertEqual(file.origInfo, PRE_CREATION)
@@ -667,16 +720,14 @@ class GitTests(DjangoTestCase):
     def testComplexDiff(self):
         """Testing parsing Git diff with existing and new files"""
         diff = self._readFixture('git_complex.diff')
-        files = self.tool.get_parser(diff).parse()
-
+        files = self.tool.get_parser(diff).parse() 
         self.assertEqual(len(files), 6)
-
         self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
         self.assertEqual(files[0].newFile, 'cfg/testcase.ini')
         self.assertEqual(files[0].origInfo, '5e35098')
         self.assertEqual(files[0].newInfo, 'e254ef4')
         self.assertFalse(files[0].binary)
-        self.assertEqual(len(files[0].data), 610)
+        self.assertEqual(len(files[0].data), 519)
         self.assertEqual(files[0].data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(files[0].data.splitlines()[12],
