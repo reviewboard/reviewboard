@@ -1,0 +1,11 @@
+diff --git a/testing b/testing
+old mode 100755
+new mode 100644
+index e69de29..bcae657
+--- a/testing
++++ b/testing
+@@ -0,0 +1 @@
++ADD
+diff --git a/testing2 b/testing2
+old mode 100644
+new mode 100755

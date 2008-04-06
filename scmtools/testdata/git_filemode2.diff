@@ -1,0 +1,24 @@
+diff --git a/testing b/testing
+old mode 100755
+new mode 100644
+index e69de29..bcae657
+--- a/testing
++++ b/testing
+@@ -0,0 +1 @@
++ADD
+diff --git a/testing2 b/testing2
+old mode 100644
+new mode 100755
+diff --git a/cfg/testcase.ini b/cfg/testcase.ini
+index cc18ec8..5e70b73 100644
+--- a/cfg/testcase.ini
++++ b/cfg/testcase.ini
+@@ -1,6 +1,7 @@
++blah blah blah
+ [mysql]
+ host = localhost
+ port = 3306
+ user = user
+ pass = pass
+-db = pyunit
++db = pyunit
