@@ -554,6 +554,20 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
 
     add_navigation_cues(files)
 
+    def cmp_file(x, y):
+        # Sort based on basepath in asc order
+        if x["basepath"] != y["basepath"]:
+            return cmp(x["basepath"], y["basepath"])
+        # Sort based on filename in asc order, then basod on extension in desc
+        # order, to make *.h be ahead of *.c/cpp
+        x_file, x_ext = os.path.splitext(x["basename"])
+        y_file, y_ext = os.path.splitext(y["basename"])
+        if x_file != y_file:
+            return cmp(x_file, y_file)
+        else:
+            return cmp(y_ext, x_ext)
+
+    files.sort(cmp_file)
     return files
 
 
