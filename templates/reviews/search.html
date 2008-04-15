@@ -1,5 +1,6 @@
-{% load datagrid %}
 {% extends "base.html" %}
+{% load datagrid %}
+{% load i18n %}
 {% block title %}{% trans "Search Review Requests" %}{% endblock %}
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="/css/search.css" />
@@ -18,7 +19,7 @@
   <div class="searchresult">
    <h2><a href="{{ result.get_absolute_url }}">{{ result.summary }}</a></h2>
    <div class="excerpt">{{ result.description|truncatewords:30 }}</div>
-   <div class="by">{% blocktrans with result.time_added|timesince as added_since and firstof result.submitter.get_full_name result.submitter.username as added_by %}{{ added_since }} ago by {{ added_by }}{% endblocktrans %}</div>
+   <div class="by">{% blocktrans with result.time_added|timesince as added_since and result.submitter.get_full_name|default_if_none:result.submitter.username as added_by%}{{added_since}} ago by {{added_by}}{% endblocktrans %}</div>
   </div>
  {% endfor %}
  {% if is_paginated %}
