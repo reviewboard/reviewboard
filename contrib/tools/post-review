@@ -539,7 +539,7 @@ class PerforceClient(SCMClient):
         if not m:
             return None
 
-        repository_path = m.group(1)
+        repository_path = m.group(1).strip()
 
         try:
             hostname, port = repository_path.split(":")
@@ -663,7 +663,7 @@ class PerforceClient(SCMClient):
                 die("Unknown change type '%s' for %s" % (changetype, depot_path))
 
 
-            diff_cmd = "diff -urNp '%s' '%s'" % (old_file, new_file)
+            diff_cmd = 'diff -urNp "%s" "%s"' % (old_file, new_file)
             # Diff returns "1" if differences were found.
             dl = execute(diff_cmd, extra_ignore_errors=(1,)).splitlines(True)
 
@@ -739,7 +739,7 @@ class PerforceClient(SCMClient):
         a permissions bug on Windows.
         """
         debug('Writing "%s" to "%s"' % (depot_path, tmpfile))
-        data = execute("p4 print -q '%s'" % depot_path)
+        data = execute('p4 print -q "%s"' % depot_path)
 
         f = open(tmpfile, "w")
         f.write(data)
@@ -752,7 +752,7 @@ class PerforceClient(SCMClient):
         """
         # $ p4 where //user/bvanzant/main/testing
         # //user/bvanzant/main/testing //bvanzant:test05:home/testing /home/bvanzant/home-versioned/testing
-        cmd = "p4 where '%s'" % (depot_path,)
+        cmd = 'p4 where "%s"' % (depot_path,)
         where_output = execute(cmd).splitlines()
         # Take only the last line from the where command.  If you have a
         # multi-line view mapping with exclusions, Perforce will display
@@ -986,12 +986,19 @@ def execute(command, split_lines=False, ignore_errors=False,
     """
     Utility function to execute a command and return the output.
     """
-    p = subprocess.Popen(command,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT,
-                         shell=True,
-                         close_fds=True)
+    if sys.platform.startswith('win'):
+        p = subprocess.Popen(command,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             shell=True)
+    else:
+        p = subprocess.Popen(command,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             shell=True,
+                             close_fds=True)
     if split_lines:
         data = p.stdout.readlines()
     else:
@@ -1116,7 +1123,7 @@ def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
     if not review_url.startswith('http'):
         review_url = 'http://%s' % review_url
 
-    print 'Review request posted.'
+    print "Review request #%s posted." % (review_request['id'],)
     print
     print review_url
 
@@ -1239,6 +1246,10 @@ def main(args):
     server = ReviewBoardServer(server_url, repository_info, cookie_file)
 
     if repository_info.supports_changesets:
+        if len(args) < 1:
+            print "You must include a change set number"
+            sys.exit(1)
+
         changenum = args[0]
     else:
         changenum = None
