@@ -1,13 +1,3 @@
-body {
-  behavior: url("/scripts/csshover2.htc");
-}
-
-img,
-table.sidebyside .commentflag,
-.box.important .box-inner {
-  behavior: url("/scripts/pngfix.htc");
-}
-
 /*
  * The trophy appears too high on IE and the box has padding that I can't
  * get rid of. Just make the trophy inline.

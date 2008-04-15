@@ -323,7 +323,7 @@ class SubmitterDataGrid(DataGrid):
 
     @staticmethod
     def link_to_object(obj, value):
-        return settings.SITE_ROOT + obj.get_absolute_url()
+        return settings.SITE_ROOT + obj.get_absolute_url()[1:]
 
 
 class GroupDataGrid(DataGrid):
