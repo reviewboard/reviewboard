@@ -157,7 +157,7 @@ var asyncJsonRequest = function(method, url, callbacks, postData) {
  */
 function toggleStar(el, type, objid, default_) {
   var isStarred = gStars[el] == undefined ? default_ : gStars[el];
-  var url = gSiteRoot + "api/json/" + type + "/" + objid + "/";
+  var url = SITE_ROOT + "api/json/" + type + "/" + objid + "/";
 
   if (isStarred) {
     url += "unstar/";

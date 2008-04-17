@@ -15,7 +15,7 @@ var gSavedFieldCount = 0;
 
 
 function getApiPath() {
-    return gSiteRoot + 'api/json/reviewrequests/' + gReviewRequestId;
+    return SITE_ROOT + 'api/json/reviewrequests/' + gReviewRequestId;
 }
 
 function normalizeURL(url) {
