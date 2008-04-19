@@ -28,5 +28,11 @@
      "fields": {"name": "Git",
                 "class_name": "reviewboard.scmtools.git.GitTool"
                }
+    },
+    {"pk": "6",
+     "model": "scmtools.tool",
+     "fields": {"name": "Bazaar",
+                "class_name": "reviewboard.scmtools.bzr.BZRTool"
+               }
     }
 ]
