@@ -159,10 +159,10 @@ ENABLE_SEARCH = False
 SEARCH_INDEX = os.path.join(REVIEWBOARD_ROOT, 'search-index')
 
 # The number of files to display per page in the diff viewer
-DIFFVIEWER_PAGINATE_BY = 10
+DIFFVIEWER_PAGINATE_BY = 20
 
 # The number of extra files required before adding another page
-DIFFVIEWER_PAGINATE_ORPHANS = 5
+DIFFVIEWER_PAGINATE_ORPHANS = 10
 
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
