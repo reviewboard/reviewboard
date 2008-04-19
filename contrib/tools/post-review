@@ -843,6 +843,20 @@ class GitClient(SCMClient):
                 base_path = m.group(1)[len(path):]
                 self.type = "svn"
                 return RepositoryInfo(path=path, base_path=base_path)
+        else:
+            # Versions of git-svn before 1.5.4 don't (appear to) support
+            # 'git svn info'.  If we fail because of an older git install,
+            # here, figure out what version of git is installed and give
+            # the user a hint about what to do next.
+            version = execute("git svn --version", ignore_errors=True)
+            version_parts = re.search('version (\d+)\.(\d+)\.(\d+)',
+                                      version)
+            if version_parts and not is_valid_version((version_parts.group(1),
+                                                       version_parts.group(2),
+                                                       version_parts.group(3)),
+                                                      (1, 5, 4)):
+                    die("Your installation of git-svn must be upgraded to " + \
+                        "version 1.5.4 or later")
 
         # Okay, maybe Perforce.
         # TODO
@@ -850,6 +864,18 @@ class GitClient(SCMClient):
         # Nope, it's git then.
         # TODO
         return None
+
+    def is_valid_version(actual, expected):
+        """
+        Takes two tuples, both in the form:
+            (major_version, minor_version, micro_version)
+        Returns true if the actual version is greater than or equal to
+        the expected version, and false otherwise.
+        """
+        return (expected[0] > actual[0]) or \
+               (expected[0] == actual[0] and expected[1] > actual[1]) or \
+               (expected[0] == actual[0] and expected[1] == actual[1] and \
+                expected[2] >= actual[2])
 
     def scan_for_server(self, repository_info):
         # Scan first for dot files, since it's faster and will cover the
