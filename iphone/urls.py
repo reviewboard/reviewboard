@@ -7,7 +7,7 @@ urlpatterns = patterns('',
 
     # Accounts
     url(r'^account/login/$', 'djblets.auth.views.login',
-        {'next_page': settings.SITE_ROOT + '/iphone/',
+        {'next_page': settings.SITE_ROOT + 'iphone/',
          'template_name': 'iphone/login.html',
          'extra_context': {'BUILTIN_AUTH': settings.BUILTIN_AUTH}},
         name="iphone-login"),

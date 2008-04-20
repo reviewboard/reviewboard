@@ -65,14 +65,6 @@ MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
 
-# URL prefix for media -- CSS, JavaScript and images. Make sure to use a
-# trailing slash.
-#
-# Examples: "http://foo.com/media/", "/media/".
-MEDIA_URL = SITE_ROOT + "media/"
-
-ADMIN_MEDIA_PREFIX = MEDIA_URL + 'admin/'
-
 TEMPLATE_DIRS = (
     # Don't forget to use absolute paths, not relative paths.
     os.path.join(REVIEWBOARD_ROOT, 'templates'),
@@ -108,7 +100,6 @@ WEB_API_ENCODERS = (
 # reviewboard in to an existing authentication environment (such as NIS),
 # this data will come in from outside.
 BUILTIN_AUTH = True
-LOGIN_URL = SITE_ROOT + 'account/login'
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
 # Default repository path to use for the source code.
@@ -182,8 +173,20 @@ if os.path.split(os.path.dirname(__file__))[1] != 'reviewboard':
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:
+    import settings_local
     from settings_local import *
 except ImportError:
     dependency_error('Unable to read settings_local.py.')
 
 TEMPLATE_DEBUG = DEBUG
+
+# URL prefix for media -- CSS, JavaScript and images. Make sure to use a
+# trailing slash.
+#
+# Examples: "http://foo.com/media/", "/media/".
+MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + 'media/')
+
+
+# Base these on the user's SITE_ROOT.
+LOGIN_URL = SITE_ROOT + 'account/login/'
+ADMIN_MEDIA_PREFIX = MEDIA_URL + 'admin/'
