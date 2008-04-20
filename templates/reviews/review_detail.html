@@ -28,7 +28,9 @@
 <script type="text/javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
   var gUserURL = "{% url user user %}";
+{% if not user.is_anonymous %}
   var gUserFullName = "{{user|user_displayname}}";
+{% endif %}
   var gReviewRequestId = "{{review_request.id}}";
   var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 </script>
