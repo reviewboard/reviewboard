@@ -1,6 +1,7 @@
 rbdir = $(pyexecdir)/reviewboard/scmtools
 nobase_rb_PYTHON =		\
 	__init__.py		\
+	bzr.py			\
 	core.py			\
 	cvs.py			\
 	git.py			\
