@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.template import Template
 from django.template.context import RequestContext
@@ -190,8 +191,7 @@ class ReviewRequestDataGrid(DataGrid):
     ship_it      = ShipItColumn()
     summary      = SummaryColumn(expand=True, link=True, css_class="summary")
     submitter    = Column(_("Submitter"), db_field="auth_user.username",
-                          shrink=True, sortable=True, link=True,
-                          link_func=DataGrid.link_to_value)
+                          shrink=True, sortable=True, link=True)
 
     time_added   = DateTimeColumn(_("Posted"),
         detailed_label=_("Posted Time"),
@@ -225,6 +225,7 @@ class ReviewRequestDataGrid(DataGrid):
         self.profile_sort_field = 'sort_review_request_columns'
         self.profile_columns_field = 'review_request_columns'
         self.show_submitted = True
+        self.submitter_url_name = "user"
         self.default_sort = ["-last_updated"]
         self.default_columns = [
             "star", "summary", "submitter", "time_added", "last_updated_since"
@@ -248,6 +249,12 @@ class ReviewRequestDataGrid(DataGrid):
             return True
 
         return False
+
+    def link_to_object(self, obj, value):
+        if value and isinstance(value, User):
+            return reverse("user", args=[value])
+
+        return obj.get_absolute_url()
 
 
 class DashboardDataGrid(ReviewRequestDataGrid):
@@ -323,7 +330,7 @@ class SubmitterDataGrid(DataGrid):
 
     @staticmethod
     def link_to_object(obj, value):
-        return settings.SITE_ROOT + obj.get_absolute_url()[1:]
+        return reverse("user", args=[obj.id])
 
 
 class GroupDataGrid(DataGrid):

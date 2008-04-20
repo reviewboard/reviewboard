@@ -1,10 +1,10 @@
-from django.conf.urls.defaults import patterns
+from django.conf.urls.defaults import patterns, url
 
 urlpatterns = patterns('reviewboard.reviews.views',
-    (r'^$', 'all_review_requests'),
+    url(r'^$', 'all_review_requests', name="all-review-requests"),
 
     # Review request creation
-    (r'^new/$', 'new_review_request'),
+    url(r'^new/$', 'new_review_request', name="new-review-request"),
 
     # Review request detail
     (r'^(?P<review_request_id>[0-9]+)/$', 'review_detail',
@@ -51,5 +51,5 @@ urlpatterns = patterns('reviewboard.reviews.views',
      'preview_reply_email'),
 
     # Search
-    (r'^search/$', 'search'),
+    url(r'^search/$', 'search', name="search"),
 )

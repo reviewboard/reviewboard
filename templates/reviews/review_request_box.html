@@ -20,7 +20,7 @@
   </colgroup>
   <tr>
    <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
-   <td class="value"><a id="submitter" href="{{SITE_ROOT}}{{review_request.submitter.get_absolute_url|slice:"1:"}}">{% firstof review_request.submitter.get_full_name review_request.submitter.username %}</a></td>
+   <td class="value"><a id="submitter" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
    <td class="caption" colspan="2">{% trans "Reviewers" %}</td>
   </tr>
   <tr>
@@ -29,7 +29,7 @@
    <td class="indented label"><label for="target_groups">{% trans "Groups" %}:</label></td>
    <td class="value"><span id="target_groups">
 {%  for group in review_request_details.target_groups.all %}
-<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+<a href="{% url group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
   </span></td>
   </tr>
@@ -43,7 +43,7 @@
    <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>
    <td class="value"><span id="target_people">
 {%  for person in review_request_details.target_people.all %}
-<a href="{{SITE_ROOT}}{{person.get_absolute_url|slice:"1:"}}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
+<a href="{% url user person %}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
   </span></td>
   </tr>

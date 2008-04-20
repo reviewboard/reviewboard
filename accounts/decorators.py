@@ -2,6 +2,7 @@ from urllib import quote
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 
 from djblets.auth.util import login_required
@@ -41,8 +42,8 @@ def valid_prefs_required(view_func):
         except Profile.DoesNotExist:
             pass
 
-        return HttpResponseRedirect("%saccount/preferences/?%s=%s" %
-                                    (settings.SITE_ROOT,
+        return HttpResponseRedirect("%s?%s=%s" %
+                                    (reverse("user-preferences"),
                                      REDIRECT_FIELD_NAME,
                                      quote(request.get_full_path())))
 

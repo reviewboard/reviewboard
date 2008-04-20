@@ -1,5 +1,5 @@
-<form id="login" class="dialog" method="post" action="/iphone/account/login/">
- <input type="hidden" name="next_page" value="/iphone/dashboard/" />
+<form id="login" class="dialog" method="post" action="{% url iphone-login %}">
+ <input type="hidden" name="next_page" value="{% url iphone-dashboard %}" />
  <fieldset>
   <h1>Log In</h1>
   <a class="button leftButton" type="cancel">Cancel</a>

@@ -1,6 +1,6 @@
 <ul id="reviewrequests" title="{{source}}">
 {% for reviewrequest in object_list %}
- <li><a href="r/{{reviewrequest.id}}/">{{reviewrequest.summary}}<br/>
+ <li><a href="{% url iphone-review-request reviewrequest.id %}">{{reviewrequest.summary}}<br/>
      <small>{{reviewrequest.submitter}}</small><br/>
      <small>Updated {{reviewrequest.last_updated|timesince}} ago</small>
   </a></li>

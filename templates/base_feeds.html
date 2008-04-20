@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
 {% block extrahead %}
-<link rel="alternate" type="application/rss+xml" title="Atom 1.0 Feed" href="/feeds/rss{{app_path}}" />
-<link rel="alternate" type="application/rss+xml" title="RSS 2.0 Feed" href="/feeds/rss{{app_path}}" />
+<link rel="alternate" type="application/rss+xml" title="Atom 1.0 Feed" href="{% url atom-feed app_path %}" />
+<link rel="alternate" type="application/rss+xml" title="RSS 2.0 Feed" href="{% url rss-feed app_path %}" />
 {% endblock %}

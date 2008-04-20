@@ -27,8 +27,8 @@
 <script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/reviews.js"></script>
 <script type="text/javascript">
   var gReviewRequestPath = '{{review_request.get_absolute_url}}';
-  var gUserURL = "{{user.get_absolute_url}}";
-  var gUserFullName = "{% firstof user.get_full_name user.username %}";
+  var gUserURL = "{% url user user %}";
+  var gUserFullName = "{{user|user_displayname}}";
   var gReviewRequestId = "{{review_request.id}}";
   var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
 </script>
@@ -38,7 +38,7 @@
 {% ifneatnumber review_request.id %}
 {%  box "yay" %}
  <img src="{{MEDIA_URL}}rb/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
- <h1>{% firstof review_request.submitter.get_full_name review_request.submitter.username %} got review request #{{review_request.id}}!</h1>
+ <h1>{{review_request.submitter|user_displayname}} got review request #{{review_request.id}}!</h1>
 {%  endbox %}
 {% endifneatnumber %}
 
@@ -110,7 +110,7 @@
  <div id="{{review.id}}-banners"></div>
  <div class="header">
   {% if review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
-  <div class="reviewer"><a href="{{review.user.get_absolute_url}}">{% firstof review.user.get_full_name review.user.username %}</a></div>
+  <div class="reviewer"><a href="{% url user review.user %}">{{review.user|user_displayname}}</a></div>
   <div class="posted_time">{% blocktrans with review.timestamp|timesince as timestamp_since  and review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
  </div>
  <div class="body">

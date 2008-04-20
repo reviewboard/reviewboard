@@ -6,7 +6,7 @@
  <fieldset>
   <div class="summary">
    <h3>{{review_request.summary}}</h3>
-   <a href="/iphone/users/{{review_request.submitter}}/">{% firstof review_request.submitter.get_full_name review_request.submitter.username %}</a>
+   <a href="{% url iphone-user review_request.submitter %}/">{{review_request.submitter|user_displayname}}</a>
   </div>
   <div class="row">
    <label>Added</label>
@@ -20,11 +20,11 @@
    <label>Reviewers</label>
    <div>
 {% for group in review_request_details.target_groups.all %}
-<a href="{{group.get_absolute_url}}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+<a href="{% url iphone-group group %}">{{group}}</a>{% if not forloop.last %}, {% endif %}
 {% endfor %}
 {% if review_request_details.target_groups.count and review_request_details.target_people.count %}<br />{% endif %}
 {% for person in review_request_details.target_people.all %}
-<a href="{{person.get_absolute_url}}">{{person}}</a>{%if not forloop.last %}, {%endif %}
+<a href="{% url iphone-user person %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
 {% endfor %}
    </div>
   </div>
@@ -66,7 +66,7 @@
 
  <div class="controls">
   <a class="whiteButton">Screenshots</a>
-  <a class="whiteButton" href="/iphone/r/{{review_request.id}}/diff/">Diff</a>
+  <a class="whiteButton" href="{% url iphone-diff review_request.id %}">Diff</a>
  </div>
 
 {% ifnotequal reviews|length 0 %}
@@ -74,7 +74,7 @@
 {%  for review in reviews %}
  <fieldset class="review">
   <div class="summary">
-   <a href="/iphone/users/{{review.user}}/">{% firstof review.user.get_full_name review.user.username %}</a>
+   <a href="{% url iphone-user review.user %}">{{review.user|user_displayname}}</a>
    {% if review.ship_it %}- <div class="shipit">Ship it!</div>{% endif %}
    <br />
    Posted {{review.timestamp}}

@@ -39,6 +39,12 @@ import reviewboard
 def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     setup_test_environment()
     settings.DEBUG = False
+
+    # Default to testing in a non-subdir install.
+    settings.SITE_ROOT = "/"
+    settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
+    settings.ADMIN_MEDIA_PREFIX = settings.MEDIA_URL + 'admin/'
+
     old_name = settings.DATABASE_NAME
     create_test_db(verbosity, autoclobber=not interactive)
     management.call_command('syncdb', verbosity=verbosity, interactive=interactive)

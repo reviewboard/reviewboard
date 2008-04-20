@@ -3,6 +3,7 @@ from sha import sha
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.contrib.auth.models import get_hexdigest
+from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
@@ -14,7 +15,8 @@ from reviewboard.accounts.models import Profile
 
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.SITE_ROOT)
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME,
+                                      reverse("dashboard"))
 
     profile, profile_is_new = \
         Profile.objects.get_or_create(user=request.user)
@@ -44,7 +46,6 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             profile.save()
 
             return HttpResponseRedirect(redirect_to)
-
     else:
         form = PreferencesForm({
             'settings': settings,

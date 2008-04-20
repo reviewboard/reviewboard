@@ -12,7 +12,7 @@
  <li class="group">{{section.grouper}}</li>
 {%   endifnotequal %}
 {%   for file in section.list|dictsort:"basename" %}
- <li><a href="/iphone/r/{{review_request.id}}/diff/{{file.filediff.diffset.revision}}/{{file.filediff.id}}/">{{file.basename}}<br/><small>{{file.num_changes}} changes</small></a></li>
+ <li><a href="{% url iphone-diff-fragment review_request.id file.filediff.diffset.revision file.filediff.id %}">{{file.basename}}<br/><small>{{file.num_changes}} changes</small></a></li>
 {%   endfor %}
 {%  endfor %}
 </ul>

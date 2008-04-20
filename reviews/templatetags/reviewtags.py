@@ -320,7 +320,6 @@ def dashboard_entry(context, level, text, view, group=None):
 
     return {
         'MEDIA_URL': settings.MEDIA_URL,
-        'SITE_ROOT': settings.SITE_ROOT,
         'level': level,
         'text': text,
         'view': view,
@@ -486,5 +485,4 @@ def render_star(user, obj):
         'starred': int(starred),
         'user': user,
         'MEDIA_URL': settings.MEDIA_URL,
-        'SITE_ROOT': settings.SITE_ROOT,
     })

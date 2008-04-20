@@ -15,17 +15,17 @@
    <h1 id="pageTitle"></h1>
    <a id="backButton" class="button" href="#"></a>
 {% if user.is_authenticated %}
-   <a class="button" href="account/">Account</a>
+   <a class="button" href="{% url iphone-user-preferences %}">Account</a>
 {% else %}
-   <a class="button" href="account/login/">Log In</a>
+   <a class="button" href="{% url iphone-login %}">Log In</a>
 {% endif %}
   </div>
 
   <ul id="home" title="Review Board" selected="true">
-   <li><a href="dashboard/">Dashboard</a></li>
-   <li><a href="r/">All Review Requests</a></li>
-   <li><a href="groups/">Groups</a></li>
-   <li><a href="users/">Submitters</a></li>
+   <li><a href="{% url iphone-dashboard %}">Dashboard</a></li>
+   <li><a href="{% url iphone-all-review-requests %}">All Review Requests</a></li>
+   <li><a href="{% url iphone-groups %}">Groups</a></li>
+   <li><a href="{% url iphone-users %}">Submitters</a></li>
   </ul>
  </body>
 </html>

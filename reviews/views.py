@@ -3,6 +3,7 @@ from datetime import datetime
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
                         HttpResponseForbidden
@@ -429,7 +430,7 @@ def setstatus(request, review_request_id, action):
 
     review_request.save()
     if action == 'discard':
-        return HttpResponseRedirect(settings.SITE_ROOT + 'dashboard/')
+        return HttpResponseRedirect(reverse("dashboard"))
     else:
         return HttpResponseRedirect(review_request.get_absolute_url())
 
@@ -568,7 +569,7 @@ def search(request, template_name='reviews/search.html'):
 
     if not query:
         # FIXME: I'm not super thrilled with this
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse("root"))
 
     import lucene
 
