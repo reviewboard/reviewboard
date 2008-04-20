@@ -422,7 +422,7 @@ def get_revision_str(revision):
     if revision == scmtools.HEAD:
         return "HEAD"
     elif revision == scmtools.PRE_CREATION:
-        return "Pre-creation"
+        return ""
     else:
         return "Revision %s" % revision
 
@@ -517,6 +517,7 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
                 continue
 
         filediff_revision_str = get_revision_str(filediff.source_revision)
+        newfile = (filediff.source_revision == scmtools.PRE_CREATION)
 
         if interdiffset:
             source_revision = "Diff Revision %s" % diffset.revision
@@ -528,7 +529,11 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
                 dest_revision = "Diff Revision %s" % interdiffset.revision
         else:
             source_revision = get_revision_str(filediff.source_revision)
-            dest_revision = _("New Change")
+
+            if newfile:
+                dest_revision = _("New File")
+            else:
+                dest_revision = _("New Change")
 
         i = filediff.source_file.rfind('/')
 
@@ -550,6 +555,7 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
             'interfilediff': interfilediff,
             'force_interdiff': force_interdiff,
             'binary': filediff.binary,
+            'newfile': newfile,
         })
 
     add_navigation_cues(files)

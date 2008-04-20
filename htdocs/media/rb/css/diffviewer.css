@@ -16,12 +16,21 @@ table.sidebyside col.left {
   width: 50%;
 }
 
+table.sidebyside.newfile col.left {
+  border-right: 1px #C0C0C0 solid;
+  width: 0%;
+}
+
 table.sidebyside col.line {
   border-right: 1px #C0C0C0 solid;
 }
 
 table.sidebyside col.right {
   width: 50%;
+}
+
+table.sidebyside.newfile col.right {
+  width: 100%;
 }
 
 table.sidebyside pre {

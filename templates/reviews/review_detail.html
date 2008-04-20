@@ -136,7 +136,7 @@
 {% for comment in review.ordered_comments %}
     <dt>
      <a name="comment{{comment.id}}"></a>
-     <table class="sidebyside">
+     <table class="sidebyside{% ifequal comment.filediff.source_revision PRE_CREATION %} newfile{% endifequal %}">
       <colgroup>
        <col class="line" />
        <col class="left" />
