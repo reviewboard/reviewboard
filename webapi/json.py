@@ -660,9 +660,9 @@ def _set_draft_field_data(draft, field_name, data):
 def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if not request.POST['value']:
-        return WebAPIResponseError(request, MISSING_ATTRIBUTE,
-                                   {'attribute': field_name})
+    #if not request.POST['value']:
+    #    return WebAPIResponseError(request, MISSING_ATTRIBUTE,
+    #                               {'attribute': field_name})
 
     m = re.match(r'screenshot_(?P<id>[0-9]+)_caption', field_name)
     if m:
