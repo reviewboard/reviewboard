@@ -1017,14 +1017,16 @@ def execute(command, split_lines=False, ignore_errors=False,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
-                             shell=True)
+                             shell=True,
+                             universal_newlines=True)
     else:
         p = subprocess.Popen(command,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
                              shell=True,
-                             close_fds=True)
+                             close_fds=True,
+                             universal_newlines=True)
     if split_lines:
         data = p.stdout.readlines()
     else:
