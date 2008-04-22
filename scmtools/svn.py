@@ -1,4 +1,6 @@
 import re
+import urllib
+import urlparse
 
 try:
     from pysvn import ClientError, Revision, opt_revision_kind
@@ -74,6 +76,16 @@ class SVNTool(SCMTool):
 
         try:
             normpath = self.__normalize_path(path)
+
+            # SVN expects to have URLs escaped. Take care to only
+            # escape the path part of the URL.
+            if self.client.is_url(normpath):
+                pathtuple = urlparse.urlsplit(normpath)
+                normpath = urlparse.urlunsplit((pathtuple.scheme,
+                                                pathtuple.netloc,
+                                                urllib.quote(pathtuple.path),
+                                                '',''))
+
             normrev  = self.__normalize_revision(revision)
 
             data = self.client.cat(normpath, normrev)
