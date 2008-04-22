@@ -47,7 +47,10 @@ class UploadDiffForm(forms.Form):
 
         for f in files:
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
-            filename = os.path.join(basedir, f2).replace("\\", "/")
+            if f2.startswith("/"):
+                filename = f2
+            else:
+                filename = os.path.join(basedir, f2).replace("\\", "/")
 
             # FIXME: this would be a good place to find permissions errors
             if revision != PRE_CREATION and revision != UNKNOWN and \
