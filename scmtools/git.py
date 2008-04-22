@@ -82,21 +82,15 @@ class GitDiffParser(DiffParser):
         Parses out one file from a Git diff
         """
         if self.lines[i].startswith("diff --git"):
-            # First check if it is a new file with no content, then skip
+            # First check if it is a new file with no content or
+            # a file mode change with no content or
+            # a deleted file with no content
+            # then skip
             try:
-                if self.lines[i + 1].startswith("new file mode") and \
-                        self.lines[i + 3].startswith("diff --git"):
-                    i += 3
-                    return i, None
-            except IndexError, x:
-                # This means this is the only bit left in the file
-                i += 3
-                return i, None
-
-            # Now we check if it is just a file mode change and no content
-            try:
-                if self.lines[i + 1].startswith("old mode") and \
-                        self.lines[i + 3].startswith("diff --git"):
+                if ((self.lines[i + 1].startswith("new file mode") or
+                     self.lines[i + 1].startswith("old mode") or
+                     self.lines[i + 1].startswith("deleted file mode")) and
+                    self.lines[i + 3].startswith("diff --git")):
                     i += 3
                     return i, None
             except IndexError, x:
