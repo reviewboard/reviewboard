@@ -479,6 +479,12 @@ class SVNClient(SCMClient):
 
         path = m.group(1)
 
+        # If the given URI has a username at the beginning, we need to strip it
+        # out so that it will still match
+        m2 = re.match(r'^(svn\+ssh|http|https)://([-a-zA-Z0-9.]*@)(.*)$', path)
+        if m2:
+            path = '%s://%s' % (m2.group(1), m2.group(3))
+
         m = re.search(r'^URL: (.+)$', data, re.M)
         if not m:
             return None
