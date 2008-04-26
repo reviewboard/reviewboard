@@ -57,6 +57,45 @@ class ShipItColumn(Column):
         return ""
 
 
+class MyCommentsColumn(Column):
+    """
+    A column meant to represent the status of the logged-in user's
+    comments on the review.
+    """
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, *args, **kwargs)
+        self.image_url = settings.MEDIA_URL + "images/comment-draft.png"
+        self.image_width = 18
+        self.image_height = 16
+        self.image_alt = _("My Comments")
+        self.detailed_label = _("My Comments")
+        self.shrink = True
+
+        # XXX It'd be nice to be able to sort on this, but datagrids currently
+        # can only sort based on stored (in the DB) values, not computed values.
+
+    def render_data(self, review_request):
+        user = self.datagrid.request.user
+
+        image_url = None
+        image_alt = None
+
+        reviews = review_request.review_set.filter(user=user)
+        if reviews.filter(public=False).count() > 0:
+            # Remind about drafts over finished comments
+            image_url = self.image_url
+            image_alt = _("Comments drafted")
+        elif reviews.filter(public=True).count() > 0:
+            image_url = settings.MEDIA_URL + "images/comment.png"
+            image_alt = _("Comments published")
+        else:
+            return ""
+
+        return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
+                (image_url, self.image_width, self.image_height,
+                 image_alt)
+
+
 class NewUpdatesColumn(Column):
     """
     A column used to indicate whether the review request has any new updates
@@ -264,6 +303,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
     depending on the view that was passed.
     """
     new_updates = NewUpdatesColumn()
+    my_comments = MyCommentsColumn()
 
     def __init__(self, request):
         ReviewRequestDataGrid.__init__(self, request, None, "")
