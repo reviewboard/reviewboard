@@ -35,8 +35,7 @@ def check_dependencies():
 
         # QuerySet refactor (r7477)
         from django.core.exceptions import FieldError
-    except ImportError, e:
-        print e
+    except ImportError:
         dependency_error("Django > 0.97 (or SVN >= r7477) is required.")
 
     # PIL
