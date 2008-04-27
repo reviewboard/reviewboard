@@ -33,9 +33,11 @@ def check_dependencies():
         if django.VERSION[0] == 0 and django.VERSION[1] < 97:
             raise ImportError
 
-        from django.utils.safestring import mark_safe
-    except ImportError:
-        dependency_error("Django > 0.97 (or SVN >= r6671) is required.")
+        # QuerySet refactor (r7477)
+        from django.core.exceptions import FieldError
+    except ImportError, e:
+        print e
+        dependency_error("Django > 0.97 (or SVN >= r7477) is required.")
 
     # PIL
     try:

@@ -10,7 +10,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
-from djblets.util.db import ConcurrencyManager, QLeftOuterJoins
+from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import ModificationTimestampField
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
@@ -200,15 +200,14 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def to_user_directly(self, username, user=None, status='P'):
         query_user = User.objects.get(username=username)
-        query = QLeftOuterJoins(Q(target_people=query_user) |
-                                Q(starred_by__user=query_user))
+        query = Q(target_people=query_user) | Q(starred_by__user=query_user)
         return self._query(user, status, query)
 
     def to_user(self, username, user=None, status='P'):
         query_user = User.objects.get(username=username)
-        query = QLeftOuterJoins(Q(target_groups__users=query_user) |
-                                Q(target_people=query_user) |
-                                Q(starred_by__user=query_user))
+        query = Q(target_groups__users=query_user) | \
+                Q(target_people=query_user) | \
+                Q(starred_by__user=query_user)
         return self._query(user, status, query)
 
     def from_user(self, username, user=None, status='P'):
