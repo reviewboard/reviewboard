@@ -530,7 +530,47 @@ class SVNClient(SCMClient):
         return self.do_diff('svn diff --diff-cmd=diff -r %s' % revision_range)
 
     def do_diff(self, cmd):
-        return self.convert_to_absolute_paths(execute(cmd, split_lines=True))
+        diff = execute(cmd, split_lines=True)
+        diff = self.handle_renames(diff)
+        diff = self.convert_to_absolute_paths(diff)
+
+        return ''.join(diff)
+
+    def handle_renames(self, diff_content):
+	"""
+	The output of svn diff is incorrect when the file in question came
+	into being via svn mv/cp. Although the patch for these files are
+	relative to its parent, the diff header doesn't reflect this.
+	This function fixes the relevant section headers of the patch to
+	portray this relationship.
+	"""
+
+        result = []
+
+        from_line = ""
+        for line in diff_content:
+            if line.startswith('---'):
+                from_line = line
+                continue
+
+	    # This is where we decide how mangle the previous '---'
+            if line.startswith('+++'):
+                to_file, _ = self.parse_filename_header(line[4:])
+                info       = self.svn_info(to_file)
+                if info.has_key("Copied From URL"):
+                    url       = info["Copied From URL"]
+                    root      = info["Repository Root"]
+                    from_file = url[len(root):]
+                    result.append(from_line.replace(to_file, from_file))
+                else:
+                    result.append(from_line) #as is, no copy performed
+
+            # We only mangle '---' lines. All others get added straight to
+	    # the output.
+            result.append(line)
+
+        return result
+
 
     def convert_to_absolute_paths(self, diff_content):
         """
@@ -539,7 +579,7 @@ class SVNClient(SCMClient):
         repository.
         """
 
-        result = ''
+        result = []
 
         for line in diff_content:
             front = None
@@ -547,27 +587,33 @@ class SVNClient(SCMClient):
                 front, line = line.split(" ", 1)
 
             if front:
-                # filename and rest of line (usually the revision component)
-                file, rest = self.parse_filename_header(line)
+                if line.startswith('/'): #already absolute
+                    line = front + " " + line
+                else:
+                    # filename and rest of line (usually the revision component)
+                    file, rest = self.parse_filename_header(line)
 
-                info_output = execute('svn info %s' % file)
+                    info = self.svn_info(file)
+                    url  = info["URL"]
+                    root = info["Repository Root"]
+                    path = url[len(root):]
 
-                for info in info_output.splitlines():
-                    parts = info.split(': ', 1)
-                    if len(parts) > 1:
-                        key, value = parts
-                        if key == "URL":
-                            url = value
-                        elif key == "Repository Root":
-                            root = value
+                    line = front + " " + path + rest
 
-                path = url[len(root):]
-
-                line = front + " " + path + rest
-
-            result = result + line
+            result.append(line)
 
         return result
+
+    def svn_info(self, path):
+        """Return a dict which is the result of 'svn info' at a given path."""
+        svninfo = {}
+        for info in execute("svn info " + path).splitlines():
+            parts = info.split(": ", 1)
+            if len(parts) == 2:
+                key, value = parts
+                svninfo[key] = value
+
+        return svninfo
 
     # Adapted from server code parser.py
     def parse_filename_header(self, s):
