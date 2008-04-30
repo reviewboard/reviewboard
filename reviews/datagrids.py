@@ -64,8 +64,8 @@ class MyCommentsColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "rb/images/comment-draft.png"
-        self.image_width = 18
+        self.image_url = settings.MEDIA_URL + "rb/images/comment-draft-small.png"
+        self.image_width = 16
         self.image_height = 16
         self.image_alt = _("My Comments")
         self.detailed_label = _("My Comments")
@@ -85,7 +85,7 @@ class MyCommentsColumn(Column):
             image_url = self.image_url
             image_alt = _("Comments drafted")
         elif reviews.filter(public=True).count() > 0:
-            image_url = settings.MEDIA_URL + "rb/images/comment.png"
+            image_url = settings.MEDIA_URL + "rb/images/comment-small.png"
             image_alt = _("Comments published")
         else:
             return ""
