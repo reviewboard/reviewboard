@@ -64,7 +64,7 @@ class MyCommentsColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "images/comment-draft.png"
+        self.image_url = settings.MEDIA_URL + "rb/images/comment-draft.png"
         self.image_width = 18
         self.image_height = 16
         self.image_alt = _("My Comments")
@@ -76,17 +76,16 @@ class MyCommentsColumn(Column):
 
     def render_data(self, review_request):
         user = self.datagrid.request.user
-
         image_url = None
         image_alt = None
-
         reviews = review_request.review_set.filter(user=user)
+
         if reviews.filter(public=False).count() > 0:
             # Remind about drafts over finished comments
             image_url = self.image_url
             image_alt = _("Comments drafted")
         elif reviews.filter(public=True).count() > 0:
-            image_url = settings.MEDIA_URL + "images/comment.png"
+            image_url = settings.MEDIA_URL + "rb/images/comment.png"
             image_alt = _("Comments published")
         else:
             return ""
