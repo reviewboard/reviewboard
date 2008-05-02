@@ -363,6 +363,9 @@ def diffsets_with_comments(review, current_pair):
     """
     Returns a list of diffsets in the review that contain draft comments.
     """
+    if not review:
+        return
+
     diffsets = DiffSet.objects.filter(files__comment__review=review)
     diffsets = diffsets.filter(files__comment__interfilediff__isnull=True)
     diffsets = diffsets.distinct()
@@ -380,6 +383,9 @@ def interdiffs_with_comments(review, current_pair):
     """
     Returns a list of interdiffs in the review that contain draft comments.
     """
+    if not review:
+        return
+
     diffsets = DiffSet.objects.filter(files__comment__review=review)
     diffsets = diffsets.filter(files__comment__interfilediff__isnull=False)
     diffsets = diffsets.distinct()
@@ -403,6 +409,9 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
     Returns whether or not the specified review has any comments that
     aren't in the specified diffset or interdiff.
     """
+    if not review:
+        return False
+
     current_diffset, interdiff = diffset_pair
 
     # See if there are any diffsets with comments on them in this review.
