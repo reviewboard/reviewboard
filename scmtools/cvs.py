@@ -122,7 +122,7 @@ class CVSClient:
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
 
-        p = subprocess.Popen(['cvs', '-d', self.repository, 'checkout',
+        p = subprocess.Popen(['cvs', '-q', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=True)
@@ -155,7 +155,11 @@ class CVSClient:
 
         # Otherwise, if there's an exit code, or errmsg doesn't look like
         # successful header, then call it a generic SCMError.
-        if failure or not errmsg.startswith('=========='):
+        #
+        # If the .cvspass file doesn't exist, CVS will return an error message
+        # stating this. This is safe to ignore.
+        if (failure and not errmsg.startswith('==========')) and \
+           not ".cvspass does not exist - creating new file" in errmsg:
             self.cleanup()
             raise SCMError(errmsg)
 
