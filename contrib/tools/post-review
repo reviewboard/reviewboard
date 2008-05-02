@@ -462,6 +462,53 @@ class SCMClient(object):
         return None
 
 
+class CVSClient(SCMClient):
+    """
+    A wrapper around the cvs tool that fetches repository
+    information and generates compatible diffs.
+    """
+    def get_repository_info(self):
+        if not check_install("cvs"):
+            return None
+
+        cvsroot_path = os.path.join("CVS", "Root")
+
+        if not os.path.exists(cvsroot_path):
+            return None
+
+        fp = open(cvsroot_path, "r")
+        repository_path = fp.read().strip()
+        fp.close()
+
+        i = repository_path.find("@")
+        if i != -1:
+            repository_path = repository_path[i + 1:]
+
+        return RepositoryInfo(path=repository_path)
+
+    def diff(self, files):
+        """
+        Performs a diff across all modified files in a CVS repository.
+        """
+        return self.do_diff(' '.join(files))
+
+    def diff_between_revisions(self, revision_range):
+        """
+        Performs a diff between 2 revisions of a CVS repository.
+        """
+        rev_str = ''
+
+        for rev in revision_range.split(":"):
+            rev_str += "-r %s" % rev
+
+        return self.do_diff(rev_str)
+
+    def do_diff(self, params):
+        # Diff returns "1" if differences were found.
+        return execute('cvs -q diff -u %s' % params,
+                       extra_ignore_errors=(1,))
+
+
 class SVNClient(SCMClient):
     """
     A wrapper around the svn Subversion tool that fetches repository
@@ -1360,7 +1407,8 @@ def main(args):
     repository_info = None
     tool = None
 
-    for tool in (SVNClient(), MercurialClient(), GitClient(), PerforceClient()):
+    for tool in (SVNClient(), CVSClient(), MercurialClient(),
+                 GitClient(), PerforceClient()):
         repository_info = tool.get_repository_info()
 
         if repository_info:
