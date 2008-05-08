@@ -773,7 +773,7 @@ function expandChunk(fileid, filediff_id, chunk_index, tbody_id) {
       revision += "-" + gInterdiffRevision;
     }
 
-    var url = '/r/' + gReviewRequestId + '/diff/' + revision +
+    var url = SITE_ROOT + 'r/' + gReviewRequestId + '/diff/' + revision +
               '/fragment/' + filediff_id + '/chunk/' + chunk_index + '/';
     YAHOO.util.Connect.asyncRequest("GET", url, {
         success: function(res) {
