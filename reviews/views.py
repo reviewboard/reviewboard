@@ -20,7 +20,6 @@ from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
-from reviewboard.reviews.decorators import owner_required
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
@@ -84,7 +83,6 @@ def new_review_request(request,
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_detail(request, review_request_id, template_name):
     """
@@ -246,7 +244,6 @@ def _query_for_diff(review_request, user, revision, query_extra=None):
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def diff(request, review_request_id, revision=None, interdiff_revision=None,
          template_name='diffviewer/view_diff.html'):
     """
@@ -301,7 +298,6 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def raw_diff(request, review_request_id, revision=None):
     """
     Displays a raw diff of all the filediffs in a diffset for the
@@ -318,7 +314,6 @@ def raw_diff(request, review_request_id, revision=None):
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def diff_fragment(request, review_request_id, revision, filediff_id,
                   interdiff_revision=None,
                   chunkindex=None, collapseall=False,
@@ -359,7 +354,6 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
 
 
 @login_required
-@owner_required
 def publish(request, review_request_id):
     """
     Publishes a new review request or the changes on a draft for a review
@@ -367,36 +361,38 @@ def publish(request, review_request_id):
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if not review_request.target_groups and \
-       not review_request.target_people:
-        pass # FIXME show an error
+    if review_request.is_mutable_by(request.user):
+        if not review_request.target_groups and \
+           not review_request.target_people:
+            pass # FIXME show an error
 
-    try:
-        draft = review_request.reviewrequestdraft_set.get()
+        try:
+            draft = review_request.reviewrequestdraft_set.get()
 
-        # This will in turn save the review request, so we'll be done.
-        draft.review_request.public = True
-        draft.save_draft()
+            # This will in turn save the review request, so we'll be done.
+            draft.review_request.public = True
+            draft.save_draft()
 
-        # Make sure we have the draft's copy of the review request.
-        review_request = draft.review_request
+            # Make sure we have the draft's copy of the review request.
+            review_request = draft.review_request
 
-        # We don't need this anymore.
-        draft.delete()
-    except ReviewRequestDraft.DoesNotExist:
-        # The draft didn't exist, so we must save the review request
-        # ourselves.
-        review_request.public = True
-        review_request.save()
+            # We don't need this anymore.
+            draft.delete()
+        except ReviewRequestDraft.DoesNotExist:
+            # The draft didn't exist, so we must save the review request
+            # ourselves.
+            review_request.public = True
+            review_request.save()
 
-    if settings.SEND_REVIEW_MAIL:
-        mail_review_request(request.user, review_request)
+        if settings.SEND_REVIEW_MAIL:
+            mail_review_request(request.user, review_request)
 
-    return HttpResponseRedirect(review_request.get_absolute_url())
+        return HttpResponseRedirect(review_request.get_absolute_url())
+    else:
+        raise HttpResponseForbidden() # XXX Error out
+
 
 @login_required
-@owner_required(perms=['reviews.change_reviewrequest',
-                       'reviews.can_change_status'])
 def setstatus(request, review_request_id, action):
     """
     Sets the status of the review request based on the specified action.
@@ -415,6 +411,10 @@ def setstatus(request, review_request_id, action):
     HTTP Forbidden error.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_mutable_by(request.user) and \
+       not request.user.has_perm("reviews.can_change_status"):
+        raise HttpResponseForbidden()
 
     try:
         if review_request.status == "D" and action == "reopen":
@@ -438,7 +438,6 @@ def setstatus(request, review_request_id, action):
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def preview_review_request_email(
         request, review_request_id,
         template_name='reviews/review_request_email.txt'):
@@ -461,7 +460,6 @@ def preview_review_request_email(
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def preview_review_email(request, review_request_id, review_id,
                          template_name='reviews/review_email.txt'):
     """
@@ -489,7 +487,6 @@ def preview_review_email(request, review_request_id, review_id,
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def preview_reply_email(request, review_request_id, review_id, reply_id,
                         template_name='reviews/reply_email.txt'):
     """
@@ -516,7 +513,6 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
 
 @login_required
-@owner_required
 def delete_screenshot(request, review_request_id, screenshot_id):
     """
     Deletes a screenshot from a review request and redirects back to the
@@ -535,7 +531,6 @@ def delete_screenshot(request, review_request_id, screenshot_id):
 
 
 @check_login_required
-@owner_required(only_nonpublic=True)
 def view_screenshot(request, review_request_id, screenshot_id,
                     template_name='reviews/screenshot_detail.html'):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
