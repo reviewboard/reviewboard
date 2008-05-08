@@ -57,6 +57,11 @@ class HgDiffParser(DiffParser):
         return linenum
 
     def parse_diff_header(self, linenum, info):
+        if linenum <= len(self.lines) and \
+           self.lines[linenum].startswith("Binary file "):
+            info['binary'] = True
+            linenum += 1
+
         if linenum + 1 < len(self.lines) and \
            (self.lines[linenum].startswith('--- ') and \
              self.lines[linenum + 1].startswith('+++ ')):
