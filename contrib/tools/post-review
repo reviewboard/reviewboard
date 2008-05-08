@@ -31,6 +31,7 @@ from urlparse import urljoin, urlparse
 # in the repository setup page must be set to the remote URL of the
 # repository.
 
+#
 # Reviewboard URL.
 #
 # Set this if you wish to hard-code a default server to always use.
@@ -45,7 +46,13 @@ from urlparse import urljoin, urlparse
 #
 # If this is not possible or desired, setting the value here will let
 # you get started quickly.
-
+#
+# For all other repositories, a .reviewboardrc file present at the top of
+# the checkout will also work. For example:
+#
+#   $ cat .reviewboardrc
+#   REVIEWBOARD_URL = "http://reviewboard.example.com"
+#
 REVIEWBOARD_URL = None
 
 # Default submission arguments.  These are all optional; run this
