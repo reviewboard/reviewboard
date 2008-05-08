@@ -25,12 +25,17 @@ from urlparse import urljoin, urlparse
 # In particular, setting the REVIEWBOARD_URL variable will allow
 # you to make it easy for people to submit reviews regardless of
 # their SCM setup.
+#
+# Note that in order for this script to work with a reviewboard site
+# that uses local paths to access a repository, the 'Mirror path'
+# in the repository setup page must be set to the remote URL of the
+# repository.
 
 # Reviewboard URL.
 #
 # Set this if you wish to hard-code a default server to always use.
-# It's generally recommended to set this on your SCM repository instead
-# for those that support it (currently only SVN and Git).
+# It's generally recommended to set this using your SCM repository
+# (for those that support it -- currently only SVN and Git).
 #
 # For example, on SVN:
 #   $ svn propset reviewboard:url http://reviewboard.example.com .
@@ -38,8 +43,9 @@ from urlparse import urljoin, urlparse
 # Or with Git:
 #   $ git config reviewboard.url http://reviewboard.example.com
 #
-# If this is not a concern, setting the value here will let you get started
-# quickly.
+# If this is not possible or desired, setting the value here will let
+# you get started quickly.
+
 REVIEWBOARD_URL = None
 
 # Default submission arguments.  These are all optional; run this
@@ -122,6 +128,8 @@ class ReviewBoardServer:
     """
     def __init__(self, url, info, cookie_file):
         self.url = url
+        if self.url[-1] != '/':
+            self.url += '/'
         self.info = info
         self.cookie_file = cookie_file
         self.cookie_jar  = cookielib.MozillaCookieJar(self.cookie_file)
@@ -150,7 +158,7 @@ class ReviewBoardServer:
 
         debug('Logging in with username "%s"' % username)
         try:
-            self.api_post('/api/json/accounts/login/', {
+            self.api_post('api/json/accounts/login/', {
                 'username': username,
                 'password': password,
             })
@@ -216,7 +224,7 @@ class ReviewBoardServer:
                 debug("Submitting the review request as %s" % submit_as)
                 data['submit_as'] = submit_as
 
-            rsp = self.api_post('/api/json/reviewrequests/new/', data)
+            rsp = self.api_post('api/json/reviewrequests/new/', data)
         except APIError, e:
             rsp, = e.args
 
@@ -224,7 +232,7 @@ class ReviewBoardServer:
                 if rsp['err']['code'] == 204: # Change number in use
                     debug("Review request already exists. Updating it...")
                     rsp = self.api_post(
-                        '/api/json/reviewrequests/%s/update_from_changenum/' %
+                        'api/json/reviewrequests/%s/update_from_changenum/' %
                         rsp['review_request']['id'])
                 else:
                     raise e
@@ -241,7 +249,7 @@ class ReviewBoardServer:
         debug("Attempting to set field '%s' to '%s' for review request '%s'" %
               (field, value, rid))
 
-        self.api_post('/api/json/reviewrequests/%s/draft/set/' % rid, {
+        self.api_post('api/json/reviewrequests/%s/draft/set/' % rid, {
             field: value,
         })
 
@@ -249,14 +257,14 @@ class ReviewBoardServer:
         """
         Returns the review request with the specified ID.
         """
-        rsp = self.api_get('/api/json/reviewrequests/%s/' % rid)
+        rsp = self.api_get('api/json/reviewrequests/%s/' % rid)
         return rsp['review_request']
 
     def save_draft(self, review_request):
         """
         Saves a draft of a review request.
         """
-        self.api_post("/api/json/reviewrequests/%s/draft/save/" %
+        self.api_post("api/json/reviewrequests/%s/draft/save/" %
                       review_request['id'])
         debug("Review request draft saved")
 
@@ -270,7 +278,7 @@ class ReviewBoardServer:
         if self.info.base_path:
             fields['basedir'] = self.info.base_path
 
-        self.api_post('/api/json/reviewrequests/%s/diff/new/' %
+        self.api_post('api/json/reviewrequests/%s/diff/new/' %
                       review_request['id'], fields,
                       {'path': {'filename': 'diff',
                                 'content': diff_content}})
@@ -280,7 +288,7 @@ class ReviewBoardServer:
         Publishes a review request.
         """
         debug("Publishing")
-        self.http_post(path='/r/%s/publish/' % review_request['id'],
+        self.http_post(path='r/%s/publish/' % review_request['id'],
                        fields = {})
 
     def process_json(self, data):
@@ -1247,7 +1255,6 @@ def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
     Attempts to create a review request on a Review Board server and upload
     a diff. On success, the review request path is displayed.
     """
-
     try:
         save_draft = False
 
@@ -1307,7 +1314,8 @@ def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
     if options.publish:
         server.publish(review_request)
 
-    review_url = '%s/%s/%s/' % (server.url, "r", review_request['id'])
+    request_url = 'r/' + str(review_request['id'])
+    review_url = urljoin(server.url, request_url)
 
     if not review_url.startswith('http'):
         review_url = 'http://%s' % review_url
