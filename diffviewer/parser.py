@@ -87,10 +87,10 @@ class DiffParser(object):
                    line.startswith("RCS file: ") or \
                    line.startswith("retrieving revision ") or \
                    line.startswith("diff ") or \
-                   (i > start and line == self.INDEX_SEP and \
+                   (i > start and line.startswith(self.INDEX_SEP) and \
                     self.lines[i - 1].startswith("Index: ")) or \
                    (i + 1 < linenum and line.startswith("Index: ") and \
-                    self.lines[i + 1] == self.INDEX_SEP):
+                    self.lines[i + 1].startswith(self.INDEX_SEP)):
 
                     # This is a valid part of a diff header. Add it.
                     file.data += self.lines[i] + "\n"
@@ -108,7 +108,7 @@ class DiffParser(object):
         """
         if linenum + 1 < len(self.lines) and \
            self.lines[linenum].startswith("Index: ") and \
-           self.lines[linenum + 1] == self.INDEX_SEP:
+           self.lines[linenum + 1].startswith(self.INDEX_SEP):
             # This is an Index: header, which is common in CVS and Subversion,
             # amongst other systems.
             try:
