@@ -520,7 +520,7 @@ class CVSClient(SCMClient):
 
     def do_diff(self, params):
         # Diff returns "1" if differences were found.
-        return execute('cvs -q diff -u %s' % params,
+        return execute('cvs diff -u %s' % params,
                        extra_ignore_errors=(1,))
 
 
