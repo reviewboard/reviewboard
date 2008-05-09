@@ -1118,7 +1118,7 @@ class GitClient(SCMClient):
                 # diff --git a/path/to/file b/path/to/file
                 info = line.split(" ")
                 diff_data += "Index: %s\n" % info[2]
-                diff_data += "=" * 63
+                diff_data += "=" * 67
                 diff_data += "\n"
             elif line.startswith("index "):
                 # Filter this out.
