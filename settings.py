@@ -190,3 +190,8 @@ MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + 'media/')
 # Base these on the user's SITE_ROOT.
 LOGIN_URL = SITE_ROOT + 'account/login/'
 ADMIN_MEDIA_PREFIX = MEDIA_URL + 'admin/'
+
+# Cookie settings
+SESSION_COOKIE_NAME = "rbsessionid"
+SESSION_COOKIE_AGE = 365 * 24 * 24 * 60 # 1 year
+SESSION_COOKIE_PATH = SITE_ROOT
