@@ -551,7 +551,7 @@ class SVNClient(SCMClient):
         if not m:
             return None
 
-        base_path = m.group(1)[len(path):]
+        base_path = m.group(1)[len(path):] or "/"
 
         return RepositoryInfo(path=path, base_path=base_path)
 
