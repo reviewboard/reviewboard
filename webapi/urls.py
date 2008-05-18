@@ -20,6 +20,7 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
 
     # Groups
     (r'^groups/$', 'group_list'),
+    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/users/$', 'users_in_group'),
 
     # Review groups
     (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$',

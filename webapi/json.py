@@ -20,6 +20,7 @@ from djblets.webapi.errors import WebAPIError, \
                                   PERMISSION_DENIED, DOES_NOT_EXIST, \
                                   INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
                                   MISSING_ATTRIBUTE
+
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -273,6 +274,20 @@ def group_list(request):
 
     return WebAPIResponse(request, {
         'groups': u,
+    })
+
+@webapi_login_required
+def users_in_group(request, group_name):
+    """
+    Returns a list of users in a group.
+    """
+    try:
+        g = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    return WebAPIResponse(request, {
+        'users', g.users.all(),
     })
 
 @webapi_login_required
