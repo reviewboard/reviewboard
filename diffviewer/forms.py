@@ -9,7 +9,12 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 import reviewboard.scmtools as scmtools
 from scmtools import PRE_CREATION, UNKNOWN
 
+
 class EmptyDiffError(ValueError):
+    pass
+
+
+class NoBaseDirError(ValueError):
     pass
 
 
@@ -39,7 +44,10 @@ class UploadDiffForm(forms.Form):
 
         # Grab the base directory if there is one.
         if not tool.get_diffs_use_absolute_paths():
-            basedir = smart_unicode(self.cleaned_data['basedir'])
+            try:
+                basedir = smart_unicode(self.cleaned_data['basedir'])
+            except AttributeError:
+                raise NoBaseDirError(_('The "Base Diff Path" field is required'))
         else:
             basedir = ''
 
