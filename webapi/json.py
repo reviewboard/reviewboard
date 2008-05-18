@@ -287,7 +287,7 @@ def users_in_group(request, group_name):
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     return WebAPIResponse(request, {
-        'users', g.users.all(),
+        'users': g.users.all(),
     })
 
 @webapi_login_required
