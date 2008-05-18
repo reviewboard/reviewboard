@@ -38,6 +38,13 @@ def check_dependencies():
     except ImportError:
         dependency_error("Django > 0.97 (or SVN >= r7477) is required.")
 
+    # django-evolution
+    try:
+        import django_evolution
+    except ImportError:
+        dependency_error("django_evolution is required.\n"
+                         "http://code.google.com/p/django-evolution/")
+
     # PIL
     try:
         imp.find_module('PIL')
