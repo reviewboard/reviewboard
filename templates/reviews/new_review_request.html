@@ -52,17 +52,17 @@ YAHOO.util.Event.on(window, "load", function(e) {
     </td>{% endspaceless %}
    </tr>
    <tr id="row_changenum">
-    <td><label for="id_changenum">{% trans "Change Number" %}:</label></td>
+    <td><label for="id_changenum">{{form.changenum.label}}:</label></td>
     <td>{{form.changenum}}</td>
     <td>{{form.changenum.errors}}</td>
    </tr>
    <tr id="row_basedir">
-    <td><label for="id_basedir">{% trans "Base Diff Path" %}:</label></td>
+    <td><label for="id_basedir">{{form.basedir.label}}:</label></td>
     <td>{{form.basedir}}</td>
     <td>{{form.basedir.errors}}</td>
    </tr>
    <tr id="row_diff_path">
-    <td><label for="id_diff_path">{% trans "Diff" %}:</label></td>
+    <td><label for="id_diff_path">{{form.diff_path.label}}:</label></td>
     <td>{{form.diff_path}}</td>
     <td>{{form.diff_path.errors}}</td>
    </tr>

@@ -92,17 +92,24 @@ def patch(diff, file, filename):
     f.write(convert_line_endings(file))
     f.close()
 
+    diff = convert_line_endings(diff)
+
     # XXX: catch exception if Popen fails?
     newfile = '%s-new' % oldfile
     p = subprocess.Popen(['patch', '-o', newfile, oldfile],
                          stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
-    p.stdin.write(convert_line_endings(diff))
+    p.stdin.write(diff)
     p.stdin.close()
     patch_output = p.stdout.read()
     failure = p.wait()
 
     if failure:
+        f = open("%s.diff" %
+                 (os.path.join(tempdir, os.path.basename(filename))), "w")
+        f.write(diff)
+        f.close()
+
         # FIXME: This doesn't provide any useful error report on why the patch
         # failed to apply, which makes it hard to debug.  We might also want to
         # have it clean up if DEBUG=False
@@ -189,25 +196,37 @@ def convert_to_utf8(s, enc):
 
 
 def get_original_file(filediff):
-    """Get a file either from the cache or the SCM.  SCM exceptions are
-       passed back to the caller."""
+    """
+    Get a file either from the cache or the SCM, applying the parent diff if
+    it exists.
 
-    tool = filediff.diffset.repository.get_scmtool()
-    file = filediff.source_file
-    revision = filediff.source_revision
+    SCM exceptions are passed back to the caller.
+    """
+    data = ""
 
-    key = "%s:%s:%s" % (filediff.diffset.repository.path, urlquote(file),
-                        revision)
+    if filediff.source_revision != scmtools.PRE_CREATION:
+        tool = filediff.diffset.repository.get_scmtool()
+        file = filediff.source_file
+        revision = filediff.source_revision
 
-    # We wrap the result of get_file in a list and then return the first
-    # element after getting the result from the cache. This prevents the
-    # cache backend from converting to unicode, since we're no longer
-    # passing in a string and the cache backend doesn't recursively look
-    # through the list in order to convert the elements inside.
-    #
-    # Basically, this fixes the massive regressions introduced by the Django
-    # unicode changes.
-    return cache_memoize(key, lambda: [tool.get_file(file, revision)])[0]
+        key = "%s:%s:%s" % (filediff.diffset.repository.path, urlquote(file),
+                            revision)
+
+        # We wrap the result of get_file in a list and then return the first
+        # element after getting the result from the cache. This prevents the
+        # cache backend from converting to unicode, since we're no longer
+        # passing in a string and the cache backend doesn't recursively look
+        # through the list in order to convert the elements inside.
+        #
+        # Basically, this fixes the massive regressions introduced by the
+        # Django unicode changes.
+        data = cache_memoize(key, lambda: [tool.get_file(file, revision)])[0]
+
+    # If there's a parent diff set, apply it to the buffer.
+    if filediff.parent_diff:
+        data = patch(filediff.parent_diff, data, filediff.source_file)
+
+    return data
 
 
 def get_patched_file(buffer, filediff):
@@ -293,21 +312,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     file = filediff.source_file
     revision = filediff.source_revision
-    old = ""
 
-    if revision != scmtools.PRE_CREATION:
-        old = get_original_file(filediff)
-
+    old = get_original_file(filediff)
     new = get_patched_file(old, filediff)
 
     if interfilediff:
         old = new
-
-        if interfilediff.source_revision != scmtools.PRE_CREATION:
-            interdiff_orig = get_original_file(interfilediff)
-        else:
-            interdiff_orig = ""
-
+        interdiff_orig = get_original_file(interfilediff)
         new = get_patched_file(interdiff_orig, interfilediff)
     elif force_interdiff:
         # Basically, revert the change.

@@ -15,7 +15,10 @@ class EmptyDiffError(ValueError):
 
 class UploadDiffForm(forms.Form):
     basedir = forms.CharField(label=_("Base directory"))
-    path = forms.CharField(label=_("Diff path"), widget=forms.FileInput())
+    path = forms.CharField(label=_("Diff"), widget=forms.FileInput())
+    parent_diff_path = forms.CharField(label=_("Parent diff (optional)"),
+                                       widget=forms.FileInput(),
+                                       required=False)
 
     # Extensions used for intelligent sorting of header files
     # before implementation files.
@@ -31,21 +34,68 @@ class UploadDiffForm(forms.Form):
             # the user for the base directory.
             del(self.fields['basedir'])
 
-    def create(self, file, diffset_history=None):
-        # Parse the diff
+    def create(self, diff_file, parent_diff_file=None, diffset_history=None):
         tool = self.repository.get_scmtool()
-        files = tool.get_parser(file["content"]).parse()
+
+        # Grab the base directory if there is one.
+        if not tool.get_diffs_use_absolute_paths():
+            basedir = smart_unicode(self.cleaned_data['basedir'])
+        else:
+            basedir = ''
+
+        # Parse the diff
+        files = list(self._process_files(
+            diff_file, basedir, check_existance=(parent_diff_file is not None)))
 
         if len(files) == 0:
             raise EmptyDiffError(_("The diff file is empty"))
 
-        # Check that we can actually get all these files.
-        if tool.get_diffs_use_absolute_paths():
-            basedir = ''
-        else:
-            basedir = smart_unicode(self.cleaned_data['basedir'])
+        # Sort the files so that header files come before implementation.
+        files.sort(cmp=self._compare_files, key=lambda f: f.origFile)
+
+        # Parse the parent diff
+        parent_files = {}
+
+        if parent_diff_file:
+            # If the user supplied a base diff, we need to parse it and
+            # later apply each of the files that are in the main diff
+            for f in self._process_files(parent_diff_file, basedir,
+                                         check_existance=True):
+                parent_files[f.origFile] = f
+
+        diffset = DiffSet(name=diff_file["filename"], revision=0,
+                          history=diffset_history,
+                          diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
+        diffset.repository = self.repository
+        diffset.save()
 
         for f in files:
+            if f.origFile in parent_files:
+                parent_file = parent_files[f.origFile]
+                parent_content = parent_file.data
+                source_rev = parent_file.origInfo
+            else:
+                parent_content = ""
+                source_rev = f.origInfo
+
+            dest_file = os.path.join(basedir, f.newFile).replace("\\", "/")
+
+            filediff = FileDiff(diffset=diffset,
+                                source_file=f.origFile,
+                                dest_file=dest_file,
+                                source_revision=smart_unicode(source_rev),
+                                dest_detail=f.newInfo,
+                                diff=f.data,
+                                parent_diff=parent_content,
+                                binary=f.binary)
+            filediff.save()
+
+        return diffset
+
+    def _process_files(self, file, basedir, check_existance=False):
+        tool = self.repository.get_scmtool()
+
+        for f in tool.get_parser(file["content"]).parse():
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
             if f2.startswith("/"):
                 filename = f2
@@ -53,33 +103,15 @@ class UploadDiffForm(forms.Form):
                 filename = os.path.join(basedir, f2).replace("\\", "/")
 
             # FIXME: this would be a good place to find permissions errors
-            if revision != PRE_CREATION and revision != UNKNOWN and \
-               not tool.file_exists(filename, revision):
+            if (revision != PRE_CREATION and revision != UNKNOWN and
+                (check_existance and not tool.file_exists(filename, revision))):
                 raise scmtools.FileNotFoundError(filename, revision)
 
             f.origFile = filename
             f.origInfo = revision
 
-        diffset = DiffSet(name=file["filename"], revision=0,
-                          history=diffset_history,
-                          diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
-        diffset.repository = self.repository
-        diffset.save()
+            yield f
 
-        # Sort the files so that header files come before implementation.
-        files.sort(cmp=self._compare_files, key=lambda f: f.origFile)
-
-        for f in files:
-            filediff = FileDiff(diffset=diffset,
-                                source_file=f.origFile,
-                                dest_file=os.path.join(basedir, f.newFile).replace("\\", "/"),
-                                source_revision=smart_unicode(f.origInfo),
-                                dest_detail=f.newInfo,
-                                diff=f.data,
-                                binary=f.binary)
-            filediff.save()
-
-        return diffset
 
     def _compare_files(self, filename1, filename2):
         """

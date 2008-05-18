@@ -52,8 +52,10 @@ def new_review_request(request,
 
         if form.is_valid():
             try:
-                review_request = form.create(request.user,
-                                             request.FILES['diff_path'])
+                review_request = form.create(
+                    user=request.user,
+                    diff_file=request.FILES['diff_path'],
+                    parent_diff_file=request.FILES.get('parent_diff_path'))
                 return HttpResponseRedirect(review_request.get_absolute_url())
             except:
                 # XXX - OwnershipError or ChangeSetError?

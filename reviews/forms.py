@@ -1,6 +1,7 @@
 import re
 
 from django import newforms as forms
+from django.utils.translation import ugettext as _
 from PIL import Image
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
@@ -19,10 +20,13 @@ class OwnershipError(ValueError):
 
 
 class NewReviewRequestForm(forms.Form):
-    basedir = forms.CharField(required=False)
-    diff_path = forms.CharField(widget=forms.FileInput, required=True)
-    repository = forms.ChoiceField(required=True)
-    changenum = forms.IntegerField(required=False)
+    basedir = forms.CharField(label=_("Base Diff Path"), required=False)
+    diff_path = forms.CharField(label=_("Diff"),
+                                widget=forms.FileInput, required=True)
+    parent_diff_path = forms.CharField(label=_("Parent Diff (optional)"),
+                                       widget=forms.FileInput, required=False)
+    repository = forms.ChoiceField(label=_("Repository"), required=True)
+    changenum = forms.IntegerField(label=_("Change Number"), required=False)
 
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
@@ -36,7 +40,7 @@ class NewReviewRequestForm(forms.Form):
         names = [x for x in map(str.strip, re.split(',\s*', data)) if x]
         return set([constructor(name) for name in names])
 
-    def create(self, user, file):
+    def create(self, user, diff_file, parent_diff_file):
         repository = Repository.objects.get(pk=self.cleaned_data['repository'])
         changenum = self.cleaned_data['changenum'] or None
 
@@ -77,14 +81,19 @@ class NewReviewRequestForm(forms.Form):
         },
         files={
             'path': self.cleaned_data['diff_path'],
+            'parent_diff_path': self.cleaned_data['parent_diff_path'],
         })
         diff_form.full_clean()
 
         try:
-            diff_form.create(file, review_request.diffset_history)
+            diff_form.create(diff_file, parent_diff_file,
+                             review_request.diffset_history)
             if 'path' in diff_form.errors:
                 review_request.delete()
                 self.errors['diff_path'] = diff_form.errors['path']
+            elif 'base_diff_path' in diff_form.errors:
+                review_request.delete()
+                self.errors['base_diff_path'] = diff_form.errors['base_diff_path']
         except EmptyDiffError:
             review_request.delete()
             self.errors['diff_path'] = forms.util.ErrorList([

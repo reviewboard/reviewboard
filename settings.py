@@ -77,6 +77,7 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.sites',
     'django.contrib.sessions',
+    'django_evolution',
     'djblets.datagrid',
     'djblets.util',
     'djblets.webapi',

@@ -1,8 +1,8 @@
-import base64
 from datetime import datetime
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.fields import Base64Field
 
 from reviewboard.scmtools.models import Repository
 
@@ -24,17 +24,10 @@ class FileDiff(models.Model):
                                  core=True)
     source_revision = models.CharField(_("source file revision"), max_length=512)
     dest_detail = models.CharField(_("destination file details"), max_length=512)
-    diff_base64 = models.TextField(_("diff (Base64)"))
+    diff = Base64Field(_("diff"), db_column="diff_base64")
     binary = models.BooleanField(_("binary file"), default=False)
-
-    def _set_diff(self, data):
-        self.diff_base64 = base64.encodestring(data)
-
-    def _get_diff(self):
-        return base64.decodestring(self.diff_base64)
-
-    diff = property(fget=lambda self: self._get_diff(),
-                    fset=lambda self, v: self._set_diff(v))
+    parent_diff = Base64Field(_("parent diff"), db_column="parent_diff_base64",
+                              blank=True)
 
     def __unicode__(self):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
@@ -47,7 +40,7 @@ class FileDiff(models.Model):
             (None, {
                 'fields': ('diffset', ('source_file', 'source_revision'),
                            ('dest_file', 'dest_detail'),
-                           'binary', 'diff_base64')
+                           'binary', 'diff', 'parent_diff')
             }),
         )
 
