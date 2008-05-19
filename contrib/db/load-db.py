@@ -4,6 +4,11 @@
 #
 # This loads a JSON dump of the database into ReviewBoard. It first resets
 # the database to ensure there are no duplicate entries.
+#
+# Note that this script is deprecated in favor of Django-Evolution support.
+# Database migrations can now be performed using:
+#
+#   $ ./manage.py evolve --execute
 
 import os
 import re
@@ -43,6 +48,10 @@ This will wipe out your existing database
 prior to loading. It is highly recommended
 that you have a full SQL database dump in case
 things go wrong.
+
+NOTE: Review Board migrations are now handled by running:
+
+  $ ./manage.py evolve --execute
 
 Are you sure you want to continue?"
 

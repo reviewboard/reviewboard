@@ -2,11 +2,16 @@
 #
 # Database backup script
 #
-# This dumps the database of ReviewBoard into a JSON file and then
+# This dumps the database of Review Board into a JSON file and then
 # reorders the models so that dependencies are met. The result should
 # be loadable by running:
 #
 #   $ ./contrib/db/load-db.py dbdump.json
+#
+# Note that this script is deprecated in favor of Django-Evolution support.
+# Database migrations can now be performed using:
+#
+#   $ ./manage.py evolve --execute
 
 import os
 import sys
@@ -55,6 +60,20 @@ for model in models:
 
 prev_pct = -1
 i = 0
+
+sys.stderr.write("""
+Review Board migrations are now handled by running:
+
+  $ ./manage.py evolve --execute
+
+If you really want to do a backup using backup-db.py, you must run it with
+the --force parameter. However, it is recommended that you perform backups
+using your database's native SQL dumpping support, and perform migrations
+through the above command.
+""")
+
+if len(sys.argv) != 2 or sys.argv[1] != "--force":
+    sys.exit(1)
 
 sys.stderr.write("Backing up database. This may take a while...\n")
 
