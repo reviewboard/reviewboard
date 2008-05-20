@@ -77,7 +77,6 @@ INSTALLED_APPS = (
     'django.contrib.markup',
     'django.contrib.sites',
     'django.contrib.sessions',
-    'django_evolution',
     'djblets.datagrid',
     'djblets.util',
     'djblets.webapi',
@@ -89,6 +88,7 @@ INSTALLED_APPS = (
     'reviewboard.reviews',
     'reviewboard.scmtools',
     'reviewboard.webapi',
+    'django_evolution', # Must be last
 )
 
 WEB_API_ENCODERS = (
