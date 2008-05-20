@@ -284,13 +284,14 @@ YAHOO.extendX(DiffCommentDialog, CommentDialog, {
         var revision;
         var filediffid;
 
-        if (gInterdiffRevision == null) {
-            revision = gRevision;
-            filediffid = this.commentBlock.filediffid;
+        if (this.commentBlock.interfilediff == null) {
+            revision = this.commentBlock.filediff['revision'];
+            filediffid = this.commentBlock.filediff['id'];
         } else {
-            revision = gRevision + "-" + gInterdiffRevision;
-            filediffid = this.commentBlock.filediffid + "-" +
-                         this.commentBlock.interfilediffid;
+            revision = this.commentBlock.filediff['revision'] + "-" +
+                       this.commentBlock.interfilediff['revision'];
+            filediffid = this.commentBlock.filediff['id'] + "-" +
+                         this.commentBlock.interfilediff['id'];
         }
 
         return this.getBaseURL() + '/diff/' + revision + '/file/' +
@@ -348,8 +349,8 @@ CommentBlock = function(fileid, row, linenum, comments) {
     };
 
     this.fileid = fileid;
-    this.filediffid = gFileAnchorToId[fileid];
-    this.interfilediffid = gInterdiffFileAnchorToId[fileid];
+    this.filediff = gFileAnchorToId[fileid];
+    this.interfilediff = gInterdiffFileAnchorToId[fileid];
     this.comments = comments;
     this.linenum = linenum;
     this.row = row;
@@ -367,7 +368,7 @@ CommentBlock = function(fileid, row, linenum, comments) {
 
     this.anchor = dh.append(lineNumCell, {
         tag: 'a',
-        name: 'file' + this.filediffid + 'line' + this.linenum
+        name: 'file' + this.filediff['id'] + 'line' + this.linenum
     }, true);
 
     for (comment in comments) {

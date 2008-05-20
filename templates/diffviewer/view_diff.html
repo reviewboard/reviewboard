@@ -191,9 +191,15 @@
 <a name="{{file.index}}"></a>
 {{ file.fragment }}
 <script type="text/javascript">
-  gFileAnchorToId["file{{file.filediff.id}}"] = {{file.filediff.id}};
+  gFileAnchorToId["file{{file.filediff.id}}"] = {
+    'id': {{file.filediff.id}},
+    'revision': {{file.filediff.diffset.revision}}
+  };
 {% if file.interfilediff %}
-  gInterdiffFileAnchorToId["file{{file.filediff.id}}"] = {{file.interfilediff.id}};
+  gInterdiffFileAnchorToId["file{{file.filediff.id}}"] = {
+    'id': {{file.interfilediff.id}},
+    'revision': {{file.interfilediff.diffset.revision}}
+  };
 {% endif %}
   addComments("file{{file.filediff.id}}", {% commentcounts file.filediff file.interfilediff %});
 </script>
