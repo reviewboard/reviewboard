@@ -421,6 +421,14 @@ table.sidebyside .ew {
   color: black;
 }
 
+.diff-error {
+  background: #fff6a6;
+  border: 1px #9F9656 solid;
+  margin: 0px 2px 4px 1px;
+  padding: 4px 8px;
+}
+
+
 /****************************************************************************
  * Pagination
  ****************************************************************************/

@@ -1,11 +1,14 @@
 import re
 
 from django import template
+from django.conf import settings
 from django.template import NodeList
+from django.template.loader import render_to_string
 from djblets.util.decorators import blocktag
 
 from reviewboard.diffviewer.views import get_diff_files, \
                                          get_enable_highlighting
+from reviewboard.scmtools.core import SCMError
 
 register = template.Library()
 
@@ -55,8 +58,6 @@ def forchunkswithlines(context, nodelist, filediff, interfilediff, first_line,
           {% endfor %}
         {% endforchunkswithlines %}
     """
-
-
     interdiffset = None
 
     key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
@@ -68,9 +69,15 @@ def forchunkswithlines(context, nodelist, filediff, interfilediff, first_line,
     if key in context:
         files = context[key]
     else:
-        files = get_diff_files(filediff.diffset, filediff, interdiffset,
-                               get_enable_highlighting(context['user']))
-        context[key] = files
+        try:
+            files = get_diff_files(filediff.diffset, filediff, interdiffset,
+                                   get_enable_highlighting(context['user']))
+            context[key] = files
+        except SCMError, e:
+            return render_to_string("diffviewer/diff_fragment_error.html", {
+                'error': e,
+                'MEDIA_URL': settings.MEDIA_URL,
+            })
 
     if not files:
         return "Missing lines"
