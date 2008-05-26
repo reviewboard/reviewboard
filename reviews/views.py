@@ -535,6 +535,9 @@ def delete_screenshot(request, review_request_id, screenshot_id):
 @check_login_required
 def view_screenshot(request, review_request_id, screenshot_id,
                     template_name='reviews/screenshot_detail.html'):
+    """
+    Displays a screenshot, along with any comments that were made on it.
+    """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
 
@@ -564,7 +567,11 @@ def view_screenshot(request, review_request_id, screenshot_id,
         'comments': comments,
     }))
 
+
 def search(request, template_name='reviews/search.html'):
+    """
+    Searches review requests on Review Board based on a query string.
+    """
     query = request.GET.get('q', '')
 
     if not settings.ENABLE_SEARCH:

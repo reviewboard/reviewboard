@@ -20,6 +20,12 @@ class OwnershipError(ValueError):
 
 
 class NewReviewRequestForm(forms.Form):
+    """
+    A form that handles creationg of new review requests. These take
+    information on the diffs, the repository the diffs are against, and
+    optionally a changelist number (for use in certain repository types
+    such as Perforce).
+    """
     basedir = forms.CharField(label=_("Base Diff Path"), required=False)
     diff_path = forms.CharField(label=_("Diff"),
                                 widget=forms.FileInput, required=True)
@@ -67,10 +73,14 @@ class NewReviewRequestForm(forms.Form):
             review_request = ReviewRequest.objects.create(user, repository,
                                                           changenum)
         except ChangeNumberInUseError:
+            # The user is updating an existing review request, rather than
+            # creating a new one.
             review_request = ReviewRequest.objects.get(changenum=changenum)
             review_request.update_from_changenum(changenum)
 
             if review_request.status == 'D':
+                # Act like we're creating a brand new review request if the
+                # old one is discarded.
                 review_request.status = 'P'
                 review_request.public = False
 
@@ -110,6 +120,10 @@ class NewReviewRequestForm(forms.Form):
 
 
 class UploadScreenshotForm(forms.Form):
+    """
+    A form that handles uploading of new screenshots.
+    A screenshot takes a path argument and optionally a caption.
+    """
     caption = forms.CharField(required=False)
     path = forms.CharField(widget=forms.FileInput())
 
