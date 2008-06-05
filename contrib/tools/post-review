@@ -180,7 +180,7 @@ class ReviewBoardServer:
     def has_valid_cookie(self):
         """
         Load the user's cookie file and see if they have a valid
-        'sessionid' cookie for the current Review Board server.  Returns
+        'rbsessionid' cookie for the current Review Board server.  Returns
         true if so and false otherwise.
         """
         try:
@@ -197,7 +197,7 @@ class ReviewBoardServer:
             self.cookie_jar.load(self.cookie_file, ignore_expires=True)
 
             try:
-                cookie = self.cookie_jar._cookies[host][path]['sessionid']
+                cookie = self.cookie_jar._cookies[host][path]['rbsessionid']
 
                 if not cookie.is_expired():
                     debug("Loaded valid cookie -- no login required")
