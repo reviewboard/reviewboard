@@ -394,7 +394,7 @@ class ReviewRequest(models.Model):
     def is_mutable_by(self, user):
         "Returns true if the user can modify this review request"
         return self.submitter == user or \
-               user.has_perm('reviews.change_reviewrequest')
+               user.has_perm('reviews.can_edit_reviewrequest')
 
     @permalink
     def get_absolute_url(self):
@@ -426,6 +426,7 @@ class ReviewRequest(models.Model):
         permissions = (
             ("can_change_status", "Can change status"),
             ("can_submit_as_another_user", "Can submit as another user"),
+            ("can_edit_reviewrequest", "Can edit review request"),
         )
 
 

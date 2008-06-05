@@ -70,9 +70,9 @@
     <a href="{{image.get_absolute_url}}">{{image.thumb}}</a><br />
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption">{{image.caption}}</a>
-     {% ifequal request.user review_request.submitter %}
+     {% ifuserorperm review_request.submitter "reviews.delete_screenshot" %}
       <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}rb/images/delete.png" alt="{% trans "Delete Screenshot" %}" /></a>
-     {% endifequal %}
+     {% endifuserorperm %}
     </div>
    </div>
   {% endfor %}

@@ -67,15 +67,15 @@
 {%    endifequal %}
 {%  endif %}
 {% endifuserorperm %}
-{% ifequal request.user review_request.submitter %}
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
  <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %} {% trans "Update Attached Diff" %}{% else %} {% trans "Attach Diff" %}{% endif %}</a></li>
  <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% trans "Attach Screenshot" %}</a></li>
-{% endifequal %}
-{% ifequal request.user review_request.submitter %}
+{% endifuserorperm %}
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
  <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="{{MEDIA_URL}}rb/images/edit.png" width="14" height="14" border="0" alt="" /> {% trans "Edit" %}</a></li></noscript>
-{% endifequal %}
+{% endifuserorperm %}
 </ul>
-{% ifequal request.user review_request.submitter %}
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 <script type="text/javascript">
   RB.dialogs.registerFormDialog("upload-diff-link", {
     title: "{% trans "Attach Diff" %}",
@@ -99,7 +99,7 @@
     fields: {% form_dialog_fields upload_screenshot_form %}
   });
 </script>
-{% endifequal %}
+{% endifuserorperm %}
 {% endbox %}
 
 {% for review in reviews %}
@@ -189,7 +189,7 @@
 {% endbox %}
 {% endfor %}
 
-{% ifequal request.user review_request.submitter %}
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 {% ifequal review_request.status 'P' %}
 <script type="text/javascript">
   registerEditor('summary', false);
@@ -212,5 +212,5 @@
 
 </script>
 {% endifequal %}
-{% endifequal %}
+{% endifuserorperm %}
 {% endblock %}

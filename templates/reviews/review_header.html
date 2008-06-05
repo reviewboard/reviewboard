@@ -1,14 +1,15 @@
 {% load i18n %}
+{% load djblets_utils %}
 
 <div id="error"></div>
 
 {% ifequal review_request.status 'S' %}
 <div class="banner" id="submitted-banner">
  <h1>{% trans "This change has been marked as submitted." %}</h1>
-{% ifequal request.user review_request.submitter %}
+{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
  <input type="submit" id="btn-reopen"
   value="{% trans "Reopen for Review" %}" onclick="location = '{{review_request.get_absolute_url}}reopen/'" />
-{% endifequal %}
+{% endifuserorperm %}
 </div>
 {% else %}
 {%  ifequal review_request.status 'D' %}
@@ -20,7 +21,7 @@
 {% endifequal %}
 </div>
 {%  else %}
-{%   ifequal request.user review_request.submitter %}
+{%  ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 <div class="banner" id="draft-banner" style="display:none;">
 {%    if review_request.public %}
  <h1>{% trans "This review request is a draft." %}</h1>
@@ -37,12 +38,12 @@
  <input type="submit" id="btn-draft-discard"
   value="{% trans "Discard Review Request" %}" onclick="discardReviewRequest();" />
 {%    endif %}
-{%   endifequal %}
+{%   endifuserorperm %}
 </div>
 {%  endifequal %}
 {% endifequal %}
 
-{% ifequal request.user review_request.submitter %}
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 {% ifequal review_request.status 'P' %}
 <script type="text/javascript">
 {% if draft or not review_request.public %}
@@ -52,4 +53,4 @@
 {% endif %}
 </script>
 {% endifequal %}
-{% endifequal %}
+{% endifuserorperm %}
