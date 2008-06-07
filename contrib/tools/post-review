@@ -71,7 +71,7 @@ DEBUG           = False
 ###
 
 
-VERSION = "0.7"
+VERSION = "0.8"
 
 user_config = None
 tempfiles = []
@@ -86,10 +86,12 @@ class RepositoryInfo:
     """
     A representation of a source code repository.
     """
-    def __init__(self, path=None, base_path=None, supports_changesets=False):
+    def __init__(self, path=None, base_path=None, supports_changesets=False,
+                 supports_parent_diffs=False):
         self.path = path
         self.base_path = base_path
         self.supports_changesets = supports_changesets
+        self.supports_parent_diffs = supports_parent_diffs
 
     def __str__(self):
         return "Path: %s, Base path: %s, Supports changesets: %s" % \
@@ -275,20 +277,34 @@ class ReviewBoardServer:
                       review_request['id'])
         debug("Review request draft saved")
 
-    def upload_diff(self, review_request, diff_content):
+    def upload_diff(self, review_request, diff_content, parent_diff_content):
         """
         Uploads a diff to a Review Board server.
         """
-        debug("Uploading diff, size: %d" % (len(diff_content),))
+        debug("Uploading diff, size: %d" % len(diff_content)
+
+        if parent_diff_content:
+            debug("Uploading parent diff, size: %d" % len(parent_diff_content)
+
         fields = {}
+        files = {}
 
         if self.info.base_path:
             fields['basedir'] = self.info.base_path
 
+        files['path'] = {
+            'filename': 'diff',
+            'content': diff_content
+        }
+
+        if parent_diff_content:
+            files['parent_diff_path'] = {
+                'filename': 'parent_diff',
+                'content': parent_diff_content
+            }
+
         self.api_post('api/json/reviewrequests/%s/diff/new/' %
-                      review_request['id'], fields,
-                      {'path': {'filename': 'diff',
-                                'content': diff_content}})
+                      review_request['id'], fields, files)
 
     def publish(self, review_request):
         """
@@ -451,7 +467,7 @@ class SCMClient(object):
         return None
 
     def diff(self, args):
-        return None
+        return (None, None)
 
     def diff_between_revisions(self, revision_range):
         return None
@@ -520,8 +536,9 @@ class CVSClient(SCMClient):
 
     def do_diff(self, params):
         # Diff returns "1" if differences were found.
-        return execute('cvs diff -u %s' % params,
-                       extra_ignore_errors=(1,))
+        return (execute('cvs diff -u %s' % params,
+                        extra_ignore_errors=(1,)),
+                None)
 
 
 class SVNClient(SCMClient):
@@ -596,7 +613,7 @@ class SVNClient(SCMClient):
         diff = self.handle_renames(diff)
         diff = self.convert_to_absolute_paths(diff)
 
-        return ''.join(diff)
+        return (''.join(diff), None)
 
     def handle_renames(self, diff_content):
         """
@@ -700,6 +717,7 @@ class SVNClient(SCMClient):
         # strip off ending newline, and return it as the second component
         return [s.split('\n')[0], '\n']
 
+
 class PerforceClient(SCMClient):
     """
     A wrapper around the p4 Perforce tool that fetches repository information
@@ -765,7 +783,6 @@ class PerforceClient(SCMClient):
 
         cwd = os.getcwd()
         diff_lines = []
-
 
         empty_filename = make_tempfile()
         tmp_diff_from_filename = make_tempfile()
@@ -838,7 +855,6 @@ class PerforceClient(SCMClient):
             else:
                 die("Unknown change type '%s' for %s" % (changetype, depot_path))
 
-
             diff_cmd = 'diff -urNp "%s" "%s"' % (old_file, new_file)
             # Diff returns "1" if differences were found.
             dl = execute(diff_cmd, extra_ignore_errors=(1,)).splitlines(True)
@@ -856,7 +872,6 @@ class PerforceClient(SCMClient):
                dl[0] == ('Files %s and %s differ'% (old_file, new_file)):
                 dl = ['Binary files %s and %s differ'% (old_file, new_file)]
 
-
             if dl == [] or dl[0].startswith("Binary files "):
                 if dl == []:
                     print "Warning: %s in your changeset is unmodified" % \
@@ -865,7 +880,6 @@ class PerforceClient(SCMClient):
                 dl.insert(0, "==== %s#%s ==%s== %s ====\n" % \
                     (depot_path, base_revision, changetype_short, local_path))
             else:
-
                 m = re.search(r'(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)', dl[1])
                 if m:
                     timestamp = m.group(1)
@@ -901,12 +915,11 @@ class PerforceClient(SCMClient):
 
             diff_lines += dl
 
-
         os.unlink(empty_filename)
         os.unlink(tmp_diff_from_filename)
         os.unlink(tmp_diff_to_filename)
 
-        return ''.join(diff_lines)
+        return (''.join(diff_lines), None)
 
     def _write_file(self, depot_path, tmpfile):
         """
@@ -961,8 +974,9 @@ class MercurialClient(SCMClient):
 
         # We are going to search .hg/hgrc for the default path.
         file_name = os.path.join(local_data,'.hg', 'hgrc')
-        if not  os.path.exists(file_name):
-            return RepositoryInfo(path=local_data, base_path='/')
+        if not os.path.exists(file_name):
+            return RepositoryInfo(path=local_data, base_path='/',
+                                  supports_parent_diffs=True)
 
         f = open(file_name)
         data = f.read()
@@ -971,17 +985,19 @@ class MercurialClient(SCMClient):
         m = re.search(r'^default\s+=\s+(.+)$', data, re.M)
         if not m:
             # Return the local path, if no default value is found.
-            return RepositoryInfo(path=local_data, base_path='/')
+            return RepositoryInfo(path=local_data, base_path='/',
+                                  supports_parent_diffs=True)
 
         path = m.group(1).strip()
 
-        return RepositoryInfo(path=path, base_path='')
+        return RepositoryInfo(path=path, base_path='',
+                              supports_parent_diffs=True)
 
     def diff(self, files):
         """
         Performs a diff across all modified files in a Mercurial repository.
         """
-        return execute('hg diff %s' % ' '.join(files))
+        return (execute('hg diff %s' % ' '.join(files)), None)
 
     def diff_between_revisions(self, revision_range):
         """
@@ -1018,7 +1034,8 @@ class GitClient(SCMClient):
             if m:
                 base_path = m.group(1)[len(path):]
                 self.type = "svn"
-                return RepositoryInfo(path=path, base_path=base_path)
+                return RepositoryInfo(path=path, base_path=base_path,
+                                      supports_parent_diffs=True)
         else:
             # Versions of git-svn before 1.5.4 don't (appear to) support
             # 'git svn info'.  If we fail because of an older git install,
@@ -1074,33 +1091,41 @@ class GitClient(SCMClient):
 
     def diff(self, args):
         """
-        Performs a diff across all modified files in the branch.
+        Performs a diff across all modified files in the branch, taking into
+        account a parent branch.
         """
-        if len(args) == 0:
-            branch_against = "master"
-        elif len(args) == 1:
-            branch_against = args[0]
-        else:
-            print "No more than one branch can be supplied."
-            sys.exit(1)
+        parent_branch = options.parent_branch or "master"
 
-        diff_lines = execute("git diff --no-color --no-prefix -r -u %s.." %
-                             branch_against,
+        diff_lines = self.make_diff(parent_branch)
+
+        if parent_branch != "master":
+            parent_diff_lines = self.make_diff("master", parent_branch)
+        else:
+            parent_diff_lines = None
+
+        return (diff_lines, parent_diff_lines)
+
+    def make_diff(self, parent_branch, source_branch=""):
+        """
+        Performs a diff on a particular branch range.
+        """
+        diff_lines = execute("git diff --no-color --no-prefix -r -u %s..%s" %
+                             (parent_branch, source_branch),
                              split_lines=True)
 
         if self.type == "svn":
-            return self.make_svn_diff(branch_against, diff_lines)
+            return self.make_svn_diff(parent_branch, diff_lines)
 
         return None
 
 
-    def make_svn_diff(self, branch_against, diff_lines):
+    def make_svn_diff(self, parent_branch, diff_lines):
         """
         Formats the output of git diff such that it's in a form that
         svn diff would generate. This is needed so the SVNTool in Review
         Board can properly parse this diff.
         """
-        rev = execute("git-svn find-rev %s" % branch_against).strip()
+        rev = execute("git-svn find-rev %s" % parent_branch).strip()
 
         if not rev:
             return None
@@ -1257,7 +1282,8 @@ def load_config_file(filename):
     return config
 
 
-def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
+def tempt_fate(server, tool, changenum, diff_content=None,
+               parent_diff_content=None, submit_as=None):
     """
     Attempts to create a review request on a Review Board server and upload
     a diff. On success, the review request path is displayed.
@@ -1296,7 +1322,8 @@ def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
         rsp, = e.args
         if rsp['err']['code'] == 103: # Not logged in
             server.login()
-            tempt_fate(server, tool, changenum, diff_content, submit_as)
+            tempt_fate(server, tool, changenum, diff_content,
+                       parent_diff_content, submit_as)
             return
 
         if options.rid:
@@ -1309,7 +1336,8 @@ def tempt_fate(server, tool, changenum, diff_content=None, submit_as=None):
 
     if not server.info.supports_changesets or not options.change_only:
         try:
-            server.upload_diff(review_request, diff_content)
+            server.upload_diff(review_request, diff_content,
+                               parent_diff_content)
         except APIError, e:
             rsp, = e.args
             print "Error uploading diff: %s (%s)" % (rsp['err']['msg'],
@@ -1394,6 +1422,13 @@ def parse_options(tool, repository_info, args):
                               help="updates info from changelist, but does " +
                                    "not upload a new diff")
 
+        if repository_info.supports_parent_diffs:
+            parser.add_option("--parent",
+                              dest="parent_branch", default=None,
+                              metavar="PARENT_BRANCH",
+                              help="the parent branch this diff should be " +
+                                   "against")
+
         tool.add_options(parser)
 
 
@@ -1461,8 +1496,9 @@ def main(args):
 
     if options.revision_range:
         diff = tool.diff_between_revisions(options.revision_range)
+        parent_diff = None
     else:
-        diff = tool.diff(args)
+        diff, parent_diff = tool.diff(args)
 
     if options.output_diff_only:
         print diff
@@ -1472,6 +1508,7 @@ def main(args):
     server.login()
 
     review_url = tempt_fate(server, tool, changenum, diff_content=diff,
+                            parent_diff_content=parent_diff
                             submit_as=options.submit_as)
 
     # Load the review up in the browser if requested to:
