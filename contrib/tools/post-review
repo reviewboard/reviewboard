@@ -281,10 +281,10 @@ class ReviewBoardServer:
         """
         Uploads a diff to a Review Board server.
         """
-        debug("Uploading diff, size: %d" % len(diff_content)
+        debug("Uploading diff, size: %d" % len(diff_content))
 
         if parent_diff_content:
-            debug("Uploading parent diff, size: %d" % len(parent_diff_content)
+            debug("Uploading parent diff, size: %d" % len(parent_diff_content))
 
         fields = {}
         files = {}
@@ -1508,7 +1508,7 @@ def main(args):
     server.login()
 
     review_url = tempt_fate(server, tool, changenum, diff_content=diff,
-                            parent_diff_content=parent_diff
+                            parent_diff_content=parent_diff,
                             submit_as=options.submit_as)
 
     # Load the review up in the browser if requested to:
