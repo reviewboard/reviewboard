@@ -599,13 +599,13 @@ class SVNClient(SCMClient):
         return ''.join(diff)
 
     def handle_renames(self, diff_content):
-	"""
-	The output of svn diff is incorrect when the file in question came
-	into being via svn mv/cp. Although the patch for these files are
-	relative to its parent, the diff header doesn't reflect this.
-	This function fixes the relevant section headers of the patch to
-	portray this relationship.
-	"""
+        """
+        The output of svn diff is incorrect when the file in question came
+        into being via svn mv/cp. Although the patch for these files are
+        relative to its parent, the diff header doesn't reflect this.
+        This function fixes the relevant section headers of the patch to
+        portray this relationship.
+        """
 
         result = []
 
@@ -615,7 +615,7 @@ class SVNClient(SCMClient):
                 from_line = line
                 continue
 
-	    # This is where we decide how mangle the previous '---'
+            # This is where we decide how mangle the previous '---'
             if line.startswith('+++'):
                 to_file, _ = self.parse_filename_header(line[4:])
                 info       = self.svn_info(to_file)
@@ -628,7 +628,7 @@ class SVNClient(SCMClient):
                     result.append(from_line) #as is, no copy performed
 
             # We only mangle '---' lines. All others get added straight to
-	    # the output.
+            # the output.
             result.append(line)
 
         return result
