@@ -29,7 +29,7 @@
    <td class="indented label"><label for="target_groups">{% trans "Groups" %}:</label></td>
    <td class="value"><span id="target_groups">
 {%  for group in review_request_details.target_groups.all %}
-<a href="{% url group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+<a href="{% url group group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
 {%  endfor %}
   </span></td>
   </tr>

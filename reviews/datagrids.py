@@ -369,7 +369,7 @@ class SubmitterDataGrid(DataGrid):
 
     @staticmethod
     def link_to_object(obj, value):
-        return reverse("user", args=[obj.id])
+        return reverse("user", args=[obj.username])
 
 
 class GroupDataGrid(DataGrid):
