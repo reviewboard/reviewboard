@@ -559,7 +559,10 @@ class ReviewRequestDraft(models.Model):
         # could be made would be to cache the compiled regexes somewhere.
         files = self.diffset.files.all()
         for default in DefaultReviewer.objects.all():
-            regex = re.compile(default.file_regex)
+            try:
+                regex = re.compile(default.file_regex)
+            except:
+                continue
 
             for filediff in files:
                 if regex.match(filediff.source_file or filediff.dest_file):
