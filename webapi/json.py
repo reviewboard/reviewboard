@@ -1011,7 +1011,8 @@ def new_diff(request, review_request_id):
         return WebAPIResponseFormError(request, form)
 
     try:
-        diffset = form.create(request.FILES['path'])
+        diffset = form.create(request.FILES['path'],
+                              request.FILES.get('parent_diff_path'))
 
         # Set the initial revision to be one newer than the most recent
         # public revision, so we can reference it in the diff viewer.

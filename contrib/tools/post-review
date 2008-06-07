@@ -1125,7 +1125,7 @@ class GitClient(SCMClient):
         svn diff would generate. This is needed so the SVNTool in Review
         Board can properly parse this diff.
         """
-        rev = execute("git-svn find-rev %s" % parent_branch).strip()
+        rev = execute("git-svn find-rev master").strip()
 
         if not rev:
             return None
@@ -1176,7 +1176,7 @@ def debug(s):
     """
     Prints debugging information if post-review was run with --debug
     """
-    if options.debug:
+    if options and options.debug:
         print ">>> %s" % s
 
 
@@ -1213,6 +1213,8 @@ def execute(command, split_lines=False, ignore_errors=False,
     """
     Utility function to execute a command and return the output.
     """
+    debug(command)
+
     if sys.platform.startswith('win'):
         p = subprocess.Popen(command,
                              stdin=subprocess.PIPE,
