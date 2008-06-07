@@ -662,10 +662,16 @@ def _set_draft_field_data(draft, field_name, data):
         setattr(draft, field_name, data)
 
         if field_name == 'bugs_closed':
-            if data == '':
-                data = []
-            else:
-                data = [b.strip() for b in data.split(',')]
+            def _sanitize_bug_ids(entries):
+                for bug in (x.strip() for x in entries.split(',')):
+                    if not bug:
+                        continue
+                    # RB stores bug numbers as numbers, but many people have the
+                    # habit of prepending #, so filter it out:
+                    if bug[0] == '#':
+                        bug = bug[1:]
+                    yield bug
+            data = list(_sanitize_bug_ids(data))
 
         return data, None
 
