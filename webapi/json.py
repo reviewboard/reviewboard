@@ -252,7 +252,7 @@ def user_list(request):
     if not query:
         u = User.objects.filter(is_active=True)
     else:
-        u = User.objects.filter(is_active=True, username__startswith=query)
+        u = User.objects.filter(is_active=True, username__istartswith=query)
 
     return WebAPIResponse(request, {
         'users': u,
@@ -270,7 +270,7 @@ def group_list(request):
     if not query:
         u = Group.objects.all()
     else:
-        u = Group.objects.filter(name__startswith=query)
+        u = Group.objects.filter(name__istartswith=query)
 
     return WebAPIResponse(request, {
         'groups': u,
