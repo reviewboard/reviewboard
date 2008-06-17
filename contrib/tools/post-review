@@ -1071,12 +1071,13 @@ class GitClient(SCMClient):
             version = execute("git svn --version", ignore_errors=True)
             version_parts = re.search('version (\d+)\.(\d+)\.(\d+)',
                                       version)
-            if version_parts and not is_valid_version((version_parts.group(1),
-                                                       version_parts.group(2),
-                                                       version_parts.group(3)),
-                                                      (1, 5, 4)):
-                    die("Your installation of git-svn must be upgraded to " + \
-                        "version 1.5.4 or later")
+            if (version_parts and
+                not self.is_valid_version((int(version_parts.group(1)),
+                                           int(version_parts.group(2)),
+                                           int(version_parts.group(3))),
+                                          (1, 5, 4))):
+                die("Your installation of git-svn must be upgraded to " + \
+                    "version 1.5.4 or later")
 
         # Okay, maybe Perforce.
         # TODO
@@ -1085,7 +1086,7 @@ class GitClient(SCMClient):
         # TODO
         return None
 
-    def is_valid_version(actual, expected):
+    def is_valid_version(self, actual, expected):
         """
         Takes two tuples, both in the form:
             (major_version, minor_version, micro_version)
