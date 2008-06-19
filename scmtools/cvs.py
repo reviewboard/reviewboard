@@ -10,23 +10,47 @@ from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 
 class CVSTool(SCMTool):
     regex_rev = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
+    regex_repopath = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
 
     def __init__(self, repository):
-        if ':' in repository.path:
-            self.repopath = repository.path.split(':')[1]
-            if repository.username:
-                if repository.password:
-                    auth = '%s:%s@' % (repository.username, repository.password)
-                else:
-                    auth = '%s@' % (repository.username)
-            else:
-                auth = ''
-            self.CVSROOT = ":pserver:%s%s" % (auth, repository.path)
-        else:
-            self.repopath = self.CVSROOT = repository.path
-        self.client = CVSClient(self.CVSROOT)
-
         SCMTool.__init__(self, repository)
+        self.client = CVSClient(self.build_cvsroot())
+
+    def build_cvsroot(self):
+        # NOTE: According to cvs, the following formats are valid.
+        #
+        #  :(gserver|kserver|pserver):[[user][:password]@]host[:[port]]/path
+        #  [:(ext|server):][[user]@]host[:]/path
+        #  :local:e:\path
+        #  :fork:/path
+
+        if not self.repository.path.startswith(":"):
+            # The user has a path or something. We'll want to parse out the
+            # server name, port (if specified) and path and build a :pserver:
+            # CVSROOT.
+            m = self.regex_repopath.match(self.repository.path)
+
+            if m:
+                self.repopath = m.group("path")
+                cvsroot = ":pserver:"
+
+                if self.repository.username:
+                    if self.repository.password:
+                        cvsroot += '%s:%s@' % (self.repository.username,
+                                               self.repository.password)
+                    else:
+                        cvsroot += '%s@' % (self.repository.username)
+
+                cvsroot += "%s:%s%s" % (m.group("hostname"),
+                                        m.group("port") or "",
+                                        m.group("path"))
+                return cvsroot
+
+        # We couldn't parse this as a hostname:port/path. Assume it's a local
+        # path or a full CVSROOT and let CVS handle it.
+        self.repopath = self.repository.path
+
+        return self.repopath
 
     def get_file(self, path, revision=HEAD):
         if not path:
@@ -122,7 +146,7 @@ class CVSClient:
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
 
-        p = subprocess.Popen(['cvs', '-q', '-d', self.repository, 'checkout',
+        p = subprocess.Popen(['cvs', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=True)

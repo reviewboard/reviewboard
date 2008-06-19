@@ -46,6 +46,30 @@ class CVSTests(unittest.TestCase):
         except ImportError:
             raise nose.SkipTest
 
+    def testPathWithPort(self):
+        """Testing parsing a CVSROOT with a port"""
+        repo = Repository(name="CVS",
+                          path="example.com:123/cvsroot/test",
+                          username="anonymous",
+                          tool=Tool.objects.get(name="CVS"))
+        tool = repo.get_scmtool()
+
+        self.assertEqual(tool.repopath, "/cvsroot/test")
+        self.assertEqual(tool.client.repository,
+                         ":pserver:anonymous@example.com:123/cvsroot/test")
+
+    def testPathWithoutPort(self):
+        """Testing parsing a CVSROOT without a port"""
+        repo = Repository(name="CVS",
+                          path="example.com:/cvsroot/test",
+                          username="anonymous",
+                          tool=Tool.objects.get(name="CVS"))
+        tool = repo.get_scmtool()
+
+        self.assertEqual(tool.repopath, "/cvsroot/test")
+        self.assertEqual(tool.client.repository,
+                         ":pserver:anonymous@example.com:/cvsroot/test")
+
     def testGetFile(self):
         """Testing CVSTool.get_file"""
         expected = "test content\n"
