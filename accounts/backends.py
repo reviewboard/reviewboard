@@ -64,6 +64,8 @@ class LDAPBackend:
             import ldap
             ldapo = ldap.initialize(settings.LDAP_URI)
             ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
+            if settings.LDAP_TLS:
+                ldapo.start_tls_s()
             ldapo.simple_bind_s(settings.LDAP_UID_MASK % username, password)
 
             return self.get_or_create_user(username)
@@ -81,6 +83,8 @@ class LDAPBackend:
                 import ldap
                 ldapo = ldap.initialize(settings.LDAP_URI)
                 ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
+                if settings.LDAP_TLS:
+                    ldapo.start_tls_s()
                 ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID, settings.LDAP_ANON_BIND_PASSWD)
 
                 passwd = ldapo.search_s(settings.LDAP_UID_MASK % username,
