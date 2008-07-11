@@ -54,19 +54,19 @@ class SVNTool(SCMTool):
 
         # svnlook uses 'rev 0', while svn diff uses 'revision 0'
         self.revision_re = re.compile("""
-            ^(\(([^\)]+)\)\s)?           # creating diffs between two branches
-                                         # of a remote repository will insert
-                                         # extra "relocation information" into
-                                         # the diff.
+            ^(\(([^\)]+)\)\s)?              # creating diffs between two branches
+                                            # of a remote repository will insert
+                                            # extra "relocation information" into
+                                            # the diff.
 
-            (?:\d+-\d+-\d+\ +            # svnlook-style diffs contain a
-               \d+:\d+:\d+\ +            # timestamp on each line before the
-               [A-Z]+\ +)?               # revision number.  This here is
-                                         # probably a really crappy way to
-                                         # express that, but oh well.
+            (?:\d+-\d+-\d+\ +               # svnlook-style diffs contain a
+               \d+:\d+:\d+\ +               # timestamp on each line before the
+               [A-Z]+\ +)?                  # revision number.  This here is
+                                            # probably a really crappy way to
+                                            # express that, but oh well.
 
-            \([Rr]ev(?:ision)?\ (\d+)\)$ # svnlook uses 'rev 0' while svn diff
-                                         # uses 'revision 0'
+            \ *\([Rr]ev(?:ision)?\ (\d+)\)$ # svnlook uses 'rev 0' while svn diff
+                                            # uses 'revision 0'
             """, re.VERBOSE)
 
 

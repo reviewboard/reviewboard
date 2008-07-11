@@ -243,7 +243,7 @@ class SubversionTests(unittest.TestCase):
         """Testing revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', '(working copy)')[1],
                          HEAD)
-        self.assertEqual(self.tool.parse_diff_revision('', '(revision 0)')[1],
+        self.assertEqual(self.tool.parse_diff_revision('', '   (revision 0)')[1],
                          PRE_CREATION)
 
         self.assertEqual(self.tool.parse_diff_revision('', '(revision 1)')[1],
