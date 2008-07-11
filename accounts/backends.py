@@ -90,7 +90,8 @@ class LDAPBackend:
                 passwd = ldapo.search_s(settings.LDAP_UID_MASK % username,
                                         ldap.SCOPE_SUBTREE, "objectclass=*")
 
-                first_name, last_name = passwd[0][1]['cn'][0].split(' ', 1)
+                first_name = passwd[0][1]['givenName']
+                last_name = passwd[0][1]['sn']
                 email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
 
                 user = User(username=username,
