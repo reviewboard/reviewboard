@@ -78,6 +78,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.sessions',
     'djblets.datagrid',
+    'djblets.feedview',
     'djblets.util',
     'djblets.webapi',
     'reviewboard.accounts',

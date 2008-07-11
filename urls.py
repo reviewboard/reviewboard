@@ -13,7 +13,7 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
 
 # URLs global to all modes
 urlpatterns = patterns('',
-    (r'^admin/', include('django.contrib.admin.urls')),
+    (r'^admin/', include('reviewboard.admin.urls')),
 )
 
 # Add static media if running in DEBUG mode
@@ -52,7 +52,6 @@ else:
 
     # Main includes
     urlpatterns += patterns('',
-        (r'^admin/', include('django.contrib.admin.urls')),
         (r'^api/json/', include('reviewboard.webapi.urls')),
         (r'^r/', include('reviewboard.reviews.urls')),
         (r'^reports/', include('reviewboard.reports.urls')),

@@ -1,0 +1,105 @@
+{% extends "admin/base_site.html" %}
+{% load adminmedia %}
+{% load adminapplist %}
+{% load i18n %}
+{% load log %}
+
+{% block stylesheet %}{% admin_media_prefix %}css/dashboard.css{% endblock %}
+{% block coltype %}colM{% endblock %}
+{% block bodyclass %}dashboard{% endblock %}
+{% block breadcrumbs %}{% endblock %}
+
+{% block extrahead %}
+<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui/connection/connection-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui/event/event-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="colMS">
+ <div id="content-main">
+  {# "Manage" section #}
+  <div class="module manage">
+   <table summary="{% trans "Common management operations." %}">
+    <caption>{% trans "Manage" %}</caption>
+    <tbody>
+     <tr>
+      <th scope="row"><a href="db/auth/user/">{% trans "Users" %}</a>
+        <span class="count">({{user_count}})</span></th>
+      <td><a class="addlink" href="db/auth/user/add/">{% trans "Add" %}</a></td>
+     </tr>
+     <tr>
+      <th scope="row"><a href="db/reviews/group/">{% trans "Review groups" %}</a>
+        <span class="count">({{reviewgroup_count}})</span></th>
+      <td><a class="addlink" href="db/reviews/group/add/">{% trans "Add" %}</a></td>
+     </tr>
+     <tr>
+      <th scope="row"><a href="db/reviews/defaultreviewer/">{% trans "Default reviewers" %}</a>
+        <span class="count">({{defaultreviewer_count}})</span></th>
+      <td><a class="addlink" href="db/reviews/defaultreviewer/add/">{% trans "Add" %}</a></td>
+     </tr>
+     <tr>
+      <th scope="row"><a href="db/scmtools/repository/">{% trans "Repositories" %}</a>
+        <span class="count">({{repository_count}})</span></th>
+      <td><a class="addlink" href="db/scmtools/repository/add/">{% trans "Add" %}</a></td>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+ </div> {# content-main #}
+
+ <div id="content-related">
+  {# "Server Info" section #}
+  <div class="module serverinfo">
+   <table summary="{% trans "Server information." %}">
+    <caption>{% trans "Server Information" %}</caption>
+    <tbody>
+     <tr>
+      <th>{% trans "Review Board version" %}</th>
+      <td>{{version}}</td>
+     </tr>
+     <tr>
+      <th colspan="2"><a href="cache/">Server Cache</a></th>
+     </tr>
+    </tbody>
+   </table>
+  </div>
+ </div> {# content-related #}
+</div> {# colMS #}
+
+<br class="clear" />
+<div class="colM">
+ {# "News" section #}
+ <div class="module news">
+  <table summary="{% trans "Latest Review Board news updates." %}">
+   <caption>
+    <span class="title">{% trans "News" %}</span>
+	<span class="actions">
+     <a href="http://www.review-board.org/news/">View All News</a>
+	 |
+     <a href="#" onclick="javascript:reloadNews();">{% trans "Reload" %}</a>
+     |
+     <a href="feed/news/rss/">
+      <img src="{{MEDIA_URL}}rb/images/rss.png" width="14" height="14" />
+      RSS
+     </a>
+    </span>
+   </caption>
+   <tbody>
+    <tr>
+     <td id="news-content"></td>
+    </tr>
+   </tbody>
+  </table>
+ </div>
+</div>
+<script language="javascript">
+  function reloadNews() {
+      getEl("news-content").load("feed/news/?reload=1");
+  }
+
+  getEl("news-content").load("feed/news/");
+</script>
+{% endblock %}

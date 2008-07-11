@@ -1,0 +1,157 @@
+#admin-nav {
+  background-color: #557ab1;
+  float: left;
+  list-style: none;
+  margin: 0;
+  padding: 0 10px;
+  width: 100%;
+}
+
+#admin-nav li {
+  display: block;
+  float: left;
+  line-height: normal;
+  margin: 0 10px 0 0;
+  padding: 0;
+}
+
+#admin-nav li a {
+  display: block;
+  float: left;
+  font-size: 110%;
+  padding: 4px 8px;
+}
+
+#admin-nav li a:hover {
+  background-color: #2f5183;
+  text-decoration: none;
+}
+
+#admin-nav li a.active {
+  background-color: #173663;
+}
+
+.module.manage .count {
+  color: #A0A0A0;
+  font-size: x-small;
+  font-weight: normal;
+}
+
+.module.news {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.module caption a, .module caption a:visited {
+  color: white;
+}
+
+.module caption img {
+  vertical-align: bottom;
+}
+
+.module caption span.actions {
+  float: right;
+}
+
+.module caption span.title {
+  float: left;
+}
+
+.module caption {
+  width: 100%;
+}
+
+.module table {
+  width: 100%;
+}
+
+.module th {
+  white-space: nowrap;
+}
+
+/***************************************************************************
+ * Django Admin overrides
+ ***************************************************************************/
+table thead th.ascending a {
+  background: transparent url("../../djblets/images/datagrid/sort_asc_primary.png") no-repeat right 0.4em;
+}
+
+thead th, tfoot td {
+  background: transparent url("../../djblets/images/datagrid/header_bg.png") repeat-x;
+  padding: 5px;
+  border-bottom: 1px solid #999999;
+  border-right: 1px solid #CCCCCC;
+  border-top: 1px solid #999999;
+  border-left: 0 !important;
+}
+
+thead th a:link, thead th a:visited {
+  color: black;
+}
+
+#branding h1 {
+  color: #EEEEEE;
+}
+
+#content-related .module h2 {
+  background: #5988bb;
+  color: white;
+}
+
+#header {
+  background-color: #2f5183;
+}
+
+.dashboard #content {
+  width: auto;
+}
+
+.module h2, .module caption {
+  background: #5988bb;
+}
+
+.module {
+  border-color: #C0C0C0;
+}
+
+.row1 {
+  background: #F2F2F2;
+}
+
+td, th {
+  border-bottom: 0;
+}
+
+/* Override the way links and wrapping work in modules. */
+.module.news table td {
+  white-space: normal !important;
+  padding: 0;
+}
+
+.module.news table td a {
+  display: inline;
+  padding: 0;
+}
+
+.module.news .entry {
+  padding-bottom: 0.8em;
+}
+
+.module.news .entry-title {
+  padding-top: 0.4em;
+  padding-bottom: 0.8em;
+}
+
+.module.news .entry-content {
+  margin-left: 1.2em;
+}
+
+.module.news .loading-indicator {
+  padding: 4px;
+}
+
+.module.news .feed-error {
+  margin: 0;
+  padding: 4px;
+}

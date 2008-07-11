@@ -41,7 +41,7 @@
      {% blocktrans with user|realname|escape as username %}<li>Welcome, <b>{{username}}</b></li>{% endblocktrans %}
      <li>- <a href="{% url user-preferences %}">{% trans "My account" %}</a></li>
 {% if user.is_staff %}
-     <li>- <a href="{% url django.contrib.admin.views.main.index %}">{% trans "Admin" %}</a></li>
+     <li>- <a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Admin" %}</a></li>
 {% endif %}
      <li>- <a href="{% url logout %}">{% trans "Log out" %}</a></li>
     {% else %}

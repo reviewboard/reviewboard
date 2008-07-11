@@ -1,0 +1,53 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<b>Cache backend:</b> {{cache_backend}}
+
+<h2>Statistics</h2>
+{% if cache_hosts %}
+{%  for hostname,stats in cache_hosts %}
+<div class="module">
+ <table>
+  <caption>{{hostname}}</caption>
+  <colgroup>
+   <col width="10%" />
+   <col width="90%" />
+  </colgroup>
+  <tr>
+   <th scope="row">{% trans "Memory usage:" %}</th>
+   <td>{{stats.bytes|filesizeformat}}</td>
+  </tr>
+  <tr>
+   <th scope="row">{% trans "Keys in cache:" %}</th>
+   <td>{{stats.curr_items}} of {{stats.total_items}}</td>
+  </tr>
+  <tr>
+   <th scope="row">{% trans "Cache hits:" %}</th>
+   <td>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate}}%</td>
+  </tr>
+  <tr>
+   <th scope="row">{% trans "Cache misses:" %}</th>
+   <td>{{stats.get_misses}} of {{stats.cmd_get}}: {{stats.miss_rate}}%</td>
+  </tr>
+  <tr>
+   <th scope="row">{% trans "Cache evictions:" %}</th>
+   <td>{{stats.evictions}}</td>
+  </tr>
+  <tr>
+   <th scope="row">{% trans "Cache traffic:" %}</th>
+   <td>{{stats.bytes_read|filesizeformat}} in,
+       {{stats.bytes_written|filesizeformat}} out</td>
+  </tr>
+  <tr>
+   <th scope="row">{% trans "Uptime:" %}</th>
+   <td>{{stats.uptime}}</td>
+  </tr>
+ </table>
+</div>
+{%  endfor %}
+{% else %}
+<p>{% trans "Statistics are not available for this backend." %}</p>
+{% endif %}
+
+{% endblock %}

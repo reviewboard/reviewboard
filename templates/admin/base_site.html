@@ -3,8 +3,24 @@
 
 {% block title %}{{title}} | {% trans "Review Board administration" %}{% endblock %}
 
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin.css" />
+<link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png" />
+{% endblock %}
+
 {% block branding %}
 <h1 id="site-name">{% trans "Review Board administration" %}</h1>
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><a href="{{SITE_ROOT}}admin/">{% trans "Home" %}</a> {% if title %} &rsaquo; {{ title|escape }}{% endif %}</div>
+{% endblock %}
+
+{% block nav-global %}
+{%  if user.is_authenticated %}
+<ul id="admin-nav">
+ <li><a href="{% url reviewboard.admin.views.dashboard %}">Dashboard</a></li>
+ <li><a href="{% url django.contrib.admin.views.main.index %}">Database</a></li>
+</ul>
+{%  endif %}
+{% endblock %}
