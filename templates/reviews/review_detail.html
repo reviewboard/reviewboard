@@ -48,7 +48,7 @@
 
 {% box "review-request" %}
 <ul id="topcontrols">
-{% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %}
+{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
  <li><a href="diff/#index_header"><img src="{{MEDIA_URL}}rb/images/diff.png" width="17" height="14" border="0" alt="" /> {% trans "View Diff" %}</a></li>
 {% endif %}
 </ul>
@@ -68,7 +68,7 @@
 {%  endif %}
 {% endifuserorperm %}
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
- <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffset_set.count %} {% trans "Update Attached Diff" %}{% else %} {% trans "Attach Diff" %}{% endif %}</a></li>
+ <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %} {% trans "Update Attached Diff" %}{% else %} {% trans "Attach Diff" %}{% endif %}</a></li>
  <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% trans "Attach Screenshot" %}</a></li>
 {% endifuserorperm %}
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}

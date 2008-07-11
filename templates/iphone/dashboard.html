@@ -4,7 +4,7 @@
  <li class="group">Incoming Reviews</li>
  <li><a href="{% url iphone-dashboard-list %}?view=incoming">All</a></li>
  <li><a href="{% url iphone-dashboard-list %}?view=to-me">To Me</a></li>
-{% for group in user.group_set.all %}
+{% for group in user.review_groups.all %}
  <li><a href="{% url iphone-dashboard-list %}?view=to-group&group={{group}}">{{group}}</a></li>
 {% endfor %}
 {% ifnotequal user.get_profile.starred_groups.count 0 %}

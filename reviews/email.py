@@ -115,7 +115,7 @@ def harvest_people_from_review_request(review_request):
     """
     # See the comment in harvest_people_from_review for this list
     # comprehension.
-    return [u for review in review_request.review_set.all()
+    return [u for review in review_request.reviews.all()
               for u in harvest_people_from_review(review)]
 
 

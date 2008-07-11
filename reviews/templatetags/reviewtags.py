@@ -33,9 +33,9 @@ def forcomment(context, nodelist, filediff, review=None):
     context.push()
 
     if not review:
-        comments = filediff.comment_set.all()
+        comments = filediff.comments.all()
     else:
-        comments = filediff.comment_set.filter(review=review)
+        comments = filediff.comments.filter(review=review)
 
     for comment in comments:
         context['comment'] = comment
@@ -114,19 +114,19 @@ def commentcounts(context, filediff, interfilediff=None):
                                        interfilediff__isnull=True)
 
     for comment in query:
-        if comment.review_set.count() > 0:
-            review = comment.review_set.get()
-            if review.public or review.user == user:
-                line = comment.first_line
+        review = get_object_or_none(comment.review)
 
-                if not comments.has_key(line):
-                    comments[line] = []
+        if review and (review.public or review.user == user):
+            line = comment.first_line
 
-                comments[line].append({
-                    'text': comment.text,
-                    'localdraft': review.user == user and \
-                                  not review.public,
-                })
+            if not comments.has_key(line):
+                comments[line] = []
+
+            comments[line].append({
+                'text': comment.text,
+                'localdraft': review.user == user and \
+                              not review.public,
+            })
 
     return simplejson.dumps(comments)
 
@@ -153,25 +153,25 @@ def screenshotcommentcounts(context, screenshot):
     comments = {}
     user = context.get('user', None)
 
-    for comment in screenshot.screenshotcomment_set.all():
-        if comment.review_set.count() > 0:
-            review = comment.review_set.get()
-            if review.public or review.user == user:
-                position = '%dx%d+%d+%d' % (comment.w, comment.h, \
-                                            comment.x, comment.y)
+    for comment in screenshot.comments.all():
+        review = get_object_or_none(comment.review)
 
-                if not comments.has_key(position):
-                    comments[position] = []
+        if review and (review.public or review.user == user):
+            position = '%dx%d+%d+%d' % (comment.w, comment.h, \
+                                        comment.x, comment.y)
 
-                comments[position].append({
-                    'text': comment.text,
-                    'localdraft' : review.user == user and \
-                                   not review.public,
-                    'x' : comment.x,
-                    'y' : comment.y,
-                    'w' : comment.w,
-                    'h' : comment.h,
-                })
+            if not comments.has_key(position):
+                comments[position] = []
+
+            comments[position].append({
+                'text': comment.text,
+                'localdraft' : review.user == user and \
+                               not review.public,
+                'x' : comment.x,
+                'y' : comment.y,
+                'w' : comment.w,
+                'h' : comment.h,
+            })
 
     return simplejson.dumps(comments)
 
@@ -229,7 +229,7 @@ def reply_list(context, review, comment, context_type, context_id):
 
     if context_type == "comment" or context_type == "screenshot_comment":
         for reply_comment in comment.public_replies(user):
-            s += generate_reply_html(reply_comment.review_set.get(),
+            s += generate_reply_html(reply_comment.review.get(),
                                      reply_comment.timestamp,
                                      reply_comment.text)
     elif context_type == "body_top" or context_type == "body_bottom":

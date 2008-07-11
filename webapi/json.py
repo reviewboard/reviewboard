@@ -27,9 +27,9 @@ from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.forms import UploadScreenshotForm
-from reviewboard.reviews.models import ChangeNumberInUseError, \
-                                       InvalidChangeNumberError, \
-                                       ReviewRequest, Review, Group, Comment, \
+from reviewboard.reviews.errors import ChangeNumberInUseError, \
+                                       InvalidChangeNumberError
+from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.models import Repository
@@ -124,7 +124,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'comments': o.comments.all(),
             }
         elif isinstance(o, Comment):
-            review = o.review_set.get()
+            review = o.review.get()
             return {
                 'id': o.id,
                 'filediff': o.filediff,
@@ -138,7 +138,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'user': review.user,
             }
         elif isinstance(o, ScreenshotComment):
-            review = o.review_set.get()
+            review = o.review.get()
             return {
                 'id': o.id,
                 'screenshot': o.screenshot,
@@ -530,8 +530,8 @@ def review(request, review_request_id, review_id):
 
 
 def _get_reviews(review_request):
-    return review_request.review_set.filter(public=True,
-                                            base_reply_to__isnull=True)
+    return review_request.reviews.filter(public=True,
+                                         base_reply_to__isnull=True)
 
 
 @webapi_login_required
@@ -1019,7 +1019,7 @@ def new_diff(request, review_request_id):
         #
         # TODO: It would be nice to later consolidate this with the logic in
         #       DiffSet.save.
-        public_diffsets = review_request.diffset_history.diffset_set
+        public_diffsets = review_request.diffset_history.diffsets
 
         if public_diffsets.count() > 0:
             diffset.revision = public_diffsets.latest().revision + 1
@@ -1049,7 +1049,7 @@ def new_diff(request, review_request_id):
     discarded_diffset = None
 
     try:
-        draft = review_request.reviewrequestdraft_set.get()
+        draft = review_request.draft.get()
 
         if draft.diffset and draft.diffset != diffset:
             discarded_diffset = draft.diffset
@@ -1059,7 +1059,7 @@ def new_diff(request, review_request_id):
     draft.diffset = diffset
 
     # We only want to add default reviewers the first time.  Was bug 318.
-    if review_request.diffset_history.diffset_set.count() == 0:
+    if review_request.diffset_history.diffsets.count() == 0:
         draft.add_default_reviewers();
 
     draft.save()
@@ -1180,7 +1180,7 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
             return WebAPIResponseError(request, INVALID_ACTION,
                                      {'action': action})
 
-    comments_query = filediff.comment_set.filter(
+    comments_query = filediff.comments.filter(
         Q(review__public=True) | Q(review__user=request.user),
         first_line=line)
 
@@ -1249,7 +1249,7 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                                        {'action': action})
 
     return WebAPIResponse(request, {
-        'comments': screenshot.screenshotcomment_set.filter(
+        'comments': screenshot.comments.filter(
             Q(review__public=True) | Q(review__user=request.user),
             x=x, y=y, w=w, h=h)
     })

@@ -16,18 +16,9 @@ from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.reviews.errors import InvalidChangeNumberError
+from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.scmtools.models import Repository
-
-
-class InvalidChangeNumberError(Exception):
-    def __init__(self):
-        Exception.__init__(self, None)
-
-
-class ChangeNumberInUseError(Exception):
-    def __init__(self, review_request=None):
-        Exception.__init__(self, None)
-        self.review_request = review_request
 
 
 def update_obj_with_changenum(obj, repository, changenum):
@@ -63,6 +54,7 @@ class Group(models.Model):
                     "are sent to."))
     users = models.ManyToManyField(User, core=False, blank=True,
                                    filter_interface=models.HORIZONTAL,
+                                   related_name="review_groups",
                                    verbose_name=_("users"))
 
     def __unicode__(self):
@@ -152,82 +144,6 @@ class Screenshot(models.Model):
         list_display_links = ('thumb', 'caption')
 
 
-class ReviewRequestManager(ConcurrencyManager):
-    """
-    A manager for review requests. Provides specialized queries to retrieve
-    review requests with specific targets or origins, and to create review
-    requests based on certain data.
-    """
-
-    def create(self, user, repository, changenum=None):
-        """
-        Creates a new review request, optionally filling in fields based off
-        a change number.
-        """
-        if changenum:
-            try:
-                review_request = self.get(changenum=changenum,
-                                          repository=repository)
-                raise ChangeNumberInUseError(review_request)
-            except ReviewRequest.DoesNotExist:
-                pass
-
-        review_request = ReviewRequest(repository=repository)
-
-        if changenum:
-            review_request.update_from_changenum(changenum)
-
-        diffset_history = DiffSetHistory()
-        diffset_history.save()
-
-        review_request.diffset_history = diffset_history
-        review_request.submitter = user
-        review_request.status = 'P'
-        review_request.public = False
-        review_request.save()
-
-        return review_request
-
-    def public(self, user=None, status='P'):
-        return self._query(user, status)
-
-    def to_group(self, group_name, user=None, status='P'):
-        return self._query(user, status, Q(target_groups__name=group_name))
-
-    def to_user_groups(self, username, user=None, status='P'):
-        return self._query(user, status,
-                           Q(target_groups__users__username=username))
-
-    def to_user_directly(self, username, user=None, status='P'):
-        query_user = User.objects.get(username=username)
-        query = Q(target_people=query_user) | Q(starred_by__user=query_user)
-        return self._query(user, status, query)
-
-    def to_user(self, username, user=None, status='P'):
-        query_user = User.objects.get(username=username)
-        query = Q(target_groups__users=query_user) | \
-                Q(target_people=query_user) | \
-                Q(starred_by__user=query_user)
-        return self._query(user, status, query)
-
-    def from_user(self, username, user=None, status='P'):
-        return self._query(user, status, Q(submitter__username=username))
-
-    def _query(self, user, status, extra_query=None):
-        query = Q(public=True)
-
-        if user and user.is_authenticated():
-            query = query | Q(submitter=user)
-
-        if status:
-            query = query & Q(status=status)
-
-        if extra_query:
-            query = query & extra_query
-
-        return self.filter(query).distinct()
-
-
 class ReviewRequest(models.Model):
     """
     A review request.
@@ -246,6 +162,7 @@ class ReviewRequest(models.Model):
     )
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
+                                  related_name="review_requests",
                                   raw_id_admin=True)
     time_added = models.DateTimeField(_("time added"), default=datetime.now)
     last_updated = ModificationTimestampField(_("last updated"))
@@ -254,7 +171,9 @@ class ReviewRequest(models.Model):
     public = models.BooleanField(_("public"), default=False)
     changenum = models.PositiveIntegerField(_("change number"), blank=True,
                                             null=True, db_index=True)
-    repository = models.ForeignKey(Repository, verbose_name=_("repository"))
+    repository = models.ForeignKey(Repository,
+                                   related_name="review_requests",
+                                   verbose_name=_("repository"))
     email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
@@ -266,11 +185,13 @@ class ReviewRequest(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     max_length=300, blank=True)
     diffset_history = models.ForeignKey(DiffSetHistory,
+                                        related_name="review_request",
                                         verbose_name=_('diff set history'),
                                         blank=True, raw_id_admin=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(
         Group,
+        related_name="review_requests",
         verbose_name=_("target groups"),
         core=False, blank=True,
         filter_interface=models.HORIZONTAL)
@@ -282,8 +203,8 @@ class ReviewRequest(models.Model):
         filter_interface=models.HORIZONTAL)
     screenshots = models.ManyToManyField(
         Screenshot,
-        verbose_name=_("screenshots"),
         related_name="review_request",
+        verbose_name=_("screenshots"),
         core=False, blank=True, raw_id_admin=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
@@ -326,11 +247,11 @@ class ReviewRequest(models.Model):
             if query.count() > 0:
                 visit = query[0]
 
-                return self.review_set.filter(
+                return self.reviews.filter(
                     public=True,
                     timestamp__gt=visit.timestamp).exclude(user=user)
 
-        return self.review_set.get_empty_query_set()
+        return self.reviews.get_empty_query_set()
 
     def add_default_reviewers(self):
         """
@@ -341,10 +262,10 @@ class ReviewRequest(models.Model):
         the set of files in the diff.
         """
 
-        if self.diffset_history.diffset_set.count() != 1:
+        if self.diffset_history.diffsets.count() != 1:
             return
 
-        diffset = self.diffset_history.diffset_set.get()
+        diffset = self.diffset_history.diffsets.get()
 
         people = set()
         groups = set()
@@ -378,7 +299,7 @@ class ReviewRequest(models.Model):
         """
         Returns all public top-level reviews for this review request.
         """
-        return self.review_set.filter(public=True, base_reply_to__isnull=True)
+        return self.reviews.filter(public=True, base_reply_to__isnull=True)
 
     def update_from_changenum(self, changenum):
         """
@@ -440,6 +361,7 @@ class ReviewRequestDraft(models.Model):
     details are copied back over to the originating ReviewRequest.
     """
     review_request = models.ForeignKey(ReviewRequest,
+                                       related_name="draft",
                                        verbose_name=_("review request"),
                                        core=True, unique=True,
                                        raw_id_admin=True)
@@ -454,6 +376,7 @@ class ReviewRequestDraft(models.Model):
                                 raw_id_admin=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
+                                           related_name="drafts",
                                            verbose_name=_("target groups"),
                                            core=False, blank=True,
                                            filter_interface=models.HORIZONTAL)
@@ -463,6 +386,7 @@ class ReviewRequestDraft(models.Model):
                                            core=False, blank=True,
                                            filter_interface=models.HORIZONTAL)
     screenshots = models.ManyToManyField(Screenshot,
+                                         related_name="drafts",
                                          verbose_name=_("screenshots"),
                                          core=False, blank=True,
                                          raw_id_admin=True)
@@ -687,6 +611,7 @@ class Comment(models.Model):
     two filediffs. It can also have multiple replies.
     """
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
+                                 related_name="comments",
                                  raw_id_admin=True)
     interfilediff = models.ForeignKey(FileDiff,
                                       verbose_name=_('interdiff file'),
@@ -724,13 +649,13 @@ class Comment(models.Model):
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
         return "%sdiff/%s/?file=%s#file%sline%s" % \
-             (self.review_set.get().review_request.get_absolute_url(),
-              revision_path, self.filediff.id, self.filediff.id, self.first_line)
+             (self.review.get().review_request.get_absolute_url(),
+              revision_path, self.filediff.id, self.filediff.id,
+              self.first_line)
 
     def get_review_url(self):
         return "%s#comment%d" % \
-            (self.review_set.get().review_request.get_absolute_url(),
-             self.id)
+            (self.review.get().review_request.get_absolute_url(), self.id)
 
     def __unicode__(self):
         return self.text
@@ -755,6 +680,7 @@ class ScreenshotComment(models.Model):
     A comment on a screenshot.
     """
     screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
+                                   related_name="comments",
                                    raw_id_admin=True)
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
@@ -792,8 +718,7 @@ class ScreenshotComment(models.Model):
 
     def get_review_url(self):
         return "%s#scomment%d" % \
-            (self.review_set.get().review_request.get_absolute_url(),
-             self.id)
+            (self.review.get().review_request.get_absolute_url(), self.id)
 
     def __unicode__(self):
         return self.text
@@ -811,8 +736,10 @@ class Review(models.Model):
     A review of a review request.
     """
     review_request = models.ForeignKey(ReviewRequest, raw_id_admin=True,
+                                       related_name="reviews",
                                        verbose_name=_("review request"))
     user = models.ForeignKey(User, verbose_name=_("user"),
+                             related_name="reviews",
                              raw_id_admin=True)
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     public = models.BooleanField(_("public"), default=False)
@@ -849,11 +776,13 @@ class Review(models.Model):
         help_text=_("The review that the body (bottom) field is in reply to."))
 
     comments = models.ManyToManyField(Comment, verbose_name=_("comments"),
+                                      related_name="review",
                                       core=False, blank=True,
                                       raw_id_admin=True)
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
         verbose_name=_("screenshot comments"),
+        related_name="review",
         core=False, blank=True, raw_id_admin=True)
 
     # XXX Deprecated. This will be removed in a future release.

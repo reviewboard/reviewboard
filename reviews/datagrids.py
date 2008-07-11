@@ -78,7 +78,7 @@ class MyCommentsColumn(Column):
         user = self.datagrid.request.user
         image_url = None
         image_alt = None
-        reviews = review_request.review_set.filter(user=user)
+        reviews = review_request.reviews.filter(user=user)
 
         if reviews.filter(public=False).count() > 0:
             # Remind about drafts over finished comments
@@ -135,7 +135,8 @@ class SummaryColumn(Column):
 
         if review_request.submitter == self.datagrid.request.user:
             try:
-                draft = review_request.reviewrequestdraft_set.get()
+                draft = review_request.draft.get()
+                summary = conditional_escape(draft.summary)
                 return "<span class=\"draftlabel\">[Draft]</span> " + \
                        summary
             except ReviewRequestDraft.DoesNotExist:
@@ -162,8 +163,8 @@ class PendingCountColumn(Column):
         Column.__init__(self, *args, **kwargs)
 
     def render_data(self, obj):
-        return str(obj.reviewrequest_set.filter(public=True,
-                                                status='P').count())
+        return str(getattr(obj, self.field_name).filter(public=True,
+                                                        status='P').count())
 
 
 class ReviewCountColumn(Column):
@@ -355,7 +356,9 @@ class SubmitterDataGrid(DataGrid):
     username      = Column(_("Username"), link=True, sortable=True)
     fullname      = Column(_("Full Name"), field_name="get_full_name",
                            link=True, expand=True)
-    pending_count = PendingCountColumn(_("Pending Reviews"), shrink=True)
+    pending_count = PendingCountColumn(_("Pending Reviews"),
+                                       field_name="directed_review_requests",
+                                       shrink=True)
 
     def __init__(self, request):
         DataGrid.__init__(self, request, User.objects.filter(is_active=True),
@@ -364,7 +367,7 @@ class SubmitterDataGrid(DataGrid):
         self.profile_sort_field = 'sort_submitter_columns'
         self.profile_columns_field = 'submitter_columns'
         self.default_columns = [
-            "username", "fullname", "pending_reviews"
+            "username", "fullname", "pending_count"
         ]
 
     @staticmethod
@@ -380,7 +383,9 @@ class GroupDataGrid(DataGrid):
     name          = Column(_("Group ID"), link=True, sortable=True)
     displayname   = Column(_("Group Name"), field_name="display_name",
                            link=True, expand=True)
-    pending_count = PendingCountColumn(_("Pending Reviews"), shrink=True)
+    pending_count = PendingCountColumn(_("Pending Reviews"),
+                                       field_name="review_requests",
+                                       shrink=True)
 
     def __init__(self, request, title=_("All groups")):
         DataGrid.__init__(self, request, Group.objects.all(), title)
@@ -388,7 +393,7 @@ class GroupDataGrid(DataGrid):
         self.profile_columns_field = 'group_columns'
         self.default_sort = ["name"]
         self.default_columns = [
-            "star", "name", "displayname", "pending_reviews"
+            "star", "name", "displayname", "pending_count"
         ]
 
 

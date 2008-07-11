@@ -126,7 +126,7 @@ def revision_link_list(history, current_pair):
     which of the revisions is already selected, as determined by the current
     diffset pair.
     """
-    for diffset in history.diffset_set.all():
+    for diffset in history.diffsets.all():
         yield {
             'revision': diffset.revision,
             'is_current': current_pair[0] == diffset and
@@ -140,7 +140,7 @@ def interdiff_link_list(history, current_pair):
     Returns a list of revisions in the specified diffset history based on
     the passed interdiff pair.
     """
-    for diffset in history.diffset_set.all():
+    for diffset in history.diffsets.all():
         if current_pair[0].revision < diffset.revision:
             path = "%s-%s" % (current_pair[0].revision, diffset.revision)
         else:

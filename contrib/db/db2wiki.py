@@ -83,9 +83,9 @@ def get_object_info(o):
             ('bugs_closed', o.get_bug_list()),
             ('public', o.public),
             ('status', o.status),
-            ('diff', o.diffset_history.diffset_set.latest().name),
+            ('diff', o.diffset_history.diffsets.latest().name),
             ('reviews', [(review.user.username, get_object_info(review))
-                         for review in o.review_set.all()]),
+                         for review in o.reviews.all()]),
         ]
     elif isinstance(o, Review):
         info = [

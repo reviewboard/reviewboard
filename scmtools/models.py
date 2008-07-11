@@ -18,7 +18,7 @@ class Repository(models.Model):
     mirror_path = models.CharField(max_length=128, blank=True)
     username = models.CharField(max_length=32, blank=True)
     password = models.CharField(max_length=128, blank=True)
-    tool = models.ForeignKey(Tool)
+    tool = models.ForeignKey(Tool, related_name="repositories")
     bug_tracker = models.URLField(verify_exists=False, blank=True)
     encoding = models.CharField(max_length=32, blank=True)
 

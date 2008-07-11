@@ -144,7 +144,7 @@ class Command(NoArgsCommand):
 
         files = []
         if request.diffset_history:
-            for diffset in request.diffset_history.diffset_set.all():
+            for diffset in request.diffset_history.diffsets.all():
                 for filediff in diffset.files.all():
                     if filediff.source_file:
                         files.append(filediff.source_file)

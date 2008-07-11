@@ -93,7 +93,7 @@ def review_detail(request, review_request_id, template_name):
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    draft = get_object_or_none(review_request.reviewrequestdraft_set)
+    draft = get_object_or_none(review_request.draft)
     reviews = review_request.get_public_reviews()
 
     for review in reviews:
@@ -224,7 +224,7 @@ def _query_for_diff(review_request, user, revision, query_extra=None):
         # This will try to grab the diff associated with a draft if the review
         # request has an associated draft and is either the revision being
         # requested or no revision is being requested.
-        draft = get_object_or_none(review_request.reviewrequestdraft_set)
+        draft = get_object_or_none(review_request.draft)
         if draft and draft.diffset and \
            (revision is None or draft.diffset.revision == revision):
             return draft.diffset
@@ -276,7 +276,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
                                     review_request=review_request,
                                     public=False,
                                     base_reply_to__isnull=True)
-        draft = get_object_or_none(review_request.reviewrequestdraft_set,
+        draft = get_object_or_none(review_request.draft,
                                    review_request__submitter=request.user)
 
     repository = review_request.repository
@@ -331,7 +331,7 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
-        draft = review_request.reviewrequestdraft_set.get()
+        draft = review_request.draft.get()
         query_extra = Q(reviewrequestdraft=draft)
     except ReviewRequestDraft.DoesNotExist:
         query_extra = None
@@ -369,7 +369,7 @@ def publish(request, review_request_id):
             pass # FIXME show an error
 
         try:
-            draft = review_request.reviewrequestdraft_set.get()
+            draft = review_request.draft.get()
 
             # This will in turn save the review request, so we'll be done.
             draft.review_request.public = True
@@ -543,7 +543,7 @@ def view_screenshot(request, review_request_id, screenshot_id,
 
     query = Q(history=review_request.diffset_history)
 
-    draft = get_object_or_none(review_request.reviewrequestdraft_set)
+    draft = get_object_or_none(review_request.draft)
     if draft:
         query = query & Q(reviewrequestdraft=draft)
 

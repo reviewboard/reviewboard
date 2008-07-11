@@ -498,7 +498,7 @@ class WebAPITests(TestCase):
 
         # Clear out any reviews on the first review request we find.
         review_request = ReviewRequest.objects.public()[0]
-        review_request.review_set = []
+        review_request.reviews = []
         review_request.save()
 
         rsp = self.apiPost("reviewrequests/%s/reviews/draft/save" %
@@ -508,7 +508,7 @@ class WebAPITests(TestCase):
             'body_bottom': body_bottom,
         })
 
-        reviews = review_request.review_set.filter(user=self.user)
+        reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)
         review = reviews[0]
 
@@ -525,7 +525,7 @@ class WebAPITests(TestCase):
 
         # Clear out any reviews on the first review request we find.
         review_request = ReviewRequest.objects.public()[0]
-        review_request.review_set = []
+        review_request.reviews = []
         review_request.save()
 
         rsp = self.apiPost("reviewrequests/%s/reviews/draft/publish" %
@@ -537,7 +537,7 @@ class WebAPITests(TestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
 
-        reviews = review_request.review_set.filter(user=self.user)
+        reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)
         review = reviews[0]
 
@@ -555,7 +555,7 @@ class WebAPITests(TestCase):
         rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
                            review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(review_request.review_set.count(), 0)
+        self.assertEqual(review_request.reviews.count(), 0)
 
     def testReviewDraftDeleteDoesNotExist(self):
         """Testing the reviewrequests/reviews/draft/delete API with Does Not Exist error"""
@@ -598,7 +598,7 @@ class WebAPITests(TestCase):
         review_request = Review.objects.all()[0].review_request
         rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['reviews']), review_request.review_set.count())
+        self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
 
     def testReviewsListCount(self):
         """Testing the reviewrequests/reviews/count API"""
@@ -606,7 +606,7 @@ class WebAPITests(TestCase):
         rsp = self.apiGet("reviewrequests/%s/reviews/count" %
                           review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['reviews'], review_request.review_set.count())
+        self.assertEqual(rsp['reviews'], review_request.reviews.count())
 
     def testReviewCommentsList(self):
         """Testing the reviewrequests/reviews/comments API"""
@@ -631,7 +631,7 @@ class WebAPITests(TestCase):
         comment_text = "My Comment Text"
 
         comment = Comment.objects.all()[0]
-        review = comment.review_set.get()
+        review = comment.review.get()
 
         rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
                            (review.review_request.id, review.id), {
@@ -650,7 +650,7 @@ class WebAPITests(TestCase):
         comment_text = "My Comment Text"
 
         comment = self.testScreenshotCommentsSet()
-        review = comment.review_set.get()
+        review = comment.review.get()
 
         rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
                            (review.review_request.id, review.id), {
@@ -832,7 +832,7 @@ class WebAPITests(TestCase):
 
     def postNewDiffComment(self, review_request, comment_text):
         """Utility function for posting a new diff comment."""
-        diffset = review_request.diffset_history.diffset_set.latest()
+        diffset = review_request.diffset_history.diffsets.latest()
         filediff = diffset.files.all()[0]
 
         rsp = self.apiPost(
@@ -854,7 +854,7 @@ class WebAPITests(TestCase):
         comment_text = "This is a test comment."
 
         review_request = ReviewRequest.objects.public()[0]
-        review_request.review_set = []
+        review_request.reviews = []
 
         rsp = self.postNewDiffComment(review_request, comment_text)
 
@@ -868,7 +868,7 @@ class WebAPITests(TestCase):
         self.testDiffCommentsSet()
 
         review_request = ReviewRequest.objects.public()[0]
-        diffset = review_request.diffset_history.diffset_set.latest()
+        diffset = review_request.diffset_history.diffsets.latest()
         filediff = diffset.files.all()[0]
 
         rsp = self.apiPost(
@@ -888,7 +888,7 @@ class WebAPITests(TestCase):
         self.testDiffCommentsSet()
 
         review_request = ReviewRequest.objects.public()[0]
-        diffset = review_request.diffset_history.diffset_set.latest()
+        diffset = review_request.diffset_history.diffsets.latest()
         filediff = diffset.files.all()[0]
 
         rsp = self.apiGet(

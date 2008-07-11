@@ -37,7 +37,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
                 request.user.first_name = form.cleaned_data['first_name']
                 request.user.last_name = form.cleaned_data['last_name']
                 request.user.email = form.cleaned_data['email']
-            request.user.group_set = form.cleaned_data['groups']
+            request.user.review_groups = form.cleaned_data['groups']
             request.user.save()
 
             profile.first_time_setup_done = True
@@ -54,7 +54,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             'last_name': request.user.last_name,
             'email': request.user.email,
             'syntax_highlighting': profile.syntax_highlighting,
-            'groups': [g.id for g in request.user.group_set.all()],
+            'groups': [g.id for g in request.user.review_groups.all()],
         })
 
     return render_to_response(template_name, RequestContext(request, {

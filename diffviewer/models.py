@@ -54,8 +54,10 @@ class DiffSet(models.Model):
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
                                 raw_id_admin=True,
+                                related_name="diffsets",
                                 verbose_name=_("diff set history"))
-    repository = models.ForeignKey(Repository, verbose_name=_("repository"))
+    repository = models.ForeignKey(Repository, related_name="diffsets",
+                                   verbose_name=_("repository"))
     diffcompat = models.IntegerField(
         _('differ compatibility version'),
         default=0,
@@ -71,11 +73,11 @@ class DiffSet(models.Model):
         diffset otherwise.
         """
         if self.revision == 0 and self.history != None:
-            if self.history.diffset_set.count() == 0:
+            if self.history.diffsets.count() == 0:
                 # Start on revision 1. It's more human-grokable.
                 self.revision = 1
             else:
-                self.revision = self.history.diffset_set.latest().revision + 1
+                self.revision = self.history.diffsets.latest().revision + 1
 
         super(DiffSet, self).save()
 
@@ -101,7 +103,7 @@ class DiffSetHistory(models.Model):
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
 
     def __unicode__(self):
-        return u'Diff Set History (%s revisions)' % (self.diffset_set.count())
+        return u'Diff Set History (%s revisions)' % self.diffsets.count()
 
     class Admin:
         pass

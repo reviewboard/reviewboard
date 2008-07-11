@@ -58,7 +58,7 @@
 
 <div id="diff-details">
 <a name="index_header"></a>
-{% with review_request.diffset_history.diffset_set.latest.revision as latest_revision %}
+{% with review_request.diffset_history.diffsets.latest.revision as latest_revision %}
 {% with diffset.revision as revision %}
 <div class="main">
 {%  if interdiffset %}
@@ -117,7 +117,7 @@
  {%  endbox %}
 {%  endif %}
 
-{%  ifnotequal review_request.diffset_history.diffset_set.count 1 %}
+{%  ifnotequal review_request.diffset_history.diffsets.count 1 %}
 {#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>

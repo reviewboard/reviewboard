@@ -5,18 +5,12 @@ from django.utils.translation import ugettext as _
 from PIL import Image
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
+from reviewboard.reviews.errors import ChangeNumberInUseError, \
+                                       ChangeSetError, \
+                                       OwnershipError
 from reviewboard.reviews.models import ReviewRequest, \
-                                       ReviewRequestDraft, Screenshot, \
-                                       ChangeNumberInUseError
+                                       ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.models import Repository
-
-
-class ChangeSetError(ValueError):
-    pass
-
-
-class OwnershipError(ValueError):
-    pass
 
 
 class NewReviewRequestForm(forms.Form):
