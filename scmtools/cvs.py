@@ -14,7 +14,9 @@ class CVSTool(SCMTool):
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
-        self.client = CVSClient(self.build_cvsroot())
+
+        self.cvsroot, self.repopath = self.build_cvsroot()
+        self.client = CVSClient(self.cvsroot, self.repopath)
 
     def build_cvsroot(self):
         # NOTE: According to cvs, the following formats are valid.
@@ -31,7 +33,7 @@ class CVSTool(SCMTool):
             m = self.regex_repopath.match(self.repository.path)
 
             if m:
-                self.repopath = m.group("path")
+                path = m.group("path")
                 cvsroot = ":pserver:"
 
                 if self.repository.username:
@@ -43,14 +45,12 @@ class CVSTool(SCMTool):
 
                 cvsroot += "%s:%s%s" % (m.group("hostname"),
                                         m.group("port") or "",
-                                        m.group("path"))
-                return cvsroot
+                                        path)
+                return cvsroot, path
 
         # We couldn't parse this as a hostname:port/path. Assume it's a local
         # path or a full CVSROOT and let CVS handle it.
-        self.repopath = self.repository.path
-
-        return self.repopath
+        return self.repository.path, self.repository.path
 
     def get_file(self, path, revision=HEAD):
         if not path:
@@ -127,10 +127,11 @@ class CVSDiffParser(DiffParser):
 
 
 class CVSClient:
-    def __init__(self, repository):
+    def __init__(self, repository, path):
         self.tempdir = ""
         self.currentdir = os.getcwd()
         self.repository = repository
+        self.path = path
 
     def cleanup(self):
         if self.currentdir != os.getcwd():
@@ -145,6 +146,15 @@ class CVSClient:
         # working directory even though we force stdout with -p.
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
+
+        # We strip the repo off of the fully qualified path as CVS does
+        # not like to be given absolute paths.
+        if filename.startswith(self.path + "/"):
+            filename = filename[len(self.path) + 1:]
+
+        # Strip off the ",v" we sometimes get for CVS paths.
+        if filename.endswith(",v"):
+            filename = filename.rstrip(",v")
 
         p = subprocess.Popen(['cvs', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],

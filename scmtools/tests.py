@@ -78,9 +78,18 @@ class CVSTests(unittest.TestCase):
         badrev = Revision('2.1')
 
         self.assertEqual(self.tool.get_file(file, rev), expected)
+        self.assertEqual(self.tool.get_file(file + ",v", rev), expected)
+        self.assertEqual(self.tool.get_file(self.tool.repopath + '/' +
+                                            file + ",v", rev), expected)
 
         self.assert_(self.tool.file_exists('test/testfile'))
+        self.assert_(self.tool.file_exists(self.tool.repopath +
+                                           '/test/testfile'))
+        self.assert_(self.tool.file_exists('test/testfile,v'))
         self.assert_(not self.tool.file_exists('test/testfile2'))
+        self.assert_(not self.tool.file_exists(self.tool.repopath +
+                                               '/test/testfile2'))
+        self.assert_(not self.tool.file_exists('test/testfile2,v'))
         self.assert_(not self.tool.file_exists('test/testfile', badrev))
 
         self.assertRaises(FileNotFoundError,
