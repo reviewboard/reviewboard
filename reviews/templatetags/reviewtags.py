@@ -366,8 +366,8 @@ def diffsets_with_comments(review, current_pair):
     if not review:
         return
 
-    diffsets = DiffSet.objects.filter(files__comment__review=review)
-    diffsets = diffsets.filter(files__comment__interfilediff__isnull=True)
+    diffsets = DiffSet.objects.filter(files__comments__review=review)
+    diffsets = diffsets.filter(files__comments__interfilediff__isnull=True)
     diffsets = diffsets.distinct()
 
     for diffset in diffsets:
@@ -386,8 +386,8 @@ def interdiffs_with_comments(review, current_pair):
     if not review:
         return
 
-    diffsets = DiffSet.objects.filter(files__comment__review=review)
-    diffsets = diffsets.filter(files__comment__interfilediff__isnull=False)
+    diffsets = DiffSet.objects.filter(files__comments__review=review)
+    diffsets = diffsets.filter(files__comments__interfilediff__isnull=False)
     diffsets = diffsets.distinct()
 
     for diffset in diffsets:
@@ -415,8 +415,8 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
     current_diffset, interdiff = diffset_pair
 
     # See if there are any diffsets with comments on them in this review.
-    q = DiffSet.objects.filter(files__comment__review=review)
-    q = q.filter(files__comment__interfilediff__isnull=True).distinct()
+    q = DiffSet.objects.filter(files__comments__review=review)
+    q = q.filter(files__comments__interfilediff__isnull=True).distinct()
 
     if not interdiff:
         # The user is browsing a standard diffset, so filter it out.
@@ -426,13 +426,13 @@ def has_comments_in_diffsets_excluding(review, diffset_pair):
         return True
 
     # See if there are any interdiffs with comments on them in this review.
-    q = DiffSet.objects.filter(files__comment__review=review)
-    q = q.filter(files__comment__interfilediff__isnull=False)
+    q = DiffSet.objects.filter(files__comments__review=review)
+    q = q.filter(files__comments__interfilediff__isnull=False)
 
     if interdiff:
         # The user is browsing an interdiff, so filter it out.
         q = q.exclude(pk=current_diffset.id,
-                      files__comment__interfilediff__diffset=interdiff)
+                      files__comments__interfilediff__diffset=interdiff)
 
     return q.count() > 0
 
