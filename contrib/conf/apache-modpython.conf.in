@@ -6,7 +6,7 @@
 	ErrorDocument 500 /errordocs/500.html
 
 	# Serve django pages
-	<LocationMatch ^/(.*)$>
+	<Location "/">
 		PythonPath "['@djangodir@'] + ['@pythondir@/reviewboard'] + ['@pythondir@/djblets'] + sys.path"
 		SetEnv DJANGO_SETTINGS_MODULE reviewboard.settings
 		SetHandler mod_python
@@ -16,13 +16,16 @@
 		# If you run multiple mod_python sites in the same apache
 		# instonce, uncomment this line:
 		# PythonInterpreter reviewboard
-	</LocationMatch>
+	</Location>
 
 	# Serve static media without running it through mod_python
 	# (overrides the above)
-	<LocationMatch ^(/(media|errordocs))>
+	<Location "/media">
 		SetHandler None
-	</LocationMatch>
+	</Location>
+	<Location "/errordocs">
+		SetHandler None
+	</Location>
 
 	# Alias static media requests to filesystem
 	Alias /media @pythondir@/reviewboard/htdocs/media
