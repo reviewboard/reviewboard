@@ -8,7 +8,9 @@ class HgTool(SCMTool):
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
         if repository.path.startswith('http'):
-            self.client = HgWebClient(repository.path)
+            self.client = HgWebClient(repository.path,
+                                      repository.username,
+                                      repository.password)
         else:
             self.client = HgClient(repository.path)
 
@@ -73,8 +75,10 @@ class HgDiffParser(DiffParser):
 
 
 class HgWebClient:
-    def __init__(self, repoPath):
+    def __init__(self, repoPath, username, password):
         self.url = repoPath
+        self.username = username
+        self.password = password
 
     def cat_file(self, path, rev="tip"):
         if rev == HEAD:
@@ -82,7 +86,11 @@ class HgWebClient:
         elif rev == PRE_CREATION:
             rev = ""
         try:
-            f = urllib2.urlopen('%s/raw-file/%s/%s' % (self.url, rev, path))
+            passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            passman.add_password(None, self.url, self.username, self.password)
+            authhandler = urllib2.HTTPBasicAuthHandler(passman)
+            opener = urllib2.build_opener(authhandler)
+            f = opener.open('%s/raw-file/%s/%s' % (self.url, rev, path))
             return f.read()
         except Exception, e:
             raise FileNotFoundError(path, rev, str(e))
