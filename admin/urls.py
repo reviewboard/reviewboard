@@ -1,4 +1,5 @@
 from django.conf.urls.defaults import *
+from django.contrib import admin
 
 
 NEWS_FEED = "http://www.review-board.org/news/feed/"
@@ -9,7 +10,7 @@ urlpatterns = patterns('reviewboard.admin.views',
 )
 
 urlpatterns += patterns('',
-    ('^db/', include('django.contrib.admin.urls')),
+    ('^db/(.*)', admin.site.root),
     ('^feed/news/$', 'djblets.feedview.views.view_feed',
      {'template_name': 'admin/feed.html',
       'url': NEWS_FEED}),

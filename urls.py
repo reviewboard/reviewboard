@@ -2,6 +2,7 @@ import os.path
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
+from django.contrib import admin
 
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
@@ -9,6 +10,11 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
                                       RssGroupReviewsFeed, \
                                       AtomGroupReviewsFeed
+
+
+# Load in all the models for the admin UI.
+if not admin.site._registry:
+    admin.autodiscover()
 
 
 # URLs global to all modes

@@ -27,14 +27,11 @@ def check_dependencies():
        (sys.version_info[0] == 2 and sys.version_info[1] < 4):
         dependency_error('Python 2.4 or newer is required.')
 
-    # Django 0.97
+    # Django 1.0 alpha
     try:
         import django
-        if django.VERSION[0] == 0 and django.VERSION[1] < 97:
+        if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0):
             raise ImportError
-
-        # QuerySet refactor (r7477)
-        from django.core.exceptions import FieldError
     except ImportError:
         dependency_error("Django > 0.97 (or SVN >= r7477) is required.")
 

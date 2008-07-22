@@ -1,15 +1,13 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
+
 class Tool(models.Model):
     name = models.CharField(max_length=32, unique=True)
     class_name = models.CharField(max_length=128, unique=True)
 
     def __unicode__(self):
         return self.name
-
-    class Admin:
-        list_display = ('__unicode__', 'class_name')
 
 
 class Repository(models.Model):
@@ -48,6 +46,3 @@ class Repository(models.Model):
 
     class Meta:
         verbose_name_plural = "Repositories"
-
-    class Admin:
-        list_display = ('__unicode__', 'path')

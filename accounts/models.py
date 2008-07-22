@@ -9,11 +9,6 @@ from djblets.util.db import ConcurrencyManager
 from reviewboard.reviews.models import Group, ReviewRequest
 
 
-# Hack the admin display to include the is_active field
-User._meta.admin.list_display += ('is_active',)
-User._meta.admin.list_filter += ('is_active',)
-
-
 class ReviewRequestVisit(models.Model):
     """
     A recording of the last time a review request was visited by a user.
@@ -77,20 +72,15 @@ class Profile(models.Model):
     # review request and receive e-mails on updates without actually being
     # on the reviewer list or commenting on the review. This is similar to
     # adding yourself to a CC list.
-    starred_review_requests = models.ManyToManyField(
-        ReviewRequest, core=False, blank=True,
-        filter_interface=models.HORIZONTAL,
-        related_name="starred_by")
+    starred_review_requests = models.ManyToManyField(ReviewRequest,
+                                                     core=False, blank=True,
+                                                     related_name="starred_by")
 
     # A list of watched groups. This is so that users can monitor groups
     # without actually joining them, preventing e-mails being sent to the
     # user and review requests from entering the Incoming Reviews list.
-    starred_groups = models.ManyToManyField(
-        Group, core=False, blank=True, filter_interface=models.HORIZONTAL,
-        related_name="starred_by")
+    starred_groups = models.ManyToManyField(Group, core=False, blank=True,
+                                            related_name="starred_by")
 
     def __unicode__(self):
         return self.user.username
-
-    class Admin:
-        list_display = ('__unicode__', 'first_time_setup_done')

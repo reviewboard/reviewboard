@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 from django.conf import settings
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
@@ -53,7 +54,6 @@ class Group(models.Model):
         help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
     users = models.ManyToManyField(User, core=False, blank=True,
-                                   filter_interface=models.HORIZONTAL,
                                    related_name="review_groups",
                                    verbose_name=_("users"))
 
@@ -63,9 +63,6 @@ class Group(models.Model):
     @permalink
     def get_absolute_url(self):
         return ('reviewboard.reviews.views.group', None, {'name': self.name})
-
-    class Admin:
-        list_display = ('name', 'display_name', 'mailing_list')
 
     class Meta:
         verbose_name = _("review group")
@@ -97,9 +94,6 @@ class DefaultReviewer(models.Model):
 
     def __unicode__(self):
         return self.name
-
-    class Admin:
-        pass
 
 
 class Screenshot(models.Model):
@@ -139,10 +133,6 @@ class Screenshot(models.Model):
             'screenshot_id': self.id
         })
 
-    class Admin:
-        list_display = ('thumb', 'caption', 'image')
-        list_display_links = ('thumb', 'caption')
-
 
 class ReviewRequest(models.Model):
     """
@@ -162,8 +152,7 @@ class ReviewRequest(models.Model):
     )
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
-                                  related_name="review_requests",
-                                  raw_id_admin=True)
+                                  related_name="review_requests")
     time_added = models.DateTimeField(_("time added"), default=datetime.now)
     last_updated = ModificationTimestampField(_("last updated"))
     status = models.CharField(_("status"), max_length=1, choices=STATUSES,
@@ -187,31 +176,29 @@ class ReviewRequest(models.Model):
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         related_name="review_request",
                                         verbose_name=_('diff set history'),
-                                        blank=True, raw_id_admin=True)
+                                        blank=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(
         Group,
         related_name="review_requests",
         verbose_name=_("target groups"),
-        core=False, blank=True,
-        filter_interface=models.HORIZONTAL)
+        core=False, blank=True)
     target_people = models.ManyToManyField(
         User,
         verbose_name=_("target people"),
         related_name="directed_review_requests",
-        core=False, blank=True,
-        filter_interface=models.HORIZONTAL)
+        core=False, blank=True)
     screenshots = models.ManyToManyField(
         Screenshot,
         related_name="review_request",
         verbose_name=_("screenshots"),
-        core=False, blank=True, raw_id_admin=True)
+        core=False, blank=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
         help_text=_("A list of screenshots that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
-        core=False, blank=True, raw_id_admin=True)
+        core=False, blank=True)
 
 
     # Set this up with the ReviewRequestManager
@@ -336,11 +323,6 @@ class ReviewRequest(models.Model):
 
         super(ReviewRequest, self).save()
 
-    class Admin:
-        list_display = ('summary', 'submitter', 'status', 'public', \
-                        'last_updated')
-        list_filter = ('public', 'status', 'time_added', 'last_updated')
-
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
         unique_together = (('changenum', 'repository'),)
@@ -363,8 +345,7 @@ class ReviewRequestDraft(models.Model):
     review_request = models.ForeignKey(ReviewRequest,
                                        related_name="draft",
                                        verbose_name=_("review request"),
-                                       core=True, unique=True,
-                                       raw_id_admin=True)
+                                       core=True, unique=True)
     last_updated = ModificationTimestampField(_("last updated"))
     summary = models.CharField(_("summary"), max_length=300, core=True)
     description = models.TextField(_("description"))
@@ -372,28 +353,24 @@ class ReviewRequestDraft(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
-                                blank=True, null=True, core=False,
-                                raw_id_admin=True)
+                                blank=True, null=True, core=False)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
                                            related_name="drafts",
                                            verbose_name=_("target groups"),
-                                           core=False, blank=True,
-                                           filter_interface=models.HORIZONTAL)
+                                           core=False, blank=True)
     target_people = models.ManyToManyField(User,
                                            verbose_name=_("target people"),
                                            related_name="directed_drafts",
-                                           core=False, blank=True,
-                                           filter_interface=models.HORIZONTAL)
+                                           core=False, blank=True)
     screenshots = models.ManyToManyField(Screenshot,
                                          related_name="drafts",
                                          verbose_name=_("screenshots"),
-                                         core=False, blank=True,
-                                         raw_id_admin=True)
+                                         core=False, blank=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
         related_name="inactive_drafts",
-        core=False, blank=True, raw_id_admin=True)
+        core=False, blank=True)
 
     submitter = property(lambda self: self.review_request.submitter)
 
@@ -595,10 +572,6 @@ class ReviewRequestDraft(models.Model):
         update_obj_with_changenum(self, self.review_request.repository,
                                   changenum)
 
-    class Admin:
-        list_display = ('summary', 'submitter', 'last_updated')
-        list_filter = ('last_updated',)
-
     class Meta:
         ordering = ['-last_updated']
 
@@ -611,15 +584,14 @@ class Comment(models.Model):
     two filediffs. It can also have multiple replies.
     """
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
-                                 related_name="comments",
-                                 raw_id_admin=True)
+                                 related_name="comments")
     interfilediff = models.ForeignKey(FileDiff,
                                       verbose_name=_('interdiff file'),
-                                      blank=True, null=True, raw_id_admin=True,
+                                      blank=True, null=True,
                                       related_name="interdiff_comments")
     reply_to = models.ForeignKey("self", blank=True, null=True,
                                  related_name="replies",
-                                 verbose_name=_("reply to"), raw_id_admin=True)
+                                 verbose_name=_("reply to"))
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     text = models.TextField(_("comment text"))
 
@@ -666,11 +638,6 @@ class Comment(models.Model):
         else:
             return self.text
 
-    class Admin:
-        list_display = ('truncate_text', 'filediff', 'first_line',
-                        'num_lines', 'timestamp')
-        list_filter = ('timestamp',)
-
     class Meta:
         ordering = ['timestamp']
 
@@ -680,12 +647,10 @@ class ScreenshotComment(models.Model):
     A comment on a screenshot.
     """
     screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
-                                   related_name="comments",
-                                   raw_id_admin=True)
+                                   related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
-                                 verbose_name=_("reply to"),
-                                 raw_id_admin=True)
+                                 verbose_name=_("reply to"))
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     text = models.TextField(_('comment text'))
 
@@ -723,10 +688,6 @@ class ScreenshotComment(models.Model):
     def __unicode__(self):
         return self.text
 
-    class Admin:
-        list_display = ('text', 'screenshot', 'timestamp')
-        list_filter = ('timestamp',)
-
     class Meta:
         ordering = ['timestamp']
 
@@ -735,19 +696,18 @@ class Review(models.Model):
     """
     A review of a review request.
     """
-    review_request = models.ForeignKey(ReviewRequest, raw_id_admin=True,
+    review_request = models.ForeignKey(ReviewRequest,
                                        related_name="reviews",
                                        verbose_name=_("review request"))
     user = models.ForeignKey(User, verbose_name=_("user"),
-                             related_name="reviews",
-                             raw_id_admin=True)
+                             related_name="reviews")
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     public = models.BooleanField(_("public"), default=False)
     ship_it = models.BooleanField(_("ship it"), default=False,
         help_text=_("Indicates whether the reviewer thinks this code is "
                     "ready to ship."))
     base_reply_to = models.ForeignKey(
-        "self", blank=True, null=True, raw_id_admin=True,
+        "self", blank=True, null=True,
         related_name="replies",
         verbose_name=_("Base reply to"),
         help_text=_("The top-most review in the discussion thread for "
@@ -765,30 +725,29 @@ class Review(models.Model):
                     "comments."))
 
     body_top_reply_to = models.ForeignKey(
-        "self", blank=True, null=True, raw_id_admin=True,
+        "self", blank=True, null=True,
         related_name="body_top_replies",
         verbose_name=_("body (top) reply to"),
         help_text=_("The review that the body (top) field is in reply to."))
     body_bottom_reply_to = models.ForeignKey(
-        "self", blank=True, null=True, raw_id_admin=True,
+        "self", blank=True, null=True,
         related_name="body_bottom_replies",
         verbose_name=_("body (bottom) reply to"),
         help_text=_("The review that the body (bottom) field is in reply to."))
 
     comments = models.ManyToManyField(Comment, verbose_name=_("comments"),
                                       related_name="review",
-                                      core=False, blank=True,
-                                      raw_id_admin=True)
+                                      core=False, blank=True)
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
         verbose_name=_("screenshot comments"),
         related_name="review",
-        core=False, blank=True, raw_id_admin=True)
+        core=False, blank=True)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(
         DiffSet, verbose_name="Reviewed Diff",
-        blank=True, null=True, raw_id_admin=True,
+        blank=True, null=True,
         help_text=_("This field is unused and will be removed in a future "
                     "version."))
 
@@ -844,11 +803,6 @@ class Review(models.Model):
     def get_absolute_url(self):
         return "%s#review%s" % (self.review_request.get_absolute_url(),
                                 self.id)
-
-    class Admin:
-        list_display = ('review_request', 'user', 'public', 'ship_it',
-                        'is_reply', 'timestamp')
-        list_filter = ('public', 'timestamp')
 
     class Meta:
         ordering = ['timestamp']

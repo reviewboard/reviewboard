@@ -20,7 +20,7 @@
 {%  if user.is_authenticated %}
 <ul id="admin-nav">
  <li><a href="{% url reviewboard.admin.views.dashboard %}">Dashboard</a></li>
- <li><a href="{% url django.contrib.admin.views.main.index %}">Database</a></li>
+ <li><a href="{% url reviewboard.admin.views.dashboard %}db/">Database</a></li>
 </ul>
 {%  endif %}
 {% endblock %}

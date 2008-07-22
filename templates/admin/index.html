@@ -1,6 +1,5 @@
 {% extends "admin/base_site.html" %}
 {% load adminmedia %}
-{% load adminapplist %}
 {% load i18n %}
 {% load log %}
 
@@ -12,7 +11,6 @@
 {% block content %}
 <div id="content-main">
 
-{% get_admin_app_list as app_list %}
 {% if app_list %}
 {%  for app in app_list %}
  <div class="module">

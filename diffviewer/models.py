@@ -16,8 +16,7 @@ class FileDiff(models.Model):
     """
     diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
                                 related_name='files',
-                                verbose_name=_("diff set"),
-                                raw_id_admin=True)
+                                verbose_name=_("diff set"))
 
     source_file = models.CharField(_("source file"), max_length=256, core=True)
     dest_file = models.CharField(_("destination file"), max_length=256,
@@ -33,17 +32,6 @@ class FileDiff(models.Model):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
                                         self.dest_file, self.dest_detail)
 
-    class Admin:
-        list_display = ('source_file', 'source_revision',
-                        'dest_file', 'dest_detail')
-        fields = (
-            (None, {
-                'fields': ('diffset', ('source_file', 'source_revision'),
-                           ('dest_file', 'dest_detail'),
-                           'binary', 'diff', 'parent_diff')
-            }),
-        )
-
 
 class DiffSet(models.Model):
     """
@@ -53,7 +41,6 @@ class DiffSet(models.Model):
     revision = models.IntegerField(_("revision"), core=True)
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
     history = models.ForeignKey('DiffSetHistory', null=True, core=True,
-                                raw_id_admin=True,
                                 related_name="diffsets",
                                 verbose_name=_("diff set history"))
     repository = models.ForeignKey(Repository, related_name="diffsets",
@@ -84,9 +71,6 @@ class DiffSet(models.Model):
     def __unicode__(self):
         return u"[%s] %s r%s" % (self.id, self.name, self.revision)
 
-    class Admin:
-        list_display = ('__unicode__', 'revision', 'timestamp')
-
     class Meta:
         get_latest_by = 'revision'
         ordering = ['revision', 'timestamp']
@@ -105,5 +89,5 @@ class DiffSetHistory(models.Model):
     def __unicode__(self):
         return u'Diff Set History (%s revisions)' % self.diffsets.count()
 
-    class Admin:
-        pass
+    class Meta:
+        verbose_name_plural = "Diff set histories"
