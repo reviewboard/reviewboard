@@ -1,8 +1,8 @@
+import os.path
 import re
 
 from django import forms
 from django.utils.translation import ugettext as _
-from PIL import Image
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.reviews.errors import ChangeNumberInUseError, \
@@ -21,10 +21,9 @@ class NewReviewRequestForm(forms.Form):
     such as Perforce).
     """
     basedir = forms.CharField(label=_("Base Diff Path"), required=False)
-    diff_path = forms.CharField(label=_("Diff"),
-                                widget=forms.FileInput, required=True)
-    parent_diff_path = forms.CharField(label=_("Parent Diff (optional)"),
-                                       widget=forms.FileInput, required=False)
+    diff_path = forms.FileField(label=_("Diff"), required=True)
+    parent_diff_path = forms.FileField(label=_("Parent Diff (optional)"),
+                                       required=False)
     repository = forms.ChoiceField(label=_("Repository"), required=True)
     changenum = forms.IntegerField(label=_("Change Number"), required=False)
 
@@ -84,8 +83,8 @@ class NewReviewRequestForm(forms.Form):
             'basedir': self.cleaned_data['basedir'],
         },
         files={
-            'path': self.cleaned_data['diff_path'],
-            'parent_diff_path': self.cleaned_data['parent_diff_path'],
+            'path': diff_file,
+            'parent_diff_path': parent_diff_file,
         })
         diff_form.full_clean()
 
@@ -119,23 +118,16 @@ class UploadScreenshotForm(forms.Form):
     A screenshot takes a path argument and optionally a caption.
     """
     caption = forms.CharField(required=False)
-    path = forms.CharField(widget=forms.FileInput())
+    path = forms.ImageField(required=True)
 
-    def create(self, data, review):
+    def create(self, file, review_request):
         screenshot = Screenshot(caption=self.cleaned_data['caption'],
                                 draft_caption=self.cleaned_data['caption'])
-        screenshot.save()
-        screenshot.save_image_file(data['filename'], data['content'])
+        screenshot.save_image_file(file.name, file, save=True)
 
-        try:
-            image = Image.open(screenshot.get_image_filename())
-            image.load()
-        except:
-            screenshot.delete()
-            raise ValueError('The file does not appear to be an image')
+        review_request.screenshots.add(screenshot)
 
-        draft = ReviewRequestDraft.create(review)
-        review.screenshots.add(screenshot)
+        draft = ReviewRequestDraft.create(review_request)
         draft.screenshots.add(screenshot)
         draft.save()
 

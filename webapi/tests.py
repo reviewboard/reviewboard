@@ -41,6 +41,7 @@ class WebAPITests(TestCase):
 
     def apiPost(self, path, query={}):
         print "Posting to /api/json/%s/" % path
+        print "Post data: %s" % query
         response = self.client.post("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, 200)
         rsp = simplejson.loads(response.content)
@@ -804,6 +805,7 @@ class WebAPITests(TestCase):
         review_request = self.testNewReviewRequest()
 
         f = open("htdocs/media/rb/images/trophy.png", "r")
+        self.assert_(f)
         rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
                            review_request.id, {
             'path': f,
@@ -821,8 +823,10 @@ class WebAPITests(TestCase):
             exclude(submitter=self.user)[0]
 
         f = open("htdocs/media/rb/images/trophy.png", "r")
+        self.assert_(f)
         rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
                            review_request.id, {
+            'caption': 'Trophy',
             'path': f,
         })
         f.close()

@@ -20,9 +20,8 @@ class NoBaseDirError(ValueError):
 
 class UploadDiffForm(forms.Form):
     basedir = forms.CharField(label=_("Base directory"))
-    path = forms.CharField(label=_("Diff"), widget=forms.FileInput())
-    parent_diff_path = forms.CharField(label=_("Parent diff (optional)"),
-                                       widget=forms.FileInput(),
+    path = forms.FileField(label=_("Diff"))
+    parent_diff_path = forms.FileField(label=_("Parent diff (optional)"),
                                        required=False)
 
     # Extensions used for intelligent sorting of header files
@@ -71,7 +70,7 @@ class UploadDiffForm(forms.Form):
                                          check_existance=True):
                 parent_files[f.origFile] = f
 
-        diffset = DiffSet(name=diff_file["filename"], revision=0,
+        diffset = DiffSet(name=diff_file.name, revision=0,
                           history=diffset_history,
                           diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
         diffset.repository = self.repository
@@ -103,7 +102,7 @@ class UploadDiffForm(forms.Form):
     def _process_files(self, file, basedir, check_existance=False):
         tool = self.repository.get_scmtool()
 
-        for f in tool.get_parser(file["content"]).parse():
+        for f in tool.get_parser(file.read()).parse():
             f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo)
             if f2.startswith("/"):
                 filename = f2

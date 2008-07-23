@@ -23,6 +23,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+import os
+import os.path
 import sys
 
 import djblets
@@ -42,6 +44,13 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
 
     # Default to testing in a non-subdir install.
     settings.SITE_ROOT = "/"
+    settings.MEDIA_ROOT = "/tmp/reviewboard-tests"
+
+    images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
+
+    if not os.path.exists(images_dir):
+        os.makedirs(images_dir)
+
     settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
     settings.ADMIN_MEDIA_PREFIX = settings.MEDIA_URL + 'admin/'
 
@@ -67,6 +76,13 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     if len(sys.argv) > 2:
         nose_argv += sys.argv[2:]
     nose.main(argv=nose_argv)
+
+    for root, dirs, files in walk(settings.MEDIA_ROOT, topdown=False):
+        for name in files:
+            os.remove(os.path.join(root, name))
+
+        for name in dirs:
+            os.rmdir(os.path.join(root, name))
 
     destroy_test_db(old_name, verbosity)
     teardown_test_environment()

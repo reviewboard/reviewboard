@@ -107,7 +107,8 @@ class Screenshot(models.Model):
     draft_caption = models.CharField(_("draft caption"),
                                      max_length=256, blank=True)
     image = models.ImageField(_("image"),
-                              upload_to=os.path.join('uploaded', 'images'))
+                              upload_to=os.path.join('uploaded', 'images',
+                                                     '%Y', '%m', '%d'))
 
     def thumb(self):
         """

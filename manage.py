@@ -33,7 +33,7 @@ def check_dependencies():
         if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0):
             raise ImportError
     except ImportError:
-        dependency_error("Django > 0.97 (or SVN >= r7477) is required.")
+        dependency_error("Django >= 1.0 alpha is required.")
 
     # django-evolution
     try:
