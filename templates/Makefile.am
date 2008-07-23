@@ -3,11 +3,20 @@ nobase_rb_DATA = \
 	accounts/login.html \
 	accounts/prefs.html \
 	accounts/register.html \
+	admin/base_site.html \
+	admin/cache_stats.html \
+	admin/dashboard.html \
+	admin/database.html \
+	admin/feed.html \
+	admin/index.html \
+	admin/manual_updates_required.html \
+	admin/manual-updates/media-upload-dir.html \
 	base_feeds.html \
 	base.html \
 	diffviewer/changeindex.html \
 	diffviewer/comments_dlg.html \
 	diffviewer/diff_file_fragment.html \
+	diffviewer/diff_fragment_error.html \
 	diffviewer/view_diff.html \
 	feeds/reviews_description.html \
 	feeds/reviews_title.html \

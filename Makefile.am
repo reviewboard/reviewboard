@@ -39,6 +39,11 @@ nobase_djblets_PYTHON = \
 	djblets/datagrid/grids.py \
 	djblets/datagrid/templatetags/__init__.py \
 	djblets/datagrid/templatetags/datagrid.py \
+	djblets/feedview/__init__.py \
+	djblets/feedview/feedparser.py \
+	djblets/feedview/views.py \
+	djblets/feedview/templatetags/__init__.py \
+	djblets/feedview/templatetags/feedtags.py \
 	djblets/util/templatetags/__init__.py \
 	djblets/util/templatetags/djblets_deco.py \
 	djblets/util/templatetags/djblets_email.py \
@@ -48,6 +53,7 @@ nobase_djblets_PYTHON = \
 	djblets/util/__init__.py \
 	djblets/util/context_processors.py \
 	djblets/util/db.py \
+	djblets/util/dbevolution.py \
 	djblets/util/decorators.py \
 	djblets/util/fields.py \
 	djblets/util/misc.py \

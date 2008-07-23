@@ -1,10 +1,13 @@
 rbdir = $(pyexecdir)/reviewboard/reviews
 nobase_rb_PYTHON = \
 	__init__.py \
+	admin.py \
 	datagrids.py \
 	email.py \
+	errors.py \
 	feeds.py \
 	forms.py \
+	managers.py \
 	models.py \
 	tests.py \
 	urls.py \
