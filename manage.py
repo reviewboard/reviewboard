@@ -84,11 +84,11 @@ def check_dependencies():
         dependency_warning('pysvn not found.  SVN integration will not work.')
 
     try:
-        imp.find_module('p4')
+        imp.find_module('P4')
         subprocess.call(['p4', '-h'],
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     except ImportError:
-        dependency_warning('p4python not found.  Perforce integration will not work.')
+        dependency_warning('p4python (>=08.1) not found.  Perforce integration will not work.')
     except OSError:
         dependency_error('p4 command not found.  Perforce integration will not work.')
 

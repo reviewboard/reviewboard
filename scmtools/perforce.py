@@ -2,7 +2,7 @@ import re
 import subprocess
 
 try:
-    from p4 import P4Error
+    from P4 import P4Error
 except ImportError:
     pass
 
@@ -13,11 +13,12 @@ class PerforceTool(SCMTool):
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
-        import p4
-        self.p4 = p4.P4()
+        import P4
+        self.p4 = P4.P4()
         self.p4.port = str(repository.mirror_path or repository.path)
         self.p4.user = str(repository.username)
         self.p4.password = str(repository.password)
+        self.p4.exception_level = 1
 
         # We defer actually connecting until just before we do some operation
         # that requires an active connection to the perforce depot.  This
@@ -35,12 +36,12 @@ class PerforceTool(SCMTool):
             pass
 
     def _connect(self):
-        if not self.p4.connected:
+        if not self.p4.connected():
             self.p4.connect()
 
     def _disconnect(self):
         try:
-            if self.p4.connected:
+            if self.p4.connected():
                 self.p4.disconnect()
         except AttributeError:
             pass
@@ -55,7 +56,10 @@ class PerforceTool(SCMTool):
         self._connect()
         changeset = self.p4.run_describe('-s', str(changesetid))
         self._disconnect()
-        return self.parse_change_desc(changeset, changesetid)
+
+        if changeset:
+            return self.parse_change_desc(changeset[0], changesetid)
+        return None
 
     def get_diffs_use_absolute_paths(self):
         return True
@@ -138,23 +142,9 @@ class PerforceTool(SCMTool):
         # isn't attempting to "claim" another's changelist.  We then split
         # everything around the 'Affected files ...' line, and process the
         # results.
-        changeset.username = changedesc[0].split(' ')[3].split('@')[0]
-
-        description = '\n'.join(changedesc[1:])
-        file_header = re.search('Affected files ...', description)
-
-        desc = None
-        for line in description[:file_header.start()].split('\n'):
-            if line.startswith('\t'):
-                line = line[1:]
-            if desc:
-                desc += '\n' + line.rstrip()
-            else:
-                desc = line.rstrip()
-        changeset.description = desc.rstrip()
-        changeset.files = filter(lambda x: len(x),
-            [x.strip().split('#', 1)[0] for x in
-                description[file_header.end():].split('\n')])
+        changeset.username = changedesc['user']
+        changeset.description = changedesc['desc']
+        changeset.files = changedesc['depotFile']
 
         split = changeset.description.find('\n\n')
         if split >= 0 and split < 100:
