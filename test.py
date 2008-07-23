@@ -30,6 +30,14 @@ import sys
 import djblets
 import nose
 
+try:
+    # Make sure to pre-load all the image handlers. If we do this later during
+    # unit tests, we don't seem to always get our list, causing tests to fail.
+    from PIL import Image
+    Image.init()
+except ImportError:
+    pass
+
 from django.conf import settings
 from django.core import management
 from django.test.utils import setup_test_environment, teardown_test_environment
