@@ -149,8 +149,9 @@ class CVSClient:
 
         # We strip the repo off of the fully qualified path as CVS does
         # not like to be given absolute paths.
-        if filename.startswith(self.path + "/"):
-            filename = filename[len(self.path) + 1:]
+        repos_path = self.path.split(":")[-1]
+        if filename.startswith(repos_path + "/"):
+            filename = filename[len(repos_path) + 1:]
 
         # Strip off the ",v" we sometimes get for CVS paths.
         if filename.endswith(",v"):
