@@ -1,6 +1,7 @@
 import re
 import urllib
 import urlparse
+import os
 
 try:
     from pysvn import ClientError, Revision, opt_revision_kind
@@ -105,10 +106,11 @@ class SVNTool(SCMTool):
             if 'File not found' in stre or 'path not found' in stre:
                 raise FileNotFoundError(path, revision, str(e))
             elif 'callback_ssl_server_trust_prompt required' in stre:
+                home = os.path.expanduser('~')
                 raise SCMError(
-                    'HTTPS certificate not accepted.  Please ensure that ' +
-                    'the proper certificate exists in ~/.subversion/auth ' +
-                    'for the user that reviewboard is running as.')
+                    'HTTPS certificate not accepted.  Please ensure that '
+                    'the proper certificate exists in %s/.subversion/auth '
+                    'for the user that reviewboard is running as.' % home)
             else:
                 raise SCMError(e)
 
