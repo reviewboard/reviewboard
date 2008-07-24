@@ -30,6 +30,7 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
 from reviewboard.reviews.email import mail_review_request
+from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
@@ -363,34 +364,18 @@ def publish(request, review_request_id):
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    if review_request.is_mutable_by(request.user):
+    try:
         if not review_request.target_groups and \
            not review_request.target_people:
             pass # FIXME show an error
 
-        try:
-            draft = review_request.draft.get()
+        if not review_request.can_publish():
+            raise HttpResponseForbidden()
 
-            # This will in turn save the review request, so we'll be done.
-            draft.review_request.public = True
-            draft.save_draft()
-
-            # Make sure we have the draft's copy of the review request.
-            review_request = draft.review_request
-
-            # We don't need this anymore.
-            draft.delete()
-        except ReviewRequestDraft.DoesNotExist:
-            # The draft didn't exist, so we must save the review request
-            # ourselves.
-            review_request.public = True
-            review_request.save()
-
-        if settings.SEND_REVIEW_MAIL:
-            mail_review_request(request.user, review_request)
+        review_request = review_request.publish(request.user)
 
         return HttpResponseRedirect(review_request.get_absolute_url())
-    else:
+    except PermissionError:
         raise HttpResponseForbidden() # XXX Error out
 
 

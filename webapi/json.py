@@ -59,6 +59,9 @@ REPO_NOT_IMPLEMENTED      = WebAPIError(209, "The specified repository is " +
 REPO_INFO_ERROR           = WebAPIError(210, "There was an error fetching " +
                                              "extended information for this " +
                                              "repository.")
+NOTHING_TO_PUBLISH        = WebAPIError(211, "You attempted to publish a " +
+                                             "review request that doesn't " +
+                                             "have an associated draft.")
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -459,6 +462,21 @@ def review_request_unstar(request, review_request_id):
     if not profile_is_new:
         profile.starred_review_requests.remove(review_request)
         profile.save()
+
+    return WebAPIResponse(request)
+
+
+@webapi_login_required
+def review_request_publish(request, review_request_id):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        if not review_request.can_publish():
+            return WebAPIResponseError(request, NOTHING_TO_PUBLISH)
+        review_request.publish(request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        raise HttpResponseForbidden()
 
     return WebAPIResponse(request)
 

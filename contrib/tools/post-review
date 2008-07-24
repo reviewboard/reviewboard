@@ -311,8 +311,8 @@ class ReviewBoardServer:
         Publishes a review request.
         """
         debug("Publishing")
-        self.http_post(path='r/%s/publish/' % review_request['id'],
-                       fields = {})
+        self.api_post('api/json/reviewrequests/%s/publish/' %
+                      review_request['id'])
 
     def process_json(self, data):
         """

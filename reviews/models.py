@@ -17,10 +17,10 @@ from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.reviews.email import mail_review_request
 from reviewboard.reviews.errors import InvalidChangeNumberError
 from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.scmtools.models import Repository
-
 
 def update_obj_with_changenum(obj, repository, changenum):
     """
@@ -324,6 +324,27 @@ class ReviewRequest(models.Model):
 
         super(ReviewRequest, self).save()
 
+    def can_publish(self):
+        return get_object_or_none(self.draft) is not None
+
+    def publish(self, user):
+        """
+        Save the current draft attached to this review request. Send out the
+        associated email. Returns the review request that was saved.
+        """
+        if not self.is_mutable_by(user):
+            raise PermissionError
+
+        draft = self.draft.get()
+        if draft is not None:
+            # This will in turn save the review request, so we'll be done.
+            self.public = True
+            draft.save_draft(self)
+            draft.delete()
+
+            if settings.SEND_REVIEW_MAIL:
+                mail_review_request(user, self)
+
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
         unique_together = (('changenum', 'repository'),)
@@ -484,9 +505,10 @@ class ReviewRequestDraft(models.Model):
             if group not in existing_groups:
                 self.target_groups.add(group)
 
-    def save_draft(self):
+    def save_draft(self, request=None):
         """
-        Save this draft into the assocated ReviewRequest object.
+        Save this draft. Uses the draft's assocated ReviewRequest object if one
+        isn't passed in.
 
         This returns a dict of changed fields, which is used by the e-mail
         template to tell people what's new and interesting.
@@ -503,13 +525,14 @@ class ReviewRequestDraft(models.Model):
             'diff'
         Each of these keys will have an associated boolean value.
         """
-        request = self.review_request
+        if request is None:
+            request = self.review_request
 
         changes = {}
 
         def update_field(a, b, name):
-            # Apparently django models don't have __getattr__ or __setattr__, so
-            # we have to update __dict__ directly.  Sigh.
+            # Apparently django models don't have __getattr__ or __setattr__,
+            # so we have to update __dict__ directly.  Sigh.
             value = b.__dict__[name]
             if a.__dict__[name] != value:
                 changes[name] = True
@@ -545,8 +568,8 @@ class ReviewRequestDraft(models.Model):
                 s.save()
         update_list(request.screenshots, self.screenshots, 'screenshots')
 
-        # If a caption changed, screenshots will always be changed regardless of
-        # whether the list of associated screenshots changed.
+        # If a caption changed, screenshots will always be changed regardless
+        # of whether the list of associated screenshots changed.
         if screenshots_changed:
             changes['screenshots'] = True
 
