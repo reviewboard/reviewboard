@@ -372,7 +372,7 @@ def publish(request, review_request_id):
         if not review_request.can_publish():
             raise HttpResponseForbidden()
 
-        review_request = review_request.publish(request.user)
+        review_request.publish(request.user)
 
         return HttpResponseRedirect(review_request.get_absolute_url())
     except PermissionError:
