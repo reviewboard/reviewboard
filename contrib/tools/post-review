@@ -882,7 +882,7 @@ class PerforceClient(SCMClient):
 
             diff_cmd = 'diff -urNp "%s" "%s"' % (old_file, new_file)
             # Diff returns "1" if differences were found.
-            dl = execute(diff_cmd, extra_ignore_errors=(1,)).splitlines(True)
+            dl = execute(diff_cmd, extra_ignore_errors=(1,2)).splitlines(True)
 
             if local_name.startswith(cwd):
                 local_path = local_name[len(cwd) + 1:]
