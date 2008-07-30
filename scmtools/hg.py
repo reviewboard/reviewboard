@@ -90,7 +90,7 @@ class HgWebClient:
             passman.add_password(None, self.url, self.username, self.password)
             authhandler = urllib2.HTTPBasicAuthHandler(passman)
             opener = urllib2.build_opener(authhandler)
-            f = opener.open('%s/raw-file/%s/%s' % (self.url, rev, path))
+            f = opener.open('%s/raw/%s/%s' % (self.url, rev, path))
             return f.read()
         except Exception, e:
             raise FileNotFoundError(path, rev, str(e))
