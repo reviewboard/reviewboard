@@ -711,7 +711,7 @@ class SVNClient(SCMClient):
     def svn_info(self, path):
         """Return a dict which is the result of 'svn info' at a given path."""
         svninfo = {}
-        for info in execute("env LANG=en_US.UTF-8 svn info " + path).splitlines():
+        for info in execute("env LANG=en_US.UTF-8 svn info '%s'" % path).splitlines():
             parts = info.split(": ", 1)
             if len(parts) == 2:
                 key, value = parts
@@ -1528,6 +1528,7 @@ def main(args):
         diff = tool.diff_between_revisions(options.revision_range)
         parent_diff = None
     else:
+        args = ["'%s'" % arg for arg in args] # quote filenames
         diff, parent_diff = tool.diff(args)
 
     if options.output_diff_only:
