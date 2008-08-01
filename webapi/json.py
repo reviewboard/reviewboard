@@ -491,6 +491,20 @@ def review_request_delete(request, review_request_id):
 
     return WebAPIResponse(request)
 
+@webapi_login_required
+def review_request_updated(request, review_request_id):
+    """
+    Determines if a review has been updated since the user last viewed
+    it.
+    """
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    return WebAPIResponse(request, {
+        'updated' : review_request.get_new_reviews(request.user).count() > 0
+        })
 
 @webapi_login_required
 def review_request_list(request, func, **kwargs):
