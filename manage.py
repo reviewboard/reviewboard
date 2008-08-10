@@ -31,10 +31,11 @@ def check_dependencies():
     # Django 1.0 alpha
     try:
         import django
-        if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0):
+        if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0 and
+                django.VERSION[2] == "alpha_2"):
             raise ImportError
     except ImportError:
-        dependency_error("Django >= 1.0 alpha is required.")
+        dependency_error("Django >= 1.0 alpha 2 is required.")
 
     # django-evolution
     try:
