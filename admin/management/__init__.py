@@ -7,7 +7,7 @@ from django_evolution import models as django_evolution
 from reviewboard.diffviewer.models import FileDiff
 
 
-def init_evolutions(app, created_models):
+def init_evolutions(app, created_models, **kwargs):
     """
     Attempts to initialize the Django Evolution schema signatures to sane
     values. This works around the issue where a first syncdb with Django
@@ -59,4 +59,4 @@ def init_evolutions(app, created_models):
     loaddata.Command().handle("admin/fixtures/initial_evolution_schema.json",
                               verbosity=0)
 
-dispatcher.connect(init_evolutions, signal=signals.post_syncdb)
+signals.post_syncdb.connect(init_evolutions)

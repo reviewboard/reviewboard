@@ -123,7 +123,7 @@ class UploadScreenshotForm(forms.Form):
     def create(self, file, review_request):
         screenshot = Screenshot(caption=self.cleaned_data['caption'],
                                 draft_caption=self.cleaned_data['caption'])
-        screenshot.save_image_file(file.name, file, save=True)
+        screenshot.image.save(file.name, file, save=True)
 
         review_request.screenshots.add(screenshot)
 

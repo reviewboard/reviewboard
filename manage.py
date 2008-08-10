@@ -5,7 +5,8 @@ import sys
 import os
 from os.path import abspath, dirname
 
-from django.core.management import execute_manager
+from django.core.management import execute_manager, setup_environ, \
+                                   execute_from_command_line
 
 # Add the parent directory of 'manage.py' to the python path, so manage.py can
 # be run from any directory.  From http://www.djangosnippets.org/snippets/281/
@@ -124,5 +125,20 @@ if __name__ == "__main__":
             if 'DJANGO_SETTINGS_MODULE' not in os.environ:
                 sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
                 check_dependencies()
+
+    # Django r8244 moves django.db.models.fields.files.ImageField and
+    # FileField into django.db.models.files, causing existing
+    # signatures to fail. For the purpose of loading, temporarily
+    # place these back into fields. The next time the signature is
+    # generated in Django Evolution, the correct, new location will be
+    # written.
+    #
+    # TODO: Remove this when Django Evolution works again.
+    project_directory = setup_environ(settings)
+    import django.db.models.fields as model_fields
+    import django.db.models.fields.files as model_files
+    model_fields.ImageField = model_files.ImageField
+    model_fields.FileField = model_files.FileField
+
 
     execute_manager(settings)

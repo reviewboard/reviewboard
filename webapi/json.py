@@ -160,7 +160,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'id': o.id,
                 'caption': o.caption,
                 'title': u'Screenshot: %s' % (o.caption or
-                                              os.path.basename(o.image)),
+                                              os.path.basename(o.image.path)),
                 'image_url': o.get_absolute_url(),
             }
         elif isinstance(o, FileDiff):
