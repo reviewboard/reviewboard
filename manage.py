@@ -115,19 +115,8 @@ def check_dependencies():
         sys.stderr.write('\n\n')
 
 
-if __name__ == "__main__":
-    if settings.DEBUG:
-        if len(sys.argv) > 1 and \
-           (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
-            # If DJANGO_SETTINGS_MODULE is in our environment, we're in
-            # execute_manager's sub-process.  It doesn't make sense to do this
-            # check twice, so just return.
-            import os
-            if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-                sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
-                check_dependencies()
-
-    # Django r8244 moves django.db.models.fields.files.ImageField and
+def fix_django_evolution_issues():
+    # XXX Django r8244 moves django.db.models.fields.files.ImageField and
     # FileField into django.db.models.files, causing existing
     # signatures to fail. For the purpose of loading, temporarily
     # place these back into fields. The next time the signature is
@@ -141,5 +130,42 @@ if __name__ == "__main__":
     model_fields.ImageField = model_files.ImageField
     model_fields.FileField = model_files.FileField
 
+    # XXX Temporary fix for Django Evolution's signal handler.
+    #     Remove when they update to use the new signal code.
+    #     This will disable DEBUG while connecting the signal,
+    #     disabling the assert for the kwargs parameter.
+    from django.conf import settings as django_settings
+    from django.db.models.signals import post_syncdb
+    old_debug = django_settings.DEBUG
+    django_settings.DEBUG = False
+    old_receivers = list(post_syncdb.receivers)
+    import warnings
+    warnings.filterwarnings("ignore", ".*")
+    mgmt = __import__("django_evolution.management", {}, {}, [''])
+    warnings.resetwarnings()
+    post_syncdb.receivers = old_receivers
+    django_settings.DEBUG = old_debug
+    old_evolution = mgmt.evolution
+
+    def wrap_evolution(app, created_models, verbosity=1, **kwargs):
+        old_evolution(app, created_models, verbosity)
+
+    post_syncdb.connect(wrap_evolution)
+    mgmt.evolution = wrap_evolution
+
+
+if __name__ == "__main__":
+    if settings.DEBUG:
+        if len(sys.argv) > 1 and \
+           (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
+            # If DJANGO_SETTINGS_MODULE is in our environment, we're in
+            # execute_manager's sub-process.  It doesn't make sense to do this
+            # check twice, so just return.
+            import os
+            if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+                sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
+                check_dependencies()
+
+    fix_django_evolution_issues()
 
     execute_manager(settings)
