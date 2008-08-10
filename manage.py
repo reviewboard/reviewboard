@@ -132,26 +132,16 @@ def fix_django_evolution_issues():
 
     # XXX Temporary fix for Django Evolution's signal handler.
     #     Remove when they update to use the new signal code.
-    #     This will disable DEBUG while connecting the signal,
-    #     disabling the assert for the kwargs parameter.
     from django.conf import settings as django_settings
-    from django.db.models.signals import post_syncdb
-    old_debug = django_settings.DEBUG
-    django_settings.DEBUG = False
-    old_receivers = list(post_syncdb.receivers)
-    import warnings
-    warnings.filterwarnings("ignore", ".*")
-    mgmt = __import__("django_evolution.management", {}, {}, [''])
-    warnings.resetwarnings()
-    post_syncdb.receivers = old_receivers
-    django_settings.DEBUG = old_debug
-    old_evolution = mgmt.evolution
+    from django.dispatch import dispatcher
 
-    def wrap_evolution(app, created_models, verbosity=1, **kwargs):
-        old_evolution(app, created_models, verbosity)
+    def custom_connect(function, signal):
+        def wrapper_func(app, created_models, verbosity=1, **kwargs):
+            function(app, created_models, verbosity)
 
-    post_syncdb.connect(wrap_evolution)
-    mgmt.evolution = wrap_evolution
+        signal.connect(wrapper_func)
+
+    dispatcher.connect = custom_connect
 
 
 if __name__ == "__main__":
