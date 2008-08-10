@@ -39,3 +39,15 @@ def check_updates_required():
 
 
     return _updates_required
+
+
+def reset_check_cache():
+    """
+    Resets the cached data of all checks. This is mainly useful during
+    unit tests.
+    """
+    global _updates_required
+    global _install_fine
+
+    _updates_required = []
+    _install_fine = False

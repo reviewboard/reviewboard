@@ -78,10 +78,10 @@ def report(request, username, format, report, get_context):
         'domain_method': settings.DOMAIN_METHOD,
     })
 
-    return HttpResponse(
-        render_to_response(template['template'],
-                           RequestContext(request, context)),
-        content_type=template['content-type'] + ";charset=UTF-8")
+    return render_to_response(template['template'], context,
+                              RequestContext(request),
+                              mimetype="%s;charset=UTF-8" %
+                                       template['content-type'])
 
 
 def review_request(request, username, format):
