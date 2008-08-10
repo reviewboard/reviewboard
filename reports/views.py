@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.http import HttpResponse, Http404
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 
 from reviewboard.reviews.models import ReviewRequest, Review
@@ -63,7 +63,7 @@ def report(request, username, format, report, get_context):
     # FIXME - error checking?
     period = int(request.GET.get('period', 7))
 
-    user = User.objects.get(username=username)
+    user = get_object_or_404(User, username=username)
 
     try:
         template = report['templates'][format]
