@@ -1,5 +1,6 @@
 rbdir = $(pyexecdir)/reviewboard/htdocs
 nobase_rb_DATA = \
+	media/rb/css/admin.css \
 	media/rb/css/dashboard.css \
 	media/rb/css/datagrid.css \
 	media/rb/css/reviews.css \
@@ -106,6 +107,7 @@ nobase_rb_DATA = \
 	media/rb/images/box_bottom_bg_trans.png \
 	media/rb/images/fish-trophy.png \
 	media/rb/images/comment-draft.png \
+	media/rb/images/comment-draft-small.png \
 	media/rb/images/important.png \
 	media/rb/images/convo.png \
 	media/rb/images/box_top_bg.png \
@@ -134,12 +136,14 @@ nobase_rb_DATA = \
 	media/rb/images/collapse.png \
 	media/rb/images/expand.png \
 	media/rb/images/comment.png \
+	media/rb/images/comment-small.png \
 	media/rb/images/delete.png \
 	media/rb/images/delete.svg \
 	media/rb/images/gold_box_bottom_bg.png \
 	media/rb/images/review_request_box_bottom_bg.png \
 	media/rb/images/review_box_top_bg.png \
 	media/rb/images/reviewrequest.png \
+	media/rb/images/rss.png \
 	media/rb/images/shipit.png \
 	media/yui/dom/dom-min.js \
 	media/yui/menu/assets/menuaroup8_nrm_1.gif \
