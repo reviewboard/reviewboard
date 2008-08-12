@@ -7,6 +7,7 @@ from os.path import abspath, dirname
 
 from django.core.management import execute_manager, setup_environ, \
                                    execute_from_command_line
+from django.utils.functional import curry
 
 # Add the parent directory of 'manage.py' to the python path, so manage.py can
 # be run from any directory.  From http://www.djangosnippets.org/snippets/281/
@@ -115,6 +116,10 @@ def check_dependencies():
         sys.stderr.write('\n\n')
 
 
+# XXX Ugliness needed due to weak refs for dispatch callbacks. This can be
+#     reomved when fix_django_evolution_issues() goes away.
+_signal_connections = []
+
 def fix_django_evolution_issues():
     # XXX Django r8244 moves django.db.models.fields.files.ImageField and
     # FileField into django.db.models.files, causing existing
@@ -137,9 +142,13 @@ def fix_django_evolution_issues():
 
     def custom_connect(function, signal):
         def wrapper_func(app, created_models, verbosity=1, **kwargs):
-            function(app, created_models, verbosity)
+            function(app, created_models, verbosity=verbosity)
 
-        signal.connect(wrapper_func)
+        dispatch_uid = "%s.%s" % (function.__module__, function.__name__)
+        dispatch_uid = dispatch_uid.replace("..", ".")
+        func = wrapper_func
+        signal.connect(func, dispatch_uid=dispatch_uid)
+        _signal_connections.append(func)
 
     dispatcher.connect = custom_connect
 
