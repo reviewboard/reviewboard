@@ -42,7 +42,7 @@ var gActions = [
     },
 
     { // Next file
-        keys: "fFJN>/",
+        keys: "fFJN>",
         onPress: function() { scrollToAnchor(GetNextFileAnchor(FORWARD)); }
     },
 
