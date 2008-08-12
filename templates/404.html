@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% load djblets_deco %}
+
+{% block title %}404 - Page Does Not Exist{% endblock %}
+
+{% block content %}
+{% box "important" %}
+<h1>The page you were looking for does not exist.</h1>
+<p>
+ If you're pretty sure this page <i>does</i> exist, try
+ <a href="{% url login %}">logging in</a> and trying again.
+</p>
+{% endbox %}
+{% endblock %}
