@@ -41,7 +41,15 @@ except ImportError:
 from django.conf import settings
 from django.core import management
 from django.test.utils import setup_test_environment, teardown_test_environment
-from django.test.utils import create_test_db, destroy_test_db
+
+# XXX Switch to using connection.creation.* directly once we require
+#     Django 1.0 beta 1.
+try:
+    from django.test.utils import create_test_db, destroy_test_db
+except ImportError:
+    from django.db import connection
+    create_test_db = connection.creation.create_test_db
+    destroy_test_db = connection.creation.destroy_test_db
 
 import reviewboard
 
