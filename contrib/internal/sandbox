@@ -1,0 +1,25 @@
+#!/bin/sh
+
+if test -d .svn; then
+	COMMAND="svn info"
+elif test -d ../.git; then
+	COMMAND="git svn info"
+else
+	echo "Unknown repository type. Make sure you're in the top-level of"
+	echo "the reviewboard directory."
+	exit 1
+fi
+
+REVISION=`$COMMAND | grep Revision: |cut -f2 -d" "`
+
+./contrib/tools/post-review --output-diff $@ | buildbot try \
+	--diff=- \
+	-p1 \
+	--connect="ssh" \
+	--builder="x86_ubuntu704_django_trunk" \
+	--builder="x86_ubuntu704_django_1.0_alpha_2" \
+	--tryhost="review-board.org" \
+	--master="review-board.org:9989" \
+	--trydir="~buildbot/masters/reviewboard/jobdir" \
+	--username=$USER \
+	--baserev=$REVISION
