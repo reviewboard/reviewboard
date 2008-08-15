@@ -40,17 +40,25 @@ class HgDiffParser(DiffParser):
     """
 
     def parse_special_header(self, linenum, info):
+        # XXX: does not handle git style diffs
         if self.lines[linenum].startswith("diff -r"):
-            # should contain "diff -r aaa [-r bbb] filename"
+            # diff between two revisions are in the following form:
+            #  "diff -r abcdef123456 -r 123456abcdef filename"
+            # diff between a revision and the working copy are like:
+            #  "diff -r abcdef123456 filename"
             diffLine = self.lines[linenum].split()
             try:
                 # hg is file based, so new file always == old file
-                info['newFile'] = info['origFile'] = diffLine[-1]
-                info['origInfo'] = diffLine[2]
-                if len(diffLine) <= 4:
-                    info['newInfo'] = "Uncommitted"
-                else:
+                isCommitted = len(diffLine) > 4 and diffLine[3] == '-r'
+                if isCommitted:
+                    nameStartIndex = 5
                     info['newInfo'] = diffLine[4]
+                else:
+                    nameStartIndex = 3
+                    info['newInfo'] = "Uncommitted"
+                info['newFile'] = info['origFile'] = \
+                    ' '.join(diffLine[nameStartIndex:])
+                info['origInfo'] = diffLine[2]
             except ValueError:
                 raise DiffParserError("The diff file is missing revision information",
                                       linenum)
@@ -90,7 +98,8 @@ class HgWebClient:
             passman.add_password(None, self.url, self.username, self.password)
             authhandler = urllib2.HTTPBasicAuthHandler(passman)
             opener = urllib2.build_opener(authhandler)
-            f = opener.open('%s/raw/%s/%s' % (self.url, rev, path))
+            f = opener.open('%s/raw-file/%s/%s' %
+                            (self.url, rev, urllib.quote(path)))
             return f.read()
         except Exception, e:
             raise FileNotFoundError(path, rev, str(e))
