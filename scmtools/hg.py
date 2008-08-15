@@ -99,7 +99,7 @@ class HgWebClient:
             authhandler = urllib2.HTTPBasicAuthHandler(passman)
             opener = urllib2.build_opener(authhandler)
             f = opener.open('%s/raw-file/%s/%s' %
-                            (self.url, rev, urllib.quote(path)))
+                            (self.url, rev, urllib2.quote(path)))
             return f.read()
         except Exception, e:
             raise FileNotFoundError(path, rev, str(e))
