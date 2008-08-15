@@ -1,5 +1,4 @@
 from django_evolution.mutations import *
-from django.db import models
 
 from djblets.util.fields import Base64Field
 from djblets.util.dbevolution import FakeChangeFieldType

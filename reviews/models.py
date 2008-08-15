@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 
 from django.conf import settings
-from django.contrib import admin
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
@@ -18,7 +17,8 @@ from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.email import mail_review_request
-from reviewboard.reviews.errors import InvalidChangeNumberError
+from reviewboard.reviews.errors import InvalidChangeNumberError, \
+                                       PermissionError
 from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.scmtools.models import Repository
 

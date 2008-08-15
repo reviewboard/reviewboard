@@ -23,11 +23,9 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-import os
 import os.path
 import sys
 
-import djblets
 import nose
 
 try:
@@ -50,8 +48,6 @@ except ImportError:
     from django.db import connection
     create_test_db = connection.creation.create_test_db
     destroy_test_db = connection.creation.destroy_test_db
-
-import reviewboard
 
 
 def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
@@ -93,7 +89,7 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
         nose_argv += sys.argv[2:]
     nose.main(argv=nose_argv)
 
-    for root, dirs, files in walk(settings.MEDIA_ROOT, topdown=False):
+    for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):
         for name in files:
             os.remove(os.path.join(root, name))
 

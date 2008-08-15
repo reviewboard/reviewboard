@@ -1,17 +1,9 @@
-import unittest
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
-from django.template import Context, Template, Token, TOKEN_TEXT
-from django.template.loader import render_to_string
-from django.template.context import RequestContext
+from django.template import Context, Template
 from django.test import TestCase
 
-from djblets.util.templatetags import djblets_email
-from djblets.util.testing import TagTest
-
-import reviewboard.reviews.templatetags.reviewtags as reviewtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \

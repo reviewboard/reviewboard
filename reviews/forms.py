@@ -1,4 +1,3 @@
-import os.path
 import re
 
 from django import forms

@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.http import HttpResponse, Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.views.decorators.http import require_POST
@@ -18,8 +18,7 @@ from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
 from djblets.webapi.errors import WebAPIError, \
                                   PERMISSION_DENIED, DOES_NOT_EXIST, \
-                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
-                                  MISSING_ATTRIBUTE
+                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
@@ -28,7 +27,8 @@ from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.errors import ChangeNumberInUseError, \
-                                       InvalidChangeNumberError
+                                       InvalidChangeNumberError, \
+                                       PermissionError
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment

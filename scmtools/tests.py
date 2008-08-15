@@ -1,10 +1,11 @@
+import imp
 import os
 import nose
 import unittest
 
 from django.test import TestCase as DjangoTestCase
 try:
-    import P4
+    imp.find_module("P4")
     from P4 import P4Error
 except ImportError:
     pass

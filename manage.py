@@ -5,9 +5,7 @@ import sys
 import os
 from os.path import abspath, dirname
 
-from django.core.management import execute_manager, setup_environ, \
-                                   execute_from_command_line
-from django.utils.functional import curry
+from django.core.management import execute_manager, setup_environ
 
 # Add the parent directory of 'manage.py' to the python path, so manage.py can
 # be run from any directory.  From http://www.djangosnippets.org/snippets/281/
@@ -40,7 +38,7 @@ def check_dependencies():
 
     # django-evolution
     try:
-        import django_evolution
+        imp.find_module('django_evolution')
     except ImportError:
         dependency_error("django_evolution is required.\n"
                          "http://code.google.com/p/django-evolution/")
@@ -69,7 +67,7 @@ def check_dependencies():
     # PyLucene
     if settings.ENABLE_SEARCH:
         try:
-            import lucene
+            imp.find_module('lucene')
         except ImportError:
             dependency_error('PyLucene (with JCC) is required when '
                              'ENABLE_SEARCH is set.')
@@ -137,7 +135,6 @@ def fix_django_evolution_issues():
 
     # XXX Temporary fix for Django Evolution's signal handler.
     #     Remove when they update to use the new signal code.
-    from django.conf import settings as django_settings
     from django.dispatch import dispatcher
 
     def custom_connect(function, signal):
@@ -160,7 +157,6 @@ if __name__ == "__main__":
             # If DJANGO_SETTINGS_MODULE is in our environment, we're in
             # execute_manager's sub-process.  It doesn't make sense to do this
             # check twice, so just return.
-            import os
             if 'DJANGO_SETTINGS_MODULE' not in os.environ:
                 sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
                 check_dependencies()

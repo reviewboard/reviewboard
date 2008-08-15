@@ -1,5 +1,4 @@
 from django.core.management.commands import loaddata
-from django.dispatch import dispatcher
 from django.db.models import signals
 
 from django_evolution import models as django_evolution

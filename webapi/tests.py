@@ -1,13 +1,11 @@
 import os
-import unittest
 
 from django.contrib.auth.models import User, Permission
 from django.test import TestCase
 from django.utils import simplejson
-from djblets.util.testing import TagTest
 
 import reviewboard.webapi.json as webapi
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        Comment, Screenshot, ScreenshotComment

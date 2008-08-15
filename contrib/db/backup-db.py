@@ -15,7 +15,6 @@
 
 import os
 import sys
-import gc
 
 sys.path.append(os.getcwd())
 

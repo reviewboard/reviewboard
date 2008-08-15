@@ -20,7 +20,7 @@ from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
-from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
@@ -29,7 +29,6 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
-from reviewboard.reviews.email import mail_review_request
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm

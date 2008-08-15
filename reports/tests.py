@@ -1,6 +1,3 @@
-import os
-import unittest
-
 from django.conf import settings
 from django.test import TestCase
 

@@ -2,10 +2,8 @@ from django import template
 from django.conf import settings
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from django.template import NodeList, TemplateSyntaxError, Variable, \
-                            VariableDoesNotExist
+from django.template import NodeList, TemplateSyntaxError
 from django.template.loader import render_to_string
-from django.template.defaultfilters import escape
 from django.utils import simplejson
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.misc import get_object_or_none
@@ -14,7 +12,7 @@ from djblets.util.templatetags.djblets_utils import humanize_list
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
-                                       ReviewRequestDraft, ScreenshotComment
+                                       ScreenshotComment
 
 
 register = template.Library()
