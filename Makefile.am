@@ -83,6 +83,26 @@ nobase_djblets_DATA = \
 	djblets/util/templates/deco/box.html \
 	djblets/util/templates/deco/errorbox.html
 
+evolutiondir = $(rbdir)
+nobase_evolution_PYTHON = \
+	django_evolution/__init__.py \
+	django_evolution/diff.py \
+	django_evolution/evolve.py \
+	django_evolution/models.py \
+	django_evolution/mutations.py \
+	django_evolution/signature.py \
+	django_evolution/utils.py \
+	django_evolution/db/__init__.py \
+	django_evolution/db/common.py \
+	django_evolution/db/mysql.py \
+	django_evolution/db/mysql_old.py \
+	django_evolution/db/postgresql.py \
+	django_evolution/db/postgresql_psycopg2.py \
+	django_evolution/db/sqlite3.py \
+	django_evolution/management/__init__.py \
+	django_evolution/management/commands/__init__.py \
+	django_evolution/management/commands/evolve.py 
+
 EXTRA_DIST = \
 	$(rb_SCRIPTS) \
 	$(rb_DATA) \

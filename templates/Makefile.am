@@ -1,5 +1,7 @@
 rbdir = $(pyexecdir)/reviewboard/templates
 nobase_rb_DATA = \
+	404.html \
+	500.html \
 	accounts/login.html \
 	accounts/prefs.html \
 	accounts/register.html \

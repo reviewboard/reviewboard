@@ -9,6 +9,8 @@ nobase_rb_PYTHON =			\
 	smdiff.py			\
 	tests.py			\
 	views.py			\
+	evolutions/__init__.py \
+	evolutions/add_parent_diffs.py \
 	templatetags/__init__.py	\
 	templatetags/difftags.py
 
