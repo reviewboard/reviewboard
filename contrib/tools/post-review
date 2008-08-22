@@ -162,8 +162,15 @@ class ReviewBoardServer:
 
         print "==> Review Board Login Required"
         print "Enter username and password for Review Board at %s" % self.url
-        username = raw_input('Username: ')
-        password = getpass.getpass('Password: ')
+        if not options.submit_as:
+            username = raw_input('Username: ')
+        else:
+            username = options.submit_as
+
+        if not options.password:
+            password = getpass.getpass('Password: ')
+        else:
+            password = options.password
 
         debug('Logging in with username "%s"' % username)
         try:
@@ -1443,6 +1450,9 @@ def parse_options(tool, repository_info, args):
                       dest="submit_as", default=SUBMIT_AS, metavar="USERNAME",
                       help="user name to be recorded as the author of the "
                            "review request, instead of the logged in user")
+    parser.add_option("--password",
+                      dest="password", default=None, metavar="PASSWORD",
+                      help="password to be supplied to the reviewboard server")
 
     if repository_info:
         if repository_info.supports_changesets:
