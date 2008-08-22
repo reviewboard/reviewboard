@@ -1,0 +1,17 @@
+include AUTHORS
+include COPYING
+include INSTALL
+include MANIFEST.in
+include NEWS
+include README
+include settings_local.py.tmpl
+recursive-include accounts/fixtures *
+recursive-include admin/fixtures *
+recursive-include contrib *
+recursive-include diffviewer/testdata *
+recursive-include htdocs *.css *.htc *.png *.jpg *.gif *.js
+recursive-include locale *
+recursive-include reviews/fixtures *
+recursive-include scmtools/fixtures *
+recursive-include scmtools/testdata *
+recursive-include templates *.html *.txt
