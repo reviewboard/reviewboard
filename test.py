@@ -38,16 +38,8 @@ except ImportError:
 
 from django.conf import settings
 from django.core import management
+from django.db import connection
 from django.test.utils import setup_test_environment, teardown_test_environment
-
-# XXX Switch to using connection.creation.* directly once we require
-#     Django 1.0 beta 1.
-try:
-    from django.test.utils import create_test_db, destroy_test_db
-except ImportError:
-    from django.db import connection
-    create_test_db = connection.creation.create_test_db
-    destroy_test_db = connection.creation.destroy_test_db
 
 
 def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
@@ -67,15 +59,13 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     settings.ADMIN_MEDIA_PREFIX = settings.MEDIA_URL + 'admin/'
 
     old_name = settings.DATABASE_NAME
-    create_test_db(verbosity, autoclobber=not interactive)
+    connection.creation.create_test_db(verbosity, autoclobber=not interactive)
     management.call_command('syncdb', verbosity=verbosity, interactive=interactive)
 
     # Nose uses all local modules, which is really silly.  These were getting
     # tested (and failing), so turn them off.
     exclusion = '|'.join(['setup_test_environment',
-                          'teardown_test_environment',
-                          'create_test_db',
-                          'destroy_test_db'])
+                          'teardown_test_environment'])
 
     nose_argv=['test.py', '-v',
                '--with-coverage',
@@ -96,5 +86,5 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
         for name in dirs:
             os.rmdir(os.path.join(root, name))
 
-    destroy_test_db(old_name, verbosity)
+    connection.creation.destroy_test_db(old_name, verbosity)
     teardown_test_environment()

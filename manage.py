@@ -31,10 +31,10 @@ def check_dependencies():
     try:
         import django
         if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0 and
-                (django.VERSION[2] == "alpha_2" or django.VERSION[2] == "beta_1")):
+                django.VERSION[2] == "beta_1"):
             raise ImportError
     except ImportError:
-        dependency_error("Django >= 1.0 alpha 2 is required.")
+        dependency_error("Django >= 1.0 beta 1 is required.")
 
     # django-evolution
     try:
@@ -115,7 +115,7 @@ def check_dependencies():
 
 
 # XXX Ugliness needed due to weak refs for dispatch callbacks. This can be
-#     reomved when fix_django_evolution_issues() goes away.
+#     removed when fix_django_evolution_issues() goes away.
 _signal_connections = []
 
 def fix_django_evolution_issues():
