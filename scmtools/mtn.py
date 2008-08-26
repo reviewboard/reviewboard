@@ -1,0 +1,92 @@
+import os
+import re
+import subprocess
+
+from reviewboard.diffviewer.parser import DiffParser
+from reviewboard.scmtools.core import FileNotFoundError, SCMError, \
+                                      SCMTool
+
+
+class MonotoneTool(SCMTool):
+    # Known limitations of this tool include:
+    #    - It depends on a local database which we somehow need to determine
+    #      how to update.
+    #    - Binary files are not currently marked
+    #    - Empty files cause the diff viewer to blow up.
+    def __init__(self, repository):
+        SCMTool.__init__(self, repository)
+        self.client = MonotoneClient(repository.path)
+
+    def get_file(self, path, revision=None):
+        # revision is actually the file id here...
+        if not revision:
+            return ""
+
+        return self.client.get_file(revision)
+
+    def file_exists(self, path, revision=None):
+        # revision is actually the file id here...
+        if not revision:
+            return False
+
+        try:
+            self.client.get_file(revision)
+        except FileNotFoundError:
+            return False
+
+        return True
+
+    def parse_diff_revision(self, file_str, revision_str):
+        return file_str, revision_str
+
+    def get_diffs_use_absolute_paths(self):
+        return True
+
+    def get_fields(self):
+        return ['diff_path']
+
+    def get_parser(self, data):
+        return MonotoneDiffParser(data)
+
+
+class MonotoneDiffParser(DiffParser):
+    INDEX_SEP = "=" * 60
+
+    def parse_special_header(self, linenum, info):
+        if self.lines[linenum].startswith("#"):
+            if "is binary" in self.lines[linenum]:
+                info['binary'] = True
+                linenum += 1
+            elif self.lines[linenum + 1] == self.INDEX_SEP:
+                # this is a standard mtn diff header (comments with the file summary)
+                linenum += 1
+
+        return linenum
+
+
+class MonotoneClient:
+    def __init__(self, path):
+        self.path = path
+
+        if not os.path.isfile(self.path):
+            raise SCMError("Repository %s does not exist" % path)
+
+    def get_file(self, fileid):
+        args = ['mtn', '-d', self.path, 'automate', 'get_file', fileid]
+
+        p = subprocess.Popen(args, stderr=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
+
+        out = p.stdout.read()
+        err = p.stderr.read()
+        failure = p.wait()
+
+        if not failure:
+            return out
+
+        if "mtn: misuse: no file" in err:
+            raise FileNotFoundError(fileid)
+        else:
+            raise SCMError(err)
+
+
+# vi: et:sw=4 ts=4
