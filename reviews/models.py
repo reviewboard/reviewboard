@@ -22,6 +22,9 @@ from reviewboard.reviews.errors import InvalidChangeNumberError, \
 from reviewboard.reviews.managers import ReviewRequestManager
 from reviewboard.scmtools.models import Repository
 
+#the model for the summery only allows it to be 300 chars in length
+MAX_SUMMARY_LENGTH = 300
+
 def update_obj_with_changenum(obj, repository, changenum):
     """
     Utility helper to update a review request or draft from the
@@ -39,6 +42,15 @@ def update_obj_with_changenum(obj, repository, changenum):
     obj.branch = changeset.branch
     obj.bugs_closed = ','.join(changeset.bugs_closed)
 
+def truncate(string, num):
+   if len(string) > num:
+      string = string[0:num]
+      i = string.rfind('.')
+
+      if i != -1:
+         string = string[0:i + 1]
+
+   return string
 
 class Group(models.Model):
     """
@@ -316,6 +328,7 @@ class ReviewRequest(models.Model):
 
     def save(self):
         self.bugs_closed = self.bugs_closed.strip()
+        self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
 
         if self.status != "P":
             # If this is not a pending review request now, delete any
@@ -423,6 +436,7 @@ class ReviewRequestDraft(models.Model):
 
     def save(self):
         self.bugs_closed = self.bugs_closed.strip()
+        self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
         super(ReviewRequestDraft, self).save()
 
     @staticmethod
