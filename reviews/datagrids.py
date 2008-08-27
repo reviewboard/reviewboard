@@ -164,6 +164,22 @@ class PendingCountColumn(Column):
                                                         status='P').count())
 
 
+class GroupMemberCountColumn(Column):
+    """
+    A column used to show the number of users that registered for a group.
+    """
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, *args, **kwargs)
+        self.link = True
+        self.link_func = self.link_to_object
+
+    def render_data(self, group):
+        return str(group.users.count())
+
+    def link_to_object(self, group, value):
+        return reverse('group_members', args=[group.name])
+
+
 class ReviewCountColumn(Column):
     """
     A column showing the number of reviews for a review request.
@@ -357,9 +373,10 @@ class SubmitterDataGrid(DataGrid):
                                        field_name="directed_review_requests",
                                        shrink=True)
 
-    def __init__(self, request):
-        DataGrid.__init__(self, request, User.objects.filter(is_active=True),
-                          _("All submitters"))
+    def __init__(self, request,
+                 queryset=User.objects.filter(is_active=True),
+                 title=_("All submitters")):
+        DataGrid.__init__(self, request, queryset, title)
         self.default_sort = ["username"]
         self.profile_sort_field = 'sort_submitter_columns'
         self.profile_columns_field = 'submitter_columns'
@@ -382,7 +399,11 @@ class GroupDataGrid(DataGrid):
                            link=True, expand=True)
     pending_count = PendingCountColumn(_("Pending Reviews"),
                                        field_name="review_requests",
+                                       link=True,
                                        shrink=True)
+    member_count  = GroupMemberCountColumn(_("Members"),
+                                           field_name="members",
+                                           shrink=True)
 
     def __init__(self, request, title=_("All groups")):
         DataGrid.__init__(self, request, Group.objects.all(), title)

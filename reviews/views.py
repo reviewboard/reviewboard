@@ -195,6 +195,21 @@ def group(request, name, template_name='reviews/datagrid.html'):
 
 
 @check_login_required
+def group_members(request, name, template_name='reviews/datagrid.html'):
+    """
+    A list of users registered for a particular group.
+    """
+    # Make sure the group exists
+    get_object_or_404(Group, name=name)
+
+    datagrid = SubmitterDataGrid(request,
+        Group.objects.get(name=name).users.filter(is_active=True),
+        _("Members of group %s") % name)
+
+    return datagrid.render_to_response(template_name)
+
+
+@check_login_required
 def submitter(request, username, template_name='reviews/datagrid.html'):
     """
     A list of review requests owned by a particular user.

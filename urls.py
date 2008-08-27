@@ -77,6 +77,7 @@ else:
         # Groups
         url(r'^groups/$', 'group_list', name="all-groups"),
         url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/$', 'group', name="group"),
+        url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/members/$', 'group_members', name="group_members"),
     )
 
 
