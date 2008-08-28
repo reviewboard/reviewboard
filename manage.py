@@ -126,6 +126,16 @@ def fix_django_evolution_issues():
     model_fields.ImageField = model_files.ImageField
     model_fields.FileField = model_files.FileField
 
+    # XXX Django expects an 'abstract' key on a Meta, so set this on MockMeta.
+    from django_evolution.mutations import MockMeta
+    MockMeta.abstract = False
+
+    # XXX Django-Evolution uses the old callsite for sql_indexes_for_model.
+    #     Copy the function back temporarily to make this work.
+    from django.core.management import sql
+    from django.db import connection
+    sql.sql_indexes_for_model = connection.creation.sql_indexes_for_model
+
     # XXX Temporary fix for Django Evolution's signal handler.
     #     Remove when they update to use the new signal code.
     from django.dispatch import dispatcher
