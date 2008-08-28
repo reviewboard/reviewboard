@@ -329,6 +329,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 5)
         self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Made e-mail improvements')
@@ -355,6 +356,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
         self.assertEqual(datagrid.rows[1]['object'].username, 'doc')
@@ -373,6 +375,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].name, 'devgroup')
         self.assertEqual(datagrid.rows[1]['object'].name, 'emptygroup')
@@ -393,6 +396,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Made e-mail improvements')
@@ -413,6 +417,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Add permission checking for JSON API')
@@ -427,6 +432,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Made e-mail improvements')
@@ -445,6 +451,7 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
         self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary,
                          'Update for cleaned_data changes')

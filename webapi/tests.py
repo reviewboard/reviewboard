@@ -31,8 +31,11 @@ class WebAPITests(TestCase):
         self.client.logout()
 
     def apiGet(self, path, query={}):
+        print "Getting /api/json/%s/" % path
+        print "Query data: %s" % query
         response = self.client.get("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, 200)
+        print "Raw response: %s" % response.content
         rsp = simplejson.loads(response.content)
         print "Response: %s" % rsp
         return rsp

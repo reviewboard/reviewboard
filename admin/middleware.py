@@ -1,0 +1,29 @@
+from django.conf import settings
+
+from reviewboard.admin.checks import check_updates_required
+from reviewboard.admin.views import manual_updates_required
+from reviewboard.webapi.json import service_not_configured
+
+
+class CheckUpdatesRequiredMiddleware:
+    """
+    Middleware that checks if manual updates need to be made on the
+    installation. If updates are required, all attempts to access a
+    URL will be redirected to the updates page (or an appropriate
+    error response for API calls.
+    """
+    def process_request(self, request):
+        """
+        Checks whether updates are required and returns the appropriate
+        response if they are.
+        """
+        if check_updates_required():
+            api_path = settings.SITE_ROOT + "api/"
+
+            if request.META['PATH_INFO'].startswith(api_path):
+                return service_not_configured(request)
+
+            return manual_updates_required(request)
+
+        # Let another handler handle this.
+        return None

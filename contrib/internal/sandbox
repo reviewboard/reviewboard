@@ -16,8 +16,8 @@ REVISION=`$COMMAND | grep Revision: |cut -f2 -d" "`
 	--diff=- \
 	-p1 \
 	--connect="ssh" \
-	--builder="x86_ubuntu704_django_trunk" \
-	--builder="x86_ubuntu704_django_1.0_beta_1" \
+	--builder="reviewboard_django_trunk" \
+	--builder="reviewboard_django_1.0_beta_1" \
 	--tryhost="review-board.org" \
 	--master="review-board.org:9989" \
 	--trydir="~buildbot/masters/reviewboard/jobdir" \

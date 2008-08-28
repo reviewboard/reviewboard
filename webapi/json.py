@@ -14,11 +14,13 @@ from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
                                 WebAPIResponseError, \
                                 WebAPIResponseFormError
-from djblets.webapi.decorators import webapi_login_required, \
+from djblets.webapi.decorators import webapi, \
+                                      webapi_login_required, \
                                       webapi_permission_required
 from djblets.webapi.errors import WebAPIError, \
                                   PERMISSION_DENIED, DOES_NOT_EXIST, \
-                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA
+                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
+                                  SERVICE_NOT_CONFIGURED
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
@@ -215,6 +217,14 @@ def string_to_status(status):
         return None
     else:
         raise "Invalid status '%s'" % status
+
+
+@webapi
+def service_not_configured(request):
+    """
+    Returns an error specifying that the service has not yet been configured.
+    """
+    return WebAPIResponseError(request, SERVICE_NOT_CONFIGURED)
 
 
 @webapi_login_required
