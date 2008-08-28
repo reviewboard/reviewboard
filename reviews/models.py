@@ -65,7 +65,7 @@ class Group(models.Model):
     mailing_list = models.EmailField(_("mailing list"), blank=True,
         help_text=_("The mailing list review requests and discussions "
                     "are sent to."))
-    users = models.ManyToManyField(User, core=False, blank=True,
+    users = models.ManyToManyField(User, blank=True,
                                    related_name="review_groups",
                                    verbose_name=_("users"))
 
@@ -99,10 +99,10 @@ class DefaultReviewer(models.Model):
         help_text=_("File paths are matched against this regular expression "
                     "to determine if these reviewers should be added."))
     groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
-                                    core=False, blank=True)
+                                    blank=True)
     people = models.ManyToManyField(User, verbose_name=_("default people"),
                                     related_name="default_review_paths",
-                                    core=False, blank=True)
+                                    blank=True)
 
     def __unicode__(self):
         return self.name
@@ -181,7 +181,7 @@ class ReviewRequest(models.Model):
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)
 
-    summary = models.CharField(_("summary"), max_length=300, core=True)
+    summary = models.CharField(_("summary"), max_length=300)
     description = models.TextField(_("description"), blank=True)
     testing_done = models.TextField(_("testing done"), blank=True)
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
@@ -195,23 +195,23 @@ class ReviewRequest(models.Model):
         Group,
         related_name="review_requests",
         verbose_name=_("target groups"),
-        core=False, blank=True)
+        blank=True)
     target_people = models.ManyToManyField(
         User,
         verbose_name=_("target people"),
         related_name="directed_review_requests",
-        core=False, blank=True)
+        blank=True)
     screenshots = models.ManyToManyField(
         Screenshot,
         related_name="review_request",
         verbose_name=_("screenshots"),
-        core=False, blank=True)
+        blank=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
         help_text=_("A list of screenshots that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
-        core=False, blank=True)
+        blank=True)
 
 
     # Set this up with the ReviewRequestManager
@@ -380,32 +380,32 @@ class ReviewRequestDraft(models.Model):
     review_request = models.ForeignKey(ReviewRequest,
                                        related_name="draft",
                                        verbose_name=_("review request"),
-                                       core=True, unique=True)
+                                       unique=True)
     last_updated = ModificationTimestampField(_("last updated"))
-    summary = models.CharField(_("summary"), max_length=300, core=True)
+    summary = models.CharField(_("summary"), max_length=300)
     description = models.TextField(_("description"))
     testing_done = models.TextField(_("testing done"))
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
-                                blank=True, null=True, core=False)
+                                blank=True, null=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
                                            related_name="drafts",
                                            verbose_name=_("target groups"),
-                                           core=False, blank=True)
+                                           blank=True)
     target_people = models.ManyToManyField(User,
                                            verbose_name=_("target people"),
                                            related_name="directed_drafts",
-                                           core=False, blank=True)
+                                           blank=True)
     screenshots = models.ManyToManyField(Screenshot,
                                          related_name="drafts",
                                          verbose_name=_("screenshots"),
-                                         core=False, blank=True)
+                                         blank=True)
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
         related_name="inactive_drafts",
-        core=False, blank=True)
+        blank=True)
 
     submitter = property(lambda self: self.review_request.submitter)
 
@@ -774,13 +774,12 @@ class Review(models.Model):
         help_text=_("The review that the body (bottom) field is in reply to."))
 
     comments = models.ManyToManyField(Comment, verbose_name=_("comments"),
-                                      related_name="review",
-                                      core=False, blank=True)
+                                      related_name="review", blank=True)
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
         verbose_name=_("screenshot comments"),
         related_name="review",
-        core=False, blank=True)
+        blank=True)
 
     # XXX Deprecated. This will be removed in a future release.
     reviewed_diffset = models.ForeignKey(

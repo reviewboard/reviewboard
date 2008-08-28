@@ -14,13 +14,12 @@ class FileDiff(models.Model):
     This contains the patch and information needed to produce original and
     patched versions of a single file in a repository.
     """
-    diffset = models.ForeignKey('DiffSet', edit_inline=models.STACKED,
+    diffset = models.ForeignKey('DiffSet',
                                 related_name='files',
                                 verbose_name=_("diff set"))
 
-    source_file = models.CharField(_("source file"), max_length=256, core=True)
-    dest_file = models.CharField(_("destination file"), max_length=256,
-                                 core=True)
+    source_file = models.CharField(_("source file"), max_length=256)
+    dest_file = models.CharField(_("destination file"), max_length=256)
     source_revision = models.CharField(_("source file revision"), max_length=512)
     dest_detail = models.CharField(_("destination file details"), max_length=512)
     diff = Base64Field(_("diff"), db_column="diff_base64")
@@ -37,10 +36,10 @@ class DiffSet(models.Model):
     """
     A revisioned collection of FileDiffs.
     """
-    name = models.CharField(_('name'), max_length=256, core=True)
-    revision = models.IntegerField(_("revision"), core=True)
+    name = models.CharField(_('name'), max_length=256)
+    revision = models.IntegerField(_("revision"))
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
-    history = models.ForeignKey('DiffSetHistory', null=True, core=True,
+    history = models.ForeignKey('DiffSetHistory', null=True,
                                 related_name="diffsets",
                                 verbose_name=_("diff set history"))
     repository = models.ForeignKey(Repository, related_name="diffsets",

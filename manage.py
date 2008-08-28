@@ -31,7 +31,7 @@ def check_dependencies():
     try:
         import django
         if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0 and
-                django.VERSION[2] == "beta_1"):
+                django.VERSION[2] in ["beta_1", "beta_2"]):
             raise ImportError
     except ImportError:
         dependency_error("Django >= 1.0 beta 1 is required.")
