@@ -241,7 +241,7 @@ class EMailSettingsForm(SiteSettingsForm):
     """
     E-mail settings for Review Board.
     """
-    mail_send_review_email = forms.BooleanField(
+    mail_send_review_mail = forms.BooleanField(
         label=_("Send e-mails for review requests and reviews"),
         required=False)
     mail_host = forms.CharField(
