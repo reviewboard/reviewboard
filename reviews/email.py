@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
@@ -53,7 +52,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     Formats and sends an e-mail out with the current domain and review request
     being added to the template context. Returns the resulting message ID.
     """
-    current_site = Site.objects.get(pk=settings.SITE_ID)
+    current_site = Site.objects.get_current()
 
     from_email = get_email_address_for_user(user)
 
@@ -78,9 +77,11 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             if recipient.is_active:
                 recipients.add(get_email_address_for_user(recipient))
 
+    siteconfig = current_site.config.get()
+
     context['user'] = user
     context['domain'] = current_site.domain
-    context['domain_method'] = settings.DOMAIN_METHOD
+    context['domain_method'] = siteconfig.get("site_domain_method")
     context['review_request'] = review_request
     body = render_to_string(template_name, context)
 

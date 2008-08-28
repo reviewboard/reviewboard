@@ -6,6 +6,7 @@ import os
 from os.path import abspath, dirname
 
 from django.core.management import execute_manager, setup_environ
+from django.template.defaultfilters import striptags
 
 # Add the parent directory of 'manage.py' to the python path, so manage.py can
 # be run from any directory.  From http://www.djangosnippets.org/snippets/281/
@@ -17,10 +18,16 @@ except ImportError:
     sys.stderr.write("Error: Can't find the file 'settings.py' in the directory containing %r. It appears you've customized things.\nYou'll have to run django-admin.py, passing it your settings module.\n(If the file settings.py does indeed exist, it's causing an ImportError somehow.)\n" % __file__)
     sys.exit(1)
 
+from reviewboard.admin import checks
+
 
 warnings_found = 0
 def check_dependencies():
     from settings import dependency_error
+
+    # Some of our checks require access to django.conf.settings, so
+    # tell Django about our settings.
+    setup_environ(settings)
 
     # Python 2.4
     if sys.version_info[0] < 2 or \
@@ -51,27 +58,6 @@ def check_dependencies():
 
     import subprocess
 
-    # pygments
-    if settings.DIFF_SYNTAX_HIGHLIGHTING:
-        try:
-            import pygments
-            version = pygments.__version__.split(".")
-            if version[0] == 0 and version[1] < 9:
-                dependency_error('Pygments is installed, but is an old version. '
-                                 'Versions prior to 0.9 are known to have '
-                                 'serious problems.')
-        except ImportError:
-            dependency_error('The Pygments library is required when ' +
-                             'DIFF_SYNTAX_HIGHLIGHTING is enabled.')
-
-    # PyLucene
-    if settings.ENABLE_SEARCH:
-        try:
-            imp.find_module('lucene')
-        except ImportError:
-            dependency_error('PyLucene (with JCC) is required when '
-                             'ENABLE_SEARCH is set.')
-
     # The following checks are non-fatal warnings, since these dependencies are
     # merely recommended, not required.
     def dependency_warning(string):
@@ -97,6 +83,13 @@ def check_dependencies():
         imp.find_module('mercurial')
     except ImportError:
         dependency_warning('hg not found.  Mercurial integration will not work.')
+
+    for check_func in (checks.get_can_enable_search,
+                       checks.get_can_enable_syntax_highlighting):
+        success, reason = check_func()
+
+        if not success:
+            dependency_warning(striptags(reason))
 
     found = False
     for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):

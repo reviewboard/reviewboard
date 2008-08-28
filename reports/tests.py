@@ -1,5 +1,6 @@
-from django.conf import settings
 from django.test import TestCase
+
+from djblets.siteconfig.models import SiteConfiguration
 
 
 class ViewTests(TestCase):
@@ -7,7 +8,8 @@ class ViewTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
-        settings.REQUIRE_SITEWIDE_LOGIN = False
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("auth_require_sitewide_login", False)
 
     def testReviewRequestReport(self):
         """Testing review_request report"""

@@ -1,5 +1,6 @@
 import time
 from sha import sha
+
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.core.urlresolvers import reverse
@@ -7,9 +8,25 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from djblets.auth.util import login_required
+from djblets.auth.views import register
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.forms import PreferencesForm
 from reviewboard.accounts.models import Profile
+
+
+def account_register(request):
+    """
+    Handles redirection to the appropriate registration page, depending
+    on the authentication type the user has configured.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    auth_backend = siteconfig.get("auth_backend")
+
+    if auth_backend == "builtin":
+        return register(request, next_page=settings.SITE_ROOT + 'dashboard/')
+
+    return HttpResponseRedirect(reverse("login"))
 
 
 @login_required
@@ -26,7 +43,10 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         form = PreferencesForm(request.POST)
 
         if form.is_valid():
-            if settings.BUILTIN_AUTH:
+            siteconfig = SiteConfiguration.objects.get_current()
+            auth_backend = siteconfig.get("auth_backend")
+
+            if auth_backend == "builtin":
                 if form.cleaned_data['password1']:
                     salt = sha(str(time.time())).hexdigest()[:5]
                     hash = sha(salt + form.cleaned_data['password1'])
@@ -36,6 +56,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
                 request.user.first_name = form.cleaned_data['first_name']
                 request.user.last_name = form.cleaned_data['last_name']
                 request.user.email = form.cleaned_data['email']
+
             request.user.review_groups = form.cleaned_data['groups']
             request.user.save()
 

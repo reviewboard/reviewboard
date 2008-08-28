@@ -1,9 +1,13 @@
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.template import Context, Template
 from django.test import TestCase
 
+from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.templatetags import djblets_email
+from djblets.util.testing import TagTest
+
+import reviewboard.reviews.templatetags.reviewtags as reviewtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \
@@ -16,7 +20,9 @@ class EmailTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
-        settings.SEND_REVIEW_MAIL = True
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("mail_send_review_mail", True)
+        siteconfig.save()
         mail.outbox = []
 
     def testNewReviewRequestEmail(self):
@@ -233,7 +239,9 @@ class ViewTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
-        settings.REQUIRE_SITEWIDE_LOGIN = False
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.siteconfig.set("auth_require_sitewide_login", False)
+        self.siteconfig.save()
 
     def getContextVar(self, response, varname):
         for context in response.context:
@@ -273,7 +281,6 @@ class ViewTests(TestCase):
         self.client.login(username='admin', password='admin')
 
         response = self.client.get('/r/3/')
-        print response.content
         self.assertEqual(response.status_code, 200)
 
         request = self.getContextVar(response, 'review_request')
@@ -300,7 +307,8 @@ class ViewTests(TestCase):
 
     def testReviewDetailSitewideLogin(self):
         """Testing review_detail view with site-wide login enabled"""
-        settings.REQUIRE_SITEWIDE_LOGIN = True
+        self.siteconfig.set("auth_require_sitewide_login", True)
+        self.siteconfig.save()
         response = self.client.get('/r/1/')
         self.assertEqual(response.status_code, 302)
 
@@ -346,7 +354,8 @@ class ViewTests(TestCase):
 
     def testReviewListSitewideLogin(self):
         """Testing all_review_requests view with site-wide login enabled"""
-        settings.REQUIRE_SITEWIDE_LOGIN = True
+        self.siteconfig.set("auth_require_sitewide_login", True)
+        self.siteconfig.save()
         response = self.client.get('/r/')
         self.assertEqual(response.status_code, 302)
 
@@ -365,7 +374,8 @@ class ViewTests(TestCase):
 
     def testSubmitterListSitewideLogin(self):
         """Testing submitter_list view with site-wide login enabled"""
-        settings.REQUIRE_SITEWIDE_LOGIN = True
+        self.siteconfig.set("auth_require_sitewide_login", True)
+        self.siteconfig.save()
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 302)
 
@@ -384,7 +394,8 @@ class ViewTests(TestCase):
 
     def testGroupListSitewideLogin(self):
         """Testing group_list view with site-wide login enabled"""
-        settings.REQUIRE_SITEWIDE_LOGIN = True
+        self.siteconfig.set("auth_require_sitewide_login", True)
+        self.siteconfig.save()
         response = self.client.get('/groups/')
         self.assertEqual(response.status_code, 302)
 

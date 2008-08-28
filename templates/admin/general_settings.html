@@ -1,0 +1,40 @@
+{% extends "admin/settings.html" %}
+
+{% block extrahead %}
+{{block.super}}
+<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo/yahoo-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui/event/event-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
+<script type="text/javascript">
+  var auth_backends = ["ldap", "nis", "custom"];
+
+  function updateAuthFormDisplay() {
+    var selection = getEl("id_auth_backend").dom;
+    var backend = selection.options[selection.selectedIndex].value;
+
+    for (i in auth_backends) {
+      getEl("fieldset_" + auth_backends[i]).addClass("hidden");
+    }
+
+    var el = getEl("fieldset_" + backend);
+
+    if (el) {
+      el.dom.style.display = "";
+      el.removeClass("hidden");
+    }
+  }
+
+  YAHOO.util.Event.on(window, "load", function(e) {
+    YAHOO.util.Event.on(getEl("id_auth_backend").dom, "change", function(e) {
+      updateAuthFormDisplay();
+    });
+
+    updateAuthFormDisplay();
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+{{block.super}}
+{% endblock %}

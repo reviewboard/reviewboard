@@ -23,7 +23,7 @@
  <h1 class="title">{% trans "User Preferences" %}</h1>
  <div class="main">
   <table>
-   {% if settings.BUILTIN_AUTH %}
+   {% ifequal siteconfig.settings.auth_backend "builtin" %}
    <tr>
     <td><label for="id_first_name">{% trans "First Name:" %}</label></td>
     <td>{{form.first_name}}</td>
@@ -44,8 +44,8 @@
     <td><label for="id_password2">{% trans "Verify New Password:" %}</label></td>
     <td>{{form.password2}} {{form.errors.password2}}</td>
    </tr>
-   {% endif %}
-{% if settings.DIFF_SYNTAX_HIGHLIGHTING %}
+   {% endifequal %}
+{% if siteconfig.settings.diffviewer_syntax_highlighting %}
    <tr>
     <td></td>
     <td>{{form.syntax_highlighting}} {{form.syntax_highlighting.label}}</td>

@@ -174,11 +174,6 @@ table.sidebyside .commentflag.draft {
   background: url('../images/comment-draft.png') no-repeat !important;
 }
 
-/* Extra whitespace highlight */
-table.sidebyside .ew {
-  background: #ee3434;
-}
-
 #diffs {
   list-style: none;
   margin: 0;

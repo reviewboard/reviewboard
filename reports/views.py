@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.http import Http404
@@ -72,10 +71,13 @@ def report(request, username, format, report, get_context):
 
     since = datetime.now() - timedelta(days=period)
 
+    site = Site.objects.get_current()
+    siteconfig = site.config.get()
+
     context = get_context(user, since)
     context.update({
-        'domain': Site.objects.get(pk=settings.SITE_ID).domain,
-        'domain_method': settings.DOMAIN_METHOD,
+        'domain': site,
+        'domain_method': siteconfig.get("site_domain_method"),
     })
 
     return render_to_response(template['template'], context,

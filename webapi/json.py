@@ -2,7 +2,6 @@ from datetime import datetime
 import os.path
 import re
 
-from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -10,6 +9,8 @@ from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
 from django.views.decorators.http import require_POST
+
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
                                 WebAPIResponseError, \
@@ -348,8 +349,6 @@ def new_review_request(request):
     Required parameters:
 
       * repository_path: The repository to create the review request against.
-                         If not specified, the DEFAULT_REPOSITORY_PATH
-                         setting will be used.
                          If both this and repository_id are set,
                          repository_path's value takes precedence.
       * repository_id:   The ID of the repository to create the review
@@ -377,8 +376,7 @@ def new_review_request(request):
       * INVALID_CHANGE_NUMBER
     """
     try:
-        repository_path = request.POST.get('repository_path',
-                                           settings.DEFAULT_REPOSITORY_PATH)
+        repository_path = request.POST.get('repository_path', None)
         repository_id = request.POST.get('repository_id', None)
         submit_as = request.POST.get('submit_as')
 
@@ -648,7 +646,8 @@ def review_request_draft_save(request, review_request_id):
     changes = draft.save_draft()
     draft.delete()
 
-    if settings.SEND_REVIEW_MAIL and changes:
+    siteconfig = SiteConfiguration.objects.get_current()
+    if siteconfig.get("mail_send_review_mail") and changes:
         mail_review_request(request.user, review_request, changes)
 
     return WebAPIResponse(request)
@@ -830,7 +829,8 @@ def review_draft_save(request, review_request_id, publish=False):
     else:
         review.save()
 
-    if publish and settings.SEND_REVIEW_MAIL:
+    siteconfig = SiteConfiguration.objects.get_current()
+    if publish and siteconfig.get("mail_send_review_mail"):
         mail_review(request.user, review)
 
     return WebAPIResponse(request)
@@ -992,7 +992,8 @@ def review_reply_draft_save(request, review_request_id, review_id):
                                    user=request.user)
         reply.publish()
 
-        if settings.SEND_REVIEW_MAIL:
+        siteconfig = SiteConfiguration.objects.get_current()
+        if siteconfig.get("mail_send_review_mail"):
             mail_reply(request.user, reply)
 
         return WebAPIResponse(request)

@@ -1,11 +1,11 @@
 from urllib import quote
 
-from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 
 from djblets.auth.util import login_required
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.accounts.models import Profile
@@ -19,7 +19,9 @@ def check_login_required(view_func):
     the user is not logged in, they're redirected to the login link.
     """
     def _check(*args, **kwargs):
-        if settings.REQUIRE_SITEWIDE_LOGIN:
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if siteconfig.get("auth_require_sitewide_login"):
             return login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)

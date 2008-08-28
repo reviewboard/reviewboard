@@ -8,6 +8,8 @@ from django.conf import settings
 from django.core.management.base import NoArgsCommand
 from django.db.models import Q
 
+from djblets.siteconfig.models import SiteConfiguration
+
 from reviews.models import ReviewRequest
 
 try:
@@ -31,11 +33,13 @@ class Command(NoArgsCommand):
     requires_model_validation = True
 
     def handle_noargs(self, **options):
+        siteconfig = SiteConfiguration.objects.get_current()
+
         # Refuse to do anything if they haven't turned on search.
-        if not settings.ENABLE_SEARCH:
-            sys.stderr.write('ENABLE_SEARCH is set to False in '
-                             'settings_local.py.  This needs to be set to '
-                             'True to run this command.\n')
+        if not siteconfig.get("search_enable"):
+            sys.stderr.write('Search is currently disabled. It must be '
+                             'enabled in the Review Board administration '
+                             'settings to run this command.\n')
             sys.exit(1)
 
         if not have_lucene:
@@ -44,7 +48,7 @@ class Command(NoArgsCommand):
 
         incremental = options.get('incremental', True)
 
-        store_dir = settings.SEARCH_INDEX
+        store_dir = siteconfig.get("search_index_file")
         if not os.path.exists(store_dir):
             os.mkdir(store_dir)
         timestamp_file = os.path.join(store_dir, 'timestamp')

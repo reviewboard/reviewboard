@@ -1,4 +1,4 @@
-#admin-nav {
+#admin-nav, #admin-subnav {
   background-color: #557ab1;
   float: left;
   list-style: none;
@@ -7,7 +7,8 @@
   width: 100%;
 }
 
-#admin-nav li {
+#admin-nav li,
+#admin-subnav li {
   display: block;
   float: left;
   line-height: normal;
@@ -15,20 +16,27 @@
   padding: 0;
 }
 
-#admin-nav li a {
+#admin-nav li a,
+#admin-subnav li a {
   display: block;
   float: left;
   font-size: 110%;
   padding: 4px 8px;
 }
 
-#admin-nav li a:hover {
+#admin-nav li a:hover,
+#admin-subnav li a:hover {
   background-color: #2f5183;
   text-decoration: none;
 }
 
-#admin-nav li a.active {
+#admin-nav li a.active,
+#admin-subnav li a.active {
   background-color: #173663;
+}
+
+#admin-subnav {
+  background-color: #333333;
 }
 
 .module.manage .count {
@@ -69,6 +77,7 @@
 .module th {
   white-space: nowrap;
 }
+
 
 /***************************************************************************
  * Django Admin overrides

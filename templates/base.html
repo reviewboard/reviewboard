@@ -47,15 +47,15 @@
      <li>- <a href="{% url logout %}">{% trans "Log out" %}</a></li>
     {% else %}
      <li><a href="{% url login %}?next_page={{request.path}}">{% trans "Log in" %}</a></li>
-     {% if settings.BUILTIN_AUTH %}
+     {% ifequal siteconfig.settings.auth_backend "builtin" %}
      <li>- <a href="{% url register %}">{% trans "Register" %}</a></li>
-     {% endif %}
+     {% endifequal %}
     {% endif %}
      <li>- <a href="http://code.google.com/p/reviewboard/issues/list">{% trans "Bugs" %}</a></li>
      <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">{% trans "Report bug" %}</a></li>
     </ul>
    </div>
-   {% if user.is_authenticated or not settings.REQUIRE_SITEWIDE_LOGIN %}
+   {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
    <form method="get" action="{% url search %}">
     <div id="navbar-outer">
      <ul id="navbar">
@@ -67,7 +67,7 @@
       <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
       <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
       <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
-      {% if settings.ENABLE_SEARCH %}
+      {% if siteconfig.settings.search_enable %}
       <li id="searchbar">
       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
        <input type="submit" value="{% trans "Search" %}" />

@@ -45,6 +45,7 @@ class WebAPITests(TestCase):
         print "Post data: %s" % query
         response = self.client.post("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, 200)
+        print "Raw response: %s" % response.content
         rsp = simplejson.loads(response.content)
         print "Response: %s" % rsp
         return rsp

@@ -10,9 +10,12 @@ nobase_rb_DATA = \
 	admin/dashboard.html \
 	admin/database.html \
 	admin/feed.html \
+	admin/general_settings.html \
 	admin/index.html \
+	admin/settings.html \
 	admin/manual_updates_required.html \
 	admin/manual-updates/media-upload-dir.html \
+	admin/manual-updates/run-syncdb.html \
 	base_feeds.html \
 	base.html \
 	diffviewer/changeindex.html \

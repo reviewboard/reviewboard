@@ -21,6 +21,9 @@
 <ul id="admin-nav">
  <li><a href="{% url reviewboard.admin.views.dashboard %}">Dashboard</a></li>
  <li><a href="{% url reviewboard.admin.views.dashboard %}db/">Database</a></li>
+ <li><a href="{% url site-settings %}">Settings</a></li>
 </ul>
+
+{%   block subnavbar %}{% endblock %}
 {%  endif %}
 {% endblock %}

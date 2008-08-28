@@ -51,6 +51,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.i18n',
     'django.core.context_processors.media',
     'django.core.context_processors.request',
+    'djblets.siteconfig.context_processors.siteconfig',
     'djblets.util.context_processors.settingsVars',
     'djblets.util.context_processors.siteRoot',
 )
@@ -80,6 +81,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'djblets.datagrid',
     'djblets.feedview',
+    'djblets.siteconfig',
     'djblets.util',
     'djblets.webapi',
     'reviewboard.accounts',
@@ -98,15 +100,7 @@ WEB_API_ENCODERS = (
     'reviewboard.webapi.json.ReviewBoardAPIEncoder',
 )
 
-# Whether to use django's built-in system for users.  This turns on certain
-# features like the registration page and profile editing.  If you're tying
-# reviewboard in to an existing authentication environment (such as NIS),
-# this data will come in from outside.
-BUILTIN_AUTH = True
 AUTH_PROFILE_MODULE = "accounts.Profile"
-
-# Default repository path to use for the source code.
-DEFAULT_REPOSITORY_PATH = None
 
 # Default expiration time for the cache.  Note that this has no effect unless
 # CACHE_BACKEND is specified in settings_local.py
@@ -116,47 +110,6 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 # gives us a somewhat more comprehensive test execution than django's built-in
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.runner'
-
-# Default diff settings
-DIFF_CONTEXT_NUM_LINES = 5
-DIFF_CONTEXT_COLLAPSE_THRESHOLD = 2 * DIFF_CONTEXT_NUM_LINES + 3
-
-# List of file patterns that will show whitespace-only changes. The
-# default behavior for diffs is to hide lines showing only leading
-# whitespace changes.
-#
-# For example:
-#
-#    DIFF_INCLUDE_SPACE_PATTERNS = ["*.py", "*.txt"]
-#
-DIFF_INCLUDE_SPACE_PATTERNS = []
-
-# When enabled, this will send e-mails for all review requests and comments
-# out to the e-mail addresses defined for the group.
-SEND_REVIEW_MAIL = False
-
-# Enable syntax highlighting in the diff viewer
-DIFF_SYNTAX_HIGHLIGHTING = False
-
-# Access method used for the site, used in e-mails.  Override this in
-# settings_local.py if you choose to use https instead of http.
-DOMAIN_METHOD = "http"
-
-# Require a login for accessing any part of the site. If False, review
-# requests, diffs, lists of review requests, etc. will be accessible without
-# a login.
-REQUIRE_SITEWIDE_LOGIN = False
-
-# Enable search. See the comment in settings_local.py for more information on
-# what's required to get this working.
-ENABLE_SEARCH = False
-SEARCH_INDEX = os.path.join(REVIEWBOARD_ROOT, 'search-index')
-
-# The number of files to display per page in the diff viewer
-DIFFVIEWER_PAGINATE_BY = 20
-
-# The number of extra files required before adding another page
-DIFFVIEWER_PAGINATE_ORPHANS = 10
 
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
@@ -195,6 +148,7 @@ LOGIN_URL = SITE_ROOT + 'account/login/'
 ADMIN_MEDIA_PREFIX = MEDIA_URL + 'admin/'
 
 # Cookie settings
+LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
 SESSION_COOKIE_AGE = 365 * 24 * 24 * 60 # 1 year
 SESSION_COOKIE_PATH = SITE_ROOT

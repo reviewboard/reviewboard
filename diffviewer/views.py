@@ -8,7 +8,6 @@ try:
 except ImportError:
     pygments = None
 
-from django.conf import settings
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
@@ -17,6 +16,7 @@ from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
@@ -31,8 +31,9 @@ def get_enable_highlighting(user):
     else:
         user_syntax_highlighting = True
 
-    return settings.DIFF_SYNTAX_HIGHLIGHTING and \
-           user_syntax_highlighting and pygments
+    siteconfig = SiteConfiguration.objects.get_current()
+    return siteconfig.get('diffviewer_syntax_highlighting') and \
+           user_syntax_highlighting and pygments is not None
 
 
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
@@ -82,8 +83,11 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         files = get_diff_files(diffset, None, interdiffset, highlighting)
 
         # Break the list of files into pages
-        paginator = Paginator(files, settings.DIFFVIEWER_PAGINATE_BY,
-                                    orphans=settings.DIFFVIEWER_PAGINATE_ORPHANS)
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        paginator = Paginator(files,
+                              siteconfig.get("diffviewer_paginate_by"),
+                              siteconfig.get("diffviewer_paginate_orphans"))
 
         page_num = int(request.GET.get('page', 1))
 

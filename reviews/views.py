@@ -16,6 +16,7 @@ from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 
 from djblets.auth.util import login_required
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
@@ -449,13 +450,14 @@ def preview_review_request_email(
     This is mainly used for debugging.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    siteconfig = SiteConfiguration.objects.get_current()
 
     return HttpResponse(render_to_string(template_name,
         RequestContext(request, {
             'review_request': review_request,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
-            'domain_method': settings.DOMAIN_METHOD,
+            'domain_method': siteconfig.get("site_domain_method"),
         }),
     ), mimetype='text/plain')
 
@@ -472,6 +474,7 @@ def preview_review_email(request, review_request_id, review_id,
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
+    siteconfig = SiteConfiguration.objects.get_current()
 
     review.ordered_comments = \
         review.comments.order_by('filediff', 'first_line')
@@ -482,7 +485,7 @@ def preview_review_email(request, review_request_id, review_id,
             'review': review,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
-            'domain_method': settings.DOMAIN_METHOD,
+            'domain_method': siteconfig.get("site_domain_method"),
         }),
     ), mimetype='text/plain')
 
@@ -500,6 +503,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
     reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
+    siteconfig = SiteConfiguration.objects.get_current()
 
     return HttpResponse(render_to_string(template_name,
         RequestContext(request, {
@@ -508,7 +512,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
             'reply': reply,
             'user': request.user,
             'domain': Site.objects.get(pk=settings.SITE_ID).domain,
-            'domain_method': settings.DOMAIN_METHOD,
+            'domain_method': siteconfig.get("site_domain_method"),
         }),
     ), mimetype='text/plain')
 
@@ -572,8 +576,9 @@ def search(request, template_name='reviews/search.html'):
     Searches review requests on Review Board based on a query string.
     """
     query = request.GET.get('q', '')
+    siteconfig = SiteConfiguration.objects.get_current()
 
-    if not settings.ENABLE_SEARCH:
+    if not siteconfig.get("search_enable"):
         # FIXME: show something useful
         raise Http404
 
@@ -589,7 +594,8 @@ def search(request, template_name='reviews/search.html'):
     except ValueError:
         pass
 
-    store = lucene.FSDirectory.getDirectory(settings.SEARCH_INDEX, False)
+    index_file = siteconfig.get("search_index_file")
+    store = lucene.FSDirectory.getDirectory(index_file, False)
     try:
         searcher = lucene.IndexSearcher(store)
     except lucene.JavaError, e:

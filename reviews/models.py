@@ -2,7 +2,6 @@ import os
 import re
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q, permalink
@@ -10,6 +9,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import ModificationTimestampField
 from djblets.util.misc import get_object_or_none
@@ -355,7 +355,8 @@ class ReviewRequest(models.Model):
             draft.save_draft(self)
             draft.delete()
 
-            if settings.SEND_REVIEW_MAIL:
+            siteconfig = SiteConfiguration.objects.get_current()
+            if siteconfig.get("mail_send_review_mail"):
                 mail_review_request(user, self)
 
     class Meta:

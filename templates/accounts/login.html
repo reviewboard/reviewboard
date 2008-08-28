@@ -7,8 +7,8 @@
 
 {% block content %}
 {% box "important" %}
-{% if BUILTIN_AUTH %}
-{% definevar "register_url" %}{% url register %}{% enddefinevar %}
+{% ifequal siteconfig.settings.auth_backend "builtin" %}
+{%  definevar "register_url" %}{% url register %}{% enddefinevar %}
 <h1>{% trans "New user?" %}</h1>
  <p>
  {% blocktrans %}If you don't yet have an account, you'll need to <a href="{{register_url}}">register</a> one. It will only take a minute.{% endblocktrans %}
@@ -18,7 +18,7 @@
  <p>
  {% blocktrans %}There's no need to register a new account. Your standard username and password should work fine.{% endblocktrans %}
  </p>
-{% endif %}
+{% endifequal %}
 {% endbox %}
 
 {% box "loginform" %}

@@ -1,0 +1,22 @@
+{% load i18n %}
+<h1 class="title">{% trans "Database changes" %}</h1>
+<div class="main">
+ <p>
+{% blocktrans %}
+  The Review Board database schema has changed since your last upgrade. To
+  update your schema, run:
+{% endblocktrans %}
+ </p>
+ <pre>
+  $ ./manage.py syncdb
+ </pre>
+ <p>
+{% blocktrans %}
+   Follow any additional instructions it may give you. If, for example, it
+   tells you to perform a schema evolution, run:
+{% endblocktrans %}
+ </p>
+ <pre>
+  $ ./manage.py evolve --execute
+ </pre>
+</div>

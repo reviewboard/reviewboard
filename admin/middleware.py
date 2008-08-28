@@ -17,10 +17,11 @@ class CheckUpdatesRequiredMiddleware:
         Checks whether updates are required and returns the appropriate
         response if they are.
         """
-        if check_updates_required():
-            api_path = settings.SITE_ROOT + "api/"
+        path_info = request.META['PATH_INFO']
 
-            if request.META['PATH_INFO'].startswith(api_path):
+        if (check_updates_required() and
+            not path_info.startswith(settings.MEDIA_URL)):
+            if path_info.startswith(settings.SITE_ROOT + "api/"):
                 return service_not_configured(request)
 
             return manual_updates_required(request)

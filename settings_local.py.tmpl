@@ -13,9 +13,6 @@ SECRET_KEY = '***********************************************'
 # django installations, the best option is probably to use memcached.
 CACHE_BACKEND = 'locmem:///'
 
-# Whether to send e-mail for review requests.
-SEND_REVIEW_MAIL = False
-
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/current/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
 TIME_ZONE = 'US/Pacific'
@@ -32,22 +29,6 @@ SITE_ID = 1
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = True
-
-# Enable search.  Search needs PyLucene to be installed.  It also requires
-# that a regular job be set up to perform the indexing.  To generate the
-# index, run:
-#    manage.py index
-# This command will perform an incremental index.  To do a full reindex, run:
-#    manage.py index --full
-#
-# Incremental indexes should be done fairly often.
-# A sample cron configuration exists in contrib/conf/search-cron.conf
-#
-# If you want the search index to be located somewhere other than the
-# reviewboard root, set SEARCH_INDEX to the desired path.  The index needs to be
-# a directory writable by the user creating the index and readable by the user
-# that Review Board runs as.
-ENABLE_SEARCH = False
 
 
 # TLS for LDAP.  If you're using LDAP authentication and your LDAP server

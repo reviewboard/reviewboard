@@ -1,8 +1,8 @@
 import os
 import unittest
 
-from django.conf import settings
 from django.test import TestCase
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 import reviewboard.diffviewer.diffutils as diffutils
@@ -220,7 +220,8 @@ class DiffParserTest(unittest.TestCase):
 
 class HighlightRegionTest(TestCase):
     def setUp(self):
-        settings.DIFF_SYNTAX_HIGHLIGHTING = True
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', True)
 
     def testHighlightRegion(self):
         """Testing highlightregion"""

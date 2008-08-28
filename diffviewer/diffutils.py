@@ -13,12 +13,12 @@ try:
 except ImportError:
     pass
 
-from django.conf import settings
 from django.utils.html import escape
 from django.utils.http import urlquote
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.myersdiff import MyersDiffer
@@ -371,17 +371,23 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     if not markup_b:
         markup_b = re.split(r"\r?\n", escape(new))
 
+    siteconfig = SiteConfiguration.objects.get_current()
+
     chunks = []
     linenum = 1
 
     ignore_space = True
-    for pattern in settings.DIFF_INCLUDE_SPACE_PATTERNS:
+    for pattern in siteconfig.get("diffviewer_include_space_patterns"):
         if fnmatch.fnmatch(file, pattern):
             ignore_space = False
             break
 
     differ = Differ(a, b, ignore_space=ignore_space,
                     compat_version=diffset.diffcompat)
+
+    # TODO: Make this back into a preference if people really want it.
+    context_num_lines = siteconfig.get("diffviewer_context_num_lines")
+    collapse_threshold = 2 * context_num_lines + 3
 
     for tag, i1, i2, j1, j2 in differ.get_opcodes():
         oldlines = markup_a[i1:i2]
@@ -394,23 +400,19 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                     a[i1:i2], b[j1:j2], oldlines, newlines)
         linenum += numlines
 
-        if tag == 'equal' and \
-           numlines > settings.DIFF_CONTEXT_COLLAPSE_THRESHOLD:
-            last_range_start = numlines - settings.DIFF_CONTEXT_NUM_LINES
+        if tag == 'equal' and numlines > collapse_threshold:
+            last_range_start = numlines - context_num_lines
 
             if len(chunks) == 0:
                 add_ranged_chunks(lines, 0, last_range_start, True)
                 add_ranged_chunks(lines, last_range_start, numlines)
             else:
-                add_ranged_chunks(lines, 0, settings.DIFF_CONTEXT_NUM_LINES)
+                add_ranged_chunks(lines, 0, context_num_lines)
 
                 if i2 == a_num_lines and j2 == b_num_lines:
-                    add_ranged_chunks(lines,
-                                      settings.DIFF_CONTEXT_NUM_LINES,
-                                      numlines, True)
+                    add_ranged_chunks(lines, context_num_lines, numlines, True)
                 else:
-                    add_ranged_chunks(lines,
-                                      settings.DIFF_CONTEXT_NUM_LINES,
+                    add_ranged_chunks(lines, context_num_lines,
                                       last_range_start, True)
                     add_ranged_chunks(lines, last_range_start, numlines)
         else:

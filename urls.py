@@ -5,12 +5,16 @@ from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
 
 from reviewboard.admin.checks import check_updates_required
+from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
                                       RssGroupReviewsFeed, \
                                       AtomGroupReviewsFeed
 
+
+# Load all site settings.
+load_site_config()
 
 # Load in all the models for the admin UI.
 if not admin.site._registry:
@@ -47,6 +51,7 @@ atom_feeds = {
 
 # Main includes
 urlpatterns += patterns('',
+    (r'^account/', include('reviewboard.accounts.urls')),
     (r'^api/json/', include('reviewboard.webapi.urls')),
     (r'^r/', include('reviewboard.reviews.urls')),
     (r'^reports/', include('reviewboard.reports.urls')),
@@ -91,28 +96,6 @@ urlpatterns += patterns('',
         {'url': 'dashboard/'},
         name="root"),
 
-    # Authentication and accounts
-    url(r'^account/login/$', 'djblets.auth.views.login',
-        {'next_page': settings.SITE_ROOT + 'dashboard/',
-         'extra_context': {'BUILTIN_AUTH': settings.BUILTIN_AUTH}},
-        name="login"),
-    url(r'^account/preferences/$',
-        'reviewboard.accounts.views.user_preferences',
-        name="user-preferences"),
-
     # This must be last.
     (r'^iphone/', include('reviewboard.iphone.urls')),
 )
-
-
-if settings.BUILTIN_AUTH:
-    urlpatterns += patterns('',
-        url(r'^account/register/$', 'djblets.auth.views.register',
-            {'next_page': settings.SITE_ROOT + 'dashboard/'},
-            name="register"),
-    )
-else:
-    urlpatterns += patterns('',
-        (r'^account/register/$',
-         'django.views.generic.simple.redirect_to',
-         {'url': settings.SITE_ROOT + 'account/login/'}))
