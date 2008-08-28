@@ -86,9 +86,20 @@ def migrate_settings(siteconfig):
     Migrates any settings we want in the database from the settings file.
     """
     # Convert everything in the table.
-    for siteconfig_key, settings_key in migration_table.iteritems():
+    for siteconfig_key, setting_data in migration_table.iteritems():
+        if isinstance(setting_data, dict):
+            setting_key = setting_data['key']
+            serialize_func = setting_data.get('serialize_func', None)
+        else:
+            setting_key = setting_data
+            serialize_func = None
+
         default = defaults.get(siteconfig_key, None)
-        value = getattr(settings, settings_key, default)
+        value = getattr(settings, setting_key, default)
+
+        if serialize_func and callable(serialize_func):
+            value = serialize_func(value)
+
         siteconfig.set(siteconfig_key, value)
 
 
