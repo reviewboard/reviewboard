@@ -1262,6 +1262,8 @@ def execute(command, env=None, split_lines=False, ignore_errors=False,
 
     debug(command)
 
+    env.update(os.environ)
+
     if sys.platform.startswith('win'):
         p = subprocess.Popen(command,
                              stdin=subprocess.PIPE,
