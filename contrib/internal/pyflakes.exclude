@@ -1,0 +1,3 @@
+admin/cache_stats.py:8: redefinition of unused 'memcache' from line 5
+admin/cache_stats.py:10: redefinition of unused 'memcache' from line 8
+settings.py:133: 'from settings_local import *' used; unable to detect undefined names
