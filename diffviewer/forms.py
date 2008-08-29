@@ -6,8 +6,7 @@ from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-import reviewboard.scmtools as scmtools
-from scmtools import PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
 
 
 class EmptyDiffError(ValueError):
@@ -112,7 +111,7 @@ class UploadDiffForm(forms.Form):
             # FIXME: this would be a good place to find permissions errors
             if (revision != PRE_CREATION and revision != UNKNOWN and
                 (check_existance and not tool.file_exists(filename, revision))):
-                raise scmtools.FileNotFoundError(filename, revision)
+                raise FileNotFoundError(filename, revision)
 
             f.origFile = filename
             f.origInfo = revision

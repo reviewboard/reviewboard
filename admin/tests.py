@@ -1,8 +1,5 @@
 from django.conf import settings
-from django.core.urlresolvers import clear_url_caches
 from django.test import TestCase
-
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin import checks
 
@@ -10,14 +7,9 @@ from reviewboard.admin import checks
 class UpdateTests(TestCase):
     """Tests for update required pages"""
 
-    def setUp(self):
-        pass
-        #self.backup_media_root = settings.MEDIA_ROOT
-
     def tearDown(self):
         # Make sure we don't break further tests by resetting this fully.
         checks.reset_check_cache()
-        #settings.MEDIA_ROOT = self.backup_media_root
 
     def testManualUpdatesRequired(self):
         """Testing check_updates_required with valid configuration"""

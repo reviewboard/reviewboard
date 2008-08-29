@@ -23,7 +23,7 @@ from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.smdiff import SMDiffer
-import reviewboard.scmtools as scmtools
+from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
 DEFAULT_DIFF_COMPAT_VERSION = 1
@@ -209,7 +209,7 @@ def get_original_file(filediff):
     """
     data = ""
 
-    if filediff.source_revision != scmtools.PRE_CREATION:
+    if filediff.source_revision != PRE_CREATION:
         tool = filediff.diffset.repository.get_scmtool()
         file = filediff.source_file
         revision = filediff.source_revision
@@ -437,9 +437,9 @@ def add_navigation_cues(files):
 
 
 def get_revision_str(revision):
-    if revision == scmtools.HEAD:
+    if revision == HEAD:
         return "HEAD"
-    elif revision == scmtools.PRE_CREATION:
+    elif revision == PRE_CREATION:
         return ""
     else:
         return "Revision %s" % revision
@@ -535,7 +535,7 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
                 continue
 
         filediff_revision_str = get_revision_str(filediff.source_revision)
-        newfile = (filediff.source_revision == scmtools.PRE_CREATION)
+        newfile = (filediff.source_revision == PRE_CREATION)
 
         if interdiffset:
             source_revision = "Diff Revision %s" % diffset.revision

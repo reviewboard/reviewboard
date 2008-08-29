@@ -4,10 +4,7 @@ from django.template import Context, Template
 from django.test import TestCase
 
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.templatetags import djblets_email
-from djblets.util.testing import TagTest
 
-import reviewboard.reviews.templatetags.reviewtags as reviewtags
 from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \

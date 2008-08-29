@@ -4,7 +4,6 @@ import optparse
 import sys
 import time
 
-from django.conf import settings
 from django.core.management.base import NoArgsCommand
 from django.db.models import Q
 

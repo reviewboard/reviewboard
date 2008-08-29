@@ -6,7 +6,6 @@
 # MacOS X and data files installation.
 
 import os
-import re
 import sys
 
 from ez_setup import use_setuptools

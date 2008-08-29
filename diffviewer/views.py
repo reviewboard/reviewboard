@@ -1,13 +1,5 @@
 import traceback
 
-# This makes sure that the "pygments" identifier exists.  If the pygments
-# library is not available, it will be None.  Otherwise, it will be the module
-# object.
-try:
-    import pygments
-except ImportError:
-    pygments = None
-
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, render_to_response
@@ -20,6 +12,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize, get_object_or_none
 
 from reviewboard.accounts.models import Profile
+from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.diffutils import UserVisibleError, get_diff_files
 
@@ -32,8 +25,9 @@ def get_enable_highlighting(user):
         user_syntax_highlighting = True
 
     siteconfig = SiteConfiguration.objects.get_current()
-    return siteconfig.get('diffviewer_syntax_highlighting') and \
-           user_syntax_highlighting and pygments is not None
+    return (siteconfig.get('diffviewer_syntax_highlighting') and
+            user_syntax_highlighting and
+            get_can_enable_syntax_highlighting())
 
 
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,

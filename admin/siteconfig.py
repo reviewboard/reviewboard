@@ -1,7 +1,6 @@
 import os.path
 
 from django.conf import settings
-from django.contrib.sites.models import Site
 from django.core.exceptions import ImproperlyConfigured
 
 from djblets.siteconfig.django_settings import apply_django_settings, \

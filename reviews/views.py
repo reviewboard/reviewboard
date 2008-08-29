@@ -36,8 +36,8 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
                                        Review, Group, Screenshot, \
                                        ScreenshotComment
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
-import reviewboard.scmtools as scmtools
 
 
 @login_required
@@ -121,7 +121,7 @@ def review_detail(request, review_request_id, template_name):
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
-        'PRE_CREATION': scmtools.PRE_CREATION,
+        'PRE_CREATION': PRE_CREATION,
     }))
 
 

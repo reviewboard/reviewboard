@@ -4,7 +4,6 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
 
-from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \

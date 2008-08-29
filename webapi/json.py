@@ -35,8 +35,8 @@ from reviewboard.reviews.errors import ChangeNumberInUseError, \
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
+from reviewboard.scmtools.core import FileNotFoundError
 from reviewboard.scmtools.models import Repository
-import reviewboard.scmtools as scmtools
 
 
 #
@@ -1069,7 +1069,7 @@ def new_diff(request, review_request_id):
             diffset.save()
         else:
             diffset.revision = 1
-    except scmtools.FileNotFoundError, e:
+    except FileNotFoundError, e:
         return WebAPIResponseError(request, REPO_FILE_NOT_FOUND, {
             'file': e.path,
             'revision': e.revision

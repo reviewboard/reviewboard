@@ -1,3 +1,4 @@
+import imp
 import os
 
 from django.conf import settings
@@ -69,7 +70,7 @@ def get_can_enable_search():
     Checks whether the search functionality can be enabled.
     """
     try:
-        import lucene
+        imp.find_module("lucene")
         return (True, None)
     except ImportError:
         return (False, _(
