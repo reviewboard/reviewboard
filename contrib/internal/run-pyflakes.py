@@ -9,6 +9,7 @@ import sys
 
 
 module_exclusions = [
+    'build',
     'djblets',
     'django_evolution',
     'dist',
