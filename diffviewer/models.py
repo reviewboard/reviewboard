@@ -50,7 +50,7 @@ class DiffSet(models.Model):
         help_text=_("The diff generator compatibility version to use. "
                     "This can and should be ignored."))
 
-    def save(self):
+    def save(self, **kwargs):
         """
         Saves this diffset.
 

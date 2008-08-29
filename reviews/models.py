@@ -326,7 +326,7 @@ class ReviewRequest(models.Model):
     def __unicode__(self):
         return self.summary
 
-    def save(self):
+    def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()
         self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
 
@@ -435,7 +435,7 @@ class ReviewRequestDraft(models.Model):
     def __unicode__(self):
         return self.summary
 
-    def save(self):
+    def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()
         self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
         super(ReviewRequestDraft, self).save()
