@@ -157,7 +157,7 @@ class CVSClient:
         if filename.endswith(",v"):
             filename = filename.rstrip(",v")
 
-        p = subprocess.Popen(['cvs', '-d', self.repository, 'checkout',
+        p = subprocess.Popen(['cvs', '-f', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=True)
