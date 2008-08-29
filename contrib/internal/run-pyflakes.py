@@ -4,6 +4,7 @@
 # exclude errors we know to be fine.
 
 import os
+import re
 import subprocess
 import sys
 
@@ -48,14 +49,18 @@ def main():
     fp = open(os.path.join(cur_dir, "pyflakes.exclude"), "r")
 
     for line in fp.readlines():
-        exclusions[line.rstrip()] = 1
+        if not line.startswith("#"):
+            exclusions[line.rstrip()] = 1
 
     fp.close()
 
     # Now filter thin
     for line in contents:
         line = line.rstrip()
-        if line not in exclusions:
+        test_line = re.sub(r':[0-9]+:', r':*:', line, 1)
+        test_line = re.sub(r'line [0-9]+', r'line *', test_line)
+
+        if test_line not in exclusions:
             print line
 
 
