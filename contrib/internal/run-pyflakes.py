@@ -13,6 +13,7 @@ module_exclusions = [
     'django_evolution',
     'dist',
     'ez_setup.py',
+    'htdocs',
     'settings_local.py',
     'ReviewBoard.egg-info',
 ]
