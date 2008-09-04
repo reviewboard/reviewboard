@@ -79,6 +79,11 @@ setup(name="ReviewBoard",
       package_dir={'reviewboard': ''},
       cmdclass=cmdclasses,
       install_requires=['Django>=1.0', 'django_evolution', 'Djblets'],
+      dependency_links = [
+          "http://www.review-board.org/downloads/mirror/",
+          "http://www.review-board.org/downloads/nightlies/",
+          "http://www.review-board.org/downloads/bleeding/",
+      ],
       include_package_data=True,
       zip_safe=False,
       classifiers=[
