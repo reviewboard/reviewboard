@@ -1218,7 +1218,7 @@ def debug(s):
     """
     Prints debugging information if post-review was run with --debug
     """
-    if options and options.debug:
+    if DEBUG or options and options.debug:
         print ">>> %s" % s
 
 
