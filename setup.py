@@ -78,7 +78,7 @@ setup(name="ReviewBoard",
       packages=packages,
       package_dir={'reviewboard': ''},
       cmdclass=cmdclasses,
-      install_requires=['Django>=1.0-beta-1', 'django_evolution', 'Djblets'],
+      install_requires=['Django>=1.0', 'django_evolution', 'Djblets'],
       include_package_data=True,
       zip_safe=False,
       classifiers=[
