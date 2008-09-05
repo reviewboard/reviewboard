@@ -29,13 +29,19 @@ def get_email_addresses_for_group(g):
 
 
 class SpiffyEmailMessage(EmailMessage):
-    def __init__(self, subject, body, from_email, to, in_reply_to):
+    def __init__(self, subject, body, from_email, to, cc, in_reply_to):
         EmailMessage.__init__(self, subject, body, from_email, to)
+
+        self.cc = cc or []
+
         self.in_reply_to = in_reply_to
         self.message_id = None
 
     def message(self):
         msg = super(SpiffyEmailMessage, self).message()
+
+        if self.cc:
+            msg['Cc'] =','.join(self.cc)
 
         if self.in_reply_to:
             msg['In-Reply-To'] = self.in_reply_to
@@ -57,12 +63,14 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     from_email = get_email_address_for_user(user)
 
     recipients = set([from_email])
+    to_field = set()
 
     if review_request.submitter.is_active:
         recipients.add(get_email_address_for_user(review_request.submitter))
 
     for u in review_request.target_people.filter(is_active=True):
         recipients.add(get_email_address_for_user(u))
+        to_field.add(get_email_address_for_user(u))
 
     for group in review_request.target_groups.all():
         for address in get_email_addresses_for_group(group):
@@ -85,8 +93,18 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     context['review_request'] = review_request
     body = render_to_string(template_name, context)
 
+    # Set the cc field only when the to field (i.e People) are mentioned,
+    # so that to field consists of Reviewers and cc consists of all the
+    # other members of the group
+    if to_field:
+        cc_field = recipients.symmetric_difference(to_field)
+    else:
+        to_field = recipients
+        cc_field = set()
+
     message = SpiffyEmailMessage(subject.strip(), body, from_email,
-                                 list(recipients), in_reply_to)
+                                 list(to_field), list(cc_field), in_reply_to)
+
     message.send()
 
     return message.message_id
