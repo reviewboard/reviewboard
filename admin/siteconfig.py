@@ -3,6 +3,7 @@ import os.path
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
+from djblets.log import siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import apply_django_settings, \
                                                get_django_defaults, \
                                                get_django_settings_map
@@ -34,10 +35,12 @@ settings_map = {
     'site_domain_method':         'DOMAIN_METHOD',
 }
 settings_map.update(get_django_settings_map())
+settings_map.update(log_siteconfig.settings_map)
 
 
 # All the default values for settings.
 defaults = get_django_defaults()
+defaults.update(log_siteconfig.defaults)
 defaults.update({
     'auth_ldap_anon_bind_uid':             '',
     'auth_ldap_anon_bind_passwd':          '',

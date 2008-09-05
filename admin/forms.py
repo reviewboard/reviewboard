@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.sites.models import Site
 from django.utils.translation import ugettext as _
 
+from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.checks import get_can_enable_search, \
@@ -353,5 +354,53 @@ class DiffSettingsForm(SiteSettingsForm):
                 'fields': ('diffviewer_context_num_lines',
                            'diffviewer_paginate_by',
                            'diffviewer_paginate_orphans')
+            }
+        )
+
+
+class LoggingSettingsForm(SiteSettingsForm):
+    """
+    Logging settings for Review Board.
+    """
+    logging_enabled = forms.BooleanField(
+        label=_("Enable logging"),
+        help_text=_("Enables logging of Review Board operations. This is in "
+                    "addition to your web server's logging and does not log "
+                    "all page visits."),
+        required=False)
+
+    logging_directory = forms.CharField(
+        label=_("Log directory"),
+        help_text=_("The directory where log files will be stored. This must "
+                    "be writable by the web server."),
+        required=False)
+
+    logging_allow_profiling = forms.BooleanField(
+        label=_("Allow code profiling"),
+        help_text=_("Logs the time spent on certain operations. This is "
+                    "useful for debugging but may greatly increase the "
+                    "size of log files."),
+        required=False)
+
+    def save(self):
+        super(LoggingSettingsForm, self).save()
+
+        # Reload any important changes into the Django settings.
+        load_site_config()
+        restart_logging()
+
+    class Meta:
+        title = _("Logging Settings")
+        fieldsets = (
+            {
+                'title':   _('General'),
+                'classes': ('wide',),
+                'fields':  ('logging_enabled',
+                            'logging_directory'),
+            },
+            {
+                'title':   _('Advanced'),
+                'classes': ('wide',),
+                'fields':  ('logging_allow_profiling',),
             }
         )

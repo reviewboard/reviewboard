@@ -42,6 +42,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
 )
 
@@ -99,6 +100,8 @@ WEB_API_ENCODERS = (
     'djblets.webapi.core.BasicAPIEncoder',
     'reviewboard.webapi.json.ReviewBoardAPIEncoder',
 )
+
+LOGGING_NAME = "reviewboard"
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
 

@@ -1,9 +1,17 @@
+import logging
 import os.path
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
 
+# We do this to guarantee we're getting the absolute "djblets.log" and not
+# the relative "djblets.log" (which turns into "reviewboard.djblets.log")
+# Yes, it's a hack. We can remove it when djblets is removed from the source
+# directory.
+log = __import__("djblets.log", fromlist=["log"], level=0)
+
+from reviewboard import VERSION
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
@@ -14,6 +22,10 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
 
 # Load all site settings.
 load_site_config()
+
+# Set up logging.
+log.init_logging()
+logging.info("Log file for Review Board v%s" % VERSION)
 
 # Load in all the models for the admin UI.
 if not admin.site._registry:

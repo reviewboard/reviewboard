@@ -1,3 +1,4 @@
+import logging
 import traceback
 
 from django.core.paginator import Paginator
@@ -74,6 +75,14 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
     highlighting = get_enable_highlighting(request.user)
 
     try:
+        if interdiffset_id:
+            logging.debug("Generating diff viewer page for interdiffset ids "
+                          "%s-%s",
+                          diffset_id, interdiffset_id)
+        else:
+            logging.debug("Generating diff viewer page for filediff id %s",
+                          diffset_id)
+
         files = get_diff_files(diffset, None, interdiffset, highlighting)
 
         # Break the list of files into pages
@@ -137,6 +146,16 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         response = render_to_response(template_name,
                                       RequestContext(request, context))
         response.set_cookie('collapsediffs', collapseall)
+
+        if interdiffset_id:
+            logging.debug("Done generating diff viewer page for interdiffset "
+                          "ids %s-%s",
+                          diffset_id, interdiffset_id)
+        else:
+            logging.debug("Done generating diff viewer page for filediff "
+                          "id %s",
+                          diffset_id)
+
         return response
 
     except Exception, e:

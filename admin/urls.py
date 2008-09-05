@@ -22,6 +22,9 @@ urlpatterns += patterns('djblets.siteconfig.views',
     (r'^settings/diffs/$', 'site_settings',
      {'form_class': forms.DiffSettingsForm,
       'template_name': 'admin/settings.html'}),
+    (r'^settings/logging/$', 'site_settings',
+     {'form_class': forms.LoggingSettingsForm,
+      'template_name': 'admin/settings.html'}),
 )
 
 urlpatterns += patterns('',

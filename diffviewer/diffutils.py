@@ -1,4 +1,5 @@
 import fnmatch
+import logging
 import os
 import re
 import subprocess
@@ -18,6 +19,7 @@ from django.utils.http import urlquote
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
+from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
 
@@ -56,6 +58,8 @@ def Differ(a, b, ignore_space=False,
 def patch(diff, file, filename):
     """Apply a diff to a file.  Delegates out to `patch` because noone
        except Larry Wall knows how to patch."""
+
+    log_timer = log_timed("Patching file %s" % filename)
 
     def convert_line_endings(data):
         # Files without a trailing newline come out of Perforce (and possibly
@@ -110,6 +114,8 @@ def patch(diff, file, filename):
         f.write(diff)
         f.close()
 
+        log_timer.done()
+
         # FIXME: This doesn't provide any useful error report on why the patch
         # failed to apply, which makes it hard to debug.  We might also want to
         # have it clean up if DEBUG=False
@@ -125,6 +131,8 @@ def patch(diff, file, filename):
     os.unlink(oldfile)
     os.unlink(newfile)
     os.rmdir(tempdir)
+
+    log_timer.done()
 
     return data
 
@@ -210,7 +218,15 @@ def get_original_file(filediff):
     data = ""
 
     if filediff.source_revision != PRE_CREATION:
-        tool = filediff.diffset.repository.get_scmtool()
+        def fetch_file(file, revision):
+            log_timer = log_timed("Fetching file '%s' r%s from %s" %
+                                  (file, revision, repository))
+            data = tool.get_file(file, revision)
+            log_timer.done()
+            return data
+
+        repository = filediff.diffset.repository
+        tool = repository.get_scmtool()
         file = filediff.source_file
         revision = filediff.source_revision
 
@@ -225,7 +241,7 @@ def get_original_file(filediff):
         #
         # Basically, this fixes the massive regressions introduced by the
         # Django unicode changes.
-        data = cache_memoize(key, lambda: [tool.get_file(file, revision)])[0]
+        data = cache_memoize(key, lambda: [fetch_file(file, revision)])[0]
 
     # If there's a parent diff set, apply it to the buffer.
     if filediff.parent_diff:
@@ -389,6 +405,12 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     context_num_lines = siteconfig.get("diffviewer_context_num_lines")
     collapse_threshold = 2 * context_num_lines + 3
 
+    if interfilediff:
+        logging.debug("Generating diff chunks for interdiff ids %s-%s",
+                      filediff.id, interfilediff.id)
+    else:
+        logging.debug("Generating diff chunks for filediff id %s", filediff.id)
+
     for tag, i1, i2, j1, j2 in differ.get_opcodes():
         oldlines = markup_a[i1:i2]
         newlines = markup_b[j1:j2]
@@ -417,6 +439,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                     add_ranged_chunks(lines, last_range_start, numlines)
         else:
             chunks.append(new_chunk(lines, numlines, tag))
+
+    if interfilediff:
+        logging.debug("Done generating diff chunks for interdiff ids %s-%s",
+                      filediff.id, interfilediff.id)
+    else:
+        logging.debug("Done generating diff chunks for filediff id %s",
+                      filediff.id)
 
     return chunks
 
@@ -448,8 +477,26 @@ def get_revision_str(revision):
 def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
     if filediff:
         filediffs = [filediff]
+
+        if interdiffset:
+            log_timer = log_timed("Generating diff file info for "
+                                  "interdiffset ids %s-%s, filediff %s" %
+                                  (diffset.id, interdiffset.id, filediff.id))
+        else:
+            log_timer = log_timed("Generating diff file info for "
+                                  "diffset id %s, filediff %s" %
+                                  (diffset.id, filediff.id))
     else:
         filediffs = diffset.files.all()
+
+        if interdiffset:
+            log_timer = log_timed("Generating diff file info for "
+                                  "interdiffset ids %s-%s" %
+                                  (diffset.id, interdiffset.id))
+        else:
+            log_timer = log_timed("Generating diff file info for "
+                                  "diffset id %s" % diffset.id)
+
 
     # A map used to quickly look up the equivalent interfilediff given a
     # source file.
@@ -592,6 +639,9 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
             return cmp(y_ext, x_ext)
 
     files.sort(cmp_file)
+
+    log_timer.done()
+
     return files
 
 

@@ -1,3 +1,4 @@
+import logging
 import re
 
 
@@ -34,6 +35,9 @@ class DiffParser(object):
         Parses the diff, returning a list of File objects representing each
         file in the diff.
         """
+        logging.debug("DiffParser.parse: Beginning parse of diff, size = %s",
+                      len(self.data))
+
         self.files = []
         file = None
         i = 0
@@ -52,6 +56,8 @@ class DiffParser(object):
                     file.data += self.lines[i] + "\n"
 
                 i += 1
+
+        logging.debug("DiffParser.parse: Finished parsing diff.")
 
         return self.files
 
