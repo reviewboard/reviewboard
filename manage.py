@@ -107,10 +107,6 @@ def check_dependencies():
         sys.stderr.write('\n\n')
 
 
-# XXX Ugliness needed due to weak refs for dispatch callbacks. This can be
-#     removed when fix_django_evolution_issues() goes away.
-_signal_connections = []
-
 def fix_django_evolution_issues():
     # XXX Django r8244 moves django.db.models.fields.files.ImageField and
     # FileField into django.db.models.files, causing existing
@@ -125,33 +121,6 @@ def fix_django_evolution_issues():
     import django.db.models.fields.files as model_files
     model_fields.ImageField = model_files.ImageField
     model_fields.FileField = model_files.FileField
-
-    # XXX Django expects an 'abstract' key on a Meta, so set this on MockMeta.
-    from django_evolution.mutations import MockMeta
-    MockMeta.abstract = False
-
-    # XXX Django-Evolution uses the old callsite for sql_indexes_for_model.
-    #     Copy the function back temporarily to make this work.
-    from django.core.management import sql
-    from django.db import connection
-    sql.sql_indexes_for_model = connection.creation.sql_indexes_for_model
-
-    # XXX Temporary fix for Django Evolution's signal handler.
-    #     Remove when they update to use the new signal code.
-    from django.dispatch import dispatcher
-
-    def custom_connect(function, signal):
-        def wrapper_func(app, created_models, verbosity=1, **kwargs):
-            function(app, created_models, verbosity=verbosity)
-
-        dispatch_uid = "%s.%s" % (function.__module__, function.__name__)
-        dispatch_uid = dispatch_uid.replace("..", ".")
-        func = wrapper_func
-        signal.connect(func, dispatch_uid=dispatch_uid)
-        _signal_connections.append(func)
-
-    dispatcher.connect = custom_connect
-
 
 if __name__ == "__main__":
     if settings.DEBUG:
