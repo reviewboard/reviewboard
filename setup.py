@@ -80,6 +80,7 @@ setup(name="ReviewBoard",
       cmdclass=cmdclasses,
       install_requires=['Django>=1.0', 'django_evolution', 'Djblets'],
       dependency_links = [
+          "http://www.djangoproject.com/download/1.0/tarball/#egg=Django-1.0",
           "http://www.review-board.org/downloads/mirror/",
           "http://www.review-board.org/downloads/nightlies/",
           "http://www.review-board.org/downloads/bleeding/",
