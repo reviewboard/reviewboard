@@ -9,7 +9,7 @@ from django.contrib import admin
 # the relative "djblets.log" (which turns into "reviewboard.djblets.log")
 # Yes, it's a hack. We can remove it when djblets is removed from the source
 # directory.
-log = __import__("djblets.log", {}, {}, ["log"], 0)
+log = __import__("djblets.log", {}, {}, ["log"])
 
 from reviewboard import VERSION
 from reviewboard.admin.siteconfig import load_site_config
