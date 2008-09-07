@@ -1,3 +1,6 @@
+// iui.js
+//      iPhone UI helpers
+//      http://code.google.com/p/iui/
 
 (function() {
 
