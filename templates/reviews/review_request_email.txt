@@ -18,7 +18,9 @@ Summary{% if changes %}{% if changes.summary or changes.description %} (updated)
 {{ review_request.description }}
 
 {% ifnotequal review_request.bugs_closed "" %}
-This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.
+This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.{% ifnotequal review_request.repository.bug_tracker "" %}{% for bug in review_request.get_bug_list %}
+    {{ bug|bug_url:review_request }}{% endfor %}
+{% endifnotequal %}
 {% endifnotequal %}
 
 
