@@ -34,14 +34,14 @@ def check_dependencies():
        (sys.version_info[0] == 2 and sys.version_info[1] < 4):
         dependency_error('Python 2.4 or newer is required.')
 
-    # Django 1.0 alpha
+    # Django 1.0
     try:
         import django
         if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0 and
                 django.VERSION[2] == "final"):
             raise ImportError
     except ImportError:
-        dependency_error("Django >= 1.0 is required.")
+        dependency_error("Django 1.0 is required.")
 
     # django-evolution
     try:
@@ -75,7 +75,7 @@ def check_dependencies():
         subprocess.call(['p4', '-h'],
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     except ImportError:
-        dependency_warning('p4python (>=08.1) not found.  Perforce integration will not work.')
+        dependency_warning('p4python (>=07.3) not found.  Perforce integration will not work.')
     except OSError:
         dependency_error('p4 command not found.  Perforce integration will not work.')
 
