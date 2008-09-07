@@ -122,7 +122,7 @@
  {%  endbox %}
 {%  endif %}
 
-{%  ifnotequal review_request.diffset_history.diffsets.count 1 %}
+{%  ifnotequal num_diffs 1 %}
 {#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>

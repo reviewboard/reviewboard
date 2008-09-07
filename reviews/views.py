@@ -302,6 +302,10 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     is_draft_interdiff = has_draft_diff and interdiffset and \
                          draft.diffset == interdiffset
 
+    num_diffs = review_request.diffset_history.diffsets.count()
+    if draft and draft.diffset:
+        num_diffs += 1
+
     return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,
         'review_request': review_request,
@@ -309,6 +313,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
         'draft': draft,
         'is_draft_diff': is_draft_diff,
         'is_draft_interdiff': is_draft_interdiff,
+        'num_diffs': num_diffs,
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
