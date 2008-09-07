@@ -65,6 +65,16 @@ class MonotoneDiffParser(DiffParser):
 
 class MonotoneClient:
     def __init__(self, path):
+        found = False
+        for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
+            if os.path.exists(os.path.join(dir, 'mtn')):
+                found = True
+                break
+        if not found:
+            # This is technically not the right kind of error, but it's the
+            # pattern we use with all the other tools.
+            raise ImportError
+
         self.path = path
 
         if not os.path.isfile(self.path):
@@ -73,7 +83,10 @@ class MonotoneClient:
     def get_file(self, fileid):
         args = ['mtn', '-d', self.path, 'automate', 'get_file', fileid]
 
-        p = subprocess.Popen(args, stderr=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
+        p = subprocess.Popen(args,
+                             stderr=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             close_fds=True)
 
         out = p.stdout.read()
         err = p.stderr.read()

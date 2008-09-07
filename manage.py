@@ -99,6 +99,14 @@ def check_dependencies():
     if not found:
         dependency_warning('git binary not found.  Git integration will not work.')
 
+    found = False
+    for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
+        if os.path.exists(os.path.join(dir, 'mtn')):
+            found = True
+            break
+    if not found:
+        dependency_warning('mtn binary not found.  Monotone integration will not work.')
+
     # Django will print warnings/errors for database backend modules and flup
     # if the configuration requires it.
 
