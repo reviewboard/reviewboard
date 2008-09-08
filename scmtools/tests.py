@@ -347,7 +347,7 @@ class PerforceTests(unittest.TestCase):
         for file, expected in map(None, desc.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(hash(desc.summary), 4980424973015496725)
+        self.assertEqual(hash(desc.summary), 588429333)
 
     def testGetFile(self):
         """Testing PerforceTool.get_file"""
