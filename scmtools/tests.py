@@ -334,7 +334,7 @@ class PerforceTests(unittest.TestCase):
             else:
                 raise
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(hash(desc.description), -7425743081915501647)
+        self.assertEqual(hash(desc.description), -1591954511)
 
         expected_files = [
             '//public/perforce/api/python/P4Client/P4Clientmodule.cc',
@@ -363,7 +363,7 @@ class PerforceTests(unittest.TestCase):
                     'Connection to public.perforce.com failed.  No internet?')
             else:
                 raise
-        self.assertEqual(hash(file), -6079245147730624701)
+        self.assertEqual(hash(file), 1392492355)
 
     def testEmptyDiff(self):
         """Testing Perforce empty diff parsing"""
