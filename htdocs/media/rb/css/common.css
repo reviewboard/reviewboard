@@ -150,6 +150,11 @@ ul.errorlist li {
   margin: 0;
 }
 
+.datagrid-title,
+.datagrid-titlebox {
+  background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
+}
+
 
 /****************************************************************************
  * Inline editor forms

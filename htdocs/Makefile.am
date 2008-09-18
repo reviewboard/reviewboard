@@ -2,7 +2,6 @@ rbdir = $(pyexecdir)/reviewboard/htdocs
 nobase_rb_DATA = \
 	media/rb/css/admin.css \
 	media/rb/css/dashboard.css \
-	media/rb/css/datagrid.css \
 	media/rb/css/reviews.css \
 	media/rb/css/syntax.css \
 	media/rb/css/yui-ui.css \

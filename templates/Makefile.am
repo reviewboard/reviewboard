@@ -45,7 +45,6 @@ nobase_rb_DATA = \
 	reports/status_report-text.txt \
 	reviews/dashboard_entry.html \
 	reviews/dashboard.html \
-	reviews/datagrid.html \
 	reviews/new_review_request.html \
 	reviews/reply_email.txt \
 	reviews/review_detail.html \

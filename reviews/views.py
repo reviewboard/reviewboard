@@ -126,7 +126,7 @@ def review_detail(request, review_request_id, template_name):
 
 
 @check_login_required
-def all_review_requests(request, template_name='reviews/datagrid.html'):
+def all_review_requests(request, template_name='datagrid/datagrid.html'):
     """
     Displays a list of all review requests.
     """
@@ -137,7 +137,7 @@ def all_review_requests(request, template_name='reviews/datagrid.html'):
 
 
 @check_login_required
-def submitter_list(request, template_name='reviews/datagrid.html'):
+def submitter_list(request, template_name='datagrid/datagrid.html'):
     """
     Displays a list of all users.
     """
@@ -145,7 +145,7 @@ def submitter_list(request, template_name='reviews/datagrid.html'):
 
 
 @check_login_required
-def group_list(request, template_name='reviews/datagrid.html'):
+def group_list(request, template_name='datagrid/datagrid.html'):
     """
     Displays a list of all review groups.
     """
@@ -181,7 +181,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
 
 @check_login_required
-def group(request, name, template_name='reviews/datagrid.html'):
+def group(request, name, template_name='datagrid/datagrid.html'):
     """
     A list of review requests belonging to a particular group.
     """
@@ -196,7 +196,7 @@ def group(request, name, template_name='reviews/datagrid.html'):
 
 
 @check_login_required
-def group_members(request, name, template_name='reviews/datagrid.html'):
+def group_members(request, name, template_name='datagrid/datagrid.html'):
     """
     A list of users registered for a particular group.
     """
@@ -211,7 +211,7 @@ def group_members(request, name, template_name='reviews/datagrid.html'):
 
 
 @check_login_required
-def submitter(request, username, template_name='reviews/datagrid.html'):
+def submitter(request, username, template_name='datagrid/datagrid.html'):
     """
     A list of review requests owned by a particular user.
     """

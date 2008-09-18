@@ -1,5 +1,4 @@
-{% extends "base.html" %}
-{% load datagrid %}
+{% extends "datagrid/datagrid.html" %}
 {% load djblets_deco %}
 {% load i18n %}
 {% load reviewtags %}
@@ -8,16 +7,7 @@
 {% block extrahead %}
 <meta http-equiv="refresh" content="300" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/datagrid.css" />
-<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/event/event-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/dragdrop/dragdrop-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo-dom-event/yahoo-dom-event.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/common.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/datagrid.js"></script>
+{{block.super}}
 {% endblock %}
 
 {% block content %}
