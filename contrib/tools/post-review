@@ -725,7 +725,7 @@ class SVNClient(SCMClient):
         for info in execute(["svn", "info", path],
                             env={'LANG': 'en_US.UTF-8'},
                             split_lines=True):
-            parts = info.split(": ", 1)
+            parts = info.strip().split(": ", 1)
             if len(parts) == 2:
                 key, value = parts
                 svninfo[key] = value
