@@ -41,7 +41,7 @@ class SpiffyEmailMessage(EmailMessage):
         msg = super(SpiffyEmailMessage, self).message()
 
         if self.cc:
-            msg['Cc'] =','.join(self.cc)
+            msg['Cc'] = ','.join(self.cc)
 
         if self.in_reply_to:
             msg['In-Reply-To'] = self.in_reply_to
@@ -50,6 +50,12 @@ class SpiffyEmailMessage(EmailMessage):
         self.message_id = msg['Message-ID']
 
         return msg
+
+    def recipients(self):
+        """
+        Returns a list of all recipients of the e-mail.
+        """
+        return self.to + self.bcc + self.cc
 
 
 def send_review_mail(user, review_request, subject, in_reply_to,
