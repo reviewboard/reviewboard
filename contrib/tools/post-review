@@ -9,6 +9,7 @@ import simplejson
 import socket
 import subprocess
 import sys
+import urllib
 import urllib2
 from optparse import OptionParser
 from tempfile import mkstemp
@@ -674,7 +675,7 @@ class SVNClient(SCMClient):
                 if info.has_key("Copied From URL"):
                     url       = info["Copied From URL"]
                     root      = info["Repository Root"]
-                    from_file = url[len(root):]
+                    from_file = urllib.unquote(url[len(root):])
                     result.append(from_line.replace(to_file, from_file))
                 else:
                     result.append(from_line) #as is, no copy performed
@@ -710,7 +711,7 @@ class SVNClient(SCMClient):
                     info = self.svn_info(file)
                     url  = info["URL"]
                     root = info["Repository Root"]
-                    path = url[len(root):]
+                    path = urllib.unquote(url[len(root):])
 
                     line = front + " " + path + rest
 
