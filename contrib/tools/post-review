@@ -1256,12 +1256,10 @@ def execute(command, env=None, split_lines=False, ignore_errors=False,
     """
     Utility function to execute a command and return the output.
     """
-    # Internally, subprocess.Popen calls this anyway, but since we're
-    # showing it on the command line, we may as well do it ourselves.
     if isinstance(command, list):
-        command = subprocess.list2cmdline(command)
-
-    debug(command)
+        debug(subprocess.list2cmdline(command))
+    else:
+        debug(command)
 
     if env:
         env.update(os.environ)
@@ -1273,7 +1271,7 @@ def execute(command, env=None, split_lines=False, ignore_errors=False,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
-                             shell=True,
+                             shell=False,
                              universal_newlines=True,
                              env=env)
     else:
@@ -1281,7 +1279,7 @@ def execute(command, env=None, split_lines=False, ignore_errors=False,
                              stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT,
-                             shell=True,
+                             shell=False,
                              close_fds=True,
                              universal_newlines=True,
                              env=env)
