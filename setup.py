@@ -12,6 +12,8 @@ from ez_setup import use_setuptools
 use_setuptools()
 
 from setuptools import setup, find_packages
+from setuptools.command.build_py import build_py
+from setuptools.command.egg_info import manifest_maker
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
@@ -32,6 +34,58 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
 
+def my_write_manifest(self):
+    """
+    A version of manifest_maker.write_manifest that makes sure all files
+    in the manifest start with "./" so that they'll be included in the egg.
+    Otherwise, package data won't be installed. This oversight in setuptools
+    is partially due to the bug mentioned in fixed_build_py.
+
+    This should probably go away when we move the package contents into the
+    reviewboard/ directory.
+    """
+    for i, file in enumerate(self.filelist.files):
+        if (not file.startswith("./") and
+            not file.startswith("ReviewBoard.egg-info")):
+            self.filelist.files[i] = "./" + file
+
+    old_write_manifest(self)
+
+old_write_manifest = manifest_maker.write_manifest
+manifest_maker.write_manifest = my_write_manifest
+
+
+class fixed_build_py(build_py):
+    """
+    A version of setuptools's build_py that works around a bug when the
+    package dir is an empty string. While distutils documents that an empty
+    string should be used when the package contents are in the same directory
+    as setup.py, setuptools has a bug that breaks with this when installing
+    package data from that directory.
+
+    We temporarily set the package directory to "." so that _get_data_files
+    can extract the path without breaking.
+    """
+    def __init__(self, *args, **kwargs):
+        build_py.__init__(self, *args, **kwargs)
+        self.workaround_pkgdir = False
+
+    def get_package_dir(self, package):
+        pkg_dir = build_py.get_package_dir(self, package)
+
+        if self.workaround_pkgdir and pkg_dir == "":
+            return "."
+
+        return pkg_dir
+
+    def _get_data_files(self):
+        self.workaround_pkgdir = True
+        results = build_py._get_data_files(self)
+        self.workaround_pkgdir = False
+
+        return results
+
+
 class osx_install_data(install_data):
     # On MacOS, the platform-specific lib dir is
     # /System/Library/Framework/Python/.../
@@ -47,23 +101,25 @@ class osx_install_data(install_data):
         self.set_undefined_options('install', ('install_lib', 'install_dir'))
         install_data.finalize_options(self)
 
+
 if sys.platform == "darwin":
     cmdclasses = {'install_data': osx_install_data}
 else:
     cmdclasses = {'install_data': install_data}
+
+cmdclasses["build_py"] = fixed_build_py
 
 
 # Since we don't actually keep our directories in a reviewboard directory
 # like we really should, we have to fake it. Prepend "reviewboard." here,
 # set package_dir below, and make sure to exclude our svn:externals
 # dependencies.
-packages = [
+packages = ["reviewboard"] + [
     "reviewboard." + package_name
     for package_name in find_packages(
         exclude=["djblets",          "djblets.*",
                  "django_evolution", "django_evolution.*"])
 ]
-
 
 # Build the reviewboard package.
 setup(name="ReviewBoard",

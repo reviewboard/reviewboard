@@ -15,3 +15,4 @@ recursive-include reviews/fixtures *
 recursive-include scmtools/fixtures *
 recursive-include scmtools/testdata *
 recursive-include templates *.html *.txt
+prune htdocs/media/uploaded/images
