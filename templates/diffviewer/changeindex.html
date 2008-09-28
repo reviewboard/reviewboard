@@ -1,5 +1,5 @@
 {% load i18n %}
-<ol class="index">
+<ol class="index" start="{{page_start_index}}">
 {% for file in files %}
  <li><a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.depot_filename}}</a>:
  {% if file.binary %}

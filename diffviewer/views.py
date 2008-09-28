@@ -142,6 +142,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         context['next_page'] = page.next_page_number()
         context['has_previous'] = page.has_previous()
         context['previous_page'] = page.previous_page_number()
+        context['page_start_index'] = page.start_index()
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))
