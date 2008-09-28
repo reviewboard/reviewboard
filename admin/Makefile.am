@@ -11,7 +11,7 @@ nobase_rb_PYTHON = \
 	views.py \
 	management/__init__.py \
 	management/evolutions.py \
-	management/sites.py \
+	management/sites.py
 
 nobase_rb_DATA = \
 	fixtures/initial_evolution_schema.json
