@@ -271,6 +271,9 @@ class ReviewRequestDataGrid(DataGrid):
 
     review_count = ReviewCountColumn()
 
+    review_id = Column(_("Review ID"), field_name="id", db_field="id",
+                       shrink=True, sortable=True, link=True)
+
     def __init__(self, request, queryset, title):
         DataGrid.__init__(self, request, queryset, title)
         self.listview_template = 'reviews/review_request_listview.html'
