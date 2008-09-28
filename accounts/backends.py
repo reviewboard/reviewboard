@@ -45,6 +45,7 @@ class NISBackend:
                             email=email)
                 user.is_staff = False
                 user.is_superuser = False
+                user.set_unusable_password()
                 user.save()
             except nis.error:
                 pass
@@ -101,6 +102,7 @@ class LDAPBackend:
                             email=email)
                 user.is_staff = False
                 user.is_superuser = False
+                user.set_unusable_password()
                 user.save()
             except ImportError:
                 pass
