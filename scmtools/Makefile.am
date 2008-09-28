@@ -51,15 +51,6 @@ nobase_rb_DATA = \
 	testdata/git_repo/config \
 	testdata/git_repo/description \
 	testdata/git_repo/HEAD \
-	testdata/git_repo/hooks/applypatch-msg \
-	testdata/git_repo/hooks/commit-msg \
-	testdata/git_repo/hooks/post-commit \
-	testdata/git_repo/hooks/post-receive \
-	testdata/git_repo/hooks/post-update \
-	testdata/git_repo/hooks/pre-applypatch \
-	testdata/git_repo/hooks/pre-commit \
-	testdata/git_repo/hooks/pre-rebase \
-	testdata/git_repo/hooks/update \
 	testdata/git_repo/info/exclude \
 	testdata/git_repo/objects/a6/2df6c28c6c150d671c9947a3d07928c21a07e0 \
 	testdata/git_repo/objects/b1/7a09b164f5f1ffc8b31ca5980934ffa39faca3 \
