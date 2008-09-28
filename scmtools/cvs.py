@@ -157,6 +157,9 @@ class CVSClient:
         if filename.endswith(",v"):
             filename = filename.rstrip(",v")
 
+        # If the file is in the Attic, strip the Attic path element
+        filename = '/'.join(filename.rsplit('/Attic/', 1))
+
         p = subprocess.Popen(['cvs', '-f', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
