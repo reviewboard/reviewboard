@@ -722,6 +722,11 @@ def _set_draft_field_data(draft, field_name, data):
 def review_request_draft_set_field(request, review_request_id, field_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
+    if field_name == 'summary' and '\n' in request.POST['value']:
+        return WebAPIResponseError(request, INVALID_FORM_DATA,
+            {'attribute': field_name,
+             'detail': 'Summary cannot contain newlines'})
+
     #if not request.POST['value']:
     #    return WebAPIResponseError(request, MISSING_ATTRIBUTE,
     #                               {'attribute': field_name})
