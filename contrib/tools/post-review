@@ -93,6 +93,7 @@ class RepositoryInfo:
         self.base_path = base_path
         self.supports_changesets = supports_changesets
         self.supports_parent_diffs = supports_parent_diffs
+        debug("repository info: %s" % self)
 
     def __str__(self):
         return "Path: %s, Base path: %s, Supports changesets: %s" % \
@@ -531,6 +532,16 @@ class CVSClient(SCMClient):
         i = repository_path.find("@")
         if i != -1:
             repository_path = repository_path[i + 1:]
+
+        i = repository_path.find(":")
+        if i != -1:
+            host = repository_path[:i]
+            try:
+                canon = socket.getfqdn()
+                repository_path = repository_path.replace('%s:' % host,
+                                                          '%s:' % canon)
+            except socket.error, msg:
+                debug("failed to get fqdn for %s, msg=%s" % (host, msg))
 
         return RepositoryInfo(path=repository_path)
 
