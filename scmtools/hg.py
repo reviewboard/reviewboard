@@ -1,4 +1,8 @@
 import urllib2
+try:
+    from urllib2 import quote as urllib_quote
+except ImportError:
+    from urllib import quote as urllib_quote
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.core import \
@@ -99,7 +103,7 @@ class HgWebClient:
             authhandler = urllib2.HTTPBasicAuthHandler(passman)
             opener = urllib2.build_opener(authhandler)
             f = opener.open('%s/raw-file/%s/%s' %
-                            (self.url, rev, urllib2.quote(path)))
+                            (self.url, rev, urllib_quote(path)))
             return f.read()
         except Exception, e:
             raise FileNotFoundError(path, rev, str(e))
