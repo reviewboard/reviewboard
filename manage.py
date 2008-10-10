@@ -37,8 +37,8 @@ def check_dependencies():
     # Django 1.0
     try:
         import django
-        if not (django.VERSION[0] == 1 and django.VERSION[1] >= 0 and
-                django.VERSION[2] == "final"):
+        if not (django.VERSION[0] == 1 and
+                (django.VERSION[1] > 0 or django.VERSION[2] == "final")):
             raise ImportError
     except ImportError:
         dependency_error("Django 1.0 is required.")
