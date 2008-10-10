@@ -1377,6 +1377,11 @@ def tempt_fate(server, tool, changenum, diff_content=None,
                                             options.summary)
             save_draft = True
 
+        if options.bugs_closed:
+            server.set_review_request_field(review_request, 'bugs_closed',
+                                            options.bugs_closed)
+            save_draft = True
+
         if options.description:
             server.set_review_request_field(review_request, 'description',
                                             options.description)
@@ -1471,6 +1476,9 @@ def parse_options(tool, repository_info, args):
     parser.add_option("--description",
                       dest="description", default=None,
                       help="description of the review ")
+    parser.add_option("--bugs-closed",
+                      dest="bugs_closed", default=None,
+                      help="list of bugs closed ")
     parser.add_option("--revision-range",
                       dest="revision_range", default=None,
                       help="generate the diff for review based on given "
