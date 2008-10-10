@@ -187,7 +187,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         this.cancel();
     },
 
-    startEdit: function() {
+    startEdit: function(animate) {
         if (this.el.dom.firstChild && this.el.dom.firstChild.tagName == "PRE") {
             this.initialValue = this.el.dom.firstChild.innerHTML;
         } else {
@@ -195,7 +195,9 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         }
         this.setValue(this.normalizeText(this.initialValue).htmlDecode());
         this.editing = true;
-        this.show();
+
+        this.show(animate);
+
         this.fireEvent('beginedit', this);
     },
 
@@ -249,7 +251,7 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
         this.fireEvent('cancel', this, this.initialValue);
     },
 
-    show: function() {
+    show: function(animate) {
         if (this.editicon) {
             this.editicon.hide(this.animateIcon);
         }
@@ -272,9 +274,16 @@ YAHOO.extendX(RB.widgets.InlineEditor, YAHOO.ext.util.Observable, {
             this.field.setStyle("overflow", "hidden");
             this.fitWidthToParent();
             this.autoSizeArea.minHeight = newHeight;
-            this.field.setHeight(elHeight);
-            this.field.setHeight(newHeight, true, 0.35,
-                this.finishShow.createDelegate(this));
+
+
+            /* Explicitly test against false because undefined == animate */
+            if (animate == false) {
+                this.field.setHeight(newHeight);
+            } else {
+                this.field.setHeight(elHeight);
+                this.field.setHeight(newHeight, true, 0.35,
+                    this.finishShow.createDelegate(this));
+            }
         } else {
             this.finishShow();
         }

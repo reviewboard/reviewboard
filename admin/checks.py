@@ -32,8 +32,8 @@ def check_updates_required():
             ))
 
         try:
-            from djblets.siteconfig.models import SiteConfiguration
-            siteconfig = SiteConfiguration.objects.get_current()
+            from reviewboard.changedescs.models import ChangeDescription
+            ChangeDescription.objects.count()
         except:
             # We were unable to load this, so it's likely that the user
             # hasn't run syncdb yet.

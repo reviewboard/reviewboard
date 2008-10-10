@@ -58,7 +58,7 @@ function onEditComplete(field, value, callback) {
     );
 }
 
-function registerEditor(field, multiline) {
+function registerEditor(field, multiline, initialOpen) {
     var editor = new RB.widgets.InlineEditor({
         el: field,
         multiline: multiline,
@@ -69,6 +69,10 @@ function registerEditor(field, multiline) {
     editor.on('complete',
         function(editor, value) { onEditComplete(field, value); },
         this, true);
+
+    if (initialOpen) {
+        editor.startEdit(false);
+    }
 
     gEditors.push(editor);
 }

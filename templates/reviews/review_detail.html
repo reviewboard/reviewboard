@@ -102,25 +102,26 @@
 {% endifuserorperm %}
 {% endbox %}
 
-{% for review in reviews %}
-<a name="review{{review.id}}"></a>
-{% if forloop.last %}
+{% for entry in entries %}
+{%  if entry.review %}
+<a name="review{{entry.review.id}}"></a>
+{%   if forloop.last %}
 <a name="last-review" />
-{% endif %}
-{% box "review" %}
+{%   endif %}
+{%   box "review" %}
 <div class="main">
- <div id="{{review.id}}-banners"></div>
+ <div id="{{entry.review.id}}-banners"></div>
  <div class="header">
-  {% if review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
-  <div class="reviewer"><a href="{% url user review.user %}">{{review.user|user_displayname}}</a></div>
-  <div class="posted_time">{% blocktrans with review.timestamp|timesince as timestamp_since  and review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
+  {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
+  <div class="reviewer"><a href="{% url user entry.review.user %}">{{entry.review.user|user_displayname}}</a></div>
+  <div class="posted_time">{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
  </div>
  <div class="body">
-   <pre class="body_top">{{review.body_top|escape}}</pre>
-   {% reply_section review "" "body_top" "rcbt" %}
-{% if review.comments.all or review.screenshot_comments.all %}
+   <pre class="body_top">{{entry.review.body_top|escape}}</pre>
+   {% reply_section entry.review "" "body_top" "rcbt" %}
+{% if entry.review.comments.all or entry.review.screenshot_comments.all %}
    <dl class="diff-comments">
-{% for comment in review.screenshot_comments.all %}
+{% for comment in entry.review.screenshot_comments.all %}
     <dt>
      <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
@@ -132,10 +133,10 @@
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
-     {% reply_section review comment "screenshot_comment" "rc" %}
+     {% reply_section entry.review comment "screenshot_comment" "rc" %}
     </dd>
 {% endfor %}
-{% for comment in review.ordered_comments %}
+{% for comment in entry.review.ordered_comments %}
     <dt>
      <a name="comment{{comment.id}}"></a>
      <table class="sidebyside{% ifequal comment.filediff.source_revision PRE_CREATION %} newfile{% endifequal %}">
@@ -175,18 +176,68 @@
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
-	 {% reply_section review comment "comment" "rc" %}
+	 {% reply_section entry.review comment "comment" "rc" %}
     </dd>
 {% endfor %}
    </dl>
 {% endif %}
-  {% if review.body_bottom %}
-   <pre class="body_bottom">{{review.body_bottom|escape}}</pre>
-   {% reply_section review "" "body_bottom" "rcbb" %}
+  {% if entry.review.body_bottom %}
+   <pre class="body_bottom">{{entry.review.body_bottom|escape}}</pre>
+   {% reply_section entry.review "" "body_bottom" "rcbb" %}
   {% endif %}
  </div>
 </div>
-{% endbox %}
+{%   endbox %}
+{%  endif %}
+{%  if entry.changedesc %}
+<a name="changedesc{{entry.changedesc.id}}"></a>
+{%   box "changedesc" %}
+<div class="main">
+ <div class="header">
+   <b>Review request changed</b>
+   <div class="posted_time">{% blocktrans with entry.changedesc.timestamp|timesince as timestamp_since and entry.changedesc.timestamp|date:"F jS, Y, P" as timestamp_date %}Updated {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
+ </div>
+ <div class="body">
+  <ul>
+{% for fieldinfo in entry.changeinfo %}
+   <li><label>{{fieldinfo.title}}</label>
+{%  ifequal fieldinfo.type "changed" %}
+{% blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</p>
+{%  endifequal %}
+{%  ifequal fieldinfo.type "add_remove" %}
+    <ul>
+{%   if fieldinfo.info.removed %}
+{% definevar "removed_values" %}
+{% for item in fieldinfo.info.removed %}{% if item.1 %}<a href="{{item.1}}">{{item.0}}</a>{% else %}{{item.0}}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+{% enddefinevar %}
+<li>{% blocktrans %}removed {{removed_values}}{% endblocktrans %}</li>
+{%   endif %}
+{%   if fieldinfo.info.added %}
+{% definevar "added_values" %}
+{% for item in fieldinfo.info.added %}{% if item.1 %}<a href="{{item.1}}">{{item.0}}</a>{% else %}{{item.0}}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+{% enddefinevar %}
+<li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
+{%   endif %}
+    </ul>
+{%  endifequal %}
+{%  ifequal fieldinfo.type "screenshot_captions" %}
+    <ul>
+{%   for info in fieldinfo.info.values %}
+     <li>{% blocktrans with info.old.0 as old_value and info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</li>
+{%   endfor %}
+    </ul>
+{%  endifequal %}
+   </li>
+{% endfor %}
+  </ul>
+{% if entry.changedesc.text %}
+  <label>{% trans "Description:" %}</label>
+  <pre class="changedesc-text">{{entry.changedesc.text|escape}}</pre>
+{% endif %}
+ </div>
+</div>
+{%   endbox %}
+{%  endif %}
 {% endfor %}
 
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
@@ -209,6 +260,10 @@
 {% for image in review_request_details.screenshots.all %}
   registerEditor('screenshot_{{image.id}}_caption', false);
 {% endfor %}
+
+{% if entry.changedesc %}
+  registerEditor('changedescription', true, true);
+{% endif %}
 
 </script>
 {% endifequal %}

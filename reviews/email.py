@@ -144,17 +144,17 @@ def harvest_people_from_review_request(review_request):
               for u in harvest_people_from_review(review)]
 
 
-def mail_review_request(user, review_request, changes=None):
-    """Send an e-mail representing the supplied review request.
-
-    The "changes" argument is an optional list of strings which refer to fields
-    within the review request which have been updated.  This is created when
-    saving a draft on a public review request, and will be None when publishing
-    initially.  This is used by the template to add contextual (updated) flags
-    to inform people what changed.
-
+def mail_review_request(user, review_request, changedesc=None):
     """
+    Send an e-mail representing the supplied review request.
 
+    The "changedesc" argument is an optional ChangeDescription showing
+    what changed in a review request, possibly with explanatory text from
+    the submitter. This is created when saving a draft on a public review
+    request, and will be None when publishing initially.  This is used by
+    the template to add contextual (updated) flags to inform people what
+    changed.
+    """
     # If the review request is not yet public or has been discarded, don't send
     # any mail.
     if not review_request.public or review_request.status == 'D':
@@ -171,11 +171,17 @@ def mail_review_request(user, review_request, changes=None):
     else:
         extra_recipients = None
 
+    extra_context = {}
+
+    if changedesc:
+        extra_context['change_text'] = changedesc.text
+        extra_context['changes'] = changedesc.fields_changed
+
     review_request.time_emailed = datetime.now()
     review_request.email_message_id = \
         send_review_mail(user, review_request, subject, reply_message_id,
                          extra_recipients, 'reviews/review_request_email.txt',
-                         {'changes': changes})
+                         extra_context)
     review_request.save()
 
 

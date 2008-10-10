@@ -643,11 +643,11 @@ def review_request_draft_save(request, review_request_id):
     if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    changes = draft.save_draft()
+    changes = draft.publish()
     draft.delete()
 
     siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail") and changes:
+    if siteconfig.get("mail_send_review_mail"):
         mail_review_request(request.user, review_request, changes)
 
     return WebAPIResponse(request)
@@ -742,6 +742,14 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         draft = _prepare_draft(request, review_request)
         screenshot.draft_caption = data = request.POST['value']
         screenshot.save()
+        draft.save()
+
+        return WebAPIResponse(request, {field_name: data})
+
+    if field_name == "changedescription":
+        draft = _prepare_draft(request, review_request)
+        draft.changedesc.text = data = request.POST['value']
+        draft.changedesc.save()
         draft.save()
 
         return WebAPIResponse(request, {field_name: data})

@@ -361,6 +361,74 @@
 
 
 /****************************************************************************
+ * Change Descriptions
+ ****************************************************************************/
+#changedescription {
+  background-color: #FFFFFF;
+  border: 1px #b8b5a0 solid;
+  margin: 5px 0 0 0;
+  padding: 10px;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+.changedesc {
+  background-color: #fefadf;
+  background-image: url('../images/review_request_box_top_bg.png');
+}
+
+.changedesc .body {
+  background-color: #FAFAFA;
+  border: 1px #AAAAAA solid;
+  clear: both;
+  margin: 5px;
+  padding: 10px;
+}
+
+.changedesc .body pre {
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+.changedesc .box-inner {
+  background-image: url('../images/review_request_box_bottom_bg.png') !important;
+}
+
+.changedesc .header {
+  padding: 2px 4px;
+}
+
+.changedesc .header a {
+  color: black;
+  text-decoration: none;
+}
+
+.changedesc .header b {
+  float: left;
+  font-weight: bold;
+}
+
+.changedesc .header .posted_time {
+  text-align: right;
+}
+
+.changedesc label {
+  color: #575012;
+  font-weight: bold;
+}
+
+.changedesc ul {
+  padding-left: 2em;
+  margin-bottom: 10px;
+}
+
+/****************************************************************************
  * Screenshots
  ****************************************************************************/
 .screenshot-caption {

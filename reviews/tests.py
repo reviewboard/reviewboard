@@ -9,7 +9,8 @@ from reviewboard.reviews.email import get_email_address_for_user, \
                                       get_email_addresses_for_group, \
                                       mail_review_request, mail_review, \
                                       mail_reply
-from reviewboard.reviews.models import Group, ReviewRequest, Review
+from reviewboard.reviews.models import Group, ReviewRequest, \
+                                       ReviewRequestDraft, Review
 
 
 class EmailTests(TestCase):
@@ -467,6 +468,60 @@ class ViewTests(TestCase):
                          'Comments Improvements')
 
         self.client.logout()
+
+
+class DraftTests(TestCase):
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def testDraftChanges(self):
+        """Testing recording of draft changes."""
+        draft = self.getDraft()
+        review_request = draft.review_request
+
+        old_summary = review_request.summary
+        old_description = review_request.description
+        old_testing_done = review_request.testing_done
+        old_branch = review_request.branch
+        old_bugs = review_request.get_bug_list()
+
+        draft.summary = "New summary"
+        draft.description = "New description"
+        draft.testing_done = "New testing done"
+        draft.branch = "New branch"
+        draft.bugs_closed = "12, 34, 56"
+
+        new_bugs = draft.get_bug_list()
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assert_("summary" in fields)
+        self.assert_("description" in fields)
+        self.assert_("testing_done" in fields)
+        self.assert_("branch" in fields)
+        self.assert_("bugs_closed" in fields)
+
+        old_bugs_norm = set([(bug,) for bug in old_bugs])
+        new_bugs_norm = set([(bug,) for bug in new_bugs])
+
+        self.assertEqual(fields["summary"]["old"][0], old_summary)
+        self.assertEqual(fields["summary"]["new"][0], draft.summary)
+        self.assertEqual(fields["description"]["old"][0], old_description)
+        self.assertEqual(fields["description"]["new"][0], draft.description)
+        self.assertEqual(fields["testing_done"]["old"][0], old_testing_done)
+        self.assertEqual(fields["testing_done"]["new"][0], draft.testing_done)
+        self.assertEqual(fields["branch"]["old"][0], old_branch)
+        self.assertEqual(fields["branch"]["new"][0], draft.branch)
+        self.assertEqual(set(fields["bugs_closed"]["old"]), old_bugs_norm)
+        self.assertEqual(set(fields["bugs_closed"]["new"]), new_bugs_norm)
+        self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
+        self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
+
+
+    def getDraft(self):
+        """Convenience function for getting a new draft to work with."""
+        return ReviewRequestDraft.create(ReviewRequest.objects.get(
+            summary="Add permission checking for JSON API"))
 
 
 class IfNeatNumberTagTests(TestCase):

@@ -11,6 +11,12 @@ This is an automatically generated e-mail. To reply, visit:
 {% endif %}
 Review request for {% reviewer_list review_request %}.
 
+{% if change_text %}
+Changes
+-------
+
+{{change_text}}
+{% endif %}
 
 Summary{% if changes %}{% if changes.summary or changes.description %} (updated){% endif %}{% endif %}
 -------

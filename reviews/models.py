@@ -3,6 +3,7 @@ import re
 from datetime import datetime
 
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models import Q, permalink
 from django.utils.html import escape
@@ -15,6 +16,7 @@ from djblets.util.fields import ModificationTimestampField
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.email import mail_review_request
 from reviewboard.reviews.errors import InvalidChangeNumberError, \
@@ -213,6 +215,11 @@ class ReviewRequest(models.Model):
         related_name="inactive_review_request",
         blank=True)
 
+    changedescs = models.ManyToManyField(ChangeDescription,
+        verbose_name=_("change descriptions"),
+        related_name="review_request",
+        blank=True)
+
 
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
@@ -351,9 +358,11 @@ class ReviewRequest(models.Model):
         draft = self.draft.get()
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
-            self.public = True
-            draft.save_draft(self)
+            draft.publish(self)
             draft.delete()
+
+            self.public = True
+            self.save()
 
             siteconfig = SiteConfiguration.objects.get_current()
             if siteconfig.get("mail_send_review_mail"):
@@ -390,6 +399,9 @@ class ReviewRequestDraft(models.Model):
                                                     max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
                                 blank=True, null=True)
+    changedesc = models.ForeignKey(ChangeDescription,
+                                   verbose_name=_('change description'),
+                                   blank=True, null=True)
     branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
                                            related_name="drafts",
@@ -460,6 +472,11 @@ class ReviewRequestDraft(models.Model):
                     'branch': review_request.branch,
                 })
 
+        if draft.changedesc is None and review_request.public:
+            changedesc = ChangeDescription()
+            changedesc.save()
+            draft.changedesc = changedesc
+
         if draft_is_new:
             map(draft.target_groups.add, review_request.target_groups.all())
             map(draft.target_people.add, review_request.target_people.all())
@@ -520,88 +537,147 @@ class ReviewRequestDraft(models.Model):
             if group not in existing_groups:
                 self.target_groups.add(group)
 
-    def save_draft(self, request=None):
+    def publish(self, review_request=None):
         """
-        Save this draft. Uses the draft's assocated ReviewRequest object if one
-        isn't passed in.
+        Publishes this draft. Uses the draft's assocated ReviewRequest
+        object if one isn't passed in.
 
-        This returns a dict of changed fields, which is used by the e-mail
-        template to tell people what's new and interesting.
+        This updates and returns the draft's ChangeDescription, which
+        contains the changed fields. This is used by the e-mail template
+        to tell people what's new and interesting.
 
-        The possible keys inside the changes dict are:
-            'summary'
-            'description'
-            'testing_done'
-            'bugs_closed'
-            'branch'
-            'target_groups'
-            'target_people'
-            'screenshots'
-            'diff'
-        Each of these keys will have an associated boolean value.
+        The keys that may be saved in 'fields_changed' in the
+        ChangeDescription are:
+
+           *  'summary'
+           *  'description'
+           *  'testing_done'
+           *  'bugs_closed'
+           *  'branch'
+           *  'target_groups'
+           *  'target_people'
+           *  'screenshots'
+           *  'screenshot_captions'
+           *  'diff'
+
+        Each field in 'fields_changed' represents a changed field. This will
+        save fields in the standard formats as defined by the
+        'ChangeDescription' documentation, with the exception of the
+        'screenshot_captions' and 'diff' fields.
+
+        For the 'screenshot_captions' field, the value will be a dictionary
+        of screenshot ID/dict pairs with the following fields:
+
+           * 'old': The old value of the field
+           * 'new': The new value of the field
+
+        For the 'diff' field, there is only ever an 'added' field, containing
+        the ID of the new diffset.
         """
-        if request is None:
-            request = self.review_request
+        if not review_request:
+            review_request = self.review_request
 
-        changes = {}
+        if not self.changedesc and review_request.public:
+            self.changedesc = ChangeDescription()
 
-        def update_field(a, b, name):
+        def update_field(a, b, name, record_changes=True):
             # Apparently django models don't have __getattr__ or __setattr__,
             # so we have to update __dict__ directly.  Sigh.
             value = b.__dict__[name]
-            if a.__dict__[name] != value:
-                changes[name] = True
-                a.__dict__[name] = value
-            else:
-                changes[name] = False
+            old_value = a.__dict__[name]
 
-        def update_list(a, b, name):
+            if old_value != value:
+                if record_changes and self.changedesc:
+                    self.changedesc.record_field_change(name, old_value, value)
+
+                a.__dict__[name] = value
+
+        def update_list(a, b, name, record_changes=True, name_field=None):
             aset = set([x.id for x in a.all()])
             bset = set([x.id for x in b.all()])
-            changes[name] = bool(aset.symmetric_difference(bset))
 
-            a.clear()
-            map(a.add, b.all())
+            if aset.symmetric_difference(bset):
+                if record_changes and self.changedesc:
+                    self.changedesc.record_field_change(name, a.all(), b.all(),
+                                                        name_field)
 
-        update_field(request, self, 'summary')
-        update_field(request, self, 'description')
-        update_field(request, self, 'testing_done')
-        update_field(request, self, 'bugs_closed')
-        update_field(request, self, 'branch')
+                a.clear()
+                map(a.add, b.all())
 
-        update_list(request.target_groups, self.target_groups, 'target_groups')
-        update_list(request.target_people, self.target_people, 'target_people')
+
+        update_field(review_request, self, 'summary')
+        update_field(review_request, self, 'description')
+        update_field(review_request, self, 'testing_done')
+        update_field(review_request, self, 'branch')
+
+        update_list(review_request.target_groups, self.target_groups,
+                    'target_groups', name_field="name")
+        update_list(review_request.target_people, self.target_people,
+                    'target_people', name_field="username")
+
+        # Specifically handle bug numbers
+        old_bugs = set(review_request.get_bug_list())
+        new_bugs = set(self.get_bug_list())
+
+        if old_bugs != new_bugs:
+            update_field(review_request, self, 'bugs_closed',
+                         record_changes=False)
+
+            if self.changedesc:
+                self.changedesc.record_field_change('bugs_closed',
+                                                    old_bugs - new_bugs,
+                                                    new_bugs - old_bugs)
+
 
         # Screenshots are a bit special.  The list of associated screenshots can
         # change, but so can captions within each screenshot.
         screenshots = self.screenshots.all()
-        screenshots_changed = False
-        for s in request.screenshots.all():
+        caption_changes = {}
+
+        for s in review_request.screenshots.all():
             if s in screenshots and s.caption != s.draft_caption:
-                screenshots_changed = True
+                caption_changes[s.id] = {
+                    'old': (s.caption,),
+                    'new': (s.draft_caption,),
+                }
+
                 s.caption = s.draft_caption
                 s.save()
-        update_list(request.screenshots, self.screenshots, 'screenshots')
 
-        # If a caption changed, screenshots will always be changed regardless
-        # of whether the list of associated screenshots changed.
-        if screenshots_changed:
-            changes['screenshots'] = True
+        if caption_changes and self.changedesc:
+            self.changedesc.fields_changed['screenshot_captions'] = \
+                caption_changes
+
+        update_list(review_request.screenshots, self.screenshots,
+                    'screenshots', name_field="caption")
 
         # There's no change notification required for this field.
-        request.inactive_screenshots.clear()
-        map(request.inactive_screenshots.add, self.inactive_screenshots.all())
+        review_request.inactive_screenshots.clear()
+        map(review_request.inactive_screenshots.add,
+            self.inactive_screenshots.all())
 
         if self.diffset:
-            changes['diff'] = True
-            self.diffset.history = request.diffset_history
+            if self.changedesc:
+                self.changedesc.fields_changed['diff'] = {
+                    'added': [(_("Diff r%s") % self.diffset.revision,
+                               reverse("view_diff_revision",
+                                       args=[review_request.id,
+                                             self.diffset.revision]),
+                               self.diffset.id)],
+                }
+
+            self.diffset.history = review_request.diffset_history
             self.diffset.save()
-        else:
-            changes['diff'] = False
 
-        request.save()
+        if self.changedesc:
+            self.changedesc.timestamp = datetime.now()
+            self.changedesc.public = True
+            self.changedesc.save()
+            review_request.changedescs.add(self.changedesc)
 
-        return changes
+        review_request.save()
+
+        return self.changedesc
 
     def update_from_changenum(self, changenum):
         """

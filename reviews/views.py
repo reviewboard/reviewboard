@@ -85,6 +85,19 @@ def new_review_request(request,
     }))
 
 
+fields_changed_name_map = {
+    'summary': 'Summary',
+    'description': 'Description',
+    'testing_done': 'Testing Done',
+    'bugs_closed': 'Bugs Closed',
+    'branch': 'Branch',
+    'target_groups': 'Reviewers (Groups)',
+    'target_people': 'Reviewers (People)',
+    'screenshots': 'Screenshots',
+    'screenshot_captions': 'Screenshot Captions',
+    'diff': 'Diff',
+}
+
 @check_login_required
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_detail(request, review_request_id, template_name):
@@ -111,12 +124,60 @@ def review_detail(request, review_request_id, template_name):
         visited.save()
 
     repository = review_request.repository
+    changedescs = review_request.changedescs.filter(public=True)
+
+    entries = []
+
+    for review in reviews:
+        entries.append({
+            'review': review,
+            'timestamp': review.timestamp,
+        })
+
+    for changedesc in changedescs:
+        fields_changed = []
+
+        for name, info in changedesc.fields_changed.items():
+            if 'added' in info or 'removed' in info:
+                change_type = 'add_remove'
+
+                # We don't hard-code URLs in the bug info, since the
+                # tracker may move, but we can do it here.
+                if (name == "bugs_closed" and
+                    review_request.repository.bug_tracker):
+                    bug_url = review_request.repository.bug_tracker
+                    for field in info:
+                        for i, buginfo in enumerate(info[field]):
+                            info[field][i] = (buginfo[0],
+                                              bug_url % buginfo[0])
+
+            elif 'old' in info or 'new' in info:
+                change_type = 'changed'
+            elif name == "screenshot_captions":
+                change_type = 'screenshot_captions'
+            else:
+                # No clue what this is. Bail.
+                continue
+
+            fields_changed.append({
+                'title': fields_changed_name_map.get(name, name),
+                'info': info,
+                'type': change_type,
+            })
+
+        entries.append({
+            'changeinfo': fields_changed,
+            'changedesc': changedesc,
+            'timestamp': changedesc.timestamp,
+        })
+
+    entries.sort(key=lambda item: item['timestamp'])
 
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
         'review_request_details': draft or review_request,
-        'reviews': reviews,
+        'entries': entries,
         'request': request,
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
@@ -390,13 +451,13 @@ def publish(request, review_request_id):
             pass # FIXME show an error
 
         if not review_request.can_publish():
-            raise HttpResponseForbidden()
+            return HttpResponseForbidden()
 
         review_request.publish(request.user)
 
         return HttpResponseRedirect(review_request.get_absolute_url())
     except PermissionError:
-        raise HttpResponseForbidden() # XXX Error out
+        return HttpResponseForbidden() # XXX Error out
 
 
 @login_required
