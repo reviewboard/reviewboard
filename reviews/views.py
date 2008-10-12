@@ -100,7 +100,8 @@ fields_changed_name_map = {
 
 @check_login_required
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
-def review_detail(request, review_request_id, template_name):
+def review_detail(request, review_request_id,
+                  template_name="reviews/review_detail.html"):
     """
     Main view for review requests. This covers the review request information
     and all the reviews on it.

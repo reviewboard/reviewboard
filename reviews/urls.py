@@ -7,8 +7,8 @@ urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^new/$', 'new_review_request', name="new-review-request"),
 
     # Review request detail
-    (r'^(?P<review_request_id>[0-9]+)/$', 'review_detail',
-     {'template_name': 'reviews/review_detail.html'}),
+    url(r'^(?P<review_request_id>[0-9]+)/$', 'review_detail',
+        name="review-request-detail"),
 
     # Review request diffs
     url(r'^(?P<review_request_id>[0-9]+)/diff/$', 'diff', name="view_diff"),

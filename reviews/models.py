@@ -326,7 +326,7 @@ class ReviewRequest(models.Model):
 
     @permalink
     def get_absolute_url(self):
-        return ('reviewboard.reviews.views.review_detail', None, {
+        return ('review-request-detail', None, {
             'review_request_id': self.id,
         })
 
