@@ -56,14 +56,14 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def to_user_directly(self, username, user=None, status='P'):
         query_user = User.objects.get(username=username)
-        query = Q(target_people=query_user) | Q(starred_by__user=query_user)
+        query = Q(starred_by__user=query_user) | Q(target_people=query_user)
         return self._query(user, status, query)
 
     def to_user(self, username, user=None, status='P'):
         query_user = User.objects.get(username=username)
-        query = Q(target_groups__users=query_user) | \
+        query = Q(starred_by__user=query_user) \
                 Q(target_people=query_user) | \
-                Q(starred_by__user=query_user)
+                Q(target_groups__users=query_user)
         return self._query(user, status, query)
 
     def from_user(self, username, user=None, status='P'):
