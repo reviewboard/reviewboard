@@ -144,8 +144,8 @@ class GeneralSettingsForm(SiteSettingsForm):
         domain_method = url_parts[0]
         domain_name = url_parts[1]
 
-        if not domain_name.endswith("/"):
-            domain_name += "/"
+        if domain_name.endswith("/"):
+            domain_name = domain_name[:-1]
 
         site = Site.objects.get_current()
         site.domain = domain_name
