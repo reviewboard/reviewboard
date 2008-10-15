@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -27,6 +28,7 @@ def dashboard(request, template_name="admin/dashboard.html"):
         'has_cache_stats': get_has_cache_stats(),
         'title': _("Dashboard"),
         'version': VERSION,
+        'root_path': settings.SITE_ROOT + "admin/db/"
     }))
 
 
@@ -42,6 +44,7 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
         'cache_hosts': cache_stats,
         'cache_backend': cache.__module__,
         'title': _("Server Cache"),
+        'root_path': settings.SITE_ROOT + "admin/db/"
     }))
 
 
