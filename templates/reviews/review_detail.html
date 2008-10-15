@@ -261,10 +261,11 @@
   registerEditor('screenshot_{{image.id}}_caption', false);
 {% endfor %}
 
-{% if entry.changedesc %}
-  registerEditor('changedescription', true, true);
-{% endif %}
-
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
+{%  if review_request.public %}
+    registerEditor('changedescription', true, true);
+{%  endif %}
+{% endifuserorperm %}
 </script>
 {% endifequal %}
 {% endifuserorperm %}
