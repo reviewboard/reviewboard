@@ -63,18 +63,20 @@ class ChangeDescTests(TestCase):
         self.assert_("new" in changedesc.fields_changed["test"])
         self.assert_("added" in changedesc.fields_changed["test"])
         self.assert_("removed" in changedesc.fields_changed["test"])
-        self.assertEqual(changedesc.fields_changed["test"]["old"],
-                         [(obj.text, obj.get_absolute_url(), obj.id)
-                          for obj in old_value])
-        self.assertEqual(changedesc.fields_changed["test"]["new"],
-                         [(obj.text, obj.get_absolute_url(), obj.id)
-                          for obj in new_value])
-        self.assertEqual(changedesc.fields_changed["test"]["added"],
-                         [(new_value[2].text, new_value[2].get_absolute_url(),
-                           new_value[2].id)])
-        self.assertEqual(changedesc.fields_changed["test"]["removed"],
-                         [(old_value[0].text, old_value[0].get_absolute_url(),
-                           old_value[0].id)])
+        self.assertEqual(set(changedesc.fields_changed["test"]["old"]),
+                         set([(obj.text, obj.get_absolute_url(), obj.id)
+                             for obj in old_value]))
+        self.assertEqual(set(changedesc.fields_changed["test"]["new"]),
+                         set([(obj.text, obj.get_absolute_url(), obj.id)
+                             for obj in new_value]))
+        self.assertEqual(set(changedesc.fields_changed["test"]["added"]),
+                         set([(new_value[2].text,
+                              new_value[2].get_absolute_url(),
+                              new_value[2].id)]))
+        self.assertEqual(set(changedesc.fields_changed["test"]["removed"]),
+                         set([(old_value[0].text,
+                               old_value[0].get_absolute_url(),
+                               old_value[0].id)]))
 
     def testRecordListMismatchType(self):
         """Testing record_field_change with mismatched types"""
