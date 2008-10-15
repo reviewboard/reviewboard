@@ -8,7 +8,8 @@ from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 
-from reviewboard.admin.checks import get_can_enable_search, \
+from reviewboard.admin.checks import get_can_enable_ldap, \
+                                     get_can_enable_search, \
                                      get_can_enable_syntax_highlighting
 from reviewboard.admin.siteconfig import load_site_config
 
@@ -128,6 +129,16 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.disabled_fields['search_enable'] = True
             self.disabled_fields['search_index_file'] = True
             self.disabled_reasons['search_enable'] = _(reason)
+
+        can_enable_ldap, reason = get_can_enable_ldap()
+        if not can_enable_ldap:
+            self.disabled_fields['auth_ldap_uri'] = True
+            self.disabled_fields['auth_ldap_email_domain'] = True
+            self.disabled_fields['auth_ldap_tls'] = True
+            self.disabled_fields['auth_ldap_uid_mask'] = True
+            self.disabled_fields['auth_ldap_anon_bind_uid'] = True
+            self.disabled_fields['auth_ldap_anon_bind_password'] = True
+            self.disabled_reasons['auth_ldap_uri'] = _(reason)
 
         super(GeneralSettingsForm, self).load()
 

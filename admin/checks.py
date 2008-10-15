@@ -102,3 +102,17 @@ def get_can_enable_syntax_highlighting():
             'Syntax highlighting requires the <a href="%(url)s">Pygments</a> '
             'library, which is not installed.'
         ) % {'url': "http://www.pygments.org/"})
+
+
+def get_can_enable_ldap():
+    """
+    Checks whether LDAP authentication can be enabled.
+    """
+    try:
+        imp.find_module("ldapy")
+        return (True, None)
+    except ImportError:
+        return (False, _(
+            'LDAP authentication requires the python-ldap library, which '
+            'is not installed.'
+        ))
