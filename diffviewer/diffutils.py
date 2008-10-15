@@ -241,7 +241,8 @@ def get_original_file(filediff):
         #
         # Basically, this fixes the massive regressions introduced by the
         # Django unicode changes.
-        data = cache_memoize(key, lambda: [fetch_file(file, revision)])[0]
+        data = cache_memoize(key, lambda: [fetch_file(file, revision)],
+                             large_data=True)[0]
 
     # If there's a parent diff set, apply it to the buffer.
     if filediff.parent_diff:
@@ -563,11 +564,13 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
             else:
                 key += "interdiff-%s-none" % filediff.id
 
-            chunks = cache_memoize(key,
+            chunks = cache_memoize(
+                key,
                 lambda: get_chunks(filediff.diffset,
                                    filediff, interfilediff,
                                    force_interdiff,
-                                   enable_syntax_highlighting))
+                                   enable_syntax_highlighting),
+                large_data=True)
 
         if interdiffset:
             # In the case of interdiffs, don't show any unmodified files
