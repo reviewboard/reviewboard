@@ -523,7 +523,7 @@ def preview_review_request_email(
         RequestContext(request, {
             'review_request': review_request,
             'user': request.user,
-            'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+            'domain': Site.objects.get_current().domain,
             'domain_method': siteconfig.get("site_domain_method"),
         }),
     ), mimetype='text/plain')
@@ -551,7 +551,7 @@ def preview_review_email(request, review_request_id, review_id,
             'review_request': review_request,
             'review': review,
             'user': request.user,
-            'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+            'domain': Site.objects.get_current().domain,
             'domain_method': siteconfig.get("site_domain_method"),
         }),
     ), mimetype='text/plain')
@@ -578,7 +578,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
             'review': review,
             'reply': reply,
             'user': request.user,
-            'domain': Site.objects.get(pk=settings.SITE_ID).domain,
+            'domain': Site.objects.get_current().domain,
             'domain_method': siteconfig.get("site_domain_method"),
         }),
     ), mimetype='text/plain')
