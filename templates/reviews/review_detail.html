@@ -126,7 +126,7 @@
      <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
       <span class="filename">
-       <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image|basename}}{% endif %}</a>
+       <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image.name|basename}}{% endif %}</a>
       </span>
       {{comment.image|safe}}
      </div>
