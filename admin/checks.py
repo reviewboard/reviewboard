@@ -109,7 +109,7 @@ def get_can_enable_ldap():
     Checks whether LDAP authentication can be enabled.
     """
     try:
-        imp.find_module("ldapy")
+        imp.find_module("ldap")
         return (True, None)
     except ImportError:
         return (False, _(
