@@ -864,8 +864,17 @@ class PerforceClient(SCMClient):
 
         debug("Generating diff for changenum %s" % changenum)
 
+        # set the P4 enviroment:
+        if options.p4_client:
+           os.environ['P4CLIENT'] = options.p4_client
+
+        if options.p4_port:
+           os.environ['P4PORT'] = options.p4_port
+
+
         description = execute(["p4", "describe", "-s", str(changenum)],
                               split_lines=True)
+
         if '*pending*' in description[0]:
             cl_is_pending = True
 
@@ -1570,6 +1579,15 @@ def parse_options(tool, repository_info, args):
                                    "against")
 
         tool.add_options(parser)
+
+    if isinstance(tool,PerforceClient):
+       parser.add_option("--p4-client",
+                         dest="p4_client", default=None,
+                         help="the Perforce client name that the review is in")
+
+       parser.add_option("--p4-port",
+                         dest="p4_port", default=None,
+                         help="the Perforce servers IP address that the review is on")
 
 
     parser.add_option("-d", "--debug",

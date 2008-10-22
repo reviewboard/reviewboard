@@ -1,0 +1,25 @@
+About P4Tool
+------------
+
+  P4Tool.txt is an extension to P4win that adds support for invoking
+  post-review from the UI.
+
+
+Installation
+------------
+
+  1) Make a copy of P4Tool.txt and modify it for your setup. Specifically,
+     you'll need to replace "<Path of post-review goes here>" with the path to
+     the post-review script on your system.
+
+     If using a compiled post-review.exe, place the path to this file and
+	 remove "python" before the file path.
+
+  2) Import P4Tool.txt into P4win.
+
+
+Usage
+-----
+
+  To post a change for review, right-click on the change and select
+  "post-review".
