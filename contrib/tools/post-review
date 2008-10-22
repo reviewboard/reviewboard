@@ -56,6 +56,15 @@ from urlparse import urljoin, urlparse
 #
 REVIEWBOARD_URL = None
 
+#
+# Repository URL.
+#
+# Set this if you run post-commit outside of a working copy (currently
+# this option is only supported by SVN).  Revision number-based diffs
+# will be generated using the URL.
+#
+REPOSITORY_URL = None
+
 # Default submission arguments.  These are all optional; run this
 # script with --help for descriptions of each argument.
 TARGET_GROUPS   = None
@@ -583,6 +592,8 @@ class SVNClient(SCMClient):
     A wrapper around the svn Subversion tool that fetches repository
     information and generates compatible diffs.
     """
+    diff_against_url = False
+
     def get_repository_info(self):
         if not check_install('svn help'):
             return None
@@ -591,13 +602,20 @@ class SVNClient(SCMClient):
                        env={'LANG': 'en_US.UTF-8'},
                        ignore_errors=True)
         m = re.search(r'^Repository Root: (.+)$', data, re.M)
+
+        # If not in a working copy but a repository url is configured,
+        # then all work will be done using that url.
         if not m:
-            return None
+            if REPOSITORY_URL:
+                self.diff_against_url = True
+                return RepositoryInfo(path=REPOSITORY_URL, base_path='/')
+            else:
+                return None
 
         path = m.group(1)
 
         # If the given URI has a username at the beginning, we need to strip it
-        # out so that it will still match
+        # out so that it will still match.
         m2 = re.match(r'^(svn\+ssh|http|https)://([-a-zA-Z0-9.]*@)(.*)$', path)
         if m2:
             path = '%s://%s' % (m2.group(1), m2.group(3))
@@ -650,8 +668,24 @@ class SVNClient(SCMClient):
         """
         Performs a diff between 2 revisions of a Subversion repository.
         """
-        return self.do_diff(["svn", "diff", "--diff-cmd=diff", "-r",
-                             revision_range])
+        # If working outside of a working copy, using a repository URL,
+        # perform the diff using the URL
+        if self.diff_against_url:
+            revisions = revision_range.split(':')
+            if len(revisions) < 1:
+                return None
+            elif len(revisions) == 1:
+                revisions[1] = 'HEAD'
+
+            old_url = REPOSITORY_URL + '@' + revisions[0]
+            new_url = REPOSITORY_URL + '@' + revisions[1]
+
+            return self.do_diff(["svn", "diff", "--diff-cmd=diff", old_url,
+                                 new_url])
+        # Otherwise, perform the revision range diff using a working copy
+        else:
+            return self.do_diff(["svn", "diff", "--diff-cmd=diff", "-r",
+                                 revision_range])
 
     def do_diff(self, cmd):
         """
@@ -672,6 +706,12 @@ class SVNClient(SCMClient):
         This function fixes the relevant section headers of the patch to
         portray this relationship.
         """
+
+        # svn diff against a repository URL on two revisions appears to
+        # handle moved files properly, so only adjust the diff file names
+        # if they were created using a working copy.
+        if self.diff_against_url:
+            return diff_content
 
         result = []
 
@@ -718,13 +758,20 @@ class SVNClient(SCMClient):
                 if line.startswith('/'): #already absolute
                     line = front + " " + line
                 else:
-                    # filename and rest of line (usually the revision component)
+                    # filename and rest of line (usually the revision
+                    # component)
                     file, rest = self.parse_filename_header(line)
 
-                    info = self.svn_info(file)
-                    url  = info["URL"]
-                    root = info["Repository Root"]
-                    path = urllib.unquote(url[len(root):])
+                    # If working with a diff generated outside of a working
+                    # copy, then file paths are already absolute, so just
+                    # add initial slash.
+                    if self.diff_against_url:
+                        path = urllib.unquote('/' + file)
+                    else:
+                        info = self.svn_info(file)
+                        url  = info["URL"]
+                        root = info["Repository Root"]
+                        path = urllib.unquote(url[len(root):])
 
                     line = front + " " + path + rest
 
@@ -1527,8 +1574,10 @@ def main(args):
     if 'USERPROFILE' in os.environ:
         homepath = os.path.join(os.environ["USERPROFILE"], "Local Settings",
                                 "Application Data")
-    else:
+    elif 'HOME' in os.environ:
         homepath = os.environ["HOME"]
+    else:
+        homepath = ''
 
     # Load the config and cookie files
     globals()['user_config'] = \
