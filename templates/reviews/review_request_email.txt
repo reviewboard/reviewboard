@@ -32,8 +32,8 @@ This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_r
 
 Diffs{% if changes and changes.diff %} (updated){% endif %}
 -----
-{% for filediff in review_request.diffset_history.diffset_set.latest.files.all %}
-  {{ filediff.source_file }}{% endfor %}
+{% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
+  {{ filediff.source_file }} {{ filediff.source_revision }} {% endfor %}
 
 Diff: {{domain_method}}://{{domain}}{{ review_request.get_absolute_url }}diff
 
