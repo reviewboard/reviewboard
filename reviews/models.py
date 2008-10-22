@@ -358,7 +358,7 @@ class ReviewRequest(models.Model):
         draft = self.draft.get()
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
-            draft.publish(self)
+            changes = draft.publish(self)
             draft.delete()
 
             self.public = True
@@ -366,7 +366,7 @@ class ReviewRequest(models.Model):
 
             siteconfig = SiteConfiguration.objects.get_current()
             if siteconfig.get("mail_send_review_mail"):
-                mail_review_request(user, self)
+                mail_review_request(user, self, changes)
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
