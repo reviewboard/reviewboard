@@ -380,7 +380,7 @@ def new_review_request(request):
         repository_id = request.POST.get('repository_id', None)
         submit_as = request.POST.get('submit_as')
 
-        if submit_as:
+        if submit_as and request.user.username != submit_as:
             if not request.user.has_perm('reviews.can_submit_as_another_user'):
                 return WebAPIResponseError(request, PERMISSION_DENIED)
             try:
