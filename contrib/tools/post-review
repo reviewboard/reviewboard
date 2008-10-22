@@ -1530,6 +1530,9 @@ def parse_options(tool, repository_info, args):
     parser.add_option("--description",
                       dest="description", default=None,
                       help="description of the review ")
+    parser.add_option("--description-file",
+                      dest="description_file", default=None,
+                      help="text file containing a description of the review")
     parser.add_option("--branch",
                       dest="branch", default=None,
                       help="affected branch ")
@@ -1574,6 +1577,21 @@ def parse_options(tool, repository_info, args):
                       help="display debug output")
 
     (globals()["options"], args) = parser.parse_args(args)
+
+    if options.description and options.description_file:
+        sys.stderr.write("The --description and --description-file options "
+                         "are mutually exclusive.\n")
+        sys.exit(1)
+
+    if options.description_file:
+        if os.path.exists(options.description_file):
+            fp = open(options.description_file, "r")
+            options.description = fp.read()
+            fp.close()
+        else:
+            sys.stderr.write("The description file %s does not exist.\n" %
+                             options.description_file)
+            sys.exit(1)
 
     return args
 
