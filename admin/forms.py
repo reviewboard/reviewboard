@@ -222,13 +222,13 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'fields':  ('auth_backend',),
             },
             {
-                'id':      'nis',
+                'id':      'auth_nis',
                 'classes': ('wide', 'hidden'),
                 'title':   _("NIS Authentication Settings"),
                 'fields':  ('auth_nis_email_domain',),
             },
             {
-                'id':      'ldap',
+                'id':      'auth_ldap',
                 'classes': ('wide', 'hidden'),
                 'title':   _("LDAP Authentication Settings"),
                 'fields':  ('auth_ldap_uri',
@@ -239,7 +239,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                             'auth_ldap_anon_bind_passwd'),
             },
             {
-                'id':      'custom',
+                'id':      'auth_custom',
                 'classes': ('wide', 'hidden'),
                 'title':   _("Custom Authentication Settings"),
                 'fields':  ('custom_backends',)

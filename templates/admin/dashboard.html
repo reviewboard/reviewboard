@@ -9,11 +9,7 @@
 {% block breadcrumbs %}{% endblock %}
 
 {% block extrahead %}
-<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/event/event-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -78,7 +74,7 @@
 	<span class="actions">
      <a href="http://www.review-board.org/news/">View All News</a>
 	 |
-     <a href="#" onclick="javascript:reloadNews();">{% trans "Reload" %}</a>
+     <a href="." id="reload-news">{% trans "Reload" %}</a>
      |
      <a href="feed/news/rss/">
       <img src="{{MEDIA_URL}}rb/images/rss.png" width="14" height="14" />
@@ -95,10 +91,13 @@
  </div>
 </div>
 <script language="javascript">
-  function reloadNews() {
-      getEl("news-content").load("feed/news/?reload=1");
-  }
+    $(document).ready(function() {
+        $("a#reload-news").click(function(evt){
+            $("#news-content").load("feed/news/?reload=1");
+            evt.preventDefault();
+        });
 
-  getEl("news-content").load("feed/news/");
+        $("#news-content").load("feed/news/");
+    });
 </script>
 {% endblock %}

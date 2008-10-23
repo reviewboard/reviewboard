@@ -5,29 +5,25 @@
 {% block extrahead %}
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
-<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/event/event-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
 <script type="text/javascript">
-var fields = ["changenum", "basedir", "diff_path"];
-var visible = {{fields|safe}};
-function updateFormDisplay() {
-    var selection = getEl("id_repository").dom;
-    var selectedID = selection.options[selection.selectedIndex].value;
-    var shown = visible[selectedID];
+    var visible = {{fields|safe}};
 
-    for (i in fields) {
-        getEl("row_" + fields[i]).dom.style.display = "none";
-    }
-    for (i in shown) {
-        getEl("row_" + shown[i]).dom.style.display = "";
-    }
-}
+    function updateFormDisplay() {
+        var selection = $("#id_repository").get(0);
+        var selectedID = selection.options[selection.selectedIndex].value;
 
-YAHOO.util.Event.on(window, "load", function(e) {
-    updateFormDisplay();
-});
+        $("tr[id^=row_]").hide();
+        $(visible[selectedID]).each(function() {
+            $("tr#row_" + this).show();
+        });
+    }
+
+    $(document).ready(function() {
+        $("#id_repository")
+            .change(updateFormDisplay)
+            .triggerHandler("change");
+    });
 </script>
 {% endblock %}
 
@@ -40,7 +36,7 @@ YAHOO.util.Event.on(window, "load", function(e) {
    <tr>
     <td><label for="id_repository">{% trans "Repository" %}:</label></td>
     {% spaceless %}<td>
-     <select name="repository" id="id_repository" onchange="updateFormDisplay();">
+     <select name="repository" id="id_repository">
       {% for repository in form.fields.repository.choices %}
        {% ifequal form.data.repository repository.0 %}
         <option value="{{repository.0}}" selected="selected">{{repository.1}}</option>
