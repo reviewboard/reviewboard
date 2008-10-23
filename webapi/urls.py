@@ -75,6 +75,12 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/unstar/$',
      'review_request_unstar'),
 
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/close/(?P<type>discarded|submitted)/$',
+     'review_request_close'),
+
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reopen/$',
+     'review_request_reopen'),
+
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/delete/$',
      'review_request_delete'),
 
@@ -106,6 +112,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_draft_delete'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/$',
      'review_draft_comments'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/$',
+     'review_draft'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/$',
      'review_list'),

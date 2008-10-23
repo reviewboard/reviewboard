@@ -160,10 +160,14 @@ class ReviewRequest(models.Model):
     request. Some fields are user-modifiable, while some are used for
     internal state.
     """
+    PENDING_REVIEW = "P"
+    SUBMITTED      = "S"
+    DELETED        = "D"
+
     STATUSES = (
-        ('P', _('Pending Review')),
-        ('S', _('Submitted')),
-        ('D', _('Discarded')),
+        (PENDING_REVIEW, _('Pending Review')),
+        (SUBMITTED,      _('Submitted')),
+        (DELETED,        _('Discarded')),
     )
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
@@ -346,6 +350,39 @@ class ReviewRequest(models.Model):
 
     def can_publish(self):
         return get_object_or_none(self.draft) is not None
+
+    def close(self, type, user=None):
+        """
+        Closes the review request. The type must be one of
+        SUBMITTED or DISCARDED.
+        """
+        if (user and not self.is_mutable_by(user) and
+            not user.has_perm("reviews.can_change_status")):
+            raise PermissionError
+
+        if type not in [self.SUBMITTED, self.DISCARDED]:
+            raise AttributeError("%s is not a valid close type" % type)
+
+        self.status = type
+        self.save()
+
+        draft = self.draft.get()
+        if draft is not None:
+            draft.delete()
+
+    def reopen(self, user=None):
+        """
+        Reopens the review request for review.
+        """
+        if (user and not self.is_mutable_by(user) and
+            not user.has_perm("reviews.can_change_status")):
+            raise PermissionError
+
+        if self.status == "D":
+            self.public = False
+
+        self.status = "P"
+        self.save()
 
     def publish(self, user):
         """

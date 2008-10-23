@@ -484,7 +484,42 @@ def review_request_publish(request, review_request_id):
     except ReviewRequest.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
     except PermissionError:
-        raise HttpResponseForbidden()
+        return HttpResponseForbidden()
+
+    return WebAPIResponse(request)
+
+
+@webapi_login_required
+def review_request_close(request, review_request_id, type):
+    type_map = {
+        'submitted': ReviewRequest.SUBMITTED,
+        'discarded': ReviewRequest.DISCARDED,
+    }
+
+    if type not in type_map:
+        return WebAPIResponseError(request, INVALID_ATTRIBUTE,
+                                   {'attribute': type})
+
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.close(type_map[type], request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        return HttpResponseForbidden()
+
+    return WebAPIResponse(request)
+
+
+@webapi_login_required
+def review_request_reopen(request, review_request_id):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.reopen(request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        return HttpResponseForbidden()
 
     return WebAPIResponse(request)
 
@@ -833,9 +868,15 @@ def review_draft_save(request, review_request_id, publish=False):
         review_request=review_request,
         public=False,
         base_reply_to__isnull=True)
-    review.ship_it     = request.POST.has_key('shipit')
-    review.body_top    = request.POST['body_top']
-    review.body_bottom = request.POST['body_bottom']
+
+    if 'shipit' in request.POST:
+        review.ship_it = request.POST['shipit']
+
+    if 'body_top' in request.POST:
+        review.body_top = request.POST['body_top']
+
+    if 'body_bottom' in request.POST:
+        review.body_bottom = request.POST['body_bottom']
 
     if publish:
         review.publish()
@@ -903,9 +944,7 @@ def review_reply_draft(request, review_request_id, review_id):
         public=False,
         base_reply_to=source_review)
 
-    result = {
-        'reply': reply,
-    }
+    result = {}
 
     if reply_is_new:
         reply.save()
@@ -987,10 +1026,29 @@ def review_reply_draft(request, review_request_id, review_id):
     if reply.body_top == "" and reply.body_bottom == "" and \
        reply.comments.count() == 0 and reply.screenshot_comments.count() == 0:
         reply.delete()
+        result['reply'] = None
+        result['discarded'] = True
     else:
         reply.save()
+        result['reply'] = reply
 
     return WebAPIResponse(request, result)
+
+
+@webapi_login_required
+def review_draft(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        review = Review.objects.get(user=request.user,
+                                    review_request=review_request,
+                                    public=False,
+                                    base_reply_to__isnull=True)
+        return WebAPIResponse(request, {
+            'review': review,
+        })
+    except Review.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
 @webapi_login_required
