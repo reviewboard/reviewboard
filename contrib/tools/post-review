@@ -1450,6 +1450,11 @@ def tempt_fate(server, tool, changenum, diff_content=None,
                                             options.description)
             save_draft = True
 
+        if options.testing_done:
+            server.set_review_request_field(review_request, 'testing_done',
+                                            options.testing_done)
+            save_draft = True
+
         if save_draft:
             server.save_draft(review_request)
     except APIError, e:
@@ -1542,6 +1547,12 @@ def parse_options(tool, repository_info, args):
     parser.add_option("--description-file",
                       dest="description_file", default=None,
                       help="text file containing a description of the review")
+    parser.add_option("--testing-done",
+                      dest="testing_done", default=None,
+                      help="details of testing done ")
+    parser.add_option("--testing-done-file",
+                      dest="testing_file", default=None,
+                      help="text file containing details of testing done ")
     parser.add_option("--branch",
                       dest="branch", default=None,
                       help="affected branch ")
@@ -1609,6 +1620,21 @@ def parse_options(tool, repository_info, args):
         else:
             sys.stderr.write("The description file %s does not exist.\n" %
                              options.description_file)
+            sys.exit(1)
+
+    if options.testing_done and options.testing_file:
+        sys.stderr.write("The --testing-done and --testing-done-file options "
+                         "are mutually exclusive.\n")
+        sys.exit(1)
+
+    if options.testing_file:
+        if os.path.exists(options.testing_file):
+            fp = open(options.testing_file, "r")
+            options.testing_done = fp.read()
+            fp.close()
+        else:
+            sys.stderr.write("The testing file %s does not exist.\n" %
+                             options.testing_file)
             sys.exit(1)
 
     return args
