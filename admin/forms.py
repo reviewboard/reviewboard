@@ -188,13 +188,13 @@ class GeneralSettingsForm(SiteSettingsForm):
                            self.fields['auth_backend'].initial
 
             if auth_backend != "ldap":
-                set_fieldset_required("ldap", False)
+                set_fieldset_required("auth_ldap", False)
 
             if auth_backend != "nis":
-                set_fieldset_required("nis", False)
+                set_fieldset_required("auth_nis", False)
 
             if auth_backend != "custom":
-                set_fieldset_required("custom", False)
+                set_fieldset_required("auth_custom", False)
 
         super(GeneralSettingsForm, self).full_clean()
 
