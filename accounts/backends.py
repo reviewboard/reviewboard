@@ -2,7 +2,9 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from djblets.util.misc import get_object_or_none
 import crypt
+import logging
 import nis
+
 
 class NISBackend:
     """
@@ -86,7 +88,8 @@ class LDAPBackend:
                 ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
                 if settings.LDAP_TLS:
                     ldapo.start_tls_s()
-                ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID, settings.LDAP_ANON_BIND_PASSWD)
+                ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
+                                    settings.LDAP_ANON_BIND_PASSWD)
 
                 passwd = ldapo.search_s(settings.LDAP_UID_MASK % username,
                                         ldap.SCOPE_SUBTREE, "objectclass=*")
@@ -112,9 +115,11 @@ class LDAPBackend:
                 # know how
                 pass
             except ldap.NO_SUCH_OBJECT:
-                pass
-            except ldap.LDAPError:
-                pass
+                logging.warning("LDAP error: The specified object does not "
+                                "exist in the Directory: %s" %
+                                settings.LDAP_UID_MASK % username)
+            except ldap.LDAPError, e:
+                logging.warning("LDAP error: %s" % e)
         return user
 
     def get_user(self, user_id):
