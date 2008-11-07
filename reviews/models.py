@@ -162,12 +162,12 @@ class ReviewRequest(models.Model):
     """
     PENDING_REVIEW = "P"
     SUBMITTED      = "S"
-    DELETED        = "D"
+    DISCARDED      = "D"
 
     STATUSES = (
         (PENDING_REVIEW, _('Pending Review')),
         (SUBMITTED,      _('Submitted')),
-        (DELETED,        _('Discarded')),
+        (DISCARDED,      _('Discarded')),
     )
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
@@ -366,8 +366,11 @@ class ReviewRequest(models.Model):
         self.status = type
         self.save()
 
-        draft = self.draft.get()
-        if draft is not None:
+        try:
+            draft = self.draft.get()
+        except ReviewRequestDraft.DoesNotExist:
+            pass
+        else:
             draft.delete()
 
     def reopen(self, user=None):
