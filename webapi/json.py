@@ -649,6 +649,18 @@ def count_review_comments(request, review_request_id, review_id):
 
 
 @webapi_login_required
+def review_request_draft(request, review_request_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+    except ReviewRequestDraft.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    return WebAPIResponse(request, {'review_request_draft': draft})
+
+
+@webapi_login_required
 @require_POST
 def review_request_draft_discard(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)

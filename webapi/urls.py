@@ -90,6 +90,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_from_changenum/$',
      'review_request_draft_update_from_changenum'),
 
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/$',
+     'review_request_draft'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
      'review_request_draft_save'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
