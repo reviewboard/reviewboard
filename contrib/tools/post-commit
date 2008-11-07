@@ -1,0 +1,169 @@
+#!/usr/bin/env python
+
+# If you install this as a post-commit hook in your Subversion repository, it
+# will scan the commit message for a review request URL and mark those reviews
+# as 'submitted'. So, for example, if a commit message contains the string:
+# http://reviews.dev.company.com/r/256/ then that review request will be marked
+# as submitted.
+
+# The user to log in as. This user needs to either be a superuser or have the
+# "reviews | review request | Can change status" permission.
+USERNAME = 'plumpy'
+PASSWORD = 'password'
+
+# The URL to your review board installation. This will be used to do the JSON
+# API calls and to search the commit log messages for review request links.
+REVIEWBOARD_URL = 'http://reviews.dev.company.com'
+
+import cookielib
+import mimetools
+import re
+import simplejson
+import subprocess
+import sys
+import urllib2
+from urlparse import urljoin
+
+class APIError(Exception):
+        pass
+
+
+# This is shamelessly ripped off from post-review
+class ReviewBoardServer:
+    """
+    An instance of a Review Board server.
+    """
+    def __init__(self, url):
+        self.url = url
+        if self.url[-1] != '/':
+            self.url += '/'
+        cj = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        urllib2.install_opener(opener)
+
+    def login(self):
+        """
+        Logs in to a Review Board server, prompting the user for login
+        information if needed.
+        """
+        try:
+            self.api_post('api/json/accounts/login/', {
+                'username': USERNAME,
+                'password': PASSWORD,
+            })
+        except APIError, e:
+            rsp, = e.args
+
+            die("Unable to log in: %s (%s)" % (rsp["err"]["msg"],
+                                               rsp["err"]["code"]))
+
+    def set_submitted(self, review_request_id):
+        """
+        Marks a review request as submitted.
+        """
+        self.api_post('api/json/reviewrequests/%s/close/submitted/' %
+                      review_request_id)
+
+    def process_json(self, data):
+        """
+        Loads in a JSON file and returns the data if successful. On failure,
+        APIError is raised.
+        """
+        rsp = simplejson.loads(data)
+
+        if rsp['stat'] == 'fail':
+            raise APIError, rsp
+
+        return rsp
+
+    def _make_url(self, path):
+        """Given a path on the server returns a full http:// style url"""
+        url = urljoin(self.url, path)
+        if not url.startswith('http'):
+            url = 'http://%s' % url
+        return url
+
+    def http_post(self, path, fields, files=None):
+        """
+        Performs an HTTP POST on the specified path, storing any cookies that
+        were set.
+        """
+        url = self._make_url(path)
+
+        content_type, body = self._encode_multipart_formdata(fields, files)
+        headers = {
+            'Content-Type': content_type,
+            'Content-Length': str(len(body))
+        }
+
+        try:
+            r = urllib2.Request(url, body, headers)
+            data = urllib2.urlopen(r).read()
+            return data
+        except urllib2.URLError, e:
+            die("Unable to access %s. The host path may be invalid\n%s" % \
+                (url, e))
+        except urllib2.HTTPError, e:
+            die("Unable to access %s (%s). The host path may be invalid\n%s" % \
+                (url, e.code, e.read()))
+
+    def api_post(self, path, fields=None, files=None):
+        """
+        Performs an API call using HTTP POST at the specified path.
+        """
+        return self.process_json(self.http_post(path, fields, files))
+
+    def _encode_multipart_formdata(self, fields, files):
+        """
+        Encodes data for use in an HTTP POST.
+        """
+        BOUNDARY = mimetools.choose_boundary()
+        content = ""
+
+        fields = fields or {}
+        files = files or {}
+
+        for key in fields:
+            content += "--" + BOUNDARY + "\r\n"
+            content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
+            content += "\r\n"
+            content += fields[key] + "\r\n"
+
+        for key in files:
+            filename = files[key]['filename']
+            value = files[key]['content']
+            content += "--" + BOUNDARY + "\r\n"
+            content += "Content-Disposition: form-data; name=\"%s\"; " % key
+            content += "filename=\"%s\"\r\n" % filename
+            content += "\r\n"
+            content += value + "\r\n"
+
+        content += "--" + BOUNDARY + "--\r\n"
+        content += "\r\n"
+
+        content_type = "multipart/form-data; boundary=%s" % BOUNDARY
+
+        return content_type, content
+
+
+def die(msg=None):
+    """
+    Cleanly exits the program with an error message.
+    """
+    if msg:
+        print msg
+
+    sys.exit(1)
+
+svnlook = ['svnlook', 'log', '-r', sys.argv[2], sys.argv[1]]
+log_message = subprocess.Popen(svnlook, stdout=subprocess.PIPE).communicate()[0]
+
+server = None
+
+for match in re.finditer(REVIEWBOARD_URL + '/r/(\d+)/', log_message):
+    if server is None:
+        server = ReviewBoardServer(REVIEWBOARD_URL)
+        server.login()
+
+    review_request_id = match.group(1)
+    server.set_submitted(review_request_id)
