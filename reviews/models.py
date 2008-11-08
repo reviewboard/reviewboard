@@ -328,6 +328,34 @@ class ReviewRequest(models.Model):
         return self.submitter == user or \
                user.has_perm('reviews.can_edit_reviewrequest')
 
+    def get_draft(self, user=None):
+        """
+        Returns the draft of the review request. If a user is specified,
+        than the draft will be returned only if owned by the user. Otherwise,
+        None will be returned.
+        """
+        if not user:
+            return get_object_or_none(self.draft)
+        elif user.is_authenticated():
+            return get_object_or_none(self.draft,
+                                      review_request__submitter=user)
+
+        return None
+
+    def get_pending_review(self, user):
+        """
+        Returns the pending review owned by the specified user, if any.
+        This will return an actual review, not a reply to a review.
+        """
+        if user.is_authenticated():
+            return get_object_or_none(Review,
+                                      user=user,
+                                      review_request=self,
+                                      public=False,
+                                      base_reply_to__isnull=True)
+
+        return None
+
     @permalink
     def get_absolute_url(self):
         return ('review-request-detail', None, {
@@ -381,11 +409,12 @@ class ReviewRequest(models.Model):
             not user.has_perm("reviews.can_change_status")):
             raise PermissionError
 
-        if self.status == "D":
-            self.public = False
+        if self.status != self.PENDING_REVIEW:
+            if self.status == self.DISCARDED:
+                self.public = False
 
-        self.status = "P"
-        self.save()
+            self.status = self.PENDING_REVIEW
+            self.save()
 
     def publish(self, user):
         """
@@ -920,6 +949,19 @@ class Review(models.Model):
         Returns a list of public replies to this review.
         """
         return self.replies.filter(public=True)
+
+    def get_pending_reply(self, user):
+        """
+        Returns the pending reply to this review owned by the specified
+        user, if any.
+        """
+        if user.is_authenticated():
+            return get_object_or_none(Review,
+                                      user=user,
+                                      public=False,
+                                      base_reply_to=self)
+
+        return None
 
     def publish(self):
         """

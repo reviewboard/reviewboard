@@ -858,11 +858,7 @@ def review_request_draft_update_from_changenum(request, review_request_id):
                                  {'changenum': review_request.changenum})
 
     draft.save()
-
-    if review_request.status == 'D':
-        review_request.status = 'P'
-        review_request.public = False
-        review_request.save()
+    review_request.reopen()
 
     return WebAPIResponse(request, {
         'draft': draft,
@@ -906,30 +902,24 @@ def review_draft_save(request, review_request_id, publish=False):
 @require_POST
 def review_draft_delete(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = review_request.get_pending_review(request.user)
 
-    try:
-        review = Review.objects.get(user=request.user,
-                                    review_request=review_request,
-                                    public=False,
-                                    base_reply_to__isnull=True)
+    if review:
         review.delete()
         return WebAPIResponse(request)
-    except Review.DoesNotExist:
+    else:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
 @webapi_login_required
 def review_draft_comments(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = review_request.get_pending_review(request.user)
 
-    try:
-        review = Review.objects.get(user=request.user,
-                                    review_request=review_request,
-                                    public=False,
-                                    base_reply_to__isnull=True)
+    if review:
         comments = review.comments.all()
         screenshot_comments = review.screenshot_comments.all()
-    except Review.DoesNotExist:
+    else:
         comments = []
         screenshot_comments = []
 
@@ -957,9 +947,6 @@ def review_reply_draft(request, review_request_id, review_id):
         base_reply_to=source_review)
 
     result = {}
-
-    if reply_is_new:
-        reply.save()
 
     if context_type == "comment":
         context_id = request.POST['id']
@@ -1050,16 +1037,13 @@ def review_reply_draft(request, review_request_id, review_id):
 @webapi_login_required
 def review_draft(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = review_request.get_pending_review(request.user)
 
-    try:
-        review = Review.objects.get(user=request.user,
-                                    review_request=review_request,
-                                    public=False,
-                                    base_reply_to__isnull=True)
+    if review:
         return WebAPIResponse(request, {
             'review': review,
         })
-    except Review.DoesNotExist:
+    else:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
@@ -1070,9 +1054,9 @@ def review_reply_draft_save(request, review_request_id, review_id):
     if isinstance(review, WebAPIResponseError):
         return review
 
-    try:
-        reply = Review.objects.get(base_reply_to=review, public=False,
-                                   user=request.user)
+    reply = review.get_pending_reply(request.user)
+
+    if reply:
         reply.publish()
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -1080,7 +1064,7 @@ def review_reply_draft_save(request, review_request_id, review_id):
             mail_reply(request.user, reply)
 
         return WebAPIResponse(request)
-    except Review.DoesNotExist:
+    else:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
@@ -1091,12 +1075,12 @@ def review_reply_draft_discard(request, review_request_id, review_id):
     if isinstance(review, WebAPIResponseError):
         return review
 
-    try:
-        reply = Review.objects.get(base_reply_to=review, public=False,
-                                   user=request.user)
+    reply = review.get_pending_reply(request.user)
+
+    if reply:
         reply.delete()
         return WebAPIResponse(request)
-    except Review.DoesNotExist:
+    else:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
@@ -1107,7 +1091,7 @@ def review_replies_list(request, review_request_id, review_id):
         return review
 
     return WebAPIResponse(request, {
-        'replies': review.replies.filter(public=True)
+        'replies': review.public_replies()
     })
 
 
@@ -1118,7 +1102,7 @@ def count_review_replies(request, review_request_id, review_id):
         return review
 
     return WebAPIResponse(request, {
-        'count': review.replies.filter(public=True).count()
+        'count': review.public_replies().count()
     })
 
 
@@ -1256,9 +1240,6 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
                 public=False,
                 base_reply_to__isnull=True)
 
-            if review_is_new:
-                review.save()
-
             if interfilediff:
                 comment, comment_is_new = review.comments.get_or_create(
                     filediff=filediff,
@@ -1279,19 +1260,19 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
                 review.comments.add(comment)
                 review.save()
         elif action == "delete":
-            review = get_object_or_404(Review,
-                review_request=review_request,
-                user=request.user,
-                public=False)
+            review = review_request.get_pending_review(request.user)
+
+            if not review:
+                raise Http404()
+
+            q = Q(filediff=filediff, first_line=line)
+
+            if interfilediff:
+                q = q & Q(interfilediff=interfilediff)
+            else:
+                q = q & Q(interfilediff__isnull=True)
 
             try:
-                q = Q(filediff=filediff, first_line=line)
-
-                if interfilediff:
-                    q = q & Q(interfilediff=interfilediff)
-                else:
-                    q = q & Q(interfilediff__isnull=True)
-
                 comment = review.comments.get(q)
                 comment.delete()
             except Comment.DoesNotExist:
@@ -1338,9 +1319,6 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                 public=False,
                 base_reply_to__isnull=True)
 
-            if review_is_new:
-                review.save()
-
             comment, comment_is_new = review.screenshot_comments.get_or_create(
                screenshot=screenshot,
                x=x, y=y, w=w, h=h)
@@ -1353,10 +1331,10 @@ def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
                 review.screenshot_comments.add(comment)
                 review.save()
         elif action == "delete":
-            review = get_object_or_404(Review,
-                review_request=review_request,
-                user=request.user,
-                public=False)
+            review = review_request.get_pending_review(request.user)
+
+            if not review:
+                raise Http404()
 
             try:
                 comment = review.screenshot_comments.get(screenshot=screenshot,

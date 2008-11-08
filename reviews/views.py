@@ -109,17 +109,10 @@ def review_detail(request, review_request_id,
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     reviews = review_request.get_public_reviews()
-    draft = None
-    review = None
-
-    for review in reviews:
-        review.ordered_comments = \
-            review.comments.order_by('filediff', 'first_line')
+    draft = review_request.get_draft(request.user)
+    review = review_request.get_pending_review(request.user)
 
     if request.user.is_authenticated():
-        draft = get_object_or_none(review_request.draft,
-                                   review_request__submitter=request.user)
-
         # If the review request is public and pending review and if the user
         # is logged in, mark that they've visited this review request.
         if review_request.public and review_request.status == "P":
@@ -133,10 +126,13 @@ def review_detail(request, review_request_id,
 
     entries = []
 
-    for review in reviews:
+    for temp_review in reviews:
+        temp_review.ordered_comments = \
+            temp_review.comments.order_by('filediff', 'first_line')
+
         entries.append({
-            'review': review,
-            'timestamp': review.timestamp,
+            'review': temp_review,
+            'timestamp': temp_review.timestamp,
         })
 
     for changedesc in changedescs:
@@ -302,15 +298,13 @@ def _query_for_diff(review_request, user, revision, query_extra=None):
     if revision:
         revision = int(revision)
 
-    if user.is_authenticated():
-        # This will try to grab the diff associated with a draft if the review
-        # request has an associated draft and is either the revision being
-        # requested or no revision is being requested.
-        draft = get_object_or_none(review_request.draft,
-                                   review_request__submitter=user)
-        if draft and draft.diffset and \
-           (revision is None or draft.diffset.revision == revision):
-            return draft.diffset
+    # This will try to grab the diff associated with a draft if the review
+    # request has an associated draft and is either the revision being
+    # requested or no revision is being requested.
+    draft = review_request.get_draft(user)
+    if draft and draft.diffset and \
+       (revision is None or draft.diffset.revision == revision):
+        return draft.diffset
 
     query = Q(history=review_request.diffset_history)
 
@@ -351,16 +345,10 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
                                        interdiff_revision)
         interdiffset_id = interdiffset.id
 
-    if request.user.is_authenticated():
-        # Try to find an existing pending review of this diff from the
-        # current user.
-        review = get_object_or_none(Review,
-                                    user=request.user,
-                                    review_request=review_request,
-                                    public=False,
-                                    base_reply_to__isnull=True)
-        draft = get_object_or_none(review_request.draft,
-                                   review_request__submitter=request.user)
+    # Try to find an existing pending review of this diff from the
+    # current user.
+    review = review_request.get_pending_review(request.user)
+    draft = review_request.get_draft(request.user)
 
     repository = review_request.repository
 
@@ -417,9 +405,7 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     diff.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    draft = get_object_or_none(review_request.draft,
-                               review_request__submitter=request.user)
+    draft = review_request.get_draft(request.user)
 
     if draft:
         query_extra = Q(reviewrequestdraft=draft)
@@ -617,15 +603,13 @@ def view_screenshot(request, review_request_id, screenshot_id,
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+    review = review_request.get_pending_review(request.user)
+    draft = review_request.get_draft(request.user)
 
     query = Q(history=review_request.diffset_history)
 
-    if request.user.is_authenticated():
-        draft = get_object_or_none(review_request.draft,
-                                   review_request__submitter=request.user)
-
-        if draft:
-            query = query & Q(reviewrequestdraft=draft)
+    if draft:
+        query = query & Q(reviewrequestdraft=draft)
 
     try:
         diffset = DiffSet.objects.filter(query).latest()
