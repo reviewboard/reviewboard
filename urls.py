@@ -12,16 +12,12 @@ from django.contrib import admin
 log = __import__("djblets.log", {}, {}, ["log"])
 
 from reviewboard import VERSION
-from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
                                       RssGroupReviewsFeed, \
                                       AtomGroupReviewsFeed
 
-
-# Load all site settings.
-load_site_config()
 
 # Set up logging.
 log.init_logging()

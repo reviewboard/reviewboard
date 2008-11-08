@@ -48,6 +48,11 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+
+    # These must go before anything that deals with settings.
+    'djblets.siteconfig.middleware.SettingsMiddleware',
+    'reviewboard.admin.middleware.LoadSettingsMiddleware',
+
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
 )

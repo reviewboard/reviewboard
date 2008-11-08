@@ -1,8 +1,18 @@
 from django.conf import settings
 
 from reviewboard.admin.checks import check_updates_required
+from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.views import manual_updates_required
 from reviewboard.webapi.json import service_not_configured
+
+
+class LoadSettingsMiddleware:
+    """
+    Middleware that loads the settings on each request.
+    """
+    def process_request(self, request):
+        # Load all site settings.
+        load_site_config()
 
 
 class CheckUpdatesRequiredMiddleware:
