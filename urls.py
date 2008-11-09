@@ -59,7 +59,7 @@ atom_feeds = {
 # Main includes
 urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
-    (r'^api/json/', include('reviewboard.webapi.urls')),
+    (r'^api/(?P<api_format>json|xml)/', include('reviewboard.webapi.urls')),
     (r'^r/', include('reviewboard.reviews.urls')),
     (r'^reports/', include('reviewboard.reports.urls')),
 )
