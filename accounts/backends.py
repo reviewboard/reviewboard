@@ -69,14 +69,20 @@ class LDAPBackend:
             ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
             if settings.LDAP_TLS:
                 ldapo.start_tls_s()
-            ldapo.simple_bind_s(settings.LDAP_UID_MASK % username, password)
+            search = ldapo.search_s(settings.LDAP_BASE_DN, ldap.SCOPE_ONELEVEL,
+                                    settings.LDAP_UID_MASK % username)
+            ldapo.bind_s(search[0][0], password)
 
             return self.get_or_create_user(username)
 
         except ImportError:
             pass
         except ldap.INVALID_CREDENTIALS:
-            pass
+            logging.warning("LDAP error: The specified object does not "
+                            "exist in the Directory: %s" %
+                            settings.LDAP_UID_MASK % username)
+        except ldap.LDAPError, e:
+            logging.warning("LDAP error: %s" % e)
 
     def get_or_create_user(self, username):
         try:
@@ -88,11 +94,13 @@ class LDAPBackend:
                 ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
                 if settings.LDAP_TLS:
                     ldapo.start_tls_s()
-                ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
-                                    settings.LDAP_ANON_BIND_PASSWD)
+                if settings.LDAP_ANON_BIND_UID:
+                    ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
+                                        settings.LDAP_ANON_BIND_PASSWD)
 
-                passwd = ldapo.search_s(settings.LDAP_UID_MASK % username,
-                                        ldap.SCOPE_SUBTREE, "objectclass=*")
+                passwd = ldapo.search_s(settings.LDAP_BASE_DN,
+                                        ldap.SCOPE_ONELEVEL,
+                                        settings.LDAP_UID_MASK % username)
 
                 first_name = passwd[0][1]['givenName'][0]
                 last_name = passwd[0][1]['sn'][0]
@@ -115,9 +123,10 @@ class LDAPBackend:
                 # know how
                 pass
             except ldap.NO_SUCH_OBJECT:
-                logging.warning("LDAP error: The specified object does not "
-                                "exist in the Directory: %s" %
-                                settings.LDAP_UID_MASK % username)
+                logging.warning("LDAP error: %s settings.LDAP_BASE_DN: %s "
+                                "settings.LDAP_UID_MASK: %s" %
+                                (e, settings.LDAP_BASE_DN,
+                                 settings.LDAP_UID_MASK % username))
             except ldap.LDAPError, e:
                 logging.warning("LDAP error: %s" % e)
         return user

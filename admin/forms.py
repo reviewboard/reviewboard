@@ -79,8 +79,16 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("The LDAP server to authenticate with. "
                     "For example: ldap://localhost:389"))
 
+    auth_ldap_base_dn = forms.CharField(
+        label=_("LDAP Base DN"),
+        help_text=_("The LDAP Base DN for performing LDAP searches.  For "
+                    "example: ou=users,dc=example,dc=com"),
+        required=True)
+
     auth_ldap_email_domain = forms.CharField(
-        label=_("E-Mail Domain"))
+        label=_("E-Mail Domain"),
+        help_text=_("This is appened to the login username as the users email "
+                    "address."))
 
     auth_ldap_tls = forms.BooleanField(
         label=_("Use TLS for authentication"),
@@ -91,7 +99,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         initial="uid=%s,ou=users,dc=example,dc=com",
         help_text=_("The string representing the user. Use \"%(varname)s\" "
                     "where the username would normally go. For example: "
-                    "uid=%(varname)s,ou=users,dc=example,dc=com") %
+                    "(uid=%(varname)s)") %
                   {'varname': '%s'})
 
     auth_ldap_anon_bind_uid = forms.CharField(
@@ -135,6 +143,7 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.disabled_fields['auth_ldap_uri'] = True
             self.disabled_fields['auth_ldap_email_domain'] = True
             self.disabled_fields['auth_ldap_tls'] = True
+            self.disabled_fields['auth_ldap_base_dn'] = True
             self.disabled_fields['auth_ldap_uid_mask'] = True
             self.disabled_fields['auth_ldap_anon_bind_uid'] = True
             self.disabled_fields['auth_ldap_anon_bind_password'] = True
@@ -232,6 +241,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide', 'hidden'),
                 'title':   _("LDAP Authentication Settings"),
                 'fields':  ('auth_ldap_uri',
+                            'auth_ldap_base_dn',
                             'auth_ldap_email_domain',
                             'auth_ldap_tls',
                             'auth_ldap_uid_mask',
