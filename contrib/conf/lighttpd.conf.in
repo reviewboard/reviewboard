@@ -8,10 +8,10 @@ server.modules = (
 )
 
 # This is not used directly, it is superceded by our aliases below.
-server.document-root = "@pythondir@/reviewboard/htdocs"
-server.errorlog      = "/var/log/reviewboard/lighttpd-error.log"
-accesslog.filename   = "/var/log/reviewboard/lighttpd-access.log"
-server.pid-file      = "/var/run/reviewboard/lighttpd.pid"
+server.document-root = "@sitedir@/htdocs"
+server.errorlog      = "@sitedir@/logs/lighttpd-error.log"
+accesslog.filename   = "@sitedir@/logs/lighttpd-access.log"
+server.pid-file      = "@sitedir@/lighttpd.pid"
 
 fastcgi.server = (
     "/reviewboard.fcgi" => (
@@ -23,8 +23,8 @@ fastcgi.server = (
 )
 
 alias.url = (
-    "/media" => "@pythondir@/reviewboard/htdocs/media",
-    "/errordocs" => "@pythondir@/reviewboard/htdocs/errordocs",
+    "/media" => "@sitedir@/htdocs/media",
+    "/errordocs" => "@sitedir@/htdocs/errordocs",
 )
 
 url.rewrite-once = (

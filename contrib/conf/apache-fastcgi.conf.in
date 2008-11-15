@@ -4,14 +4,15 @@ AddHandler fastcgi-script .fcgi
 # time (such as viewing a large diff where many the files need to be
 # retrieved from the repository.  The path here doesn't really matter, but the
 # port needs to match the one used by the fastcgi server.
-FastCGIExternalServer @pythondir@/reviewboard/htdocs/reviewboard.fcgi -host 127.0.0.1:3033 -idle-timeout 60
+FastCGIExternalServer @sitedir@/htdocs/reviewboard.fcgi -host 127.0.0.1:3033 -idle-timeout 60
 
 <VirtualHost *:80>
-	ServerName example.com
-	DocumentRoot @pythondir@/reviewboard/htdocs/
+	ServerName @sitedomain@
+	DocumentRoot @sitedir@/htdocs
 
 	# Alias static media requests to filesystem
-	Alias /media @pythondir@/reviewboard/htdocs/media
+	Alias /media @sitedir@/htdocs/media
+	Alias /errordocs @sitedir@/htdocs/errordocs
 
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html

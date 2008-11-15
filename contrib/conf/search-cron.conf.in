@@ -1,5 +1,5 @@
 # Incremental indices every 10 minutes
-0,10,20,30,40,50 * * * * @pythondir@/reviewboard/manage.py index
+0,10,20,30,40,50 * * * * @rbsite@ @sitedir@ manage index
 
 # Do a full index once a week on Sunday at 2am
-* 2 * * 0 @pythondir@/reviewboard/manage.py index --full
+* 2 * * 0 @rbsite@ @sitedir@ manage index -- --full

@@ -1,21 +1,20 @@
 <VirtualHost *:80>
-	ServerName example.com
-	DocumentRoot @pythondir@/reviewboard/htdocs
+	ServerName @sitedomain@
+	DocumentRoot @sitedir@/htdocs
 
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html
 
 	# Serve django pages
 	<Location "/">
-		PythonPath "['@djangodir@'] + ['@pythondir@/reviewboard'] + ['@pythondir@/djblets'] + sys.path"
+		PythonPath "['@sitedir@/conf'] + sys.path"
 		SetEnv DJANGO_SETTINGS_MODULE reviewboard.settings
 		SetHandler mod_python
 		PythonHandler django.core.handlers.modpython
 		PythonAutoReload Off
 		PythonDebug Off
-		# If you run multiple mod_python sites in the same apache
-		# instonce, uncomment this line:
-		# PythonInterpreter reviewboard
+		# Used to run multiple mod_python sites in the same apache
+		PythonInterpreter reviewboard_@siteid@
 	</Location>
 
 	# Serve static media without running it through mod_python
@@ -28,6 +27,6 @@
 	</Location>
 
 	# Alias static media requests to filesystem
-	Alias /media @pythondir@/reviewboard/htdocs/media
-	Alias /errordocs @pythondir@/reviewboard/htdocs/errordocs
+	Alias /media @sitedir@/htdocs/media
+	Alias /errordocs @sitedir@/htdocs/errordocs
 </VirtualHost>
