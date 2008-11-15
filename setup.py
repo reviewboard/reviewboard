@@ -6,6 +6,7 @@
 # MacOS X and data files installation.
 
 import os
+import shutil
 import sys
 
 from ez_setup import use_setuptools
@@ -51,8 +52,8 @@ def my_write_manifest(self):
 
     old_write_manifest(self)
 
-old_write_manifest = manifest_maker.write_manifest
-manifest_maker.write_manifest = my_write_manifest
+#old_write_manifest = manifest_maker.write_manifest
+#manifest_maker.write_manifest = my_write_manifest
 
 
 class fixed_build_py(build_py):
@@ -107,19 +108,46 @@ if sys.platform == "darwin":
 else:
     cmdclasses = {'install_data': install_data}
 
-cmdclasses["build_py"] = fixed_build_py
+#cmdclasses["build_py"] = fixed_build_py
 
+
+if os.path.exists("reviewboard"):
+    shutil.rmtree("reviewboard")
+
+print "Copying tree to staging area..."
+shutil.copytree(".", "reviewboard", True)
+
+# Clean up things that shouldn't be in there...
+shutil.rmtree("reviewboard/ReviewBoard.egg-info", ignore_errors=True)
+shutil.rmtree("reviewboard/build", ignore_errors=True)
+shutil.rmtree("reviewboard/dist", ignore_errors=True)
+os.unlink("reviewboard/setup.py")
+os.unlink("reviewboard/ez_setup.py")
 
 # Since we don't actually keep our directories in a reviewboard directory
 # like we really should, we have to fake it. Prepend "reviewboard." here,
 # set package_dir below, and make sure to exclude our svn:externals
 # dependencies.
-packages = ["reviewboard"] + [
-    "reviewboard." + package_name
+rb_dirs = []
+
+for dirname in os.listdir("."):
+    if os.path.isdir(dirname) and dirname != "reviewboard":
+        rb_dirs.append(dirname)
+        rb_dirs.append(dirname + ".*")
+
+print rb_dirs
+
+packages = [#["reviewboard"] + [
+    #"reviewboard." + package_name
+    package_name
     for package_name in find_packages(
-        exclude=["djblets",          "djblets.*",
-                 "django_evolution", "django_evolution.*"])
+        exclude=["reviewboard.djblets",          "reviewboard.djblets.*",
+                 "reviewboard.django_evolution", "reviewboard.django_evolution.*"] +
+                rb_dirs)
 ]
+
+print packages
+#sys.exit(0)
 
 # Build the reviewboard package.
 setup(name="ReviewBoard",
@@ -132,7 +160,9 @@ setup(name="ReviewBoard",
       maintainer="Christian Hammond",
       maintainer_email="chipx86@chipx86.com",
       packages=packages,
-      package_dir={'reviewboard': ''},
+      scripts=[
+          "reviewboard/contrib/tools/rb-site",
+      ],
       cmdclass=cmdclasses,
       install_requires=['Django>=1.0', 'django_evolution', 'Djblets'],
       dependency_links = [
@@ -156,3 +186,5 @@ setup(name="ReviewBoard",
           "Topic :: Software Development :: Quality Assurance",
       ]
 )
+
+shutil.rmtree("reviewboard")
