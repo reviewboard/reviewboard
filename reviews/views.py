@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
@@ -17,7 +16,6 @@ from django.views.generic.list_detail import object_list
 
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required

@@ -14,7 +14,7 @@ use_setuptools()
 
 from setuptools import setup, find_packages
 from setuptools.command.build_py import build_py
-from setuptools.command.egg_info import manifest_maker
+#from setuptools.command.egg_info import manifest_maker
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
@@ -35,23 +35,23 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
 
-def my_write_manifest(self):
-    """
-    A version of manifest_maker.write_manifest that makes sure all files
-    in the manifest start with "./" so that they'll be included in the egg.
-    Otherwise, package data won't be installed. This oversight in setuptools
-    is partially due to the bug mentioned in fixed_build_py.
-
-    This should probably go away when we move the package contents into the
-    reviewboard/ directory.
-    """
-    for i, file in enumerate(self.filelist.files):
-        if (not file.startswith("./") and
-            not file.startswith("ReviewBoard.egg-info")):
-            self.filelist.files[i] = "./" + file
-
-    old_write_manifest(self)
-
+#def my_write_manifest(self):
+#    """
+#    A version of manifest_maker.write_manifest that makes sure all files
+#    in the manifest start with "./" so that they'll be included in the egg.
+#    Otherwise, package data won't be installed. This oversight in setuptools
+#    is partially due to the bug mentioned in fixed_build_py.
+#
+#    This should probably go away when we move the package contents into the
+#    reviewboard/ directory.
+#    """
+#    for i, file in enumerate(self.filelist.files):
+#        if (not file.startswith("./") and
+#            not file.startswith("ReviewBoard.egg-info")):
+#            self.filelist.files[i] = "./" + file
+#
+#    old_write_manifest(self)
+#
 #old_write_manifest = manifest_maker.write_manifest
 #manifest_maker.write_manifest = my_write_manifest
 

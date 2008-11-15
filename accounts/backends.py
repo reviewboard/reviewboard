@@ -122,7 +122,7 @@ class LDAPBackend:
                 # ANON_BIND_UID and ANON_BIND_PASSWD are wrong, but I don't
                 # know how
                 pass
-            except ldap.NO_SUCH_OBJECT:
+            except ldap.NO_SUCH_OBJECT, e:
                 logging.warning("LDAP error: %s settings.LDAP_BASE_DN: %s "
                                 "settings.LDAP_UID_MASK: %s" %
                                 (e, settings.LDAP_BASE_DN,
