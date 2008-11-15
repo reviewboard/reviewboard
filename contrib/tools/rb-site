@@ -800,12 +800,21 @@ class InstallCommand(Command):
         self.show_install_status()
         self.show_finished()
 
-    def normalize_url_path(self, path):
+    def normalize_root_url_path(self, path):
         if not path.endswith("/"):
             path += "/"
 
         if not path.startswith("/"):
             path = "/" + path
+
+        return path
+
+    def normalize_media_url_path(self, path):
+        if not path.endswith("/"):
+            path += "/"
+
+        if path.startswith("/"):
+            path = path[1:]
 
         return path
 
@@ -856,7 +865,7 @@ class InstallCommand(Command):
                       "should not include the domain name.")
 
         ui.prompt_input(page, "Root Path", "/",
-                        normalize_func=self.normalize_url_path,
+                        normalize_func=self.normalize_root_url_path,
                         save_obj=site, save_var="site_root")
 
     def ask_media_url(self):
@@ -868,7 +877,7 @@ class InstallCommand(Command):
                       "for this purpose.")
 
         ui.prompt_input(page, "Media URL", "media/",
-                        normalize_func=self.normalize_url_path,
+                        normalize_func=self.normalize_media_url_path,
                         save_obj=site, save_var="media_url")
 
     def ask_database_type(self):
@@ -1040,8 +1049,11 @@ class InstallCommand(Command):
         else:
             site_media_url = site.site_root + site.media_url
 
+        site_media_root = os.path.join(site.abs_install_dir, "htdocs", "media")
+
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("site_media_url", site_media_url)
+        siteconfig.set("site_media_root", site_media_root)
         siteconfig.set("site_admin_name", site.admin_user)
         siteconfig.set("site_admin_email", site.admin_email)
         siteconfig.save()
