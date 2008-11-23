@@ -36,12 +36,14 @@ def check_dependencies():
 
     # Django 1.0
     try:
+        # Django 1.0 final has VERSION (1, 0, "final").
+        # All subsequent versions have a 5-tuple, e.g. (1, 1, 0, "alpha", 0).
         import django
-        if not (django.VERSION[0] == 1 and
-                (django.VERSION[1] > 0 or django.VERSION[2] == "final")):
+        if not (django.VERSION == (1, 0, "final") or
+                (len(django.VERSION) == 5 and django.VERSION[1] >= 0)):
             raise ImportError
     except ImportError:
-        dependency_error("Django 1.0 is required.")
+        dependency_error("Django 1.0 or newer is required.")
 
     # django-evolution
     try:
