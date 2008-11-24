@@ -1021,6 +1021,8 @@ class InstallCommand(Command):
                 site.generate_config_files)
         ui.step(page, "Creating database",
                 site.sync_database)
+        ui.step(page, "Performing migrations",
+                site.migrate_database)
         ui.step(page, "Creating administrator account",
                 site.create_admin_user)
         ui.step(page, "Saving site settings",
