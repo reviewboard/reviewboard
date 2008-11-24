@@ -202,6 +202,7 @@ class Site(object):
 
         try:
             from django.core.management import execute_manager
+            from reviewboard.admin.migration import fix_django_evolution_issues
             import reviewboard.settings
 
             if not params:
@@ -210,6 +211,7 @@ class Site(object):
             if DEBUG:
                 params.append("--verbosity=0")
 
+            fix_django_evolution_issues(reviewboard.settings)
             execute_manager(reviewboard.settings, [__file__, cmd] + params)
         except ImportError, e:
             ui.error("Unable to execute the manager command %s: %s" %

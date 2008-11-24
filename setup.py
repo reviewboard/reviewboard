@@ -124,6 +124,12 @@ shutil.rmtree("reviewboard/dist", ignore_errors=True)
 os.unlink("reviewboard/setup.py")
 os.unlink("reviewboard/ez_setup.py")
 
+if os.path.exists("reviewboard/settings_local.py"):
+    os.unlink("reviewboard/settings_local.py")
+
+if os.path.exists("reviewboard/settings_local.pyc"):
+    os.unlink("reviewboard/settings_local.pyc")
+
 # Since we don't actually keep our directories in a reviewboard directory
 # like we really should, we have to fake it. Prepend "reviewboard." here,
 # set package_dir below, and make sure to exclude our svn:externals

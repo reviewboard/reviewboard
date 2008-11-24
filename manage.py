@@ -19,6 +19,7 @@ except ImportError:
     sys.exit(1)
 
 from reviewboard.admin import checks
+from reviewboard.admin.migration import fix_django_evolution_issues
 
 
 warnings_found = 0
@@ -117,21 +118,6 @@ def check_dependencies():
         sys.stderr.write('\n\n')
 
 
-def fix_django_evolution_issues():
-    # XXX Django r8244 moves django.db.models.fields.files.ImageField and
-    # FileField into django.db.models.files, causing existing
-    # signatures to fail. For the purpose of loading, temporarily
-    # place these back into fields. The next time the signature is
-    # generated in Django Evolution, the correct, new location will be
-    # written.
-    #
-    # TODO: Remove this when Django Evolution works again.
-    project_directory = setup_environ(settings)
-    import django.db.models.fields as model_fields
-    import django.db.models.fields.files as model_files
-    model_fields.ImageField = model_files.ImageField
-    model_fields.FileField = model_files.FileField
-
 if __name__ == "__main__":
     if settings.DEBUG:
         if len(sys.argv) > 1 and \
@@ -143,6 +129,6 @@ if __name__ == "__main__":
                 sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
                 check_dependencies()
 
-    fix_django_evolution_issues()
+    fix_django_evolution_issues(settings)
 
     execute_manager(settings)
