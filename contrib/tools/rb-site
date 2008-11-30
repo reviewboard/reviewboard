@@ -3,6 +3,7 @@
 import getpass
 import os
 import pkg_resources
+import platform
 import shutil
 import sys
 import textwrap
@@ -776,11 +777,14 @@ class InstallCommand(Command):
     needs_ui = True
 
     def add_options(self, parser):
+        isWin = (platform.system() == "Windows")
+
         group = OptionGroup(parser, "'install' command",
                             self.__doc__.strip())
         group.add_option("--copy-media", action="store_true",
-                         dest="copy_media", default=False,
+                         dest="copy_media", default=isWin,
                          help="copy media files instead of symlinking")
+
         # TODO: Parameters for default options
         parser.add_option_group(group)
 
