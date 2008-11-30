@@ -141,19 +141,13 @@ for dirname in os.listdir("."):
         rb_dirs.append(dirname)
         rb_dirs.append(dirname + ".*")
 
-print rb_dirs
-
-packages = [#["reviewboard"] + [
-    #"reviewboard." + package_name
+packages = [
     package_name
     for package_name in find_packages(
         exclude=["reviewboard.djblets",          "reviewboard.djblets.*",
                  "reviewboard.django_evolution", "reviewboard.django_evolution.*"] +
                 rb_dirs)
 ]
-
-print packages
-#sys.exit(0)
 
 # Build the reviewboard package.
 setup(name="ReviewBoard",
