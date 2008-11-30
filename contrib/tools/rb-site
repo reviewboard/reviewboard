@@ -84,13 +84,16 @@ class Site(object):
             self.mkdir(os.path.join(self.install_dir, "db"))
 
         self.mkdir(htdocs_dir)
-        self.mkdir(os.path.join(htdocs_dir, "errordocs"))
         self.mkdir(media_dir)
 
         # TODO: In the future, support changing ownership of these
         #       directories.
         self.mkdir(os.path.join(media_dir, "uploaded"))
         self.mkdir(os.path.join(media_dir, "uploaded", "images"))
+
+        self.link_pkg_dir("reviewboard",
+                          "htdocs/errordocs",
+                          os.path.join("htdocs", "errordocs"))
 
         media_base = os.path.join("htdocs", "media")
         rb_djblets_src = "htdocs/media/djblets"
