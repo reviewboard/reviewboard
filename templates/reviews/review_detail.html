@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load difftags %}
 {% load djblets_deco %}
 {% load djblets_utils %}
 {% load djblets_js %}
@@ -21,6 +20,8 @@
 <script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}yui/utilities/utilities.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/common.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/dialogs.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/widgets.js"></script>
@@ -139,45 +140,25 @@
 {% for comment in entry.review.ordered_comments %}
     <dt>
      <a name="comment{{comment.id}}"></a>
-     <table class="sidebyside{% ifequal comment.filediff.source_revision PRE_CREATION %} newfile{% endifequal %}">
-      <colgroup>
-       <col class="line" />
-       <col class="left" />
-       <col class="line" />
-       <col class="right" />
-      </colgroup>
-      <thead>
-       <tr>
-        <th colspan="4" class="filename">
-         <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
-		 <span class="diffrevision">
-{% if comment.interfilediff %}
-          (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
-{% else %}
-		  (Diff revision {{comment.filediff.diffset.revision}})
-{% endif %}
-		 </span>
-        </th>
-       </tr>
-      </thead>
-{% forchunkswithlines comment.filediff comment.interfilediff comment.first_line comment.num_lines %}
-      <tbody class="{{chunk.change}}">
-{% for line in chunk.lines %}
-       <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
-         <th>{{line.1}}</td>
-         <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
-         <th>{{line.4}}</td>
-         <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
-       </tr>
-{% endfor %}
-      </tbody>
-{% endforchunkswithlines %}
-     </table>
+     <div id="comment_container_{{comment.id}}">
+      <div class="loading">
+       <img src="{{MEDIA_URL}}rb/images/spinner.gif" width="16" height="16" alt="" />
+       {% trans "Loading diff fragment..." %}
+      </div>
+     </div>
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
-	 {% reply_section entry.review comment "comment" "rc" %}
+     {% reply_section entry.review comment "comment" "rc" %}
     </dd>
+    <script type="text/javascript">
+      $.funcQueue("diff_comments").add(function() {
+        $("#comment_container_{{comment.id}}").load(
+          "reviews/{{entry.review.id}}/fragment/diff-comment/{{comment.id}}/",
+          null,
+          $.funcQueue("diff_comments").next);
+      });
+    </script>
 {% endfor %}
    </dl>
 {% endif %}
@@ -266,6 +247,8 @@
     registerEditor('changedescription', true, true);
 {%  endif %}
 {% endifuserorperm %}
+
+    $.funcQueue("diff_comments").start();
 </script>
 {% endifequal %}
 {% endifuserorperm %}

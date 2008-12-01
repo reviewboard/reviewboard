@@ -31,9 +31,9 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
-                                       Review, Group, Screenshot, \
-                                       ScreenshotComment
+from reviewboard.reviews.models import Comment, ReviewRequest, \
+                                       ReviewRequestDraft, Review, Group, \
+                                       Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
@@ -387,6 +387,21 @@ def raw_diff(request, review_request_id, revision=None):
     resp = HttpResponse(data, mimetype='text/x-patch')
     resp['Content-Disposition'] = 'inline; filename=%s' % diffset.name
     return resp
+
+
+@check_login_required
+def comment_diff_fragment(request, review_request_id, review_id, comment_id,
+                          template_name='reviews/diff_comment_fragment.html'):
+    """
+    Returns the fragment representing the part of a diff referenced by a
+    comment. This is used to allow lazy-loading of these diff fragments, since
+    they may not be cached and take time to generate.
+    """
+    diff_comment = get_object_or_404(Comment, pk=comment_id)
+
+    return render_to_response(template_name, RequestContext(request, {
+        'comment': diff_comment,
+    }))
 
 
 @check_login_required

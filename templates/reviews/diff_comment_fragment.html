@@ -1,0 +1,37 @@
+{% load djblets_utils %}
+{% load reviewtags %}
+{% load difftags %}
+<table class="sidebyside{% ifequal comment.filediff.source_revision PRE_CREATION %} newfile{% endifequal %}">
+ <colgroup>
+  <col class="line" />
+  <col class="left" />
+  <col class="line" />
+  <col class="right" />
+ </colgroup>
+ <thead>
+  <tr>
+   <th colspan="4" class="filename">
+    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
+    <span class="diffrevision">
+{% if comment.interfilediff %}
+     (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
+{% else %}
+     (Diff revision {{comment.filediff.diffset.revision}})
+{% endif %}
+    </span>
+   </th>
+  </tr>
+ </thead>
+{% forchunkswithlines comment.filediff comment.interfilediff comment.first_line comment.num_lines %}
+ <tbody class="{{chunk.change}}">
+{% for line in chunk.lines %}
+  <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
+    <th>{{line.1}}</td>
+    <td><pre>{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
+    <th>{{line.4}}</td>
+    <td><pre>{{line.5|highlightregion:line.6|showextrawhitespace}}</pre></td>
+  </tr>
+{% endfor %}
+ </tbody>
+{% endforchunkswithlines %}
+</table>

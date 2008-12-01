@@ -46,6 +46,11 @@ ul.errorlist li {
   display: inline;
 }
 
+.loading img {
+  margin-right: 4px;
+  vertical-align: text-bottom;
+}
+
 
 /****************************************************************************
  * Banners
