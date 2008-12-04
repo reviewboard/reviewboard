@@ -11,7 +11,7 @@
 
 {% block content %}
  {% ifequal hits 0 %}
- {% trans "No review requests matching your query" %}<b>{{ query }}</b>
+ {% trans "No review requests matching your query" %}: <b>{{ query }}</b>
  {% else %}
  {% trans "Results" %} <b>{{ first_on_page }} - {{ last_on_page }}</b> of {{ hits }} for <b>{{ query }}</b>
  {% endifequal %}
