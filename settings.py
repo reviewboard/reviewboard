@@ -73,9 +73,6 @@ ROOT_URLCONF = 'djblets.util.rooturl'
 
 REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
-HTDOCS_ROOT = os.path.join(REVIEWBOARD_ROOT, 'htdocs')
-MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
-
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
 
@@ -150,6 +147,11 @@ except ImportError:
     dependency_error('Unable to read settings_local.py.')
 
 TEMPLATE_DEBUG = DEBUG
+
+LOCAL_ROOT = os.path.dirname(os.path.dirname(settings_local.__file__))
+HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
+MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
+
 
 # URL prefix for media -- CSS, JavaScript and images. Make sure to use a
 # trailing slash.
