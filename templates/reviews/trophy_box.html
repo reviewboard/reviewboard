@@ -1,0 +1,12 @@
+{% load djblets_deco %}
+{% load djblets_utils %}
+{% load i18n %}
+{% load reviewtags %}
+
+{% ifneatnumber review_request.id %}
+{%  box "yay" %}
+ <img src="{{MEDIA_URL}}rb/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png" width="32" height="48" border="0" alt="" />
+ <h1>{% blocktrans with review_request.submitter|user_displayname as submitter %}{{submitter}} got review request #{{review_request.id}}!{% endblocktrans %}</h1>
+{%  endbox %}
+{% endifneatnumber %}
+
