@@ -9,7 +9,7 @@ from django.db.models import Q
 
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviews.models import ReviewRequest
+from reviewboard.reviews.models import ReviewRequest
 
 try:
     import lucene
