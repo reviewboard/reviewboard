@@ -148,7 +148,16 @@ except ImportError:
 
 TEMPLATE_DEBUG = DEBUG
 
-LOCAL_ROOT = os.path.dirname(os.path.dirname(settings_local.__file__))
+local_dir = os.path.dirname(settings_local.__file__)
+
+if local_dir == os.path.dirname(__file__):
+    # settings_local.py and settings.py are in the same place. This is probably
+    # an SVN checkout.
+    LOCAL_ROOT = local_dir
+else:
+    # This is likely a site install. Get the parent directory.
+    LOCAL_ROOT = os.path.dirname(local_dir)
+
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
 
