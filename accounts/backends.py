@@ -74,7 +74,6 @@ class LDAPBackend:
             ldapo.bind_s(search[0][0], password)
 
             return self.get_or_create_user(username)
-
         except ImportError:
             pass
         except ldap.INVALID_CREDENTIALS:
@@ -84,9 +83,12 @@ class LDAPBackend:
         except ldap.LDAPError, e:
             logging.warning("LDAP error: %s" % e)
 
+        return None
+
     def get_or_create_user(self, username):
         try:
             user = User.objects.get(username=username)
+            return user
         except User.DoesNotExist:
             try:
                 import ldap
@@ -115,6 +117,7 @@ class LDAPBackend:
                 user.is_superuser = False
                 user.set_unusable_password()
                 user.save()
+                return user
             except ImportError:
                 pass
             except ldap.INVALID_CREDENTIALS:
@@ -129,7 +132,8 @@ class LDAPBackend:
                                  settings.LDAP_UID_MASK % username))
             except ldap.LDAPError, e:
                 logging.warning("LDAP error: %s" % e)
-        return user
+
+        return None
 
     def get_user(self, user_id):
         return get_object_or_none(User, pk=user_id)
