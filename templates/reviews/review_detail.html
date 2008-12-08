@@ -216,9 +216,9 @@
 {%  endif %}
 {% endfor %}
 
+<script type="text/javascript">
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 {% ifequal review_request.status 'P' %}
-<script type="text/javascript">
   registerEditor('summary', false);
   registerEditor('branch', false);
   registerEditor('description', true);
@@ -237,14 +237,12 @@
   registerEditor('screenshot_{{image.id}}_caption', false);
 {% endfor %}
 
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{%  if review_request.public %}
+{% if review_request.public %}
     registerEditor('changedescription', true, true);
-{%  endif %}
+{% endif %}
+{% endifequal %}
 {% endifuserorperm %}
 
     $.funcQueue("diff_comments").start();
 </script>
-{% endifequal %}
-{% endifuserorperm %}
 {% endblock %}
