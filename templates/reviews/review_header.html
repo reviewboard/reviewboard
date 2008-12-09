@@ -31,7 +31,7 @@
  <input type="submit" id="btn-draft-discard"
   value="{% trans "Discard Draft" %}" onclick="discardDraft();" />
  <p><label for="changedescription">{% trans "Describe your changes (optional):" %}</label></p>
- <pre id="changedescription">{{draft.changedesc.text}}</pre>
+ <pre id="changedescription">{% if draft.changedesc %}{{draft.changedesc.text}}{% endif %}</pre>
 {%    else %}
  <h1>{% trans "This review request is not yet public." %}</h1>
  {% trans "Be sure to publish when finished." %}
