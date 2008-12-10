@@ -1054,7 +1054,7 @@ class PerforceClient(SCMClient):
         # multi-line view mapping with exclusions, Perforce will display
         # the exclusions in order, with the last line showing the actual
         # location.
-        last_line = where_output[-1]
+        last_line = where_output[-1].strip()
 
         # XXX: This breaks on filenames with spaces.
         return last_line.split(' ')[2]
