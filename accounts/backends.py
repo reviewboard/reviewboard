@@ -15,7 +15,7 @@ class NISBackend:
         try:
             passwd = nis.match(username, 'passwd').split(':')
             original_crypted = passwd[1]
-            new_crypted = crypt.crypt(password, original_crypted[:2])
+            new_crypted = crypt.crypt(password, original_crypted)
 
             if original_crypted == new_crypted:
                 return self.get_or_create_user(username, passwd)
