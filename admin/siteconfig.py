@@ -28,6 +28,7 @@ settings_map = {
     'auth_ldap_anon_bind_uid':    'LDAP_ANON_BIND_UID',
     'auth_ldap_anon_bind_passwd': 'LDAP_ANON_BIND_PASSWD',
     'auth_ldap_email_domain':     'LDAP_EMAIL_DOMAIN',
+    'auth_ldap_email_attribute':  'LDAP_EMAIL_ATTRIBUTE',
     'auth_ldap_tls':              'LDAP_TLS',
     'auth_ldap_base_dn':          'LDAP_BASE_DN',
     'auth_ldap_uid_mask':         'LDAP_UID_MASK',

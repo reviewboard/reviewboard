@@ -106,7 +106,11 @@ class LDAPBackend:
 
                 first_name = passwd[0][1]['givenName'][0]
                 last_name = passwd[0][1]['sn'][0]
-                email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
+
+                if settings.LDAP_EMAIL_DOMAIN:
+                    email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
+                elif settings.LDAP_EMAIL_ATTRIBUTE:
+                    email = passwd[0][1][settings.LDAP_EMAIL_ATTRIBUTE][0]
 
                 user = User(username=username,
                             password='',

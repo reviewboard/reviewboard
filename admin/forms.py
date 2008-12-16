@@ -87,8 +87,16 @@ class GeneralSettingsForm(SiteSettingsForm):
 
     auth_ldap_email_domain = forms.CharField(
         label=_("E-Mail Domain"),
-        help_text=_("This is appened to the login username as the users email "
-                    "address."))
+        help_text=_("The domain name appended to the username to construct "
+                    "the user's e-mail address. This takes precedence over "
+                    '"E-Mail LDAP Attribute."'),
+        required=False)
+
+    auth_ldap_email_attribute = forms.CharField(
+        label=_("E-Mail LDAP Attribute"),
+        help_text=_("The attribute in the LDAP server that stores the user's "
+                    "e-mail address. For example: mail"),
+        required=False)
 
     auth_ldap_tls = forms.BooleanField(
         label=_("Use TLS for authentication"),
@@ -142,6 +150,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         if not can_enable_ldap:
             self.disabled_fields['auth_ldap_uri'] = True
             self.disabled_fields['auth_ldap_email_domain'] = True
+            self.disabled_fields['auth_ldap_email_attribute'] = True
             self.disabled_fields['auth_ldap_tls'] = True
             self.disabled_fields['auth_ldap_base_dn'] = True
             self.disabled_fields['auth_ldap_uid_mask'] = True
@@ -243,6 +252,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'fields':  ('auth_ldap_uri',
                             'auth_ldap_base_dn',
                             'auth_ldap_email_domain',
+                            'auth_ldap_email_attribute',
                             'auth_ldap_tls',
                             'auth_ldap_uid_mask',
                             'auth_ldap_anon_bind_uid',
