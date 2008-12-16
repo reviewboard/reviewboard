@@ -234,6 +234,9 @@ class Site(object):
         src_dir = pkg_resources.resource_filename(pkgname, src_path)
         dest_dir = os.path.join(self.install_dir, dest_path)
 
+        if os.path.islink(dest_dir) and not os.path.exists(dest_dir):
+            os.unlink(dest_dir)
+
         if os.path.exists(dest_dir):
             if not replace:
                 return
