@@ -526,6 +526,9 @@ class GtkUI(UIToolkit):
         self.next_button.show()
         self.bbox.pack_start(self.next_button, False, False, 0)
         self.next_button.connect('clicked', self.next_page)
+        self.next_button.set_flags(gtk.CAN_DEFAULT)
+        self.next_button.grab_default()
+        self.next_button.grab_focus()
 
         self.close_button = gtk.Button(stock=gtk.STOCK_CLOSE)
         self.bbox.pack_start(self.close_button, False, False, 0)
@@ -644,6 +647,7 @@ class GtkUI(UIToolkit):
         entry = gtk.Entry()
         entry.show()
         hbox.pack_start(entry, True, True, 0)
+        entry.set_activates_default(True)
 
         if password:
             entry.set_visibility(False)
@@ -653,8 +657,14 @@ class GtkUI(UIToolkit):
 
         entry.connect("key_release_event", save_input)
 
+        page.setdefault('entries', []).append(entry)
         page['validators'].append(lambda: entry.get_text() != "")
         page['on_show_funcs'].append(save_input)
+
+        # If this is the first on the page, make sure it gets focus when
+        # we switch to this page.
+        if len(page['entries']) == 1:
+            page['on_show_funcs'].append(entry.grab_focus)
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
