@@ -58,6 +58,7 @@ defaults.update({
     'diffviewer_paginate_by':              20,
     'diffviewer_paginate_orphans':         10,
     'diffviewer_syntax_highlighting':      True,
+    'diffviewer_syntax_highlighting_threshold': 0,
     'diffviewer_show_trailing_whitespace': True,
     'mail_send_review_mail':               False,
     'search_enable':                       False,

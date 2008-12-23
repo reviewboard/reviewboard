@@ -373,6 +373,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     markup_a = markup_b = None
 
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    threshold = siteconfig.get('diffviewer_syntax_highlighting_threshold')
+
+    if threshold and (a_num_lines > threshold or b_num_lines > threshold):
+        enable_syntax_highlighting = False
+
     if enable_syntax_highlighting:
         try:
             # TODO: Try to figure out the right lexer for these files
@@ -387,8 +394,6 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     if not markup_b:
         markup_b = re.split(r"\r?\n", escape(new))
-
-    siteconfig = SiteConfiguration.objects.get_current()
 
     chunks = []
     linenum = 1
