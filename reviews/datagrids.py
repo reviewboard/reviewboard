@@ -245,6 +245,8 @@ class ReviewRequestDataGrid(DataGrid):
     submitter    = Column(_("Submitter"), db_field="submitter__username",
                           shrink=True, sortable=True, link=True)
 
+    repository   = Column(_("Repository"), db_field="repository__name",
+                          shrink=True, sortable=True, link=False)
     time_added   = DateTimeColumn(_("Posted"),
         detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
