@@ -1,19 +1,35 @@
+import calendar
 from datetime import datetime, timedelta
 import subprocess
 import time
 
-from reviewboard.scmtools.core import SCMError, SCMTool
+from reviewboard.scmtools.core import SCMError, SCMTool, PRE_CREATION
 
 
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 
 class BZRTool(SCMTool):
+    # Timestamp format in bzr diffs.
+    # This isn't totally accurate: there should be a %z at the end.
+    # Unfortunately, strptime() doesn't support %z.
+    DIFF_TIMESTAMP_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+    # "bzr diff" indicates that a file is new by setting the old
+    # timestamp to the epoch time.
+    PRE_CREATION_TIMESTAMP = '1970-01-01 00:00:00 +0000'
+
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
-    def get_file(self, path, revision=0):
+    def get_file(self, path, revision):
+        if revision == BZRTool.PRE_CREATION_TIMESTAMP:
+            return ''
+
+        # "bzr -r date:" expects the timestamp to be in local time.
+        local_datetime = self._revision_timestamp_to_local(revision)
+
         p = subprocess.Popen(['bzr', 'cat',
-                              '-r', str(revision), str(self.repository.path) + '/' + path],
+                             '-r', 'date:' + str(local_datetime), self._get_repo_path(path)],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=True)
         contents = p.stdout.read()
@@ -26,47 +42,16 @@ class BZRTool(SCMTool):
         return contents
 
     def parse_diff_revision(self, file_str, revision_str):
+        if revision_str == BZRTool.PRE_CREATION_TIMESTAMP:
+            return (file_str, PRE_CREATION)
 
-        # A Bazaar diff contains only timestamps, so we try
-        # to deduce the actual revision number based on that.
-
-        p = subprocess.Popen(['bzr', 'log',
-                             str(self.repository.path) + '/' + file_str],
-                             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             close_fds=True)
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            raise SCMError(errmsg)
-
-        # A log entry has, for example, the following lines (among others):
-        # revno: 1
-        # timestamp: Thu 2008-03-20 18:25:34 +0200
-
-        revision_timestamp = self.__parse_timestamp(revision_str)
-        revision = 0 # If no revision is found, use 0
-        current_revision = 0 # Temporary per log entry
-        lines = contents.splitlines()
-        for line in lines:
-            values=line.split(':', 1);
-            if values[0] == 'revno':
-                current_revision = values[1].strip()
-            elif values[0] == 'timestamp':
-                timestamp = self.__parse_timestamp(values[1].strip()[4:])
-                if timestamp == revision_timestamp:
-                    revision = current_revision
-
-        if revision == 0:
-            raise SCMError("%s: no revision found for timestamp '%s'." %
-                           (file_str, revision_str))
-
-        return file_str, str(revision)
+        return file_str, revision_str
 
     def get_filenames_in_revision(self, revision):
+        local_datetime = self._revision_timestamp_to_local(revision)
+
         p = subprocess.Popen(['bzr', 'inventory',
-                              '-r', str(revision), str(self.repository.path)],
+                             '-r', 'date:' + str(local_datetime), str(self.repository.path)],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=True)
         contents = p.stdout.read()
@@ -82,17 +67,34 @@ class BZRTool(SCMTool):
         return ['basedir', 'diff_path']
 
     def get_diffs_use_absolute_paths(self):
-        return True
+        return False
 
-    def __parse_timestamp(self, timestamp_str):
-        # The timestamp format is: YYYY-MM-DD HH:MM:SS +HHMM
-        timestamp = datetime(*time.strptime(timestamp_str[0:19], '%Y-%m-%d %H:%M:%S')[0:6])
+    def _get_repo_path(self, path, basedir=None):
+        parts = [self.repository.path.strip("/")]
+
+        if basedir:
+            parts.append(basedir.strip("/"))
+
+        parts.append(path.strip("/"))
+
+        return "/".join(parts)
+
+    def _revision_timestamp_to_local(self, timestamp_str):
+        """When using a date to ask bzr for a file revision, it expects
+        the date to be in local time. So, this function converts a
+        timestamp from a bzr diff file to local time.
+        """
+
+        timestamp = datetime(*time.strptime(timestamp_str[0:19], BZRTool.DIFF_TIMESTAMP_FORMAT)[0:6])
 
         # Now, parse the difference to GMT time (such as +0200)
+        # If only strptime() supported %z, we wouldn't have to do this manually.
         delta = timedelta(hours=int(timestamp_str[21:23]), minutes=int(timestamp_str[23:25]))
         if timestamp_str[20] == '+':
             timestamp -= delta
         else:
             timestamp += delta
 
-        return timestamp
+        # convert to local time
+        return datetime.fromtimestamp(calendar.timegm(timestamp.timetuple()))
+
