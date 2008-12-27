@@ -106,6 +106,95 @@ class RepositoryInfo:
               (self.base_path, base_path))
         self.base_path = base_path
 
+    def find_server_repository_info(self, server):
+        """
+        Try to find the repository from the list of repositories on the server.
+        For Subversion, this could be a repository with a different URL. For
+        all other clients, this is a noop.
+        """
+        return self
+
+
+class SvnRepositoryInfo(RepositoryInfo):
+    """
+    A representation of a SVN source code repository. This version knows how to
+    find a matching repository on the server even if the URLs differ.
+    """
+    def __init__(self, path, base_path, uuid):
+        RepositoryInfo.__init__(self, path, base_path)
+        self.uuid = uuid
+
+    def find_server_repository_info(self, server):
+        """
+        The point of this function is to find a repository on the server that
+        matches self, even if the paths aren't the same. (For example, if self
+        uses an 'http' path, but the server uses a 'file' path for the same
+        repository.) It does this by comparing repository UUIDs. If the
+        repositories use the same path, you'll get back self, otherwise you'll
+        get a different SvnRepositoryInfo object (with a different path).
+        """
+        repositories = server.get_repositories()
+
+        for repository in repositories:
+            if repository['tool'] != 'Subversion':
+                continue
+
+            info = self._get_repository_info(server, repository)
+
+            if not info or self.uuid != info['uuid']:
+                continue
+
+            repos_base_path = info['url'][len(info['root_url']):]
+            relpath = self._get_relative_path(self.base_path, repos_base_path)
+            if relpath:
+                return SvnRepositoryInfo(info['url'], relpath, self.uuid)
+
+        # We didn't find a matching repository on the server. We'll just return
+        # self and hope for the best.
+        return self
+
+    def _get_repository_info(self, server, repository):
+        try:
+            return server.get_repository_info(repository['id'])
+        except APIError, e:
+            # If the server couldn't fetch the repository info, it will return
+            # code 210. Ignore those.
+            # Other more serious errors should still be raised, though.
+            rsp = e.args[0]
+            if rsp['err']['code'] == 210:
+                return None
+
+            raise e
+
+    def _get_relative_path(self, path, root):
+        pathdirs = self._split_on_slash(path)
+        rootdirs = self._split_on_slash(root)
+
+        # root is empty, so anything relative to that is itself
+        if len(rootdirs) == 0:
+            return path
+
+        # If one of the directories doesn't match, then path is not relative
+        # to root.
+        if rootdirs != pathdirs:
+            return None
+
+        # All the directories matched, so the relative path is whatever
+        # directories are left over. The base_path can't be empty, though, so
+        # if the paths are the same, return '/'
+        if len(pathdirs) == len(rootdirs):
+            return '/'
+        else:
+            return '/'.join(pathdirs[len(rootdirs):])
+
+    def _split_on_slash(self, path):
+        # Split on slashes, but ignore multiple slashes and throw away any
+        # trailing slashes.
+        split = re.split('/*', path)
+        if split[-1] == '':
+            split = split[0:-1]
+        return split
+
 
 class ReviewBoardHTTPPasswordMgr(urllib2.HTTPPasswordMgr):
     """
@@ -140,7 +229,7 @@ class ReviewBoardHTTPPasswordMgr(urllib2.HTTPPasswordMgr):
             return urllib2.HTTPPasswordMgr.find_user_password(self, realm, uri)
 
 
-class ReviewBoardServer:
+class ReviewBoardServer(object):
     """
     An instance of a Review Board server.
     """
@@ -148,7 +237,8 @@ class ReviewBoardServer:
         self.url = url
         if self.url[-1] != '/':
             self.url += '/'
-        self.info = info
+        self._info = info
+        self._server_info = None
         self.cookie_file = cookie_file
         self.cookie_jar  = cookielib.MozillaCookieJar(self.cookie_file)
 
@@ -287,6 +377,20 @@ class ReviewBoardServer:
         rsp = self.api_get('api/json/reviewrequests/%s/' % rid)
         return rsp['review_request']
 
+    def get_repositories(self):
+        """
+        Returns the list of repositories on this server.
+        """
+        rsp = self.api_get('/api/json/repositories/')
+        return rsp['repositories']
+
+    def get_repository_info(self, rid):
+        """
+        Returns detailed information about a specific repository.
+        """
+        rsp = self.api_get('/api/json/repositories/%s/info/' % rid)
+        return rsp['info']
+
     def save_draft(self, review_request):
         """
         Saves a draft of a review request.
@@ -331,6 +435,14 @@ class ReviewBoardServer:
         debug("Publishing")
         self.api_post('api/json/reviewrequests/%s/publish/' %
                       review_request['id'])
+
+    def _get_server_info(self):
+        if not self._server_info:
+            self._server_info = self._info.find_server_repository_info(self)
+
+        return self._server_info
+
+    info = property(_get_server_info)
 
     def process_json(self, data):
         """
@@ -602,19 +714,17 @@ class SVNClient(SCMClient):
 
         path = m.group(1)
 
-        # If the given URI has a username at the beginning, we need to strip it
-        # out so that it will still match.
-        m2 = re.match(r'^(svn\+ssh|http|https)://([-a-zA-Z0-9.]*@)(.*)$', path)
-        if m2:
-            path = '%s://%s' % (m2.group(1), m2.group(3))
-
         m = re.search(r'^URL: (.+)$', data, re.M)
         if not m:
             return None
 
         base_path = m.group(1)[len(path):] or "/"
 
-        return RepositoryInfo(path=path, base_path=base_path)
+        m = re.search(r'^Repository UUID: (.+)$', data, re.M)
+        if not m:
+            return None
+
+        return SvnRepositoryInfo(path, base_path, m.group(1))
 
     def scan_for_server(self, repository_info):
         # Scan first for dot files, since it's faster and will cover the
