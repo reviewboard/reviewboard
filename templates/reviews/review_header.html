@@ -1,14 +1,12 @@
 {% load i18n %}
 {% load djblets_utils %}
 
-<div id="error"></div>
-
 {% ifequal review_request.status 'S' %}
 <div class="banner" id="submitted-banner">
  <h1>{% trans "This change has been marked as submitted." %}</h1>
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
- <input type="submit" id="btn-reopen"
-  value="{% trans "Reopen for Review" %}" onclick="location = '{{review_request.get_absolute_url}}reopen/'" />
+ <input type="submit" id="btn-review-request-reopen"
+  value="{% trans "Reopen for Review" %}" />
 {% endifuserorperm %}
 </div>
 {% else %}
@@ -16,8 +14,8 @@
 <div class="banner" id="discard-banner">
  <h1>{% trans "This change has been discarded." %}</h1>
 {% ifequal request.user review_request.submitter %}
- <input type="submit" id="btn-reopen"
-  value="{% trans "Reopen for Review" %}" onclick="location = '{{review_request.get_absolute_url}}reopen/'" />
+ <input type="submit" id="btn-review-request-reopen"
+  value="{% trans "Reopen for Review" %}" />
 {% endifequal %}
 </div>
 {%  else %}
@@ -26,19 +24,19 @@
 {%    if review_request.public %}
  <h1>{% trans "This review request is a draft." %}</h1>
  {% trans "Be sure to publish when finished." %}
- <input type="submit" id="btn-draft-publish"
-  value="{% trans "Publish Changes" %}" onclick="publishDraft();" />
- <input type="submit" id="btn-draft-discard"
-  value="{% trans "Discard Draft" %}" onclick="discardDraft();" />
+ <input type="button" id="btn-draft-publish"
+  value="{% trans "Publish Changes" %}" />
+ <input type="button" id="btn-draft-discard"
+  value="{% trans "Discard Draft" %}" />
  <p><label for="changedescription">{% trans "Describe your changes (optional):" %}</label></p>
- <pre id="changedescription">{% if draft.changedesc %}{{draft.changedesc.text}}{% endif %}</pre>
+ <pre id="changedescription" class="editable">{% if draft.changedesc %}{{draft.changedesc.text}}{% endif %}</pre>
 {%    else %}
  <h1>{% trans "This review request is not yet public." %}</h1>
  {% trans "Be sure to publish when finished." %}
- <input type="submit" id="btn-draft-publish"
-  value="{% trans "Publish" %}" onclick="publishDraft();" />
- <input type="submit" id="btn-draft-discard"
-  value="{% trans "Discard Review Request" %}" onclick="discardReviewRequest();" />
+ <input type="button" id="btn-draft-publish"
+  value="{% trans "Publish" %}" />
+ <input type="button" id="btn-review-request-discard"
+  value="{% trans "Discard Review Request" %}" />
 {%    endif %}
 {%   endifuserorperm %}
 </div>
@@ -48,11 +46,13 @@
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
 {% ifequal review_request.status 'P' %}
 <script type="text/javascript">
+    $(document).ready(function() {
 {% if draft or not review_request.public %}
-  showDraftBanner();
+        $("#draft-banner").show();
 {% else %}
-  hideDraftBanner();
+        $("#draft-banner").hide();
 {% endif %}
+    });
 </script>
 {% endifequal %}
 {% endifuserorperm %}

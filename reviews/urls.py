@@ -10,6 +10,11 @@ urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^(?P<review_request_id>[0-9]+)/$', 'review_detail',
         name="review-request-detail"),
 
+    # Reviews
+    (r'^(?P<review_request_id>[0-9]+)/reviews/draft/inline-form/$',
+     'review_draft_inline_form',
+     {'template_name': 'reviews/review_draft_inline_form.html'}),
+
     # Review request diffs
     url(r'^(?P<review_request_id>[0-9]+)/diff/$', 'diff', name="view_diff"),
     url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$', 'diff',
@@ -33,12 +38,6 @@ urlpatterns = patterns('reviewboard.reviews.views',
      'diff'),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
      'diff_fragment'),
-
-    # Review request modification
-    (r'^(?P<review_request_id>[0-9]+)/publish/$', 'publish'),
-
-    (r'^(?P<review_request_id>[0-9]+)/(?P<action>(discard|submitted|reopen))/$',
-     'setstatus'),
 
     # Screenshots
     (r'^(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',

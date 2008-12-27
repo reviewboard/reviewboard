@@ -259,10 +259,12 @@ def user_list(request):
     """
     Returns a list of all users.
 
-    If the query parameter is passed, users with a username beginning with
+    If the q parameter is passed, users with a username beginning with
     the query value will be returned.
     """
-    query = request.GET.get('query', None)
+    # XXX Support "query" for backwards-compatibility until after 1.0.
+    query = request.GET.get('q', request.GET.get('query', None))
+
     if not query:
         u = User.objects.filter(is_active=True)
     else:
@@ -277,10 +279,12 @@ def group_list(request):
     """
     Returns a list of all review groups.
 
-    If the query parameter is passed, groups with a name beginning with
+    If the q parameter is passed, groups with a name beginning with
     the query value will be returned.
     """
-    query = request.GET.get('query', None)
+    # XXX Support "query" for backwards-compatibility until after 1.0.
+    query = request.GET.get('q', request.GET.get('query', None))
+
     if not query:
         u = Group.objects.all()
     else:

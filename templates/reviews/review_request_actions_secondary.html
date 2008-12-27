@@ -1,0 +1,22 @@
+{% load djblets_utils %}
+{% load i18n %}
+{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
+{%  if review_request.public %}
+{%    ifequal review_request.status 'P' %}
+ <li>
+  <a id="close-review-request-link" href="#">{% trans "Close" %} <img src="{{MEDIA_URL}}rb/images/dropdown.png" width="7" height="5" border="0" alt="" /></a>
+  <ul class="menu" style="display: none;">
+   <li><a id="link-review-request-close-submitted" href="#">{% trans "Submitted" %}</a></li>
+   <li><a id="discard-review-request-link" href="#">{% trans "Discarded" %}</a></li>
+  {%     if perms.reviews.delete_reviewrequest %}
+   <li><a id="delete-review-request-link" href="#">{% trans "Delete Permanently" %}</a></li>
+  {%     endif %}
+  </ul>
+ </li>
+{%    endifequal %}
+{%  endif %}
+{% endifuserorperm %}
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
+ <li><a id="upload-screenshot-link" href="#">{% trans "Add Screenshot" %}</a></li>
+ <li><a id="upload-diff-link" href="#">{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}{% trans "Update Diff" %}{% else %}{% trans "Upload Diff" %}{% endif %}</a></li>
+{% endifuserorperm %}

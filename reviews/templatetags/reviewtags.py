@@ -97,7 +97,13 @@ def commentcounts(context, filediff, interfilediff=None):
       =========== ==================================================
       Key         Description
       =========== ==================================================
+      comment_id  The ID of the comment
       text        The text of the comment
+      line        The first line number
+      num_lines   The number of lines this comment spans
+      user        A dictionary containing "username" and "name" keys
+                  for the user
+      url         The URL to the comment
       localdraft  True if this is the current user's draft comment
       =========== ==================================================
     """
@@ -115,13 +121,19 @@ def commentcounts(context, filediff, interfilediff=None):
         review = get_object_or_none(comment.review)
 
         if review and (review.public or review.user == user):
-            line = comment.first_line
+            key = "%s:%s" % (comment.first_line, comment.num_lines)
 
-            if not comments.has_key(line):
-                comments[line] = []
-
-            comments[line].append({
+            comments.setdefault(key, []).append({
+                'comment_id': comment.id,
                 'text': comment.text,
+                'line': comment.first_line,
+                'num_lines': comment.num_lines,
+                'user': {
+                    'username': review.user.username,
+                    'name': review.user.get_full_name() or review.user.username,
+                },
+                #'timestamp': comment.timestamp,
+                'url': comment.get_review_url(),
                 'localdraft': review.user == user and \
                               not review.public,
             })
@@ -158,11 +170,14 @@ def screenshotcommentcounts(context, screenshot):
             position = '%dx%d+%d+%d' % (comment.w, comment.h, \
                                         comment.x, comment.y)
 
-            if not comments.has_key(position):
-                comments[position] = []
-
-            comments[position].append({
+            comments.setdefault(position, []).append({
+                'id': comment.id,
                 'text': comment.text,
+                'user': {
+                    'username': review.user.username,
+                    'name': review.user.get_full_name() or review.user.username,
+                },
+                'url': comment.get_review_url(),
                 'localdraft' : review.user == user and \
                                not review.public,
                 'x' : comment.x,

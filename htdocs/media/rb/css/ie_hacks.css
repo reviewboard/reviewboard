@@ -23,12 +23,6 @@ table.sidebyside tbody.insert td:first-child {
   border-top: 1px #AAAAAA solid;
 }
 
-/* The padding around the selector arrow causes rows to grow on IE. */
-table.sidebyside thead th.controls,
-table.sidebyside th.controls {
-  padding: 0;
-}
-
 .banner input {
   vertical-align: middle;
 }
@@ -50,8 +44,24 @@ table.sidebyside th.controls {
 }
 
 /* Position the "View Diff" and other controls correctly. */
-.review-request #topcontrols {
+.review-request #actions {
   padding: 0 1px 0 0;
+}
+
+/*
+ * Fix the li spacing bug in IE6 by adding a border -
+ * http://blog.onthafly.com/2007/11/ie6-menu-list-item-spacing-nightmare.html
+ */
+.review-request #actions ul.menu li {
+  border-bottom: 1px #dfb16a solid;
+}
+
+.screenshot-container .screenshot {
+  height: auto;
+}
+
+#comment-detail #review_comments ul li h2 .actions a {
+  border: 1px black solid !important;
 }
 
 /* IE can't seem to do fixed height for the two columns, so force a minimum. */

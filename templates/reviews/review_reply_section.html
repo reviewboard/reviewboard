@@ -1,13 +1,19 @@
 {% load i18n %}
 {% load reviewtags %}
-  <ol class="reply-comments" id="{{context_id}}-{{review.id}}">
-   {% reply_list review comment context_type context_id %}
-  </ol>
+  <div id="{{context_id}}-{{review.id}}">
+   <ol class="reply-comments">
+    {% reply_list review comment context_type context_id %}
+   </ol>
 {% if user.is_authenticated %}
-  <ul class="controls">
-   <li><a href="#" id="add_comment_{{context_id}}-{{review.id}}" onclick="showCommentForm('{{review.id}}', '{{context_id}}-{{review.id}}'); return false;">{% trans "Add comment" %}</a></li>
-  </ul>
+   <ul class="controls">
+    <li><a href="#" id="add_{{context_type}}_{{comment.id}}" class="add_comment_link">{% trans "Add comment" %}</a></li>
+   </ul>
+  </div>
   <script language="javascript">
-  registerCommentSection("{{review.id}}", "{{context_id}}-{{review.id}}", "{% ifequal comment "" %}{{review.id}}{% else %}{{comment.id}}{% endifequal %}", "{{context_type}}");
+  $(document).ready(function()
+  {
+      $("#{{context_id}}-{{review.id}}").commentSection("{{review.id}}",
+          "{% ifequal comment "" %}{{review.id}}{% else %}{{comment.id}}{% endifequal %}", "{{context_type}}");
+  });
   </script>
 {% endif %}

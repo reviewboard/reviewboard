@@ -177,10 +177,30 @@ def review_detail(request, review_request_id,
         'review_request': review_request,
         'review_request_details': draft or review_request,
         'entries': entries,
+        'review': review,
         'request': request,
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
+        'PRE_CREATION': PRE_CREATION,
+    }))
+
+
+@login_required
+@cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
+def review_draft_inline_form(request, review_request_id, template_name):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = review_request.get_pending_review(request.user)
+
+    # This may be a brand new review. If so, we don't have a review object.
+    if review:
+        review.ordered_comments = \
+            review.comments.order_by('filediff', 'first_line')
+
+    return render_to_response(template_name, RequestContext(request, {
+        'review_request': review_request,
+        'review': review,
+        'scmtool': review_request.repository.get_scmtool(),
         'PRE_CREATION': PRE_CREATION,
     }))
 
@@ -444,74 +464,6 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
                               template_name)
 
 
-@login_required
-def publish(request, review_request_id):
-    """
-    Publishes a new review request or the changes on a draft for a review
-    request.
-    """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    try:
-        if not review_request.target_groups and \
-           not review_request.target_people:
-            pass # FIXME show an error
-
-        if not review_request.can_publish():
-            return HttpResponseForbidden()
-
-        review_request.publish(request.user)
-
-        return HttpResponseRedirect(review_request.get_absolute_url())
-    except PermissionError:
-        return HttpResponseForbidden() # XXX Error out
-
-
-@login_required
-def setstatus(request, review_request_id, action):
-    """
-    Sets the status of the review request based on the specified action.
-
-    Valid actions are:
-
-        * 'discard'
-        * 'submitted'
-        * 'reopen'
-
-    If a review request was discarded and action is 'reopen', this will
-    reset the review request's public state to False.
-
-    If the user is not the owner of this review request and does not have
-    the 'reviews.can_change_status' permission, they will get an
-    HTTP Forbidden error.
-    """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    if not review_request.is_mutable_by(request.user) and \
-       not request.user.has_perm("reviews.can_change_status"):
-        raise HttpResponseForbidden()
-
-    try:
-        if review_request.status == "D" and action == "reopen":
-            review_request.public = False
-
-        review_request.status = {
-            'discard':   'D',
-            'submitted': 'S',
-            'reopen':    'P',
-        }[action]
-
-    except KeyError:
-        # This should never happen under normal circumstances
-        raise Exception('Error when setting review status: unknown status code')
-
-    review_request.save()
-    if action == 'discard':
-        return HttpResponseRedirect(reverse("dashboard"))
-    else:
-        return HttpResponseRedirect(review_request.get_absolute_url())
-
-
 @check_login_required
 def preview_review_request_email(
         request, review_request_id,
@@ -625,11 +577,6 @@ def view_screenshot(request, review_request_id, screenshot_id,
         query = query & Q(reviewrequestdraft=draft)
 
     try:
-        diffset = DiffSet.objects.filter(query).latest()
-    except DiffSet.DoesNotExist:
-        diffset = None
-
-    try:
         comments = ScreenshotComment.objects.filter(screenshot=screenshot)
     except ScreenshotComment.DoesNotExist:
         comments = []
@@ -637,11 +584,13 @@ def view_screenshot(request, review_request_id, screenshot_id,
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
+        'review': review,
         'details': draft or review_request,
         'screenshot': screenshot,
         'request': request,
-        'diffset': diffset,
         'comments': comments,
+        'upload_diff_form': UploadDiffForm(review_request.repository),
+        'upload_screenshot_form': UploadScreenshotForm(),
     }))
 
 

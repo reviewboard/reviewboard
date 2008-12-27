@@ -1,0 +1,102 @@
+{% load i18n %}
+{% load djblets_utils %}
+{% load reviewtags %}
+{% load difftags %}
+<div id="review-form-comments" class="review">
+ <p><input class="recommendation" type="checkbox" {% if review.ship_it %}checked="checked"{% endif %} /> <label>{% trans "Ship It" %}</label></p>
+ <pre class="body-top editable">{{review.body_top}}</pre>
+
+ <div class="comments">
+{% if review.comments.all or review.screenshot_comments.all %}
+  <dl class="diff-comments">
+{% for comment in review.screenshot_comments.all %}
+   <dt>
+    <div class="screenshot">
+     <span class="filename">
+      <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image|basename}}{% endif %}</a>
+     </span>
+     {{comment.image|safe}}
+    </div>
+   </dt>
+   <dd>
+    <pre class="editable" id="screenshot-comment-{{comment.id}}">{{comment.text|escape}}</pre>
+
+{% comment %}
+    <!-- We'll want to do this eventually... Need to make it work in a
+         non-instant-apply world. -->
+
+    <ul class="controls">
+     <li><a href="#" id="delete-screenshot-comment-{{comment.id}}">{% trans "Delete comment" %}</a></li>
+    </ul>
+{% endcomment %}
+
+    <script type="text/javascript">
+        var editor = $("#screenshot-comment-{{comment.id}}")
+            .reviewFormCommentEditor({
+                path: getScreenshotAPIPath("{{comment.id}}", {{comment.x}}, {{comment.y}}, {{comment.w}}, {{comment.h}})
+            });
+        $("#edit-screenshot-comment-{{comment.id").click(function() {
+            editor.inlineEditor("startEdit");
+        });
+    </script>
+   </dd>
+{% endfor %}
+
+{% for comment in review.ordered_comments %}
+   <dt>
+    <div id="review_draft_comment_container_{{comment.id}}">
+     <div class="loading">
+      <img src="{{MEDIA_URL}}rb/images/spinner.gif" width="16" height="16" alt="" />
+      {% trans "Loading diff fragment..." %}
+     </div>
+    </div>
+   </dt>
+   <dd>
+    <pre class="editable" id="diff-comment-{{comment.id}}">{{comment.text|escape}}</pre>
+
+{% comment %}
+    <!-- We'll want to do this eventually... Need to make it work in a
+         non-instant-apply world. -->
+
+    <ul class="controls">
+     <li><a href="#" id="delete-diff-comment-{{comment.id}}">{% trans "Delete comment" %}</a></li>
+    </ul>
+{% endcomment %}
+
+    <script type="text/javascript">
+        var editor = $("#diff-comment-{{comment.id}}").reviewFormCommentEditor({
+            path: getDiffAPIPath({% spaceless %}
+                {{comment.filediff.diffset.revision}},
+                {{comment.filediff.id}},
+{% if comment.interfilediff %}
+                {{comment.interfilediff.diffset.revision}},
+                {{comment.interfilediff.id}},
+{% else %}
+                null, null,
+{% endif %}
+                {{comment.first_line}}),{% endspaceless %}
+            data: {
+                action: "set",
+                num_lines: {{comment.num_lines}}
+            }
+        });
+        $("#edit-diff-comment-{{comment.id}}").click(function() {
+            editor.inlineEditor("startEdit");
+        });
+        $.funcQueue("review_draft_diff_comments").add(function() {
+          $("#review_draft_comment_container_{{comment.id}}").load(
+            gReviewRequestPath + "reviews/{{review.id}}/fragment/" +
+            "diff-comment/{{comment.id}}/",
+            null,
+            $.funcQueue("review_draft_diff_comments").next);
+        });
+    </script>
+   </dd>
+{% endfor %}
+  </dl>
+ </div>
+
+ <pre class="body-bottom editable">{{review.body_bottom}}</pre>
+{% endif %}
+
+</div>

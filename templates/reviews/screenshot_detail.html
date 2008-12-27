@@ -5,35 +5,34 @@
 
 {% block title %}{% trans "Screenshot" %}{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
 {% block extrahead %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/yui-ui.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
-<script language="javascript" src="{{MEDIA_URL}}yui/utilities/utilities.js"></script>
-<script language="javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
-<script language="javascript" src="{{MEDIA_URL}}rb/scripts/rb/common.js"></script>
-<script language="javascript" src="{{MEDIA_URL}}rb/scripts/rb/widgets.js"></script>
-<script language="javascript" src="{{MEDIA_URL}}rb/scripts/comments.js"></script>
-<ascript language="javascript" src="{{MEDIA_URL}}rb/scripts/diffviewer.js"></script>
-<script language="javascript" src="{{MEDIA_URL}}rb/scripts/screenshots.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc1.packed.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}rb/js/common.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}rb/js/reviews.js"></script>
+<script language="javascript" src="{{MEDIA_URL}}rb/js/screenshots.js"></script>
+{% include "reviews/review_flags.html" %}
 <script language="javascript">
-  var gReviewRequestPath = '{{review_request.get_absolute_url}}';
-  var gReviewRequestId = '{{review_request.id}}';
   var gScreenshotId = '{{screenshot.id}}';
-  {% if diffset %}var gRevision = '{{diffset.revision}}';{% else %}var gRevision = 'None';{% endif %}
-  {% if interdiffset %}
-   var gInterdiffRevision = '{{interdiffset.revision}}';
-  {% else %}
-   var gInterdiffRevision = null;
-  {% endif %}
-  var gUserAuthenticated = {{user.is_authenticated|lower}};
 </script>
 {% endblock %}
 
 {% block content %}
 {% box "review-request"%}
- <ul id="topcontrols">
-  <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}rb/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> {% trans "View Review Request" %}</a></li>
+ <ul id="actions">
+{% include "reviews/review_request_actions_secondary.html" %}
+ <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+{% include "reviews/review_request_actions_primary.html" %}
+  <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
+{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+ <li class="primary"><a href="{{review_request.get_absolute_url}}diff/#index_header">{% trans "View Diff" %}</a></li>
+{% endif %}
  </ul>
+
+{% include "reviews/review_request_dlgs.html" %}
+
  <div class="main">
   <h1 id="summary"><a href="{{review_request.get_absolute_url}}">{{review_request.summary}}</a></h1>
   <div class="content">
@@ -41,22 +40,21 @@
 {% include "reviews/screenshotindex.html" %}
   </div>
  </div>
- <ul class="controls">
-  <li><a href="#" onClick="showReviewDlg();" id="review-link">{% trans "Review" %}</a></li>
- </ul>
 {% endbox %}
 
-{% spaceless %}
 <div id="screenshot-display">
  <img src="{{screenshot.image.url}}" alt="{{screenshot.caption}}" />
 </div>
-{% endspaceless %}
+
+{% include "reviews/comments_dlg.html" %}
 
 <script language="javascript">
-  addComments({% screenshotcommentcounts screenshot %});
+  $(document).ready(function() {
+	  $("#screenshot-display").screenshotCommentBox(
+		{% screenshotcommentcounts screenshot %});
+	});
 </script>
 
 {% include "reviews/screenshotindex.html" %}
-{% include "diffviewer/comments_dlg.html" %}
 
 {% endblock %}

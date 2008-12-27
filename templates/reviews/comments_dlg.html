@@ -1,0 +1,18 @@
+{% load i18n %}
+<div id="comment-detail" style="display:none;position:absolute;">
+ <div id="review_comments">
+  <h1 class="title">{% trans "Other reviews" %}</h1>
+  <ul id="review_comment_list"></ul>
+ </div>
+ <form id="draft-form" method="post">
+  <h1 class="title">{% trans "Your comment" %}</h1>
+  <input type="hidden" name="action" id="comment_action" value="" />
+  <textarea id="comment_text" name="text" rows="6" cols="30"></textarea>
+  <div class="status"></div>
+  <div class="buttons">
+   <input type="button" id="comment_save" value="{% trans "Save" %}" />
+   <input type="button" id="comment_cancel" value="{% trans "Cancel" %}" />
+   <input type="button" id="comment_delete" value="{% trans "Delete" %}" />
+  </div>
+ </form>
+</div>

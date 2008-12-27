@@ -21,7 +21,7 @@ class NewReviewRequestForm(forms.Form):
     """
     basedir = forms.CharField(label=_("Base Diff Path"), required=False)
     diff_path = forms.FileField(label=_("Diff"), required=True)
-    parent_diff_path = forms.FileField(label=_("Parent Diff (optional)"),
+    parent_diff_path = forms.FileField(label=_("Parent Diff"),
                                        required=False)
     repository = forms.ChoiceField(label=_("Repository"), required=True)
     changenum = forms.IntegerField(label=_("Change Number"), required=False)

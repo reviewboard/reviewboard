@@ -1,0 +1,36 @@
+{% load djblets_js %}
+{% load djblets_utils %}
+{% load i18n %}
+
+{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
+<script type="text/javascript">
+    $(document).ready(function() {
+    $("#upload-diff-link").click(function() {
+      $("<div/>")
+        .formDlg({
+          title: "{% trans "Upload Diff" %}",
+          confirmLabel: "{% trans "Upload" %}",
+          path: "/reviewrequests/{{review_request.id}}/diff/new/",
+          width: 600,
+          upload: true,
+          fields: {% form_dialog_fields upload_diff_form %}
+        });
+
+      return false;
+    });
+
+    $("#upload-screenshot-link").click(function() {
+      $("<div/>").formDlg({
+        title: "{% trans "Upload Screenshot" %}",
+        confirmLabel: "{% trans "Upload" %}",
+        path: "/reviewrequests/{{review_request.id}}/screenshot/new/",
+        width: 550,
+        upload: true,
+        fields: {% form_dialog_fields upload_screenshot_form %}
+      });
+
+      return false;
+    });
+  });
+</script>
+{% endifuserorperm %}

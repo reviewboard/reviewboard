@@ -10,7 +10,7 @@
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css" />
   <script type="text/javascript">
     var MEDIA_URL = "{{MEDIA_URL}}";
-	var SITE_ROOT = "{{SITE_ROOT}}";
+    var SITE_ROOT = "{{SITE_ROOT}}";
   </script>
 {% block extrahead %}{% endblock %}
   <!--[if lt IE 7.]>
@@ -25,6 +25,8 @@
       behavior: url("{{MEDIA_URL}}rb/js/pngfix.htc");
     }
   </style>
+  <![endif]-->
+  <!--[if lt IE 8.]>
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css"></script>
   <![endif]-->
  </head>
@@ -34,9 +36,6 @@
   <div id="container">
 {% block headerbar %}
    <div id="headerbar">
-    <h1 id="title"><a href="{% url root %}">Review Board</a></h1>
-    <h2 id="beta">beta</h2>
-
     <ul id="accountnav">
     {% if user.is_authenticated %}
      {% blocktrans with user|realname|escape as username %}<li>Welcome, <b>{{username}}</b></li>{% endblocktrans %}
@@ -54,6 +53,9 @@
      <li>- <a href="http://code.google.com/p/reviewboard/issues/list">{% trans "Bugs" %}</a></li>
      <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">{% trans "Report bug" %}</a></li>
     </ul>
+    <h1 id="title"><a href="{% url root %}">Review Board</a></h1>
+    <h2 id="beta">beta</h2>
+
    </div>
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
    <form method="get" action="{% url search %}">
@@ -78,6 +80,7 @@
    </form>
    {% endif %}
 {% endblock %}
+   <div id="error"></div>
    <div id="content">
 {% block content %}{% endblock %}
    </div>

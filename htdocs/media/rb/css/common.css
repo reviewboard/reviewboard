@@ -18,7 +18,7 @@ form th {
   vertical-align: top;
 }
 
-label {
+label.required {
   font-weight: bold;
 }
 
@@ -30,14 +30,10 @@ span.draftlabel {
   color: #008000;
 }
 
-table td.label {
-  text-align: right;
-}
-
 ul.errorlist {
-  background: #fff6a6;
-  border: 1px #9F9656 solid;
+  color: #DD0000;
   display: inline;
+  font-weight: bold;
   margin: 0 0 0 15px;
   padding: 4px 8px;
 }
@@ -76,7 +72,8 @@ ul.errorlist li {
 /****************************************************************************
  * Box classes
  ****************************************************************************/
-.box {
+.box, .modalbox {
+  background-color: white;
   background-image: url('../images/box_top_bg.png');
   background-position: top left;
   background-repeat: repeat-x;
@@ -123,14 +120,12 @@ ul.errorlist li {
   cursor: pointer;
 }
 
-.box h1.title {
+.box h1.title,
+.modalbox-title {
   background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 5px 10px 5px 5px;
-}
-
-.box h1.title {
   font-size: 120%;
 }
 
@@ -144,7 +139,8 @@ ul.errorlist li {
   width: 100%;
 }
 
-.box-inner {
+.box-inner,
+.modalbox-inner {
   background-image: url('../images/box_bottom_bg.png');
   background-position: bottom left;
   background-repeat: repeat-x;
@@ -158,6 +154,31 @@ ul.errorlist li {
 .datagrid-title,
 .datagrid-titlebox {
   background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
+}
+
+
+/****************************************************************************
+ * Modal Boxes
+ ****************************************************************************/
+.modalbox {
+  margin: 10px;
+}
+
+.modalbox-contents {
+  margin: 10px;
+  position: relative; /* Makes this the offsetParent for calculations. */
+}
+
+.modalbox-buttons {
+  position: absolute;
+  margin: 10px;
+  text-align: right;
+  bottom: 0;
+  right: 0;
+}
+
+.modalbox-buttons input {
+  margin-left: 10px;
 }
 
 
@@ -202,12 +223,19 @@ ul.errorlist li {
  * Forms
  ****************************************************************************/
 form table td {
-  padding: 4px;
+  padding: 8px 8px 4px 4px;
+}
+
+.formdlg tr {
+  padding-top: 4px;
+}
+
+.formdlg td.label {
+  white-space: nowrap;
 }
 
 .formdlg .error {
-  background-color: #FFF6A6;
-  border: 1px #9F9656 solid;
+  color: #DD0000;
   font-weight: bold;
   margin-bottom: 10px;
   padding: 4px 8px;
@@ -223,6 +251,12 @@ form table td {
 .formdlg .errorlist li {
   display: list-item;
   padding: 2px 4px;
+}
+
+.formdlg .help {
+  font-size: 10px;
+  color: #333;
+  padding-top: 0;
 }
 
 .formdlg .spinner {
@@ -273,9 +307,7 @@ form table td {
   list-style: none;
   margin: 0;
   padding: 0;
-  position: absolute;
-  right: 20px;
-  top: 10px;
+  float: right;
 }
 
 #accountnav li {

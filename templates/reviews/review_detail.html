@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load djblets_deco %}
 {% load djblets_utils %}
-{% load djblets_js %}
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
@@ -11,103 +10,45 @@
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/yui-ui.css" />
-<script type="text/javascript" src="{{MEDIA_URL}}yui/yahoo/yahoo-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/animation/animation-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/connection/connection-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/autocomplete/autocomplete-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/event/event-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/dom/dom-min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui/utilities/utilities.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc1.packed.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/common.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/dialogs.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/widgets.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/reviews.js"></script>
-<script type="text/javascript">
-  var gReviewRequestPath = '{{review_request.get_absolute_url}}';
-  var gUserURL = "{% url user user %}";
-{% if not user.is_anonymous %}
-  var gUserFullName = "{{user|user_displayname}}";
-{% endif %}
-  var gReviewRequestId = "{{review_request.id}}";
-  var gBugTrackerURL = "{{review_request.repository.bug_tracker}}";
-</script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js"></script>
+{% include "reviews/review_flags.html" %}
 {% endblock %}
 
 {% block content %}
-
 {% include "reviews/trophy_box.html" %}
 {% include "reviews/review_header.html" %}
 
 {% box "review-request" %}
-<ul id="topcontrols">
+
+<ul id="actions">
+{% include "reviews/review_request_actions_secondary.html" %}
+ <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+{% include "reviews/review_request_actions_primary.html" %}
 {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
- <li><a href="diff/#index_header"><img src="{{MEDIA_URL}}rb/images/diff.png" width="17" height="14" border="0" alt="" /> {% trans "View Diff" %}</a></li>
+ <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
 {% endif %}
 </ul>
+
 <div class="main">
 {% include "reviews/review_request_box.html" %}
 </div>
-<ul class="controls">
-{% if perms.reviews.delete_reviewrequest %}
- <li><a id="delete-review-request-link" href="#" onClick="deleteReviewRequest();"><img src="{{MEDIA_URL}}rb/images/delete.png" width="12" height="12" border="0" alt="" /> {% trans "Delete" %}</a></li>
-{% endif %}
-{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
-{%  if review_request.public %}
-{%    ifequal review_request.status 'P' %}
- <li><a href="{{review_request.get_absolute_url}}submitted/">{% trans "Set Submitted" %}</a></li>
- <li><a href="#" onClick="discardReviewRequest();" id="discard-review-request-link">{% trans "Discard" %}</a></li>
-{%    endifequal %}
-{%  endif %}
-{% endifuserorperm %}
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
- <li><a id="upload-diff-link" href="#" onClick="RB.dialogs.showFormDialog('upload-diff-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %} {% trans "Update Attached Diff" %}{% else %} {% trans "Attach Diff" %}{% endif %}</a></li>
- <li><a id="upload-screenshot-link" href="#" onClick="RB.dialogs.showFormDialog('upload-screenshot-link');"><img src="{{MEDIA_URL}}rb/images/upload.png" width="14" height="14" border="0" alt="" /> {% trans "Attach Screenshot" %}</a></li>
-{% endifuserorperm %}
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
- <noscript><li><a href="{{review_request.get_absolute_url}}edit/"><img src="{{MEDIA_URL}}rb/images/edit.png" width="14" height="14" border="0" alt="" /> {% trans "Edit" %}</a></li></noscript>
-{% endifuserorperm %}
 </ul>
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-<script type="text/javascript">
-  RB.dialogs.registerFormDialog("upload-diff-link", {
-    title: "{% trans "Attach Diff" %}",
-    confirmButton: "{% trans "Attach" %}",
-    width: 400,
-    height: 250,
-    path: '{{SITE_ROOT}}api/json/reviewrequests/{{review_request.id}}/diff/new/',
-    upload: true,
-    onSubmitted: function() { window.location.reload(); },
-    fields: {% form_dialog_fields upload_diff_form %}
-  });
-
-  RB.dialogs.registerFormDialog("upload-screenshot-link", {
-    title: "{% trans "Attach Screenshot" %}",
-    confirmButton: "{% trans "Attach" %}",
-    width: 350,
-    height: 250,
-    path: '{{SITE_ROOT}}api/json/reviewrequests/{{review_request.id}}/screenshot/new/',
-    upload: true,
-    onSubmitted: function() { window.location.reload(); },
-    fields: {% form_dialog_fields upload_screenshot_form %}
-  });
-</script>
-{% endifuserorperm %}
 {% endbox %}
 
 {% for entry in entries %}
 {%  if entry.review %}
-<a name="review{{entry.review.id}}"></a>
+<a name="review{{review.id}}"></a>
+<div id="review{{review.id}}">
 {%   if forloop.last %}
 <a name="last-review" />
 {%   endif %}
 {%   box "review" %}
 <div class="main">
- <div id="{{entry.review.id}}-banners"></div>
+ <div class="banners"></div>
  <div class="header">
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="reviewer"><a href="{% url user entry.review.user %}">{{entry.review.user|user_displayname}}</a></div>
@@ -171,7 +112,7 @@
 {%   box "changedesc" %}
 <div class="main">
  <div class="header">
-   <b>Review request changed</b>
+   <b>{% trans "Review request changed" %}</b>
    <div class="posted_time">{% blocktrans with entry.changedesc.timestamp|timesince as timestamp_since and entry.changedesc.timestamp|date:"F jS, Y, P" as timestamp_date %}Updated {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
  </div>
  <div class="body">
@@ -217,33 +158,17 @@
 {%  endif %}
 {% endfor %}
 
+{% if request.GET.reply_id and request.GET.reply_type %}
 <script type="text/javascript">
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{% ifequal review_request.status 'P' %}
-  registerEditor('summary', false);
-  registerEditor('branch', false);
-  registerEditor('description', true);
-  registerEditor('testing_done', true);
-  registerCommaListEditor('bugs_closed', onBugsChanged);
-  registerAutoCompleteCommaListEditor('target_groups',
-                                      onTargetGroupsChanged,
-                                      "{{SITE_ROOT}}api/json/groups/",
-                                      ["groups", "name"]);
-  registerAutoCompleteCommaListEditor('target_people',
-                                      onTargetPeopleChanged,
-                                      "{{SITE_ROOT}}api/json/users/",
-                                      ["users", "username"]);
-
-{% for image in review_request_details.screenshots.all %}
-  registerEditor('screenshot_{{image.id}}_caption', false);
-{% endfor %}
-
-{% if review_request.public %}
-    registerEditor('changedescription', true, true);
-{% endif %}
-{% endifequal %}
-{% endifuserorperm %}
-
-    $.funcQueue("diff_comments").start();
+  $(document).ready(function() {
+      $.funcQueue("diff_comments").add(function() {
+          var link = $("#add_{{request.GET.reply_type}}_{{request.GET.reply_id}}");
+          $(window).scrollTop(link.offset().top);
+          link.click();
+          $.funcQueue("diff_comments").next();
+      });
+  });
 </script>
+{% endif %}
+
 {% endblock %}

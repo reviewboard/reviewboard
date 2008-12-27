@@ -10,47 +10,45 @@
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/yui-ui.css" />
 {% if siteconfig.settings.diffviewer_show_trailing_whitespace %}
 <style type="text/css">
   .ew { background: #ee3434; }
 </style>
 {% endif %}
-<script type="text/javascript" src="{{MEDIA_URL}}yui/utilities/utilities.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}yui-ext/yui-ext.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/common.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/dialogs.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/rb/widgets.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/comments.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/diffviewer.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/scripts/reviews.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc1.packed.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js"></script>
+{% include "reviews/review_flags.html" %}
 <script type="text/javascript">
-  var gReviewRequestPath = '{{review_request.get_absolute_url}}';
-  var gReviewRequestId = '{{review_request.id}}';
   var gRevision = '{{diffset.revision}}';
 {% if interdiffset %}
   var gInterdiffRevision = '{{interdiffset.revision}}';
 {% else %}
   var gInterdiffRevision = null;
 {% endif %}
-  var gUserAuthenticated = {{user.is_authenticated|lower}};
 </script>
 {% endblock %}
 
 {% block content %}
 {% if error %}
-{% errorbox %}
- <p>{{error}}</p>
- {% if trace %}<pre>{{trace|escape}}</pre>{% endif %}
-{% enderrorbox %}
-{% else %}
+{%  errorbox %}
+<p>{{error}}</p>
+{%   if trace %}<pre>{{trace|escape}}</pre>{% endif %}
+{%  enderrorbox %}
+{% else %}{# !error #}
 
 {% include "reviews/trophy_box.html" %}
 {% include "reviews/review_header.html" %}
 
 {% box "review-request" %}
-<ul id="topcontrols">
- <li><a href="{{review_request.get_absolute_url}}"><img src="{{MEDIA_URL}}rb/images/reviewrequest.png" width="16" height="16" border="0" alt="" /> {% trans "View Review Request" %}</a></li>
+<ul id="actions">
+{% include "reviews/review_request_actions_secondary.html" %}
+ <li class="primary"><a href="raw/">{% trans "Download Diff" %}</a></li>
+{% include "reviews/review_request_actions_primary.html" %}
+ <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
 </ul>
 <div class="main">
 {% include "reviews/review_request_box.html" %}
@@ -173,8 +171,6 @@
 </div>
 
 <ul class="controls">
-{% if user.is_authenticated %}<li><a href="#" onClick="showReviewDlg();" id="review-link">{% trans "Review" %}</a></li>{% endif %}
- <li><a href="raw/"> {% trans "Download Patch" %}</a></li>
 {% if collapseall %}
  <li><a href=".?expand=1"><img src="{{MEDIA_URL}}rb/images/expand.png" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
 {% else %}
@@ -187,7 +183,6 @@
 
 <div id="diffs">
 {% for file in files %}
-<a name="{{file.index}}"></a>
 {{ file.fragment }}
 <script type="text/javascript">
   gFileAnchorToId["file{{file.filediff.id}}"] = {
@@ -200,14 +195,16 @@
     'revision': {{file.interfilediff.diffset.revision}}
   };
 {% endif %}
-  addComments("file{{file.filediff.id}}", {% commentcounts file.filediff file.interfilediff %});
+  $(document).ready(function() {
+    $("#file{{file.filediff.id}}").diffFile({% commentcounts file.filediff file.interfilediff %});
+  });
 </script>
 {% endfor %}
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
 </div>
 
-{% include "diffviewer/comments_dlg.html" %}
+{% include "reviews/comments_dlg.html" %}
 
-{% endif %}
+{% endif %}{# !error #}
 {% endblock %}

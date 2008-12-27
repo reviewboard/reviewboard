@@ -28,6 +28,19 @@
   margin-left: -3px;
 }
 
+.inline-editor-form .buttons input[type='button'] {
+  margin-left: 0px;
+  margin-right: 6px;
+}
+
+.inline-editor-form textarea + .buttons {
+  margin-top: 6px;
+}
+
+.inline-editor-form input[type] + .buttons {
+  padding-left: 6px;
+}
+
 .review-request {
   background-color: #fefadf;
   background-image: url('../images/review_request_box_top_bg.png');
@@ -175,7 +188,8 @@
   font-size: 130%;
 }
 
-.review-request #topcontrols {
+.review-request #actions {
+  border-right: 1px #000000 solid;
   float: right;
   list-style: none;
   margin: -1px -1px 0 0;
@@ -183,22 +197,63 @@
   white-space: nowrap;
 }
 
-.review-request #topcontrols a {
+.review-request #actions a {
   color: black;
   cursor: pointer;
   display: block;
+  padding: 4px 8px;
+  text-decoration: none;
+}
+
+.review-request #actions img {
+  vertical-align: middle;
+}
+
+.review-request #actions li {
+  background: #dfb16a url("../images/review_request_action_bg.png") repeat-x top left;
+  border: 1px black solid;
+  border-right: 0;
+  float: left;
+}
+
+.review-request #actions>li:first-child {
+  -moz-border-radius: 0 0 0 8px;
+  -webkit-border-radius: 0 0 0 8px;
+  border-radius: 0 0 0 8px;
+}
+
+.review-request #actions li.primary {
+  background-image: url("../images/review_request_action_primary_bg.png");
+  background-color: #e7c591;
+}
+
+.review-request #actions ul.menu {
+  background: #dfb16a url("../images/review_request_action_bg.png") repeat-x top left;
+  border: 1px black solid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+}
+
+.review-request #actions ul.menu li {
+  background: none;
+  border: 0;
+  float: none;
+  margin: 0;
+  padding: 0;
+}
+
+.review-request #actions ul.menu li a {
+  color: black;
+  display: block;
+  margin: 0;
   padding: 5px 10px;
   text-decoration: none;
 }
 
-.review-request #topcontrols img {
-  vertical-align: middle;
-}
-
-.review-request #topcontrols li {
-  background-color: #B6CCE3;
-  border: 1px #3465A4 solid;
-  font-size: 120%;
+.review-request #actions ul.menu a:hover {
+  background-color: #c79343;
 }
 
 .review-request #updated_time,
@@ -253,8 +308,16 @@
   text-align: right;
 }
 
-.review .body .controls a {
+.review .controls li {
+  display: inline;
+}
+
+.review .controls a {
   text-decoration: none;
+}
+
+.review .comments {
+  border: 0;
 }
 
 .review .diff-comments dd {
@@ -434,11 +497,56 @@
   margin-bottom: 10px;
 }
 
+
+/****************************************************************************
+ * Review Form
+ ****************************************************************************/
+#review-form {
+  overflow: auto;
+  padding: 10px;
+}
+
+#review-form pre.editable {
+  background-color: #FFFFFF;
+  border: 1px #b8b5a0 solid;
+  margin: 10px 0;
+  padding: 10px;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+#review-form textarea {
+  border: 1px #b8b5a0 solid;
+  height: 1.5em;
+  overflow: hidden;
+  width: 100%;
+}
+
+#review-form label {
+  color: black;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+#review-form-comments {
+  background: none;
+}
+
+
 /****************************************************************************
  * Screenshots
  ****************************************************************************/
 .screenshot-caption {
-  margin-top: 2px;
+  background-color: #F6F6F6;
+  border: 1px #999999 solid;
+  border-top: 1px #CCCCCC solid;
+  padding: 2px 8px;
+  -moz-border-radius: 0 0 8px 8px;
+  -webkit-border-radius: 0 0 8px 8px;
+  border-radius: 0 0 8px 8px;
 }
 
 .screenshot-caption img {
@@ -446,26 +554,55 @@
 }
 
 .screenshot-container {
+  background: white;
   float: left;
+  display: inline;
+  margin-bottom: 10px;
   margin-right: 10px;
   max-width: 400px;
+  min-width: 130px;
   text-align: center;
-  vertical-align: top;
+  vertical-align: middle;
+  position: relative;
 }
 
-.screenshot-container img {
+.screenshot-container a {
+  color: black;
+  text-decoration: none;
+}
+
+.screenshot-container .screenshot {
+  border: 1px #999999 solid;
+  border-bottom: 0;
+  height: 100px;
+  line-height: 100px;
   margin: 0 auto;
+  vertical-align: bottom;
+}
+
+.screenshot-container .screenshot img {
+  vertical-align: middle;
+}
+
+.screenshot-container:hover {
+  background-color: #F6F6F6;
+}
+
+.screenshot-container:hover .screenshot-caption {
+  background-color: #E6E6E6;
 }
 
 #screenshot-display {
   border: 1px #777777 solid;
   cursor: crosshair;
   padding: 10px;
+  position: relative;
 }
 
 #screenshot-display img {
   display: block;
   margin: 0 auto;
+  padding: 0;
 }
 
 #screenshot-display .selection {
@@ -487,20 +624,116 @@
   border: 1px #aceb6f solid;
 }
 
-#screenshot-display .selection-flag.draft {
-  background-color: #aceb6f;
+#screenshot-display .selection-flag.flag-draft {
+  background: #aceb6f;
 }
 
 #screenshot-display #selection-container {
-  visibility: hidden;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  z-index: 999;
 }
 
 #screenshot-display #selection-interactive {
   border: 1px #ff0000 dashed;
   position: absolute;
-  visibility: hidden;
+}
+
+
+/****************************************************************************
+ * Comment detail dialog
+ ****************************************************************************/
+#comment-detail {
+  border: 1px black solid;
+  margin-top: 8px;
+  cursor: default;
+}
+
+#comment-detail h1 {
+  margin: 0 0 6px 0;
+  padding: 0;
+}
+
+#comment-detail form {
+  background-color: #aceb6f;
+  display: block;
+  padding: 6px;
+}
+
+#comment-detail form .buttons input[type="button"] {
+  margin-right: 3px;
+}
+
+#comment-detail form .buttons {
+  bottom: 6px;
+  left: 6px;
+  margin-top: 6px;
+  position: absolute;
+}
+
+#comment-detail .status {
+  margin: 4px 0;
+  font-style: italic;
+}
+
+#comment-detail #review_comments {
+  background-color: #a1c0e3;
+  border-right: 1px black solid;
+  padding: 6px;
+}
+
+#comment-detail #review_comments ul {
+  background-color: white;
+  border: 1px #333333 solid;
+  list-style: none;
+  margin: 0;
+  overflow: auto;
+  padding: 0;
+  position: relative;
+}
+
+#comment-detail #review_comments ul li {
+  padding: 6px;
+}
+
+#comment-detail #review_comments ul li.even {
+  background-color: #F3F3F3;
+}
+
+#comment-detail #review_comments ul li pre {
+  font-size: 90%;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+#comment-detail #review_comments ul li h2 {
+  font-size: 90%;
+  margin: 0 0 6px 0;
+  padding: 0;
+}
+
+#comment-detail #review_comments ul li h2 .actions {
+  font-weight: normal;
+  position: absolute;
+  right: 6px;
+}
+
+#comment-detail #review_comments ul li h2 .actions a {
+  background-color: #EEEEEE;
+  border: 1px black outset;
+  color: black;
+  cursor: pointer;
+  text-decoration: none;
+  margin-left: 6px;
+  padding: 1px 3px;
+}
+
+#comment-detail #review_comments ul li h2 .actions a:hover {
+  background-color: #F6F6F6;
 }
 
 
@@ -513,24 +746,83 @@
   border: 1px #808080 solid;
 }
 
+#review-banner {
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  z-index: 1000;
+}
+
+
+/****************************************************************************
+ * Tooltips
+ ****************************************************************************/
+.tooltip {
+  background-color: #fef6b3;
+  border: 1px #a58600 solid;
+  padding: 4px;
+  position: absolute;
+}
+
+.tooltip.comments {
+  border: 1px black solid;
+  border-bottom: 0;
+  padding: 0;
+}
+
+.tooltip.comments ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tooltip.comments li {
+  background-color: #a1c0e3;
+  border-bottom: 1px #5170b3 solid;
+  margin: 0;
+  padding: 5px;
+}
+
+.tooltip.comments li.draft {
+  background-color: #aceb6f;
+  border-bottom: 1px black solid;
+}
+
+.tooltip.comments li pre {
+  font-size: 90%;
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+
+/****************************************************************************
+ * Bubbles
+ ****************************************************************************/
+.bubble {
+  background-color: white;
+  border: 1px black solid;
+  font-size: 10pt;
+  font-weight: bold;
+  padding: 6px;
+  position: absolute;
+  white-space: nowrap;
+  z-index: 999;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+}
+
 
 /****************************************************************************
  * Auto-complete widget
  ****************************************************************************/
-/* Widget */
-.yui-skin-sam .yui-ac
-{
-  position: relative;
-}
-
-/* Results container */
-.yui-skin-sam .yui-ac-container
-{
-  width: 100%;
-}
-
 /* Content container wrapper */
-.yui-skin-sam .yui-ac-content
+.ui-autocomplete-results
 {
   background: #ffffff;
   border: 1px solid #808080;
@@ -541,27 +833,14 @@
 }
 
 /* Footer */
-.yui-skin-sam .yui-ac-ft {
+.ui-autocomplete-footer {
   background: #ECECEC;
   border-top: 1px #C0C0C0 solid;
   padding: 3px 6px;
 }
 
-/* Container shadow */
-.yui-skin-sam .yui-ac-shadow
-{
-  background: #000;
-  filter: alpha(opacity=10);
-  margin: 0.3em;
-  -moz-opacity: 0.10;
-  opacity: .10;
-  position: absolute;
-  width: 100%;
-  z-index: 9049;
-}
-
 /* Results list */
-.yui-skin-sam .yui-ac-content ul
+.ui-autocomplete-results ul
 {
   margin: 0;
   padding: 0;
@@ -569,7 +848,7 @@
 }
 
 /* Result item */
-.yui-skin-sam .yui-ac-content li
+.ui-autocomplete-results li
 {
   cursor: pointer;
   margin: 0;
@@ -578,13 +857,15 @@
 }
 
 /* Pre-highlighted result item */
-.yui-skin-sam .yui-ac-content li.yui-ac-prehighlight
+/*
+.ui-autocomplete-results .ui-autocomplete-over
 {
   background: #9cc2eb;
 }
+*/
 
 /* Highlighted result item */
-.yui-skin-sam .yui-ac-content li.yui-ac-highlight
+.ui-autocomplete-results .ui-autocomplete-over
 {
   background: #71a5db;
   color: #FFF;

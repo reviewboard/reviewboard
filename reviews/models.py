@@ -377,7 +377,7 @@ class ReviewRequest(models.Model):
         super(ReviewRequest, self).save()
 
     def can_publish(self):
-        return get_object_or_none(self.draft) is not None
+        return not self.public or get_object_or_none(self.draft) is not None
 
     def close(self, type, user=None):
         """
@@ -424,18 +424,20 @@ class ReviewRequest(models.Model):
         if not self.is_mutable_by(user):
             raise PermissionError
 
-        draft = self.draft.get()
+        draft = get_object_or_none(self.draft)
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
             changes = draft.publish(self)
             draft.delete()
+        else:
+            changes = None
 
-            self.public = True
-            self.save()
+        self.public = True
+        self.save()
 
-            siteconfig = SiteConfiguration.objects.get_current()
-            if siteconfig.get("mail_send_review_mail"):
-                mail_review_request(user, self, changes)
+        siteconfig = SiteConfiguration.objects.get_current()
+        if siteconfig.get("mail_send_review_mail"):
+            mail_review_request(user, self, changes)
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
