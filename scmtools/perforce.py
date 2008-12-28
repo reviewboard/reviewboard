@@ -1,13 +1,22 @@
 import re
 import subprocess
 
+from django.utils.translation import ugettext as _
+
 try:
     from P4 import P4Error
 except ImportError:
     pass
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools.core import SCMTool, ChangeSet, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMTool, SCMError, ChangeSet, \
+                                      HEAD, PRE_CREATION
+
+
+class EmptyChangesetError(SCMError):
+    def __init__(self, changenum):
+        SCMError.__init__(_('Changeset %d is empty') % changenum)
+
 
 class PerforceTool(SCMTool):
     def __init__(self, repository):
@@ -144,7 +153,11 @@ class PerforceTool(SCMTool):
         # results.
         changeset.username = changedesc['user']
         changeset.description = changedesc['desc']
-        changeset.files = changedesc['depotFile']
+
+        try:
+            changeset.files = changedesc['depotFile']
+        except KeyError:
+            raise EmptyChangesetError(changenum)
 
         split = changeset.description.find('\n\n')
         if split >= 0 and split < 100:

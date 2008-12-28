@@ -60,6 +60,9 @@ class NewReviewRequestForm(forms.Form):
             except NotImplementedError:
                 # This scmtool doesn't have changesets
                 pass
+            except SCMError, e:
+                self.errors['changenum'] = forms.util.ErrorList([str(e)])
+                raise ChangeSetError()
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,
