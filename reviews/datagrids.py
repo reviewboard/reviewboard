@@ -419,6 +419,10 @@ class GroupDataGrid(DataGrid):
             "star", "name", "displayname", "pending_count"
         ]
 
+    @staticmethod
+    def link_to_object(obj, value):
+        return reverse("group", args=[obj.name])
+
 
 class WatchedGroupDataGrid(GroupDataGrid):
     """
