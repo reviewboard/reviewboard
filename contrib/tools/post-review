@@ -821,12 +821,12 @@ class SVNClient(SCMClient):
 
         from_line = ""
         for line in diff_content:
-            if line.startswith('---'):
+            if line.startswith('--- '):
                 from_line = line
                 continue
 
-            # This is where we decide how mangle the previous '---'
-            if line.startswith('+++'):
+            # This is where we decide how mangle the previous '--- '
+            if line.startswith('+++ '):
                 to_file, _ = self.parse_filename_header(line[4:])
                 info       = self.svn_info(to_file)
                 if info.has_key("Copied From URL"):
