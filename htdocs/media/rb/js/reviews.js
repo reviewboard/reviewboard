@@ -130,7 +130,7 @@ function reviewRequestApiCall(options) {
     options.path = getReviewRequestAPIPath() + options.path;
 
     if (!options.success) {
-        options.success = function() { window.location.reload(); };
+        options.success = function() { window.location = gReviewRequestPath; };
     }
 
     rbApiCall(options);
@@ -858,6 +858,7 @@ $.reviewForm = function() {
 
         $.funcQueue("reviewForm").add(function() {
             dlg.modalBox("destroy");
+            window.location = gReviewRequestPath;
         });
 
         $.funcQueue("reviewForm").start();
