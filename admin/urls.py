@@ -9,10 +9,8 @@ NEWS_FEED = "http://www.review-board.org/news/feed/"
 urlpatterns = patterns('reviewboard.admin.views',
     (r'^$', 'dashboard'),
     (r'^cache/$', 'cache_stats'),
-)
 
-# Settings
-urlpatterns += patterns('djblets.siteconfig.views',
+    # Settings
     (r'^settings/general/$', 'site_settings',
      {'form_class': forms.GeneralSettingsForm,
       'template_name': 'admin/general_settings.html'}),

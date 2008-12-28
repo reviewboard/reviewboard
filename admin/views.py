@@ -6,6 +6,7 @@ from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
+from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard import VERSION
 from reviewboard.admin.checks import check_updates_required
@@ -46,6 +47,14 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
         'title': _("Server Cache"),
         'root_path': settings.SITE_ROOT + "admin/db/"
     }))
+
+
+@staff_member_required
+def site_settings(request, form_class,
+                  template_name="siteconfig/settings.html"):
+    return djblets_site_settings(request, form_class, template_name, {
+        'root_path': settings.SITE_ROOT + "admin/db/"
+    })
 
 
 def manual_updates_required(request,
