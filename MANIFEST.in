@@ -2,7 +2,7 @@ recursive-include reviewboard/accounts/fixtures *
 recursive-include reviewboard/admin/fixtures *
 recursive-include reviewboard/contrib *
 recursive-include reviewboard/diffviewer/testdata *
-recursive-include reviewboard/htdocs *.css *.htc *.png *.jpg *.gif *.js
+recursive-include reviewboard/htdocs *.css *.htc *.png *.jpg *.gif *.js *.html
 recursive-include reviewboard/locale *
 recursive-include reviewboard/reviews/fixtures *
 recursive-include reviewboard/scmtools/fixtures *
