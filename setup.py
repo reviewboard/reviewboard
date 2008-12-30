@@ -165,7 +165,8 @@ setup(name="ReviewBoard",
           "reviewboard/contrib/tools/rb-site",
       ],
       cmdclass=cmdclasses,
-      install_requires=['Django>=1.0.2', 'django_evolution', 'Djblets'],
+      install_requires=['Django>=1.0.2', 'django_evolution',
+                        'Djblets>=0.4.dev_20081229'],
       dependency_links = [
           "http://www.review-board.org/downloads/mirror/",
           # TODO: Replace with a releases/ when we perform our first release.
