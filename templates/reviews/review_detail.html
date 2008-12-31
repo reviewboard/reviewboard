@@ -41,8 +41,8 @@
 
 {% for entry in entries %}
 {%  if entry.review %}
-<a name="review{{review.id}}"></a>
-<div id="review{{review.id}}">
+<a name="review{{entry.review.id}}"></a>
+<div id="review{{entry.review.id}}">
 {%   if forloop.last %}
 <a name="last-review" />
 {%   endif %}
