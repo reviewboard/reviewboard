@@ -276,8 +276,8 @@ class ReviewRequestDataGrid(DataGrid):
     review_id = Column(_("Review ID"), field_name="id", db_field="id",
                        shrink=True, sortable=True, link=True)
 
-    def __init__(self, request, queryset, title):
-        DataGrid.__init__(self, request, queryset, title)
+    def __init__(self, *args, **kwargs):
+        DataGrid.__init__(self, *args, **kwargs)
         self.listview_template = 'reviews/review_request_listview.html'
         self.profile_sort_field = 'sort_review_request_columns'
         self.profile_columns_field = 'review_request_columns'
@@ -323,8 +323,8 @@ class DashboardDataGrid(ReviewRequestDataGrid):
     new_updates = NewUpdatesColumn()
     my_comments = MyCommentsColumn()
 
-    def __init__(self, request):
-        ReviewRequestDataGrid.__init__(self, request, None, "")
+    def __init__(self, *args, **kwargs):
+        ReviewRequestDataGrid.__init__(self, *args, **kwargs)
         self.listview_template = 'datagrid/listview.html'
         self.profile_sort_field = 'sort_dashboard_columns'
         self.profile_columns_field = 'dashboard_columns'
@@ -335,6 +335,18 @@ class DashboardDataGrid(ReviewRequestDataGrid):
             "new_updates", "star", "summary", "submitter",
             "time_added", "last_updated_since"
         ]
+
+        group = self.request.GET.get('group', None)
+        view = self.request.GET.get('view', None)
+        extra_query = []
+
+        if view:
+            extra_query.append("view=%s" % view)
+
+        if group:
+            extra_query.append("group=%s" % group)
+
+        self.extra_context['extra_query'] = "&".join(extra_query)
 
     def load_extra_state(self, profile):
         group = self.request.GET.get('group', '')
@@ -410,8 +422,9 @@ class GroupDataGrid(DataGrid):
                                            field_name="members",
                                            shrink=True)
 
-    def __init__(self, request, title=_("All groups")):
-        DataGrid.__init__(self, request, Group.objects.all(), title)
+    def __init__(self, request, title=_("All groups"), *args, **kwargs):
+        DataGrid.__init__(self, request, queryset=Group.objects.all(),
+                          title=title, *args, **kwargs)
         self.profile_sort_field = 'sort_group_columns'
         self.profile_columns_field = 'group_columns'
         self.default_sort = ["name"]
@@ -430,8 +443,8 @@ class WatchedGroupDataGrid(GroupDataGrid):
     linking to a dashboard view of them. This is meant for display in the
     dashboard.
     """
-    def __init__(self, request):
-        GroupDataGrid.__init__(self, request, _("Watched groups"))
+    def __init__(self, request, title=_("Watched groups"), *args, **kwargs):
+        GroupDataGrid.__init__(self, request, title=title, *args, **kwargs)
         self.queryset = request.user.get_profile().starred_groups.all()
 
     def link_to_object(self, group, value):
