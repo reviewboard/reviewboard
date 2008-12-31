@@ -882,7 +882,9 @@ def review_draft_save(request, review_request_id, publish=False):
         base_reply_to__isnull=True)
 
     if 'shipit' in request.POST:
-        review.ship_it = request.POST['shipit']
+        review.ship_it = request.POST['shipit'] in (1, "1", True, "True")
+
+    print "Ship it: %s (%s)" % (review.ship_it, type(review.ship_it))
 
     if 'body_top' in request.POST:
         review.body_top = request.POST['body_top']
