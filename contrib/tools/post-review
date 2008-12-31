@@ -1247,7 +1247,7 @@ class GitClient(SCMClient):
             m = re.search(r'^URL: (.+)$', data, re.M)
 
             if m:
-                base_path = m.group(1)[len(path):]
+                base_path = m.group(1)[len(path):] or "/"
                 self.type = "svn"
                 return RepositoryInfo(path=path, base_path=base_path,
                                       supports_parent_diffs=True)
