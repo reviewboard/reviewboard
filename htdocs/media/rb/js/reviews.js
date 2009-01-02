@@ -307,7 +307,7 @@ function publishDraft() {
  */
 $.fn.commentSection = function(review_id, context_id, context_type) {
     var self = $(this);
-    var sectionId = sectionId;
+    var sectionId = context_id;
     var reviewEl = $("#review" + review_id);
     var commentsList = $(".reply-comments", self)
     var bannersEl = $(".banners", reviewEl);
