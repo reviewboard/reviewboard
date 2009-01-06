@@ -69,12 +69,13 @@ function showServerError(specific, data) {
 
 /*
  * Convenience wrapper for Review Board API functions. This will handle
- * any button disabling/enabling, write to the correct path prefix, and
- * displaying server errors.
+ * any button disabling/enabling, write to the correct path prefix, form
+ * uploading, and displaying server errors.
  *
  * options has the following fields:
  *
  *    buttons  - An optional list of buttons to disable/enable.
+ *    form     - A form to upload, if any.
  *    type     - The request type (defaults to "POST").
  *    path     - The relative path to the Review Board API tree.
  *    data     - Data to send with the request.
@@ -92,7 +93,7 @@ function rbApiCall(options) {
         options.buttons.attr("disabled", true);
     }
 
-    $.ajax({
+    var data = {
         type: options.type || "POST",
         url: options.url || (SITE_ROOT + "api/json" + options.path),
         data: options.data || {dummy: ""},
@@ -116,7 +117,13 @@ function rbApiCall(options) {
                 options.complete(xhr, status);
             }
         }
-    });
+    };
+
+    if (options.form) {
+        options.form.ajaxSubmit(data);
+    } else {
+        $.ajax(data);
+    }
 }
 
 
@@ -181,6 +188,13 @@ $.fn.formDlg = function(options) {
                     .append('<col width="100%"/>'))
                 .append($("<tbody/>")));
 
+        if (options.upload) {
+            form.attr({
+                encoding: "multipart/form-data",
+                enctype:  "multipart/form-data"
+            });
+        }
+
         var tbody = $("tbody", form);
 
         var fieldInfo = {};
@@ -235,7 +249,7 @@ $.fn.formDlg = function(options) {
                     $('<input type="button"/>')
                         .val(options.confirmLabel)
                         .click(function() {
-                            send();
+                            form.submit();
                             return false;
                         })
                 ]
@@ -251,7 +265,8 @@ $.fn.formDlg = function(options) {
         function send() {
             rbApiCall({
                 path: options.path,
-                buttons: $("input", self.modalBox("buttons")),
+                form: form,
+                buttons: $("input:button", self.modalBox("buttons")),
                 errorPrefix: "Saving the form failed due to a server error:",
                 success: function(rsp) {
                     checkForErrors(rsp);
