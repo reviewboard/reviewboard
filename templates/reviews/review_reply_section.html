@@ -8,7 +8,9 @@
    <ul class="controls">
     <li><a href="#" id="add_{{context_type}}_{{comment.id}}" class="add_comment_link">{% trans "Add comment" %}</a></li>
    </ul>
+{% endif %}
   </div>
+{% if user.is_authenticated %}
   <script language="javascript">
   $(document).ready(function()
   {
