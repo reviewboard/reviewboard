@@ -798,26 +798,66 @@ class InstallCommand(Command):
                          dest="copy_media", default=isWin,
                          help="copy media files instead of symlinking")
 
-        # TODO: Parameters for default options
+        group.add_option("--noinput", action="store_true", default=False,
+                         help="run non-interactively using configuration "
+                              "provided in command-line options")
+        group.add_option("--domain-name",
+                         help="full domain name of the site, excluding the "
+                              "http://, port or path")
+        group.add_option("--site-root", default="/",
+                         help="path to the site relative to the domain name")
+        group.add_option("--media-url", default="media/",
+                         help="the URL containing the media files")
+        group.add_option("--db-type",
+                         help="database type (mysql, postgresql or sqlite3)")
+        group.add_option("--db-name", default="reviewboard",
+                         help="database name (not for sqlite3)")
+        group.add_option("--db-host", default="localhost",
+                         help="database host (not for sqlite3)")
+        group.add_option("--db-user",
+                         help="database user (not for sqlite3)")
+        group.add_option("--db-pass",
+                         help="password for the database user "
+                              "(not for sqlite3)")
+        group.add_option("--cache-type",
+                         help="cache server type (memcached or file)")
+        group.add_option("--cache-info",
+                         help="cache identifier (memcached connection string "
+                              "or file cache directory)")
+        group.add_option("--web-server-type",
+                         help="web server (apache or lighttpd)")
+        group.add_option("--python-loader",
+                         help="python loader for apache (modpython or fastcgi)")
+        group.add_option("--admin-user", default="admin",
+                         help="the site administrator's username")
+        group.add_option("--admin-password",
+                         help="the site administrator's password")
+        group.add_option("--admin-email",
+                         help="the site administrator's e-mail address")
+
         parser.add_option_group(group)
 
     def run(self):
         if not self.check_permissions():
             return
 
+        site.__dict__.update(options.__dict__)
+
         self.print_introduction()
-        self.ask_domain()
-        self.ask_site_root()
-        self.ask_media_url()
-        self.ask_database_type()
-        self.ask_database_name()
-        self.ask_database_host()
-        self.ask_database_login()
-        self.ask_cache_type()
-        self.ask_cache_info()
-        self.ask_web_server_type()
-        self.ask_python_loader()
-        self.ask_admin_user()
+
+        if not options.noinput:
+            self.ask_domain()
+            self.ask_site_root()
+            self.ask_media_url()
+            self.ask_database_type()
+            self.ask_database_name()
+            self.ask_database_host()
+            self.ask_database_login()
+            self.ask_cache_type()
+            self.ask_cache_info()
+            self.ask_web_server_type()
+            self.ask_python_loader()
+            self.ask_admin_user()
 
         self.show_install_status()
         self.show_finished()
@@ -871,7 +911,7 @@ class InstallCommand(Command):
         ui.text(page, "This should be the full domain without the http://, "
                       "port or path.")
 
-        ui.prompt_input(page, "Domain Name",
+        ui.prompt_input(page, "Domain Name", site.domain_name,
                         save_obj=site, save_var="domain_name")
 
     def ask_site_root(self):
@@ -886,7 +926,7 @@ class InstallCommand(Command):
         ui.text(page, "Note that this is the path relative to the domain and "
                       "should not include the domain name.")
 
-        ui.prompt_input(page, "Root Path", "/",
+        ui.prompt_input(page, "Root Path", site.site_root,
                         normalize_func=self.normalize_root_url_path,
                         save_obj=site, save_var="site_root")
 
@@ -898,7 +938,7 @@ class InstallCommand(Command):
                       "custom installs may instead have a separate server "
                       "for this purpose.")
 
-        ui.prompt_input(page, "Media URL", "media/",
+        ui.prompt_input(page, "Media URL", site.media_url,
                         normalize_func=self.normalize_media_url_path,
                         save_obj=site, save_var="media_url")
 
@@ -935,7 +975,7 @@ class InstallCommand(Command):
         ui.text(page, "You may need to create this database and grant a "
                       "user modification rights before continuing.")
 
-        ui.prompt_input(page, "Database Name", "reviewboard",
+        ui.prompt_input(page, "Database Name", site.db_name,
                         save_obj=site, save_var="db_name")
 
     def ask_database_host(self):
@@ -952,7 +992,7 @@ class InstallCommand(Command):
                       "The port is optional if you're using a standard "
                       "port for the database type.")
 
-        ui.prompt_input(page, "Database Server", "localhost",
+        ui.prompt_input(page, "Database Server", site.db_host,
                         normalize_func=normalize_host_port,
                         save_obj=site, save_var="db_host")
 
@@ -963,9 +1003,9 @@ class InstallCommand(Command):
         ui.text(page, "This must be a user that has creation and modification "
                       "rights on the database.")
 
-        ui.prompt_input(page, "Database Username",
+        ui.prompt_input(page, "Database Username", site.db_user,
                         save_obj=site, save_var="db_user")
-        ui.prompt_input(page, "Database Password", password=True,
+        ui.prompt_input(page, "Database Password", site.db_pass, password=True,
                         save_obj=site, save_var="db_pass")
 
     def ask_cache_type(self):
@@ -986,14 +1026,15 @@ class InstallCommand(Command):
                       "memcached://hostname:port/")
 
         ui.prompt_input(page, "Memcache Server",
-                        "memcached://localhost:11211/",
+                        site.cache_info or "memcached://localhost:11211/",
                         save_obj=site, save_var="cache_info")
 
         # Appears only if using file caching.
         page = ui.page("Where should the temporary cache files be stored?",
                        is_visible_func=lambda: site.cache_type == "file")
 
-        ui.prompt_input(page, "Cache Directory", "/tmp/reviewboard_cache",
+        ui.prompt_input(page, "Cache Directory",
+                        site.cache_info or "/tmp/reviewboard_cache",
                         normalize_func=lambda value: "file://" + value,
                         save_obj=site, save_var="cache_info")
 
@@ -1026,11 +1067,11 @@ class InstallCommand(Command):
                       "other than your NIS/LDAP account so as to prevent "
                       "conflicts.")
 
-        ui.prompt_input(page, "Username", "admin",
+        ui.prompt_input(page, "Username", site.admin_user,
                         save_obj=site, save_var="admin_user")
-        ui.prompt_input(page, "Password", password=True,
+        ui.prompt_input(page, "Password", site.admin_password, password=True,
                         save_obj=site, save_var="admin_password")
-        ui.prompt_input(page, "E-Mail Address",
+        ui.prompt_input(page, "E-Mail Address", site.admin_email,
                         save_obj=site, save_var="admin_email")
 
     def show_install_status(self):
@@ -1150,6 +1191,9 @@ def parse_options(args):
 
 
     (options, args) = parser.parse_args(args)
+
+    if options.noinput:
+        options.force_console = True
 
     # We expect at least two args (command and install path)
     if len(args) < 2 or args[0] not in COMMANDS.keys():
