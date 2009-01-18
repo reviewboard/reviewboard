@@ -200,10 +200,11 @@ def convert_to_utf8(s, enc):
             for e in enc.split(','):
                 try:
                     u = unicode(s, e)
-                    break
+                    return u.encode('utf-8')
                 except UnicodeError:
                     pass
-            return u.encode('utf-8')
+            raise Exception(_("Diff content couldn't be converted to UTF-8 "
+                              "using the following encodings: %s") % enc)
     else:
         raise TypeError("Value to convert is unexpected type %s", type(s))
 
