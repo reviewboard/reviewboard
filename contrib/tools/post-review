@@ -652,7 +652,7 @@ class CVSClient(SCMClient):
         if i != -1:
             host = repository_path[:i]
             try:
-                canon = socket.getfqdn()
+                canon = socket.getfqdn(host)
                 repository_path = repository_path.replace('%s:' % host,
                                                           '%s:' % canon)
             except socket.error, msg:
