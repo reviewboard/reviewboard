@@ -100,7 +100,7 @@ class Site(object):
         rb_djblets_src = "htdocs/media/djblets"
         rb_djblets_dest = os.path.join(media_base, "djblets")
 
-        for media_dir in ["admin", "rb", "yui", "yui-ext"]:
+        for media_dir in ["admin", "rb"]:
             path = os.path.join(media_base, media_dir)
             self.link_pkg_dir("reviewboard",
                               "htdocs/media/%s" % media_dir,
