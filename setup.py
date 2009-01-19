@@ -18,8 +18,6 @@ from setuptools.command.build_py import build_py
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
-from __init__ import VERSION # Ick.
-
 
 # Make sure we're actually in the directory containing setup.py.
 root_dir = os.path.dirname(__file__)
@@ -111,24 +109,27 @@ else:
 #cmdclasses["build_py"] = fixed_build_py
 
 
-if os.path.exists("reviewboard"):
-    shutil.rmtree("reviewboard")
+# We only want to do this if it's not an sdist build, which means there will
+# be a PKG-INFO.
+if not os.path.exists("PKG-INFO"):
+    if os.path.exists("reviewboard"):
+        shutil.rmtree("reviewboard")
 
-print "Copying tree to staging area..."
-shutil.copytree(".", "reviewboard", True)
+    print "Copying tree to staging area..."
+    shutil.copytree(".", "reviewboard", True)
 
-# Clean up things that shouldn't be in there...
-shutil.rmtree("reviewboard/ReviewBoard.egg-info", ignore_errors=True)
-shutil.rmtree("reviewboard/build", ignore_errors=True)
-shutil.rmtree("reviewboard/dist", ignore_errors=True)
-os.unlink("reviewboard/setup.py")
-os.unlink("reviewboard/ez_setup.py")
+    # Clean up things that shouldn't be in there...
+    shutil.rmtree("reviewboard/ReviewBoard.egg-info", ignore_errors=True)
+    shutil.rmtree("reviewboard/build", ignore_errors=True)
+    shutil.rmtree("reviewboard/dist", ignore_errors=True)
+    os.unlink("reviewboard/setup.py")
+    os.unlink("reviewboard/ez_setup.py")
 
-if os.path.exists("reviewboard/settings_local.py"):
-    os.unlink("reviewboard/settings_local.py")
+    if os.path.exists("reviewboard/settings_local.py"):
+        os.unlink("reviewboard/settings_local.py")
 
-if os.path.exists("reviewboard/settings_local.pyc"):
-    os.unlink("reviewboard/settings_local.pyc")
+    if os.path.exists("reviewboard/settings_local.pyc"):
+        os.unlink("reviewboard/settings_local.pyc")
 
 # Since we don't actually keep our directories in a reviewboard directory
 # like we really should, we have to fake it. Prepend "reviewboard." here,
@@ -148,6 +149,10 @@ packages = [
                  "reviewboard.django_evolution", "reviewboard.django_evolution.*"] +
                 rb_dirs)
 ]
+
+
+# Import this now, since reviewboard is in the right place now.
+from reviewboard import VERSION
 
 # Build the reviewboard package.
 setup(name="ReviewBoard",
@@ -188,4 +193,6 @@ setup(name="ReviewBoard",
       ]
 )
 
-shutil.rmtree("reviewboard")
+
+if not os.path.exists("PKG-INFO"):
+    shutil.rmtree("reviewboard")

@@ -405,7 +405,14 @@ def raw_diff(request, review_request_id, revision=None):
     data = ''.join([filediff.diff for filediff in diffset.files.all()])
 
     resp = HttpResponse(data, mimetype='text/x-patch')
-    resp['Content-Disposition'] = 'inline; filename=%s' % diffset.name
+
+    if diffset.name == 'diff':
+        filename = "bug%s.patch" % review_request.bugs_closed.replace(',', '_')
+    else:
+        filename = diffset.name
+
+    resp['Content-Disposition'] = 'inline; filename=%s' % filename
+
     return resp
 
 
