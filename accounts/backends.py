@@ -141,3 +141,127 @@ class LDAPBackend:
 
     def get_user(self, user_id):
         return get_object_or_none(User, pk=user_id)
+
+
+class ActiveDirectoryBackend:
+    def get_domain_name(self):
+        return str(settings.AD_DOMAIN_NAME)
+
+    def get_ldap_search_root(self):
+        root = ['dc=%s' % x for x in self.get_domain_name().split('.')]
+        if settings.AD_OU_NAME:
+            root = ['ou=%s' % settings.AD_OU_NAME] + root
+        return ','.join(root)
+
+    def search_ad(self, con, filterstr):
+        import ldap
+        search_root = self.get_ldap_search_root()
+        logging.debug('Search root ' + search_root)
+        return con.search_s(search_root, scope=ldap.SCOPE_SUBTREE, filterstr=filterstr)
+
+    def find_domain_controllers_from_dns(self):
+        import DNS
+        DNS.Base.DiscoverNameServers()
+        q = '_ldap._tcp.%s' % self.get_domain_name()
+        req = DNS.Base.DnsRequest(q, qtype = 'SRV').req()
+        return [x['data'][-2:] for x in req.answers]
+
+    def can_recurse(self, depth):
+        return (settings.AD_RECURSION_DEPTH == -1 or
+                        depth <= settings.AD_RECURSION_DEPTH)
+
+    def get_member_of(self, con, search_results, seen=None, depth=0):
+        depth += 1
+        if seen is None:
+            seen = set()
+
+        for name, data in search_results:
+            if name is None:
+                continue
+            member_of = data.get('memberOf', [])
+            new_groups = [x.split(',')[0].split('=')[1] for x in member_of]
+            old_seen = seen.copy()
+            seen.update(new_groups)
+
+            # collect groups recursively
+            if self.can_recurse(depth):
+                for group in new_groups:
+                    if group in old_seen:
+                        continue
+                    group_data = self.search_ad(con, '(&(objectClass=group)(saMAccountName=%s))' % group)
+                    seen.update(self.get_member_of(con, group_data, seen=seen, depth=depth))
+            else:
+                logging.warning('ActiveDirectory recursive group check reached maximum recursion depth.')
+
+        return seen
+
+    def get_ldap_connections(self):
+        import ldap
+        if settings.AD_FIND_DC_FROM_DNS:
+            dcs = self.find_domain_controllers_from_dns()
+        else:
+            dcs = [('389', settings.AD_DOMAIN_CONTROLLER)]
+
+        for dc in dcs:
+            port, host = dc
+            con = ldap.open(host, port=int(port))
+            if settings.AD_USE_TLS:
+                con.start_tls_s()
+            con.set_option(ldap.OPT_REFERRALS, 0)
+            yield con
+
+    def authenticate(self, username, password):
+        import ldap
+        connections = self.get_ldap_connections()
+
+        for con in connections:
+            try:
+                bind_username ='%s@%s' % (username, self.get_domain_name())
+                con.simple_bind_s(bind_username, password)
+                user_data = self.search_ad(con, '(&(objectClass=user)(sAMAccountName=%s))' % username)
+                try:
+                    group_names = self.get_member_of(con, user_data)
+                except Exception, e:
+                    logging.error("Active Directory error: failed getting groups for user %s" % username)
+                    return None
+                required_group = settings.AD_GROUP_NAME
+                if required_group and not required_group in group_names:
+                    logging.warning("Active Directory: User %s is not in required group %s" % (username, required_group))
+                    return None
+
+                return self.get_or_create_user(username, user_data)
+            except ldap.SERVER_DOWN:
+                logging.warning('Active Directory: Domain controller is down - host: %s port: %s' % (host, port))
+                continue
+            except ldap.INVALID_CREDENTIALS:
+                logging.warning('Active Directory: Failed login for user %s' % username)
+                return None
+
+        logging.error('Active Directory error: Could not contact any domain controller servers')
+        return None
+
+    def get_or_create_user(self, username, ad_user_data):
+        try:
+            user = User.objects.get(username=username)
+            return user
+        except User.DoesNotExist:
+            try:
+                first_name = ad_user_data[0][1]['givenName'][0]
+                last_name = ad_user_data[0][1]['sn'][0]
+                email = u'%s@%s' % (username, settings.AD_DOMAIN_NAME)
+
+                user = User(username=username,
+                            password='',
+                            first_name=first_name,
+                            last_name=last_name,
+                            email=email)
+                user.is_staff = False
+                user.is_superuser = False
+                user.set_unusable_password()
+                user.save()
+                return user
+            except:
+                return None
+
+    def get_user(self, user_id):
+        return get_object_or_none(User, pk=user_id)

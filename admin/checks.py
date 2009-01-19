@@ -116,3 +116,18 @@ def get_can_enable_ldap():
             'LDAP authentication requires the python-ldap library, which '
             'is not installed.'
         ))
+
+def get_can_enable_dns():
+    """
+    Checks whether we can query DNS to find the domain controller to use.
+    """
+    try:
+        # XXX for reasons I don't understand imp.find_module doesn't work
+        #imp.find_module("DNS")
+        import DNS
+        return (True, None)
+    except ImportError:
+        return (False, _(
+            'PyDNS, which is required to find the domain controller, '
+            'is not installed.'
+            ))

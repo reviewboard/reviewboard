@@ -8,9 +8,11 @@ from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 
-from reviewboard.admin.checks import get_can_enable_ldap, \
+from reviewboard.admin.checks import get_can_enable_dns, \
+                                     get_can_enable_ldap, \
                                      get_can_enable_search, \
                                      get_can_enable_syntax_highlighting
+
 from reviewboard.admin.siteconfig import load_site_config
 
 
@@ -62,6 +64,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Authentication Method"),
         choices=(
             ("builtin", _("Standard registration")),
+            ("ad",      _("Active Directory")),
             ("ldap",    _("LDAP")),
             ("nis",     _("NIS")),
             ("custom",  _("Custom"))
@@ -122,6 +125,42 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("The optional password for the anonymous user."),
         required=False)
 
+    auth_ad_domain_name = forms.CharField(
+        label=_("Domain name"),
+        help_text=_("Enter the domain name to use, (ie. example.com). This will be "
+                    "used to query for LDAP servers and to bind to the domain."),
+        required=True)
+
+    auth_ad_use_tls = forms.BooleanField(
+        label=_("Use TLS for authentication"),
+        required=False)
+
+    auth_ad_find_dc_from_dns = forms.BooleanField(
+        label=_("Find DC from DNS"),
+        help_text=_("Query DNS to find which domain controller to use"),
+        required=False)
+
+    auth_ad_domain_controller = forms.CharField(
+        label=_("Domain controller"),
+        help_text=_("If not using DNS to find the DC specify the domain "
+                    "controller here"),
+        required=False)
+
+    auth_ad_ou_name = forms.CharField(
+        label=_("OU name"),
+        help_text=_("Optionally restrict users to specified OU."),
+        required=False)
+
+    auth_ad_group_name = forms.CharField(
+        label=_("Group name"),
+        help_text=_("Optionally restrict users to specified group."),
+        required=False)
+
+    auth_ad_recursion_depth = forms.IntegerField(
+        label=_("Recursion Depth"),
+        help_text=_("Depth to recurse when checking group membership. 0 to turn off, -1 for unlimited."),
+        required=False)
+
     custom_backends = forms.CharField(
         label=_("Backends"),
         help_text=_("A comma-separated list of custom auth backends. These "
@@ -146,7 +185,12 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.disabled_fields['search_index_file'] = True
             self.disabled_reasons['search_enable'] = _(reason)
 
+        can_enable_dns, reason = get_can_enable_dns()
+        if not can_enable_dns:
+            self.disabled_fields['auth_ad_find_dc_from_dns'] = _(reason)
+
         can_enable_ldap, reason = get_can_enable_ldap()
+
         if not can_enable_ldap:
             self.disabled_fields['auth_ldap_uri'] = True
             self.disabled_fields['auth_ldap_email_domain'] = True
@@ -156,6 +200,15 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.disabled_fields['auth_ldap_uid_mask'] = True
             self.disabled_fields['auth_ldap_anon_bind_uid'] = True
             self.disabled_fields['auth_ldap_anon_bind_password'] = True
+
+            self.disabled_fields['auth_ad_use_tls'] = True
+            self.disabled_fields['auth_ad_group_name'] = True
+            self.disabled_fields['auth_ad_recursion_depth'] = True
+            self.disabled_fields['auth_ad_ou_name'] = True
+            self.disabled_fields['auth_ad_find_dc_from_dns'] = True
+            self.disabled_fields['auth_ad_domain_controller'] = True
+            self.disabled_fields['auth_ad_domain_name'] = _(reason)
+
             self.disabled_reasons['auth_ldap_uri'] = _(reason)
 
         super(GeneralSettingsForm, self).load()
@@ -211,6 +264,9 @@ class GeneralSettingsForm(SiteSettingsForm):
             if auth_backend != "nis":
                 set_fieldset_required("auth_nis", False)
 
+            if auth_backend != "ad":
+                set_fieldset_required("auth_ad", False)
+
             if auth_backend != "custom":
                 set_fieldset_required("auth_custom", False)
 
@@ -257,6 +313,19 @@ class GeneralSettingsForm(SiteSettingsForm):
                             'auth_ldap_uid_mask',
                             'auth_ldap_anon_bind_uid',
                             'auth_ldap_anon_bind_passwd'),
+            },
+            {
+                'id':      'auth_ad',
+                'classes': ('wide', 'hidden'),
+                'title':   _("Active Directory Authentication Settings"),
+                'fields':  ('auth_ad_domain_name',
+                            'auth_ad_use_tls',
+                            'auth_ad_find_dc_from_dns',
+                            'auth_ad_domain_controller',
+                            'auth_ad_ou_name',
+                            'auth_ad_group_name',
+                            'auth_ad_recursion_depth',
+                            ),
             },
             {
                 'id':      'auth_custom',

@@ -19,6 +19,7 @@ auth_backend_map = {
     'builtin': 'django.contrib.auth.backends.ModelBackend',
     'nis':     'reviewboard.accounts.backends.NISBackend',
     'ldap':    'reviewboard.accounts.backends.LDAPBackend',
+    'ad':      'reviewboard.accounts.backends.ActiveDirectoryBackend',
 }
 
 
@@ -33,6 +34,13 @@ settings_map = {
     'auth_ldap_base_dn':          'LDAP_BASE_DN',
     'auth_ldap_uid_mask':         'LDAP_UID_MASK',
     'auth_ldap_uri':              'LDAP_URI',
+    'auth_ad_domain_name':        'AD_DOMAIN_NAME',
+    'auth_ad_use_tls':            'AD_USE_TLS',
+    'auth_ad_find_dc_from_dns':   'AD_FIND_DC_FROM_DNS',
+    'auth_ad_domain_controller':  'AD_DOMAIN_CONTROLLER',
+    'auth_ad_ou_name':            'AD_OU_NAME',
+    'auth_ad_group_name':         'AD_GROUP_NAME',
+    'auth_ad_recursion_depth':    'AD_RECURSION_DEPTH',
     'auth_nis_email_domain':      'NIS_EMAIL_DOMAIN',
     'site_domain_method':         'DOMAIN_METHOD',
 }
