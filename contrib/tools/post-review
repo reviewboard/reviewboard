@@ -1264,11 +1264,15 @@ class GitClient(SCMClient):
             version = execute(["git", "svn", "--version"], ignore_errors=True)
             version_parts = re.search('version (\d+)\.(\d+)\.(\d+)',
                                       version)
+            svn_remote = execute(["git", "config", "--get",
+                                  "svn-remote.svn.url"], ignore_errors=True)
+
             if (version_parts and
                 not self.is_valid_version((int(version_parts.group(1)),
                                            int(version_parts.group(2)),
                                            int(version_parts.group(3))),
-                                          (1, 5, 4))):
+                                          (1, 5, 4)) and
+                svn_remote):
                 die("Your installation of git-svn must be upgraded to " + \
                     "version 1.5.4 or later")
 
@@ -1276,7 +1280,15 @@ class GitClient(SCMClient):
         # TODO
 
         # Nope, it's git then.
-        # TODO
+        origin = execute(["git", "remote", "show", "origin"])
+        m = re.search(r'URL: (.+)', origin)
+        if m:
+            url = m.group(1).rstrip('/')
+            if url:
+                self.type = "git"
+                return RepositoryInfo(path=url, base_path='',
+                                      supports_parent_diffs=True)
+
         return None
 
     def is_valid_version(self, actual, expected):
@@ -1296,7 +1308,8 @@ class GitClient(SCMClient):
         # user's $HOME/.reviewboardrc
 
         # TODO: Maybe support a server per remote later? Is that useful?
-        url = execute(["git", "config", "--get", "reviewboard.url"]).strip()
+        url = execute(["git", "config", "--get", "reviewboard.url"],
+                      ignore_errors=True).strip()
         if url:
             return url
 
@@ -1330,16 +1343,17 @@ class GitClient(SCMClient):
         """
         Performs a diff on a particular branch range.
         """
-        diff_lines = execute(["git", "diff", "--no-color", "--no-prefix",
-                              "-r", "-u", "%s..%s" % (parent_branch,
-                                                      source_branch)],
-                             split_lines=True)
-
         if self.type == "svn":
+            diff_lines = execute(["git", "diff", "--no-color", "--no-prefix",
+                                  "-r", "-u", "%s..%s" % (parent_branch,
+                                                          source_branch)],
+                                 split_lines=True)
             return self.make_svn_diff(parent_branch, diff_lines)
+        elif self.type == "git":
+            return execute(["git", "diff", "--no-color", "--no-prefix",
+                            parent_branch])
 
         return None
-
 
     def make_svn_diff(self, parent_branch, diff_lines):
         """
