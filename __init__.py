@@ -1,2 +1,2 @@
 # The version of Review Board.
-VERSION = "0.9"
+VERSION = "1.0alpha1"
