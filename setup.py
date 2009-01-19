@@ -153,6 +153,14 @@ packages = [
 
 # Import this now, since reviewboard is in the right place now.
 from reviewboard import VERSION
+IS_RELEASE = True
+
+
+if IS_RELEASE:
+    download_url = "http://www.review-board.org/downloads/releases/"
+else:
+    download_url = "http://www.review-board.org/downloads/nightlies/"
+
 
 # Build the reviewboard package.
 setup(name="ReviewBoard",
@@ -160,7 +168,7 @@ setup(name="ReviewBoard",
       license="MIT",
       description="Review Board, a web-based code review tool",
       url="http://www.review-board.org/",
-      download_url="http://www.review-board.org/downloads/releases/",
+      download_url=download_url,
       author="The Review Board Project",
       author_email="reviewboard@googlegroups.com",
       maintainer="Christian Hammond",
@@ -171,11 +179,10 @@ setup(name="ReviewBoard",
       ],
       cmdclass=cmdclasses,
       install_requires=['Django>=1.0.2', 'django_evolution',
-                        'Djblets==0.5alpha1'],
+                        'Djblets>=0.5alpha1'],
       dependency_links = [
           "http://www.review-board.org/downloads/mirror/",
-          "http://www.review-board.org/downloads/releases/",
-          #"http://www.review-board.org/downloads/nightlies/",
+          download_url,
       ],
       include_package_data=True,
       zip_safe=False,
