@@ -480,7 +480,12 @@ class ReviewBoardServer(object):
 
     def _make_url(self, path):
         """Given a path on the server returns a full http:// style url"""
-        url = urljoin(self.url, path)
+        app = urlparse(self.url)[2]
+        if path[0] == '/':
+            url = urljoin(self.url, app[:-1] + path)
+        else:
+            url = urljoin(self.url, app + path)
+
         if not url.startswith('http'):
             url = 'http://%s' % url
         return url
