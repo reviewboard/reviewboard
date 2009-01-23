@@ -7,6 +7,13 @@
  <form id="draft-form" method="post">
   <h1 class="title">{% trans "Your comment" %}</h1>
   <input type="hidden" name="action" id="comment_action" value="" />
+{% if not request.user.is_authenticated %}
+{%  url login as login_url %}
+  <p>
+   {% blocktrans %}You must <a href="{{login_url}}">log in</a> to post
+   a comment.{% endblocktrans %}
+  </p>
+{% endif %}
   <textarea id="comment_text" name="text" rows="6" cols="30"></textarea>
   <div class="status"></div>
   <div class="buttons">

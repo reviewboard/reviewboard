@@ -11,6 +11,7 @@
   <script type="text/javascript">
     var MEDIA_URL = "{{MEDIA_URL}}";
     var SITE_ROOT = "{{SITE_ROOT}}";
+    var LOGGED_IN = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
   </script>
 {% block extrahead %}{% endblock %}
   <!--[if lt IE 7.]>

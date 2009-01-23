@@ -581,6 +581,11 @@ $.fn.commentDlg = function() {
             });
         }
 
+    if (!LOGGED_IN) {
+        textField.attr("disabled", true);
+        saveButton.attr("disabled", true);
+    }
+
     /*
      * Warn the user if they try to navigate away with unsaved comments.
      *
