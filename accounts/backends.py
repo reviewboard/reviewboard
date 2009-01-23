@@ -63,6 +63,8 @@ class LDAPBackend:
     """
 
     def authenticate(self, username, password):
+        username = username.strip()
+
         try:
             import ldap
             ldapo = ldap.initialize(settings.LDAP_URI)
@@ -213,6 +215,8 @@ class ActiveDirectoryBackend:
     def authenticate(self, username, password):
         import ldap
         connections = self.get_ldap_connections()
+
+        username = username.strip()
 
         for con in connections:
             try:
