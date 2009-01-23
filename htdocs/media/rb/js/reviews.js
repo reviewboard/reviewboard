@@ -28,7 +28,9 @@ var gEditorCompleteHandlers = {
             function(item) { return item.url; },
             function(item) { return item.username; }
         );
-    }
+    },
+    'description': linkifyText,
+    'testing_done': linkifyText
 };
 
 
@@ -168,6 +170,38 @@ function urlizeList(list, urlFunc, textFunc) {
     }
 
     return str;
+}
+
+
+/*
+ * Linkifies a block of text, turning URLs, /r/#/ paths, nad bug numbers
+ * into clickable links.
+ *
+ * @param {string} text  The text to linkify.
+ *
+ * @returns {string} The resulting HTML.
+ */
+function linkifyText(text) {
+    /* Linkify all URLs. */
+    text = text.replace(
+        /\b([a-z]+:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])/g,
+        '<a href="$1">$1</a>')
+
+    /* Linkify /r/#/ review request numbers */
+    text = text.replace(
+        /(^|\s)\/(r\/\d+(\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])?)/g,
+        '$1<a href="' + SITE_ROOT + '$2">/$2</a>');
+
+    /* Bug numbers */
+    if (gBugTrackerURL != "") {
+        text = text.replace(/\b(bug|issue) #?([^.\s]+)/gi,
+            function(m1, m2, m3) {
+                return '<a href="' + gBugTrackerURL.replace("%s", m3) +
+                       '">' + m1 + '</a>';
+            });
+    }
+
+    return text;
 }
 
 
@@ -1140,6 +1174,12 @@ $(document).ready(function() {
             });
 
             $("#changedescription").inlineEditor("startEdit");
+
+            var description = $("#description");
+            var testing_done = $("#testing_done");
+
+            description.html(linkifyText(description.html()));
+            testing_done.html(linkifyText(testing_done.html()));
 
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");
