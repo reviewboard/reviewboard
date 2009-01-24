@@ -238,7 +238,5 @@ def showextrawhitespace(value):
     Any trailing whitespace or tabs following one or more spaces are
     marked up by inserted ``<span class="ew">...</span>`` tags.
     """
-    return extraWhitespace.sub(
-        lambda m: "<span class=\"ew\">%s</span>" % m.group(0),
-        value)
+    return extraWhitespace.sub(r'<span class="ew">\1</span>', value);
 showextrawhitespace.is_safe = True
