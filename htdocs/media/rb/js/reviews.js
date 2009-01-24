@@ -860,6 +860,8 @@ $.reviewForm = function() {
                 showEditIcon: false
             });
 
+        $("textarea:first", dlg).focus();
+
         $.funcQueue("review_draft_diff_comments").start();
     }
 
@@ -1171,6 +1173,7 @@ $(document).ready(function() {
                         multiline: this.tagName == "PRE",
                         showButtons:
                             !$(editable).hasClass("screenshot-editable"),
+                        startOpen: this.id == "changedescription",
                         useEditIconOnly: $(editable).hasClass("comma-editable")
                     })
                     .bind("complete", function(e, value) {
