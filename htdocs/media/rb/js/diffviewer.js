@@ -105,6 +105,9 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
             return false;
         })
 
+    this.countEl = $("<span/>")
+        .appendTo(this.el);
+
     if ($.browser.msie && $.browser.version == 6) {
         /*
          * Tooltips for some reason cause comment flags to disappear in IE6.
@@ -118,7 +121,7 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
     }
 
     this.anchor = $("<a/>")
-        .attr("name", "file" + this.filediff['id'] + "line" + this.linenum)
+        .attr("name", "file" + this.filediff['id'] + "line" + this.beginLineNum)
         .appendTo(this.el);
 
     /*
@@ -297,7 +300,7 @@ $.extend(DiffCommentBlock.prototype, {
         }
 
         this.count = count;
-        this.el.html(this.count);
+        this.countEl.html(this.count);
     },
 
     /*
