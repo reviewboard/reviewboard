@@ -872,11 +872,13 @@ $.reviewForm = function() {
      * This sets the shipit and body values, and saves all comments.
      */
     function saveReview(publish) {
-        $(".editable", dlg).each(function() {
+        $(".body-top, .body-bottom").inlineEditor("save");
+
+        $(".comment-editable:inlineEditorDirty", dlg).each(function() {
             var editable = $(this);
             $.funcQueue("reviewForm").add(function() {
                 editable
-                    .one("complete", $.funcQueue("reviewForm").next)
+                    .one("saved", $.funcQueue("reviewForm").next)
                     .inlineEditor("save");
             });
         });
@@ -946,6 +948,8 @@ $.fn.reviewFormCommentEditor = function(options) {
         }
     }, options);
 
+    var self = this;
+
     return this
         .inlineEditor({
             extraHeight: 50,
@@ -961,7 +965,7 @@ $.fn.reviewFormCommentEditor = function(options) {
             reviewRequestApiCall({
                 path: options.path,
                 data: options.data,
-                success: function() {}
+                success: function() { self.trigger("saved"); }
             });
         });
 };
