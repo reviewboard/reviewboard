@@ -10,6 +10,11 @@
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css" />
+{% if siteconfig.settings.diffviewer_show_trailing_whitespace %}
+<style type="text/css">
+  .ew { background: #ee3434; }
+</style>
+{% endif %}
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc1.packed.js"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
