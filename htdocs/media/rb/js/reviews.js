@@ -861,6 +861,7 @@ $.reviewForm = function() {
             });
 
         $("textarea:first", dlg).focus();
+        dlg.attr("scrollTop", 0);
 
         $.funcQueue("review_draft_diff_comments").start();
     }
