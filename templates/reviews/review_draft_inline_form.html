@@ -45,10 +45,27 @@
 {% for comment in review.ordered_comments %}
    <dt>
     <div id="review_draft_comment_container_{{comment.id}}">
-     <div class="loading">
-      <img src="{{MEDIA_URL}}rb/images/spinner.gif" width="16" height="16" alt="" />
-      {% trans "Loading diff fragment..." %}
-     </div>
+     <table class="sidebyside loading">
+      <thead>
+       <tr>
+        <th class="filename">
+         <a name="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
+         <span class="diffrevision">
+{% if comment.interfilediff %}
+          (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
+{% else %}
+          (Diff revision {{comment.filediff.diffset.revision}})
+{% endif %}
+         </span>
+        </th>
+       </tr>
+      </thead>
+      <tbody>
+{% for i in comment.num_lines|range %}
+       <tr><td><pre>&nbsp;</pre></th></tr>
+{% endfor %}
+      </tbody>
+     </table>
     </div>
    </dt>
    <dd>
