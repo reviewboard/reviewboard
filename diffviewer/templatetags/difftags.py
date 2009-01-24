@@ -228,7 +228,7 @@ def highlightregion(value, regions):
 highlightregion.is_safe = True
 
 
-extraWhitespace = re.compile(r'(\s+$| +\t)')
+extraWhitespace = re.compile(r'(\s+(</span>)?$| +\t)')
 
 @register.filter
 def showextrawhitespace(value):
