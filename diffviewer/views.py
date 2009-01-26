@@ -12,23 +12,10 @@ from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize, get_object_or_none
 
-from reviewboard.accounts.models import Profile
-from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.diffviewer.diffutils import UserVisibleError, get_diff_files
-
-
-def get_enable_highlighting(user):
-    if user.is_authenticated():
-        profile, profile_is_new = Profile.objects.get_or_create(user=user)
-        user_syntax_highlighting = profile.syntax_highlighting
-    else:
-        user_syntax_highlighting = True
-
-    siteconfig = SiteConfiguration.objects.get_current()
-    return (siteconfig.get('diffviewer_syntax_highlighting') and
-            user_syntax_highlighting and
-            get_can_enable_syntax_highlighting())
+from reviewboard.diffviewer.diffutils import UserVisibleError, \
+                                             get_diff_files, \
+                                             get_enable_highlighting
 
 
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,

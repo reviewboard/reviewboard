@@ -6,30 +6,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
  <head>
   <title>{% block title %}{% endblock %} | Review Board</title>
-  <link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png" />
-  <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css" />
+{% block extrahead %}{% endblock %}
   <script type="text/javascript">
+    var AJAX_SERIAL = "{{AJAX_SERIAL}}";
+    var MEDIA_SERIAL = "{{MEDIA_SERIAL}}";
     var MEDIA_URL = "{{MEDIA_URL}}";
     var SITE_ROOT = "{{SITE_ROOT}}";
     var LOGGED_IN = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
+{% block jsconsts %}{% endblock %}
   </script>
-{% block extrahead %}{% endblock %}
+  <link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
+  <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
+{% block css %}{% endblock %}
   <!--[if lt IE 7.]>
   <style type="text/css">
     body {
-      behavior: url("{{MEDIA_URL}}rb/js/csshover2.htc");
+      behavior: url("{{MEDIA_URL}}rb/js/csshover2.htc?{{MEDIA_SERIAL}}");
     }
 
     img,
     table.sidebyside .commentflag,
     .box.important .box-inner {
-      behavior: url("{{MEDIA_URL}}rb/js/pngfix.htc");
+      behavior: url("{{MEDIA_URL}}rb/js/pngfix.htc?{{MEDIA_SERIAL}}");
     }
   </style>
   <![endif]-->
   <!--[if lt IE 8.]>
-  <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css"></script>
+  <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css?{{MEDIA_SERIAL}}"></script>
   <![endif]-->
+{% block scripts %}{% endblock %}
  </head>
 {% block bodytag %}
  <body>
@@ -86,5 +91,7 @@
 {% block content %}{% endblock %}
    </div>
   </div>
+
+{% block scripts-post %}{% endblock %}
  </body>
 </html>

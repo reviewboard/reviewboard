@@ -6,31 +6,39 @@
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
-{% block extrahead %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css" />
-{% if siteconfig.settings.diffviewer_show_trailing_whitespace %}
-<style type="text/css">
-  .ew { background: #ee3434; }
-</style>
-{% endif %}
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc1.packed.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js"></script>
-{% include "reviews/review_flags.html" %}
-<script type="text/javascript">
+
+{% block jsconsts %}
+{% include "reviews/review_flags.js" %}
   var gRevision = '{{diffset.revision}}';
 {% if interdiffset %}
   var gInterdiffRevision = '{{interdiffset.revision}}';
 {% else %}
   var gInterdiffRevision = null;
 {% endif %}
-</script>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css?{{MEDIA_SERIAL}}" />
+{% if siteconfig.settings.diffviewer_show_trailing_whitespace %}
+<style type="text/css">
+  .ew { background: #ee3434; }
+</style>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js?{{MEDIA_SERIAL}}"></script>
+{% endblock %}
+
+{% block scripts-post %}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc2.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
 
 {% block content %}
@@ -173,9 +181,9 @@
 
 <ul class="controls">
 {% if collapseall %}
- <li><a href=".?expand=1"><img src="{{MEDIA_URL}}rb/images/expand.png" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
+ <li><a href=".?expand=1"><img src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
 {% else %}
- <li><a href=".?collapse=1"><img src="{{MEDIA_URL}}rb/images/collapse.png" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
+ <li><a href=".?collapse=1"><img src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
 {% endif %}
 </ul>
 {% endwith %}

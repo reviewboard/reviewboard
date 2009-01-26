@@ -405,7 +405,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
             self
                 .inlineEditor({
                     cls: "inline-comment-editor",
-                    editIconPath: MEDIA_URL + "rb/images/edit.png",
+                    editIconPath: MEDIA_URL + "rb/images/edit.png?" +
+                                  MEDIA_SERIAL,
                     notifyUnchangedCompletion: true,
                     multiline: true
                 })
@@ -1050,6 +1051,28 @@ $.reviewBanner = function() {
     return banner;
 };
 
+/*
+ * Loads a diff fragment as part of an asynchronous chain.
+ *
+ * @param {string} review_id   The review ID containing the comment fragment.
+ * @param {string} comment_id  The ID of the comment.
+ */
+function loadDiffFragment(review_id, comment_id) {
+    var container = $("#comment_container_" + comment_id);
+
+    $.funcQueue("diff_comments").add(function() {
+        $.ajax({
+            type: "GET",
+            url: "reviews/" + review_id + "/fragment/diff-comment/" +
+                 comment_id + "/?" + AJAX_SERIAL,
+            complete: function(xhr) {
+                container.html(xhr.responseText);
+                $.funcQueue("diff_comments").next();
+            }
+        });
+    });
+}
+
 $(document).ready(function() {
     /* Provide support for expanding submenus in the action list. */
     var menuitem = null;
@@ -1174,7 +1197,8 @@ $(document).ready(function() {
                 editable
                     .inlineEditor({
                         cls: this.id + "-editor",
-                        editIconPath: MEDIA_URL + "rb/images/edit.png",
+                        editIconPath: MEDIA_URL + "rb/images/edit.png?" +
+                                      MEDIA_SERIAL,
                         multiline: this.tagName == "PRE",
                         showButtons:
                             !$(editable).hasClass("screenshot-editable"),

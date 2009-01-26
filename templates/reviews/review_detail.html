@@ -5,23 +5,36 @@
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
+
 {% block extrahead %}
 <meta content="no-cache" http-equiv="pragma" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css" />
+{% endblock %}
+
+{% block jsconsts %}
+{%  include "reviews/review_flags.js" %}
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css?{{MEDIA_SERIAL}}" />
 {% if siteconfig.settings.diffviewer_show_trailing_whitespace %}
 <style type="text/css">
   .ew { background: #ee3434; }
 </style>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc1.packed.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js"></script>
-{% include "reviews/review_flags.html" %}
+{% endblock %}
+
+{% block scripts-post %}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc2.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
 
 {% block content %}
@@ -112,11 +125,8 @@
      {% reply_section entry.review comment "comment" "rc" %}
     </dd>
     <script type="text/javascript">
-      $.funcQueue("diff_comments").add(function() {
-        $("#comment_container_{{comment.id}}").load(
-          "reviews/{{entry.review.id}}/fragment/diff-comment/{{comment.id}}/",
-          null,
-          $.funcQueue("diff_comments").next);
+      $(document).ready(function() {
+        loadDiffFragment("{{entry.review.id}}", "{{comment.id}}");
       });
     </script>
 {% endfor %}

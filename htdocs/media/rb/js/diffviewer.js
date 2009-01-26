@@ -397,7 +397,8 @@ $.fn.diffFile = function(lines) {
             .appendTo("body")
             .addClass("commentflag")
             .addClass("ghost-commentflag")
-            .attr("src", MEDIA_URL + "rb/images/comment-ghost.png")
+            .attr("src", MEDIA_URL + "rb/images/comment-ghost.png?" +
+                         MEDIA_SERIAL)
             .css({
                 'position': 'absolute',
                 'left': 2

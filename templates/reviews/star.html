@@ -1,5 +1,5 @@
 {% if user.is_authenticated %}
-<img class="star" id="star-{{object.type}}-{{object.id}}" src="{{MEDIA_URL}}rb/images/star_{% if starred %}on{% else %}off{% endif %}.png" width="16" height="15" border="0" alt="" />
+<img class="star" id="star-{{object.type}}-{{object.id}}" src="{{MEDIA_URL}}rb/images/star_{% if starred %}on{% else %}off{% endif %}.png?{{MEDIA_SERIAL}}" width="16" height="15" border="0" alt="" />
 <script type="text/javascript">
     $(document).ready(function() {
         $("#star-{{object.type}}-{{object.id}}").toggleStar(

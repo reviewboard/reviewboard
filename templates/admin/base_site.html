@@ -4,8 +4,8 @@
 {% block title %}{{title}} | {% trans "Review Board administration" %}{% endblock %}
 
 {% block extrastyle %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin.css" />
-<link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin.css?{{MEDIA_SERIAL}}" />
+<link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
 {% endblock %}
 
 {% block branding %}

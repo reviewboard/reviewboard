@@ -23,9 +23,11 @@ from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize
 
+from reviewboard.accounts.models import Profile
+from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.smdiff import SMDiffer
-from reviewboard.scmtools.core import PRE_CREATION, HEAD
+from reviewboard.scmtools.core import PRE_CREATION, HEAD, SCMError
 
 
 DEFAULT_DIFF_COMPAT_VERSION = 1
@@ -658,3 +660,99 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                    enable_syntax_highlighting=True):
     return generate_files(diffset, filediff, interdiffset,
                           enable_syntax_highlighting)
+
+
+def get_file_chunks_in_range(context, filediff, interfilediff,
+                             first_line, num_lines):
+    """
+    A generator that yields chunks within a range of lines in the specified
+    filediff/interfilediff.
+
+    This is primarily intended for use with templates. It takes a
+    RequestContext for looking up the user and for caching file lists,
+    in order to improve performance and reduce lookup times for files that have
+    already been fetched.
+
+    Each returned chunk is a dictionary with the following fields:
+
+      ============= ========================================================
+      Variable      Description
+      ============= ========================================================
+      ``change``    The change type ("equal", "replace", "insert", "delete")
+      ``numlines``  The number of lines in the chunk.
+      ``lines``     The list of lines in the chunk.
+      ============= ========================================================
+
+
+    Each line in the list of lines is an array with the following data:
+
+      ======== =============================================================
+      Index    Description
+      ======== =============================================================
+      0        Virtual line number (union of the original and patched files)
+      1        Real line number in the original file
+      2        HTML markup of the original file
+      3        Changed regions of the original line (for "replace" chunks)
+      4        Real line number in the patched file
+      5        HTML markup of the patched file
+      6        Changed regions of the patched line (for "replace" chunks)
+      ======== =============================================================
+    """
+    interdiffset = None
+
+    key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
+
+    if interfilediff:
+        key += "_%s" % (interfilediff.id)
+        interdiffset = interfilediff.diffset
+
+    if key in context:
+        files = context[key]
+    else:
+        assert 'user' in context
+        files = get_diff_files(filediff.diffset, filediff, interdiffset,
+                               get_enable_highlighting(context['user']))
+        context[key] = files
+
+    if not files:
+        raise StopIteration
+
+    assert len(files) == 1
+
+    for chunk in files[0]['chunks']:
+        lines = chunk['lines']
+        if lines[-1][0] >= first_line >= lines[0][0]:
+            start_index = first_line - lines[0][0]
+
+            if first_line + num_lines <= lines[-1][0]:
+                last_index = start_index + num_lines
+            else:
+                last_index = len(lines)
+
+            new_chunk = {
+                'lines': chunk['lines'][start_index:last_index],
+                'numlines': last_index - start_index,
+                'change': chunk['change'],
+            }
+
+            yield new_chunk
+
+            first_line += new_chunk['numlines']
+            num_lines -= new_chunk['numlines']
+
+            assert num_lines >= 0
+            if num_lines == 0:
+                break
+
+
+def get_enable_highlighting(user):
+    if user.is_authenticated():
+        profile, profile_is_new = Profile.objects.get_or_create(user=user)
+        user_syntax_highlighting = profile.syntax_highlighting
+    else:
+        user_syntax_highlighting = True
+
+    siteconfig = SiteConfiguration.objects.get_current()
+    return (siteconfig.get('diffviewer_syntax_highlighting') and
+            user_syntax_highlighting and
+            get_can_enable_syntax_highlighting())

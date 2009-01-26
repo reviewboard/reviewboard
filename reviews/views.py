@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 from django.contrib.auth.models import User
@@ -5,21 +6,24 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-                        HttpResponseForbidden
+                        HttpResponseForbidden, HttpResponseNotModified, \
+                        HttpResponseServerError
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.translation import ugettext as _
-from django.views.decorators.cache import cache_control
+from django.views.decorators.cache import cache_control, cache_page
 from django.views.generic.list_detail import object_list
 
+from djblets.util.http import set_last_modified, get_modified_since
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment
@@ -34,7 +38,7 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
 from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
                                        Screenshot, ScreenshotComment
-from reviewboard.scmtools.core import PRE_CREATION
+from reviewboard.scmtools.core import PRE_CREATION, SCMError
 from reviewboard.scmtools.models import Repository
 
 
@@ -97,7 +101,6 @@ fields_changed_name_map = {
 }
 
 @check_login_required
-@cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_detail(request, review_request_id,
                   template_name="reviews/review_detail.html"):
     """
@@ -118,6 +121,13 @@ def review_detail(request, review_request_id,
                 user=request.user, review_request=review_request)
             visited.timestamp = datetime.now()
             visited.save()
+
+
+    # Find out if we can bail early.
+    last_activity_time = review_request.get_last_activity_time()
+
+    if get_modified_since(request, last_activity_time):
+        return HttpResponseNotModified()
 
     repository = review_request.repository
     changedescs = review_request.changedescs.filter(public=True)
@@ -172,7 +182,7 @@ def review_detail(request, review_request_id,
 
     entries.sort(key=lambda item: item['timestamp'])
 
-    return render_to_response(template_name, RequestContext(request, {
+    response = render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
         'review_request_details': draft or review_request,
@@ -184,6 +194,10 @@ def review_detail(request, review_request_id,
         'scmtool': repository.get_scmtool(),
         'PRE_CREATION': PRE_CREATION,
     }))
+    set_last_modified(response, last_activity_time)
+
+    return response
+
 
 
 @login_required
@@ -412,23 +426,44 @@ def raw_diff(request, review_request_id, revision=None):
         filename = diffset.name
 
     resp['Content-Disposition'] = 'inline; filename=%s' % filename
+    set_last_modified(resp, diffset.timestamp)
 
     return resp
 
 
 @check_login_required
-def comment_diff_fragment(request, review_request_id, review_id, comment_id,
-                          template_name='reviews/diff_comment_fragment.html'):
+@cache_page(60 * 60 * 24 * 365) # 1 year
+def comment_diff_fragment(
+        request, review_request_id, review_id, comment_id,
+        template_name='reviews/diff_comment_fragment.html',
+        error_template_name='diffviewer/diff_fragment_error.html'):
     """
     Returns the fragment representing the part of a diff referenced by a
     comment. This is used to allow lazy-loading of these diff fragments, since
     they may not be cached and take time to generate.
     """
-    diff_comment = get_object_or_404(Comment, pk=comment_id)
+    comment = get_object_or_404(Comment, pk=comment_id)
 
-    return render_to_response(template_name, RequestContext(request, {
-        'comment': diff_comment,
-    }))
+    context = RequestContext(request, {
+        'comment': comment,
+    })
+
+    try:
+        context['chunks'] = \
+            list(get_file_chunks_in_range(context, comment.filediff,
+                                          comment.interfilediff,
+                                          comment.first_line,
+                                          comment.num_lines))
+        response = render_to_response(template_name, context)
+        set_last_modified(response, comment.timestamp)
+
+        return response
+    except SCMError, e:
+        return HttpResponseServerError(
+            render_to_string(error_template_name, RequestContext(request, {
+                'error': e,
+            }))
+        )
 
 
 @check_login_required

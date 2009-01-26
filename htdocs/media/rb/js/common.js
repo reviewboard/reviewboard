@@ -321,8 +321,8 @@ $.fn.toggleStar = function(type, objid, default_) {
         var self = $(this);
 
         // Constants
-        var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png";
-        var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png";
+        var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
+        var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
 
         var on = default_;
         var baseURL = "/" + type + "/" + objid;

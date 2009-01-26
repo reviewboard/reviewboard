@@ -4,7 +4,7 @@
 {%  if review_request.public %}
 {%    ifequal review_request.status 'P' %}
  <li>
-  <a id="close-review-request-link" href="#">{% trans "Close" %} <img src="{{MEDIA_URL}}rb/images/dropdown.png" width="7" height="5" border="0" alt="" /></a>
+  <a id="close-review-request-link" href="#">{% trans "Close" %} <img src="{{MEDIA_URL}}rb/images/dropdown.png?{{MEDIA_SERIAL}}" width="7" height="5" border="0" alt="" /></a>
   <ul class="menu" style="display: none;">
    <li><a id="link-review-request-close-submitted" href="#">{% trans "Submitted" %}</a></li>
    <li><a id="discard-review-request-link" href="#">{% trans "Discarded" %}</a></li>

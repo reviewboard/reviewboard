@@ -1,5 +1,4 @@
 {% load djblets_utils %}
-<script type="text/javascript">
   /*
    * Initial state from the server. These should all be thought of as
    * constants, not state.

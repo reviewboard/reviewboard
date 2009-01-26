@@ -1,4 +1,4 @@
-{% extends "datagrid/datagrid.html" %}
+{% extends "base.html" %}
 {% load djblets_deco %}
 {% load i18n %}
 {% load reviewtags %}
@@ -6,9 +6,22 @@
 
 {% block extrahead %}
 <meta http-equiv="refresh" content="300" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css" />
-{{block.super}}
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js"></script>
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}djblets/css/datagrid.css?{{MEDIA_SERIAL}}" />
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.2.6.min.js"></script>
+{% endblock %}
+
+{% block scripts-post %}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc2.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/datagrid.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
 
 {% block content %}

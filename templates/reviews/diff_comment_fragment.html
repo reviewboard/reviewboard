@@ -22,7 +22,7 @@
    </th>
   </tr>
  </thead>
-{% forchunkswithlines comment.filediff comment.interfilediff comment.first_line comment.num_lines %}
+{% for chunk in chunks %}
  <tbody class="{{chunk.change}}">
 {% for line in chunk.lines %}
   <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
@@ -33,5 +33,5 @@
   </tr>
 {% endfor %}
  </tbody>
-{% endforchunkswithlines %}
+{% endfor %}{# chunks #}
 </table>

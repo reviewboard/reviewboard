@@ -43,8 +43,10 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.gzip.GZipMiddleware', # Keep this first.
     'django.middleware.common.CommonMiddleware',
     'django.middleware.doc.XViewMiddleware',
+    'django.middleware.http.ConditionalGetMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -66,6 +68,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'djblets.siteconfig.context_processors.siteconfig',
     'djblets.util.context_processors.settingsVars',
     'djblets.util.context_processors.siteRoot',
+    'djblets.util.context_processors.ajaxSerial',
+    'djblets.util.context_processors.mediaSerial',
 )
 
 SITE_ROOT_URLCONF = 'reviewboard.urls'
@@ -178,3 +182,6 @@ LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
 SESSION_COOKIE_AGE = 365 * 24 * 24 * 60 # 1 year
 SESSION_COOKIE_PATH = SITE_ROOT
+
+# The list of directories that will be searched to generate a media serial.
+MEDIA_SERIAL_DIRS = ["admin", "djblets", "rb"]

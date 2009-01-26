@@ -11,6 +11,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.dates import get_latest_timestamp
 from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import ModificationTimestampField
 from djblets.util.misc import get_object_or_none
@@ -311,6 +312,23 @@ class ReviewRequest(models.Model):
         Returns all public top-level reviews for this review request.
         """
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
+
+    def get_last_activity_time(self):
+        """
+        Returns the last timestamp of any update related to this review
+        request or its reviews.
+        """
+        timestamps = [self.last_updated]
+
+        reviews = self.reviews.filter(public=True).order_by("-timestamp")
+        if reviews:
+            timestamps.append(reviews[0].timestamp)
+
+        draft = self.get_draft()
+        if draft:
+            timestamps.append(draft.last_updated)
+
+        return get_latest_timestamp(timestamps)
 
     def update_from_changenum(self, changenum):
         """
