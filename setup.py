@@ -178,8 +178,12 @@ setup(name="ReviewBoard",
           "reviewboard/contrib/tools/rb-site",
       ],
       cmdclass=cmdclasses,
-      install_requires=['Django>=1.0.2', 'django_evolution',
-                        'Djblets>=0.5alpha1'],
+      install_requires=[
+          'Django>=1.0.2',
+          'django_evolution',
+          'Djblets>=0.5alpha2.dev_20090126',
+          'flup'
+      ],
       dependency_links = [
           "http://www.review-board.org/downloads/mirror/",
           download_url,
