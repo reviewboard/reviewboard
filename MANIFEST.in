@@ -7,7 +7,7 @@ recursive-include reviewboard/locale *
 recursive-include reviewboard/reviews/fixtures *
 recursive-include reviewboard/scmtools/fixtures *
 recursive-include reviewboard/scmtools/testdata *
-recursive-include reviewboard/templates *.html *.txt
+recursive-include reviewboard/templates *.html *.txt *.js
 prune reviewboard/htdocs/media/uploaded/images
 include ez_setup.py
 include AUTHORS
