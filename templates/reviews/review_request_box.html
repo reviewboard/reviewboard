@@ -73,7 +73,7 @@
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption" class="editable screenshot-editable">{{image.caption}}</a>
      {% ifuserorperm review_request.submitter "reviews.delete_screenshot" %}
-      <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}rb/images/delete.png" alt="{% trans "Delete Screenshot" %}" /></a>
+      <a href="s/{{image.id}}/delete/"><img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
      {% endifuserorperm %}
     </div>
    </div>
