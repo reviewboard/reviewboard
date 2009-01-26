@@ -444,6 +444,9 @@ def comment_diff_fragment(
     """
     comment = get_object_or_404(Comment, pk=comment_id)
 
+    if get_modified_since(request, comment.timestamp):
+        return HttpResponseNotModified()
+
     context = RequestContext(request, {
         'comment': comment,
     })
