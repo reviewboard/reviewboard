@@ -120,7 +120,8 @@ class Site(object):
         if self.web_server_type == "apache":
             # Generate a .htaccess file that enables compression and
             # never expires various file types.
-            fp = open(os.path.join(media_base, ".htaccess"), "w")
+            path = os.path.join(self.install_dir, media_base, ".htaccess")
+            fp = open(path, "w")
             fp.write('<IfModule mod_expires.c>\n')
             fp.write('  <FilesMatch "\.(jpg|gif|png|css|js|htc)">\n')
             fp.write('    ExpiresActive on\n')
