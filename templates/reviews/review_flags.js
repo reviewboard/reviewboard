@@ -23,4 +23,3 @@
 {% if not user.is_anonymous %}
   var gUserFullName = "{{user|user_displayname}}";
 {% endif %}
-</script>
