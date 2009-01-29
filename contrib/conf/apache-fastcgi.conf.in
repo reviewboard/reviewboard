@@ -1,10 +1,6 @@
 AddHandler fastcgi-script .fcgi
 
-# We have a large timeout on this because some operations may take a long
-# time (such as viewing a large diff where many the files need to be
-# retrieved from the repository.  The path here doesn't really matter, but the
-# port needs to match the one used by the fastcgi server.
-FastCGIExternalServer @sitedir@/htdocs/reviewboard.fcgi -host 127.0.0.1:3033 -idle-timeout 60
+FastCGIServer @sitedir@/htdocs/reviewboard.fcgi -socket @sitedir@/tmp/fastcgi.sock
 
 <VirtualHost *:80>
 	ServerName @sitedomain@

@@ -1,55 +1,70 @@
-server.modules = (
+server.modules += (
+    "mod_auth",
     "mod_access",
     "mod_rewrite",
     "mod_expire",
     "mod_fastcgi",
     "mod_alias",
     "mod_accesslog",
+    "mod_compress",
 )
 
-# This is not used directly, it is superceded by our aliases below.
-server.document-root = "@sitedir@/htdocs"
-server.errorlog      = "@sitedir@/logs/lighttpd-error.log"
-accesslog.filename   = "@sitedir@/logs/lighttpd-access.log"
-server.pid-file      = "@sitedir@/lighttpd.pid"
+$HTTP["host"] =~ "@sitedomain_escaped@" {
+    # This is not used directly, it is superceded by our aliases below.
+    server.document-root = "@sitedir@/htdocs"
+    server.errorlog      = "@sitedir@/logs/lighttpd-error.log"
+    accesslog.filename   = "@sitedir@/logs/lighttpd-access.log"
 
-fastcgi.server = (
-    "/reviewboard.fcgi" => (
-        "main" => (
-        "host" => "127.0.0.1",
-        "port" => 3033,
-        "check-local" => "disable",
-        )
-    ),
-)
+    fastcgi.server = (
+        "/reviewboard.fcgi" => (
+            "main" => (
+                "bin-path" => "@sitedir@/htdocs/reviewboard.fcgi",
+                "socket" => "@sitedir@/tmp/fastcgi.sock",
+                "check-local" => "disable",
+            )
+        ),
+    )
 
-alias.url = (
-    "/media" => "@sitedir@/htdocs/media",
-    "/errordocs" => "@sitedir@/htdocs/errordocs",
-)
+    alias.url = (
+        "/media" => "@sitedir@/htdocs/media",
+        "/errordocs" => "@sitedir@/htdocs/errordocs",
+    )
 
-url.rewrite-once = (
-    "^(/media/.*)$" => "$1",
-    "^(/errordocs/.*)$" => "$1",
-    "^(/.*)$" => "/reviewboard.fcgi$1",
-)
+    url.rewrite-once = (
+        "^(/media/.*)$" => "$1",
+        "^(/errordocs/.*)$" => "$1",
+        "^(/.*)$" => "/reviewboard.fcgi$1",
+    )
 
-# Aggressively cache all static files
-$HTTP["url"] =~ "^/(css|images|scripts)/" {
-    expire.url = ( "" => "access 1 hours" )
+    # Aggressively cache all static files
+    $HTTP["url"] =~ "\.(jpg|gif|png|css|js|htc)" {
+        expire.url = ( "" => "access 1 years" )
+    }
+
+
+    # Compress files for faster transfer
+    compress.filetype = (
+        "text/plain",
+        "text/html",
+        "text/javascript",
+        "text/css",
+        "text/xml"
+    )
+    compress.cache-dir = "@sitedir@/tmp/"
+
+
+    mimetype.assign = (
+        ".gif"  => "image/gif",
+        ".jpg"  => "image/jpeg",
+        ".jpeg" => "image/jpeg",
+        ".ico"  => "image/png",
+        ".png"  => "image/png",
+        ".pdf"  => "application/pdf",
+        ".gz"   => "application/x-gzip",
+        ".css"  => "text/css",
+        ".html" => "text/html",
+        ".htm"  => "text/html",
+        ".txt"  => "text/plain",
+        ".js"   => "text/javascript",
+    )
 }
-
-mimetype.assign = (
-    ".gif"  => "image/gif",
-    ".jpg"  => "image/jpeg",
-    ".jpeg" => "image/jpeg",
-    ".ico"  => "image/png",
-    ".png"  => "image/png",
-    ".pdf"  => "application/pdf",
-    ".gz"   => "application/x-gzip",
-    ".css"  => "text/css",
-    ".html" => "text/html",
-    ".htm"  => "text/html",
-    ".txt"  => "text/plain",
-    ".js"   => "text/javascript",
-)

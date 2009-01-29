@@ -4,6 +4,7 @@ import getpass
 import os
 import pkg_resources
 import platform
+import re
 import shutil
 import sys
 import textwrap
@@ -81,6 +82,9 @@ class Site(object):
         self.mkdir(os.path.join(self.install_dir, "logs"))
         self.mkdir(os.path.join(self.install_dir, "conf"))
 
+        self.mkdir(os.path.join(self.install_dir, "tmp"))
+        os.chmod(os.path.join(self.install_dir, "tmp"), 0777)
+
         if self.db_type == "sqlite3":
             self.mkdir(os.path.join(self.install_dir, "db"))
 
@@ -147,27 +151,36 @@ class Site(object):
 
     def generate_config_files(self):
         web_conf_filename = ""
+        enable_fastcgi = False
 
         if self.web_server_type == "apache":
             if self.python_loader == "modpython":
                 web_conf_filename = "apache-modpython.conf"
             elif self.python_loader == "fastcgi":
                 web_conf_filename = "apache-fastcgi.conf"
+                enable_fastcgi = True
             else:
                 # Should never be reached.
                 assert False
         elif self.web_server_type == "lighttpd":
             web_conf_filename = "lighttpd.conf"
+            enable_fastcgi = True
         else:
             # Should never be reached.
             assert False
 
         conf_dir = os.path.join(self.install_dir, "conf")
+        htdocs_dir = os.path.join(self.install_dir, "htdocs")
 
         self.process_template("contrib/conf/%s.in" % web_conf_filename,
                               os.path.join(conf_dir, web_conf_filename))
         self.process_template("contrib/conf/search-cron.conf.in",
                               os.path.join(conf_dir, "search-cron.conf"))
+        if enable_fastcgi:
+            fcgi_filename = os.path.join(htdocs_dir, "reviewboard.fcgi")
+            self.process_template("contrib/conf/reviewboard.fcgi.in",
+                                  fcgi_filename)
+            os.chmod(fcgi_filename, 0755)
 
         # Generate a secret key based on Django's code.
         secret_key = ''.join([
@@ -201,6 +214,7 @@ class Site(object):
         fp.write("# Extra site information.\n")
         fp.write("SITE_ID = 1\n")
         fp.write("SITE_ROOT = '%s'\n" % self.site_root)
+        fp.write("FORCE_SCRIPT_NAME = ''\n")
         fp.close()
 
     def sync_database(self):
@@ -284,13 +298,19 @@ class Site(object):
         """
         Generates a file from a template.
         """
+        domain_name_escaped = self.domain_name.replace(".", "\\.")
         template = pkg_resources.resource_string("reviewboard", template_path)
 
-        template = template.replace("@rbsite@", os.path.abspath(__file__))
-        template = template.replace("@sitedir@",
-                                    os.path.abspath(self.install_dir))
-        template = template.replace("@sitedomain@", self.domain_name)
-        template = template.replace("@siteid@", self.site_id)
+        data = {
+            'rbsite': os.path.abspath(__file__),
+            'sitedir': os.path.abspath(self.install_dir),
+            'sitedomain': self.domain_name,
+            'sitedomain_escaped': domain_name_escaped,
+            'siteid': self.site_id,
+        }
+
+        template = re.sub("@([a-z_]+)@", lambda m: data.get(m.group(1)),
+                          template)
 
         fp = open(dest_filename, "w")
         fp.write(template)

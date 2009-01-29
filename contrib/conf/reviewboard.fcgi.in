@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+
+import os, sys
+
+sys.path.insert(0, "@sitedir@")
+os.environ["DJANGO_SETTINGS_MODULE"] = "reviewboard.settings"
+
+from django.core.servers.fastcgi import runfastcgi
+runfastcgi(method="threaded", daemonize="false")
