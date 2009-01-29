@@ -231,8 +231,11 @@ jQuery.extend(CommentBlock.prototype, {
      */
     getURL: function() {
         return getReviewRequestAPIPath(true) +
-               getScreenshotAPIPath(gScreenshotId, this.x, this.y,
-                                    this.width, this.height);
+               getScreenshotAPIPath(gScreenshotId,
+                                    Math.round(this.x),
+                                    Math.round(this.y),
+                                    Math.round(this.width),
+                                    Math.round(this.height));
     }
 });
 

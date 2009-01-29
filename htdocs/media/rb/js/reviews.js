@@ -1215,8 +1215,10 @@ $(document).ready(function() {
             var description = $("#description");
             var testing_done = $("#testing_done");
 
-            description.html(linkifyText(description.html()));
-            testing_done.html(linkifyText(testing_done.html()));
+            if (description.length > 0) {
+                description.html(linkifyText(description.html()));
+                testing_done.html(linkifyText(testing_done.html()));
+            }
 
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");

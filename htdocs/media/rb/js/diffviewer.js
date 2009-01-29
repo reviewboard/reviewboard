@@ -437,7 +437,7 @@ $.fn.diffFile = function(lines) {
                     selection.lastSeenIndex = row[0].rowIndex;
                     row.addClass("selected");
 
-                    $.ui.disableSelection(self);
+                    self.disableSelection();
 
                     e.stopPropagation();
                     e.preventDefault();
@@ -506,7 +506,7 @@ $.fn.diffFile = function(lines) {
                 ghostCommentFlagCell = null;
 
                 /* Re-enable text selection on IE */
-                $.ui.enableSelection(self);
+                self.enableSelection();
             })
             .mouseover(function(e) {
                 /*

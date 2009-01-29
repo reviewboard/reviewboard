@@ -157,7 +157,7 @@ $.fn.ajaxSubmit = function(options) {
     function fileUpload() {
         var form = $form[0];
         
-        if ($(':input[@name=submit]', form).length) {
+        if ($(':input[name=submit]', form).length) {
             alert('Error: Form elements must not be named "submit".');
             return;
         }
@@ -293,7 +293,15 @@ $.fn.ajaxSubmit = function(options) {
 
                 if (opts.dataType == 'json' || opts.dataType == 'script') {
                     var ta = doc.getElementsByTagName('textarea')[0];
-                    xhr.responseText = ta ? ta.value : xhr.responseText;
+                    var val = ta ? ta.value : xhr.responseText;
+
+                    if (val.substring(0, 5).toLowerCase() == "<pre>" &&
+                        val.substring(val.length - 6, val.length).toLowerCase()
+                            == "</pre>") {
+                        val = val.substring(5, val.length - 6);
+                    }
+
+                    xhr.responseText = val;
                 }
                 else if (opts.dataType == 'xml' && !xhr.responseXML && xhr.responseText != null) {
                     xhr.responseXML = toXml(xhr.responseText);
