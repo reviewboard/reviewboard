@@ -711,7 +711,7 @@ class SVNClient(SCMClient):
         if options.repository_url:
             svn_info_params.append(options.repository_url)
         data = execute(svn_info_params,
-                       env={'LANG': 'en_US.UTF-8'},
+                       env={'LC_ALL': 'en_US.UTF-8'},
                        ignore_errors=True)
         m = re.search(r'^Repository Root: (.+)$', data, re.M)
         if not m:
@@ -743,7 +743,7 @@ class SVNClient(SCMClient):
     def scan_for_server_property(self, repository_info):
         def get_url_prop(path):
             url = execute(["svn", "propget", "reviewboard:url", path],
-                          env={'LANG': 'en_US.UTF-8'}).strip()
+                          env={'LC_ALL': 'en_US.UTF-8'}).strip()
             return url or None
 
         for path in walk_parents(os.getcwd()):
@@ -801,7 +801,7 @@ class SVNClient(SCMClient):
         Performs the actual diff operation, handling renames and converting
         paths to absolute.
         """
-        diff = execute(cmd, env={'LANG': 'en_US.UTF-8'}, split_lines=True)
+        diff = execute(cmd, env={'LC_ALL': 'en_US.UTF-8'}, split_lines=True)
         diff = self.handle_renames(diff)
         diff = self.convert_to_absolute_paths(diff, repository_info)
 
@@ -893,7 +893,7 @@ class SVNClient(SCMClient):
         """Return a dict which is the result of 'svn info' at a given path."""
         svninfo = {}
         for info in execute(["svn", "info", path],
-                            env={'LANG': 'en_US.UTF-8'},
+                            env={'LC_ALL': 'en_US.UTF-8'},
                             split_lines=True):
             parts = info.strip().split(": ", 1)
             if len(parts) == 2:
