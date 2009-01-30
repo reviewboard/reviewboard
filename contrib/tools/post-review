@@ -1298,10 +1298,10 @@ class GitClient(SCMClient):
         Returns true if the actual version is greater than or equal to
         the expected version, and false otherwise.
         """
-        return (expected[0] > actual[0]) or \
-               (expected[0] == actual[0] and expected[1] > actual[1]) or \
-               (expected[0] == actual[0] and expected[1] == actual[1] and \
-                expected[2] >= actual[2])
+        return (actual[0] > expected[0]) or \
+               (actual[0] == expected[0] and actual[1] > expected[1]) or \
+               (actual[0] == expected[0] and actual[1] == expected[1] and \
+                actual[2] >= expected[2])
 
     def scan_for_server(self, repository_info):
         # Scan first for dot files, since it's faster and will cover the
