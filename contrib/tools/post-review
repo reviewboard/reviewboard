@@ -1189,8 +1189,36 @@ class MercurialClient(SCMClient):
         # We save data here to use it as a fallback. See below
         local_data = data.strip()
 
+        svn = execute(["hg", "svn", "info", ], ignore_errors=True)
+
+        if not svn.startswith('abort:'):
+            self.type = 'svn'
+            m = re.search(r'^Repository Root: (.+)$', svn, re.M)
+
+            if not m:
+                return None
+
+            path = m.group(1)
+            m2 = re.match(r'^(svn\+ssh|http|https)://([-a-zA-Z0-9.]*@)(.*)$',
+                          path)
+            if m2:
+                path = '%s://%s' % (m2.group(1), m2.group(3))
+
+            m = re.search(r'^URL: (.+)$', svn, re.M)
+
+            if not m:
+                return None
+
+            base_path = m.group(1)[len(path):] or "/"
+            return RepositoryInfo(path=path,
+                                  base_path=base_path,
+                                  supports_parent_diffs=True)
+
+        self.type = 'hg'
+
         # We are going to search .hg/hgrc for the default path.
         file_name = os.path.join(local_data,'.hg', 'hgrc')
+
         if not os.path.exists(file_name):
             return RepositoryInfo(path=local_data, base_path='/',
                                   supports_parent_diffs=True)
@@ -1200,6 +1228,7 @@ class MercurialClient(SCMClient):
         f.close()
 
         m = re.search(r'^default\s+=\s+(.+)$', data, re.M)
+
         if not m:
             # Return the local path, if no default value is found.
             return RepositoryInfo(path=local_data, base_path='/',
@@ -1216,12 +1245,18 @@ class MercurialClient(SCMClient):
         """
         # We don't support parent diffs with Mercurial yet, so return None
         # for the parent diff.
+        if self.type == 'svn':
+            return (execute(["hg", "svn", "diff", ]), None)
+
         return (execute(["hg", "diff"] + files), None)
 
     def diff_between_revisions(self, revision_range, args, repository_info):
         """
         Performs a diff between 2 revisions of a Mercurial repository.
         """
+        if self.type != 'hg':
+            raise NotImplementedError
+
         r1, r2 = revision_range.split(':')
         return execute(["hg", "diff", "-r", r1, "-r", r2])
 
@@ -1769,8 +1804,8 @@ def determine_client():
     tool = None
 
     # Try to find the SCM Client we're going to be working with.
-    for tool in (SVNClient(), CVSClient(), MercurialClient(),
-                 GitClient(), PerforceClient()):
+    for tool in (SVNClient(), CVSClient(),
+                 GitClient(), MercurialClient(), PerforceClient()):
         repository_info = tool.get_repository_info()
 
         if repository_info:
