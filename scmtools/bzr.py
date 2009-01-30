@@ -3,6 +3,11 @@ from datetime import datetime, timedelta
 import subprocess
 import time
 
+try:
+    from bzrlib import bzrdir, revisionspec
+except ImportError:
+    pass
+
 from reviewboard.scmtools.core import SCMError, SCMTool, PRE_CREATION
 
 
@@ -25,19 +30,22 @@ class BZRTool(SCMTool):
         if revision == BZRTool.PRE_CREATION_TIMESTAMP:
             return ''
 
-        # "bzr -r date:" expects the timestamp to be in local time.
-        local_datetime = self._revision_timestamp_to_local(revision)
+        revspec = self._revspec_from_revision(revision)
+        filepath = self._get_full_path(path)
 
-        p = subprocess.Popen(['bzr', 'cat',
-                             '-r', 'date:' + str(local_datetime), self._get_repo_path(path)],
-                             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             close_fds=True)
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            raise SCMError(errmsg)
+        branch = None
+        try:
+            try:
+                tree, branch, relpath = bzrdir.BzrDir.open_containing_tree_or_branch(filepath)
+                branch.lock_read()
+                revtree = revisionspec.RevisionSpec.from_string(revspec).as_tree(branch)
+                fileid = revtree.path2id(relpath)
+                contents = revtree.get_file_text(fileid)
+            except Exception, e:
+                raise SCMError(e)
+        finally:
+            if branch:
+                branch.unlock()
 
         return contents
 
@@ -47,29 +55,14 @@ class BZRTool(SCMTool):
 
         return file_str, revision_str
 
-    def get_filenames_in_revision(self, revision):
-        local_datetime = self._revision_timestamp_to_local(revision)
-
-        p = subprocess.Popen(['bzr', 'inventory',
-                             '-r', 'date:' + str(local_datetime), str(self.repository.path)],
-                             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             close_fds=True)
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
-
-        if failure:
-            raise SCMError(errmsg)
-
-        return contents.strip().splitlines();
-
     def get_fields(self):
         return ['basedir', 'diff_path']
 
     def get_diffs_use_absolute_paths(self):
         return False
 
-    def _get_repo_path(self, path, basedir=None):
+    def _get_full_path(self, path, basedir=None):
+        """Returns the full path to a file."""
         parts = [self.repository.path.strip("/")]
 
         if basedir:
@@ -78,6 +71,20 @@ class BZRTool(SCMTool):
         parts.append(path.strip("/"))
 
         return "/".join(parts)
+
+    def _revspec_from_revision(self, revision):
+        """Returns a revspec based on the revision found in the diff.
+        
+        In addition to the standard date format from "bzr diff", this
+        function supports the revid: syntax provided by the bzr diff-revid plugin.
+        """
+
+        if revision.startswith('revid:'):
+            revspec = revision
+        else:
+            revspec = 'date:' + str(self._revision_timestamp_to_local(revision))
+
+        return revspec
 
     def _revision_timestamp_to_local(self, timestamp_str):
         """When using a date to ask bzr for a file revision, it expects
