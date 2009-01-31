@@ -64,4 +64,9 @@
 {% endif %}
 {% if not standalone %}
 </table>
+<script type="text/javascript">
+  /* Add to the change index. */
+  $("li.change_file_{{file.index}}").html(
+    {% include_as_string "diffviewer/changeindex_entry.html" %});
+</script>
 {% endif %}

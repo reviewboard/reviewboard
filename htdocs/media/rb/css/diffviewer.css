@@ -4,6 +4,21 @@ table.sidebyside {
   border-collapse: collapse;
   margin: 2px;
   padding: 2px;
+  width: 100%;
+}
+
+table.sidebyside.diff-error td {
+  background: #fff6a6;
+  padding: 6px;
+}
+
+table.sidebyside.diff-error td a {
+  color: blue;
+  font-weight: bold;
+}
+
+table.sidebyside.diff-error .error-details {
+  display: none;
 }
 
 table.sidebyside a {
@@ -189,6 +204,10 @@ table.sidebyside .commentflag.draft {
   padding-left: 30px;
 }
 
+ol.index li {
+  padding: 2px 0;
+}
+
 #diffs table.sidebyside {
   margin-bottom: 20px;
 }
@@ -253,13 +272,6 @@ table.sidebyside .commentflag.draft {
 
 .revision-selector .revisions a:visited {
   color: black;
-}
-
-.diff-error {
-  background: #fff6a6;
-  border: 1px #9F9656 solid;
-  margin: 0px 2px 4px 1px;
-  padding: 4px 8px;
 }
 
 

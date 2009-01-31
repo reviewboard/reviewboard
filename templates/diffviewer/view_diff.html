@@ -30,7 +30,6 @@
 
 {% block scripts %}
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.3.1.min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
 
 {% block scripts-post %}
@@ -38,6 +37,7 @@
 <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/ui.autocomplete.min.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
@@ -193,23 +193,37 @@
 
 <div id="diffs">
 {% for file in files %}
-{{ file.fragment }}
+{%  if not interdiffset or file.interfilediff %}
+<table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
+       id="file_container_{{file.filediff.id}}">
+ <thead>
+  <tr>
+   <th colspan="2">{{file.depot_filename}}</th>
+  </tr>
+  <tr>
+   <th class="rev">{{file.revision}}</th>
+   <th class="rev">{{file.dest_revision}}</th>
+  </tr>
+ </thead>
+ <tbody>
+  <tr><td colspan="2"><pre>&nbsp;</pre></th></tr>
+ </tbody>
+</table>
 <script type="text/javascript">
-  gFileAnchorToId["file{{file.filediff.id}}"] = {
-    'id': {{file.filediff.id}},
-    'revision': {{file.filediff.diffset.revision}}
-  };
-{% if file.interfilediff %}
-  gInterdiffFileAnchorToId["file{{file.filediff.id}}"] = {
-    'id': {{file.interfilediff.id}},
-    'revision': {{file.interfilediff.diffset.revision}}
-  };
-{% endif %}
   $(document).ready(function() {
-    $("#file{{file.filediff.id}}").diffFile({% commentcounts file.filediff file.interfilediff %});
-  });
+  loadFileDiff("{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
+{% if file.interfilediff %}
+               "{{file.interfilediff.id}}", "{{file.interfilediff.diffset.revision}}",
+{% else %}
+               null, null,
+{% endif %}
+               "{{file.index}}",
+			   {% commentcounts file.filediff file.interfilediff %});
+});
 </script>
+{%  endif %}
 {% endfor %}
+
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
 </div>

@@ -26,7 +26,8 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.diffviewer.views import view_diff, view_diff_fragment
+from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
+                                         exception_traceback
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -349,7 +350,8 @@ def _query_for_diff(review_request, user, revision, query_extra=None):
         query = query & query_extra
 
     try:
-        return DiffSet.objects.filter(query).latest()
+        results = DiffSet.objects.filter(query).latest()
+        return results
     except DiffSet.DoesNotExist:
         raise Http404
 
@@ -461,18 +463,20 @@ def comment_diff_fragment(
         set_last_modified(response, comment.timestamp)
 
         return response
-    except SCMError, e:
-        return HttpResponseServerError(
-            render_to_string(error_template_name, RequestContext(request, {
-                'error': e,
-            }))
-        )
+    except Exception, e:
+        return exception_traceback(request, e, error_template_name, {
+            'file': {
+                'depot_filename': comment.filediff.source_file,
+                'index': None,
+                'filediff': comment.filediff,
+            },
+            'comment': comment,
+        })
 
 
 @check_login_required
 def diff_fragment(request, review_request_id, revision, filediff_id,
-                  interdiff_revision=None,
-                  chunkindex=None, collapseall=False,
+                  interdiff_revision=None, chunkindex=None,
                   template_name='diffviewer/diff_file_fragment.html'):
     """
     Wrapper around diffviewer.views.view_diff_fragment that takes a review
@@ -485,14 +489,9 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     draft = review_request.get_draft(request.user)
 
-    if draft:
-        query_extra = Q(reviewrequestdraft=draft)
-    else:
-        query_extra = None
-
     if interdiff_revision is not None:
         interdiffset = _query_for_diff(review_request, request.user,
-                                       interdiff_revision, query_extra)
+                                       interdiff_revision)
         interdiffset_id = interdiffset.id
         # Only the interdiff should have an extra query for the draft.
         # It's going to be the most recent diff (generally). We should be
@@ -501,12 +500,10 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     else:
         interdiffset_id = None
 
-    diffset = _query_for_diff(review_request, request.user, revision,
-                              query_extra)
+    diffset = _query_for_diff(review_request, request.user, revision)
 
     return view_diff_fragment(request, diffset.id, filediff_id,
-                              interdiffset_id, chunkindex, collapseall,
-                              template_name)
+                              interdiffset_id, chunkindex, template_name)
 
 
 @check_login_required

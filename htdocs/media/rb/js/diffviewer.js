@@ -955,18 +955,20 @@ function scrollToAnchor(anchor, noscroll) {
  * @return {jQuery} The found anchor jQuery instance, or INVALID.
  */
 function GetNextAnchor(dir, commentAnchors) {
-    for (var anchor = gSelectedAnchor + dir; ; anchor = anchor + dir) {
-        if (anchor < 0 || anchor >= gAnchors.length) {
-            return INVALID;
-        }
+    for (var anchor = gSelectedAnchor + dir;
+         anchor >= 0 && anchor < gAnchors.length;
+         anchor = anchor + dir) {
 
-        var name = gAnchors[anchor].name;
+        var anchorEl = gAnchors[anchor];
+        var name = anchorEl.name;
 
         if ((!commentAnchors && name.substr(0, 4) != "file") ||
             (commentAnchors && name.substr(0, 4) == "file")) {
-            return $(gAnchors[anchor]);
+            return $(anchorEl);
         }
     }
+
+    return $([]);
 }
 
 
@@ -978,21 +980,103 @@ function GetNextAnchor(dir, commentAnchors) {
  * @return {jQuery} The found anchor jQuery instance.
  */
 function GetNextFileAnchor(dir) {
-    var fileId = gAnchors[gSelectedAnchor].name.split(".")[0];
-    var newAnchor = parseInt(fileId) + dir;
-    return $("a[name=" + newAnchor + "]");
+    var fileId = parseInt(gAnchors[gSelectedAnchor].name.split(".")[0]);
+
+    for (var newAnchor = fileId + dir;
+         newAnchor >= 0 && newAnchor < gAnchors.length;
+         newAnchor += dir) {
+
+        var anchors = $("a[name=" + newAnchor + "]");
+
+        if (anchors.length > 0) {
+            return anchors;
+        }
+    }
+
+    return $([]);
+}
+
+
+/*
+ * Updates the list of known anchors. This is called after every part of
+ * the diff that we loaded.
+ *
+ * If no anchor is selected, we'll try to select the first one.
+ */
+function updateAnchors() {
+    gAnchors = $("table.sidebyside a[name]");
+
+    /* Skip over the change index to the first item */
+    if (gSelectedAnchor == -1 && gAnchors.length > 0) {
+      gSelectedAnchor = 0;
+      $(gAnchors[gSelectedAnchor]).highlightChunk();
+    }
+}
+
+
+/*
+ * Progressively load a diff.
+ *
+ * When the diff is loaded, it will be placed into the appropriate location
+ * in the diff viewer, rebuild the anchors, and move on to the next file.
+ *
+ * @param {string} filediff_id               The filediff ID
+ * @param {string} filediff_revision         The filediff revision
+ * @param {string} interfilediff_id          The interfilediff ID (optional)
+ * @param {string} interfilediff_revision    The interfilediff revision
+ *                                           (optional)
+ * @param {string} file_index                The file index
+ * @param {dict}   comment_counts            The comments for this region
+ */
+function loadFileDiff(filediff_id, filediff_revision,
+                      interfilediff_id, interfilediff_revision,
+                      file_index,
+                      comment_counts) {
+
+    var revision_str = filediff_revision;
+
+    if (interfilediff_id) {
+        revision_str += "-" + interfilediff_revision;
+    }
+
+    $.funcQueue("diff_files").add(function() {
+        $.ajax({
+            type: "GET",
+            url: SITE_ROOT + "r/" + gReviewRequestId + "/diff/" +
+                 revision_str + "/fragment/" + filediff_id + "/?" +
+                 "index=" + file_index + "&" + AJAX_SERIAL,
+            complete: onFileLoaded
+        });
+    });
+
+    function onFileLoaded(xhr) {
+        $("#file_container_" + filediff_id).replaceWith(xhr.responseText);
+
+        var key = "file" + filediff_id;
+
+        gFileAnchorToId[key] = {
+            'id': filediff_id,
+            'revision': filediff_revision
+        };
+
+        if (interfilediff_id) {
+            gInterdiffFileAnchorToId[key] = {
+                'id': interfilediff_id,
+                'revision': interfilediff_revision
+            };
+        }
+
+        $("#file" + filediff_id).diffFile(comment_counts);
+
+        /* We must rebuild this every time. */
+        updateAnchors();
+
+        $.funcQueue("diff_files").next();
+    }
 }
 
 
 $(document).ready(function() {
-    gAnchors = $("table.sidebyside a[name]");
-
-    /* Skip over the change index to the first item */
-    if (gAnchors.length > 0) {
-      gSelectedAnchor = 0;
-      $(gAnchors[gSelectedAnchor]).highlightChunk();
-    }
-
     $(document).keypress(function(evt) {
         if (evt.altKey || evt.ctrlKey || evt.metaKey) {
             return;
@@ -1015,6 +1099,8 @@ $(document).ready(function() {
     $("input, textarea").keypress(function(evt) {
         evt.stopPropagation();
     });
+
+    $.funcQueue("diff_files").start();
 });
 
 // vim: set et:

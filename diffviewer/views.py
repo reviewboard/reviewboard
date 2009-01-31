@@ -2,7 +2,7 @@ import logging
 import traceback
 
 from django.core.paginator import Paginator
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -16,6 +16,7 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.diffutils import UserVisibleError, \
                                              get_diff_files, \
                                              get_enable_highlighting
+from reviewboard.scmtools.core import SCMError
 
 
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
@@ -55,6 +56,17 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                                  RequestContext(request, context)))
 
 
+def get_collapse_diff(request):
+    if request.GET.get('expand', False):
+        return False
+    elif request.GET.get('collapse', False):
+        return True
+    elif request.COOKIES.has_key('collapsediffs'):
+        return (request.COOKIES['collapsediffs'] == "True")
+    else:
+        return True
+
+
 def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
     diffset = get_object_or_404(DiffSet, pk=diffset_id)
@@ -70,7 +82,8 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
             logging.debug("Generating diff viewer page for filediff id %s",
                           diffset_id)
 
-        files = get_diff_files(diffset, None, interdiffset, highlighting)
+        files = get_diff_files(diffset, None, interdiffset,
+                               highlighting, False)
 
         # Break the list of files into pages
         siteconfig = SiteConfiguration.objects.get_current()
@@ -93,30 +106,12 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
         page = paginator.page(page_num)
 
-        if request.GET.get('expand', False):
-            collapseall = False
-        elif request.GET.get('collapse', False):
-            collapseall = True
-        elif request.COOKIES.has_key('collapsediffs'):
-            collapseall = (request.COOKIES['collapsediffs'] == "True")
-        else:
-            collapseall = True
-
         context = {
             'diffset': diffset,
             'interdiffset': interdiffset,
             'diffset_pair': (diffset, interdiffset),
         }
         context.update(extra_context)
-
-        # XXX We can probably make this even more awesome and completely skip
-        #     the get_diff_files call, caching basically the entire context.
-        for file in page.object_list:
-            file['fragment'] = mark_safe(build_diff_fragment(request,
-                                                             file, None,
-                                                             highlighting,
-                                                             collapseall,
-                                                             context))
 
         context['files'] = page.object_list
 
@@ -133,7 +128,7 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))
-        response.set_cookie('collapsediffs', collapseall)
+        response.set_cookie('collapsediffs', get_collapse_diff(request))
 
         if interdiffset_id:
             logging.debug("Done generating diff viewer page for interdiffset "
@@ -150,23 +145,43 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         return exception_traceback(request, e, template_name)
 
 
-def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
-                       chunkindex=None, collapseall=False,
-                       template_name='diffviewer/diff_file_fragment.html'):
-    diffset = get_object_or_404(DiffSet, pk=diffset_id)
-    filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
-    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
-    highlighting = get_enable_highlighting(request.user)
+def view_diff_fragment(
+        request, diffset_id, filediff_id, interdiffset_id=None,
+        chunkindex=None,
+        template_name='diffviewer/diff_file_fragment.html',
+        error_template_name='diffviewer/diff_fragment_error.html'):
 
-    try:
-        files = get_diff_files(diffset, filediff, interdiffset, highlighting)
+    def get_requested_diff_file(get_chunks=True):
+        files = get_diff_files(diffset, filediff, interdiffset, highlighting,
+                               get_chunks)
 
         if files:
             assert len(files) == 1
             file = files[0]
 
+            if 'index' in request.GET:
+                file['index'] = request.GET.get('index')
+
+            return file
+
+        return None
+
+    diffset = get_object_or_404(DiffSet, pk=diffset_id)
+    filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
+    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
+    highlighting = get_enable_highlighting(request.user)
+
+    if chunkindex:
+        collapseall = False
+    else:
+        collapseall = get_collapse_diff(request)
+
+    try:
+        file = get_requested_diff_file()
+
+        if file:
             context = {
-                'standalone': True,
+                'standalone': chunkindex is not None,
             }
 
             return HttpResponse(build_diff_fragment(request, file,
@@ -177,8 +192,13 @@ def view_diff_fragment(request, diffset_id, filediff_id, interdiffset_id=None,
             _(u"Internal error. Unable to locate file record for filediff %s") % \
             filediff.id)
     except Exception, e:
-        return exception_traceback(request, e, template_name,
-                                   {'standalone': True})
+        extra_context = {}
+
+        file = get_requested_diff_file(False)
+        extra_context['file'] = file
+
+        return exception_traceback(request, e, error_template_name,
+                                   extra_context)
 
 
 def exception_traceback(request, e, template_name, extra_context={}):
@@ -187,5 +207,5 @@ def exception_traceback(request, e, template_name, extra_context={}):
     if e.__class__ is not UserVisibleError:
         context['trace'] = traceback.format_exc()
 
-    return render_to_response(template_name,
-                              RequestContext(request, context))
+    return HttpResponseServerError(
+        render_to_string(template_name, RequestContext(request, context)))

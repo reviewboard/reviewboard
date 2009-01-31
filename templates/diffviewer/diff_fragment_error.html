@@ -1,4 +1,63 @@
+{% load djblets_utils %}
 {% load i18n %}
-<p class="diff-error">
- {% trans "Diff fragment currently unavailable." %}
-</p>
+
+<table class="sidebyside diff-error{% if file.newfile %} newfile{% endif %}"
+       id="file_container_{{file.filediff.id}}">
+ <thead>
+  <tr>
+{% if comment %}
+   <th colspan="2" class="filename">
+    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
+    <span class="diffrevision">
+{% if comment.interfilediff %}
+     (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
+{% else %}
+     (Diff revision {{comment.filediff.diffset.revision}})
+{% endif %}
+    </span>
+{% else %}
+   <th colspan="2">
+    {% ifnotequal file.index None %}<a name="{{file.index}}">{% endifnotequal %}
+    {{file.depot_filename}}
+    {% ifnotequal file.index None %}</a>{% endifnotequal %}
+    </th>
+{% endif %}
+  </tr>
+{% if file.revision %}
+  <tr>
+   <th class="rev">{{file.revision}}</th>
+   <th class="rev">{{file.dest_revision}}</th>
+  </tr>
+{% endif %}
+ </thead>
+ <tbody>
+  <tr>
+   <td colspan="2">{% trans "Diff currently unavailable." %}</td>
+  </tr>
+{% if error %}
+  <tr>
+   <td colspan="2"><b>{% trans "Error:" %}</b> {{error}}</td>
+  </tr>
+{% endif %}
+{% if trace %}
+  <tr>
+   <td colspan="2">
+    <a id="diff-error-link-{{file.filediff.id}}" href="#"
+          onclick="$('#diff-error-details-{{file.filediff.id}}').toggle(); return false;">Details</a>
+   </td>
+  </tr>
+  <tr class="error-details" id="diff-error-details-{{file.filediff.id}}">
+   <td colspan="2">
+    <pre>{{trace}}</pre>
+   </td>
+  </tr>
+{% endif %}
+ </tbody>
+</table>
+{% if file %}
+<script type="text/javascript">
+  /* Add to the change index. */
+  $("li.change_file_{{file.index}}").html(
+    {% include_as_string "diffviewer/changeindex_entry.html" %});
+</script>
+{% endif %}

@@ -359,17 +359,17 @@
   text-decoration: none;
 }
 
-.review .sidebyside.loading {
+.sidebyside.loading {
   /* Helps us better keep the size, as long as the comment is within a chunk. */
   padding: 2px 2px 1px 2px;
   width: 100%;
 }
 
-.review .sidebyside.loading tbody {
+.sidebyside.loading tbody {
   background: #F3F3F3 url("../images/spinner.gif") no-repeat center center;
 }
 
-.review .sidebyside.loading tbody th {
+.sidebyside.loading tbody th {
   background: transparent;
 }
 

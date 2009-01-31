@@ -459,21 +459,6 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     return chunks
 
 
-def add_navigation_cues(files):
-    """Add index and changed_chunks to a list of files and their chunks"""
-    # FIXME: this modifies in-place right now, which is kind of ugly
-    for i, file in enumerate(files):
-        file['index'] = i
-        file['changed_chunks'] = []
-
-        for j, chunk in enumerate(file['chunks']):
-            chunk['index'] = j
-            if chunk['change'] != 'equal':
-                file['changed_chunks'].append(chunk)
-
-        file['num_changes'] = len(file['changed_chunks'])
-
-
 def get_revision_str(revision):
     if revision == HEAD:
         return "HEAD"
@@ -483,7 +468,9 @@ def get_revision_str(revision):
         return "Revision %s" % revision
 
 
-def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
+def get_diff_files(diffset, filediff=None, interdiffset=None,
+                   enable_syntax_highlighting=True,
+                   load_chunks=True):
     if filediff:
         filediffs = [filediff]
 
@@ -557,40 +544,10 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
 
 
     files = []
+    index = 0
+
     for parts in filediff_parts:
         filediff, interfilediff, force_interdiff = parts
-
-        if filediff.binary:
-            chunks = []
-        else:
-            key = key_prefix
-
-            if not force_interdiff:
-                key += str(filediff.id)
-            elif interfilediff:
-                key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
-            else:
-                key += "interdiff-%s-none" % filediff.id
-
-            chunks = cache_memoize(
-                key,
-                lambda: get_chunks(filediff.diffset,
-                                   filediff, interfilediff,
-                                   force_interdiff,
-                                   enable_syntax_highlighting),
-                large_data=True)
-
-        if interdiffset:
-            # In the case of interdiffs, don't show any unmodified files
-            has_changes = False
-
-            for chunk in chunks:
-                if chunk['change'] != 'equal':
-                    has_changes = True
-                    break
-
-            if not has_changes:
-                continue
 
         filediff_revision_str = get_revision_str(filediff.source_revision)
         newfile = (filediff.source_revision == PRE_CREATION)
@@ -620,21 +577,64 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
             basepath = ""
             basename = filediff.source_file
 
-        files.append({
+        file = {
             'depot_filename': filediff.source_file,
             'basename': basename,
             'basepath': basepath,
             'revision': source_revision,
             'dest_revision': dest_revision,
-            'chunks': chunks,
             'filediff': filediff,
             'interfilediff': interfilediff,
             'force_interdiff': force_interdiff,
             'binary': filediff.binary,
             'newfile': newfile,
-        })
+            'index': len(files),
+        }
 
-    add_navigation_cues(files)
+        if load_chunks:
+            chunks = []
+
+            if not filediff.binary:
+                key = key_prefix
+
+                if not force_interdiff:
+                    key += str(filediff.id)
+                elif interfilediff:
+                    key += "interdiff-%s-%s" % (filediff.id, interfilediff.id)
+                else:
+                    key += "interdiff-%s-none" % filediff.id
+
+                chunks = cache_memoize(
+                    key,
+                    lambda: get_chunks(filediff.diffset,
+                                       filediff, interfilediff,
+                                       force_interdiff,
+                                       enable_syntax_highlighting),
+                    large_data=True)
+
+            if interdiffset:
+                # In the case of interdiffs, don't show any unmodified files
+                has_changes = False
+
+                for chunk in chunks:
+                    if chunk['change'] != 'equal':
+                        has_changes = True
+                        break
+
+                if not has_changes:
+                    continue
+
+            file['chunks'] = chunks
+            file['changed_chunks'] = []
+
+            for j, chunk in enumerate(file['chunks']):
+                chunk['index'] = j
+                if chunk['change'] != 'equal':
+                    file['changed_chunks'].append(chunk)
+
+            file['num_changes'] = len(file['changed_chunks'])
+
+        files.append(file)
 
     def cmp_file(x, y):
         # Sort based on basepath in asc order
@@ -654,12 +654,6 @@ def generate_files(diffset, filediff, interdiffset, enable_syntax_highlighting):
     log_timer.done()
 
     return files
-
-
-def get_diff_files(diffset, filediff=None, interdiffset=None,
-                   enable_syntax_highlighting=True):
-    return generate_files(diffset, filediff, interdiffset,
-                          enable_syntax_highlighting)
 
 
 def get_file_chunks_in_range(context, filediff, interfilediff,

@@ -36,6 +36,8 @@ urlpatterns = patterns('reviewboard.reviews.views',
     # Review request interdiffs
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/$',
      'diff'),
+    (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/$',
+     'diff_fragment'),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
      'diff_fragment'),
 
