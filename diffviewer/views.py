@@ -50,7 +50,7 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
     if highlighting:
         key += '-highlighting'
 
-    key += '-' + settings.AJAX_SERIAL
+    key += '-%s' % settings.AJAX_SERIAL
 
     context['file'] = file
 
