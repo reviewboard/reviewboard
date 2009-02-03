@@ -4,6 +4,7 @@ from djblets.util.misc import get_object_or_none
 import crypt
 import logging
 import nis
+import sys
 
 
 class NISBackend:
@@ -64,6 +65,7 @@ class LDAPBackend:
 
     def authenticate(self, username, password):
         username = username.strip()
+        uid = settings.LDAP_UID_MASK % username
 
         try:
             import ldap
@@ -71,8 +73,16 @@ class LDAPBackend:
             ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
             if settings.LDAP_TLS:
                 ldapo.start_tls_s()
+
             search = ldapo.search_s(settings.LDAP_BASE_DN, ldap.SCOPE_ONELEVEL,
-                                    settings.LDAP_UID_MASK % username)
+                                    uid)
+            if not search:
+                # no such a user, return early, no need for bind attempts
+                logging.warning("LDAP error: The specified object does not "
+                                "exist in the Directory: %s" %
+                                uid)
+                return None
+
             ldapo.bind_s(search[0][0], password)
 
             return self.get_or_create_user(username)
@@ -80,10 +90,16 @@ class LDAPBackend:
             pass
         except ldap.INVALID_CREDENTIALS:
             logging.warning("LDAP error: The specified object does not "
-                            "exist in the Directory: %s" %
-                            settings.LDAP_UID_MASK % username)
+                            "exist in the Directory or provided invalid credentials: %s" %
+                            uid)
         except ldap.LDAPError, e:
             logging.warning("LDAP error: %s" % e)
+        except:
+            # fallback exception catch because
+            # django.contrib.auth.authenticate() (our caller) catches only
+            # TypeErrors
+            logging.warning("An error while LDAP-authenticating: %r" %
+                            sys.exc_info()[1])
 
         return None
 
