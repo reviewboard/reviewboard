@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import get_object_or_404, render_to_response
@@ -48,6 +49,8 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
 
     if highlighting:
         key += '-highlighting'
+
+    key += '-' + settings.AJAX_SERIAL
 
     context['file'] = file
 
