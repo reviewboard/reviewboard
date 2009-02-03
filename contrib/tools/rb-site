@@ -201,7 +201,7 @@ class Site(object):
             db_engine = "postgresql_psycopg2"
 
         fp.write("DATABASE_ENGINE = '%s'\n" % db_engine)
-        fp.write("DATABASE_NAME = '%s'\n" % self.db_name)
+        fp.write("DATABASE_NAME = '%s'\n" % self.db_name.replace("\\", "\\\\"))
 
         if self.db_type != "sqlite3":
             fp.write("DATABASE_USER = '%s'\n" % (self.db_user or ""))
@@ -305,10 +305,11 @@ class Site(object):
         """
         domain_name_escaped = self.domain_name.replace(".", "\\.")
         template = pkg_resources.resource_string("reviewboard", template_path)
+        sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
 
         data = {
             'rbsite': os.path.abspath(__file__),
-            'sitedir': os.path.abspath(self.install_dir),
+            'sitedir': sitedir,
             'sitedomain': self.domain_name,
             'sitedomain_escaped': domain_name_escaped,
             'siteid': self.site_id,
