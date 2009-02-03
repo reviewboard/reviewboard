@@ -180,7 +180,7 @@ ADMIN_MEDIA_PREFIX = MEDIA_URL + 'admin/'
 # Cookie settings
 LANGUAGE_COOKIE_NAME = "rblanguage"
 SESSION_COOKIE_NAME = "rbsessionid"
-SESSION_COOKIE_AGE = 365 * 24 * 24 * 60 # 1 year
+SESSION_COOKIE_AGE = 365 * 24 * 60 * 60 # 1 year
 SESSION_COOKIE_PATH = SITE_ROOT
 
 # The list of directories that will be searched to generate a media serial.
