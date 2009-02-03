@@ -157,9 +157,9 @@ IS_RELEASE = False
 
 
 if IS_RELEASE:
-    download_url = "http://www.review-board.org/downloads/releases/"
+    download_url = "http://downloads.review-board.org/releases/"
 else:
-    download_url = "http://www.review-board.org/downloads/nightlies/"
+    download_url = "http://downloads.review-board.org/nightlies/"
 
 
 # Build the reviewboard package.
@@ -185,7 +185,7 @@ setup(name="ReviewBoard",
           'flup'
       ],
       dependency_links = [
-          "http://www.review-board.org/downloads/mirror/",
+          "http://downloads.review-board.org/mirror/",
           download_url,
       ],
       include_package_data=True,
