@@ -218,6 +218,7 @@ class Site(object):
         fp.write("SITE_ID = 1\n")
         fp.write("SITE_ROOT = '%s'\n" % self.site_root)
         fp.write("FORCE_SCRIPT_NAME = ''\n")
+        fp.write("DEBUG = False\n")
         fp.close()
 
     def sync_database(self):
