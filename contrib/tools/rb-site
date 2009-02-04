@@ -121,33 +121,31 @@ class Site(object):
                      "Djblets is installed and try this again.")
 
 
-        if self.web_server_type == "apache":
-            # Generate a .htaccess file that enables compression and
-            # never expires various file types.
-            path = os.path.join(self.install_dir, media_base, ".htaccess")
-            fp = open(path, "w")
-            fp.write('<IfModule mod_expires.c>\n')
-            fp.write('  <FilesMatch "\.(jpg|gif|png|css|js|htc)">\n')
-            fp.write('    ExpiresActive on\n')
-            fp.write('    ExpiresDefault "access plus 1 year"\n')
-            fp.write('  </FilesMatch>\n')
-            fp.write('</IfModule>\n')
-            fp.write('\n')
-            fp.write('<IfModule mod_deflate.c>\n')
+        # Generate a .htaccess file that enables compression and
+        # never expires various file types.
+        path = os.path.join(self.install_dir, media_base, ".htaccess")
+        fp = open(path, "w")
+        fp.write('<IfModule mod_expires.c>\n')
+        fp.write('  <FilesMatch "\.(jpg|gif|png|css|js|htc)">\n')
+        fp.write('    ExpiresActive on\n')
+        fp.write('    ExpiresDefault "access plus 1 year"\n')
+        fp.write('  </FilesMatch>\n')
+        fp.write('</IfModule>\n')
+        fp.write('\n')
+        fp.write('<IfModule mod_deflate.c>\n')
 
-            for mimetype in ["text/html", "text/plain", "text/xml",
-                             "text/css", "text/javascript",
-                             "application/javascript",
-                             "application/x-javascript"]:
-                fp.write("  AddOutputFilterByType DEFLATE %s\n" % mimetype)
+        for mimetype in ["text/html", "text/plain", "text/xml",
+                         "text/css", "text/javascript",
+                         "application/javascript",
+                         "application/x-javascript"]:
+            fp.write("  AddOutputFilterByType DEFLATE %s\n" % mimetype)
 
-            fp.write('</IfModule>\n')
-            fp.write('\n')
-            fp.write("# We don't use ETag support, since we set long "
-                     "expirations and use unique URLs.\n")
-            fp.write('# This reduces the size of the HTTP headers.\n')
-            fp.write('FileETag none\n')
-            fp.close()
+        fp.write('</IfModule>\n')
+        fp.write('\n')
+        fp.write("# We don't use ETag support yet."
+        fp.write('# This reduces the size of the HTTP headers.\n')
+        fp.write('FileETag none\n')
+        fp.close()
 
     def generate_config_files(self):
         web_conf_filename = ""
