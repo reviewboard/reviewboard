@@ -4,6 +4,7 @@ import os.path
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
+from djblets.util.misc import generate_cache_serials
 
 # We do this to guarantee we're getting the absolute "djblets.log" and not
 # the relative "djblets.log" (which turns into "reviewboard.djblets.log")
@@ -22,6 +23,11 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
 # Set up logging.
 log.init_logging()
 logging.info("Log file for Review Board v%s" % VERSION)
+
+
+# Generate cache serials
+generate_cache_serials()
+
 
 # Load in all the models for the admin UI.
 if not admin.site._registry:
