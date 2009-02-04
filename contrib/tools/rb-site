@@ -142,7 +142,7 @@ class Site(object):
 
         fp.write('</IfModule>\n')
         fp.write('\n')
-        fp.write("# We don't use ETag support yet."
+        fp.write("# We don't use ETag support yet.\n")
         fp.write('# This reduces the size of the HTTP headers.\n')
         fp.write('FileETag none\n')
         fp.close()
