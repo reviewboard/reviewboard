@@ -505,7 +505,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 $.fn.commentDlg = function() {
     var SLIDE_DISTANCE = 10;
     var COMMENTS_BOX_WIDTH = 280;
-    var FORM_BOX_WIDTH = 320;
+    var FORM_BOX_WIDTH = 380;
     var self = this;
 
     /* State */

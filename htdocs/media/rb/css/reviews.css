@@ -680,6 +680,10 @@
   position: absolute;
 }
 
+#comment-detail textarea {
+  font-size: 10pt;
+}
+
 #comment-detail .status {
   margin: 4px 0;
   font-style: italic;
