@@ -241,6 +241,9 @@ $.fn.formDlg = function(options) {
             .append(errors)
             .append(self)
             .append(form)
+            .keypress(function(e) {
+                e.stopPropagation();
+            })
             .modalBox({
                 title: options.title,
                 buttons: [
