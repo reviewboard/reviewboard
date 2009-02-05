@@ -11,7 +11,7 @@
           title: "{% trans "Upload Diff" %}",
           confirmLabel: "{% trans "Upload" %}",
           path: "/reviewrequests/{{review_request.id}}/diff/new/",
-          width: 600,
+          width: "60em",
           upload: true,
           fields: {% form_dialog_fields upload_diff_form %}
         });
@@ -24,7 +24,7 @@
         title: "{% trans "Upload Screenshot" %}",
         confirmLabel: "{% trans "Upload" %}",
         path: "/reviewrequests/{{review_request.id}}/screenshot/new/",
-        width: 550,
+        width: "50em",
         upload: true,
         fields: {% form_dialog_fields upload_screenshot_form %}
       });

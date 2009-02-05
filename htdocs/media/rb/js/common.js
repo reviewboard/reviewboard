@@ -243,24 +243,25 @@ $.fn.formDlg = function(options) {
             .append(form)
             .keypress(function(e) {
                 e.stopPropagation();
-            })
-            .modalBox({
-                title: options.title,
-                buttons: [
-                    $('<input type="button"/>')
-                        .val("Cancel"),
-                    $('<input type="button"/>')
-                        .val(options.confirmLabel)
-                        .click(function() {
-                            form.submit();
-                            return false;
-                        })
-                ]
             });
 
         if (options.width) {
             box.width(options.width);
         }
+
+        box.modalBox({
+            title: options.title,
+            buttons: [
+                $('<input type="button"/>')
+                    .val("Cancel"),
+                $('<input type="button"/>')
+                    .val(options.confirmLabel)
+                    .click(function() {
+                        form.submit();
+                        return false;
+                    })
+            ]
+        });
 
         /*
          * Sends the form data to the server.
