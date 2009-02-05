@@ -295,10 +295,10 @@ $.fn.ajaxSubmit = function(options) {
                     var ta = doc.getElementsByTagName('textarea')[0];
                     var val = ta ? ta.value : xhr.responseText;
 
-                    if (val.substring(0, 5).toLowerCase() == "<pre>" &&
+                    if (val.substring(0, 4).toLowerCase() == "<pre" &&
                         val.substring(val.length - 6, val.length).toLowerCase()
                             == "</pre>") {
-                        val = val.substring(5, val.length - 6);
+						val = val.replace(/<\/?pre[^>]*>/g, '')
                     }
 
                     xhr.responseText = val;
