@@ -114,7 +114,7 @@
         </tr>
        </thead>
        <tbody>
-{% for i in comment.num_lines|range %}
+{% for i in comment.num_lines|default_if_none:1|range %}
         <tr><td><pre>&nbsp;</pre></th></tr>
 {% endfor %}
        </tbody>

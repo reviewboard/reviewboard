@@ -1,6 +1,7 @@
 import time
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
@@ -16,7 +17,8 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.cache import cache_control, cache_page
 from django.views.generic.list_detail import object_list
 
-from djblets.util.http import set_last_modified, get_modified_since
+from djblets.util.http import set_last_modified, get_modified_since, \
+                              set_etag, etag_if_none_match
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -124,10 +126,12 @@ def review_detail(request, review_request_id,
             visited.save()
 
 
-    # Find out if we can bail early.
+    # Find out if we can bail early. Generate an ETag for this.
     last_activity_time = review_request.get_last_activity_time()
+    etag = "%s:%s:%s" % (request.user, last_activity_time,
+                         settings.AJAX_SERIAL)
 
-    if get_modified_since(request, last_activity_time):
+    if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
     repository = review_request.repository
@@ -195,7 +199,7 @@ def review_detail(request, review_request_id,
         'scmtool': repository.get_scmtool(),
         'PRE_CREATION': PRE_CREATION,
     }))
-    set_last_modified(response, last_activity_time)
+    set_etag(response, etag)
 
     return response
 
