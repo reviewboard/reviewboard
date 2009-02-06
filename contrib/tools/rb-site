@@ -141,10 +141,6 @@ class Site(object):
             fp.write("  AddOutputFilterByType DEFLATE %s\n" % mimetype)
 
         fp.write('</IfModule>\n')
-        fp.write('\n')
-        fp.write("# We don't use ETag support yet.\n")
-        fp.write('# This reduces the size of the HTTP headers.\n')
-        fp.write('FileETag none\n')
         fp.close()
 
     def generate_config_files(self):
