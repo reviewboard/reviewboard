@@ -298,7 +298,7 @@ $.fn.ajaxSubmit = function(options) {
                     if (val.substring(0, 4).toLowerCase() == "<pre" &&
                         val.substring(val.length - 6, val.length).toLowerCase()
                             == "</pre>") {
-						val = val.replace(/<\/?pre[^>]*>/g, '')
+						val = val.replace(/<\/?pre[^>]*>/gi, '')
                     }
 
                     xhr.responseText = val;
