@@ -194,7 +194,7 @@ function linkifyText(text) {
 
     /* Bug numbers */
     if (gBugTrackerURL != "") {
-        text = text.replace(/\b(bug|issue) #?([^.\s]+)/gi,
+        text = text.replace(/\b(bug|issue) (#[^.\s]+|#?\d+)/gi,
             function(m1, m2, m3) {
                 return '<a href="' + gBugTrackerURL.replace("%s", m3) +
                        '">' + m1 + '</a>';
