@@ -553,6 +553,12 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         newfile = (filediff.source_revision == PRE_CREATION)
 
         if interdiffset:
+            # First, find out if we want to even process this one.
+            # We only process if there's a difference in files.
+            if (filediff and interfilediff and
+                filediff.diff == interfilediff.diff):
+                continue
+
             source_revision = "Diff Revision %s" % diffset.revision
 
             if not interfilediff and force_interdiff:
