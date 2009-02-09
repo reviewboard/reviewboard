@@ -109,29 +109,31 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
         page = paginator.page(page_num)
 
+        collapse_diffs = get_collapse_diff(request)
+
         context = {
             'diffset': diffset,
             'interdiffset': interdiffset,
             'diffset_pair': (diffset, interdiffset),
+            'files': page.object_list,
+            'collapseall': collapse_diffs,
+
+            # Add the pagination context
+            'is_paginated': page.has_other_pages(),
+            'page': page.number,
+            'pages': paginator.num_pages,
+            'page_numbers': paginator.page_range,
+            'has_next': page.has_next(),
+            'next_page': page.next_page_number(),
+            'has_previous': page.has_previous(),
+            'previous_page': page.previous_page_number(),
+            'page_start_index': page.start_index(),
         }
         context.update(extra_context)
 
-        context['files'] = page.object_list
-
-        # Add the pagination context
-        context['is_paginated'] = page.has_other_pages()
-        context['page'] = page.number
-        context['pages'] = paginator.num_pages
-        context['page_numbers'] = paginator.page_range
-        context['has_next'] = page.has_next()
-        context['next_page'] = page.next_page_number()
-        context['has_previous'] = page.has_previous()
-        context['previous_page'] = page.previous_page_number()
-        context['page_start_index'] = page.start_index()
-
         response = render_to_response(template_name,
                                       RequestContext(request, context))
-        response.set_cookie('collapsediffs', get_collapse_diff(request))
+        response.set_cookie('collapsediffs', collapse_diffs)
 
         if interdiffset_id:
             logging.debug("Done generating diff viewer page for interdiffset "
