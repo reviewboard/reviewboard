@@ -15,7 +15,7 @@ from reviewboard.scmtools.core import SCMTool, SCMError, ChangeSet, \
 
 class EmptyChangesetError(SCMError):
     def __init__(self, changenum):
-        SCMError.__init__(self, _('Changeset %d is empty') % changenum)
+        SCMError.__init__(self, _('Changeset %s is empty') % changenum)
 
 
 class PerforceTool(SCMTool):
