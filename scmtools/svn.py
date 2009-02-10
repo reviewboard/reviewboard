@@ -111,6 +111,8 @@ class SVNTool(SCMTool):
                     'HTTPS certificate not accepted.  Please ensure that '
                     'the proper certificate exists in %s/.subversion/auth '
                     'for the user that reviewboard is running as.' % home)
+            elif 'callback_get_login required' in stre:
+                raise SCMError('Login to the SCM server failed.')
             else:
                 raise SCMError(e)
 
