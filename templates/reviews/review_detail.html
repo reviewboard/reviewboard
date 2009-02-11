@@ -6,10 +6,6 @@
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
-{% block extrahead %}
-<meta content="no-cache" http-equiv="pragma" />
-{% endblock %}
-
 {% block jsconsts %}
 {%  include "reviews/review_flags.js" %}
 {% endblock %}

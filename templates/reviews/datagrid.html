@@ -1,6 +1,6 @@
 {% extends "datagrid/datagrid.html" %}
 
-{% block extrahead %}
+{% block scripts-post %}
 {{block.super}}
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
