@@ -1210,8 +1210,6 @@ $(document).ready(function() {
                     });
             });
 
-            $("#changedescription").inlineEditor("startEdit");
-
             var description = $("#description");
             var testing_done = $("#testing_done");
 
