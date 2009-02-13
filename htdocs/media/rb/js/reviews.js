@@ -513,6 +513,7 @@ $.fn.commentDlg = function() {
     var textFieldWidthDiff = 0;
     var textFieldHeightDiff = 0;
     var dirty = false;
+    var oldDirty = false;
 
     /* Page elements */
     var draftForm    = $("#draft-form", this);
@@ -526,10 +527,12 @@ $.fn.commentDlg = function() {
         .keyup(function(e) {
             dirty = dirty || commentBlock.text != textField.val();
 
-            if (dirty) {
+            if (dirty && !oldDirty) {
                 saveButton.attr("disabled", textField.val() == "");
                 statusField.html("This comment has unsaved changes.");
                 self.handleResize();
+
+                oldDirty = dirty;
             }
 
             e.stopPropagation();

@@ -689,38 +689,74 @@ $.fn.highlightChunk = function() {
     }
 
     var updateQueued = false;
+    var oldLeft;
+    var oldTop;
+    var oldWidth;
+    var oldHeight;
 
     /*
      * Updates the position of the border elements.
      */
-    function updatePosition() {
+    function updatePosition(event) {
+        if (event && event.target &&
+            event.target != window &&
+            !event.target.getElementsByTagName) {
+
+            /*
+             * This is not a container. It might be a text node.
+             * Ignore it.
+             */
+            return;
+        }
+
         var offset = el.position();
+        var left = Math.round(offset.left);
+        var top = Math.round(offset.top);
         var width = el.outerWidth();
         var height = el.outerHeight();
 
+        if (left == oldLeft &&
+            top == oldTop &&
+            width == oldWidth &&
+            height == oldHeight) {
+
+            /* The position and size haven't actually changed. */
+            return;
+        }
+
+        var outerHeight = height + borderHeight;
+        var outerWidth  = width + borderWidth;
+        var outerLeft   = left - borderOffsetX;
+        var outerTop    = top - borderOffsetY;
+
         gDiffHighlightBorder.left.css({
-            left: offset.left - borderOffsetX,
-            top: offset.top - borderOffsetY,
-            height: height + borderHeight
+            left: outerLeft,
+            top: outerTop,
+            height: outerHeight
         });
 
         gDiffHighlightBorder.top.css({
-            left: offset.left - borderOffsetX,
-            top: offset.top - borderOffsetY,
-            width: width + borderWidth
+            left: outerLeft,
+            top: outerTop,
+            width: outerWidth
         });
 
         gDiffHighlightBorder.right.css({
-            left: offset.left + width - borderOffsetX,
-            top: offset.top - borderOffsetY,
-            height: height + borderHeight
+            left: outerLeft + width,
+            top: outerTop,
+            height: outerHeight
         });
 
         gDiffHighlightBorder.bottom.css({
-            left: offset.left - borderOffsetX,
-            top: offset.top + height - borderOffsetY,
-            width: width + borderWidth
+            left: outerLeft,
+            top: outerTop + height,
+            width: outerWidth
         });
+
+        oldLeft = left;
+        oldTop = top;
+        oldWidth = width;
+        oldHeight = height;
 
         updateQueued = false;
     }
@@ -729,10 +765,10 @@ $.fn.highlightChunk = function() {
      * Updates the position after 50ms so we don't call updatePosition too
      * many times in response to a DOM change.
      */
-    function queueUpdatePosition() {
+    function queueUpdatePosition(event) {
         if (!updateQueued) {
             updateQueued = true;
-            setTimeout(updatePosition, 50);
+            setTimeout(function() { updatePosition(event); }, 50);
         }
     }
 
