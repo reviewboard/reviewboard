@@ -81,6 +81,7 @@ var gAnchors = [];
 var gCommentDlg = null;
 var gHiddenComments = {};
 var gDiffHighlightBorder = null;
+var gStartAtAnchor = null;
 
 
 /*
@@ -1111,6 +1112,16 @@ function loadFileDiff(filediff_id, filediff_revision,
         /* We must rebuild this every time. */
         updateAnchors();
 
+        if (gStartAtAnchor != null) {
+            /* See if we've loaded the anchor the user wants to start at. */
+            var anchor = $("a[name='" + gStartAtAnchor + "']");
+
+            if (anchor.length != 0) {
+                scrollToAnchor(anchor);
+                gStartAtAnchor = null;
+            }
+        }
+
         $.funcQueue("diff_files").next();
     }
 }
@@ -1139,6 +1150,13 @@ $(document).ready(function() {
     $("input, textarea").keypress(function(evt) {
         evt.stopPropagation();
     });
+
+    /* Check to see if there's an anchor we need to scroll to. */
+    var url = document.location.toString();
+
+    if (url.match("#")) {
+        gStartAtAnchor = url.split("#")[1];
+    }
 
     $.funcQueue("diff_files").start();
 });
