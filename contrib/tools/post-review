@@ -724,8 +724,7 @@ class ClearCaseClient(SCMClient):
     def get_repository_info(self):
         # We must be running this from inside a view.
         # Otherwise it doesn't make sense.
-        self.viewinfo = execute(["cleartool", "pwv", "-short"],
-                                  env={'LANG': 'en_US.UTF-8'})
+        self.viewinfo = execute(["cleartool", "pwv", "-short"])
         if self.viewinfo.startswith('\*\* NONE'):
             return None
 
@@ -762,8 +761,7 @@ class ClearCaseClient(SCMClient):
             # Call cleartool to get this version and the previous version
             #   of the element.
             curr_version, pre_version = execute(
-                ["cleartool", "desc", "-pre", elem_path],
-                env={'LANG': 'en_US.UTF-8'}).split("\n")
+                ["cleartool", "desc", "-pre", elem_path])
             curr_version = cpath.normpath(curr_version)
             pre_version = pre_version.split(':')[1].strip()
 
@@ -834,8 +832,7 @@ class ClearCaseClient(SCMClient):
                     #   path list.
                     this_version = execute(
                         ["cleartool", "desc", "-fmt", "%Vn",
-                        cpath.normpath(elem_path)],
-                        env={'LANG': 'en_US.UTF-8'})
+                        cpath.normpath(elem_path)])
                     if this_version:
                         ext_path.append(key + "/@@" + this_version + "/")
                     else:
@@ -883,8 +880,7 @@ class ClearCaseClient(SCMClient):
                         if cpath.exists(tf):
                             debug("WARNING: FILE EXISTS")
                             os.unlink(tf)
-                        execute(["cleartool", "get", "-to", tf, normkey],
-                            env={'LANG': 'en_US.UTF-8'})
+                        execute(["cleartool", "get", "-to", tf, normkey])
                     else:
                         die("ERROR: FILE NOT FOUND : %s" % epstr)
 
@@ -893,14 +889,12 @@ class ClearCaseClient(SCMClient):
     def get_files_from_label(self, label):
         voblist=[]
         # Get the list of vobs for the current view
-        allvoblist = execute(["cleartool", "lsvob", "-short"],
-            env={'LANG': 'en_US.UTF-8'}).split()
+        allvoblist = execute(["cleartool", "lsvob", "-short"]).split()
         # For each vob, find if the label is present
         for vob in allvoblist:
             try:
                 execute(["cleartool", "describe", "-local",
-                    "lbtype:%s@%s" % (label, vob)],
-                    env={'LANG': 'en_US.UTF-8'}).split()
+                    "lbtype:%s@%s" % (label, vob)]).split()
                 voblist.append(vob)
             except:
                 pass
@@ -910,8 +904,7 @@ class ClearCaseClient(SCMClient):
         for vob in voblist:
             try:
                 res = execute(["cleartool", "find", vob, "-all", "-version",
-                    "lbtype(%s)" % label, "-print"],
-                    env={'LANG': 'en_US.UTF-8'})
+                    "lbtype(%s)" % label, "-print"])
                 filelist.extend(res.split())
             except :
                 pass
@@ -1099,7 +1092,6 @@ class SVNClient(SCMClient):
         if options.repository_url:
             svn_info_params.append(options.repository_url)
         data = execute(svn_info_params,
-                       env={'LC_ALL': 'en_US.UTF-8'},
                        ignore_errors=True)
         m = re.search(r'^Repository Root: (.+)$', data, re.M)
         if not m:
@@ -1130,8 +1122,7 @@ class SVNClient(SCMClient):
 
     def scan_for_server_property(self, repository_info):
         def get_url_prop(path):
-            url = execute(["svn", "propget", "reviewboard:url", path],
-                          env={'LC_ALL': 'en_US.UTF-8'}).strip()
+            url = execute(["svn", "propget", "reviewboard:url", path]).strip()
             return url or None
 
         for path in walk_parents(os.getcwd()):
@@ -1189,7 +1180,7 @@ class SVNClient(SCMClient):
         Performs the actual diff operation, handling renames and converting
         paths to absolute.
         """
-        diff = execute(cmd, env={'LC_ALL': 'en_US.UTF-8'}, split_lines=True)
+        diff = execute(cmd, split_lines=True)
         diff = self.handle_renames(diff)
         diff = self.convert_to_absolute_paths(diff, repository_info)
 
@@ -1281,7 +1272,6 @@ class SVNClient(SCMClient):
         """Return a dict which is the result of 'svn info' at a given path."""
         svninfo = {}
         for info in execute(["svn", "info", path],
-                            env={'LC_ALL': 'en_US.UTF-8'},
                             split_lines=True):
             parts = info.strip().split(": ", 1)
             if len(parts) == 2:
@@ -1880,7 +1870,10 @@ def execute(command, env=None, split_lines=False, ignore_errors=False,
     if env:
         env.update(os.environ)
     else:
-        env = os.environ
+        env = os.environ.copy()
+
+    env['LC_ALL'] = 'en_US.UTF-8'
+    env['LANGUAGE'] = 'en_US.UTF-8'
 
     if sys.platform.startswith('win'):
         p = subprocess.Popen(command,
