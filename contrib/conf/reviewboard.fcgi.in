@@ -2,8 +2,9 @@
 
 import os, sys
 
-sys.path.insert(0, "@sitedir@")
+sys.path.insert(0, "@sitedir@/conf")
 os.environ["DJANGO_SETTINGS_MODULE"] = "reviewboard.settings"
+os.environ["PYTHON_EGG_CACHE"] = "@sitedir@/tmp/egg_cache"
 
 from django.core.servers.fastcgi import runfastcgi
 runfastcgi(method="threaded", daemonize="false")

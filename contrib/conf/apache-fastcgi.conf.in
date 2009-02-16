@@ -13,6 +13,10 @@ FastCGIServer @sitedir@/htdocs/reviewboard.fcgi -socket @sitedir@/tmp/fastcgi.so
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html
 
+	<Directory "@sitedir@/htdocs">
+		AllowOverride All
+	</Directory>
+
 	# Direct all other requests to the fastcgi server
 	RewriteEngine on
 	RewriteCond %{REQUEST_FILENAME} !-f

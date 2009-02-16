@@ -9,6 +9,7 @@
 	<Location "/">
 		PythonPath "['@sitedir@/conf'] + sys.path"
 		SetEnv DJANGO_SETTINGS_MODULE reviewboard.settings
+		SetEnv PYTHON_EGG_CACHE @sitedir@/tmp/egg_cache
 		SetHandler mod_python
 		PythonHandler django.core.handlers.modpython
 		PythonAutoReload Off
@@ -25,6 +26,10 @@
 	<Location "/errordocs">
 		SetHandler None
 	</Location>
+
+	<Directory "@sitedir@/htdocs">
+		AllowOverride All
+	</Directory>
 
 	# Alias static media requests to filesystem
 	Alias /media @sitedir@/htdocs/media
