@@ -15,7 +15,7 @@
  </colgroup>
  <thead>
   <tr onClick="gotoAnchor('{{file.index}}');">
-   <th colspan="4"><a name="{{file.index}}"></a>{{ file.depot_filename }}</th>
+   <th colspan="4"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
   </tr>
   <tr>
    <th colspan="2" class="rev">{{file.revision}}</th>
@@ -36,7 +36,7 @@
 {% for line in chunk.lines %}
   <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
 {% if forloop.first %}
-   <th>{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}"></a>{% endifnotequal %}{{line.1}}</th>
+   <th>{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}" class="chunk-anchor"></a>{% endifnotequal %}{{line.1}}</th>
 {% else %}
    <th>{{line.1}}</th>
 {% endif %}

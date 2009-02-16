@@ -5,6 +5,10 @@ var INVALID  = -1;
 var DIFF_SCROLLDOWN_AMOUNT = 100;
 var VISIBLE_CONTEXT_SIZE = 5;
 
+var ANCHOR_COMMENT = 1;
+var ANCHOR_FILE = 2;
+var ANCHOR_CHUNK = 4;
+
 
 /*
  * A list of key bindings for the page.
@@ -12,22 +16,30 @@ var VISIBLE_CONTEXT_SIZE = 5;
 var gActions = [
     { // Previous file
         keys: "aAKP<m",
-        onPress: function() { scrollToAnchor(GetNextFileAnchor(BACKWARD)); }
+        onPress: function() {
+            scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_FILE));
+        }
     },
 
     { // Next file
         keys: "fFJN>",
-        onPress: function() { scrollToAnchor(GetNextFileAnchor(FORWARD)); }
+        onPress: function() {
+            scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_FILE));
+        }
     },
 
     { // Previous diff
         keys: "sSkp,,",
-        onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD)); }
+        onPress: function() {
+            scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_CHUNK | ANCHOR_FILE));
+        }
     },
 
     { // Next diff
         keys: "dDjn..",
-        onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD)); }
+        onPress: function() {
+            scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_CHUNK | ANCHOR_FILE));
+        }
     },
 
     { // Recenter
@@ -37,12 +49,16 @@ var gActions = [
 
     { // Previous comment
         keys: "[",
-        onPress: function() { scrollToAnchor(GetNextAnchor(BACKWARD, true)); }
+        onPress: function() {
+            scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_COMMENT));
+        }
     },
 
     { // Next comment
         keys: "]",
-        onPress: function() { scrollToAnchor(GetNextAnchor(FORWARD, true)); }
+        onPress: function() {
+            scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_COMMENT));
+        }
     },
 
     { // Go to header
@@ -122,6 +138,7 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.anchor = $("<a/>")
         .attr("name", "file" + this.filediff['id'] + "line" + this.beginLineNum)
+        .addClass("comment-anchor")
         .appendTo(this.el);
 
     /*
@@ -984,48 +1001,26 @@ function scrollToAnchor(anchor, noscroll) {
 /*
  * Returns the next navigatable anchor in the specified direction.
  *
- * @param {int}  dir             The direction (BACKWARD or FORWARD)
- * @param {bool} commentAnchors  true if this should cover comment anchors.
- *                               Otherwise, file anchors is used.
+ * @param {int} dir         The direction (BACKWARD or FORWARD)
+ * @param {int} anchorType  The type of the anchor as a bitmask
+ *                          (ANCHOR_COMMENT, ANCHOR_FILE, ANCHOR_CHUNK)
  *
  * @return {jQuery} The found anchor jQuery instance, or INVALID.
  */
-function GetNextAnchor(dir, commentAnchors) {
+function GetNextAnchor(dir, anchorType) {
     for (var anchor = gSelectedAnchor + dir;
          anchor >= 0 && anchor < gAnchors.length;
          anchor = anchor + dir) {
 
-        var anchorEl = gAnchors[anchor];
-        var name = anchorEl.name;
+        var anchorEl = $(gAnchors[anchor]);
 
-        if ((!commentAnchors && name.substr(0, 4) != "file") ||
-            (commentAnchors && name.substr(0, 4) == "file")) {
-            return $(anchorEl);
-        }
-    }
-
-    return $([]);
-}
-
-
-/*
- * Returns the next file anchor in the specified direction.
- *
- * @param {int} dir  The direction (BACKWARD or FORWARD).
- *
- * @return {jQuery} The found anchor jQuery instance.
- */
-function GetNextFileAnchor(dir) {
-    var fileId = parseInt(gAnchors[gSelectedAnchor].name.split(".")[0]);
-
-    for (var newAnchor = fileId + dir;
-         newAnchor >= 0 && newAnchor < gAnchors.length;
-         newAnchor += dir) {
-
-        var anchors = $("a[name=" + newAnchor + "]");
-
-        if (anchors.length > 0) {
-            return anchors;
+        if (((anchorType & ANCHOR_COMMENT) &&
+             anchorEl.hasClass("comment-anchor")) ||
+            ((anchorType & ANCHOR_FILE) &&
+             anchorEl.hasClass("file-anchor")) ||
+            ((anchorType & ANCHOR_CHUNK) &&
+             anchorEl.hasClass("chunk-anchor"))) {
+            return anchorEl;
         }
     }
 
