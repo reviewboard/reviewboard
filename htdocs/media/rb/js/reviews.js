@@ -640,6 +640,9 @@ $.fn.commentDlg = function() {
 
         textField.focus();
 
+        oldDirty = false;
+        dirty = false;
+
         return this;
     }
 
