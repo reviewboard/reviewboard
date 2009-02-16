@@ -149,7 +149,7 @@ class GitDiffParser(DiffParser):
                 i += 1
 
             return i, file
-        return i, None
+        return i + 1, None
 
 
 class GitClient:
