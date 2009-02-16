@@ -195,7 +195,7 @@
 {% for file in files %}
 {%  if not interdiffset or file.interfilediff %}
 {%   if file.fragment %}
-{{file.fragment}}
+{{file.fragment|safe}}
 {%   else %}
 <table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
        id="file_container_{{file.filediff.id}}">
