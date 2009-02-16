@@ -728,6 +728,11 @@ $.fn.highlightChunk = function() {
         }
 
         var offset = el.position();
+
+        if (!offset) {
+            return;
+        }
+
         var left = Math.round(offset.left);
         var top = Math.round(offset.top);
         var width = el.outerWidth();
