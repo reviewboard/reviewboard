@@ -1069,25 +1069,34 @@ function loadFileDiff(filediff_id, filediff_revision,
                       file_index,
                       comment_counts) {
 
-    var revision_str = filediff_revision;
+    if ($("#file" + filediff_id).length == 1) {
+        /* We already have this one. This is probably a pre-loaded file. */
+        setupFileDiff();
+    } else {
+        var revision_str = filediff_revision;
 
-    if (interfilediff_id) {
-        revision_str += "-" + interfilediff_revision;
-    }
+        if (interfilediff_id) {
+            revision_str += "-" + interfilediff_revision;
+        }
 
-    $.funcQueue("diff_files").add(function() {
-        $.ajax({
-            type: "GET",
-            url: SITE_ROOT + "r/" + gReviewRequestId + "/diff/" +
-                 revision_str + "/fragment/" + filediff_id + "/?" +
-                 "index=" + file_index + "&" + AJAX_SERIAL,
-            complete: onFileLoaded
+        $.funcQueue("diff_files").add(function() {
+            $.ajax({
+                type: "GET",
+                url: SITE_ROOT + "r/" + gReviewRequestId + "/diff/" +
+                     revision_str + "/fragment/" + filediff_id + "/?" +
+                     "index=" + file_index + "&" + AJAX_SERIAL,
+                complete: onFileLoaded
+            });
         });
-    });
+    }
 
     function onFileLoaded(xhr) {
         $("#file_container_" + filediff_id).replaceWith(xhr.responseText);
 
+        setupFileDiff();
+    }
+
+    function setupFileDiff() {
         var key = "file" + filediff_id;
 
         gFileAnchorToId[key] = {

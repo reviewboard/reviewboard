@@ -131,6 +131,24 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         }
         context.update(extra_context)
 
+        # Attempt to preload the first file before rendering any part of
+        # the page. This helps to remove the perception that the diff viewer
+        # takes longer to load now that we have progressive diffs. Users were
+        # seeing the page itself load quickly, but didn't see that first
+        # diff immediately and instead saw a spinner, making them feel it was
+        # taking longer than it used to to load a page. We just trick the
+        # user by providing that first file.
+        first_file = page.object_list[0]
+
+        if first_file:
+            file_temp = get_diff_files(diffset, first_file['filediff'],
+                                       interdiffset, highlighting, True)[0]
+            file_temp['index'] = first_file['index']
+            first_file['fragment'] = \
+                build_diff_fragment(request, file_temp, None,
+                                    highlighting, collapse_diffs, context,
+                                    'diffviewer/diff_file_fragment.html')
+
         response = render_to_response(template_name,
                                       RequestContext(request, context))
         response.set_cookie('collapsediffs', collapse_diffs)
