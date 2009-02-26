@@ -441,7 +441,7 @@ $.fn.diffFile = function(lines) {
                  */
                 var node = e.target;
 
-                if (node == ghostCommentFlag[0]) {
+                if (ghostCommentFlagCell != null) {
                     node = ghostCommentFlagCell[0];
                 }
 
@@ -473,7 +473,7 @@ $.fn.diffFile = function(lines) {
                  */
                 var node = e.target;
 
-                if (node == ghostCommentFlag[0]) {
+                if (ghostCommentFlagCell != null) {
                     node = ghostCommentFlagCell[0];
                 }
 
