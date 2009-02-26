@@ -144,7 +144,14 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
             first_file = None
 
         if first_file:
-            temp_files = get_diff_files(diffset, first_file['filediff'],
+            filediff = first_file['filediff']
+
+            # This might be on the wrong side of the interdiff.
+            # Switch it around.
+            if filediff.diffset == interdiffset:
+                filediff = first_file['interfilediff']
+
+            temp_files = get_diff_files(diffset, filediff,
                                         interdiffset, highlighting, True)
 
             if temp_files:

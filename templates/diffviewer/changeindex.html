@@ -1,12 +1,10 @@
 {% load i18n %}
 <ol class="index" start="{{page_start_index}}">
 {% for file in files %}
-{%  if not interdiffset or file.interfilediff %}
  <li class="change_file_{{file.index}}"><a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.depot_filename}}</a>:
   <img src="{{MEDIA_URL}}rb/images/spinner.gif?{{MEDIA_SERIAL}}"
        width="10" height="10" alt="{% trans "Loading..." %}" />
  </li>
-{%  endif %}
 {% endfor %}
 </ol>
 {% if is_paginated %}

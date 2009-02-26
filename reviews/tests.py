@@ -483,6 +483,7 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
+    # Bug 892
     def testInterdiff(self):
         """Testing the diff viewer with interdiffs"""
         response = self.client.get('/r/8/diff/1-2/')
@@ -494,9 +495,7 @@ class ViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
-
-        files = self.getContextVar(response, 'files')
+        self.assertEqual(self.getContextVar(response, 'num_diffs'), 3)
 
         files = self.getContextVar(response, 'files')
         self.assert_(files)
@@ -511,6 +510,29 @@ class ViewTests(TestCase):
                          '/trunk/reviewboard/settings_local.py.tmpl')
         self.assert_('fragment' not in files[1])
         self.assert_('interfilediff' in files[1])
+
+    # Bug 847
+    def testInterdiffNewFile(self):
+        """Testing the diff viewer with interdiffs containing new files"""
+        response = self.client.get('/r/8/diff/2-3/')
+
+        # Useful for debugging any actual errors here.
+        if response.status_code != 200:
+            print "Error: %s" % self.getContextVar(response, 'error')
+            print self.getContextVar(response, 'trace')
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(self.getContextVar(response, 'num_diffs'), 3)
+
+        files = self.getContextVar(response, 'files')
+        self.assert_(files)
+        self.assertEqual(len(files), 1)
+
+        self.assertEqual(files[0]['depot_filename'],
+                         '/trunk/reviewboard/NEW_FILE')
+        self.assert_('fragment' in files[0])
+        self.assert_('interfilediff' in files[0])
 
 
 class DraftTests(TestCase):

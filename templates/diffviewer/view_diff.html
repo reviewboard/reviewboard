@@ -193,10 +193,9 @@
 
 <div id="diffs">
 {% for file in files %}
-{%  if not interdiffset or file.interfilediff %}
-{%   if file.fragment %}
+{%  if file.fragment %}
 {{file.fragment|safe}}
-{%   else %}
+{%  else %}
 <table class="sidebyside loading{% if file.newfile %} newfile{% endif %}"
        id="file_container_{{file.filediff.id}}">
  <thead>
@@ -212,7 +211,7 @@
   <tr><td colspan="2"><pre>&nbsp;</pre></th></tr>
  </tbody>
 </table>
-{%   endif %}
+{%  endif %}
 <script type="text/javascript">
   $(document).ready(function() {
   loadFileDiff("{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
@@ -225,7 +224,6 @@
 			   {% commentcounts file.filediff file.interfilediff %});
 });
 </script>
-{%  endif %}
 {% endfor %}
 
 <a name="index_footer"></a>
