@@ -102,31 +102,37 @@ class DbQueryTests(TestCase):
         """Testing get_all_review_requests"""
         self.assertValidSummaries(
             ReviewRequest.objects.public(
-                User.objects.get(username="doc")),
-            ["Comments Improvements",
-             "Update for cleaned_data changes",
-             "Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Error dialog"])
+                User.objects.get(username="doc")), [
+            "Comments Improvements",
+            "Update for cleaned_data changes",
+            "Add permission checking for JSON API",
+            "Made e-mail improvements",
+            "Error dialog",
+            "Interdiff Revision Test",
+        ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.public(status=None),
-            ["Update for cleaned_data changes",
-             "Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Error dialog",
-             "Improved login form"])
+            ReviewRequest.objects.public(status=None), [
+            "Update for cleaned_data changes",
+            "Add permission checking for JSON API",
+            "Made e-mail improvements",
+            "Error dialog",
+            "Improved login form",
+            "Interdiff Revision Test",
+        ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.public(
-                User.objects.get(username="doc"), status=None),
-            ["Comments Improvements",
-             "Update for cleaned_data changes",
-             "Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Added interdiff support",
-             "Error dialog",
-             "Improved login form"])
+                User.objects.get(username="doc"), status=None), [
+            "Comments Improvements",
+            "Update for cleaned_data changes",
+            "Add permission checking for JSON API",
+            "Made e-mail improvements",
+            "Added interdiff support",
+            "Error dialog",
+            "Improved login form",
+            "Interdiff Revision Test",
+        ])
 
     def testReviewRequestsToGroup(self):
         """Testing get_review_requests_to_group"""
@@ -197,27 +203,31 @@ class DbQueryTests(TestCase):
     def testReviewRequestsToUser(self):
         """Testing get_review_requests_to_user"""
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc"),
-            ["Update for cleaned_data changes",
-             "Add permission checking for JSON API",
-             "Made e-mail improvements"])
+            ReviewRequest.objects.to_user("doc"), [
+            "Update for cleaned_data changes",
+            "Add permission checking for JSON API",
+            "Made e-mail improvements"
+        ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc", status=None),
-            ["Update for cleaned_data changes",
-             "Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Improved login form"])
+            ReviewRequest.objects.to_user("doc", status=None), [
+
+            "Update for cleaned_data changes",
+            "Add permission checking for JSON API",
+            "Made e-mail improvements",
+            "Improved login form"
+        ])
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user("doc",
-                User.objects.get(username="doc"), status=None),
-            ["Comments Improvements",
-             "Update for cleaned_data changes",
-             "Add permission checking for JSON API",
-             "Made e-mail improvements",
-             "Added interdiff support",
-             "Improved login form"])
+                User.objects.get(username="doc"), status=None), [
+            "Comments Improvements",
+            "Update for cleaned_data changes",
+            "Add permission checking for JSON API",
+            "Made e-mail improvements",
+            "Added interdiff support",
+            "Improved login form"
+        ])
 
     def assertValidSummaries(self, review_requests, summaries):
         r_summaries = [r.summary for r in review_requests]
@@ -336,16 +346,18 @@ class ViewTests(TestCase):
 
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
-        self.assertEqual(len(datagrid.rows), 5)
+        self.assertEqual(len(datagrid.rows), 6)
         self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Made e-mail improvements')
+                         'Interdiff Revision Test')
         self.assertEqual(datagrid.rows[1]['object'].summary,
-                         'Improved login form')
+                         'Made e-mail improvements')
         self.assertEqual(datagrid.rows[2]['object'].summary,
-                         'Error dialog')
+                         'Improved login form')
         self.assertEqual(datagrid.rows[3]['object'].summary,
-                         'Update for cleaned_data changes')
+                         'Error dialog')
         self.assertEqual(datagrid.rows[4]['object'].summary,
+                         'Update for cleaned_data changes')
+        self.assertEqual(datagrid.rows[5]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
@@ -427,8 +439,10 @@ class ViewTests(TestCase):
 
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
-        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary,
+                         'Interdiff Revision Test')
+        self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Add permission checking for JSON API')
 
         self.client.logout()
