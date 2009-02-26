@@ -138,16 +138,22 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
         # diff immediately and instead saw a spinner, making them feel it was
         # taking longer than it used to to load a page. We just trick the
         # user by providing that first file.
-        first_file = page.object_list[0]
+        if page.object_list:
+            first_file = page.object_list[0]
+        else:
+            first_file = None
 
         if first_file:
-            file_temp = get_diff_files(diffset, first_file['filediff'],
-                                       interdiffset, highlighting, True)[0]
-            file_temp['index'] = first_file['index']
-            first_file['fragment'] = \
-                build_diff_fragment(request, file_temp, None,
-                                    highlighting, collapse_diffs, context,
-                                    'diffviewer/diff_file_fragment.html')
+            temp_files = get_diff_files(diffset, first_file['filediff'],
+                                        interdiffset, highlighting, True)
+
+            if temp_files:
+                file_temp = temp_files[0]
+                file_temp['index'] = first_file['index']
+                first_file['fragment'] = \
+                    build_diff_fragment(request, file_temp, None,
+                                        highlighting, collapse_diffs, context,
+                                        'diffviewer/diff_file_fragment.html')
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))

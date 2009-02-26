@@ -483,6 +483,35 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
+    def testInterdiff(self):
+        """Testing the diff viewer with interdiffs"""
+        response = self.client.get('/r/8/diff/1-2/')
+
+        # Useful for debugging any actual errors here.
+        if response.status_code != 200:
+            print "Error: %s" % self.getContextVar(response, 'error')
+            print self.getContextVar(response, 'trace')
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(self.getContextVar(response, 'num_diffs'), 2)
+
+        files = self.getContextVar(response, 'files')
+
+        files = self.getContextVar(response, 'files')
+        self.assert_(files)
+        self.assertEqual(len(files), 2)
+
+        self.assertEqual(files[0]['depot_filename'],
+                         '/trunk/reviewboard/TESTING')
+        self.assert_('fragment' in files[0])
+        self.assert_('interfilediff' in files[0])
+
+        self.assertEqual(files[1]['depot_filename'],
+                         '/trunk/reviewboard/settings_local.py.tmpl')
+        self.assert_('fragment' not in files[1])
+        self.assert_('interfilediff' in files[1])
+
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
