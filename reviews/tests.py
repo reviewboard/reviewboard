@@ -128,7 +128,6 @@ class DbQueryTests(TestCase):
             "Update for cleaned_data changes",
             "Add permission checking for JSON API",
             "Made e-mail improvements",
-            "Added interdiff support",
             "Error dialog",
             "Improved login form",
             "Interdiff Revision Test",
@@ -181,7 +180,6 @@ class DbQueryTests(TestCase):
                 User.objects.get(username="doc"), status=None),
             ["Add permission checking for JSON API",
              "Made e-mail improvements",
-             "Added interdiff support",
              "Improved login form"])
 
     def testReviewRequestsFromUser(self):
@@ -197,7 +195,6 @@ class DbQueryTests(TestCase):
             ReviewRequest.objects.from_user("doc",
                 user=User.objects.get(username="doc"), status=None),
             ["Comments Improvements",
-             "Added interdiff support",
              "Improved login form"])
 
     def testReviewRequestsToUser(self):
@@ -225,11 +222,11 @@ class DbQueryTests(TestCase):
             "Update for cleaned_data changes",
             "Add permission checking for JSON API",
             "Made e-mail improvements",
-            "Added interdiff support",
             "Improved login form"
         ])
 
     def assertValidSummaries(self, review_requests, summaries):
+        print review_requests
         r_summaries = [r.summary for r in review_requests]
 
         for summary in r_summaries:
