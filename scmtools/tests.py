@@ -506,7 +506,7 @@ class MercurialTests(DjangoTestCase):
 
     def setUp(self):
         hg_repo_path = os.path.join(os.path.dirname(__file__),
-                                    'testdata/hg_repo')
+                                    'testdata/hg_repo.bundle')
         self.repository = Repository(name='Test HG',
                                      path=hg_repo_path,
                                      tool=Tool.objects.get(name='Mercurial'))
@@ -675,7 +675,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
         self.assertEqual(file.origInfo, 'cc18ec8')
         self.assertEqual(file.newInfo, '5e70b73')
-        self.assertEqual(file.data.splitlines()[0], 
+        self.assertEqual(file.data.splitlines()[0],
                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
 
@@ -706,13 +706,13 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
-    
+
     def testNewfileNoContentDiff(self):
         """Testing parsing Git diff new file, no content"""
         diff = self._readFixture('git_newfile_nocontent.diff')
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(self.tool.get_parser(diff).parse()), 0)
-    
+
     def testNewfileNoContentWithFollowingDiff(self):
         """Testing parsing Git diff new file, no content, with following"""
         diff = self._readFixture('git_newfile_nocontent2.diff')
@@ -722,7 +722,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
         self.assertEqual(file.origInfo, 'cc18ec8')
         self.assertEqual(file.newInfo, '5e70b73')
-        self.assertEqual(file.data.splitlines()[0], 
+        self.assertEqual(file.data.splitlines()[0],
                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
 
@@ -756,7 +756,7 @@ class GitTests(DjangoTestCase):
     def testComplexDiff(self):
         """Testing parsing Git diff with existing and new files"""
         diff = self._readFixture('git_complex.diff')
-        files = self.tool.get_parser(diff).parse() 
+        files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 6)
         self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
         self.assertEqual(files[0].newFile, 'cfg/testcase.ini')
