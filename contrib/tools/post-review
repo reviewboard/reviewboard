@@ -2138,7 +2138,7 @@ def parse_options(args):
                       dest="repository_url", default=None,
                       help="the url for a repository for creating a diff "
                            "outside of a working copy (currently only supported "
-                           "by Subversion).  Requires --repository-range")
+                           "by Subversion).  Requires --revision-range")
     parser.add_option("-d", "--debug",
                       action="store_true", dest="debug", default=DEBUG,
                       help="display debug output")
@@ -2210,7 +2210,7 @@ def determine_client():
         sys.exit(1)
 
     if options.parent_branch and not repository_info.supports_parent_diffs:
-        sys.stderr.write("The --parent_branch option is not valid for the "
+        sys.stderr.write("The --parent option is not valid for the "
                          "current SCM client.\n")
         sys.exit(1)
 
