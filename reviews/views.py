@@ -9,14 +9,17 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
                         HttpResponseForbidden, HttpResponseNotModified, \
                         HttpResponseServerError
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404, get_list_or_404, \
+                             render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.utils.http import http_date
 from django.utils.translation import ugettext as _
 from django.views.decorators.cache import cache_control, cache_page
 from django.views.generic.list_detail import object_list
 
+from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified, get_modified_since, \
                               set_etag, etag_if_none_match
 from djblets.auth.util import login_required
@@ -29,7 +32,8 @@ from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
-                                         exception_traceback
+                                         exception_traceback, \
+                                         exception_traceback_string
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -438,44 +442,73 @@ def raw_diff(request, review_request_id, revision=None):
 
 
 @check_login_required
-@cache_page(60 * 60 * 24 * 365) # 1 year
-def comment_diff_fragment(
-        request, review_request_id, review_id, comment_id,
-        template_name='reviews/diff_comment_fragment.html',
+def comment_diff_fragments(
+        request, review_request_id, comment_ids,
+        template_name='reviews/load_diff_comment_fragments.js',
+        comment_template_name='reviews/diff_comment_fragment.html',
         error_template_name='diffviewer/diff_fragment_error.html'):
     """
-    Returns the fragment representing the part of a diff referenced by a
-    comment. This is used to allow lazy-loading of these diff fragments, since
-    they may not be cached and take time to generate.
+    Returns the fragment representing the parts of a diff referenced by the
+    specified list of comment IDs. This is used to allow batch lazy-loading
+    of these diff fragments based on filediffs, since they may not be cached
+    and take time to generate.
     """
-    comment = get_object_or_404(Comment, pk=comment_id)
+    comments = get_list_or_404(Comment, pk__in=comment_ids.split(","))
+    latest_timestamp = get_latest_timestamp([comment.timestamp
+                                             for comment in comments])
 
-    if get_modified_since(request, comment.timestamp):
+    if get_modified_since(request, latest_timestamp):
         return HttpResponseNotModified()
 
     context = RequestContext(request, {
-        'comment': comment,
+        'comment_entries': [],
+        'container_prefix': request.GET.get('container_prefix'),
+        'queue_name': request.GET.get('queue'),
     })
 
-    try:
-        context['chunks'] = \
-            list(get_file_chunks_in_range(context, comment.filediff,
-                                          comment.interfilediff,
-                                          comment.first_line,
-                                          comment.num_lines))
-        response = render_to_response(template_name, context)
-        set_last_modified(response, comment.timestamp)
+    had_error = False
 
-        return response
-    except Exception, e:
-        return exception_traceback(request, e, error_template_name, {
-            'file': {
-                'depot_filename': comment.filediff.source_file,
-                'index': None,
-                'filediff': comment.filediff,
-            },
+    for comment in comments:
+        try:
+            content = render_to_string(comment_template_name,
+                                       RequestContext(request, {
+                'comment': comment,
+                'chunks': list(get_file_chunks_in_range(context,
+                                                        comment.filediff,
+                                                        comment.interfilediff,
+                                                        comment.first_line,
+                                                        comment.num_lines))
+            }))
+        except Exception, e:
+            content = exception_traceback_string(request, e,
+                                                 error_template_name, {
+                'comment': comment,
+                'file': {
+                    'depot_filename': comment.filediff.source_file,
+                    'index': None,
+                    'filediff': comment.filediff,
+                },
+            })
+
+            # It's bad that we failed, and we'll return a 500, but we'll
+            # still return content for anything we have. This will prevent any
+            # caching.
+            had_error = True
+
+        context['comment_entries'].append({
             'comment': comment,
+            'html': content,
         })
+
+    page_content = render_to_string(template_name, context)
+
+    if had_error:
+        return HttpResponseServerError(page_content)
+
+    response = HttpResponse(page_content)
+    set_last_modified(response, comment.timestamp)
+    response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 365) # 1 year
+    return response
 
 
 @check_login_required

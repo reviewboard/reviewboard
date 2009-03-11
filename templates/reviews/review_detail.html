@@ -123,7 +123,13 @@
     </dd>
     <script type="text/javascript">
       $(document).ready(function() {
-        loadDiffFragment("{{entry.review.id}}", "{{comment.id}}");
+        queueLoadDiffFragment("diff_fragments", "{{comment.id}}",
+{% if comment.interfilediff %}
+          "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
+{% else %}
+          "{{comment.filediff.id}}"
+{% endif %}
+        );
       });
     </script>
 {% endfor %}

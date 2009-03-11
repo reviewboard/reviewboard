@@ -1,6 +1,7 @@
 // State variables
 var gPublishing = false;
 var gPendingSaveCount = 0;
+var gPendingDiffFragments = {};
 
 
 /*
@@ -870,7 +871,8 @@ $.reviewForm = function() {
         $("textarea:first", dlg).focus();
         dlg.attr("scrollTop", 0);
 
-        $.funcQueue("review_draft_diff_comments").start();
+        loadDiffFragments("review_draft_diff_comments",
+                          "review_draft_comment_container");
     }
 
     /*
@@ -1058,25 +1060,67 @@ $.reviewBanner = function() {
 };
 
 /*
- * Loads a diff fragment as part of an asynchronous chain.
+ * Queues the load of a diff fragment from the server.
  *
- * @param {string} review_id   The review ID containing the comment fragment.
+ * This will be added to a list, which will fetch the comments in batches
+ * based on file IDs.
+ *
+ * @param {string} queue_name  The name for this load queue.
  * @param {string} comment_id  The ID of the comment.
+ * @param {string} key         The key for this request, using the
+ *                             filediff and interfilediff.
  */
-function loadDiffFragment(review_id, comment_id) {
-    var container = $("#comment_container_" + comment_id);
+function queueLoadDiffFragment(queue_name, comment_id, key) {
+    if (!gPendingDiffFragments[queue_name]) {
+        gPendingDiffFragments[queue_name] = {};
+    }
 
-    $.funcQueue("diff_comments").add(function() {
-        $.ajax({
-            type: "GET",
-            url: "reviews/" + review_id + "/fragment/diff-comment/" +
-                 comment_id + "/?" + AJAX_SERIAL,
-            complete: function(xhr) {
-                container.html(xhr.responseText);
-                $.funcQueue("diff_comments").next();
+    if (!gPendingDiffFragments[queue_name][key]) {
+        gPendingDiffFragments[queue_name][key] = [];
+    }
+
+    gPendingDiffFragments[queue_name][key].push(comment_id);
+}
+
+
+/*
+ * Begins the loading of all diff fragments on the page belonging to
+ * the specified queue and storing in containers with the specified
+ * prefix.
+ */
+function loadDiffFragments(queue_name, container_prefix) {
+    if (!gPendingDiffFragments[queue_name]) {
+        return;
+    }
+
+    for (var key in gPendingDiffFragments[queue_name]) {
+        var comments = gPendingDiffFragments[queue_name][key];
+        var url = gReviewRequestPath + "fragments/diff-comments/";
+
+        for (var i = 0; i < comments.length; i++) {
+            url += comments[i];
+
+            if (i != comments.length - 1) {
+                url += ","
             }
-        });
-    });
+        }
+
+        url += "/?queue=" + queue_name +
+               "&container_prefix=" + container_prefix +
+               "&" + AJAX_SERIAL;
+
+        $.funcQueue("diff_comments").add(function(url) {
+            var e = document.createElement("script");
+            e.type = "text/javascript";
+            e.src = url;
+            document.body.appendChild(e);
+        }(url));
+    }
+
+    // Clear the list.
+    gPendingDiffFragments[queue_name] = {};
+
+    $.funcQueue(queue_name).start();
 }
 
 $(document).ready(function() {
@@ -1245,7 +1289,7 @@ $(document).ready(function() {
         }
     }
 
-    $.funcQueue("diff_comments").start();
+    loadDiffFragments("diff_fragments", "comment_container");
 });
 
 // vim: set et:sw=4:

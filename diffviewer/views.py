@@ -237,11 +237,15 @@ def view_diff_fragment(
                                    extra_context)
 
 
-def exception_traceback(request, e, template_name, extra_context={}):
+def exception_traceback_string(request, e, template_name, extra_context={}):
     context = { 'error': e }
     context.update(extra_context)
     if e.__class__ is not UserVisibleError:
         context['trace'] = traceback.format_exc()
 
+    return render_to_string(template_name, RequestContext(request, context))
+
+
+def exception_traceback(request, e, template_name, extra_context={}):
     return HttpResponseServerError(
-        render_to_string(template_name, RequestContext(request, context)))
+        exception_traceback_string(request, e, template_name, extra_context))

@@ -100,13 +100,14 @@
         $("#edit-diff-comment-{{comment.id}}").click(function() {
             editor.inlineEditor("startEdit");
         });
-        $.funcQueue("review_draft_diff_comments").add(function() {
-          $("#review_draft_comment_container_{{comment.id}}").load(
-            gReviewRequestPath + "reviews/{{review.id}}/fragment/" +
-            "diff-comment/{{comment.id}}/",
-            null,
-            $.funcQueue("review_draft_diff_comments").next);
-        });
+
+        queueLoadDiffFragment("review_draft_diff_comments", "{{comment.id}}",
+{% if comment.interfilediff %}
+          "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
+{% else %}
+          "{{comment.filediff.id}}"
+{% endif %}
+        );
     </script>
    </dd>
 {% endfor %}
