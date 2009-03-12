@@ -20,7 +20,7 @@ from tempfile import mkstemp
 from urlparse import urljoin, urlparse
 
 # This specific import is necessary to handle the paths for
-#   cygwin enabled machines.
+# cygwin enabled machines.
 if (sys.platform.startswith('win')
     or sys.platform.startswith('cygwin')):
     import ntpath as cpath
@@ -1654,6 +1654,10 @@ class GitClient(SCMClient):
 
         if git_dir.startswith("fatal:") or not os.path.isdir(git_dir):
             return None
+
+        # post-review in directories other than the top level of
+        # of a work-tree would result in broken diffs on the server
+        os.chdir(os.path.dirname(git_dir))
 
         # We know we have something we can work with. Let's find out
         # what it is. We'll try SVN first.
