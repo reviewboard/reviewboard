@@ -1754,6 +1754,15 @@ class GitClient(SCMClient):
         else:
             parent_diff_lines = None
 
+        if options.guess_summary and not options.summary:
+            options.summary = execute(["git", "log", "--pretty=format:%s",
+                                       "HEAD^.."], ignore_errors=True).strip()
+
+        if options.guess_description and not options.description:
+            options.description = execute(
+                ["git", "log", "--pretty=tformat:%s%n%b", parent_branch + ".."],
+                ignore_errors=True).strip()
+
         return (diff_lines, parent_diff_lines)
 
     def make_diff(self, parent_branch, source_branch=""):
@@ -2091,6 +2100,15 @@ def parse_options(args):
     parser.add_option("--description-file",
                       dest="description_file", default=None,
                       help="text file containing a description of the review")
+    parser.add_option("--guess-summary",
+                      dest="guess_summary", action="store_true",
+                      default=False,
+                      help="guess summary from the latest commit (git only)")
+    parser.add_option("--guess-description",
+                      dest="guess_description", action="store_true",
+                      default=False,
+                      help="guess description based on commits on this branch "
+                           "(git only)")
     parser.add_option("--testing-done",
                       dest="testing_done", default=None,
                       help="details of testing done ")
