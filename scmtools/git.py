@@ -104,8 +104,9 @@ class GitDiffParser(DiffParser):
             diffLine = self.lines[i].split()
             try:
                 # Need to remove the "a/" and "b/" prefix
-                file.origFile = diffLine[-2][2:]
-                file.newFile = diffLine[-1][2:]
+                remPrefix = re.compile("^[a|b]/");
+                file.origFile = remPrefix.sub("", diffLine[-2])
+                file.newFile = remPrefix.sub("", diffLine[-1])
             except ValueError:
                 raise DiffParserError(
                     "The diff file is missing revision information",
