@@ -74,6 +74,11 @@ class LDAPBackend:
             if settings.LDAP_TLS:
                 ldapo.start_tls_s()
 
+            # May need to log in as the anonymous user before searching.
+            if settings.LDAP_ANON_BIND_UID:
+                ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
+                                    settings.LDAP_ANON_BIND_PASSWD)
+
             search = ldapo.search_s(settings.LDAP_BASE_DN, ldap.SCOPE_ONELEVEL,
                                     uid)
             if not search:
