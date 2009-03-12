@@ -6,8 +6,8 @@ import urllib
 import urlparse
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools.core import \
-    SCMError, FileNotFoundError, SCMTool, HEAD, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 
 
 class ClearCaseTool(SCMTool):

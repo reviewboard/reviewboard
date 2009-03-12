@@ -27,7 +27,8 @@ from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.smdiff import SMDiffer
-from reviewboard.scmtools.core import PRE_CREATION, HEAD, SCMError
+from reviewboard.scmtools.core import PRE_CREATION, HEAD
+from reviewboard.scmtools.errors import SCMError
 
 
 DEFAULT_DIFF_COMPAT_VERSION = 1

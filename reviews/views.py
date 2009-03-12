@@ -39,13 +39,12 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           ReviewRequestDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
-from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
                                        Screenshot, ScreenshotComment
-from reviewboard.scmtools.core import PRE_CREATION, SCMError
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
 

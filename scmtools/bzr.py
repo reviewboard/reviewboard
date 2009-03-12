@@ -8,7 +8,8 @@ try:
 except ImportError:
     pass
 
-from reviewboard.scmtools.core import SCMError, SCMTool, PRE_CREATION
+from reviewboard.scmtools.core import SCMTool, PRE_CREATION
+from reviewboard.scmtools.errors import SCMError
 
 
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)

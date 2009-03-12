@@ -1,8 +1,6 @@
 import reviewboard.diffviewer.parser as diffparser
 
-class SCMError(Exception):
-    def __init__(self, msg):
-        Exception.__init__(self, msg)
+from reviewboard.scmtools.errors import FileNotFoundError
 
 
 class ChangeSet:
@@ -15,22 +13,6 @@ class ChangeSet:
         self.bugs_closed = []
         self.files = []
         self.username = ""
-
-
-class FileNotFoundError(Exception):
-    def __init__(self, path, revision=None, detail=None):
-        if revision == None or revision == HEAD:
-            msg = "The file '%s' could not be found in the repository" % path
-        else:
-            msg = "The file '%s' (r%s) could not be found in the repository" \
-                % (path, revision)
-        if detail:
-            msg += ': ' + detail
-        Exception.__init__(self, msg)
-
-        self.revision = revision
-        self.path = path
-        self.detail = detail
 
 
 class Revision(object):

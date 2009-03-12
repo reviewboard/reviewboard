@@ -4,11 +4,12 @@ from django import forms
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
-from reviewboard.reviews.errors import ChangeNumberInUseError, \
-                                       ChangeSetError, \
-                                       OwnershipError
+from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.models import ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
+from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
+                                        InvalidChangeNumberError, \
+                                        ChangeSetError
 from reviewboard.scmtools.models import Repository
 
 
@@ -47,22 +48,26 @@ class NewReviewRequestForm(forms.Form):
         if changenum:
             try:
                 changeset = repository.get_scmtool().get_changeset(changenum)
-                if not changeset:
-                    self.errors['changenum'] = forms.util.ErrorList([
-                        'This change number does not represent a valid '
-                        'changeset.'])
-                    raise ChangeSetError()
-
-                if user.username != changeset.username:
-                    self.errors['changenum'] = forms.util.ErrorList([
-                        'This change number is owned by another user.'])
-                    raise OwnershipError()
             except NotImplementedError:
                 # This scmtool doesn't have changesets
                 pass
             except SCMError, e:
                 self.errors['changenum'] = forms.util.ErrorList([str(e)])
                 raise ChangeSetError()
+            except ChangeSetError, e:
+                self.errors['changenum'] = forms.util.ErrorList([str(e)])
+                raise e
+
+            if not changeset:
+                self.errors['changenum'] = forms.util.ErrorList([
+                    'This change number does not represent a valid '
+                    'changeset.'])
+                raise InvalidChangeNumberError()
+
+            if user.username != changeset.username:
+                self.errors['changenum'] = forms.util.ErrorList([
+                    'This change number is owned by another user.'])
+                raise OwnershipError()
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,

@@ -29,13 +29,14 @@ from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.email import mail_review, mail_review_request, \
                                       mail_reply
 from reviewboard.reviews.forms import UploadScreenshotForm
-from reviewboard.reviews.errors import ChangeNumberInUseError, \
-                                       InvalidChangeNumberError, \
-                                       PermissionError
+from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.core import FileNotFoundError
+from reviewboard.scmtools.errors import ChangeNumberInUseError, \
+                                        EmptyChangeSetError, \
+                                        InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 
 
@@ -65,6 +66,8 @@ REPO_INFO_ERROR           = WebAPIError(210, "There was an error fetching " +
 NOTHING_TO_PUBLISH        = WebAPIError(211, "You attempted to publish a " +
                                              "review request that doesn't " +
                                              "have an associated draft.")
+EMPTY_CHANGESET           = WebAPIError(212, "The change number specified " +
+                                             "represents an empty changeset")
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -416,6 +419,8 @@ def new_review_request(request):
                                  {'review_request': e.review_request})
     except InvalidChangeNumberError:
         return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
+    except EmptyChangeSetError:
+        return WebAPIResponseError(request, EMPTY_CHANGESET)
 
 
 @webapi_login_required

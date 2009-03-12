@@ -3,8 +3,8 @@ import re
 import subprocess
 import tempfile
 
-from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
-                                      SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 
 

@@ -17,7 +17,6 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.diffutils import UserVisibleError, \
                                              get_diff_files, \
                                              get_enable_highlighting
-from reviewboard.scmtools.core import SCMError
 
 
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,

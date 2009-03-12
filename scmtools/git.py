@@ -2,10 +2,9 @@ import os
 import re
 import subprocess
 
-from reviewboard.diffviewer.parser import \
-    DiffParser, DiffParserError, File
-from reviewboard.scmtools.core import \
-    FileNotFoundError, SCMError, SCMTool, HEAD, PRE_CREATION
+from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
+from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 
 class GitTool(SCMTool):

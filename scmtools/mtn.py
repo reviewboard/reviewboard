@@ -2,8 +2,8 @@ import os
 import subprocess
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools.core import FileNotFoundError, SCMError, \
-                                      SCMTool
+from reviewboard.scmtools.core import SCMTool
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 
 class MonotoneTool(SCMTool):

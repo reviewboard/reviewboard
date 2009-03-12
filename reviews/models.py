@@ -20,9 +20,9 @@ from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.email import mail_review_request
-from reviewboard.reviews.errors import InvalidChangeNumberError, \
-                                       PermissionError
+from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import ReviewRequestManager
+from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 
 #the model for the summery only allows it to be 300 chars in length

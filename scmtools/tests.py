@@ -12,10 +12,10 @@ except ImportError:
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
-from reviewboard.scmtools.core import SCMError, FileNotFoundError, \
-                                      Revision, HEAD, PRE_CREATION, \
-                                      ChangeSet
+from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
+from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
+
 
 class CoreTests(unittest.TestCase):
     """Tests for the scmtools.core module"""

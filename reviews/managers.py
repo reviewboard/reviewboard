@@ -5,7 +5,7 @@ from django.db.models import Q
 from djblets.util.db import ConcurrencyManager
 
 from reviewboard.diffviewer.models import DiffSetHistory
-from reviewboard.reviews.errors import ChangeNumberInUseError
+from reviewboard.scmtools.errors import ChangeNumberInUseError
 
 
 class ReviewRequestManager(ConcurrencyManager):
