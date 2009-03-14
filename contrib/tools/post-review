@@ -1694,7 +1694,7 @@ class GitClient(SCMClient):
 
         if options.guess_description and not options.description:
             options.description = execute(
-                ["git", "log", "--pretty=tformat:%s%n%b", parent_branch + ".."],
+                ["git", "log", "--pretty=format:%s%n%n%b", parent_branch + ".."],
                 ignore_errors=True).strip()
 
         return (diff_lines, parent_diff_lines)
