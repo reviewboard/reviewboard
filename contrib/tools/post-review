@@ -2,7 +2,6 @@
 import cookielib
 import difflib
 import getpass
-import md5
 import mimetools
 import ntpath
 import os
@@ -18,6 +17,12 @@ import urllib2
 from optparse import OptionParser
 from tempfile import mkstemp
 from urlparse import urljoin, urlparse
+
+try:
+    from hashlib import md5
+except ImportError:
+    # Support Python versions before 2.5.
+    from md5 import md5
 
 # This specific import is necessary to handle the paths for
 # cygwin enabled machines.
@@ -719,7 +724,7 @@ class ClearCaseClient(SCMClient):
 
     def get_filename_hash(self, fname):
         # Hash the filename string so its easy to find the file later on.
-        return md5.md5(fname).hexdigest()
+        return md5(fname).hexdigest()
 
     def get_repository_info(self):
         # We must be running this from inside a view.
