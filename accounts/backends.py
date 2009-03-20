@@ -256,7 +256,7 @@ class ActiveDirectoryBackend:
 
                 return self.get_or_create_user(username, user_data)
             except ldap.SERVER_DOWN:
-                logging.warning('Active Directory: Domain controller is down - host: %s port: %s' % (host, port))
+                logging.warning('Active Directory: Domain controller is down')
                 continue
             except ldap.INVALID_CREDENTIALS:
                 logging.warning('Active Directory: Failed login for user %s' % username)

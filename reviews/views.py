@@ -7,8 +7,7 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-                        HttpResponseForbidden, HttpResponseNotModified, \
-                        HttpResponseServerError
+                        HttpResponseNotModified, HttpResponseServerError
 from django.shortcuts import get_object_or_404, get_list_or_404, \
                              render_to_response
 from django.template.context import RequestContext
@@ -16,7 +15,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.http import http_date
 from django.utils.translation import ugettext as _
-from django.views.decorators.cache import cache_control, cache_page
+from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 
 from djblets.util.dates import get_latest_timestamp
@@ -32,7 +31,6 @@ from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
-                                         exception_traceback, \
                                          exception_traceback_string
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \

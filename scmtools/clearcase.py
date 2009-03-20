@@ -1,12 +1,8 @@
 import os
-import re
 import subprocess
-import sys
-import urllib
-import urlparse
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
+from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 
 
@@ -16,7 +12,6 @@ class ClearCaseTool(SCMTool):
 
         SCMTool.__init__(self, repository)
 
-        import cleartool
         self.client = ClearCaseClient(self.repopath)
         self.uses_atomic_revisions = False
 
@@ -145,7 +140,7 @@ class ClearCaseClient:
             return contents
 
         if errmsg.startswith("fatal: Not a valid object name"):
-            raise FileNotFoundError(commit)
+            raise FileNotFoundError(filename)
         else:
             raise SCMError(errmsg)
 

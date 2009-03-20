@@ -1,6 +1,5 @@
 import calendar
 from datetime import datetime, timedelta
-import subprocess
 import time
 
 try:

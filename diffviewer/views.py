@@ -7,7 +7,6 @@ from django.http import HttpResponse, HttpResponseServerError
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
 from djblets.siteconfig.models import SiteConfiguration
