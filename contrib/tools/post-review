@@ -53,13 +53,25 @@ else:
 #
 # Set this if you wish to hard-code a default server to always use.
 # It's generally recommended to set this using your SCM repository
-# (for those that support it -- currently only SVN and Git).
+# (for those that support it -- currently only SVN, Git, and Perforce).
 #
 # For example, on SVN:
 #   $ svn propset reviewboard:url http://reviewboard.example.com .
 #
 # Or with Git:
 #   $ git config reviewboard.url http://reviewboard.example.com
+#
+# On Perforce servers version 2008.1 and above:
+#   $ p4 counter reviewboard.url http://reviewboard.example.com
+#
+# Older Perforce servers only allow numerical counters, so embedding
+# the url in the counter name is also supported:
+#   $ p4 counter reviewboard.url.http:\|\|reviewboard.example.com 1
+#
+# Note that slashes are not allowed in Perforce counter names, so replace them
+# with pipe characters (they are a safe substitute as they are not used
+# unencoded in URLs). You may need to escape them when issuing the p4 counter
+# command as above.
 #
 # If this is not possible or desired, setting the value here will let
 # you get started quickly.
@@ -1269,6 +1281,45 @@ class PerforceClient(SCMClient):
 
         return RepositoryInfo(path=repository_path, supports_changesets=True)
 
+    def scan_for_server(self, repository_info):
+        # Scan first for dot files, since it's faster and will cover the
+        # user's $HOME/.reviewboardrc
+        server_url = \
+            super(PerforceClient, self).scan_for_server(repository_info)
+
+        if server_url:
+            return server_url
+
+        return self.scan_for_server_counter(repository_info)
+
+    def scan_for_server_counter(self, repository_info):
+        """
+        Checks the Perforce counters to see if the Review Board server's url
+        is specified. Since Perforce only started supporting non-numeric
+        counter values in server version 2008.1, we support both a normal
+        counter 'reviewboard.url' with a string value and embedding the url in
+        a counter name like 'reviewboard.url.http:||reviewboard.example.com'.
+        Note that forward slashes aren't allowed in counter names, so
+        pipe ('|') characters should be used. These should be safe because they
+        should not be used unencoded in urls.
+        """
+
+        counters_text = execute(["p4", "counters"])
+
+        # Try for a "reviewboard.url" counter first.
+        m = re.search(r'^reviewboard.url = (\S+)', counters_text, re.M)
+
+        if m:
+            return m.group(1)
+
+        # Next try for a counter of the form:
+        # reviewboard_url.http:||reviewboard.example.com
+        m2 = re.search(r'^reviewboard.url\.(\S+)', counters_text, re.M)
+
+        if m2:
+            return m2.group(1).replace('|', '/')
+
+        return None
 
     def diff(self, args):
         """
