@@ -186,8 +186,10 @@ ul.errorlist li {
  * Inline editor forms
  ****************************************************************************/
 .editicon {
-  cursor: pointer;
   margin-left: 4px;
+}
+
+.editicon img {
   vertical-align: bottom;
 }
 
