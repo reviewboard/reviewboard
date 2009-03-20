@@ -73,6 +73,11 @@ class GeneralSettingsForm(SiteSettingsForm):
                     "users."),
         required=True)
 
+    auth_enable_registration = forms.BooleanField(
+        label=_("Enable registration"),
+        help_text=_("Allow users to register new accounts."),
+        required=False)
+
     auth_nis_email_domain = forms.CharField(
         label=_("E-Mail Domain"))
 
@@ -282,7 +287,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'title':   _("Site Settings"),
                 'fields':  ('server', 'site_media_url',
-                            'site_admin_name', 'site_admin_email',
+                            'site_admin_name',
+                            'site_admin_email',
                             'auth_anonymous_access'),
             },
             {
@@ -294,6 +300,12 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'title':   _("Advanced Authentication"),
                 'fields':  ('auth_backend',),
+            },
+            {
+                'id':      'auth_builtin',
+                'classes': ('wide', 'hidden'),
+                'title':   _("Basic Authentication Settings"),
+                'fields':  ('auth_enable_registration',),
             },
             {
                 'id':      'auth_nis',

@@ -23,7 +23,8 @@ def account_register(request):
     siteconfig = SiteConfiguration.objects.get_current()
     auth_backend = siteconfig.get("auth_backend")
 
-    if auth_backend == "builtin":
+    if (auth_backend == "builtin" and
+        siteconfig.settings.get(auth_enable_registration)):
         return register(request, next_page=settings.SITE_ROOT + 'dashboard/')
 
     return HttpResponseRedirect(reverse("login"))

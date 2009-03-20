@@ -61,6 +61,7 @@ defaults.update({
     'auth_nis_email_domain':               '',
     'auth_require_sitewide_login':         False,
     'auth_custom_backends':                [],
+    'auth_enable_registration':            True,
     'diffviewer_context_num_lines':        5,
     'diffviewer_include_space_patterns':   [],
     'diffviewer_paginate_by':              20,

@@ -50,12 +50,16 @@
      <li>- <a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Admin" %}</a></li>
 {% endif %}
      <li>- <a href="{% url logout %}">{% trans "Log out" %}</a></li>
-    {% else %}
+{% else %}
      <li><a href="{% url login %}?next_page={{request.path}}">{% trans "Log in" %}</a></li>
-     {% ifequal siteconfig.settings.auth_backend "builtin" %}
+{#  XXX Using default sucks, but siteconfig defaults don't #}
+{#      work from templates.                               #}
+{%  ifequal siteconfig.settings.auth_backend "builtin" %}
+{%   if siteconfig.settings.auth_enable_registration|default_if_none:1 %}
      <li>- <a href="{% url register %}">{% trans "Register" %}</a></li>
-     {% endifequal %}
-    {% endif %}
+{%   endif %}
+{%  endifequal %}
+{% endif %}{# !is_staff #}
      <li>- <a href="http://code.google.com/p/reviewboard/issues/list">{% trans "Bugs" %}</a></li>
      <li>- <a href="http://code.google.com/p/reviewboard/issues/entry">{% trans "Report bug" %}</a></li>
     </ul>
