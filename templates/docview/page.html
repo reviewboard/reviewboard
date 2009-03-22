@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load markup %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/docs.css" />
+{% endblock %}
+
+{% block content %}
+<div id="docpage">
+{{content}}
+</div>
+{% endblock %}

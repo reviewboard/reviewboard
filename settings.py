@@ -93,6 +93,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.sessions',
     'djblets.datagrid',
+    'djblets.docview',
     'djblets.feedview',
     'djblets.siteconfig',
     'djblets.util',

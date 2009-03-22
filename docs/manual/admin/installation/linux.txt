@@ -1,0 +1,406 @@
+===================
+Installing on Linux
+===================
+
+
+Before You Begin
+================
+
+Review Board is provided as downloadable packages through
+`Python setuptools`_. The easy part is installing Review Board itself. The
+harder part is installing some of the dependencies, which we have less control
+over. This guide will help with some of these dependencies.
+
+It's assumed that you know which database and web server you want to use,
+and have already installed these on your server. It's also assumed that
+you have Python v2.4 or v2.5 installed.
+
+Review Board supports the following database servers:
+
+* MySQL_ v5.0.31 or newer
+* PostgreSQL_
+* sqlite_ v3
+
+And the following web servers:
+
+* Apache_ + mod_python or fastcgi
+* lighttpd_ + fastcgi
+
+
+If you're running Fedora_, you may need to add the `Fedora Extras`_ repository
+to your yum configuration.
+
+The instructions below are assuming you're logged in as ``root`` or
+are using :command:`sudo`.
+
+
+.. _MySQL: http://www.mysql.com/
+.. _PostgreSQL: http://www.postgresql.org/
+.. _sqlite: http://www.sqlite.org/
+.. _Apache: http://www.apache.org/
+.. _lighttpd: http://www.lighttpd.net/
+
+.. _`Fedora Extras`: http://fedoraproject.org/wiki/Extras
+
+
+Installing Python Setuptools
+============================
+
+Before you begin, you'll need `Python setuptools`_. Most Linux distributions
+have this packaged and available for installation.
+
+To install on on Debian_, Ubuntu_, or another Debian-based distribution,
+type::
+
+    $ apt-get install python-setuptools
+
+
+To install on a `RedHat Enterprise`_, Fedora_, CentOS_, or another
+RedHat-based distribution, type::
+
+    $ yum install python-setuptools
+
+
+Users of other distributions should check with their distribution for native
+packages, or follow the `setuptools installation`_ instructions.
+
+
+.. _`Python setuptools`: http://peak.telecommunity.com/DevCenter/setuptools
+.. _`setuptools installation`: http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
+
+
+.. index:: memcached
+
+Installing memcached
+====================
+
+Memcached_ is a high-performant caching server used by Review Board. While
+optional, it's **strongly** recommended in order to have a fast, responsive
+setup. Along with memcached, we need the cmemcache_ Python bindings.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install memcached libmemcache-dev
+
+To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
+
+    $ yum install memcached
+
+If libmemcache_ is not available in your distribution, you'll need to compile
+it manually or download an RPM from http://tangent.org/552/libmemcached.html.
+
+Next you'll need to install cmemcache_. This may be provided by your
+distribution. If not, you can install it from http://gijsbert.org/cmemcache/.
+Download the tarball and do the following::
+
+    $ ./configure --prefix=/usr
+    $ make
+    $ make install
+
+
+.. _memcached: http://www.danga.com/memcached/
+.. _libmemcache: http://tangent.org/552/libmemcached.html
+.. _cmemcache: http://gijsbert.org/cmemcache/
+
+
+Installing patch
+================
+
+:command:`patch` is required for Review Board's diff viewer to work.
+All distributions should provide this.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install patch
+
+To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
+
+    $ yum install patch
+
+
+Installing Review Board
+=======================
+
+To install Review Board and its required dependencies (Djblets,
+`Django-Evolution`_, Django_, flup_, and `Python Imaging Library`_) in one go,
+type::
+
+    $ easy_install ReviewBoard
+
+
+This will automatically download and install the latest stable release of
+Review Board and the required versions of its core dependencies.
+
+
+Installing Database Bindings
+============================
+
+Depending on the database you plan to use, you will probably need additional
+bindings.
+
+
+MySQL
+-----
+
+To install, type::
+
+    $ easy_install mysql-python
+
+
+Distributions may provide native packages.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install python-mysqldb
+
+
+PostgreSQL
+----------
+
+To install, type::
+
+    $ easy_install psycopg2
+
+
+SQLite
+------
+
+.. note:: If you have Python 2.5 or higher, you already have SQLite and won't
+          need to install this.
+
+To install, type::
+
+    $ easy_install pysqlite
+
+Distributions may provide native packages.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install python-sqlite2
+
+To install on Fedora_ type::
+
+    $ yum install py-pysqlite2
+
+
+Additional instructions for other distributions `are available
+<http://oss.itsystementwicklung.de/trac/pysqlite/wiki/PysqlitePackages>`_
+
+
+Installing Source Control Components
+====================================
+
+Depending on which source control systems you plan to use, you will need
+some additional components.
+
+
+CVS
+---
+
+To use Review Board with CVS_, you'll need the :command:`cvs` package
+installed. This is available on almost every distribution.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install cvs
+
+To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
+
+    $ yum install cvs
+
+
+.. _CVS: http://www.nongnu.org/cvs/
+
+
+Git
+---
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install git-core
+
+To install on Fedora_, type::
+
+    $ yum install git-core
+
+If your distribution doesn't provide Git_, you'll need to install it
+manually from http://www.git-scm.com/.
+
+
+.. _Git: http://www.git-scm.com/
+
+
+Mercurial
+---------
+
+To install support for Mercurial_, type::
+
+    $ easy_install mercurial
+
+You can also check your distribution for a native package, or use one of the
+`binary packages
+<http://www.selenic.com/mercurial/wiki/index.cgi/BinaryPackages>`_ provided.
+
+
+.. _Mercurial: http://www.selenic.com/mercurial/
+
+
+Perforce
+--------
+
+To use Review Board with Perforce_, you'll first need to install
+:command:`p4` some place in your web server's path (usually :file:`/usr/bin`).
+You'll then need to install the Python bindings by typing the following::
+
+    $ easy_install P4PythonInstaller
+
+This should fetch the appropriate versions of the ``p4api`` library and
+compile it. This will require that you have standard build tools
+(:command:`gcc`, :command:`make`, etc.) installed on your system.
+
+
+.. _Perforce: http://www.perforce.com/
+
+
+Subversion
+----------
+
+To use Review Board with Subversion_, you'll need both subversion and
+PySVN_ installed.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install subversion python-svn
+
+To install on Fedora_, type::
+
+    $ yum install subversion pysvn
+
+`RedHat Enterprise`_ and CentOS_ provide subversion, but you may have to
+install PySVN from scratch. To install Subversion, type::
+
+    $ yum install subversion
+
+If your distribution doesn't provide PySVN, you can install it by
+`downloading <http://pysvn.tigris.org/project_downloads.html>`_ the latest
+release and following the instructions in the provided :file:`INSTALL.html`.
+
+
+.. _Subversion: http://subversion.tigris.org/
+.. _PySVN: http://pysvn.tigris.org/
+
+
+.. _installing-pylucene:
+
+Installing PyLucene
+===================
+
+This is an optional step.
+
+We use PyLucene_ for our search functionality. It can be complicated to
+install, and requires a working Java installation.
+
+
+Ubuntu Jaunty and Debian Testing
+--------------------------------
+
+If you're using Ubuntu_ Jaunty or Debian_ Testing, you can simply install this
+by typing::
+
+    $ sudo apt-get install pylucene
+
+Otherwise, you'll have to perform a manual installation.
+
+
+Manual Installation
+-------------------
+
+You'll need the following dependencies to build PyLucene:
+
+* gcc/g++
+* Sun's JDK
+* Ant_
+* Python development packages
+
+On Debian_ and Ubuntu_, you can install these by typing::
+
+    $ sudo apt-get install gcc g++ sun-java6-jdk ant python-dev
+
+Once these are installed, you'll need to download the `latest version
+<http://downloads.osafoundation.org/PyLucene/jcc/>`_ of PyLucene and extract
+the tarball.
+
+.. _Ant: http://ant.apache.org/
+.. _PyLucene: http://lucene.apache.org/pylucene/
+
+
+Compile JCC
+~~~~~~~~~~~
+
+JCC is needed to compile PyLucene, and is bundled along with PyLucene.
+
+First, change to the directory containing the extracted PyLucene files, and
+then type, as root::
+
+    $ cd jcc
+    $ python setup.py install
+
+
+Compile PyLucene
+~~~~~~~~~~~~~~~~
+
+Once JCC is installed, you can compile PyLucene. Change back to the
+PyLucene directory and type, as root::
+
+    $ make
+    $ make install
+
+
+Cleaning Up
+~~~~~~~~~~~
+
+Optionally, you can now remove your JDK and install a JRE in order to save
+space. This won't make any difference to the PyLucene installation either way.
+
+You can also remove your PyLucene tarball and the source directory.
+
+
+Installing Development Tools
+============================
+
+If you plan to work on Review Board's source code, there are a few
+additional packages you'll need to install:
+
+* nose_
+* Sphinx_
+
+You can install these in one go by typing::
+
+    $ easy_install nose Sphinx
+
+
+.. _nose: http://somethingaboutorange.com/mrl/projects/nose/
+.. _Sphinx: http://sphinx.pocoo.org/
+
+
+.. _`Django-Evolution`: http://django-evolution.googlecode.com/
+.. _Django: http://www.djangoproject.com/
+.. _flup: http://www.saddi.com/software/flup
+.. _`Python Imaging Library`: http://www.pythonware.com/products/pil/
+
+
+.. _Debian: http://www.debian.org/
+.. _Ubuntu: http://www.ubuntu.com/
+.. _`RedHat Enterprise`: http://www.redhat.com/
+.. _Fedora: http://www.fedoraproject.org/
+.. _CentOS: http://www.centos.org/
+
+
+After Installation
+==================
+
+Once you've finished getting Review Board itself installed, you'll want to
+create your site. See :ref:`Creating Sites` for details.
+
+
+.. comment: vim: ft=rst et

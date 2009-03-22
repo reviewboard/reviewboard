@@ -1,0 +1,57 @@
+.. _unittestfixtures:
+
+==================
+Unit Test Fixtures
+==================
+
+Overview
+========
+
+Fixtures in Django_ are essentially dumps of part of the database. They
+contain data for the various models and can be loaded in automatically for
+unit tests. This makes it quite easy for us to have various sets of data to
+test against.
+
+For our tests, we currently have three sets of fixtures:
+
+1. ``accounts/fixtures/test_users.json`` - accounts/auth apps
+2. ``reviews/fixtures/test_reviewrequests.json`` - diffviewer/reviews apps
+3. ``scmtools/fixtures/test_scmtools.json`` - scmtools app
+
+
+.. _Django: http://www.djangoproject.com/
+
+
+Updating Fixtures
+=================
+
+If you're going to add to the existing fixtures, you'll first want to modify
+settings_local.py and set your database to be sqlite. Then::
+
+   $ ./manage.py syncdb
+   $ ./manage.py loaddata test_users test_scmtools test_reviewrequests
+
+This should populate your database with the test data. After you've added to
+the data set, dump them back out::
+
+   $ ./manage.py dumpdata auth accounts > accounts/fixtures/test_users.json
+   $ ./manage.py dumpdata diffviewer reviews > reviews/fixtures/test_reviewrequests.json
+   $ ./manage.py dumpdata scmtools > scmtools/fixtures/test_scmtools.json
+
+You can choose to only dump the data you've actually modified. If you've only
+created a review request, for example, feel free to just dump the diffviewer
+and reviews apps.  Using Fixtures in Tests
+
+Using fixtures in tests is really easy. In your test class (which must be
+derived from :class:`django.test.TestCase`), add a ``fixtures = [...]`` line
+listing the fixtures you intend to use. For example::
+
+   class MyTests(TestCase):
+       fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+       ...
+
+Note that there are some dependencies to remember. ``test_users`` can be
+included by itself, as can ``test_scmtools``, but if you want to use
+``test_reviewrequests``, you must include both ``test_users`` and
+``test_scmtools``.

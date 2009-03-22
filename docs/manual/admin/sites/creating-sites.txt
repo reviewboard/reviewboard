@@ -1,0 +1,138 @@
+.. _creatingsites:
+
+==============
+Creating Sites
+==============
+
+Installation is handled by the ``rb-site install`` command.
+
+To begin, decide what the path should be to your site directory. For this
+example, we'll use ``/var/www/reviews.example.com``. Make sure first that
+this directory does not yet exist. :command:`rb-site` will create it.
+
+
+Beginning Installation
+======================
+
+Begin installation by running the following command::
+
+    $ rb-site install /var/www/reviews.example.com
+
+You will now be asked a series of questions about your site setup. It is
+expected that you will know the answers to these questions. If not, you'll
+have to decide what software you want to use for your services and refer to
+their documentation on how to set them up and configure them.
+
+.. admonition:: We recommend mod_python and memcached
+
+   If you're using Apache, we highly recommend using mod_python, as fastcgi
+   has been known to have memory leak issues with Review Board.
+
+   We also strongly recommend installing and using memcached. This will
+   drastically improve performance of your Review Board installation. If
+   possible, put this on a server with a lot of RAM.
+
+Once you have answered all the questions and completed the installation,
+you'll need to change some directory permissions and install your web server
+configuration files.
+
+
+Changing Permissions
+====================
+
+Review Board expects to be able to write to the :file:`htdocs/media/uploaded`
+directory and all subdirectories. Since Review Board is ran by your web
+server, this directory and all subdirectories and files must be writable by
+the user your web server runs as.
+
+This user varies by operating system, distribution and web server, so you may
+need to look it up. If your web server is currently running, you can look at
+what user it's running as.
+
+Once you've figured this out, go ahead and change the permissions on the
+directories. For example, in Linux/UNIX/MacOS X with a ``www-data`` user::
+
+    $ chown -R www-data /var/www/reviews.example.com/htdocs/media/uploaded
+
+
+Web Server Configuration
+========================
+
+:command:`rb-site` provides sample web server configuration files in the newly
+created :file:`conf/` directory under your new site directory. In many installs,
+these files will work out of the box, but they may require modification
+depending on the rest of your web server configuration.
+
+The configuration file will be based on the web server type and Python loader
+you've specified. For example, if you used Apache and mod_python, you would
+use :file:`apache-modpython.conf`.
+
+Installing these files is also dependent on the web server and operating
+system/distribution.
+
+
+Apache
+------
+
+There are two possible Apache configuration files that will be generated,
+depending on whether you selected ``mod_python`` or ``fastcgi`` during
+:command:`rb-site install`.
+
+If you selected ``mod_python``, your configuration file will be
+:file:`conf/apache-modpython.conf`.
+
+If you selected ``fastcgi``, your configuration file will be
+:file:`conf/apache-fastcgi.conf`.
+
+Depending on your operating system or Linux distribution, the configuration
+file can be installed in a couple different ways.
+
+If you have a :file:`sites-available` directory in your Apache
+configuration directory (for example, :file:`/etc/apache2/sites-available`,
+then you should rename your configuration file to match your site
+(e.g., :file:`reviews.example.com.conf`) and put it in that directory. Then
+create a symbolic link from that file to the :file:`sites-enabled`
+directory. This is the most common setup on Debian or Ubuntu-based
+distributions. So for example::
+
+    $ cd /etc/apache2/sites-available
+    $ cp /var/www/reviews.example.com/conf/apache-modpython.conf reviews.example.com.conf
+    $ cd ../sites-enabled
+    $ ln -s ../sites-available/reviews.example.com.conf .
+
+If you do not have a :file:`sites-available` or :file:`sites-enabled`
+directory, you'll need to embed the configuration file in your global
+Apache configuration file (usually :file:`/etc/httpd/httpd.conf` or
+:file:`/etc/httpd/apache2.conf`).
+
+Of course, the configuration file can be placed anywhere so long as it's
+at some point included by your main Apache configuration file.
+
+Once you've installed the configuration file, restart Apache and then
+try going to your site.
+
+.. note:: Some Apache installations (such as the default installs on Debian
+          and Ubuntu) by default define a global virtual host that shares
+          :file:`/var/www` as the document root. This may lead to problems
+          with your install. If you access your site and see nothing but
+          a directory listing, then you're affected by this problem.
+
+          The solution is to remove the "default" site from your
+          :file:`/etc/apache2/sites-enabled` directory. This may be
+          called something like :file:`default` or :file:`000-default`.
+
+
+lighttpd
+--------
+
+The generated configuration file for lighttpd will be saved as
+:file:`conf/lighttpd.conf`.
+
+You should either add the contents of this file to your
+:file:`/etc/lighttpd/lighttpd.conf`, or include it directly from
+:file:`lighttpd.conf` using the ``include`` directive. See the
+`lighttpd documentation`_ for more information.
+
+.. _`lighttpd documentation`: http://redmine.lighttpd.net/wiki/lighttpd
+
+.. comment: vim: ft=rst et tw=75

@@ -1,0 +1,16 @@
+:mod:`reviewboard.scmtools.models` - SCMTools Database Models
+=============================================================
+
+.. automodule:: reviewboard.scmtools.models
+
+
+Module Contents
+---------------
+
+.. autoclass:: Repository
+   :members:
+
+
+.. autoclass:: Tool
+   :members:
+

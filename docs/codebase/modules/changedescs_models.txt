@@ -1,0 +1,11 @@
+:mod:`reviewboard.changedescs.models` - Change Descriptions Database Models
+===========================================================================
+
+.. automodule:: reviewboard.changedescs.models
+
+
+Module Contents
+---------------
+
+.. autoclass:: ChangeDescription
+   :members:

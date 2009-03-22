@@ -1,0 +1,145 @@
+#docpage {
+  font-size: 12px;
+  line-height: 1.4em;
+  padding: 0 1em;
+}
+
+#docpage a {
+  text-decoration: none;
+}
+
+#docpage a:hover {
+  text-decoration: underline;
+}
+
+#docpage a:visited {
+  color: #0000B0;
+}
+
+#docpage dd {
+  margin-left: 0;
+  padding-left: 1em;
+}
+
+#docpage h1 {
+  background-color: #EEEEEE;
+  border: 1px black solid;
+  font-size: 150%;
+  line-height: 1.1em;
+  padding: 0.2em 0.4em;
+  margin-top: 1.5em;
+}
+
+#docpage h1.title {
+  background-color: transparent;
+  border: 0;
+  font-size: 200%;
+  margin-top: 1em;
+  padding: 0;
+}
+
+#docpage h2 {
+  font-size: 130%;
+  line-height: 1.1em;
+  margin: 1em 0 0.2em 0;
+}
+
+#docpage h3 {
+  font-size: 110%;
+  line-height: 1.1em;
+  margin: 1em 0 0.2em 0;
+}
+
+#docpage h4 {
+  font-size: 100%;
+  line-height: 1.1em;
+  margin: 1em 0 0.2em 0;
+}
+
+#docpage li {
+  margin-top: 0.2em;
+}
+
+#docpage ul {
+  list-style: square;
+  padding-left: 2em;
+  margin: 0;
+}
+
+#docpage ul ul {
+  padding-left: 2em;
+}
+
+#docpage pre.literal-block {
+  background: #F3F3F3;
+  border-top: 1px #999999 solid;
+  border-bottom: 1px #999999 solid;
+  margin: 1em 0;
+  padding: 0.4em 0.6em;
+}
+
+#docpage table.docutils {
+  border-color: #C0C0C0;
+  border-collapse: collapse;
+}
+
+#docpage table.docutils thead {
+  background: #b9c9fe;
+  text-align: left;
+}
+
+#docpage table.docutils tbody {
+  background: #e0eafd;
+}
+
+#docpage table.docutils td {
+  border: 0;
+  padding: 0.4em;
+}
+
+#docpage table.docutils th {
+  border: 0;
+  padding: 0.4em;
+}
+
+#docpage .admonition-title {
+  font-weight: bold;
+  font-size: 120%;
+}
+
+#docpage .admonition,
+#docpage .warning {
+  background-color: #fdf2a0;
+  background-image: url('../images/gold_box_top_bg.png');
+  background-position: top left;
+  background-repeat: repeat-x;
+  border: 1px #b7a93e solid;
+  padding: 0px 10px;
+}
+
+#docpage .contents {
+  background-color: #F8F8F8;
+  border-top: 1px black solid;
+  border-bottom: 1px black solid;
+  padding: 0.5em;
+}
+
+#docpage .contents .topic-title {
+  font-size: 110%;
+  font-weight: bold;
+  margin: 0 0 0.5em 1.3em;
+  padding: 0;
+}
+
+#docpage .contents a {
+  text-decoration: none;
+}
+
+#docpage .contents>ul {
+  padding-left: 1.5em;
+}
+
+#docpage .toc-backref {
+  color: black;
+  text-decoration: none;
+}

@@ -1,0 +1,94 @@
+=========
+Searching
+=========
+
+Overview
+========
+
+Depending on your Review Board server setup, you may have the ability to
+search through review requests. If enabled, you should see a search bar on the
+right of the navigation banner.
+
+The search functionality allows you to search for text matching part of the
+review request, files modified, and other information.
+
+
+Query Syntax
+============
+
+There are a variety of ways to combine terms in the search field. By default,
+the search results will be an "OR" of any words entered in the box. This means
+searching for ``window javascript`` will give pages that have either of those
+words in them.
+
+In order to narrow down your results, there are a few useful operators you can
+use.
+
+* **AND**:
+
+  This operator will change the relationship from "OR" to "AND". This will
+  make it so search results will contain all of the words instead of any.
+  Searching for ``window AND javascript`` will yield only review requests that
+  contain both of those words.
+
+* **NOT**:
+
+  This works a lot like ``AND``, except it will filter out results containing
+  the NOT term. For example, ``window NOT javascript`` will return matches
+  that have "window" but not "javascript".
+
+* **Phrase**:
+
+  Sticking something in double-quotes will search for the exact phrase instead
+  of splitting it up into terms.
+
+There are a number of other operators you can use to tweak the results. For a
+full explanation of the Lucene query syntax (including a couple features not
+mentioned here), see `Lucene Query Parser Syntax`_.
+
+
+.. _`Lucene Query Parser Syntax`:
+   http://lucene.apache.org/java/2_2_0/queryparsersyntax.html
+
+
+Fields
+======
+
+In addition to searching the full text of a review request, you can search
+individual fields for better results. To search for a term inside a specific
+field, prefix that term with *field*:, where *field* is one of the below:
+
+* ``summary``:
+
+  This field searches only the summary. ``summary: window`` will match
+  requests with window in the summary only.
+
+* ``author`` and ``username``:
+
+  These two fields search the review request poster. ``author`` will search
+  both the username and full name, whereas ``username`` is just the username.
+
+* ``bug``:
+
+  This field searches by bug identifier. Searching for ``bug:83724`` will find
+  any review requests which address that bug.
+
+* ``file``:
+
+  This field indexes filenames in the diff. Searching for ``file:frob.c`` will
+  yield any review requests which altered that file.
+
+These fields can be combined like any other terms. Searches like
+``file:frob.c AND author:Jim`` can make it easy to quickly find old review
+requests.
+
+
+What Gets Indexed
+=================
+
+At the moment, this indexes the full text of review requests, and file lists
+in diffs. The reviews added by others are not yet part of this, but should be
+coming soon.
+
+
+.. comment: vim: ft=rst et ts=3

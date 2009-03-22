@@ -1,0 +1,90 @@
+.. _managementcommands:
+
+===================
+Management Commands
+===================
+
+:command:`rb-site` provides a ``manage`` command for certain management tasks.
+The format for the commands is always::
+
+    $ rb-site manage /path/to/site command-name -- parameters
+
+
+The management commands that administrators are most likely to use are
+explained in detail in the following sections.
+
+To get a complete list of all management commands, run::
+
+    $ rb-site manage /path/to/site help
+
+And to retrieve information on a specific management command::
+
+    $ rb-site manage /path/to/site help command-name
+
+
+.. _search-indexing:
+
+Search Indexing
+---------------
+
+Review Board installations set up with Lucene search must periodically
+index the database. This is done through the ``index`` management command.
+There are two indexing methods: incremental and full.
+
+To perform an incremental index::
+
+    $ rb-site manage /path/to/site index
+
+
+To perform a full index::
+
+    $ rb-site manage /path/to/site index -- --full
+
+
+These commands should be run periodically in a task scheduler, such as
+``cron`` on Linux. It is advisable to do an incremental index roughly every
+10 minutes, and a full index once a week during off-peak hours.
+
+A sample ``crontab`` entry is available at :file:`conf/search-cron.conf` under
+an installed site directory.
+
+The generated search index will be placed in the `search index directory`_
+specified in the `General Settings`_ page. By default, this should be the
+"search-index" directory in your site directory.
+
+.. _`search index directory`: ../admin-ui/general-settings#search-index-directory
+.. _`General Settings`: ../admin-ui/general-settings
+
+
+Creating a Super User
+---------------------
+
+It is possible to create a new super user account without using the
+website. This can be important if the main super user account is for
+whatever reason disabled or if the login information is lost.
+
+To create a new super user account, run::
+
+    $ rb-site manage /path/to/site createsuperuser
+
+
+This will prompt for the username and password of the account. You must
+specify a user that doesn't already exist in the database. Once this is
+finished, you should be able to log in under the new account and fix any
+problems you have.
+
+
+Opening a Command Shell
+-----------------------
+
+Power users who wish to run Python commands against an installed Review
+Board server can do so with the ``shell`` management command. This can be
+useful if you're a developer looking to test some code against Review
+Board.
+
+To open a Python command shell, run::
+
+    $ rb-site manage /path/to/site shell
+
+
+.. comment: vim: ft=rst et tw=75

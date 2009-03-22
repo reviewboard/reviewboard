@@ -1,0 +1,113 @@
+=====================
+Installing on Windows
+=====================
+
+Before You Begin
+================
+
+Review Board is provided as downloadable packages through
+`Python setuptools`_. The easy part is installing Review Board itself. The
+harder part is installing some of the dependencies, which we have less control
+over. This guide will help with some of these dependencies.
+
+It's assumed that you know which database and web server you want to use,
+and have already installed these on your server.
+
+Review Board supports the following database servers:
+
+* MySQL_ v5.0.31 or newer
+* PostgreSQL_
+* sqlite_ v3
+
+And the following web servers:
+
+* Apache_ + mod_python or fastcgi
+* lighttpd_ + fastcgi
+
+
+.. _`Python setuptools`: http://peak.telecommunity.com/DevCenter/setuptools
+
+.. _MySQL: http://www.mysql.com/
+.. _PostgreSQL: http://www.postgresql.org/
+.. _sqlite: http://www.sqlite.org/
+.. _Apache: http://www.apache.org/
+.. _lighttpd: http://www.lighttpd.net/
+
+
+Installing Python Support
+=========================
+
+You can install Python by running the latest `Python 2.5 Installer`_ for
+Windows.
+
+You'll then need to run the latest `Python Setuptools Installer`_ (look
+toward the bottom of the page for the file listing).
+
+Once Python and Setuptools are installed, you'll need to add a couple
+directories to your system path.
+
+1. Open :menuselection:`Start --> Control Panel` and navigate to the
+   :guilabel:`System` icon.
+2. Click on the :guilabel:`Advanced` tab.
+3. Click :guilabel:`Environment Variables`.
+4. Find :envvar:`PATH` in :guilabel:`System variables` and click
+   :guilabel:`Edit`.
+5. Add ``;C:\Python25;C:\Python25\Scripts`` (substitute your Python
+   directory if it's not ``C:\Python25``) to the end of the list.
+
+.. _`Python 2.5 Installer`: http://python.org/download/releases/2.5.4/
+.. _`Python Setuptools Installer`: http://pypi.python.org/pypi/setuptools#windows
+
+
+.. index:: memcached
+
+Installing memcached
+====================
+
+Memcached_ is a high-performant caching server used by Review Board. While
+optional, it's **strongly** recommended in order to have a fast, responsive
+setup. Along with memcached, we need the cmemcache_ Python bindings.
+
+1. Download `memcached for Windows`_.
+2. Unzip this to the directory you want to keep memcached in (for example,
+   :file:`C:\\memcached`).
+3. If running Vista, you'll need to set this to run as an administrator.
+   Right-click on :file:`memcached.exe` and click :guilabel:`Properties`.
+   Click the :guilabel:`Compatibility` tab and then check
+   :guilabel:`Run this program as an administrator`.
+4. Install the service from the command line by typing the following from
+   the memcached directory::
+
+      memcached.exe -d install
+
+5. Start the server through the Microsoft Management Console.
+
+
+.. _`memcached for Windows`: http://code.jellycan.com/files
+
+
+If libmemcache_ is not available in your distribution, you'll need to compile
+it manually or download an RPM from http://tangent.org/552/libmemcached.html.
+
+Next you'll need to install cmemcache_. This may be provided by your
+distribution. If not, you can install it from http://gijsbert.org/cmemcache/.
+Download the tarball and do the following::
+
+    $ ./configure --prefix=/usr
+    $ make
+    $ make install
+
+
+.. _memcached: http://www.danga.com/memcached/
+.. _libmemcache: http://tangent.org/552/libmemcached.html
+.. _cmemcache: http://gijsbert.org/cmemcache/
+
+
+After Installation
+==================
+
+Once you've finished getting Review Board itself installed, you'll want to
+create your site. See :ref:`Creating Sites` for details.
+
+
+.. comment: vim: ft=rst et

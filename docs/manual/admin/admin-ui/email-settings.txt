@@ -1,0 +1,38 @@
+===============
+E-Mail Settings
+===============
+
+.. _`Send e-mails`:
+
+* **Send e-mails for review requests and reviews:**
+    If enabled, e-mails will be sent out whenever a review request is
+    posted or updated, or when reviews and replies are posted.
+
+    See `E-Mail and Review Groups`_ for more information.
+
+* **Mail Server:**
+    The SMTP mail server used for outgoing e-mails.
+    This defaults to ``localhost``.
+
+* **Port:**
+    The SMTP mail server port. This defaults to ``25``.
+
+* **Username:**
+    The username needed to connect to the outgoing SMTP mail server, if any.
+    This is optional and depends on the mail server configuration.
+
+* **Password:**
+    The password needed to connect to the outgoing SMTP mail server, if any.
+    This is optional and depends on the mail server configuration.
+
+* **Use TLS for authentication:**
+    If enabled, TLS is used for mail server authentication. This is more
+    secure, but requires TLS support on the mail server.
+
+
+.. _`E-Mail and Review Groups`:
+   ../../management/review-groups#e-mail-and-review-groups
+.. _`Review Groups`: ../../management/review-groups
+
+
+.. comment: vim: ft=rst et

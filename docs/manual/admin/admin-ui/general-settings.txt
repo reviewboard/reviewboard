@@ -1,0 +1,193 @@
+================
+General Settings
+================
+
+The General Settings page contains most of the settings you'll want to change
+for a new site. It's split up into the following sections:
+
+* :ref:`site-settings`
+* :ref:`search-settings`
+* :ref:`advanced-authentication`
+* :ref:`ldap-authentication-settings`
+* :ref:`custom-authentication-settings`
+
+
+.. _site-settings:
+
+Site Settings
+=============
+
+In this section you'll specify the paths, administrator contacts and basic
+authentication settings for the site.
+
+The following settings can be configured:
+
+* **Server:**
+    The URL of the site. This should include the ``http://`` or
+    ``https://`` but should not contain the subdirectory Review Board
+    is set up to use.
+
+    This setting is required.
+
+* **Media URL:**
+    The URL to the media files. This can point to a dedicated
+    server, or it can be a path relative to installed Review Board
+    site.
+
+    This setting is optional, and if left blank, the default
+    media path of ``/media/`` is used.
+
+* **Administrator Name:**
+    The full name of the primary administrator for this Review Board site.
+
+    This setting is required.
+
+* **Administrator E-Mail:**
+    The e-mail address of the primary administrator for this Review Board
+    site.
+
+    This setting is required.
+
+* **Allow anonymous read-only access:**
+    Determines whether or not anonymous users should be able to view
+    posted review requests and diffs.
+
+    This is often safe to enable when the code being posted is public or when
+    there's strict access controls to the site itself. If the code is
+    confidential and it's possible for people without authority to access
+    the server, this should be disabled.
+
+
+.. _search-settings:
+
+Search
+======
+
+* **Enable search:**
+    If enabled, a search field is provided at the top of every page to
+    quickly search through review requests.
+
+    This feature depends on a working :ref:`installing-pylucene` and
+    regular :ref:`search-indexing` to work.
+
+
+.. _`search index directory`:
+
+* **Search index directory:**
+    The directory on the server's file system where the search index files
+    will be stored. This defaults to a directory named "search-index" in the
+    site's directory, if left blank.
+
+    Either absolute or relative paths can be provided. A relative path will
+    always be relative to the site directory.
+
+    This option is only available if search is enabled.
+
+
+.. _advanced-authentication:
+
+Advanced Authentication
+=======================
+
+.. _`Authentication Method`:
+.. _authentication-method:
+
+* **Authentication Method:**
+    The method used for authenticating users on this Review Board server.
+
+    Review Board has multiple ways of authenticating users. By default,
+    "Standard registration" is used, but other methods can be selected. See
+    :ref:`Authentication` for more information.
+
+    Depending on the authentication method selected, additional settings may
+    be available.
+
+    Available options are:
+
+    * Standard registration
+    * LDAP
+    * NIS
+    * Custom
+
+
+.. _ldap-authentication-settings:
+
+LDAP Authentication Settings
+============================
+
+This is available if `Authentication Method`_ is set to "LDAP".
+
+* **LDAP Server:**
+    The LDAP server to authenticate with.
+    For example: ``ldap://localhost:389``
+
+    This setting is required.
+
+* **LDAP Base DN:**
+    The LDAP Base DN for performing LDAP searches.
+    For example: ``ou=users,dc=example,dc=com``
+
+    This setting is required.
+
+* **E-Mail Domain:**
+    The domain name appended to the user's login name to form the e-mail
+    address. For example: ``example.com``
+
+    This setting is required.
+
+* **Use TLS for authentication:**
+    If checked, then TLS will be used for all authentication requests. This
+    option is more secure, but must be enabled on the LDAP server.
+
+* **User Mask:**
+    The string representing the user. The string must contain the text
+    ``%s`` where the username would normally go.
+    For example: ``(uid=%s)``
+
+    This setting is required.
+
+* **Anonymous User Mask:**
+    The user mask string for anonymous users. This should be in the same
+    format as User Mask.
+
+    This setting is optional. If not provided, anonymous logins will be
+    disabled.
+
+* **Anonymous User Password:**
+    The password for the anonymous user.
+
+    This setting is optional.
+
+
+.. _nis-authentication-settings:
+
+NIS Authentication Settings
+===========================
+
+This is available if `Authentication Method`_ is set to "NIS".
+
+* **E-Mail Domain:**
+    The domain name appended to the user's login name to form the e-mail
+    address. For example: ``example.com``
+
+    This setting is required.
+
+
+.. _custom-authentication-settings:
+
+Custom Authentication Settings
+==============================
+
+This is available if `Authentication Method`_ is set to "Custom".
+
+* **Backends:**
+    A comma-separated list of custom Django authentication backend classes.
+    These are represented as Python module paths.
+
+    This is an advanced setting and should only be used if you know what
+    you're doing.
+
+    This setting is required.
+
+
+.. comment: vim: ft=rst et

@@ -1,0 +1,15 @@
+:mod:`reviewboard.accounts.models` - Account Database Models
+============================================================
+
+.. automodule:: reviewboard.accounts.models
+
+
+Module Contents
+---------------
+
+.. autoclass:: Profile
+   :members:
+
+
+.. autoclass:: ReviewRequestVisit
+   :members:

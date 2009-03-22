@@ -1,0 +1,125 @@
+===============
+Reviewing Diffs
+===============
+
+Overview
+========
+
+Diffs can be reviewed in the Review Board diff viewer by clicking
+:guilabel:`View Diff` on the review request action bar.
+
+The diff viewer provides a side-by-side view of the old and new versions of
+each modified file, complete with color coding and syntax highlighting. Lines
+can be commented on directly, allowing the developer to see exactly what part
+of code you're talking about in a review.
+
+The top of the diff viewer shows the review request box, for reference.
+Inside that box toward the bottom is an indicator showing the current
+diff revision, sometimes followed by a listing of other revisions (if more
+than one diff was uploaded to this review request), then a file listing, and
+then the diffs.
+
+Depending on the number of files modified, the diff viewer may be split across
+multiple pages. You can jump to the pages using the paginator above or below
+the diffs.
+
+
+Commenting on Lines
+===================
+
+To comment on a line on a diff, simply click the line number, or click and
+drag down to select multiple lines. A comment dialog will appear giving you
+a text entry for writing your comment. When you're done, you can click
+:guilabel:`Save` to save the comment.
+
+.. image:: comment-box.png
+
+After saving a comment, a green comment flag will appear next to the first
+line in your selection, indicating that you have an unpublished comment. Click
+the line number or comment flag to pop open the comment box for your existing
+comment again.
+
+
+Reading Existing Comments
+=========================
+
+The diff viewer will show blue comment flags along the left-hand side
+next to the line numbers that were already reviewed. The number inside the
+comment flag indicates how many comments were made on that line.
+
+If you move the mouse cursor over the comment flag, a tooltip will appear
+showing a summary of the comments made.
+
+If you click on the comment flag or the line number, the comment dialog
+will appear, along with a blue side panel on the left showing those existing
+comments. You can still write new comments in the green area of the comment
+box.
+
+.. image:: full-comment-box.png
+
+It's important to note that this is meant to be used as a reference to see if
+other people have already said what you plan to say. The comment box is
+**not** the place to reply to those comments. Instead, you can click the
+:guilabel:`Reply` link next to the particular comment, which will take you
+back to the review request page and open a reply box.
+
+
+Viewing Other Diff Revisions
+============================
+
+Every public revision of a diff that was posted is available for review. You
+can click the box for the diff revision next to the :guilabel:`Jump to
+revision` label below the current diff revision indicator.
+
+.. image:: diff-revision-selector.png
+
+This is sometimes useful when you're in the middle of a review of a particular
+diff, go away for a bit, and then come back to discover that a new diff
+revision has been uploaded. In this case, a warning box will appear telling
+you that you have additional comments on an older revision, with a helpful
+link to jump back to that revision.
+
+
+Viewing Interdiffs
+==================
+
+The diff viewer supports showing and commenting on :term:`interdiffs`. An
+interdiff is the difference between two uploaded diff revisions. In other
+words, it lets you see what changes the developer has made since the previous
+version of the diff you looked at, which is really handy for large changes.
+
+To view an interdiff between the current revision you're looking at and
+another revision, click the box for the diff revision next to the
+:guilabel:`Changes between r# and:` label.
+
+.. note:: Due to the way that the diff viewer works, if a newer diff is based
+          on a newer revision of a file, you may see other changes made to
+          that file between those revisions that has nothing to do with the
+          review itself.
+
+          If you're a developer posting code and you want to sync your
+          source tree, it's best to post your previous diff immediately
+          after syncing and then post any new changes, in order to minimize
+          this problem.
+
+
+Keyboard Shortcuts
+==================
+
+There are many keyboard shortcuts for navigating around the diff viewer:
+
+* Previous file:
+  :kbd:`a`, :kbd:`A`, :kbd:`K`, :kbd:`P`:, :kbd:`<`, or :kbd:`m`
+* Next file:
+  :kbd:`f`, :kbd:`F`, :kbd:`J`, :kbd:`N`, :kbd:`>`
+* Previous change:
+  :kbd:`s`, :kbd:`S`, :kbd:`k`, :kbd:`p`, :kbd:`,`
+* Next change:
+  :kbd:`d`, :kbd:`D`, :kbd:`j`, :kbd:`n`, :kbd:`.`
+* Previous comment:
+  :kbd:`[`
+* Next comment:
+  :kbd:`]`
+
+
+.. comment: vim: ft=rst et ts=3

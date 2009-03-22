@@ -1,0 +1,189 @@
+=========
+Dashboard
+=========
+
+Overview
+========
+
+The dashboard is your primary method of accessing review requests. It
+displays detailed information on review requests at a glance, and allows
+filtering review requests.
+
+After logging in to Review Board, you'll be taken to your dashboard. You can
+always get back to it by clicking :guilabel:`Dashboard` on the navigation
+banner near the top of the page.
+
+
+Navigation Sidebar
+==================
+
+The dashboard provides a navigation sidebar with the following items:
+
+* Starred Reviews
+* Outgoing Reviews
+* Incoming Reviews
+
+  * To Me
+
+It also lists each group you belong to, and each group you're watching.
+Each item also lists the number of review requests in that view.
+You can click on an item to be taken to that view of the dashboard.
+
+
+Review Requests List
+====================
+
+The main area of the dashboard lists the review requests belonging to that
+particular view. This is a detailed, sortable, customizable list.
+
+Clicking on any review request in the list will take you to that particular
+review request, while clicking on a submitter's name will take you to the
+list of review requests submitted by that user.
+
+
+Sorting
+=======
+
+The review request list can be sorted by clicking on a column header. Clicking
+once will sort the column in ascending order, and clicking a second time will
+sort that column in descending order. The column will have a little up or
+down arrow indicating the sorting order. You can click the :guilabel:`X` next
+to clear sorting for that column.
+
+The dashboard provides two-level sorting. You can primarilty sort by one
+column but in the case of multiple entries for a particular submitter,
+timestamp, etc., you can have secondary sorting on another column. This is set
+by simply clicking one column (which will be the secondary column) and then
+clicking another column (which will be the primary).
+
+The primary column is indicated by a black up/down arrow, and the secondary
+column is indicated by a lighter grey up/down arrow.
+
+Sorting options are saved across sessions.
+
+
+Reordering Columns
+==================
+
+Columns in the dashboard can be reordered by clicking and dragging the column.
+The columns will reorder as you're dragging to show you the new layout, and
+when you release the mouse cursor the order will be saved.
+
+
+Customizable Columns
+====================
+
+.. image:: dashboard-columns.png
+
+Different users have different things they want to see in the dashboard. You
+can change which columns are shown and which aren't by clicking the
+:guilabel:`...` button to the right of the columns. A pop-up menu will appear
+showing which columns are shown and which aren't.
+
+The following are available columns you can choose from:
+
+
+My Comments
+-----------
+
+Shows a green comment flag if you have any unpublished comments on the review
+request, or a blue comment flag if you have published comments. This allows
+you to quickly see which review requests you've addressed.
+
+
+New Updates
+-----------
+
+Shows a message bubble icon for any review requests that have been updated or
+have had discussion since you've last seen it. This does not apply to review
+requests you haven't yet looked at.
+
+
+Ship It!
+--------
+
+Shows a checkmark icon next to any review requests that someone has marked
+"Ship It!"
+
+
+Starred
+-------
+
+Displays a star indicator that can be toggled. When toggled on, the review
+request is starred, meaning you'll be CC'd on any discussion. Toggling it off
+will remove you from the CC list.
+
+
+Diff Updated
+------------
+
+Shows the timestamp of the last diff update. This is color-coded to indicate
+the age.
+
+
+Diff Updated (Relative)
+-----------------------
+
+Shows the timestamp of the last diff update, relative to now. This is
+color-coded to indicate the age.
+
+
+Last Updated
+------------
+
+Shows the timestamp of the last update to the review request. This is
+color-coded to indicate the age.
+
+
+Last Updated (Relative)
+-----------------------
+
+Shows the timestamp of the last update to the review request, relative to now.
+This is color-coded to indicate the age.
+
+
+Posted Time
+-----------
+
+Shows the timestamp when the review request was first posted. This is
+color-coded to indicate the age.
+
+
+Posted Time (Relative)
+----------------------
+
+Shows the timestamp when the review request was first posted, relative to now.
+This is color-coded to indicate the age.
+
+
+Repository
+----------
+
+Shows the repository that the review request is against.
+
+
+Review ID
+---------
+
+Shows the ID number of the review request.
+
+
+Number of Reviews
+-----------------
+
+Shows how many reviews have been made on the review request.
+
+
+Submitter
+---------
+
+Shows the username of the submitter.
+
+
+Summary
+-------
+
+Shows the summary text of the review request.
+
+
+.. comment: vim: ft=rst et ts=3

@@ -1,0 +1,65 @@
+.. _administrationguide:
+
+====================
+Administration Guide
+====================
+
+
+Installation
+============
+
+.. toctree::
+   :maxdepth: 1
+
+   installation/linux
+   installation/windows
+   installation/upgrading
+
+
+Site Maintenance
+================
+
+.. toctree::
+   :maxdepth: 1
+
+   sites/rb-site
+   sites/creating-sites
+   sites/upgrading-sites
+   sites/management-commands
+
+
+Administration UI
+=================
+
+.. toctree::
+   :maxdepth: 1
+
+   admin-ui/overview
+   admin-ui/dashboard
+   admin-ui/database
+   admin-ui/settings
+
+
+Management
+==========
+
+.. toctree::
+   :maxdepth: 1
+
+   Default Reviewers <management/default-reviewers>
+   Permission Groups <management/permission-groups>
+   Repositories <management/repositories>
+   Review Groups <management/review-groups>
+   Users <management/users>
+
+
+.. comment: Some hidden toctrees for building the structure properly.
+
+.. toctree::
+   :hidden:
+
+   sites/index
+   admin-ui/index
+   management/index
+
+.. comment: vim: ft=rst et

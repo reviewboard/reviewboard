@@ -1,0 +1,27 @@
+.. _contributingpatches:
+
+====================
+Contributing Patches
+====================
+
+New patches should always be based on our latest code in SVN.
+
+Patches should be posted on our project's Review Board server at
+http://reviews.review-board.org/. We'll review the patches there, and
+eventually submit the change if we agree it belongs in the codebase.
+
+We do not accept patches to the `mailing lists`_ or our `bug tracker`_.
+If a patch is posted there, we will ask that it be resubmitted to our
+Review Board server.
+
+Before submitting patches, please make sure the code adheres to the
+:ref:`Coding Standards`.
+
+We also strongly encourage contributors to submit unit tests along with
+their code.
+
+.. _`mailing lists`: http://www.review-board.org/mailing-lists/
+.. _`bug tracker`: http://www.review-board.org/bugs/
+
+
+.. comment: vim: ft=rst et ts=3

@@ -1,0 +1,29 @@
+==============================
+Editing and Publishing Reviews
+==============================
+
+After you have commented on any parts of a review request (specifically a diff
+or a screenshot), a green review draft banner will appear docked to the top
+of any page related to that review request. This banner gives you the ability
+to edit, publish, or discard the review request.
+
+Clicking the :guilabel:`Review` button on the review request action bar, or
+clicking :guilabel:`Edit Review` on the review draft banner will pop open a
+form for seeing and modifying your current review.
+
+Here you can add some text above or below the comments or modify the text of
+existing comments. When done, you can either publish the review (along with
+any changes made), or you can just save the changes by clicking
+:guilabel:`Save`.
+
+To publish the review, click :guilabel:`Publish Review` on the review form or
+:guilabel:`Publish` on the review banner.
+
+Likewise, you can discard the review, deleting all comments permanently, by
+clicking the :guilabel:`Discard Review` button on the review form or
+:guilabel:`Discard` on the review banner.
+
+Published reviews will appear on the review request page, where they can be
+read and commented on.
+
+.. comment: vim: ft=rst et ts=3

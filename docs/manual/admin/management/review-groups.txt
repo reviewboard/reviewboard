@@ -1,0 +1,95 @@
+.. _review-groups:
+
+======================
+Managing Review Groups
+======================
+
+Review requests are usually posted to one or more review groups, which users
+can subscribe to. Every review group has an ID name, a human-readable display
+name, and an optional mailing list.
+
+
+E-Mail and Review Groups
+========================
+
+Review groups may have a mailing list associated with it. If
+`Send e-mails for review requests and reviews`_ is enabled in
+`E-Mail Settings`_, and a mailing list is associated with a group on the
+review request's reviewers list, then e-mails will be sent to the list on all
+updates and reviews.
+
+If a mailing list is not provided, and the setting is enabled, e-mails will
+instead go out to every user who has joined the review group.
+
+.. _`Send e-mails for review requests and reviews`:
+   ../../admin-ui/email-settings#send-e-mails
+.. _`E-Mail Settings`: ../../admin-ui/email-settings
+
+
+Adding Review Groups
+====================
+
+To add a new review group, click the "Add" link next to the "Review groups"
+entry in the `database section`_ or the `Administrator Dashboard`_ in the
+`Administration UI`_. Make sure to choose "Review groups" and not "Groups", as
+the latter is for `Permission Groups`_.
+
+A form will appear with the following fields:
+
+* **Name** (required)
+    This is the ID name of the group. Users will type this when adding the
+    group to their reviewers list, and it will appear in their dashboard.
+
+* **Display name** (required)
+    This is the human-readable display name that will be shown in the
+    browseable Groups list. It should generally be kept short.
+
+* **Mailing list** (optional)
+    The mailing list that e-mails will be sent to, if enabled. If not
+    provided, e-mails will be sent to all members of the group. See
+    `E-Mail and Review Groups`_ for more information.
+
+* **Users** (optional)
+    The list of users that belong to the group. This is useful when you
+    want to pre-populate a group with specific users. This can usually be
+    left blank, since users can join the group themselves.
+
+    The list contains possible users to match. Selected entries are the users
+    you want to add. Hold down "Control" (on the PC) or "Command" (on the Mac)
+    to select more than one.
+
+When done, click "Save" to create the review group.
+
+
+Editing Review Groups
+=====================
+
+To edit a review group, click "Review groups" in the
+`Administrator Dashboard`_ or `Database section`_ of the `Administration UI`_.
+You can then browse to the group you want to modify and click it.
+
+See `Adding Review Groups`_ for a description of each field.
+
+When done, click "Save" to save your changes.
+
+
+Deleting Review Groups
+======================
+
+To delete a review group, follow the instructions in `Editing Review Groups`_
+to find the group you want to get rid of. Then click "Delete" at the
+bottom of the page.
+
+.. warning::
+
+   It is recommended that you not delete review groups, as it will affect
+   existing review requests. It is generally best to keep old groups around
+   to keep the review histories intact.
+
+
+.. _`database section`: ../../admin-ui/database
+.. _`Administration UI`: ../../admin-ui/overview
+.. _`Administrator Dashboard`: ../../admin-ui/dashboard
+.. _`Permission Groups`: permission-groups
+
+.. comment: vim: ft=rst et

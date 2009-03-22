@@ -1,0 +1,231 @@
+=====================
+Managing Repositories
+=====================
+
+Review Board supports talking to multiple source code repositories of various
+types. A single Review Board server can be configured with nearly an unlimited
+number of repositories, making it useful in large projects and companies as
+well as small. These are managed in the
+:ref:`Administration UI <administration-ui>` through either the
+:ref:`database section <database-management>` or the
+:ref:`administrator-dashboard`.
+
+
+.. _adding-repositories:
+
+Adding Repositories
+===================
+
+In order for Review Board to talk to a source code repository, it must first
+know how to access it.
+
+To add a new repository, click the :guilabel:`Add` link next to the
+:guilabel:`Repositories` entry in the
+:ref:`database section <database-management>` or the
+:ref:`administrator-dashboard`.
+
+A form will appear with the following fields:
+
+* **Name** (required)
+    This is the human-readable name of the repository that users will see.
+    The name can be whatever you like and will appear on the "New Review
+    Request" page and in the review request's displayed information.
+
+.. _`Path field`:
+
+* **Path** (required)
+    This is the path to the repository on the server. It must be accessible
+    by the server running Review Board. The value depends on the repository
+    type. See :ref:`determining-repository-information` below for more
+    information.
+
+* **Mirror Path** (optional)
+    This is an alternate path for the repository that is used during
+    lookups. It's usually used when there's separate developer and anonymous
+    URLs for the repository, with the anonymous URL entered in
+    :guilabel:`Path` and the developer URL entered in :guilabel:`Mirror Path`.
+    Review Board will always use the main path when looking up files.
+
+    See :ref:`determining-repository-information` below for more
+    information on the URLs.
+
+.. _`Username and Password fields`:
+.. _`Username field`:
+
+* **Username** and **Password** (optional)
+    Some repositories will require a username and password for access,
+    some require only a username, and some don't require either and instead
+    allow for anonymous access.
+
+    Subversion repositories, for example, generally provide anonymous access,
+    while CVS and Perforce generally require a username but not a password.
+
+    The administrator of the repository should know what is required. This
+    varies depending on the setup.
+
+* **Tool** (required)
+    This is the type of the repository. These values should be
+    straightforward.
+
+* **Bug Tracker** (optional)
+    In most projects, there's a bug tracker associated with the repository
+    or project, and review requests will often reference bugs.
+
+    Review Board will automatically link any bugs to the bug tracker
+    associated with the repository if this field is provided.
+
+    The value of the field should be the path of a ticket, except with
+    ``%s`` substituted for the ticket name.
+
+    For example:
+      * **Bugzilla**:
+        ``http://bugzilla.example.com/show_bug.cgi?id=%s``
+      * **Google Code**:
+        ``http://code.google.com/p/myproject/issues/detail?id=%s``
+      * **Trac**:
+        ``http://trac.example.com/ticket/%s``
+
+    If you don't use a bug tracker with projects in this repository, this
+    field can be left blank.
+
+* **Encoding** (optional)
+    In some cases there's confusion as to the proper encoding to expect from
+    files in a repository. You can set this to the proper encoding type (such
+    as utf-8) if you need to, but generally you don't want to touch this field
+    if things are working fine. You can leave this blank.
+
+When done, click :guilabel:`Save` to create the repository entry.
+
+
+.. _editing-repositories:
+
+Editing Repositories
+====================
+
+In the event that you need to change the information on a repository (for
+example, if the repository path or the bug tracker URL has changed), you can
+edit your repository information by clicking :guilabel:`Repositories` in the
+:ref:`administrator-dashboard` or
+:ref:`Database section <database-management>` of the
+:ref:`Administration UI <administration-ui>`.
+
+See :ref:`adding-repositories` for a description of each field.
+
+When done, click :guilabel:`Save` to save your changes.
+
+
+Deleting Repositories
+=====================
+
+To delete a repository, follow the instructions in
+:ref:`editing-repositories` to find the repository you want to get rid of.
+Then click :guilabel:`Delete` at the bottom of the page.
+
+.. warning::
+
+   Deleting a repository will delete any and all review requests, reviews,
+   diffs, or other data associated with it. You should never delete a
+   repository that has been previously used, unless the server is really
+   dead and gone with no replacement (in which case review requests won't be
+   able to grab the diff information anyway).
+
+
+.. _determining-repository-information:
+
+Determining Repository Information
+==================================
+
+The `Path field`_ for a repository is very dependent on the type of repository
+you're configuring. This section provides some help for determining which
+value to use.
+
+
+CVS
+---
+
+Review Board supports several methods of connecting to a CVS server. In
+particular, the following connection types can be used:
+
+* ``:ext:``
+* ``:fork:``
+* ``:gserver:``
+* ``:kgserver:``
+* ``:local:``
+* ``:pserver:``
+* ``:server:``
+
+If you use one of these connection types and provide it for the `Path field`_,
+you won't need to fill in the `Username and Password fields`_.
+
+If you use ``:pserver:``, you can instead provide a Path of the form
+``hostname:port/path`` and then specify the username and password in the
+appropriate fields.
+
+Some example of valid paths include:
+
+* ``cvs.example.com/cvsroot``
+* ``:pserver:anonymous@cvs.example.com/cvsroot``
+* ``:pserver:myuser:mypass@cvs.example.com:1234/cvsroot``
+* ``:local:C:\CVSROOTS\myproject``
+
+
+To determine the path of an existing checkout, you can go to the top-most
+directory of the checkout and type::
+
+    $ cat CVS/Root
+
+You should use the contents of this file as the repository path, adjusting the
+username, password or path as necessary.
+
+
+Git
+---
+
+In order to use Git with Review Board, you'll first need a local checkout,
+which should be kept in sync regularly. Ideally, this checkout will be the
+master upstream repository, or a clone kept in sync on every commit.
+
+The `Path field`_ should point to the ``.git`` directory inside this checkout.
+The `Username and Password fields`_ should be blank.
+
+
+Perforce
+--------
+
+The Perforce path can be retrieved from an existing Perforce checkout by
+typing the following::
+
+    $ p4 info
+
+Use the value from the :guilabel:`Server address` field.
+
+In most setups, the `Username field`_ must be provided. This must be a user
+that has access to the whole repository. In some setups, this is a dedicated
+read-only user.
+
+Note that Review Board will only ever use this user for read-only operations.
+It will never write to the repository.
+
+
+Subversion
+----------
+
+The Subversion path can be retrieved from an existing Subversion checkout by
+typing the following::
+
+    $ svn info
+
+Use the value from the :guilabel:`Repository Root` field.
+
+In most server setups, Subversion provides anonymous access, so the
+`Username and Password fields`_ won't need to be filled out. However, this
+depends on the server setup. Some are more restricted and will require a
+dedicated user.
+
+In Subversion setups where there's a public anonymous URL and a secured
+developer URL (such as one using ``https`` or ``svn+ssh``), you
+should put the public URL in :guilabel:`Path` field and
+your developer URL in the :guilabel:`Mirror Path`.
+
+
+.. comment: vim: ft=rst et

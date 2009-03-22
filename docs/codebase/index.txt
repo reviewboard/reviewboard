@@ -1,0 +1,28 @@
+====================================
+Review Board Code Base Documentation
+====================================
+
+
+Introduction
+============
+
+Review Board is written in the `Python`_ programming language and makes use
+of the `Django`_ web framework.
+
+The source code for Review Board is available via SVN from
+http://reviewboard.googlecode.com.
+
+.. _Python: http://www.python.org/
+.. _Django: http://www.djangoproject.com/
+
+
+Contributor Guides
+==================
+
+* :ref:`Coding Standards`
+* :ref:`Contributing Patches`
+* :ref:`Unit Test Fixtures`
+.. * :ref:`Creating SCMTools`
+
+
+.. comment: vim: ft=rst et ts=3

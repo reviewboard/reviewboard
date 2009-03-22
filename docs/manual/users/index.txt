@@ -1,0 +1,71 @@
+.. _usersguide:
+
+===========
+Users Guide
+===========
+
+Getting Started
+===============
+
+.. toctree::
+   :maxdepth: 1
+
+   getting-started/introduction
+   getting-started/what-is-code-review
+   getting-started/workflow
+
+
+Navigating Review Board
+=======================
+
+.. toctree::
+   :maxdepth: 1
+
+   navigating/dashboard
+   navigating/searching
+
+
+Managing Review Requests
+========================
+
+.. toctree::
+   :maxdepth: 1
+
+   review-requests/creating
+   review-requests/updating
+
+
+Reviewing Review Requests
+=========================
+
+.. toctree::
+   :maxdepth: 1
+
+   reviews/reviewing-diffs
+   reviews/reviewing-screenshots
+   reviews/editing-reviews
+   reviews/replying
+
+
+Tools
+=====
+
+.. toctree::
+   :maxdepth: 1
+
+   tools/post-review
+
+
+.. comment: Some hidden toctrees for building the structure properly.
+
+.. toctree::
+   :hidden:
+
+   getting-started/index
+   navigating/index
+   review-requests/index
+   reviews/index
+   tools/index
+
+
+.. comment: vim: ft=rst et ts=3

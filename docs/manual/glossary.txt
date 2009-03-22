@@ -1,0 +1,28 @@
+.. _glossary:
+
+========
+Glossary
+========
+
+.. glossary::
+
+   diff file
+       A file representing changes to one or more files. Common diff
+       formats are "unified diffs" and "context diffs."
+
+   post-commit hook
+       A script that is executed after a commit is made to a repository.
+       See :ref:`Automating post-review` for ways to use post-commit hooks
+       to automate submitting review requests to Review Board.
+
+   post-commit review
+       A form of code review where code is reviewed after it is submitted
+       to a repository, usually in a development branch.
+
+   pre-commit review
+       A form of code review where code is reviewed before it even goes
+       into a repository. This is generally a more strict way to handle
+       code review, which can lead to fewer problems in the codebase.
+
+
+.. comment: vim: ft=rst et
