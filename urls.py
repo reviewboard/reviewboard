@@ -37,18 +37,6 @@ if not admin.site._registry:
 # URLs global to all modes
 urlpatterns = patterns('',
     (r'^admin/', include('reviewboard.admin.urls')),
-    (r'^docs/users/$', 'djblets.docview.views.page',
-     {'basepath': 'docs/users/',
-      'pagename': 'index'}),
-    (r'^docs/users/(?P<pagename>[A-Za-z0-9_/-]+/$)',
-     'djblets.docview.views.page',
-     {'basepath': 'docs/users/'}),
-    (r'^docs/admin/$', 'djblets.docview.views.page',
-     {'basepath': 'docs/admin/',
-      'pagename': 'index'}),
-    (r'^docs/admin/(?P<pagename>[A-Za-z0-9_/-]+/$)',
-     'djblets.docview.views.page',
-     {'basepath': 'docs/admin/'}),
 )
 
 # Add static media if running in DEBUG mode
