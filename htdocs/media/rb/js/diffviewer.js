@@ -596,6 +596,7 @@ $.fn.diffFile = function(lines) {
 
                 if (relTarget != ghostCommentFlag[0]) {
                     ghostCommentFlag.hide();
+                    ghostCommentFlagCell = null;
                 }
 
                 if (selection.begin != null) {
