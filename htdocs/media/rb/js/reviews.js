@@ -897,7 +897,7 @@ $.reviewForm = function() {
                 $.funcQueue("reviewForm").next,
                 {
                     shipit: function() {
-                        return $(".recommendation", dlg)[0].checked ? 1 : 0;
+                        return $("#id_shipit", dlg)[0].checked ? 1 : 0;
                     },
                     body_top: function() {
                         return $(".body-top", dlg).text();

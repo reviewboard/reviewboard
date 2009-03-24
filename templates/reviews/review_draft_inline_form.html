@@ -3,7 +3,7 @@
 {% load reviewtags %}
 {% load difftags %}
 <div id="review-form-comments" class="review">
- <p><input class="recommendation" type="checkbox" {% if review.ship_it %}checked="checked"{% endif %} /> <label>{% trans "Ship It" %}</label></p>
+ <p><input id="id_shipit" class="recommendation" type="checkbox" {% if review.ship_it %}checked="checked"{% endif %} /> <label for="id_shipit">{% trans "Ship It" %}</label></p>
  <pre class="body-top editable">{{review.body_top}}</pre>
 
  <div class="comments">
