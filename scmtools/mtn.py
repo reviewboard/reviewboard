@@ -86,7 +86,7 @@ class MonotoneClient:
         p = subprocess.Popen(args,
                              stderr=subprocess.PIPE,
                              stdout=subprocess.PIPE,
-                             close_fds=True)
+                             close_fds=(os.name != 'nt'))
 
         out = p.stdout.read()
         err = p.stderr.read()

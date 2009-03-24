@@ -130,7 +130,8 @@ class ClearCaseClient:
         p = subprocess.Popen(
             ['cat', filename],
             stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE, close_fds=True
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
         )
         contents = p.stdout.read()
         errmsg = p.stderr.read()

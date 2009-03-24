@@ -181,7 +181,8 @@ class GitClient:
             ['git', '--git-dir=%s' % self.path, 'cat-file',
                  '%s' % option, '%s' % commit],
             stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE, close_fds=True
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
         )
         contents = p.stdout.read()
         errmsg = p.stderr.read()

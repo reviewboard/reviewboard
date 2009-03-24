@@ -163,7 +163,7 @@ class CVSClient:
         p = subprocess.Popen(['cvs', '-f', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             close_fds=True)
+                             close_fds=(os.name != 'nt'))
         contents = p.stdout.read()
         errmsg = p.stderr.read()
         failure = p.wait()
