@@ -56,7 +56,9 @@
 {% box "review-request" %}
 <ul id="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
+{% if not interdiffset %}
  <li class="primary"><a href="raw/">{% trans "Download Diff" %}</a></li>
+{% endif %}
 {% include "reviews/review_request_actions_primary.html" %}
  <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
 </ul>
