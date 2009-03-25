@@ -38,6 +38,7 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
+from reviewboard.webapi.decorators import webapi_check_login_required
 
 
 #
@@ -231,7 +232,7 @@ def service_not_configured(request):
     return WebAPIResponseError(request, SERVICE_NOT_CONFIGURED)
 
 
-@webapi_login_required
+@webapi_check_login_required
 def repository_list(request):
     """
     Returns a list of all known repositories.
@@ -241,7 +242,7 @@ def repository_list(request):
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def repository_info(request, repository_id):
     try:
         repository = Repository.objects.get(id=repository_id)
@@ -257,7 +258,7 @@ def repository_info(request, repository_id):
     except:
         return WebAPIResponseError(request, REPO_INFO_ERROR)
 
-@webapi_login_required
+@webapi_check_login_required
 def user_list(request):
     """
     Returns a list of all users.
@@ -277,7 +278,7 @@ def user_list(request):
         'users': u,
     })
 
-@webapi_login_required
+@webapi_check_login_required
 def group_list(request):
     """
     Returns a list of all review groups.
@@ -297,7 +298,7 @@ def group_list(request):
         'groups': u,
     })
 
-@webapi_login_required
+@webapi_check_login_required
 def users_in_group(request, group_name):
     """
     Returns a list of users in a group.
@@ -423,7 +424,7 @@ def new_review_request(request):
         return WebAPIResponseError(request, EMPTY_CHANGESET)
 
 
-@webapi_login_required
+@webapi_check_login_required
 def review_request(request, review_request_id):
     """
     Returns the review request with the specified ID.
@@ -436,7 +437,7 @@ def review_request(request, review_request_id):
     return WebAPIResponse(request, {'review_request': review_request})
 
 
-@webapi_login_required
+@webapi_check_login_required
 def review_request_by_changenum(request, repository_id, changenum):
     """
     Returns a review request with the specified changenum.
@@ -558,7 +559,7 @@ def review_request_updated(request, review_request_id):
         'updated' : review_request.get_new_reviews(request.user).count() > 0
         })
 
-@webapi_login_required
+@webapi_check_login_required
 def review_request_list(request, func, **kwargs):
     """
     Returns a list of review requests.
@@ -574,7 +575,7 @@ def review_request_list(request, func, **kwargs):
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def count_review_requests(request, func, **kwargs):
     """
     Returns the number of review requests.
@@ -603,7 +604,7 @@ def _get_and_validate_review(request, review_request_id, review_id):
     return review
 
 
-@webapi_login_required
+@webapi_check_login_required
 def review(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
@@ -618,7 +619,7 @@ def _get_reviews(review_request):
                                          base_reply_to__isnull=True)
 
 
-@webapi_login_required
+@webapi_check_login_required
 def review_list(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
@@ -626,7 +627,7 @@ def review_list(request, review_request_id):
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def count_review_list(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
@@ -634,7 +635,7 @@ def count_review_list(request, review_request_id):
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def review_comments_list(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
@@ -647,7 +648,7 @@ def review_comments_list(request, review_request_id, review_id):
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def count_review_comments(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
@@ -1093,7 +1094,7 @@ def review_reply_draft_discard(request, review_request_id, review_id):
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
-@webapi_login_required
+@webapi_check_login_required
 def review_replies_list(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
@@ -1104,7 +1105,7 @@ def review_replies_list(request, review_request_id, review_id):
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def count_review_replies(request, review_request_id, review_id):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
@@ -1217,7 +1218,7 @@ def new_screenshot(request, review_request_id):
     return WebAPIResponse(request, {'screenshot_id': screenshot.id})
 
 
-@webapi_login_required
+@webapi_check_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
                        interfilediff_id=None):
@@ -1235,6 +1236,9 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
         interfilediff = None
 
     if request.POST:
+        if request.user.is_anonymous():
+            return WebAPIResponseError(request, NOT_LOGGED_IN)
+
         num_lines = request.POST['num_lines']
         action = request.POST['action']
 
@@ -1310,12 +1314,15 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
     })
 
 
-@webapi_login_required
+@webapi_check_login_required
 def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
 
     if request.POST:
+        if request.user.is_anonymous():
+            return WebAPIResponseError(request, NOT_LOGGED_IN)
+
         action = request.POST['action']
 
         # TODO: Sanity check the fields
