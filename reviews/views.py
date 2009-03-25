@@ -14,6 +14,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.http import http_date
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
@@ -171,6 +172,14 @@ def review_detail(request, review_request_id,
             elif 'old' in info or 'new' in info:
                 change_type = 'changed'
                 multiline = (name == "description" or name == "testing_done")
+
+                # Branch text is allowed to have entities, so mark it safe.
+                if name == "branch":
+                    if 'old' in info:
+                        info['old'][0] = mark_safe(info['old'][0])
+
+                    if 'new' in info:
+                        info['new'][0] = mark_safe(info['new'][0])
             elif name == "screenshot_captions":
                 change_type = 'screenshot_captions'
             else:
