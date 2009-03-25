@@ -660,6 +660,7 @@ def view_screenshot(request, review_request_id, screenshot_id,
     return render_to_response(template_name, RequestContext(request, {
         'draft': draft,
         'review_request': review_request,
+        'review_request_details': draft or review_request,
         'review': review,
         'details': draft or review_request,
         'screenshot': screenshot,

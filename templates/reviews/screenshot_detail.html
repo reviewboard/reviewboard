@@ -44,7 +44,7 @@
 {% include "reviews/review_request_dlgs.html" %}
 
  <div class="main">
-  <h1 id="summary"><a href="{{review_request.get_absolute_url}}">{{review_request.summary}}</a></h1>
+  <h1 id="summary"><a href="{{review_request.get_absolute_url}}">{{review_request_details.summary}}</a></h1>
   <div class="content">
   {% trans "Screenshots:" %}<br />
 {% include "reviews/screenshotindex.html" %}
