@@ -183,6 +183,8 @@ function urlizeList(list, urlFunc, textFunc) {
  * @returns {string} The resulting HTML.
  */
 function linkifyText(text) {
+    text = text.htmlEncode();
+
     /* Linkify all URLs. */
     text = text.replace(
         /\b([a-z]+:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])/g,
