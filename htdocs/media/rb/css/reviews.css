@@ -485,6 +485,17 @@
   padding: 10px;
 }
 
+.changedesc .body li pre {
+  border: 1px #b8b5a0 solid;
+  padding: 10px;
+  font-size: 9pt;
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
 .changedesc .body pre {
   white-space: pre-wrap;      /* CSS 3 */
   white-space: -moz-pre-wrap; /* Mozilla, 1999+ */

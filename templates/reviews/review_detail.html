@@ -157,7 +157,14 @@
 {% for fieldinfo in entry.changeinfo %}
    <li><label>{{fieldinfo.title}}</label>
 {%  ifequal fieldinfo.type "changed" %}
-{% blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</p>
+{%   if fieldinfo.multiline %}
+	  <p><label>{% trans "Changed from:" %}</label></p>
+      <pre>{{fieldinfo.info.old.0}}</pre>
+	  <p><label>{% trans "Changed to:" %}</label></p>
+	  <pre>{{fieldinfo.info.new.0}}</pre>
+{%   else %}
+{%    blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</p>
+{%   endif %}
 {%  endifequal %}
 {%  ifequal fieldinfo.type "add_remove" %}
     <ul>

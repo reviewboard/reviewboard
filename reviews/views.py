@@ -153,6 +153,8 @@ def review_detail(request, review_request_id,
         fields_changed = []
 
         for name, info in changedesc.fields_changed.items():
+            multiline = False
+
             if 'added' in info or 'removed' in info:
                 change_type = 'add_remove'
 
@@ -168,6 +170,7 @@ def review_detail(request, review_request_id,
 
             elif 'old' in info or 'new' in info:
                 change_type = 'changed'
+                multiline = (name == "description" or name == "testing_done")
             elif name == "screenshot_captions":
                 change_type = 'screenshot_captions'
             else:
@@ -176,6 +179,7 @@ def review_detail(request, review_request_id,
 
             fields_changed.append({
                 'title': fields_changed_name_map.get(name, name),
+                'multiline': multiline,
                 'info': info,
                 'type': change_type,
             })
