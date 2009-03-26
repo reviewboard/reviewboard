@@ -45,8 +45,8 @@
 {%  for g in user.get_profile.starred_groups.all %}
 {%   dashboard_entry "sub-item" g.name "to-group" g %}
 {%  endfor %}
-  </tbody>
 {% endifnotequal %}
+  </tbody>
  </table>
  <div id="dashboard-main" class="clearfix">
 {{datagrid.render_listview}}
