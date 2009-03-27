@@ -73,6 +73,10 @@ class MyCommentsColumn(Column):
 
     def render_data(self, review_request):
         user = self.datagrid.request.user
+
+        if user.is_anonymous():
+            return ""
+
         image_url = None
         image_alt = None
         reviews = review_request.reviews.filter(user=user)
@@ -81,9 +85,8 @@ class MyCommentsColumn(Column):
             # Remind about drafts over finished comments
             image_url = self.image_url
             image_alt = _("Comments drafted")
-        if (user.is_authenticated() and
-            review_request.get_public_reviews().filter(ship_it=True,
-                                                       user=user).count() > 0):
+        elif review_request.get_public_reviews().filter(ship_it=True,
+                                                        user=user).count() > 0):
             image_url = settings.MEDIA_URL + \
                         "rb/images/comment-shipit-small.png"
             image_alt = _("Comments published. Ship it!")
