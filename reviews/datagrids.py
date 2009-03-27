@@ -81,15 +81,21 @@ class MyCommentsColumn(Column):
             # Remind about drafts over finished comments
             image_url = self.image_url
             image_alt = _("Comments drafted")
+        if (user.is_authenticated() and
+            review_request.get_public_reviews().filter(ship_it=True,
+                                                       user=user).count() > 0):
+            image_url = settings.MEDIA_URL + \
+                        "rb/images/comment-shipit-small.png"
+            image_alt = _("Comments published. Ship it!")
         elif reviews.filter(public=True).count() > 0:
             image_url = settings.MEDIA_URL + "rb/images/comment-small.png"
             image_alt = _("Comments published")
         else:
             return ""
 
-        return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
-                (image_url, self.image_width, self.image_height,
-                 image_alt)
+        return '<img src="%s?%s" width="%s" height="%s" alt="%s" />' % \
+                (image_url, settings.MEDIA_SERIAL, self.image_width,
+                 self.image_height, image_alt)
 
 
 class NewUpdatesColumn(Column):
