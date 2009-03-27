@@ -85,8 +85,7 @@ class MyCommentsColumn(Column):
             # Remind about drafts over finished comments
             image_url = self.image_url
             image_alt = _("Comments drafted")
-        elif review_request.get_public_reviews().filter(ship_it=True,
-                                                        user=user).count() > 0):
+        elif reviews.filter(ship_it=True, public=True).count() > 0:
             image_url = settings.MEDIA_URL + \
                         "rb/images/comment-shipit-small.png"
             image_alt = _("Comments published. Ship it!")
