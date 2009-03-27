@@ -15,6 +15,11 @@ review request on an associated Review Board server. This saves a lot of time
 over the web UI, and for some types of code repositories (such as Perforce),
 it's actually required in order to produce a compatible diff.
 
+:command:`post-review` is part of the RBTools package, and can be installed
+and upgraded by running::
+
+    $ easy_install -U RBTools
+
 
 Posting and Updating Review Requests
 ====================================
