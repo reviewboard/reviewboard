@@ -1,2 +1,0 @@
-P4Win Tools for Review Board
->>post-review	python	"<Path of post-review goes here>" %C --p4-client $c --p4-port $p		1	0	1	0	0	1	0		0
