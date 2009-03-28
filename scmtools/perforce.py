@@ -7,9 +7,9 @@ except ImportError:
     pass
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools.errors import EmptyChangeSetError
 from reviewboard.scmtools.core import SCMTool, ChangeSet, \
                                       HEAD, PRE_CREATION
+from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError
 
 
 class PerforceTool(SCMTool):
@@ -93,7 +93,10 @@ class PerforceTool(SCMTool):
             # The command-line output is the same as the contents of a P4Error
             # except they're prefixed with a line that says "Perforce client
             # error:", and the lines of the error are indented with tabs.
-            raise P4Error('\n'.join(line[1:] for line in error[1:]))
+            if error[0].startswith("Perforce client error:"):
+                error = error[1:]
+
+            raise SCMError('\n'.join(line.lstrip("\t") for line in error))
         else:
             return res
 
