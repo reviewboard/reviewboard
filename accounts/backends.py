@@ -79,7 +79,7 @@ class LDAPBackend:
                 ldapo.simple_bind_s(settings.LDAP_ANON_BIND_UID,
                                     settings.LDAP_ANON_BIND_PASSWD)
 
-            search = ldapo.search_s(settings.LDAP_BASE_DN, ldap.SCOPE_ONELEVEL,
+            search = ldapo.search_s(settings.LDAP_BASE_DN, ldap.SCOPE_SUBTREE,
                                     uid)
             if not search:
                 # no such a user, return early, no need for bind attempts
@@ -124,7 +124,7 @@ class LDAPBackend:
                                         settings.LDAP_ANON_BIND_PASSWD)
 
                 passwd = ldapo.search_s(settings.LDAP_BASE_DN,
-                                        ldap.SCOPE_ONELEVEL,
+                                        ldap.SCOPE_SUBTREE,
                                         settings.LDAP_UID_MASK % username)
 
                 first_name = passwd[0][1]['givenName'][0]
