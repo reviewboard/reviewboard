@@ -77,7 +77,7 @@ var gActions = [
 var gSelectedAnchor = INVALID;
 var gFileAnchorToId = {};
 var gInterdiffFileAnchorToId = {};
-var gAnchors = [];
+var gAnchors = $();
 var gCommentDlg = null;
 var gHiddenComments = {};
 var gDiffHighlightBorder = null;
@@ -116,7 +116,6 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.el = $("<span/>")
         .addClass("commentflag")
-        .appendTo(this.beginRow[0].cells[0])
         .click(function() {
             self.showCommentDlg();
             return false;
@@ -147,13 +146,15 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
      * stored list of comments.
      */
     if (comments && comments.length > 0) {
-        for (comment in comments) {
-            if (comments[comment].localdraft) {
-                this.setText(comments[comment].text);
+        for (var i in comments) {
+            var comment = comments[i];
+
+            if (comment.localdraft) {
+                this.setText(comment.text);
                 this.setHasDraft(true);
                 this.canDelete = true;
             } else {
-                this.comments.push(comments[comment]);
+                this.comments.push(comment);
             }
         }
     } else {
@@ -162,6 +163,9 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.updateCount();
     this.updateTooltip();
+
+    /* Now that we've built everything, add this to the DOM. */
+    this.beginRow[0].cells[0].appendChild(this.el[0]);
 }
 
 $.extend(DiffCommentBlock.prototype, {
@@ -238,10 +242,10 @@ $.extend(DiffCommentBlock.prototype, {
     notify: function(text) {
         var offset = this.el.offset();
 
-        var bubble = $("<div></div>")
+        var bubble = $("<div/>")
             .addClass("bubble")
-            .appendTo(this.el)
-            .text(text);
+            .text(text)
+            .appendTo(this.el);
 
         bubble
             .css({
@@ -286,22 +290,23 @@ $.extend(DiffCommentBlock.prototype, {
      * Updates the tooltip contents.
      */
     updateTooltip: function() {
-        function addEntry(text) {
-            var item = $("<li/>").appendTo(list);
-            item.text(text.truncate());
-            return item;
-        }
-
         this.tooltip.empty();
-        var list = $("<ul/>").appendTo(this.tooltip);
+        var list = $("<ul/>");
 
         if (this.text != "") {
-            addEntry(this.text).addClass("draft");
+            $("<li/>")
+                .text(this.text.truncate())
+                .addClass("draft")
+                .appendTo(list);
         }
 
-        $(this.comments).each(function(i) {
-            addEntry(this.text);
-        });
+        for (var i = 0; i < this.comments.length; i++) {
+            $("<li/>")
+                .text(this.comments[i].text.truncate())
+                .appendTo(list);
+        }
+
+        list.appendTo(this.tooltip);
     },
 
     /*
@@ -328,13 +333,15 @@ $.extend(DiffCommentBlock.prototype, {
      *                         otherwise.
      */
     setHasDraft: function(hasDraft) {
-        if (hasDraft) {
-            this.el.addClass("draft");
-        } else {
-            this.el.removeClass("draft");
-        }
+        if (hasDraft != this.hasDraft) {
+            if (hasDraft) {
+                this.el.addClass("draft");
+            } else {
+                this.el.removeClass("draft");
+            }
 
-        this.hasDraft = hasDraft;
+            this.hasDraft = hasDraft;
+        }
     },
 
     /*
@@ -412,7 +419,6 @@ $.fn.diffFile = function(lines) {
         };
 
         var ghostCommentFlag = $("<img/>")
-            .appendTo("body")
             .addClass("commentflag")
             .addClass("ghost-commentflag")
             .attr("src", MEDIA_URL + "rb/images/comment-ghost.png?" +
@@ -425,7 +431,8 @@ $.fn.diffFile = function(lines) {
             .mouseup(function(e)   { self.triggerHandler("mouseup", e);   })
             .mouseover(function(e) { self.triggerHandler("mouseover", e); })
             .mouseout(function(e)  { self.triggerHandler("mouseout", e);  })
-            .hide();
+            .hide()
+            .appendTo("body");
 
         var ghostCommentFlagCell = null;
 
@@ -828,12 +835,14 @@ function gotoAnchor(name, scroll) {
 /*
  * Finds the row in a table matching the specified line number.
  *
- * @param {HTMLElement} table    The table element.
- * @param {int}         linenum  The line number to search for.
+ * @param {HTMLElement} table     The table element.
+ * @param {int}         linenum   The line number to search for.
+ * @param {int}         startRow  Optional start row to search.
+ * @param {int}         endRow    Optional end row to search.
  *
  * @param {HTMLElement} The resulting row, or null if not found.
  */
-function findLineNumRow(table, linenum) {
+function findLineNumRow(table, linenum, startRow, endRow) {
     var row = null;
     var found = false;
     var row_offset = 1; // Get past the headers.
@@ -847,11 +856,15 @@ function findLineNumRow(table, linenum) {
         }
     }
 
-    /* Binary search for this cell. */
-    var low = 1;
-    var high = table.rows.length;
+    var low = startRow || 1;
+    var high = Math.min(endRow || table.rows.length, table.rows.length);
 
-    if (row != null) {
+    if (endRow != undefined) {
+        /* See if we got lucky and found it in the last row. */
+        if (parseInt(table.rows[endRow].getAttribute('line')) == linenum) {
+            return table.rows[endRow];
+        }
+    } else if (row != null) {
         /*
          * We collapsed the rows (unless someone mucked with the DB),
          * so the desired row is less than the row number retrieved.
@@ -859,6 +872,7 @@ function findLineNumRow(table, linenum) {
         high = parseInt(row.getAttribute('line'))
     }
 
+    /* Binary search for this cell. */
     for (var i = Math.round((low + high) / 2); low < high - 1;) {
         row = table.rows[row_offset + i];
 
@@ -872,6 +886,19 @@ function findLineNumRow(table, linenum) {
         if (!value) {
             i++;
             continue;
+        }
+
+        /* See if we can use simple math to find the row quickly. */
+        var guessRowNum = linenum - value;
+
+        if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
+            var guessRow = table.rows[row_offset + i + guessRowNum];
+
+            if (guessRow
+                && parseInt(guessRow.getAttribute('line')) == linenum) {
+                /* We found it using maths! */
+                return guessRow;
+            }
         }
 
         var oldHigh = high;
@@ -904,8 +931,8 @@ function findLineNumRow(table, linenum) {
 /*
  * Adds comment flags to a table.
  *
- * lines is a dictionary with keys for each comment ID. The values are
- * dictionaries with the following keys:
+ * lines is an array of dictionaries grouping together comments on the
+ * same line. The dictionaries contain the following keys:
  *
  *    text       - The text of the comment.
  *    line       - The first line number.
@@ -921,19 +948,33 @@ function findLineNumRow(table, linenum) {
 function addCommentFlags(table, lines) {
     var remaining = {};
 
-    for (var linenum in lines) {
-        var comments = lines[linenum];
+    var prevBeginLineNum = undefined;
 
-        beginLineNum = parseInt(comments[0].line);
-        endLineNum = beginLineNum + parseInt(comments[0].num_lines);
-        var beginRow = findLineNumRow(table[0], beginLineNum);
-        var endRow = findLineNumRow(table[0], endLineNum);
+    for (var i in lines) {
+        var line = lines[i];
+        var numLines = line.num_lines;
+
+        var beginLineNum = line.linenum;
+        var endLineNum = beginLineNum + numLines - 1;
+        var beginRow = findLineNumRow(table[0], beginLineNum, prevBeginLineNum);
+        var endRow = (endLineNum == beginLineNum
+                      ? beginRow
+                      : findLineNumRow(table[0], endLineNum,
+                                       beginRow.rowIndex,
+                                       beginRow.rowIndex + numLines - 1));
+
+        prevBeginLineNum = beginLineNum;
 
         if (beginRow != null) {
-            new DiffCommentBlock($(beginRow), $(endRow), beginLineNum,
-                                 endLineNum, comments);
+            /*
+             * Note that endRow might be null if it exists in a collapsed
+             * region, so we can get away with just using beginRow if we
+             * need to.
+             */
+            new DiffCommentBlock($(beginRow), $(endRow || beginRow),
+                                 beginLineNum, endLineNum, line.comments);
         } else {
-            remaining[beginLineNum] = comments;
+            remaining[beginLineNum] = line;
         }
     }
 
@@ -1036,13 +1077,15 @@ function GetNextAnchor(dir, anchorType) {
 
 
 /*
- * Updates the list of known anchors. This is called after every part of
- * the diff that we loaded.
+ * Updates the list of known anchors based on named anchors in the specified
+ * table. This is called after every part of the diff that we loaded.
  *
  * If no anchor is selected, we'll try to select the first one.
+ *
+ * @param {jQuery} table  The table to load anchors from.
  */
-function updateAnchors() {
-    gAnchors = $("table.sidebyside a[name]");
+function updateAnchors(table) {
+    gAnchors = gAnchors.add($("a[name]", table));
 
     /* Skip over the change index to the first item */
     if (gSelectedAnchor == -1 && gAnchors.length > 0) {
@@ -1113,10 +1156,11 @@ function loadFileDiff(filediff_id, filediff_revision,
             };
         }
 
-        $("#file" + filediff_id).diffFile(comment_counts);
+        var diffTable = $("#file" + filediff_id);
+        diffTable.diffFile(comment_counts);
 
         /* We must rebuild this every time. */
-        updateAnchors();
+        updateAnchors(diffTable);
 
         if (gStartAtAnchor != null) {
             /* See if we've loaded the anchor the user wants to start at. */

@@ -90,7 +90,8 @@ def ifneatnumber(context, nodelist, rid):
 @basictag(takes_context=True)
 def commentcounts(context, filediff, interfilediff=None):
     """
-    Returns a JSON array of current comments for a filediff.
+    Returns a JSON array of current comments for a filediff, sorted by
+    line number.
 
     Each entry in the array has a dictionary containing the following keys:
 
@@ -107,7 +108,7 @@ def commentcounts(context, filediff, interfilediff=None):
       localdraft  True if this is the current user's draft comment
       =========== ==================================================
     """
-    comments = {}
+    comment_dict = {}
     user = context.get('user', None)
 
     if interfilediff:
@@ -121,9 +122,9 @@ def commentcounts(context, filediff, interfilediff=None):
         review = get_object_or_none(comment.review)
 
         if review and (review.public or review.user == user):
-            key = "%s:%s" % (comment.first_line, comment.num_lines)
+            key = (comment.first_line, comment.num_lines)
 
-            comments.setdefault(key, []).append({
+            comment_dict.setdefault(key, []).append({
                 'comment_id': comment.id,
                 'text': comment.text,
                 'line': comment.first_line,
@@ -138,7 +139,19 @@ def commentcounts(context, filediff, interfilediff=None):
                               not review.public,
             })
 
-    return simplejson.dumps(comments)
+    comments_array = []
+
+    for key, value in comment_dict.iteritems():
+        comments_array.append({
+            'linenum': key[0],
+            'num_lines': key[1],
+            'comments': value,
+        })
+
+    comments_array.sort(cmp=lambda x, y: cmp(x['linenum'], y['linenum'] or
+                                         cmp(x['num_lines'], y['num_lines'])))
+
+    return simplejson.dumps(comments_array)
 
 
 @register.tag

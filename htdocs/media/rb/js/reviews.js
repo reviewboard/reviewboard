@@ -295,8 +295,8 @@ $.fn.reviewsAutoComplete = function(fieldName, nameKey) {
                 if ($(".ui-autocomplete-footer", resultsPane).length == 0) {
                     $("<div/>")
                         .addClass("ui-autocomplete-footer")
-                        .appendTo(resultsPane)
-                        .text("Press Tab to auto-complete.");
+                        .text("Press Tab to auto-complete.")
+                        .appendTo(resultsPane);
                 }
             });
     });
@@ -370,7 +370,6 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
     function createNewCommentForm() {
         var yourcomment_id = "yourcomment_" + sectionId + "-draft";
         $("<li/>")
-            .appendTo(commentsList)
             .addClass("reply-comment draft editor")
             .attr("id", yourcomment_id + "-item")
             .append($("<dl/>")
@@ -384,7 +383,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                     )
                     .append('<dd><pre id="' + yourcomment_id + '"/></dd>')
                 )
-            );
+            )
+            .appendTo(commentsList);
 
         var yourcommentEl = $("#" + yourcomment_id);
         createCommentEditor(yourcommentEl);
@@ -711,18 +711,19 @@ $.fn.commentDlg = function() {
             var odd = true;
 
             $(commentBlock.comments).each(function(i) {
-                var item = $("<li></li>")
-                    .appendTo(commentsList)
+                var item = $("<li/>")
                     .addClass(odd ? "odd" : "even");
-                var header = $("<h2></h2>").appendTo(item).html(this.user.name);
-                var actions = $('<span class="actions"></span>')
+                var header = $("<h2/>").appendTo(item).html(this.user.name);
+                var actions = $('<span class="actions"/>')
                     .appendTo(header);
                 $('<a href="' + this.url + '">View</a>').appendTo(actions);
                 $('<a href="' + gReviewRequestPath +
                   '?reply_id=' + this.comment_id +
                   '&reply_type=' + commentBlock.type + '">Reply</a>')
                     .appendTo(actions);
-                $("<pre></pre>").appendTo(item).text(this.text);
+                $("<pre/>").appendTo(item).text(this.text);
+
+                item.appendTo(commentsList);
 
                 showComments = true;
 
@@ -829,7 +830,6 @@ $.reviewForm = function() {
     function createForm(formHTML) {
         dlg = $("<div/>")
             .attr("id", "review-form")
-            .appendTo("body")
             .html(formHTML)
             .modalBox({
                 title: "Review for: " + gReviewRequestSummary,
