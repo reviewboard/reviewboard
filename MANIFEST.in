@@ -8,7 +8,9 @@ recursive-include reviewboard/reviews/fixtures *
 recursive-include reviewboard/scmtools/fixtures *
 recursive-include reviewboard/scmtools/testdata *
 recursive-include reviewboard/templates *.html *.txt *.js
+recursive-include reviewboard/docs *.txt *.png *.py Makefile
 prune reviewboard/htdocs/media/uploaded/images
+prune reviewboard/docs/*/_build
 include ez_setup.py
 include AUTHORS
 include COPYING
