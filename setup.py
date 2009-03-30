@@ -153,7 +153,7 @@ packages = [
 
 # Import this now, since reviewboard is in the right place now.
 from reviewboard import VERSION
-IS_RELEASE = False
+IS_RELEASE = True
 
 
 if IS_RELEASE:
