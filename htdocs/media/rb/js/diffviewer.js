@@ -353,8 +353,8 @@ $.extend(DiffCommentBlock.prototype, {
         if (gCommentDlg == null) {
             gCommentDlg = $("#comment-detail")
                 .commentDlg()
-                .css("z-index", 999)
-                .appendTo("body");
+                .css("z-index", 999);
+            gCommentDlg.appendTo("body");
         }
 
         gCommentDlg
@@ -957,15 +957,16 @@ function addCommentFlags(table, lines) {
         var beginLineNum = line.linenum;
         var endLineNum = beginLineNum + numLines - 1;
         var beginRow = findLineNumRow(table[0], beginLineNum, prevBeginLineNum);
-        var endRow = (endLineNum == beginLineNum
-                      ? beginRow
-                      : findLineNumRow(table[0], endLineNum,
-                                       beginRow.rowIndex,
-                                       beginRow.rowIndex + numLines - 1));
-
-        prevBeginLineNum = beginLineNum;
 
         if (beginRow != null) {
+            var endRow = (endLineNum == beginLineNum
+                          ? beginRow
+                          : findLineNumRow(table[0], endLineNum,
+                                           beginRow.rowIndex,
+                                           beginRow.rowIndex + numLines - 1));
+
+            prevBeginLineNum = beginLineNum;
+
             /*
              * Note that endRow might be null if it exists in a collapsed
              * region, so we can get away with just using beginRow if we

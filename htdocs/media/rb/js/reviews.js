@@ -830,6 +830,7 @@ $.reviewForm = function() {
     function createForm(formHTML) {
         dlg = $("<div/>")
             .attr("id", "review-form")
+            .appendTo("body") // Needed for scripts embedded in the HTML
             .html(formHTML)
             .modalBox({
                 title: "Review for: " + gReviewRequestSummary,
@@ -951,6 +952,8 @@ $.reviewForm = function() {
  * @param {object} options  The options, listed above.
  */
 $.fn.reviewFormCommentEditor = function(options) {
+    var self = this;
+
     options = $.extend({
         path: "",
         textKey: "text",
@@ -959,8 +962,6 @@ $.fn.reviewFormCommentEditor = function(options) {
         }
     }, options);
 
-    var self = this;
-
     return this
         .inlineEditor({
             extraHeight: 50,
@@ -968,7 +969,8 @@ $.fn.reviewFormCommentEditor = function(options) {
             multiline: true,
             notifyUnchangedCompletion: true,
             showButtons: false,
-            showEditIcon: false
+            showEditIcon: false,
+            useEditIconOnly: false
         })
         .bind("complete", function(e, value) {
             options.data[options.textKey] = value;
