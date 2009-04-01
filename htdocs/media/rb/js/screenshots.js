@@ -268,8 +268,8 @@ jQuery.fn.screenshotCommentBox = function(regions) {
     var commentDetail = $("#comment-detail")
         .commentDlg()
         .bind("close", function() { activeCommentBlock = null; })
-        .css("z-index", 999)
-        .appendTo($("body"));
+        .css("z-index", 999);
+    commentDetail.appendTo("body");
 
     /*
      * Register events on the selection area for handling new comment
