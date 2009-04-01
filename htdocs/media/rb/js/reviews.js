@@ -736,7 +736,7 @@ $.fn.commentDlg = function() {
         /* Do this here so that calculations can be done before open() */
         var width = FORM_BOX_WIDTH;
 
-        if (commentsPane.is(":visible")) {
+        if (showComments) {
             width += COMMENTS_BOX_WIDTH;
         }
 
