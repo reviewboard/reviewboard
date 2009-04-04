@@ -66,7 +66,7 @@ Installing memcached
 
 Memcached_ is a high-performant caching server used by Review Board. While
 optional, it's **strongly** recommended in order to have a fast, responsive
-setup. Along with memcached, we need the cmemcache_ Python bindings.
+setup. Along with memcached, we need the `python-memcached`_ Python bindings.
 
 1. Download `memcached for Windows`_.
 2. Unzip this to the directory you want to keep memcached in (for example,
@@ -81,26 +81,14 @@ setup. Along with memcached, we need the cmemcache_ Python bindings.
       memcached.exe -d install
 
 5. Start the server through the Microsoft Management Console.
+6. Install `python-memcached`_ by typing the following::
 
+      easy_install python-memcached
 
 .. _`memcached for Windows`: http://code.jellycan.com/files
-
-
-If libmemcache_ is not available in your distribution, you'll need to compile
-it manually or download an RPM from http://tangent.org/552/libmemcached.html.
-
-Next you'll need to install cmemcache_. This may be provided by your
-distribution. If not, you can install it from http://gijsbert.org/cmemcache/.
-Download the tarball and do the following::
-
-    $ ./configure --prefix=/usr
-    $ make
-    $ make install
-
-
 .. _memcached: http://www.danga.com/memcached/
-.. _libmemcache: http://tangent.org/552/libmemcached.html
-.. _cmemcache: http://gijsbert.org/cmemcache/
+.. _`python-memcached`:
+   http://www.tummy.com/Community/software/python-memcached/
 
 
 After Installation
