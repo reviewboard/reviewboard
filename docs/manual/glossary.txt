@@ -6,9 +6,25 @@ Glossary
 
 .. glossary::
 
+   context diff
+       A type of :term:`diff file` that represents changes to a file
+       using before/after sections. These are not well supported by
+       Review Board.
+
+       Context diffs indicate a changed region of a file by showing
+       before and after versions of a group of lines. The changed lines
+       in that before and after region are indicated by beginning the
+       lines with an exclamation point (``!``). Changes that only add
+       lines only show one section.
+
    diff file
        A file representing changes to one or more files. Common diff
-       formats are "unified diffs" and "context diffs."
+       formats are :term:`unified diff`\s and :term:`context diff`\s.
+
+   interdiffs
+       An interdiff is a diff between diffs. They show what has changed
+       between two versions of a diff, which is useful when making incremental
+       changes to a very large diff.
 
    post-commit hook
        A script that is executed after a commit is made to a repository.
@@ -23,6 +39,16 @@ Glossary
        A form of code review where code is reviewed before it even goes
        into a repository. This is generally a more strict way to handle
        code review, which can lead to fewer problems in the codebase.
+
+   unified diff
+       A type of :term:`diff file` designed to be easy to parse and easy
+       to read by humans. This is the format supported by Review Board.
+
+       Unified diffs indicate the changed region of a file by showing some
+       unchanged lines of context, then lines beginning with a minus sign
+       (``-``) to show removed lines or a plus sign (``+``) to show added
+       lines. Replaced lines are shown by a remove line followed by an add
+       line.
 
 
 .. comment: vim: ft=rst et
