@@ -1,3 +1,5 @@
+.. _general-settings:
+
 ================
 General Settings
 ================
@@ -71,7 +73,7 @@ Search
     regular :ref:`search-indexing` to work.
 
 
-.. _`search index directory`:
+.. _search-index-directory:
 
 * **Search index directory:**
     The directory on the server's file system where the search index files

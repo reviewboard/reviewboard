@@ -4,9 +4,9 @@
 Database Management
 ===================
 
-The Database section of the `Administration UI`_ allows you to view and modify
-the actual contents of the Review Board database in a simple, human-readable
-fashion.
+The Database section of the :ref:`Administration UI` allows you to view and
+modify the actual contents of the Review Board database in a simple,
+human-readable fashion.
 
 With the exception of the `management tables`_, most tables are used for
 `data storage`_ only and should not be modified unless you know what you're
@@ -23,23 +23,25 @@ The management tables are the areas of the database you're most likely to
 modify in your installation.
 
 
-===================== ============================================
-Table                 Description
-===================== ============================================
-`Default reviewers`_  Default reviewers applied to review requests
-`Groups`_             User permission/authentication groups
-`Repositories`_       Source code repository configuration
-`Review groups`_      Target reviewer groups
-`Sites`_              Site information
-`Users`_              User account information
-===================== ============================================
-
-.. _`Default reviewers`: ../default-reviewers
-.. _`Groups`: ../auth-groups
-.. _`Repositories`: ../repositories
-.. _`Review groups`: ../review-groups
-.. _`Sites`: ../sites-table
-.. _`Users`: ../users
++-------------------------+----------------------------------------------+
+| Table                   | Description                                  |
++=========================+==============================================+
+| :ref:`Default reviewers | Default reviewers applied to review requests |
+| <default-reviewers>`    |                                              |
++-------------------------+----------------------------------------------+
+| :ref:`Groups            | User permission/authentication groups        |
+| <permission-groups>`    |                                              |
++-------------------------+----------------------------------------------+
+| :ref:`Repositories      | Source code repository configuration         |
+| <repositories>`         |                                              |
++-------------------------+----------------------------------------------+
+| :ref:`Review groups     | Target reviewer groups                       |
+| <review-groups>`        |                                              |
++-------------------------+----------------------------------------------+
+| Sites                   | Basic site information                       |
++-------------------------+----------------------------------------------+
+| :ref:`Users <users>`    | User account information                     |
++-------------------------+----------------------------------------------+
 
 
 .. _data storage:
@@ -53,7 +55,7 @@ left untouched, but there may be occasions when you'll need to fix something
 for another user by modifying one of these tables.
 
 The table below is grouped by the sections listed in the Database page in the
-`Administration UI`_.
+:ref:`Administration UI`.
 
 
 ====================== ====================================================
@@ -104,7 +106,5 @@ Site configurations    Stored configuration for the site.
 
 ====================== ====================================================
 
-
-.. _`Administration UI`: ../../configuration
 
 .. comment: vim: ft=rst et

@@ -1,3 +1,5 @@
+.. _repositories:
+
 =====================
 Managing Repositories
 =====================

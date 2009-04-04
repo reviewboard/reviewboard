@@ -1,4 +1,5 @@
 .. _managing-default-reviewers:
+.. _default-reviewers:
 
 ==========================
 Managing Default Reviewers
@@ -72,7 +73,7 @@ You can then browse to the default reviewer you want to modify and click it.
 
 See :ref:`adding-default-reviewers` for a description of each field.
 
-When done, click "Save" to save your changes.
+When done, click :guilabel:`Save` to save your changes.
 
 
 Deleting Default Reviewers
@@ -80,7 +81,7 @@ Deleting Default Reviewers
 
 To delete a default reviewer, follow the instructions in
 :ref:`editing-default-reviewers` to find the default reviewer you want to get
-rid of. Then click "Delete" at the bottom of the page.
+rid of. Then click :guilabel:`Delete` at the bottom of the page.
 
 
 Regex Pattern Matching

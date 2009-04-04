@@ -1,14 +1,16 @@
+.. _e-mail-settings:
+
 ===============
 E-Mail Settings
 ===============
 
-.. _`Send e-mails`:
+.. _send-e-mails:
 
 * **Send e-mails for review requests and reviews:**
     If enabled, e-mails will be sent out whenever a review request is
     posted or updated, or when reviews and replies are posted.
 
-    See `E-Mail and Review Groups`_ for more information.
+    See :ref:`e-mail-and-review-groups` for more information.
 
 * **Mail Server:**
     The SMTP mail server used for outgoing e-mails.
@@ -28,11 +30,6 @@ E-Mail Settings
 * **Use TLS for authentication:**
     If enabled, TLS is used for mail server authentication. This is more
     secure, but requires TLS support on the mail server.
-
-
-.. _`E-Mail and Review Groups`:
-   ../../management/review-groups#e-mail-and-review-groups
-.. _`Review Groups`: ../../management/review-groups
 
 
 .. comment: vim: ft=rst et

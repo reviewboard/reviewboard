@@ -1,14 +1,16 @@
+.. _settings:
+
 ========
 Settings
 ========
 
 Review Board sites can be configured through the Settings portion of the
-`Administration UI`_. You'll generally need to make some changes in here
+:ref:`Administration UI`. You'll generally need to make some changes in here
 before others use the site.
 
-Clicking on `Settings` anywhere in the `Administration UI`_ will take you
-to the `General Settings`_ page. The navigation bar below the main
-administration navigation bar contains links for jumping to the other
+Clicking on :guilabel:`Settings` anywhere in the :ref:`Administration UI` will
+take you to the :ref:`general-settings` page. The navigation bar below the
+main administration navigation bar contains links for jumping to the other
 available settings pages, which consists of:
 
 .. toctree::
@@ -19,8 +21,5 @@ available settings pages, which consists of:
    diffviewer-settings
    logging-settings
 
-
-.. _`Administration UI`: ../overview
-.. _`General Settings`: ../general-settings
 
 .. comment: vim: ft=rst et

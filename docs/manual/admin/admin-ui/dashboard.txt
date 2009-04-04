@@ -5,11 +5,9 @@
 Administrator Dashboard
 =======================
 
-The dashboard is the front page of the `Administration UI`_. It provides
+The dashboard is the front page of the :ref:`Administration UI`. It provides
 convenient shortcuts for common management tasks, some server information, and
 Review Board project news updates.
-
-.. _`Administration UI`: ../admin-ui
 
 
 Manage
@@ -26,14 +24,13 @@ database:
 
 Clicking the name will take you to a list of items for that type. For example,
 clicking "Users" will show the list of all users. This is the same page that
-you would get by clicking the same name in the `Database Management`_ section.
+you would get by clicking the same name in the
+:ref:`Database Management <database-management>` section.
 
 Clicking the "Add" link beside the name will let you quickly add a new item in
 that section.
 
 The number in parenthesis beside the name is the number of existing entries.
-
-.. _`Database Management`: ../database
 
 
 Server Information

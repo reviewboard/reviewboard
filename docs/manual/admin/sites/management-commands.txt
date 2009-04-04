@@ -42,19 +42,20 @@ To perform a full index::
 
 
 These commands should be run periodically in a task scheduler, such as
-``cron`` on Linux. It is advisable to do an incremental index roughly every
-10 minutes, and a full index once a week during off-peak hours.
+:command:`cron` on Linux. It is advisable to do an incremental index
+roughly every 10 minutes, and a full index once a week during off-peak
+hours.
 
 A sample ``crontab`` entry is available at :file:`conf/search-cron.conf` under
 an installed site directory.
 
-The generated search index will be placed in the `search index directory`_
-specified in the `General Settings`_ page. By default, this should be the
-"search-index" directory in your site directory.
+The generated search index will be placed in the
+:ref:`search index directory <search-index-directory` specified in the
+:ref:`general-settings` page. By default, this should be the
+:file:`search-index` directory in your site directory.
 
-.. _`search index directory`: ../admin-ui/general-settings#search-index-directory
-.. _`General Settings`: ../admin-ui/general-settings
 
+.. _creating-a-super-user:
 
 Creating a Super User
 ---------------------

@@ -6,21 +6,16 @@ Overview of the Administration UI
 
 The Administration UI provides configuration options, database management,
 news updates and system information. This area is available to all users with
-`administrator`_ access and can be reached by clicking "Admin" in the
-top-right of any Review Board page.
+:ref:`staff status <staff-status>` and can be reached by clicking
+:guilabel:`Admin` in the top-right of any Review Board page.
 
 The Administration UI is composed of three main areas:
 
-* `Dashboard`_
-* `Database Management`_
-* `Settings`_
+* :ref:`Dashboard <administrator-dashboard>`
+* :ref:`Database Management <database-management>`
+* :ref:`Settings <settings>`
 
 These can be reached through the navigation bar at the top of any page.
 
-
-.. _`administrator`: ../users#administrators
-.. _`Dashboard`: ../dashboard
-.. _`Database Management`: ../database
-.. _`Settings`: ../settings
 
 .. comment: vim: ft=rst et

@@ -43,7 +43,7 @@ A form will appear with the following fields:
 * **E-mail address** (optional)
     The user's e-mail address.
 
-.. _`Staff status`:
+.. _staff-status:
 
 * **Staff status** (optional)
     This is used to set whether or not this user has access to the
@@ -117,12 +117,12 @@ Super Users
 ===========
 
 Super users are users that have complete control over the Review Board server.
-They can modify the database, change `settings`_, and even modify or close out
-other users' review requests.
+They can modify the database, change :ref:`settings <settings>`, and even
+modify or close out other users' review requests.
 
 A super user has all possible permissions assigned, and do not need to belong
 to :ref:`Permission Groups <permission-groups>`. It also implies
-`Staff status`_.
+:ref:`staff status <staff-status>`.
 
 Because of the power and potential for problems, only the most trusted people
 should have super user status.
@@ -133,10 +133,7 @@ status`_ checkbox. Then save the information.
 If you get into a position where there's no super users on the system (such as
 if an existing account's super user status is accidentally removed, or the last
 super user is no longer with the company or project), you can create a new
-super user on the command line. See `Creating a Super User`_.
-
-.. _`settings`: ../../admin-ui/settings
-.. _`Creating a Super User`: ../../sites#creating-a-super-user
+super user on the command line. See :ref:`creating-a-super-user`.
 
 
 .. _setting-permissions:
