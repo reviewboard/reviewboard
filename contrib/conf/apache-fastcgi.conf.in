@@ -1,6 +1,12 @@
-AddHandler fastcgi-script .fcgi
+<IfModule mod_fcgid.c>
+	AddHandler fcgid-script .fcgi
+</IfModule>
 
-FastCGIServer @sitedir@/htdocs/reviewboard.fcgi -socket @sitedir@/tmp/fastcgi.sock
+<IfModule mod_fastcgi.c>
+	AddHandler fastcgi-script .fcgi
+
+	FastCGIServer @sitedir@/htdocs/reviewboard.fcgi -socket @sitedir@/tmp/fastcgi.sock
+</IfModule>
 
 <VirtualHost *:80>
 	ServerName @sitedomain@
@@ -19,6 +25,10 @@ FastCGIServer @sitedir@/htdocs/reviewboard.fcgi -socket @sitedir@/tmp/fastcgi.so
 
 	# Direct all other requests to the fastcgi server
 	RewriteEngine on
+	<IfModule mod_fcgid.c>
+		RewriteRule ^/(media.*)$ /$1 [QSA,L,PT]
+		RewriteRule ^/(docs.*)$ /$1 [QSA,L,PT]
+	</IfModule>
 	RewriteCond %{REQUEST_FILENAME} !-f
 	RewriteRule ^/(.*)$ /reviewboard.fcgi/$1 [QSA,L]
 </VirtualHost>
