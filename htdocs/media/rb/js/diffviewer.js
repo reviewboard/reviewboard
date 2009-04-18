@@ -948,7 +948,7 @@ function findLineNumRow(table, linenum, startRow, endRow) {
 function addCommentFlags(table, lines) {
     var remaining = {};
 
-    var prevBeginLineNum = undefined;
+    var prevBeginRowIndex = undefined;
 
     for (var i in lines) {
         var line = lines[i];
@@ -956,16 +956,18 @@ function addCommentFlags(table, lines) {
 
         var beginLineNum = line.linenum;
         var endLineNum = beginLineNum + numLines - 1;
-        var beginRow = findLineNumRow(table[0], beginLineNum, prevBeginLineNum);
+        var beginRow = findLineNumRow(table[0], beginLineNum,
+                                      prevBeginRowIndex);
 
         if (beginRow != null) {
+            prevBeginRowIndex = beginRow.rowIndex;
+
             var endRow = (endLineNum == beginLineNum
                           ? beginRow
                           : findLineNumRow(table[0], endLineNum,
-                                           beginRow.rowIndex,
-                                           beginRow.rowIndex + numLines - 1));
+                                           prevBeginRowIndex,
+                                           prevBeginRowIndex + numLines - 1));
 
-            prevBeginLineNum = beginLineNum;
 
             /*
              * Note that endRow might be null if it exists in a collapsed
