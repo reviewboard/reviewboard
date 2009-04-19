@@ -280,6 +280,7 @@ def dashboard(request, template_name='reviews/dashboard.html'):
         * 'starred'
         * 'watched-groups'
         * 'incoming'
+        * 'mine'
     """
     view = request.GET.get('view', None)
 

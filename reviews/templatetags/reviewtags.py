@@ -320,6 +320,9 @@ def dashboard_entry(context, level, text, view, group=None):
         review_requests = ReviewRequest.objects.public(user)
     elif view == 'outgoing':
         review_requests = ReviewRequest.objects.from_user(user.username, user)
+    elif view == 'mine':
+        review_requests = ReviewRequest.objects.from_user(user.username, user,
+                                                          None)
     elif view == 'incoming':
         review_requests = ReviewRequest.objects.to_user(user.username, user)
     elif view == 'to-me':

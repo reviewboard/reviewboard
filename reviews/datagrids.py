@@ -364,6 +364,10 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         if view == 'outgoing':
             self.queryset = ReviewRequest.objects.from_user(user.username, user)
             self.title = _(u"All Outgoing Review Requests")
+        elif view == 'mine':
+            self.queryset = ReviewRequest.objects.from_user(user.username, user,
+                                                            None)
+            self.title = _(u"All My Review Requests")
         elif view == 'to-me':
             self.queryset = \
                 ReviewRequest.objects.to_user_directly(user.username, user)

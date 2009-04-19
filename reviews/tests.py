@@ -531,6 +531,25 @@ class ViewTests(TestCase):
         self.assert_('fragment' in files[0])
         self.assert_('interfilediff' in files[0])
 
+    def testDashboard5(self):
+        """Testing dashboard view (mine)"""
+        self.client.login(username='doc', password='doc')
+
+        response = self.client.get('/dashboard/', {'view': 'mine'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assert_(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary,
+                         'Added interdiff support')
+        self.assertEqual(datagrid.rows[1]['object'].summary,
+                         'Improved login form')
+        self.assertEqual(datagrid.rows[2]['object'].summary,
+                         'Comments Improvements')
+
+        self.client.logout()
+
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
