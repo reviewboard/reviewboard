@@ -93,6 +93,11 @@ function rbApiCall(options) {
         options.buttons.attr("disabled", true);
     }
 
+    $("#activity-indicator")
+        .text((options.type || options.type == "GET")
+              ? "Loading..." : "Saving...")
+        .show();
+
     var data = {
         type: options.type || "POST",
         url: options.url || (SITE_ROOT + "api/json" + options.path),
@@ -112,6 +117,10 @@ function rbApiCall(options) {
             if (options.buttons) {
                 options.buttons.attr("disabled", false);
             }
+
+            $("#activity-indicator")
+                .delay(1000)
+                .fadeOut("fast");
 
             if ($.isFunction(options.complete)) {
                 options.complete(xhr, status);
@@ -343,5 +352,12 @@ $.fn.toggleStar = function(type, objid, default_) {
         });
     });
 };
+
+$(document).ready(function() {
+    $('<div id="activity-indicator" />')
+        .text("Loading...")
+        .hide()
+        .appendTo("body");
+});
 
 // vim: set et:sw=4:

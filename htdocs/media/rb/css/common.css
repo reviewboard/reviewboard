@@ -316,6 +316,24 @@ form table td {
   display: inline;
 }
 
+#activity-indicator {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  text-align: center;
+  font-weight: bold;
+  background-color: #fce94f;
+  background-image: url("../images/spinner.gif");
+  background-position: 0.4em 0.4em;
+  background-repeat: no-repeat;
+  border: 1px #c4a000 solid;
+  border-top: 0;
+  margin-left: -3em;
+  padding: 0.5em 0.6em 0.5em 2.2em;
+  width: 6em;
+  z-index: 2000;
+}
+
 #beta {
   color: #808080;
   display: inline;
