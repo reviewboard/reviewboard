@@ -48,14 +48,14 @@ var gActions = [
     },
 
     { // Previous comment
-        keys: "[",
+        keys: "[x",
         onPress: function() {
             scrollToAnchor(GetNextAnchor(BACKWARD, ANCHOR_COMMENT));
         }
     },
 
     { // Next comment
-        keys: "]",
+        keys: "]c",
         onPress: function() {
             scrollToAnchor(GetNextAnchor(FORWARD, ANCHOR_COMMENT));
         }

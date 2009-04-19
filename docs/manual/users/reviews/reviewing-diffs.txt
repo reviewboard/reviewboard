@@ -117,9 +117,9 @@ There are many keyboard shortcuts for navigating around the diff viewer:
 * Next change:
   :kbd:`d`, :kbd:`D`, :kbd:`j`, :kbd:`n`, :kbd:`.`
 * Previous comment:
-  :kbd:`[`
+  :kbd:`[`, :kbd:`x`
 * Next comment:
-  :kbd:`]`
+  :kbd:`]`, :kbd:`c`
 
 
 .. comment: vim: ft=rst et ts=3
