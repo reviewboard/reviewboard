@@ -540,12 +540,10 @@ class ViewTests(TestCase):
 
         datagrid = self.getContextVar(response, 'datagrid')
         self.assert_(datagrid)
-        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(len(datagrid.rows), 2)
         self.assertEqual(datagrid.rows[0]['object'].summary,
-                         'Added interdiff support')
-        self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Improved login form')
-        self.assertEqual(datagrid.rows[2]['object'].summary,
+        self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Comments Improvements')
 
         self.client.logout()
