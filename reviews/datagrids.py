@@ -46,7 +46,7 @@ class ShipItColumn(Column):
         self.shrink = True
 
     def render_data(self, review_request):
-        if review_request.get_public_reviews().filter(ship_it=True).count() > 0:
+        if review_request.shipit_count > 0:
             return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
                 (self.image_url, self.image_width, self.image_height,
                  self.image_alt)
@@ -77,23 +77,37 @@ class MyCommentsColumn(Column):
         if user.is_anonymous():
             return ""
 
-        image_url = None
-        image_alt = None
         reviews = review_request.reviews.filter(user=user)
 
-        if reviews.filter(public=False).count() > 0:
-            # Remind about drafts over finished comments
-            image_url = self.image_url
-            image_alt = _("Comments drafted")
-        elif reviews.filter(ship_it=True, public=True).count() > 0:
-            image_url = settings.MEDIA_URL + \
-                        "rb/images/comment-shipit-small.png"
-            image_alt = _("Comments published. Ship it!")
-        elif reviews.filter(public=True).count() > 0:
-            image_url = settings.MEDIA_URL + "rb/images/comment-small.png"
-            image_alt = _("Comments published")
-        else:
+        if len(reviews) == 0:
             return ""
+
+        image_url = None
+        image_alt = None
+        found_ship_it = False
+
+        # Priority is ranked in the following order:
+        #
+        # 1) Non-public (draft) reviews
+        # 2) Public reviews marked "Ship It"
+        # 3) Public reviews not marked "Ship It"
+        for review in reviews:
+            if not review.public:
+                image_url = self.image_url
+                image_alt = _("Comments drafted")
+                break
+
+            if review.ship_it:
+                found_ship_it = True
+
+        if not image_url:
+            if found_ship_it:
+                image_url = settings.MEDIA_URL + \
+                            "rb/images/comment-shipit-small.png"
+                image_alt = _("Comments published. Ship it!")
+            else:
+                image_url = settings.MEDIA_URL + "rb/images/comment-small.png"
+                image_alt = _("Comments published")
 
         return '<img src="%s?%s" width="%s" height="%s" alt="%s" />' % \
                 (image_url, settings.MEDIA_SERIAL, self.image_width,
@@ -116,7 +130,7 @@ class NewUpdatesColumn(Column):
 
     def render_data(self, review_request):
         user = self.datagrid.request.user
-        if review_request.get_new_reviews(user).count() > 0:
+        if review_request.new_review_count > 0:
             return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
                 (self.image_url, self.image_width, self.image_height,
                  self.image_alt)
@@ -208,38 +222,6 @@ class ReviewCountColumn(Column):
         return "%s#last-review" % review_request.get_absolute_url()
 
 
-class LastUpdatedColumn(DateTimeColumn):
-    """
-    A column which shows the date of the last change to the review request,
-    including reviews.
-    """
-    def __init__(self, label, db_field="last_updated", *args, **kwargs):
-        DateTimeColumn.__init__(self, label, db_field=db_field, *args, **kwargs)
-
-    def find_date(self, review_request):
-        update = review_request.last_updated
-
-        reviews = review_request.get_public_reviews().order_by('-timestamp')
-        if reviews.count() > 0:
-            review_date = reviews[0].timestamp
-            if review_date > update:
-                update = review_date
-
-        return update
-
-    def render_data(self, review_request):
-        return date(self.find_date(review_request), self.format)
-
-
-class LastUpdatedSinceColumn(LastUpdatedColumn):
-    """
-    A column which shows the date of the last change to the review request,
-    including reviews.
-    """
-    def render_data(self, review_request):
-        return _("%s ago") % timesince(self.find_date(review_request))
-
-
 class ReviewRequestDataGrid(DataGrid):
     """
     A datagrid that displays a list of review requests.
@@ -259,9 +241,11 @@ class ReviewRequestDataGrid(DataGrid):
         detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
         css_class=lambda r: ageid(r.time_added))
-    last_updated = LastUpdatedColumn(_("Last Updated"),
+    last_updated = DateTimeColumn(_("Last Updated"),
         format="F jS, Y, P", shrink=True,
-        css_class=lambda r: ageid(r.last_updated))
+        db_field="last_activity_timestamp",
+        field_name="last_activity_timestamp",
+        css_class=lambda r: ageid(r.last_activity_timestamp))
     diff_updated = DateTimeColumn(_("Diff Updated"),
         format="F jS, Y, P", shrink=True,
         field_name="last_updated",
@@ -271,9 +255,11 @@ class ReviewRequestDataGrid(DataGrid):
         detailed_label=_("Posted Time (Relative)"),
         field_name="time_added", shrink=True,
         css_class=lambda r: ageid(r.time_added))
-    last_updated_since = LastUpdatedSinceColumn(_("Last Updated"),
+    last_updated_since = DateTimeSinceColumn(_("Last Updated"),
         detailed_label=_("Last Updated (Relative)"), shrink=True,
-        css_class=lambda r: ageid(r.last_updated))
+        db_field="last_activity_timestamp",
+        field_name="last_activity_timestamp",
+        css_class=lambda r: ageid(r.last_activity_timestamp))
     diff_updated_since = DateTimeSinceColumn(_("Diff Updated"),
         detailed_label=_("Diff Updated (Relative)"),
         field_name="last_updated", shrink=True,
@@ -362,30 +348,38 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         user = self.request.user
 
         if view == 'outgoing':
-            self.queryset = ReviewRequest.objects.from_user(user.username, user)
+            self.queryset = ReviewRequest.objects.from_user(user.username,
+                                                            user,
+                                                            with_counts=True)
             self.title = _(u"All Outgoing Review Requests")
         elif view == 'mine':
             self.queryset = ReviewRequest.objects.from_user(user.username, user,
-                                                            None)
+                                                            None,
+                                                            with_counts=True)
             self.title = _(u"All My Review Requests")
         elif view == 'to-me':
             self.queryset = \
-                ReviewRequest.objects.to_user_directly(user.username, user)
+                ReviewRequest.objects.to_user_directly(user.username, user,
+                                                       with_counts=True)
             self.title = _(u"Incoming Review Requests to Me")
         elif view == 'to-group':
             if group != "":
-                self.queryset = ReviewRequest.objects.to_group(group, user)
+                self.queryset = ReviewRequest.objects.to_group(group, user,
+                                                               with_counts=True)
                 self.title = _(u"Incoming Review Requests to %s") % group
             else:
                 self.queryset = \
-                    ReviewRequest.objects.to_user_groups(user.username, user)
+                    ReviewRequest.objects.to_user_groups(user.username, user,
+                                                         with_counts=True)
                 self.title = _(u"All Incoming Review Requests to My Groups")
         elif view == 'starred':
+            profile = user.get_profile()
             self.queryset = \
-                user.get_profile().starred_review_requests.public(user)
+                profile.starred_review_requests.public(user, with_counts=True)
             self.title = _(u"Starred Review Requests")
         else: # "incoming" or invalid
-            self.queryset = ReviewRequest.objects.to_user(user.username, user)
+            self.queryset = ReviewRequest.objects.to_user(user.username, user,
+                                                          with_counts=True)
             self.title = _(u"All Incoming Review Requests")
 
         return False

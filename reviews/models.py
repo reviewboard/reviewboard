@@ -5,6 +5,7 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.db.backends.util import typecast_timestamp
 from django.db.models import Q, permalink
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -27,6 +28,7 @@ from reviewboard.scmtools.models import Repository
 
 #the model for the summery only allows it to be 300 chars in length
 MAX_SUMMARY_LENGTH = 300
+
 
 def update_obj_with_changenum(obj, repository, changenum):
     """
@@ -230,6 +232,14 @@ class ReviewRequest(models.Model):
     objects = ReviewRequestManager()
 
 
+    # This is used because the backends may not return a valid datetime
+    # object when setting this value based on the result of the
+    # extra() call in ReviewRequestManager.
+    last_activity_timestamp = property(
+        lambda self: self._last_activity_timestamp,
+        lambda self, value: self.__set_last_activity_timestamp(value))
+
+
     def get_bug_list(self):
         """
         Returns a sorted list of bugs associated with this review request.
@@ -254,14 +264,22 @@ class ReviewRequest(models.Model):
         Returns any new reviews since the user last viewed the review request.
         """
         if user.is_authenticated():
-            query = self.visits.filter(user=user)
+            # If this ReviewRequest was queried using with_counts=True,
+            # then we should know the new review count and can use this to
+            # decide whether we have anything at all to show.
+            if hasattr(self, "new_review_count") and self.new_review_count > 0:
+                query = self.visits.filter(user=user)
 
-            if query.count() > 0:
-                visit = query[0]
+                try:
+                    visit = query[0]
 
-                return self.reviews.filter(
-                    public=True,
-                    timestamp__gt=visit.timestamp).exclude(user=user)
+                    return self.reviews.filter(
+                        public=True,
+                        timestamp__gt=visit.timestamp).exclude(user=user)
+                except IndexError:
+                    # This visit doesn't exist, so bail.
+                    pass
+
 
         return self.reviews.get_empty_query_set()
 
@@ -456,6 +474,13 @@ class ReviewRequest(models.Model):
         siteconfig = SiteConfiguration.objects.get_current()
         if siteconfig.get("mail_send_review_mail"):
             mail_review_request(user, self, changes)
+
+    def __set_last_activity_timestamp(self, value):
+        if isinstance(value, datetime):
+            self._last_activity_timestamp = value
+        else:
+            self._last_activity_timestamp = typecast_timestamp(value)
+
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']

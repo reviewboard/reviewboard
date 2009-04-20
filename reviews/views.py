@@ -244,7 +244,8 @@ def all_review_requests(request, template_name='reviews/datagrid.html'):
     Displays a list of all review requests.
     """
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.public(request.user, status=None),
+        ReviewRequest.objects.public(request.user, status=None,
+                                     with_counts=True),
         _("All review requests"))
     return datagrid.render_to_response(template_name)
 
@@ -303,7 +304,7 @@ def group(request, name, template_name='reviews/datagrid.html'):
     get_object_or_404(Group, name=name)
 
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.to_group(name, status=None),
+        ReviewRequest.objects.to_group(name, status=None, with_counts=True),
         _("Review requests for %s") % name)
 
     return datagrid.render_to_response(template_name)
@@ -333,7 +334,8 @@ def submitter(request, username, template_name='reviews/datagrid.html'):
     get_object_or_404(User, username=username)
 
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.from_user(username, status=None),
+        ReviewRequest.objects.from_user(username, status=None,
+                                        with_counts=True),
         _("%s's review requests") % username)
 
     return datagrid.render_to_response(template_name)
