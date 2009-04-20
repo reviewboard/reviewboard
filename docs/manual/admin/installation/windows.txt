@@ -59,6 +59,26 @@ directories to your system path.
 .. _`Python Setuptools Installer`: http://pypi.python.org/pypi/setuptools#windows
 
 
+.. index:: patch.exe
+
+Installing patch
+================
+
+In order to view diffs, you'll need to install GNU :command:`patch.exe`.
+
+You can `download the installer
+<http://gnuwin32.sourceforge.net/downlinks/patch.php>`_ for GNU
+:command:`patch.exe`. Follow the instructions in the installer and make sure
+:command:`patch.exe` in your PATH.
+
+.. warning::
+
+   If you have a non-GNU version of :command:`patch.exe` in your path
+   (such as one from Visual Studio), you will run into problems. You will
+   need to make sure the user your web server is running as sees the
+   GNU :command:`patch.exe` only.
+
+
 .. index:: memcached
 
 Installing memcached
