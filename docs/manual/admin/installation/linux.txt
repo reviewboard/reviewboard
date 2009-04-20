@@ -74,23 +74,48 @@ packages, or follow the `setuptools installation`_ instructions.
 Installing memcached
 ====================
 
+Memcached
+---------
+
 Memcached_ is a high-performant caching server used by Review Board. While
 optional, it's **strongly** recommended in order to have a fast, responsive
-setup. Along with memcached, we need the cmemcache_ Python bindings.
+setup. Along with memcached, we need libmemcache_ and the cmemcache_ Python
+bindings.
 
 To install on Debian_ or Ubuntu_, type::
 
-    $ apt-get install memcached libmemcache-dev
+    $ apt-get install memcached
 
 To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
 
     $ yum install memcached
 
-If libmemcache_ is not available in your distribution, you'll need to compile
-it manually or download an RPM from http://tangent.org/552/libmemcached.html.
 
-Next you'll need to install cmemcache_. This may be provided by your
+libmemcache
+-----------
+
+Next you'll need to install libmemcache_ and the libmemcache development
+headers. This may be provided by your distribution.
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install libmemcache-dev
+
+If libmemcache is not available in your distribution, you'll need to
+`download <http://people.freebsd.org/~seanc/libmemcache>`_ it and install it
+by typing the following::
+
+    $ ./configure --prefix=/usr
+    $ make
+    $ make install
+
+
+cmemcache
+---------
+
+Finally, you'll need to install cmemcache_. This may be provided by your
 distribution. If not, you can install it from http://gijsbert.org/cmemcache/.
+
 Download the tarball and do the following::
 
     $ ./configure --prefix=/usr
