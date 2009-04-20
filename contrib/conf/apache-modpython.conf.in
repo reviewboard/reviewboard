@@ -9,7 +9,7 @@
 	<Location "/">
 		PythonPath "['@sitedir@/conf'] + sys.path"
 		SetEnv DJANGO_SETTINGS_MODULE reviewboard.settings
-		SetEnv PYTHON_EGG_CACHE @sitedir@/tmp/egg_cache
+		SetEnv PYTHON_EGG_CACHE "@sitedir@/tmp/egg_cache"
 		SetHandler mod_python
 		PythonHandler django.core.handlers.modpython
 		PythonAutoReload Off
