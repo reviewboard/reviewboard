@@ -914,7 +914,10 @@ $.reviewForm = function() {
 
         $.funcQueue("reviewForm").add(function() {
             dlg.modalBox("destroy");
-            window.location = gReviewRequestPath;
+
+            if (publish) {
+                window.location = gReviewRequestPath;
+            }
         });
 
         $.funcQueue("reviewForm").start();
