@@ -6,7 +6,7 @@
 {{error}}
 {% endif %}
 {% if not standalone %}
-<table class="sidebyside{% if file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
+<table class="sidebyside{% if not file.interfilediff and file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
   <col class="line" />
   <col class="left" />
