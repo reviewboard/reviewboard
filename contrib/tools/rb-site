@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import getpass
+import imp
 import os
 import pkg_resources
 import platform
@@ -41,6 +42,89 @@ options = None
 args = None
 site = None
 ui = None
+
+
+class Dependencies(object):
+    memcached_modules = ["cmemcache", "memcache"]
+    sqlite_modules = ["pysqlite2", "sqlite3"]
+    mysql_modules = ["MySQLdb"]
+    postgresql_modules = ["psycopg2"]
+
+    cache_dependency_info = {
+        'required': False,
+        'title': 'Server Cache',
+        'dependencies': [
+            ("memcached", memcached_modules),
+        ],
+    }
+
+    db_dependency_info = {
+        'required': True,
+        'title': 'Databases',
+        'dependencies': [
+            ("sqlite3", sqlite_modules),
+            ("MySQL", mysql_modules),
+            ("PostgreSQL", postgresql_modules)
+        ],
+    }
+
+    @classmethod
+    def get_support_memcached(cls):
+        return cls.has_modules(cls.memcached_modules)
+
+    @classmethod
+    def get_support_mysql(cls):
+        return cls.has_modules(cls.mysql_modules)
+
+    @classmethod
+    def get_support_postgresql(cls):
+        return cls.has_modules(cls.postgresql_modules)
+
+    @classmethod
+    def get_support_sqlite(cls):
+        return cls.has_modules(cls.sqlite_modules)
+
+    @classmethod
+    def get_missing(cls):
+        fatal = False
+        missing_groups = []
+
+        for dep_info in [cls.cache_dependency_info,
+                         cls.db_dependency_info]:
+            missing_deps = []
+
+            for desc, modules in dep_info['dependencies']:
+                if not cls.has_modules(modules):
+                    missing_deps.append("%s (%s)" % (desc, ", ".join(modules)))
+
+            if missing_deps:
+                if (dep_info['required'] and
+                    len(missing_deps) == len(dep_info['dependencies'])):
+                    fatal = True
+                    text = "%s (required)" % dep_info['title']
+                else:
+                    text = "%s (optional)" % dep_info['title']
+
+                missing_groups.append({
+                    'title': text,
+                    'dependencies': missing_deps,
+                })
+
+        return fatal, missing_groups
+
+    @classmethod
+    def has_modules(cls, names):
+        """
+        Returns whether or not one of the specified modules is installed.
+        """
+        for name in names:
+            try:
+                imp.find_module(name)
+                return True
+            except ImportError:
+                continue
+
+        return False
 
 
 class Site(object):
@@ -362,6 +446,12 @@ class UIToolkit(object):
         """
         raise NotImplemented
 
+    def itemized_list(self, page, title, items):
+        """
+        Displays an itemized list.
+        """
+        raise NotImplemented
+
     def step(self, page, text, func):
         """
         Adds a step of a multi-step operation. This will indicate when
@@ -470,9 +560,21 @@ class ConsoleUI(UIToolkit):
         self.text(page, "You can type either the name or the number "
                         "from the list below.")
 
-        for i, choice in enumerate(choices):
-            self.text(page, "(%d) %s\n" % (i + 1, choice),
-                      leading_newline=(i == 0))
+        valid_choices = []
+        i = 0
+
+        for choice in choices:
+            if isinstance(choice, basestring):
+                text = choice
+                enabled = True
+            else:
+                text, enabled = choice
+
+            if enabled:
+                self.text(page, "(%d) %s\n" % (i + 1, text),
+                          leading_newline=(i == 0))
+                valid_choices.append(choice)
+                i += 1
 
         print
 
@@ -482,11 +584,11 @@ class ConsoleUI(UIToolkit):
         while not choice:
             choice = raw_input(prompt)
 
-            if choice not in choices:
+            if choice not in valid_choices:
                 try:
-                    i = int(choice) - 1
-                    if 0 <= i < len(choices):
-                        choice = choices[i]
+                    i = int(valid_choice) - 1
+                    if 0 <= i < len(valid_choices):
+                        choice = valid_choices[i]
                         break
                 except ValueError:
                     pass
@@ -509,6 +611,16 @@ class ConsoleUI(UIToolkit):
             print
 
         print self.text_wrapper.fill(text)
+
+    def itemized_list(self, page, title, items):
+        """
+        Displays an itemized list.
+        """
+        if title:
+            self.text(page, "%s:" % title)
+
+        for item in items:
+            self.text(page, "    * %s" % item, False)
 
     def step(self, page, text, func):
         """
@@ -747,10 +859,17 @@ class GtkUI(UIToolkit):
         buttons = []
 
         for choice in choices:
-            radio_button = gtk.RadioButton(label=choice, use_underline=False)
-            buttons.append(radio_button)
+            if isinstance(choice, basestring):
+                text = choice
+                enabled = True
+            else:
+                text, enabled = choice
+
+            radio_button = gtk.RadioButton(label=text, use_underline=False)
             radio_button.show()
             vbox.pack_start(radio_button, False, True, 0)
+            buttons.append(radio_button)
+            radio_button.set_sensitive(enabled)
             radio_button.connect('toggled', on_toggled)
 
             if buttons[0] != radio_button:
@@ -767,6 +886,20 @@ class GtkUI(UIToolkit):
         label.show()
         page['widget'].pack_start(label, False, True, 0)
         label.set_alignment(0, 0)
+
+    def itemized_list(self, page, title, items):
+        """
+        Displays an itemized list.
+        """
+        if title:
+            label = gtk.Label()
+            label.set_markup("<b>%s:</b>" % title)
+            label.show()
+            page['widget'].pack_start(label, False, True, 0)
+            label.set_alignment(0, 0)
+
+        for item in items:
+            self.text(page, u"    \u2022 %s" % item)
 
     def step(self, page, text, func):
         """
@@ -895,6 +1028,11 @@ class InstallCommand(Command):
 
         self.print_introduction()
 
+        if self.print_missing_dependencies():
+            # There were required dependencies missing. Don't show any more
+            # pages.
+            return
+
         if not options.noinput:
             self.ask_domain()
             self.ask_site_root()
@@ -955,6 +1093,31 @@ class InstallCommand(Command):
                       "your site for installation. This will only take a few "
                       "minutes.")
 
+    def print_missing_dependencies(self):
+        fatal, missing_dep_groups = Dependencies.get_missing()
+
+        if missing_dep_groups:
+            if fatal:
+                page = ui.page("Required modules are missing.")
+                ui.text(page, "You are missing Python modules that are "
+                              "needed before the installation process. "
+                              "You will need to install the necessary "
+                              "modules and restart the install.")
+            else:
+                page = ui.page("Make sure you have the modules you need.")
+                ui.text(page, "Depending on your installation, you may need "
+                              "certain Python modules and servers that are "
+                              "missing.")
+                ui.text(page, "If you need support for any of the following, "
+                              "you will need to install the necessary "
+                              "modules and restart the install.")
+
+            for group in missing_dep_groups:
+                ui.itemized_list(page, group['title'], group['dependencies'])
+
+        return fatal
+
+
     def ask_domain(self):
         page = ui.page("What's the domain name for this site?")
 
@@ -996,7 +1159,9 @@ class InstallCommand(Command):
         page = ui.page("What database type will you be using?")
 
         ui.prompt_choice(page, "Database Type",
-                         ["mysql", "postgresql", "sqlite3"],
+                         [("mysql", Dependencies.get_support_mysql()),
+                          ("postgresql", Dependencies.get_support_postgresql()),
+                          ("sqlite3", Dependencies.get_support_sqlite())],
                          save_obj=site, save_var="db_type")
 
     def ask_database_name(self):
@@ -1064,7 +1229,9 @@ class InstallCommand(Command):
         ui.text(page, "memcached is strongly recommended. Use it unless "
                       "you have a good reason not to.")
 
-        ui.prompt_choice(page, "Cache Type", ["memcached", "file"],
+        ui.prompt_choice(page, "Cache Type",
+                         [("memcached", Dependencies.get_support_memcached()),
+                          "file"],
                          save_obj=site, save_var="cache_type")
 
     def ask_cache_info(self):
