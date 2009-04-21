@@ -21,7 +21,7 @@ from reviewboard.diffviewer.diffutils import UserVisibleError, \
 def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                         context,
                         template_name='diffviewer/diff_file_fragment.html'):
-    key = template_name + '-'
+    key = "%s-%s-" % (template_name, file['index'])
 
     if file['force_interdiff']:
         if file['interfilediff']:
