@@ -295,7 +295,7 @@ user's checkout, it will be faster to find the property.
 
 To set the property on a directory, type::
 
-    $ svn propset reviewboard.url http://reviewboard.example.com .
+    $ svn propset reviewboard:url http://reviewboard.example.com .
 
 
 .reviewboardrc
