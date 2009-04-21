@@ -573,7 +573,7 @@ class ConsoleUI(UIToolkit):
             if enabled:
                 self.text(page, "(%d) %s\n" % (i + 1, text),
                           leading_newline=(i == 0))
-                valid_choices.append(choice)
+                valid_choices.append(text)
                 i += 1
 
         print
@@ -586,7 +586,7 @@ class ConsoleUI(UIToolkit):
 
             if choice not in valid_choices:
                 try:
-                    i = int(valid_choice) - 1
+                    i = int(choice) - 1
                     if 0 <= i < len(valid_choices):
                         choice = valid_choices[i]
                         break
