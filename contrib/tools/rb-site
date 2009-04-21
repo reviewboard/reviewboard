@@ -1196,7 +1196,7 @@ class InstallCommand(Command):
     def ask_database_host(self):
         def normalize_host_port(value):
             if ":" in value:
-                value, site.db_port = ":".split(db_host, 1)
+                value, site.db_port = value.split(":", 1)
 
             return value
 
