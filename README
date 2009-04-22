@@ -10,7 +10,7 @@ Perforce, Git, Bazaar, and Mercurial repositories.
 Review Board is written using Django and Python.
 
 Information on usage and installation can be found on
-http://www.review-board.org/wiki/Documentation
+http://www.review-board.org/docs/manual/dev/
 
 General information on the project is available on
 http://www.review-board.org/
