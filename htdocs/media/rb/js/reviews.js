@@ -187,12 +187,32 @@ function linkifyText(text) {
 
     /* Linkify all URLs. */
     text = text.replace(
-        /\b([a-z]+:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])/g,
-        '<a href="$1">$1</a>')
+        /\b([a-z]+:\/\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*([-A-Za-z0-9+@#\/%=~_();|]|))/g,
+        function(url) {
+            /*
+             * We might catch an entity at the end of the URL. This is hard
+             * to avoid, since we can't rely on advanced RegExp techniques
+             * in all browsers. So, we'll now search for it and prevent it
+             * from being part of the URL if it exists.
+             *
+             * See bug 1069.
+             */
+            var extra = "";
+            var parts = url.match(/^(.*)(&[a-z]+;)$/);
+
+            if (parts != null) {
+                /* We caught an entity. Set it free. */
+                url = parts[1];
+                extra = parts[2];
+            }
+
+            return '<a href="' + url + '">' + url + '</a>' + extra;
+        });
+
 
     /* Linkify /r/#/ review request numbers */
     text = text.replace(
-        /(^|\s)\/(r\/\d+(\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])?)/g,
+        /(^|\s|&lt;)\/(r\/\d+(\/[-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[-A-Za-z0-9+&@#\/%=~_()|])?)/g,
         '$1<a href="' + SITE_ROOT + '$2">/$2</a>');
 
     /* Bug numbers */
