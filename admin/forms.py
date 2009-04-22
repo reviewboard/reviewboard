@@ -1,3 +1,4 @@
+import pytz
 import re
 import urlparse
 
@@ -41,6 +42,12 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Administrator E-Mail"),
         required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
+
+    locale_timezone = forms.ChoiceField(
+        label=_("Time Zone"),
+        required=True,
+        choices=[(tz, tz) for tz in pytz.common_timezones],
+        help_text=_("The time zone used for all dates on this server."))
 
     auth_anonymous_access = forms.BooleanField(
         label=_("Allow anonymous read-only access"),
@@ -289,6 +296,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'fields':  ('server', 'site_media_url',
                             'site_admin_name',
                             'site_admin_email',
+                            'locale_timezone',
                             'auth_anonymous_access'),
             },
             {
