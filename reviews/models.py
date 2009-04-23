@@ -858,6 +858,13 @@ class Comment(models.Model):
         return "%s#comment%d" % \
             (self.review.get().review_request.get_absolute_url(), self.id)
 
+    def save(self, **kwargs):
+        # Update the review timestamp.
+        self.review.timestamp = datetime.now()
+        self.review.save()
+
+        super(Comment, self).save()
+
     def __unicode__(self):
         return self.text
 
@@ -913,6 +920,13 @@ class ScreenshotComment(models.Model):
     def get_review_url(self):
         return "%s#scomment%d" % \
             (self.review.get().review_request.get_absolute_url(), self.id)
+
+    def save(self, **kwargs):
+        # Update the review timestamp.
+        self.review.timestamp = datetime.now()
+        self.review.save()
+
+        super(ScreenshotComment, self).save()
 
     def __unicode__(self):
         return self.text
@@ -1008,6 +1022,11 @@ class Review(models.Model):
 
         return None
 
+    def save(self, **kwargs):
+        self.timestamp = datetime.now()
+
+        super(Review, self).save()
+
     def publish(self):
         """
         Publishes this review.
@@ -1015,7 +1034,6 @@ class Review(models.Model):
         This will make the review public and update the timestamps of all
         contained comments.
         """
-        self.timestamp = datetime.now()
         self.public = True
         self.save()
 
@@ -1047,3 +1065,4 @@ class Review(models.Model):
 
     class Meta:
         ordering = ['timestamp']
+        get_latest_by = 'timestamp'

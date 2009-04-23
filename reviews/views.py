@@ -128,10 +128,21 @@ def review_detail(request, review_request_id,
             visited.save()
 
 
+    # Unlike review above, this covers replies as well.
+    try:
+        last_draft_review = Review.objects.filter(
+            review_request=review_request,
+            user=request.user,
+            public=False).latest()
+        review_timestamp = last_draft_review.timestamp
+    except Review.DoesNotExist:
+        review_timestamp = 0
+
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time = review_request.get_last_activity_time()
-    etag = "%s:%s:%s" % (request.user, last_activity_time,
-                         settings.AJAX_SERIAL)
+
+    etag = "%s:%s:%s:%s" % (request.user, last_activity_time, review_timestamp,
+                            settings.AJAX_SERIAL)
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
