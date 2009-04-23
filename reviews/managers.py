@@ -126,7 +126,7 @@ class ReviewRequestManager(ConcurrencyManager):
                   LIMIT 1
             """
 
-            if user is not None:
+            if user and user.is_authenticated():
                 select_dict['new_review_count'] = """
                     SELECT COUNT(*)
                       FROM reviews_review, accounts_reviewrequestvisit
