@@ -3,13 +3,11 @@
    <li class="reply-comment{% if draft %} draft" id="yourcomment_{{context_id}}-{{id}}-item{% endif %}">
     <dl>
      <dt>
-      {% if draft %}<label for="yourcomment_{{context_id}}-{{id}}">{% endif %}
+      <label for="{% if draft %}your{% endif %}comment_{{context_id}}-{{id}}">
       <a href="{% url user reply_user %}">{{reply_user|user_displayname}}</a>
       <span class="timestamp">{% blocktrans with timestamp|timesince as timestamp_since and timestamp|date:"F jS, Y, P" as timestamp_date %}{{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</span>
-      {% if draft %}</label>{% endif %}
+      </label>
      </dt>
-     <dd><pre{% if draft %} id="yourcomment_{{context_id}}-{{id}}"{% endif %}>{{text|escape}}</pre></dd>
+     <dd><pre id="{% if draft %}your{% endif %}comment_{{context_id}}-{{id}}" class="reviewtext">{{text|escape}}</pre></dd>
     </dl>
    </li>
-{% if draft %}
-{% endif %}

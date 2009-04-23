@@ -71,7 +71,7 @@
   <div class="posted_time">{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
  </div>
  <div class="body">
-   <pre class="body_top">{{entry.review.body_top|escape}}</pre>
+   <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
    {% reply_section entry.review "" "body_top" "rcbt" %}
 {% if entry.review.comments.all or entry.review.screenshot_comments.all %}
    <dl class="diff-comments">
@@ -136,7 +136,7 @@
    </dl>
 {% endif %}
   {% if entry.review.body_bottom %}
-   <pre class="body_bottom">{{entry.review.body_bottom|escape}}</pre>
+   <pre class="body_bottom reviewtext">{{entry.review.body_bottom|escape}}</pre>
    {% reply_section entry.review "" "body_bottom" "rcbb" %}
   {% endif %}
  </div><!-- body -->

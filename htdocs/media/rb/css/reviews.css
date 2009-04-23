@@ -428,14 +428,14 @@
   padding: 5px;
 }
 
-.review .reply-comments .reply-comment dt a {
+.review .reply-comments .reply-comment dt label a {
   color: #AB5603;
   font-size: 1.1em;
   font-weight: bold;
   text-decoration: none;
 }
 
-.review .reply-comments .reply-comment.draft dt a {
+.review .reply-comments .reply-comment.draft dt label a {
   color: #4e9a06;
 }
 

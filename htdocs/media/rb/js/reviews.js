@@ -434,6 +434,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                     multiline: true
                 })
                 .bind("complete", function(e, value) {
+                    self.html(linkifyText(self.text()));
                     reviewRequestApiCall({
                         path: "/reviews/" + review_id + "/replies/draft/",
                         data: {
@@ -1310,6 +1311,10 @@ $(document).ready(function() {
                     .reviewsAutoComplete("users", "username");
             }
         }
+
+        $("pre.reviewtext").each(function() {
+            $(this).html(linkifyText($(this).text()));
+        });
 
         if (gReviewPending) {
             $.reviewBanner();
