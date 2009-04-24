@@ -183,7 +183,8 @@ setup(name="ReviewBoard",
           'django_evolution',
           'Djblets>=0.5beta2.dev_20090423',
           'Pygments>=0.10',
-          'flup'
+          'flup',
+          'pytz'
       ],
       dependency_links = [
           "http://downloads.review-board.org/mirror/",
