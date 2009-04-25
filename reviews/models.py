@@ -859,11 +859,15 @@ class Comment(models.Model):
             (self.review.get().review_request.get_absolute_url(), self.id)
 
     def save(self, **kwargs):
-        # Update the review timestamp.
-        self.review.timestamp = datetime.now()
-        self.review.save()
-
         super(Comment, self).save()
+
+        try:
+            # Update the review timestamp.
+            review = self.review.get()
+            review.timestamp = datetime.now()
+            review.save()
+        except Review.DoesNotExist:
+            pass
 
     def __unicode__(self):
         return self.text
@@ -922,11 +926,15 @@ class ScreenshotComment(models.Model):
             (self.review.get().review_request.get_absolute_url(), self.id)
 
     def save(self, **kwargs):
-        # Update the review timestamp.
-        self.review.timestamp = datetime.now()
-        self.review.save()
-
         super(ScreenshotComment, self).save()
+
+        try:
+            # Update the review timestamp.
+            review = self.review.get()
+            review.timestamp = datetime.now()
+            review.save()
+        except Review.DoesNotExist:
+            pass
 
     def __unicode__(self):
         return self.text

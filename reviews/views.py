@@ -129,14 +129,17 @@ def review_detail(request, review_request_id,
 
 
     # Unlike review above, this covers replies as well.
-    try:
-        last_draft_review = Review.objects.filter(
-            review_request=review_request,
-            user=request.user,
-            public=False).latest()
-        review_timestamp = last_draft_review.timestamp
-    except Review.DoesNotExist:
-        review_timestamp = 0
+    review_timestamp = 0
+
+    if request.user.is_authenticated():
+        try:
+            last_draft_review = Review.objects.filter(
+                review_request=review_request,
+                user=request.user,
+                public=False).latest()
+            review_timestamp = last_draft_review.timestamp
+        except Review.DoesNotExist:
+            pass
 
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time = review_request.get_last_activity_time()
