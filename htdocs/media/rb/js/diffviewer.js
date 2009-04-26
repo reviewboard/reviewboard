@@ -711,11 +711,11 @@ $.fn.highlightChunk = function() {
 
     if ($.browser.msie && $.browser.version <= 8) {
         /* On IE, the black rectangle is too far to the top. */
-        borderOffsetX = -borderOffsetX;
+        borderOffsetY = -borderOffsetY;
 
         if ($.browser.msie && $.browser.version == 8) {
             /* And on IE8, it's also too far to the left. */
-            borderOffsetY = -borderOffsetY;
+            borderOffsetX = -borderOffsetX;
         }
     }
 
