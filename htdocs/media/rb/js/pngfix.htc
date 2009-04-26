@@ -84,9 +84,11 @@ function iePNGFix(init)
     while (e--) tFix.push(elms[e]);
    }
    var t = tFix.length;
+/*
    if (t && (/relative|absolute/i).test(currentStyle.position))
     alert('IEPNGFix: Children of positioned element are unclickable:\n\n<' +
      nodeName + (id && ' id=' + id) + '>');
+*/
     while (t--)
      if (!(/relative|absolute/i).test(tFix[t].currentStyle.position))
       tFix[t].style.position = 'relative';

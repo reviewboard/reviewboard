@@ -107,6 +107,9 @@ function getElementsBySelect(rule) {
 		var classname = (/\.([a-z0-9_-]+)/i).exec(select);
 		var tagName = select.replace(/(\.|\#|\:)[a-z0-9_-]+/i, '');
 		var classReg = classname? new RegExp('\\b' + classname[1] + '\\b'):false;
+		if (tagName == "") {
+		    return;
+		}
 		for(var i=0; i<elements.length; i++) {
 			result = tagName? elements[i].all.tags(tagName):elements[i].all; 
 			for(var j=0; j<result.length; j++) {
