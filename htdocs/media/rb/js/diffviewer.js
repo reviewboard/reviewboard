@@ -709,9 +709,14 @@ $.fn.highlightChunk = function() {
     var borderOffsetX = borderWidth / 2;
     var borderOffsetY = borderHeight / 2;
 
-    if ($.browser.msie && $.browser.version < 8) {
-        /* This ends up making the border too high up on IE6/7. */
-        borderOffsetY = 0;
+    if ($.browser.msie && $.browser.version <= 8) {
+        /* On IE, the black rectangle is too far to the top. */
+        borderOffsetX = -borderOffsetX;
+
+        if ($.browser.msie && $.browser.version == 8) {
+            /* And on IE8, it's also too far to the left. */
+            borderOffsetY = -borderOffsetY;
+        }
     }
 
     var updateQueued = false;
