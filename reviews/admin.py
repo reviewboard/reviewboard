@@ -13,8 +13,13 @@ class CommentAdmin(admin.ModelAdmin):
     raw_id_fields = ('filediff', 'interfilediff', 'reply_to')
 
 
+class DefaultReviewerAdmin(admin.ModelAdmin):
+    filter_horizontal = ('people',)
+
+
 class GroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'display_name', 'mailing_list')
+    filter_horizontal = ('users',)
 
 
 class ReviewAdmin(admin.ModelAdmin):
@@ -32,6 +37,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
     list_filter = ('public', 'status', 'time_added', 'last_updated')
     raw_id_fields = ('submitter', 'diffset_history', 'screenshots',
                      'inactive_screenshots')
+    filter_horizontal = ('target_people',)
 
 
 class ReviewRequestDraftAdmin(admin.ModelAdmin):
@@ -39,6 +45,7 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
     list_filter = ('last_updated',)
     raw_id_fields = ('review_request', 'diffset', 'screenshots',
                      'inactive_screenshots')
+    filter_horizontal = ('target_people',)
 
 
 class ScreenshotAdmin(admin.ModelAdmin):
@@ -53,7 +60,7 @@ class ScreenshotCommentAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Comment, CommentAdmin)
-admin.site.register(DefaultReviewer)
+admin.site.register(DefaultReviewer, DefaultReviewerAdmin)
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Review, ReviewAdmin)
 admin.site.register(ReviewRequest, ReviewRequestAdmin)
