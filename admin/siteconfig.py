@@ -40,6 +40,7 @@ settings_map = {
     'auth_ad_domain_controller':  'AD_DOMAIN_CONTROLLER',
     'auth_ad_ou_name':            'AD_OU_NAME',
     'auth_ad_group_name':         'AD_GROUP_NAME',
+    'auth_ad_search_root':        'AD_SEARCH_ROOT',
     'auth_ad_recursion_depth':    'AD_RECURSION_DEPTH',
     'auth_nis_email_domain':      'NIS_EMAIL_DOMAIN',
     'site_domain_method':         'DOMAIN_METHOD',

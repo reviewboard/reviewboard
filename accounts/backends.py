@@ -127,13 +127,15 @@ class LDAPBackend:
                                         ldap.SCOPE_SUBTREE,
                                         settings.LDAP_UID_MASK % username)
 
-                first_name = passwd[0][1]['givenName'][0]
-                last_name = passwd[0][1]['sn'][0]
+                user_info = passwd[0][1]
+
+                first_name = user_info.get('givenName', [username])[0]
+                last_name = user_info.get('sn', [""])[0]
 
                 if settings.LDAP_EMAIL_DOMAIN:
                     email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
                 elif settings.LDAP_EMAIL_ATTRIBUTE:
-                    email = passwd[0][1][settings.LDAP_EMAIL_ATTRIBUTE][0]
+                    email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
 
                 user = User(username=username,
                             password='',
@@ -171,9 +173,13 @@ class ActiveDirectoryBackend:
         return str(settings.AD_DOMAIN_NAME)
 
     def get_ldap_search_root(self):
-        root = ['dc=%s' % x for x in self.get_domain_name().split('.')]
-        if settings.AD_OU_NAME:
-            root = ['ou=%s' % settings.AD_OU_NAME] + root
+        if settings.get("AD_SEARCH_ROOT"):
+            root = [settings.AD_SEARCH_ROOT]
+        else:
+            root = ['dc=%s' % x for x in self.get_domain_name().split('.')]
+            if settings.AD_OU_NAME:
+                root = ['ou=%s' % settings.AD_OU_NAME] + root
+
         return ','.join(root)
 
     def search_ad(self, con, filterstr):
@@ -271,9 +277,12 @@ class ActiveDirectoryBackend:
             return user
         except User.DoesNotExist:
             try:
-                first_name = ad_user_data[0][1]['givenName'][0]
-                last_name = ad_user_data[0][1]['sn'][0]
-                email = u'%s@%s' % (username, settings.AD_DOMAIN_NAME)
+                user_info = ad_user_data[0][1]
+
+                first_name = user_info.get('givenName', [username])[0]
+                last_name = user_info.get('sn', [""])[0]
+                email = user_info.get('mail',
+                    [u'%s@%s' % (username, settings.AD_DOMAIN_NAME])[0]
 
                 user = User(username=username,
                             password='',

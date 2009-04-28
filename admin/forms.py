@@ -168,6 +168,13 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("Optionally restrict users to specified group."),
         required=False)
 
+    auth_ad_search_root = forms.CharField(
+        label=_("Custom search root"),
+        help_text=_("Optionally specify a custom search root, overriding "
+                    "the built-in computed search root. If set, \"OU name\" "
+                    "is ignored."),
+        required=False)
+
     auth_ad_recursion_depth = forms.IntegerField(
         label=_("Recursion Depth"),
         help_text=_("Depth to recurse when checking group membership. 0 to turn off, -1 for unlimited."),
@@ -217,6 +224,7 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.disabled_fields['auth_ad_group_name'] = True
             self.disabled_fields['auth_ad_recursion_depth'] = True
             self.disabled_fields['auth_ad_ou_name'] = True
+            self.disabled_fields['auth_ad_search_root'] = True
             self.disabled_fields['auth_ad_find_dc_from_dns'] = True
             self.disabled_fields['auth_ad_domain_controller'] = True
             self.disabled_fields['auth_ad_domain_name'] = _(reason)
@@ -344,6 +352,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                             'auth_ad_domain_controller',
                             'auth_ad_ou_name',
                             'auth_ad_group_name',
+                            'auth_ad_search_root',
                             'auth_ad_recursion_depth',
                             ),
             },
