@@ -282,7 +282,7 @@ class ActiveDirectoryBackend:
                 first_name = user_info.get('givenName', [username])[0]
                 last_name = user_info.get('sn', [""])[0]
                 email = user_info.get('mail',
-                    [u'%s@%s' % (username, settings.AD_DOMAIN_NAME])[0]
+                    [u'%s@%s' % (username, settings.AD_DOMAIN_NAME)][0]
 
                 user = User(username=username,
                             password='',
