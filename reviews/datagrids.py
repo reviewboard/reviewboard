@@ -43,13 +43,18 @@ class ShipItColumn(Column):
         self.image_height = 16
         self.image_alt = "Ship It!"
         self.detailed_label = "Ship It!"
+        self.db_field = "shipit_count"
+        self.sortable = True
         self.shrink = True
 
     def render_data(self, review_request):
         if review_request.shipit_count > 0:
-            return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
-                (self.image_url, self.image_width, self.image_height,
-                 self.image_alt)
+            return '<span class="shipit-count">' \
+                    '<img src="%srb/images/shipit_checkmark.png?%s" ' \
+                         'width="9" height="8" alt="%s" /> %s' \
+                   '</span>' % \
+                (settings.MEDIA_URL, settings.MEDIA_SERIAL,
+                 self.image_alt, review_request.shipit_count)
 
         return ""
 
