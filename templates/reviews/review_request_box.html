@@ -39,7 +39,9 @@
    <td class="label"><label for="bugs_closed">{% trans "Bugs" %}:</label></td>
    <td class="value"><span id="bugs_closed" class="editable comma-editable">{% spaceless %}
 {%  for bug in review_request_details.get_bug_list %}
-{%   if review_request.repository.bug_tracker %}<a href={{bug|bug_url:review_request}}>{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
+{%   with bug|bug_url:review_request as bug_url %}
+{%    if bug_url %}<a href="{{bug_url}}">{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
+{%   endwith %}
 {%  endfor %}
 {% endspaceless %}</span></td>
    <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>

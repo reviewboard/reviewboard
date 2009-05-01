@@ -381,7 +381,8 @@ def bug_url(bug_id, review_request):
     If the repository the review request belongs to doesn't have an
     associated bug tracker, this returns None.
     """
-    if review_request.repository.bug_tracker:
+    if (review_request.repository.bug_tracker and
+        '%s' in review_request.repository.bug_tracker):
         return review_request.repository.bug_tracker % bug_id
 
     return None
