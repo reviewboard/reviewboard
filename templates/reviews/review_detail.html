@@ -42,7 +42,9 @@
 
 <ul id="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
+{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+{% endif %}
 {% include "reviews/review_request_actions_primary.html" %}
 {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
  <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
