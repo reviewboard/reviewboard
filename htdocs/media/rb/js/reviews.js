@@ -907,13 +907,16 @@ $.reviewForm = function() {
     function saveReview(publish) {
         $(".body-top, .body-bottom").inlineEditor("save");
 
-        $(".comment-editable:inlineEditorDirty", dlg).each(function() {
+        $(".comment-editable", dlg).each(function() {
             var editable = $(this);
-            $.funcQueue("reviewForm").add(function() {
-                editable
-                    .one("saved", $.funcQueue("reviewForm").next)
-                    .inlineEditor("save");
-            });
+
+            if (editable.inlineEditor("dirty")) {
+                $.funcQueue("reviewForm").add(function() {
+                    editable
+                        .one("saved", $.funcQueue("reviewForm").next)
+                        .inlineEditor("save");
+              });
+            }
         });
 
         $.funcQueue("reviewForm").add(function() {
