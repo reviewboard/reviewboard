@@ -133,10 +133,6 @@ class Site(object):
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
 
-        # Make sure that we have our settings_local.py in our path in case
-        # we need to run manager commands.
-        sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
-
         # State saved during installation
         self.domain_name = None
         self.site_root = None
@@ -299,6 +295,10 @@ class Site(object):
         fp.write("FORCE_SCRIPT_NAME = ''\n")
         fp.write("DEBUG = False\n")
         fp.close()
+
+        # Make sure that we have our settings_local.py in our path for when
+        # we need to run manager commands.
+        sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
 
     def sync_database(self):
         """
