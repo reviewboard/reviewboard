@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import connection, models
 from django.db.models import Q, permalink
+from django.dispatch import dispatcher
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -1079,6 +1080,10 @@ class Review(models.Model):
         # Atomicly update the shipit_count
         if self.ship_it:
             self.review_request.increment_ship_it()
+
+        dispatcher.send(signal=review_signals.published,
+                        sender=self.__class__,
+                        instance=self)
 
     def delete(self):
         """

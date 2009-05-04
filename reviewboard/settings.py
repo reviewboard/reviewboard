@@ -94,6 +94,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.sessions',
     'djblets.datagrid',
+    'djblets.extensions',
     'djblets.feedview',
     'djblets.siteconfig',
     'djblets.util',
@@ -102,6 +103,7 @@ INSTALLED_APPS = (
     'reviewboard.admin',
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
+    'reviewboard.extensions',
     'reviewboard.iphone',
     'reviewboard.reports',
     'reviewboard.reviews',
@@ -165,6 +167,7 @@ else:
 
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
+EXTENSIONS_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 
 
 # URL prefix for media -- CSS, JavaScript and images. Make sure to use a

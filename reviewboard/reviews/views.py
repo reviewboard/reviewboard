@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.dispatch import dispatcher
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
                         HttpResponseNotModified, HttpResponseServerError
 from django.shortcuts import get_object_or_404, get_list_or_404, \
@@ -34,6 +35,10 @@ from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
+from reviewboard.diffviewer.views import view_diff, view_diff_fragment
+from reviewboard.extensions.hooks import DashboardHook, \
+                                         ReviewRequestDetailHook
+from reviewboard.reviews import signals as review_signals
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -236,6 +241,7 @@ def review_detail(request, review_request_id,
 
     response = render_to_response(template_name, RequestContext(request, {
         'draft': draft,
+        'detail_hooks': ReviewRequestDetailHook.hooks,
         'review_request': review_request,
         'review_request_details': draft or review_request,
         'entries': entries,
@@ -326,7 +332,11 @@ def dashboard(request, template_name='reviews/dashboard.html'):
     else:
         grid = DashboardDataGrid(request)
 
-    return grid.render_to_response(template_name)
+    print DashboardHook.hooks
+
+    return grid.render_to_response(template_name, extra_context={
+        'sidebar_hooks': DashboardHook.hooks,
+    })
 
 
 @check_login_required

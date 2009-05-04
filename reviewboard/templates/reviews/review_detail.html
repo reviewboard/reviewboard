@@ -2,6 +2,7 @@
 {% load i18n %}
 {% load djblets_deco %}
 {% load djblets_utils %}
+{% load rb_extensions %}
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
@@ -41,6 +42,7 @@
 {% box "review-request" %}
 
 <ul id="actions">
+{% review_request_action_hooks %}
 {% include "reviews/review_request_actions_secondary.html" %}
 {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>

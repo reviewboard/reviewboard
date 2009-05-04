@@ -1,12 +1,15 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% load djblets_extensions %}
 {% load djblets_utils %}
 {% load i18n %}
+{% load rb_extensions %}
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
  <head>
   <title>{% block title %}{% endblock %} | Review Board</title>
 {% block extrahead %}{% endblock %}
+{% template_hook_point "base-extrahead" %}
   <script type="text/javascript">
     var AJAX_SERIAL = "{{AJAX_SERIAL}}";
     var MEDIA_SERIAL = "{{MEDIA_SERIAL}}";
@@ -18,6 +21,7 @@
   <link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
 {% block css %}{% endblock %}
+{% template_hook_point "base-css" %}
   <!--[if lt IE 7.]>
   <style type="text/css">
     body {
@@ -36,6 +40,7 @@
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css?{{MEDIA_SERIAL}}"></script>
   <![endif]-->
 {% block scripts %}{% endblock %}
+{% template_hook_point "base-scripts" %}
  </head>
 {% block bodytag %}
  <body>
@@ -72,6 +77,7 @@
     </div>
 
    </div>
+   {% template_hook_point "base-before-navbar" %}
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
    <form method="get" action="{% url search %}">
     <div id="navbar-outer">
@@ -84,6 +90,7 @@
       <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
       <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
       <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
+      {% navigation_bar_hooks %}
       {% if siteconfig.settings.search_enable %}
       <li id="searchbar">
       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
@@ -96,12 +103,16 @@
    {% endif %}
 {% endblock %}
    <div id="error"></div>
+   {% template_hook_point "base-after-navbar" %}
    <div id="content">
+{% template_hook_point "base-before-content" %}
 {% block content %}{% endblock %}
+{% template_hook_point "base-after-content" %}
    </div>
   </div>
 
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/gears_init.js?{{MEDIA_SERIAL}}"></script>
 {% block scripts-post %}{% endblock %}
+{% template_hook_point "base-scripts-post" %}
  </body>
 </html>

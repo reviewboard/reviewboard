@@ -14,6 +14,7 @@ log = __import__("djblets.log", {}, {}, ["log"])
 
 from reviewboard import get_version_string
 from reviewboard import signals
+from reviewboard.extensions.base import get_extension_manager
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
@@ -24,6 +25,8 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
 # Set up logging.
 log.init_logging()
 logging.info("Log file for Review Board v%s" % get_version_string())
+
+extension_manager = get_extension_manager()
 
 
 # Generate cache serials
@@ -37,6 +40,8 @@ if not admin.site._registry:
 
 # URLs global to all modes
 urlpatterns = patterns('',
+    (r'^admin/extensions/', include('djblets.extensions.urls'),
+     {'extension_manager': extension_manager}),
     (r'^admin/', include('reviewboard.admin.urls')),
 )
 
@@ -68,7 +73,7 @@ urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
     (r'^api/(?P<api_format>json|xml)/', include('reviewboard.webapi.urls')),
     (r'^r/', include('reviewboard.reviews.urls')),
-    (r'^reports/', include('reviewboard.reports.urls')),
+    #(r'^reports/', include('reviewboard.reports.urls')),
 )
 
 
@@ -115,4 +120,5 @@ urlpatterns += patterns('',
 )
 
 
+extension_manager.load()
 signals.initializing.send(sender=None)

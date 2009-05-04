@@ -303,7 +303,7 @@ def reply_section(context, review, comment, context_type, context_id):
 
 
 @register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
-def dashboard_entry(context, level, text, view, group=None):
+def dashboard_entry(context, level, text, view, param=None):
     """
     Renders an entry in the dashboard sidebar.
 
@@ -315,6 +315,9 @@ def dashboard_entry(context, level, text, view, group=None):
     starred = False
     show_count = True
     count = 0
+    url = None
+    group = None
+    review_requests = []
 
     if view == 'all':
         review_requests = ReviewRequest.objects.public(user)
@@ -329,6 +332,7 @@ def dashboard_entry(context, level, text, view, group=None):
         review_requests = ReviewRequest.objects.to_user_directly(user.username,
                                                                  user)
     elif view == 'to-group':
+        group = param
         review_requests = ReviewRequest.objects.to_group(group.name, user)
     elif view == 'starred':
         review_requests = \
@@ -336,6 +340,9 @@ def dashboard_entry(context, level, text, view, group=None):
         starred = True
     elif view == 'watched-groups':
         starred = True
+        show_count = False
+    elif view == "url":
+        url = param
         show_count = False
     else:
         raise template.TemplateSyntaxError, \
@@ -353,6 +360,7 @@ def dashboard_entry(context, level, text, view, group=None):
         'text': text,
         'view': view,
         'group': group,
+        'url': url,
         'count': count,
         'show_count': show_count,
         'user': user,
