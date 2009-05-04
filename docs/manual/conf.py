@@ -14,8 +14,6 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
-
 # Set this up to parse Django-driven code.
 #sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 #from reviewboard import settings

@@ -1,3 +1,4 @@
 scmtools/hg.py:*: redefinition of unused 'urllib_quote' from line *
+admin/checks.py:*: 'DNS' imported but unused
 admin/cache_stats.py:*: redefinition of unused 'memcache' from line *
 settings.py:*: 'from settings_local import *' used; unable to detect undefined names

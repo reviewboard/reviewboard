@@ -21,7 +21,7 @@ from djblets.webapi.decorators import webapi, \
 from djblets.webapi.errors import WebAPIError, \
                                   PERMISSION_DENIED, DOES_NOT_EXIST, \
                                   INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
-                                  SERVICE_NOT_CONFIGURED
+                                  NOT_LOGGED_IN, SERVICE_NOT_CONFIGURED
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
