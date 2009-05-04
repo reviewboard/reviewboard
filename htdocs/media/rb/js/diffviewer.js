@@ -199,7 +199,7 @@ $.extend(DiffCommentBlock.prototype, {
                 self.setHasDraft(true);
                 self.updateCount();
                 self.notify("Comment Saved");
-                $.reviewBanner();
+                showReviewBanner();
             }
         });
     },

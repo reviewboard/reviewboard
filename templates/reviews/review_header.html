@@ -44,15 +44,11 @@
 {% endifequal %}
 
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{% ifequal review_request.status 'P' %}
+{%  ifequal review_request.status 'P' %}
+{%   if draft or not review_request.public %}
 <script type="text/javascript">
-    $(document).ready(function() {
-{% if draft or not review_request.public %}
-        $("#draft-banner").show();
-{% else %}
-        $("#draft-banner").hide();
-{% endif %}
-    });
+  $("#draft-banner").show();
 </script>
-{% endifequal %}
+{%   endif %}
+{%  endifequal %}
 {% endifuserorperm %}

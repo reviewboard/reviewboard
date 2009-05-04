@@ -87,7 +87,7 @@ jQuery.extend(CommentBlock.prototype, {
                 self.updateCount();
 
                 self.notify("Comment Saved");
-                $.reviewBanner();
+                showReviewBanner();
             }
         });
     },

@@ -2,6 +2,9 @@
 var gPublishing = false;
 var gPendingSaveCount = 0;
 var gPendingDiffFragments = {};
+var gReviewBanner = $("#review-banner");
+var gDraftBanner = $("#draft-banner");
+var gDraftBannerButtons = $("input", gDraftBanner);
 
 
 /*
@@ -240,7 +243,7 @@ function linkifyText(text) {
 function setDraftField(field, value) {
     reviewRequestApiCall({
         path: "/draft/set/" + field + "/",
-        buttons: $("#draft-banner input"),
+        buttons: gDraftBannerButtons,
         data: { value: value },
         errorPrefix: "Saving the draft has failed due to a server error:",
         success: function(rsp) {
@@ -250,7 +253,7 @@ function setDraftField(field, value) {
                 $("#" + field).html(func(rsp[field]));
             }
 
-            $("#draft-banner").show();
+            gDraftBanner.show();
 
             if (gPublishing) {
                 gPendingSaveCount--;
@@ -342,7 +345,7 @@ function publishDraft() {
     } else {
         reviewRequestApiCall({
             path: "/publish/",
-            buttons: $("#draft-banner input"),
+            buttons: gDraftBannerButtons,
             errorPrefix: "Publishing the draft has failed due to a " +
                          "server error:"
         });
@@ -941,6 +944,8 @@ $.reviewForm = function() {
 
             if (publish) {
                 window.location = gReviewRequestPath;
+            } else {
+                showReviewBanner();
             }
         });
 
@@ -1012,83 +1017,29 @@ $.fn.reviewFormCommentEditor = function(options) {
 
 
 /*
- * Creates a new review banner at the top of the screen. This gives the
- * user the options to edit the review, publish changes, or discard the
- * review.
- *
- * @return {jQuery} The new review banner.
+ * Shows the review banner.
  */
-$.reviewBanner = function() {
-    var banner = $("#review-banner");
-
-    if (banner.length == 0) {
-        var useFixed = (!$.browser.msie || $.browser.version >= 7);
-
-        banner = $("<div/>")
-            .prependTo("body")
-            .attr("id", "review-banner")
-            .addClass("banner")
-            .width("100%")
-            .move(0, 0, "fixed")
-            .append("<h1>You have a pending review.</h1>")
-            .append($('<input type="button"/>')
-                .val("Edit Review")
-                .click(function() {
-                    $.reviewForm();
-                })
-            )
-            .append($('<input type="button"/>')
-                .val("Publish")
-                .click(function() {
-                    reviewAction("publish");
-                })
-            )
-            .append($('<input type="button"/>')
-                .val("Discard")
-                .click(function() {
-                    confirmDiscard();
-                })
-            );
-
-        var spacer = $("<div/>")
-            .prependTo("body")
-            .height(banner.outerHeight(true));
+function showReviewBanner() {
+    if (gReviewBanner.is(":hidden")) {
+        gReviewBanner
+            .slideDown()
+            .find(".banner")
+                .hide()
+                .slideDown();
     }
+}
 
-    /*
-     * Invokes a review action.
-     *
-     * @param {string} action  The action.
-     */
-    function reviewAction(action) {
-        reviewRequestApiCall({
-            path: getReviewDraftAPIPath() + "/" + action + "/",
-            buttons: $("#review-banner input")
-        });
-    }
 
-    /*
-     * Asks the user whether or not they're sure they want to discard
-     * the review, and acts on their choice.
-     */
-    function confirmDiscard() {
-        var dlg = $("<p/>")
-            .text("If you discard this review, all related comments will " +
-                  "be permanently deleted.")
-            .modalBox({
-                title: "Are you sure you want to discard this review?",
-                buttons: [
-                    $('<input type="button" value="Cancel"/>'),
-                    $('<input type="button" value="Discard"/>')
-                        .click(function(e) {
-                            reviewAction("delete");
-                        })
-                ]
-            });
-    }
+/*
+ * Hides the review banner.
+ */
+function hideReviewBanner() {
+    gReviewBanner
+        .slideUp()
+        .find(".banner")
+            .slideUp();
+}
 
-    return banner;
-};
 
 /*
  * Queues the load of a diff fragment from the server.
@@ -1192,7 +1143,7 @@ $(document).ready(function() {
     $("#btn-draft-discard").click(function() {
         reviewRequestApiCall({
             path: "/draft/discard/",
-            buttons: $("#draft-banner input"),
+            buttons: gDraftBannerButtons,
             errorPrefix: "Reverting the draft has failed due to a " +
                          "server error:"
         });
@@ -1204,7 +1155,7 @@ $(document).ready(function() {
         .click(function() {
             reviewRequestApiCall({
                 path: "/close/discarded/",
-                buttons: $("#draft-banner input"),
+                buttons: gDraftBannerButtons,
                 errorPrefix: "Discarding the review request has failed " +
                              "due to a server error:"
             });
@@ -1219,7 +1170,7 @@ $(document).ready(function() {
          */
         reviewRequestApiCall({
             path: "/close/submitted/",
-            buttons: $("#draft-banner input"),
+            buttons: gDraftBannerButtons,
             errorPrefix: "Setting the review request as submitted has failed " +
                          "due to a server error:"
         });
@@ -1230,7 +1181,7 @@ $(document).ready(function() {
     $("#btn-review-request-reopen").click(function() {
         reviewRequestApiCall({
             path: "/reopen/",
-            buttons: $("#draft-banner input"),
+            buttons: gDraftBannerButtons,
             errorPrefix: "Reopening the review request has failed " +
                          "due to a server error:"
         });
@@ -1250,7 +1201,7 @@ $(document).ready(function() {
                         .click(function(e) {
                             reviewRequestApiCall({
                                 path: "/delete/",
-                                buttons: $("#draft-banner input").add(
+                                buttons: gDraftBannerButtons.add(
                                          $("input", dlg.modalBox("buttons"))),
                                 errorPrefix: "Deleting the review request " +
                                              "has failed due to a server " +
@@ -1266,8 +1217,43 @@ $(document).ready(function() {
         return false;
     });
 
-    $("#review-link").click(function() {
+    /* Edit Review buttons. */
+    $("#review-link, #review-banner-edit").click(function() {
         $.reviewForm();
+    });
+
+    /* Review banner's Publish button. */
+    $("#review-banner-publish").click(function() {
+        reviewRequestApiCall({
+            path: getReviewDraftAPIPath() + "/publish/",
+            buttons: $("input", gReviewBanner)
+        });
+    });
+
+    /* Review banner's Delete button. */
+    $("#review-banner-discard").click(function() {
+        var dlg = $("<p/>")
+            .text("If you discard this review, all related comments will " +
+                  "be permanently deleted.")
+            .modalBox({
+                title: "Are you sure you want to discard this review?",
+                buttons: [
+                    $('<input type="button" value="Cancel"/>'),
+                    $('<input type="button" value="Discard"/>')
+                        .click(function(e) {
+                            reviewRequestApiCall({
+                                path: getReviewDraftAPIPath() + "/delete/",
+                                buttons: $("input", gReviewBanner),
+                                success: function() {
+                                    hideReviewBanner();
+                                    gReviewBanner.queue(function() {
+                                        window.location = gReviewRequestPath;
+                                    });
+                                }
+                            });
+                        })
+                ]
+            });
     });
 
     if (gUserAuthenticated) {
@@ -1318,10 +1304,6 @@ $(document).ready(function() {
         $("pre.reviewtext").each(function() {
             $(this).html(linkifyText($(this).text()));
         });
-
-        if (gReviewPending) {
-            $.reviewBanner();
-        }
     }
 
     loadDiffFragments("diff_fragments", "comment_container");

@@ -790,9 +790,17 @@
 }
 
 #review-banner {
+  padding-bottom: 4.5em;
+}
+
+#review-banner .banner {
   border-left: 0;
   border-right: 0;
   border-top: 0;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
   z-index: 1000;
 }
 
