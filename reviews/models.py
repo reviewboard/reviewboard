@@ -1001,6 +1001,9 @@ class Review(models.Model):
         help_text=_("This field is unused and will be removed in a future "
                     "version."))
 
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
+
     def __unicode__(self):
         return u"Review of '%s'" % self.review_request
 
