@@ -222,6 +222,11 @@ class Site(object):
         fp.write('</IfModule>\n')
         fp.close()
 
+    def setup_settings(self):
+        # Make sure that we have our settings_local.py in our path for when
+        # we need to run manager commands.
+        sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
+
     def generate_config_files(self):
         web_conf_filename = ""
         enable_fastcgi = False
@@ -296,9 +301,7 @@ class Site(object):
         fp.write("DEBUG = False\n")
         fp.close()
 
-        # Make sure that we have our settings_local.py in our path for when
-        # we need to run manager commands.
-        sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
+        self.setup_settings()
 
     def sync_database(self):
         """
@@ -1354,6 +1357,8 @@ class UpgradeCommand(Command):
         parser.add_option_group(group)
 
     def run(self):
+        site.setup_settings()
+
         print "Rebuilding directory structure"
         site.rebuild_site_directory()
 
@@ -1368,6 +1373,8 @@ class ManageCommand(Command):
     Runs a manage.py command on the site.
     """
     def run(self):
+        site.setup_settings()
+
         if len(args) == 0:
             ui.error("A manage command is needed.",
                      done_func=lambda: sys.exit(1))
