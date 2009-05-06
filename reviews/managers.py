@@ -105,7 +105,7 @@ class ReviewRequestManager(ConcurrencyManager):
                   WHERE reviews_review.review_request_id =
                         reviews_reviewrequest.id
                     AND reviews_review.public
-                  ORDER BY timestamp DESC
+                  ORDER BY reviews_review.timestamp DESC
                   LIMIT 1
             """
 
@@ -113,16 +113,16 @@ class ReviewRequestManager(ConcurrencyManager):
                 SELECT
                   CASE
                     WHEN COUNT(reviews_review.timestamp) > 0
-                         AND reviews_review.timestamp >
+                         AND MAX(reviews_review.timestamp) >
                              reviews_reviewrequest.last_updated
-                    THEN reviews_review.timestamp
+                    THEN MAX(reviews_review.timestamp)
                     ELSE reviews_reviewrequest.last_updated
                   END
                   FROM reviews_review
                   WHERE reviews_review.review_request_id=
                         reviews_reviewrequest.id
                     AND reviews_review.public
-                  ORDER BY reviews_review.timestamp DESC
+                  ORDER BY MAX(reviews_review.timestamp) DESC
                   LIMIT 1
             """
 
