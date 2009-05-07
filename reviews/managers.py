@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -109,6 +110,22 @@ class ReviewRequestManager(ConcurrencyManager):
                   LIMIT 1
             """
 
+            # XXX The query below requires wrapping ORDER BY with something
+            #     like MAX() when using PostgreSQL, and it works fine with
+            #     sqlite as well, but MySQL has problems with it, so
+            #     use it conditionally.
+            #
+            #     THIS IS AN UGLY HACK! Post-1.0, we really should just
+            #     store a timestamp along with the ReviewRequest containing
+            #     the last activity. The problem is that we end up bumping
+            #     last_updated during migrations, which is bad, so we need
+            #     to somehow be clever with this and only update last_updated
+            #     when we absolutely have to.
+            if settings.DATABASE_ENGINE == 'mysql':
+                order_by_wrapper = ""
+            else:
+                order_by_wrapper = "MAX"
+
             select_dict['last_activity_timestamp'] = """
                 SELECT
                   CASE
@@ -122,9 +139,11 @@ class ReviewRequestManager(ConcurrencyManager):
                   WHERE reviews_review.review_request_id=
                         reviews_reviewrequest.id
                     AND reviews_review.public
-                  ORDER BY MAX(reviews_review.timestamp) DESC
+                  ORDER BY %(order_by_wrapper)s(reviews_review.timestamp) DESC
                   LIMIT 1
-            """
+            """ % {
+                'order_by_wrapper': order_by_wrapper
+            }
 
             if user and user.is_authenticated():
                 select_dict['new_review_count'] = """
