@@ -964,7 +964,10 @@ $.reviewForm = function() {
             dlg.modalBox("destroy");
 
             if (publish) {
-                window.location = gReviewRequestPath;
+                hideReviewBanner();
+                gReviewBanner.queue(function() {
+                    window.location = gReviewRequestPath;
+                });
             } else {
                 showReviewBanner();
             }
@@ -1247,7 +1250,13 @@ $(document).ready(function() {
     $("#review-banner-publish").click(function() {
         reviewRequestApiCall({
             path: getReviewDraftAPIPath() + "/publish/",
-            buttons: $("input", gReviewBanner)
+            buttons: $("input", gReviewBanner),
+            success: function() {
+                hideReviewBanner();
+                gReviewBanner.queue(function() {
+                    window.location = gReviewRequestPath;
+                });
+            }
         });
     });
 
