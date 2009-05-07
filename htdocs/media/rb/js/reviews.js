@@ -548,22 +548,6 @@ $.fn.commentDlg = function() {
     var commentsList = $("#review_comment_list", this);
     var actionField  = $("#comment_action", draftForm);
     var buttons      = $(".buttons", draftForm);
-    var textField    = $("#comment_text", draftForm)
-        .keydown(function(e) { e.stopPropagation(); })
-        .keypress(function(e) { e.stopPropagation(); })
-        .keyup(function(e) {
-            dirty = dirty || commentBlock.text != textField.val();
-
-            if (dirty && !oldDirty) {
-                saveButton.attr("disabled", textField.val() == "");
-                statusField.html("This comment has unsaved changes.");
-                self.handleResize();
-
-                oldDirty = dirty;
-            }
-
-            e.stopPropagation();
-        });
     var statusField  = $(".status", draftForm);
     var cancelButton = $("#comment_cancel", draftForm)
         .click(function() {
@@ -580,6 +564,43 @@ $.fn.commentDlg = function() {
             commentBlock.setText(textField.val());
             commentBlock.save();
             self.close();
+        });
+
+    var textField    = $("#comment_text", draftForm)
+        .keydown(function(e) { e.stopPropagation(); })
+        .keypress(function(e) {
+            e.stopPropagation();
+
+            switch (e.keyCode) {
+                case 10:
+                case $.ui.keyCode.ENTER:
+                    /* Enter */
+                    if (e.ctrlKey) {
+                        saveButton.click();
+                    }
+                    break;
+
+                case $.ui.keyCode.ESCAPE:
+                    /* Escape */
+                    cancelButton.click();
+                    break;
+
+                default:
+                    return;
+            }
+        })
+        .keyup(function(e) {
+            dirty = dirty || commentBlock.text != textField.val();
+
+            if (dirty && !oldDirty) {
+                saveButton.attr("disabled", textField.val() == "");
+                statusField.html("This comment has unsaved changes.");
+                self.handleResize();
+
+                oldDirty = dirty;
+            }
+
+            e.stopPropagation();
         });
 
     this
