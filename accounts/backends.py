@@ -173,7 +173,7 @@ class ActiveDirectoryBackend:
         return str(settings.AD_DOMAIN_NAME)
 
     def get_ldap_search_root(self):
-        if settings.get("AD_SEARCH_ROOT"):
+        if getattr(settings, "AD_SEARCH_ROOT", None):
             root = [settings.AD_SEARCH_ROOT]
         else:
             root = ['dc=%s' % x for x in self.get_domain_name().split('.')]
