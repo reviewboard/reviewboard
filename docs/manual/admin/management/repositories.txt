@@ -187,7 +187,17 @@ In order to use Git with Review Board, you'll first need a local checkout,
 which should be kept in sync regularly. Ideally, this checkout will be the
 master upstream repository, or a clone kept in sync on every commit.
 
-The `Path field`_ should point to the ``.git`` directory inside this checkout.
+The `Path field`_ should be the full path of the ``.git`` directory inside
+this checkout.  For example: ``/var/git/projectname/.git``
+
+The `Mirror path`_ should contain the repository URL.  Find the URL you
+should use from within a git checkout by running the following::
+
+    $ git remote show origin
+
+The value shown as ``URL:`` should be entered as the mirror path.  For
+example: ``git@git.example.com:projectname.git``
+
 The `Username and Password fields`_ should be blank.
 
 
