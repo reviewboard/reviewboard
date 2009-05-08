@@ -5,16 +5,16 @@
 <IfModule mod_fastcgi.c>
 	AddHandler fastcgi-script .fcgi
 
-	FastCGIServer @sitedir@/htdocs/reviewboard.fcgi -socket @sitedir@/tmp/fastcgi.sock
+	FastCGIServer "@sitedir@/htdocs/reviewboard.fcgi" -socket "@sitedir@/tmp/fastcgi.sock"
 </IfModule>
 
 <VirtualHost *:80>
 	ServerName @sitedomain@
-	DocumentRoot @sitedir@/htdocs
+	DocumentRoot "@sitedir@/htdocs"
 
 	# Alias static media requests to filesystem
-	Alias /media @sitedir@/htdocs/media
-	Alias /errordocs @sitedir@/htdocs/errordocs
+	Alias /media "@sitedir@/htdocs/media"
+	Alias /errordocs "@sitedir@/htdocs/errordocs"
 
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html

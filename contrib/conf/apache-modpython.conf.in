@@ -1,6 +1,6 @@
 <VirtualHost *:80>
 	ServerName @sitedomain@
-	DocumentRoot @sitedir@/htdocs
+	DocumentRoot "@sitedir@/htdocs"
 
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html
@@ -32,6 +32,6 @@
 	</Directory>
 
 	# Alias static media requests to filesystem
-	Alias /media @sitedir@/htdocs/media
-	Alias /errordocs @sitedir@/htdocs/errordocs
+	Alias /media "@sitedir@/htdocs/media"
+	Alias /errordocs "@sitedir@/htdocs/errordocs"
 </VirtualHost>
