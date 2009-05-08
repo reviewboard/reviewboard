@@ -39,8 +39,8 @@ changes need to be made before post-commit reviews can be handled in the web
 UI. We plan to get to this after Review Board 1.0.
 
 
-What's pre-commit and post-commit reviews?
-------------------------------------------
+What are pre-commit and post-commit reviews?
+--------------------------------------------
 
 Pre-commit reviews are where code is reviewed before it's checked into a
 public repository and mainline, non-developer branch. Code isn't committed
@@ -52,6 +52,34 @@ until the code is reviewed, but large-scale changes to the architecture of the
 code can then be hard to make without disrupting others. Post-commit reviews
 sometimes happen by individuals or by a large group sitting together and
 reading over the code together.
+
+
+Does Review Board support git?
+------------------------------
+
+Review Board provides basic support for git. If you have a central
+"official" git repository, Review Board will work well for you.
+
+A basic pre-commit workflow with git would look like this:
+
+* Clone the central repository.
+* Make a change you want reviewed, but do not commit it yet.
+* Run post-review (or otherwise submit a diff).
+* Get reviews, update your change as needed.
+* When the change is marked to ship, commit it to master and push it to
+  the origin.
+
+A workflow that takes advantage of local branches would look like this:
+
+* Clone the central repository.
+* Create a local branch and make a change you want reviewed.
+* Run post-review (or otherwise submit a diff), comparing the branch to master.
+* Get reviews, make additional changes on the branch as needed.
+* When the change is marked to ship, merge it into master and push it to
+  the origin.
+
+Be sure to review the instructions on :ref:`repositories` for more information
+on getting started with Review Board and git.
 
 
 Troubleshooting
