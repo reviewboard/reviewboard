@@ -1,3 +1,25 @@
+version 1.0 rc2 (8-May-2009):
+	* Bugs Fixed:
+		* Installation of new sites using rb-site was broken. (Bug #1012)
+
+		* The dashboard threw an exception when using PostgreSQL.
+
+		* LDAP e-mail generation was broken and caused an exception.
+
+		* Active Directory was broken for some users and caused an exception.
+		  (Bug #1112)
+
+		* We hit concurrency issues when saving reviews sometimes. We now
+		  register each with a ConcurrencyManager.
+
+		* Apache configuration files with spaces in filenames were still
+		  broken.
+
+	* Feature Enhancements:
+		* Control-Enter now saves in the comment dialog, and Escape cancels
+		  the comment.
+
+
 version 1.0 rc1 (3-May-2009):
 	* Bugs Fixed:
 		* The review request page was "jumpy" on load. The review request
