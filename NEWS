@@ -2,7 +2,7 @@ version 1.0 rc2 (8-May-2009):
 	* Bugs Fixed:
 		* Installation of new sites using rb-site was broken. (Bug #1012)
 
-		* The dashboard threw an exception when using PostgreSQL.
+		* The dashboard threw an exception when using PostgreSQL. (Bug #1099)
 
 		* LDAP e-mail generation was broken and caused an exception.
 
@@ -13,7 +13,7 @@ version 1.0 rc2 (8-May-2009):
 		  register each with a ConcurrencyManager.
 
 		* Apache configuration files with spaces in filenames were still
-		  broken.
+		  broken. (Bug #1111)
 
 	* Feature Enhancements:
 		* Control-Enter now saves in the comment dialog, and Escape cancels
