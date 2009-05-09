@@ -619,18 +619,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                        enable_syntax_highlighting),
                     large_data=True)
 
-            if interdiffset:
-                # In the case of interdiffs, don't show any unmodified files
-                has_changes = False
-
-                for chunk in chunks:
-                    if chunk['change'] != 'equal':
-                        has_changes = True
-                        break
-
-                if not has_changes:
-                    continue
-
             file['chunks'] = chunks
             file['changed_chunks'] = []
 

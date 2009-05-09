@@ -5,6 +5,7 @@
 {% if standalone and error %}
 {{error}}
 {% endif %}
+{% if file.changed_chunks %}
 {% if not standalone %}
 <table class="sidebyside{% if not file.interfilediff and file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
@@ -62,13 +63,18 @@
 {% endif %}
 {% endfor %}
 {% endif %}
+{% endif %}
 {% if not standalone %}
 </table>
 <script type="text/javascript">
   $(document).ready(function() {
+{% if file.changed_chunks %}
     /* Add to the change index. */
     $("li.change_file_{{file.index}}").html(
       {% include_as_string "diffviewer/changeindex_entry.html" %});
+{% else %}
+    $("li.change_file_{{file.index}}").remove();
+{% endif %}
   });
 </script>
 {% endif %}
