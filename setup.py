@@ -174,9 +174,11 @@ setup(name="ReviewBoard",
       maintainer="Christian Hammond",
       maintainer_email="chipx86@chipx86.com",
       packages=packages,
-      scripts=[
-          "reviewboard/contrib/tools/rb-site",
-      ],
+      entry_points = {
+          'console_scripts': [
+              'rb-site = reviewboard.cmdline.rbsite:main',
+          ],
+      },
       cmdclass=cmdclasses,
       install_requires=[
           'Django>=1.0.2',

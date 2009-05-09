@@ -1431,11 +1431,11 @@ def parse_options(args):
     return (command, install_dir)
 
 
-def main(args):
+def main():
     global site
     global ui
 
-    command_name, install_dir = parse_options(args)
+    command_name, install_dir = parse_options(sys.argv[1:])
     command = COMMANDS[command_name]
     site = Site(install_dir)
 
@@ -1450,4 +1450,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
