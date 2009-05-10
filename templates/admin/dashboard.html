@@ -84,7 +84,11 @@
    </caption>
    <tbody>
     <tr>
-     <td id="news-content"></td>
+     <td id="news-content">
+	  <img src="{{MEDIA_URL}}rb/images/spinner.gif?{{MEDIA_SERIAL}}"
+	       class="loading-indicator" width="16" height="16" border="0" alt="" />
+	  {% trans "Loading..." %}
+	 </td>
     </tr>
    </tbody>
   </table>
