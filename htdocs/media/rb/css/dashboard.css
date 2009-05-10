@@ -16,21 +16,6 @@
   padding: 0;
 }
 
-#dashboard-main .shipit-count {
-  background-image: url("../images/shipit_bg.png");
-  background-position: top left;
-  background-repeat: repeat-x;
-  background-color: #6bc810;
-  border: 1px #478a06 solid;
-  color: white;
-  font-weight: bold;
-  padding: 0.1em 0.5em;
-  white-space: nowrap;
-  -moz-border-radius: 10px;
-  -webkit-border-radius: 10px;
-  border-radius: 10px;
-}
-
 #dashboard-navbar {
   float: left;
   width: 18em;
