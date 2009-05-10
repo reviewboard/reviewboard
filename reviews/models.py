@@ -833,6 +833,9 @@ class Comment(models.Model):
 
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
+
     def public_replies(self, user=None):
         """
         Returns a list of public replies to this comment, optionally
@@ -900,6 +903,9 @@ class ScreenshotComment(models.Model):
     y = models.PositiveSmallIntegerField(_("sub-image Y"))
     w = models.PositiveSmallIntegerField(_("sub-image width"))
     h = models.PositiveSmallIntegerField(_("sub-image height"))
+
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
 
     def public_replies(self, user=None):
         """
