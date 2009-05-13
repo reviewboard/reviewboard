@@ -1,5 +1,6 @@
 import os
 
+from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.test import TestCase
 from django.utils import simplejson
@@ -780,7 +781,10 @@ class WebAPITests(TestCase):
         if review_request is None:
             review_request = self.testNewReviewRequest()
 
-        f = open("scmtools/testdata/svn_makefile.diff", "r")
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+        f = open(diff_filename, "r")
         rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
             'path': f,
             'basedir': "/trunk",
@@ -806,7 +810,7 @@ class WebAPITests(TestCase):
         """Testing the reviewrequests/screenshot/new API"""
         review_request = self.testNewReviewRequest()
 
-        f = open("htdocs/media/rb/images/trophy.png", "r")
+        f = open(self.__getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
                            review_request.id, {
@@ -824,7 +828,7 @@ class WebAPITests(TestCase):
         review_request = ReviewRequest.objects.filter(public=True).\
             exclude(submitter=self.user)[0]
 
-        f = open("htdocs/media/rb/images/trophy.png", "r")
+        f = open(self.__getTrophyFilename(), "r")
         self.assert_(f)
         rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
                            review_request.id, {
@@ -1085,3 +1089,7 @@ class WebAPITests(TestCase):
             self.assertEqual(rsp['comments'][i]['y'], comments[i].y)
             self.assertEqual(rsp['comments'][i]['w'], comments[i].w)
             self.assertEqual(rsp['comments'][i]['h'], comments[i].h)
+
+    def __getTrophyFilename(self):
+        return os.path.join(settings.HTDOCS_ROOT,
+                            "media", "rb", "images", "trophy.png")

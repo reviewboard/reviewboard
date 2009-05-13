@@ -82,7 +82,7 @@ class MyersDifferTest(TestCase):
 
 
 class DiffParserTest(unittest.TestCase):
-    PREFIX = 'diffviewer/testdata'
+    PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
     def diff(self, options=''):
         f = os.popen('diff -rN -x .svn %s %s/orig_src %s/new_src' %

@@ -628,10 +628,12 @@ class GitTests(DjangoTestCase):
     """
     Unit tests for Git
     """
-    fixtures = ['git']
-
     def setUp(self):
-        self.repository = Repository.objects.get(name="Git test repo")
+        repo_path = os.path.join(os.path.dirname(__file__),
+                                 'testdata', 'git_repo')
+        self.repository = Repository(name='Git test repo',
+                                     path=repo_path,
+                                     tool=Tool.objects.get(name='Git'))
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
