@@ -18,6 +18,19 @@ def check_updates_required():
     global _install_fine
 
     if not _updates_required and not _install_fine:
+        # Check if the site has moved and the old media directory no longer
+        # exists.
+        if not os.path.exists(settings.MEDIA_ROOT):
+            new_media_root = os.path.join(settings.HTDOCS_ROOT, "media")
+
+            if os.path.exists(new_media_root):
+                from djblets.siteconfig.models import SiteConfiguration
+
+                siteconfig = SiteConfiguration.objects.get_current()
+                siteconfig.set("site_media_root", new_media_root)
+                settings.MEDIA_ROOT = new_media_root
+
+
         # Check if there's a media/uploaded/images directory. If not, this is
         # either a new install or is using the old-style media setup and needs
         # to be manually upgraded.
