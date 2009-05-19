@@ -97,15 +97,23 @@ class HgWebClient:
             rev = "tip"
         elif rev == PRE_CREATION:
             rev = ""
-        try:
-            passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            passman.add_password(None, self.url, self.username, self.password)
-            authhandler = urllib2.HTTPBasicAuthHandler(passman)
-            opener = urllib2.build_opener(authhandler)
-            f = opener.open('%s/raw-file/%s/%s' %
-                            (self.url, rev, urllib_quote(path)))
-            return f.read()
-        except Exception, e:
+
+        found = False
+
+        for rawpath in ["raw-file", "raw"]:
+            try:
+                passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+                passman.add_password(None, self.url, self.username,
+                                     self.password)
+                authhandler = urllib2.HTTPBasicAuthHandler(passman)
+                opener = urllib2.build_opener(authhandler)
+                f = opener.open('%s/%s/%s/%s' %
+                                (self.url, rawpath, rev, urllib_quote(path)))
+                return f.read()
+            except Exception, e:
+                pass
+
+        if not found:
             raise FileNotFoundError(path, rev, str(e))
 
     def get_filenames(self, rev):
