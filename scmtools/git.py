@@ -155,15 +155,18 @@ class GitDiffParser(DiffParser):
 class GitClient:
     def __init__(self, path):
         self.path = path
+        p = subprocess.Popen(
+            ['git', '--git-dir=%s' % self.path, 'config',
+                 'core.repositoryformatversion'],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+        contents = p.stdout.read()
+        errmsg = p.stderr.read()
+        failure = p.wait()
 
-        found = False
-        for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
-            if os.path.exists(os.path.join(dir, 'git')):
-                found = True
-                break
-        if not found:
-            # This is technically not the right kind of error, but it's the
-            # pattern we use with all the other tools.
+        if failure:
             raise ImportError
 
     def cat_file(self, commit, option="blob"):
