@@ -41,6 +41,8 @@ A form will appear with the following fields:
     type. See :ref:`determining-repository-information` below for more
     information.
 
+.. _`Mirror path field`:
+
 * **Mirror Path** (optional)
     This is an alternate path for the repository that is used during
     lookups. It's usually used when there's separate developer and anonymous
@@ -190,7 +192,7 @@ master upstream repository, or a clone kept in sync on every commit.
 The `Path field`_ should be the full path of the ``.git`` directory inside
 this checkout.  For example: ``/var/git/projectname/.git``
 
-The `Mirror path`_ should contain the repository URL.  Find the URL you
+The `Mirror path field`_ should contain the repository URL.  Find the URL you
 should use from within a git checkout by running the following::
 
     $ git remote show origin
