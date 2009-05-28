@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime
 
@@ -180,8 +181,11 @@ def review_detail(request, review_request_id,
                     bug_url = review_request.repository.bug_tracker
                     for field in info:
                         for i, buginfo in enumerate(info[field]):
-                            info[field][i] = (buginfo[0],
-                                              bug_url % buginfo[0])
+                            try:
+                                full_bug_url = bug_url % buginfo[0]
+                                info[field][i] = (buginfo[0], full_bug_url)
+                            except TypeError:
+                                logging.warning("Invalid bugtracker url format")
 
             elif 'old' in info or 'new' in info:
                 change_type = 'changed'
