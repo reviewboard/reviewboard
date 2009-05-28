@@ -8,6 +8,7 @@ class File:
         self.newFile = None
         self.origInfo = None
         self.newInfo = None
+        self.origChangesetId = None
         self.data = None
         self.binary = False
 
@@ -82,6 +83,7 @@ class DiffParser(object):
             file.newFile  = info.get('newFile')
             file.origInfo = info.get('origInfo')
             file.newInfo  = info.get('newInfo')
+            file.origChangesetId = info.get('origChangesetId')
             file.data = ""
 
             # The header is part of the diff, so make sure it gets in the

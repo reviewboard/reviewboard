@@ -18,6 +18,9 @@ class HgTool(SCMTool):
         else:
             self.client = HgClient(repository.path)
 
+        self.uses_atomic_revisions = True
+        self.diff_uses_changeset_ids = True
+
     def get_file(self, path, revision=HEAD):
         return self.client.cat_file(path, str(revision))
 
@@ -63,6 +66,7 @@ class HgDiffParser(DiffParser):
                 info['newFile'] = info['origFile'] = \
                     ' '.join(diffLine[nameStartIndex:])
                 info['origInfo'] = diffLine[2]
+                info['origChangesetId'] = diffLine[2]
             except ValueError:
                 raise DiffParserError("The diff file is missing revision information",
                                       linenum)

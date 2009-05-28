@@ -41,6 +41,7 @@ class SCMTool:
     def __init__(self, repository):
         self.repository = repository
         self.uses_atomic_revisions = False
+        self.diff_uses_changeset_ids = False
 
     def get_file(self, path, revision=None):
         raise NotImplementedError
