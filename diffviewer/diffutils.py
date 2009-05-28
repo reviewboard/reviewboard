@@ -57,34 +57,36 @@ def Differ(a, b, ignore_space=False,
                 (compat_version))
 
 
+def convert_line_endings(data):
+    # Files without a trailing newline come out of Perforce (and possibly
+    # other systems) with a trailing \r. Diff will see the \r and
+    # add a "\ No newline at end of file" marker at the end of the file's
+    # contents, which patch understands and will happily apply this to
+    # a file with a trailing \r.
+    #
+    # The problem is that we normalize \r's to \n's, which breaks patch.
+    # Our solution to this is to just remove that last \r and not turn
+    # it into a \n.
+    #
+    # See http://code.google.com/p/reviewboard/issues/detail?id=386
+    # and http://reviews.review-board.org/r/286/
+    if data == "":
+        return ""
+
+    if data[-1] == "\r":
+        data = data[:-1]
+
+    temp = data.replace('\r\r\n', '\n')
+    temp = data.replace('\r\n', '\n')
+    temp = temp.replace('\r', '\n')
+    return temp
+
+
 def patch(diff, file, filename):
     """Apply a diff to a file.  Delegates out to `patch` because noone
        except Larry Wall knows how to patch."""
 
     log_timer = log_timed("Patching file %s" % filename)
-
-    def convert_line_endings(data):
-        # Files without a trailing newline come out of Perforce (and possibly
-        # other systems) with a trailing \r. Diff will see the \r and
-        # add a "\ No newline at end of file" marker at the end of the file's
-        # contents, which patch understands and will happily apply this to
-        # a file with a trailing \r.
-        #
-        # The problem is that we normalize \r's to \n's, which breaks patch.
-        # Our solution to this is to just remove that last \r and not turn
-        # it into a \n.
-        #
-        # See http://code.google.com/p/reviewboard/issues/detail?id=386
-        # and http://reviews.review-board.org/r/286/
-        if data == "":
-            return ""
-
-        if data[-1] == "\r":
-            data = data[:-1]
-
-        temp = data.replace('\r\n', '\n')
-        temp = temp.replace('\r', '\n')
-        return temp
 
     if diff.strip() == "":
         # Someone uploaded an unchanged file. Return the one we're patching.
@@ -225,6 +227,7 @@ def get_original_file(filediff):
             log_timer = log_timed("Fetching file '%s' r%s from %s" %
                                   (file, revision, repository))
             data = tool.get_file(file, revision)
+            data = convert_line_endings(data)
             log_timer.done()
             return data
 
