@@ -136,6 +136,10 @@ class LDAPBackend:
                     email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)
                 elif settings.LDAP_EMAIL_ATTRIBUTE:
                     email = user_info[settings.LDAP_EMAIL_ATTRIBUTE][0]
+                else:
+                    logging.warning("LDAP: email for user %s is not specified",
+                                    username)
+                    email = ''
 
                 user = User(username=username,
                             password='',
