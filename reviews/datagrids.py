@@ -247,9 +247,9 @@ class ReviewRequestDataGrid(DataGrid):
         css_class=lambda r: ageid(r.time_added))
     last_updated = DateTimeColumn(_("Last Updated"),
         format="F jS, Y, P", shrink=True,
-        db_field="last_activity_timestamp",
-        field_name="last_activity_timestamp",
-        css_class=lambda r: ageid(r.last_activity_timestamp))
+        db_field="last_updated",
+        field_name="last_updated",
+        css_class=lambda r: ageid(r.last_updated))
     diff_updated = DateTimeColumn(_("Diff Updated"),
         format="F jS, Y, P", shrink=True,
         field_name="last_updated",
@@ -261,9 +261,9 @@ class ReviewRequestDataGrid(DataGrid):
         css_class=lambda r: ageid(r.time_added))
     last_updated_since = DateTimeSinceColumn(_("Last Updated"),
         detailed_label=_("Last Updated (Relative)"), shrink=True,
-        db_field="last_activity_timestamp",
-        field_name="last_activity_timestamp",
-        css_class=lambda r: ageid(r.last_activity_timestamp))
+        db_field="last_updated",
+        field_name="last_updated",
+        css_class=lambda r: ageid(r.last_updated))
     diff_updated_since = DateTimeSinceColumn(_("Diff Updated"),
         detailed_label=_("Diff Updated (Relative)"),
         field_name="last_updated", shrink=True,

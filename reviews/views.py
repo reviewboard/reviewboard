@@ -143,7 +143,13 @@ def review_detail(request, review_request_id,
             pass
 
     # Find out if we can bail early. Generate an ETag for this.
-    last_activity_time = review_request.get_last_activity_time()
+    timestamps = [review_request.last_updated]
+    draft = review_request.get_draft()
+
+    if draft:
+        timestamps.append(draft.last_updated)
+
+    last_activity_time = get_latest_timestamp(timestamps)
 
     etag = "%s:%s:%s:%s" % (request.user, last_activity_time, review_timestamp,
                             settings.AJAX_SERIAL)

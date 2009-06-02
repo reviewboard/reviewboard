@@ -232,14 +232,6 @@ class ReviewRequest(models.Model):
     objects = ReviewRequestManager()
 
 
-    # This is used because the backends may not return a valid datetime
-    # object when setting this value based on the result of the
-    # extra() call in ReviewRequestManager.
-    last_activity_timestamp = property(
-        lambda self: self._last_activity_timestamp,
-        lambda self, value: self.__set_last_activity_timestamp(value))
-
-
     def get_bug_list(self):
         """
         Returns a sorted list of bugs associated with this review request.
@@ -330,23 +322,6 @@ class ReviewRequest(models.Model):
         Returns all public top-level reviews for this review request.
         """
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
-
-    def get_last_activity_time(self):
-        """
-        Returns the last timestamp of any update related to this review
-        request or its reviews.
-        """
-        timestamps = [self.last_updated]
-
-        reviews = self.reviews.filter(public=True).order_by("-timestamp")
-        if reviews:
-            timestamps.append(reviews[0].timestamp)
-
-        draft = self.get_draft()
-        if draft:
-            timestamps.append(draft.last_updated)
-
-        return get_latest_timestamp(timestamps)
 
     def update_from_changenum(self, changenum):
         """
@@ -474,13 +449,6 @@ class ReviewRequest(models.Model):
         siteconfig = SiteConfiguration.objects.get_current()
         if siteconfig.get("mail_send_review_mail"):
             mail_review_request(user, self, changes)
-
-    def __set_last_activity_timestamp(self, value):
-        if isinstance(value, datetime):
-            self._last_activity_timestamp = value
-        else:
-            self._last_activity_timestamp = typecast_timestamp(value)
-
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
@@ -1061,6 +1029,9 @@ class Review(models.Model):
         for comment in self.screenshot_comments.all():
             comment.timetamp = self.timestamp
             comment.save()
+
+        # Update the last_updated timestamp on the review request.
+        self.review_request.save()
 
     def delete(self):
         """
