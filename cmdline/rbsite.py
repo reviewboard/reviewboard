@@ -1363,7 +1363,7 @@ class UpgradeCommand(Command):
         site.rebuild_site_directory()
 
         if options.upgrade_db:
-            print "Updating database"
+            print "Updating database. This may take a while."
             site.sync_database()
             site.migrate_database()
 
