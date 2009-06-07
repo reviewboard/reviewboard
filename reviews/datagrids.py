@@ -295,7 +295,10 @@ class ReviewRequestDataGrid(DataGrid):
                                      self.show_submitted)) != 0
 
         if self.show_submitted:
-            self.queryset = self.queryset.filter(Q(status='P') | Q(status='S'))
+            # There are only three states: Published, Submitted and Discarded.
+            # We want the first two, but it's faster to just search for not
+            # discarded.
+            self.queryset = self.queryset.exclude(status='D')
         else:
             self.queryset = self.queryset.filter(status='P')
 
@@ -304,6 +307,9 @@ class ReviewRequestDataGrid(DataGrid):
             return True
 
         return False
+
+    def post_process_queryset(self, queryset):
+        return queryset.with_counts(self.request.user)
 
     def link_to_object(self, obj, value):
         if value and isinstance(value, User):

@@ -2,12 +2,41 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from django.utils.datastructures import SortedDict
 
 from djblets.util.db import ConcurrencyManager
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
+
+
+class ReviewRequestQuerySet(QuerySet):
+    def with_counts(self, user):
+        queryset = self
+
+        if user and user.is_authenticated():
+            select_dict = {}
+
+            select_dict['new_review_count'] = """
+                SELECT COUNT(*)
+                  FROM reviews_review, accounts_reviewrequestvisit
+                  WHERE reviews_review.public
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.review_request_id =
+                        reviews_reviewrequest.id
+                    AND accounts_reviewrequestvisit.user_id = %(user_id)s
+                    AND reviews_review.timestamp >
+                        accounts_reviewrequestvisit.timestamp
+                    AND reviews_review.user_id != %(user_id)s
+            """ % {
+                'user_id': str(user.id)
+            }
+
+            queryset = self.extra(select=select_dict)
+
+        return queryset
 
 
 class ReviewRequestManager(ConcurrencyManager):
@@ -90,43 +119,9 @@ class ReviewRequestManager(ConcurrencyManager):
         query = self.filter(query).distinct()
 
         if with_counts:
-            select_dict = SortedDict()
-
-            select_dict['shipit_count'] = """
-                SELECT COUNT(*) FROM reviews_review
-                  WHERE reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.public
-                    AND reviews_review.ship_it
-                    AND reviews_review.base_reply_to_id is NULL
-            """
-
-            select_dict['last_review_timestamp'] = """
-                SELECT reviews_review.timestamp FROM reviews_review
-                  WHERE reviews_review.review_request_id =
-                        reviews_reviewrequest.id
-                    AND reviews_review.public
-                  ORDER BY reviews_review.timestamp DESC
-                  LIMIT 1
-            """
-
-            if user and user.is_authenticated():
-                select_dict['new_review_count'] = """
-                    SELECT COUNT(*)
-                      FROM reviews_review, accounts_reviewrequestvisit
-                      WHERE reviews_review.public
-                        AND reviews_review.review_request_id =
-                            reviews_reviewrequest.id
-                        AND accounts_reviewrequestvisit.review_request_id =
-                            reviews_reviewrequest.id
-                        AND accounts_reviewrequestvisit.user_id = %(user_id)s
-                        AND reviews_review.timestamp >
-                            accounts_reviewrequestvisit.timestamp
-                        AND reviews_review.user_id != %(user_id)s
-                """ % {
-                    'user_id': str(user.id)
-                }
-
-            query = query.extra(select=select_dict)
+            query = query.with_counts(user)
 
         return query
+
+    def get_query_set(self):
+        return ReviewRequestQuerySet(self.model)

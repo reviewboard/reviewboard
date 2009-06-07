@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db import models
+from django.db import connection, models
 from django.db.backends.util import typecast_timestamp
 from django.db.models import Q, permalink
 from django.utils.html import escape
@@ -226,6 +226,13 @@ class ReviewRequest(models.Model):
         verbose_name=_("change descriptions"),
         related_name="review_request",
         blank=True)
+
+    # Review-related information
+    last_review_timestamp = models.DateTimeField(_("last review timestamp"),
+                                                 null=True, default=None,
+                                                 blank=True)
+    shipit_count = models.IntegerField(_("ship-it count"), default=0,
+                                       null=True)
 
 
     # Set this up with the ReviewRequestManager
@@ -449,6 +456,24 @@ class ReviewRequest(models.Model):
         siteconfig = SiteConfiguration.objects.get_current()
         if siteconfig.get("mail_send_review_mail"):
             mail_review_request(user, self, changes)
+
+    def increment_ship_it(self):
+        """Atomicly increments the ship-it count on the review request."""
+
+        # TODO: When we switch to Django 1.1, change this to:
+        #
+        #       ReviewRequest.objects.filter(pk=self.id).update(
+        #           shipit_count=F('shipit_count') + 1)
+
+        cursor = connection.cursor()
+        cursor.execute("UPDATE reviews_reviewrequest"
+                       "   SET shipit_count = shipit_count + 1"
+                       " WHERE id = %s",
+                       [self.id])
+
+        # Update our copy.
+        r = ReviewRequest.objects.get(pk=self.id)
+        self.shipit_count = r.shipit_count
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
@@ -1031,7 +1056,12 @@ class Review(models.Model):
             comment.save()
 
         # Update the last_updated timestamp on the review request.
+        self.review_request.last_review_timestamp = self.timestamp
         self.review_request.save()
+
+        # Atomicly update the shipit_count
+        if self.ship_it:
+            self.review_request.increment_ship_it()
 
     def delete(self):
         """

@@ -1,1 +1,5 @@
-SEQUENCE = ['change_descriptions']
+SEQUENCE = [
+    'change_descriptions',
+    'last_review_timestamp',
+    'shipit_count',
+]
