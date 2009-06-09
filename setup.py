@@ -159,7 +159,7 @@ setup(name="ReviewBoard",
       install_requires=[
           'Django>=1.0.2',
           'django_evolution',
-          'Djblets>=0.5rc2.dev.20090607',
+          'Djblets>=0.5rc2.dev_20090608',
           'Pygments>=0.10',
           'flup',
           'pytz'
