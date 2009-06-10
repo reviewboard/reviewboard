@@ -1,9 +1,7 @@
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from django.utils.datastructures import SortedDict
 
 from djblets.util.db import ConcurrencyManager
 

@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Tool
 
 
 class RepositoryForm(forms.ModelForm):

@@ -5,14 +5,12 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import connection, models
-from django.db.backends.util import typecast_timestamp
 from django.db.models import Q, permalink
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.dates import get_latest_timestamp
 from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import ModificationTimestampField
 from djblets.util.misc import get_object_or_none
