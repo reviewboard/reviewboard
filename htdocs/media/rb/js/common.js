@@ -89,49 +89,62 @@ function showServerError(specific, data) {
  * @param {object} options  The options, listed above.
  */
 function rbApiCall(options) {
-    if (options.buttons) {
-        options.buttons.attr("disabled", true);
+    function doCall() {
+        if (options.buttons) {
+            options.buttons.attr("disabled", true);
+        }
+
+        $("#activity-indicator")
+            .text((options.type || options.type == "GET")
+                  ? "Loading..." : "Saving...")
+            .show();
+
+        var data = {
+            type: options.type,
+            url: options.url || (SITE_ROOT + "api/json" + options.path),
+            data: options.data || {dummy: ""},
+            dataType: options.dataType || "json",
+            success: options.success,
+            error: function(xhr, textStatus, errorThrown) {
+                showServerError(options.errorPrefix + " " + xhr.status + " " +
+                                xhr.statusText,
+                                xhr.responseText);
+
+                if ($.isFunction(options.error)) {
+                    options.error(xhr, textStatus, errorThrown);
+                }
+            },
+            complete: function(xhr, status) {
+                if (options.buttons) {
+                    options.buttons.attr("disabled", false);
+                }
+
+                $("#activity-indicator")
+                    .delay(1000)
+                    .fadeOut("fast");
+
+                if ($.isFunction(options.complete)) {
+                    options.complete(xhr, status);
+                }
+
+                $.funcQueue("rbapicall").next();
+            }
+        };
+
+        if (options.form) {
+            options.form.ajaxSubmit(data);
+        } else {
+            $.ajax(data);
+        }
     }
 
-    $("#activity-indicator")
-        .text((options.type || options.type == "GET")
-              ? "Loading..." : "Saving...")
-        .show();
+    options.type = options.type || "POST";
 
-    var data = {
-        type: options.type || "POST",
-        url: options.url || (SITE_ROOT + "api/json" + options.path),
-        data: options.data || {dummy: ""},
-        dataType: options.dataType || "json",
-        success: options.success,
-        error: function(xhr, textStatus, errorThrown) {
-            showServerError(options.errorPrefix + " " + xhr.status + " " +
-                            xhr.statusText,
-                            xhr.responseText);
-
-            if ($.isFunction(options.error)) {
-                options.error(xhr, textStatus, errorThrown);
-            }
-        },
-        complete: function(xhr, status) {
-            if (options.buttons) {
-                options.buttons.attr("disabled", false);
-            }
-
-            $("#activity-indicator")
-                .delay(1000)
-                .fadeOut("fast");
-
-            if ($.isFunction(options.complete)) {
-                options.complete(xhr, status);
-            }
-        }
-    };
-
-    if (options.form) {
-        options.form.ajaxSubmit(data);
+    if (options.type == "POST" || options.type == "PUT") {
+        $.funcQueue("rbapicall").add(doCall);
+        $.funcQueue("rbapicall").start();
     } else {
-        $.ajax(data);
+        doCall();
     }
 }
 
