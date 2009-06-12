@@ -94,21 +94,34 @@ def check_dependencies():
         if not success:
             dependency_warning(striptags(reason))
 
-    found = False
-    for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
-        if os.path.exists(os.path.join(dir, 'git')):
-            found = True
-            break
-    if not found:
-        dependency_warning('git binary not found.  Git integration will not work.')
+    cvs_found = False
+    git_found = False
+    mtn_found = False
 
-    found = False
     for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
-        if os.path.exists(os.path.join(dir, 'mtn')):
-            found = True
-            break
-    if not found:
-        dependency_warning('mtn binary not found.  Monotone integration will not work.')
+        if (os.path.exists(os.path.join(dir, 'cvs')) or
+            os.path.exists(os.path.join(dir, 'cvs.exe'))):
+            cvs_found = True
+
+        if (os.path.exists(os.path.join(dir, 'git')) or
+            os.path.exists(os.path.join(dir, 'git.exe'))):
+            git_found = True
+
+        if (os.path.exists(os.path.join(dir, 'mtn')) or
+            os.path.exists(os.path.join(dir, 'mtn.exe'))):
+            mtn_found = True
+
+    if not cvs_found:
+        dependency_warning('cvs binary not found.  CVS integration '
+                           'will not work.')
+
+    if not git_found:
+        dependency_warning('git binary not found.  Git integration '
+                           'will not work.')
+
+    if not mtn_found:
+        dependency_warning('mtn binary not found.  Monotone integration '
+                           'will not work.')
 
     # Django will print warnings/errors for database backend modules and flup
     # if the configuration requires it.

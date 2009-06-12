@@ -133,6 +133,19 @@ class CVSClient:
         self.repository = repository
         self.path = path
 
+        found = False
+
+        for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
+            if (os.path.exists(os.path.join(dir, 'cvs')) or
+                os.path.exists(os.path.join(dir, 'exe'))):
+                found = True
+                break;
+
+        if not found:
+            # This is technically not the right kind of error, but it's the
+            # pattern we use with all the other tools.
+            raise ImportError
+
     def cleanup(self):
         if self.currentdir != os.getcwd():
             # Restore current working directory

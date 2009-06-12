@@ -46,7 +46,7 @@ class CVSTests(unittest.TestCase):
         try:
             self.tool = self.repository.get_scmtool()
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('cvs binary not found')
 
     def testPathWithPort(self):
         """Testing parsing a CVSROOT with a port"""
