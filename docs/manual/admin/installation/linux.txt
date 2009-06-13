@@ -46,8 +46,8 @@ are using :command:`sudo`.
 Installing Python Setuptools
 ============================
 
-Before you begin, you'll need `Python setuptools`_. Most Linux distributions
-have this packaged and available for installation.
+Before you begin, you'll need `Python setuptools`_ version 0.6c9 or higher.
+Most Linux distributions have this packaged and available for installation.
 
 To install on on Debian_, Ubuntu_, or another Debian-based distribution,
 type::
@@ -63,6 +63,11 @@ RedHat-based distribution, type::
 
 Users of other distributions should check with their distribution for native
 packages, or follow the `setuptools installation`_ instructions.
+
+If the version available for your distribution is older than 0.6c9, you'll
+need to then upgrade setuptools to the latest version by running::
+
+    $ easy_install -U setuptools
 
 
 .. _`Python setuptools`: http://peak.telecommunity.com/DevCenter/setuptools
