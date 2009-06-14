@@ -129,7 +129,7 @@ packages = [
 
 # Import this now, since reviewboard is in the right place now.
 from reviewboard import VERSION
-IS_RELEASE = False
+IS_RELEASE = True
 
 
 if IS_RELEASE:
@@ -159,7 +159,7 @@ setup(name="ReviewBoard",
       install_requires=[
           'Django>=1.0.2',
           'django_evolution',
-          'Djblets>=0.5rc2.dev_20090608',
+          'Djblets>=0.5rc2',
           'Pygments>=0.10',
           'flup',
           'pytz'
