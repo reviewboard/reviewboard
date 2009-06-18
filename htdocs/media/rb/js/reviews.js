@@ -336,8 +336,8 @@ $.fn.reviewsAutoComplete = function(fieldName, nameKey) {
 function publishDraft() {
     if ($.trim($("#target_groups").html()) == "" &&
         $.trim($("#target_people").html()) == "") {
-        alert("There must be at least one reviewer before this review " +
-              "request can be published.");
+        alert("There must be at least one reviewer or group " +
+	      "before this review request can be published.");
     } else if ($.trim($("#summary").html()) == "") {
         alert("The draft must have a summary.");
     } else if ($.trim($("#description").html()) == "") {
