@@ -137,7 +137,7 @@ class CVSClient:
 
         for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
             if (os.path.exists(os.path.join(dir, 'cvs')) or
-                os.path.exists(os.path.join(dir, 'exe'))):
+                os.path.exists(os.path.join(dir, 'cvs.exe'))):
                 found = True
                 break;
 
