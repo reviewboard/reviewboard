@@ -3,7 +3,7 @@ from django.contrib.sites.models import Site
 
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard import VERSION
+from reviewboard import get_version_string
 from reviewboard.admin.siteconfig import settings_map, defaults
 
 
@@ -22,6 +22,8 @@ def init_siteconfig(app, created_models, verbosity, **kwargs):
         site = Site.objects.get_current()
 
     siteconfig, is_new = SiteConfiguration.objects.get_or_create(site=site)
+
+    new_version = get_version_string()
 
     if is_new:
         # Check the Site to see if this is a brand new installation. If so,
@@ -43,18 +45,18 @@ def init_siteconfig(app, created_models, verbosity, **kwargs):
                  site.domain,
                  settings.SITE_ROOT)
 
-        siteconfig.version = VERSION
+        siteconfig.version = new_version
         siteconfig.save()
-    elif siteconfig.version != VERSION:
+    elif siteconfig.version != new_version:
         print "Upgrading Review Board from %s to %s" % (siteconfig.version,
-                                                        VERSION)
-        siteconfig.version = VERSION
+                                                        new_version)
+        siteconfig.version = new_version
         siteconfig.save()
 
         # TODO: Someday we'll want to enable this code when we actually
         #       have something to tell them.
         #print "*** You are upgrading Review Board from v%s to v%s" % \
-        #      (siteconfig.version, VERSION)
+        #      (siteconfig.version, new_version)
         #print "*** To complete the upgrade, please follow the instructions at:"
         #print "*** %s://%s%s" % (siteconfig.get("site_domain_method"),
         #                         site.domain, settings.SITE_ROOT)

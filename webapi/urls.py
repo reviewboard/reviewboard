@@ -11,6 +11,9 @@ urlpatterns = never_cache_patterns('djblets.webapi.auth',
 
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
+    # Server information
+    (r'^info/$', 'server_info'),
+
     # Repositories
     (r'^repositories/$', 'repository_list'),
     (r'^repositories/(?P<repository_id>[0-9]+)/info/$', 'repository_info'),

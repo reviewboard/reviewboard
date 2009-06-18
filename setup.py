@@ -128,11 +128,10 @@ packages = [
 
 
 # Import this now, since reviewboard is in the right place now.
-from reviewboard import VERSION
-IS_RELEASE = False
+from reviewboard import get_package_version, is_release
 
 
-if IS_RELEASE:
+if is_release():
     download_url = "http://downloads.review-board.org/releases/"
 else:
     download_url = "http://downloads.review-board.org/nightlies/"
@@ -140,7 +139,7 @@ else:
 
 # Build the reviewboard package.
 setup(name="ReviewBoard",
-      version=VERSION,
+      version=get_package_version(),
       license="MIT",
       description="Review Board, a web-based code review tool",
       url="http://www.review-board.org/",

@@ -8,7 +8,6 @@ from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
-from reviewboard import VERSION
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
 from reviewboard.reviews.models import Group, DefaultReviewer
@@ -28,7 +27,6 @@ def dashboard(request, template_name="admin/dashboard.html"):
         'repository_count': Repository.objects.count(),
         'has_cache_stats': get_has_cache_stats(),
         'title': _("Dashboard"),
-        'version': VERSION,
         'root_path': settings.SITE_ROOT + "admin/db/"
     }))
 

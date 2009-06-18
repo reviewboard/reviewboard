@@ -103,6 +103,15 @@ thead th a:link, thead th a:visited {
   color: #EEEEEE;
 }
 
+.dashboard .colMS {
+  margin-right: 25em !important;
+}
+
+.dashboard #content-related {
+  margin-right: -25em;
+  width: 24em;
+}
+
 #content-related .module h2 {
   background: #5988bb;
   color: white;

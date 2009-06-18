@@ -66,7 +66,7 @@
      <li>- <a href="http://www.review-board.org/bugs/new/">{% trans "Report bug" %}</a></li>
     </ul>
     <h1 id="title"><a href="{% url root %}">Review Board</a></h1>
-    <h2 id="beta">beta</h2>
+    <h2 id="beta">{{version}}</h2>
 
    </div>
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}

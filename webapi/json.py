@@ -2,8 +2,10 @@ from datetime import datetime
 import os.path
 import re
 
+from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -23,6 +25,7 @@ from djblets.webapi.errors import WebAPIError, \
                                   INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
                                   NOT_LOGGED_IN, SERVICE_NOT_CONFIGURED
 
+from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -230,6 +233,29 @@ def service_not_configured(request):
     Returns an error specifying that the service has not yet been configured.
     """
     return WebAPIResponseError(request, SERVICE_NOT_CONFIGURED)
+
+
+@webapi_check_login_required
+def server_info(request):
+    site = Site.objects.get_current()
+    siteconfig = site.config.get()
+
+    url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
+                         settings.SITE_ROOT)
+
+    return WebAPIResponse(request, {
+        'product': {
+            'name': 'Review Board',
+            'version': get_version_string(),
+            'package_version': get_package_version(),
+            'is_release': is_release(),
+        },
+        'site': {
+            'url': url,
+            'administrators': [{'name': name, 'email': email}
+                               for name, email in settings.ADMINS],
+        },
+    })
 
 
 @webapi_check_login_required

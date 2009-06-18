@@ -12,7 +12,7 @@ from djblets.util.misc import generate_cache_serials
 # directory.
 log = __import__("djblets.log", {}, {}, ["log"])
 
-from reviewboard import VERSION
+from reviewboard import get_version_string
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
@@ -22,7 +22,7 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
 
 # Set up logging.
 log.init_logging()
-logging.info("Log file for Review Board v%s" % VERSION)
+logging.info("Log file for Review Board v%s" % get_version_string())
 
 
 # Generate cache serials

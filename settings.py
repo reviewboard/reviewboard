@@ -70,6 +70,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'djblets.util.context_processors.siteRoot',
     'djblets.util.context_processors.ajaxSerial',
     'djblets.util.context_processors.mediaSerial',
+    'reviewboard.admin.context_processors.version',
 )
 
 SITE_ROOT_URLCONF = 'reviewboard.urls'
