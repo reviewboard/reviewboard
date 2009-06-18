@@ -167,7 +167,7 @@ ul.errorlist li {
   padding: 0.1em 0.5em;
   white-space: nowrap;
   -moz-border-radius: 10px;
-  -webkit-border-radius: 10px;
+  -webkit-border-radius: 8px; /* WebKit bug */
   border-radius: 10px;
 }
 
