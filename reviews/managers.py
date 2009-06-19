@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -123,3 +125,73 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def get_query_set(self):
         return ReviewRequestQuerySet(self.model)
+
+
+class ReviewManager(ConcurrencyManager):
+    """A manager for Review models.
+
+    This handles concurrency issues with Review models. In particular, it
+    will try hard not to save two reviews at the same time, and if it does
+    manage to do that (which may happen for pending reviews while a server
+    is under heavy load), it will repair and consolidate the reviews on
+    load. This prevents errors and lost data.
+    """
+
+    def get_pending_review(self, review_request, user):
+        """Returns a user's pending review on a review request.
+
+        This will handle fixing duplicate reviews if more than one pending
+        review is found.
+        """
+        if not user.is_authenticated():
+            return None
+
+        query = self.filter(user=user,
+                            review_request=review_request,
+                            public=False,
+                            base_reply_to__isnull=True)
+        query = query.order_by("timestamp")
+
+        reviews = list(query)
+
+        if len(reviews) == 0:
+            return None
+        elif len(reviews) == 1:
+            return reviews[0]
+        else:
+            # We have duplicate reviews, which will break things. We need
+            # to condense them.
+            logging.warning("Duplicate pending reviews found for review "
+                            "request ID %s, user %s. Fixing." %
+                            (review_request.id, user.username))
+
+            return self.fix_duplicate_reviews(reviews)
+
+    def fix_duplicate_reviews(self, reviews):
+        """Fix duplicate reviews, condensing them into a single review.
+
+        This will consolidate the data from all reviews into the first
+        review in the list, and return the first review.
+        """
+        master_review = reviews[0]
+
+        for review in reviews[1:]:
+            for attname in ["body_top", "body_bottom", "body_top_reply_to",
+                            "body_bottom_reply_to"]:
+                review_value = getattr(review, attname)
+
+                if (review_value and not getattr(master_review, attname)):
+                    setattr(master_review, attname, review_value)
+
+            for attname in ["comments", "screenshot_comments"]:
+                master_m2m = getattr(master_review, attname)
+                review_m2m = getattr(review, attname)
+
+                for obj in review_m2m.all():
+                    master_m2m.add(obj)
+                    review_m2m.remove(obj)
+
+            master_review.save()
+            review.delete()
+
+        return master_review

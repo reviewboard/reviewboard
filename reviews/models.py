@@ -20,7 +20,7 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.email import mail_review_request
 from reviewboard.reviews.errors import PermissionError
-from reviewboard.reviews.managers import ReviewRequestManager
+from reviewboard.reviews.managers import ReviewRequestManager, ReviewManager
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 
@@ -363,14 +363,7 @@ class ReviewRequest(models.Model):
         Returns the pending review owned by the specified user, if any.
         This will return an actual review, not a reply to a review.
         """
-        if user.is_authenticated():
-            return get_object_or_none(Review,
-                                      user=user,
-                                      review_request=self,
-                                      public=False,
-                                      base_reply_to__isnull=True)
-
-        return None
+        return Review.objects.get_pending_review(self, user)
 
     @permalink
     def get_absolute_url(self):
@@ -998,8 +991,10 @@ class Review(models.Model):
         help_text=_("This field is unused and will be removed in a future "
                     "version."))
 
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
+    # Set this up with a ReviewManager to help prevent race conditions and
+    # to fix duplicate reviews.
+    objects = ReviewManager()
+
 
     def __unicode__(self):
         return u"Review of '%s'" % self.review_request

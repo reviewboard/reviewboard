@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib.auth.models import User
 from django.core import mail
 from django.template import Context, Template
@@ -601,6 +603,71 @@ class DraftTests(TestCase):
         """Convenience function for getting a new draft to work with."""
         return ReviewRequestDraft.create(ReviewRequest.objects.get(
             summary="Add permission checking for JSON API"))
+
+
+class ConcurrencyTests(TestCase):
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def testDuplicateReviews(self):
+        """Testing consolidation of duplicate reviews"""
+
+        body_top = "This is the body_top."
+        body_bottom = "This is the body_bottom."
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+        comment_text_3 = "Comment text 3"
+
+        # Some objects we need.
+        user = User.objects.get(username="doc")
+
+        review_request = ReviewRequest.objects.get(
+            summary="Add permission checking for JSON API")
+        filediff = \
+            review_request.diffset_history.diffsets.latest().files.all()[0]
+
+        # Create the first review.
+        review = Review(review_request=review_request, user=user)
+        review.body_top = body_top
+        review.save()
+        master_review = review
+
+        comment = review.comments.create(filediff=filediff, first_line=1)
+        comment.text = comment_text_1
+        comment.num_lines = 1
+        comment.save()
+
+        # Create the second review.
+        review = Review(review_request=review_request, user=user)
+        review.save()
+
+        comment = review.comments.create(filediff=filediff, first_line=1)
+        comment.text = comment_text_2
+        comment.num_lines = 1
+        comment.save()
+
+        # Create the third review.
+        review = Review(review_request=review_request, user=user)
+        review.body_bottom = body_bottom
+        review.save()
+
+        comment = review.comments.create(filediff=filediff, first_line=1)
+        comment.text = comment_text_3
+        comment.num_lines = 1
+        comment.save()
+
+        # Now that we've made a mess, see if we get a single review back.
+        logging.disable(logging.WARNING)
+        review = review_request.get_pending_review(user)
+        self.assert_(review)
+        self.assertEqual(review.id, master_review.id)
+        self.assertEqual(review.body_top, body_top)
+        self.assertEqual(review.body_bottom, body_bottom)
+
+        comments = list(review.comments.all())
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_2)
+        self.assertEqual(comments[2].text, comment_text_3)
 
 
 class IfNeatNumberTagTests(TestCase):
