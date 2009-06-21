@@ -4,14 +4,14 @@
 #
 #   (Major, Minor, Micro, alpha/beta/rc/final, Release Number, Released)
 #
-VERSION = (1, 0, 0, 'rc', 4, False)
+VERSION = (1, 0, 0, 'final', 0, True)
 
 
 def get_version_string():
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
     if VERSION[2]:
-        version += str(VERSION[2])
+        version += ".%s" % VERSION[2]
 
     if VERSION[3] != 'final':
         if VERSION[3] == 'rc':
@@ -29,7 +29,7 @@ def get_package_version():
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
     if VERSION[2]:
-        version += str(VERSION[2])
+        version += ".%s" % VERSION[2]
 
     if VERSION[3] != 'final':
         version += '%s%s' % (VERSION[3], VERSION[4])
