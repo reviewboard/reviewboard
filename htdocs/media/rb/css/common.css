@@ -378,6 +378,10 @@ form table td {
   margin-bottom: 8px;
 }
 
+#logo {
+  vertical-align: -100%;
+}
+
 #navbar-outer {
   border: 1px #E0E0E0 solid;
   margin: 10px 0;
@@ -419,6 +423,8 @@ form table td {
   display: inline;
   font-size: 24pt;
   font-weight: normal;
+  margin: 0;
+  padding: 0;
 }
 
 #title a {
