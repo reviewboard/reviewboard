@@ -1,0 +1,137 @@
+=====================================
+Review Board 1.0 RC 1 Release Notes
+=====================================
+
+**Release date**: May 3, 2009.
+
+
+New Features
+============
+
+* Added an activity indicator at the top of the page to show when
+  a request is being made. Examples include saving a comment,
+  marking a change as submitted, or saving fields on a review request.
+  This appears as a small but eye-catching box at the top of the
+  page with a spiner, letting the user know that the request is still
+  being processed. (:bug:`945`)
+
+* Changed the :guilabel:`Ship It` column to show the number of reviews
+  marked "ship it" next to the checkmark. This makes it easier to see at
+  a glance how many people have signed off on the review request.
+
+* Drastically sped up the dashboard. (:bug:`406`)
+
+  We were making a lot of queries in the dashboard, depending on
+  the columns used. In a worst-case scenario, this resulted in
+  a few hundred queries.
+
+  A lot of work has gone into reducing the number, which both
+  lightens the load on the database server and speeds up loading
+  the page.
+
+* Added an :guilabel:`All My Requests` entry to the dashboard's sidebar,
+  which shows all open and submitted review requests that the
+  user has made. Patch by Noah Miller. (:bug:`503`)
+
+* Added a field to the General Settings page for selecting the
+  timezone. (:bug:`1038`)
+
+* Added URL, bug number, and review request ID linkification to
+  reviews and replies. This works the same way that review request
+  linkification works. (:bug:`916`)
+
+* Added support for using mod_fcgid on Apache through the
+  generated fastcgi Apache configuration file. Patch by
+  Mark Knittig.
+
+* Added :kbd:`x` and :kbd:`c` shortcut keys in the diff viewer for going
+  to the previous/next comment. This is useful on French keyboards
+  that don't have :kbd:`[` and :kbd:`]` keys. (:bug:`1031`)
+
+* rb-site now warns about missing dependencies before starting the
+  install, and limits configuration to what's available. This
+  prevents the case where people would get part-way through an
+  install and see it fail due to a missing Python module or
+  database server. (:bug:`755`, :bug:`756`)
+
+* Made the user selection fields in the administration UI more
+  usable. They now display as a side-by-side view, with selected
+  users on the right, and the list of users is searchable. Patch
+  by Eric Huss. (:bug:`912`)
+
+* Improved compatibility with Active Directory servers, allowing
+  for using a "custom search root" that administrators can override
+  for specific setups, and for using the server's "mail" field when
+  available for e-mail addresses. (:bug:`908`)
+
+* Added subtle animations for the review draft banner, indicating
+  whether we're creating a new review or discarding one.
+
+
+Bugs Fixed
+==========
+
+* The review request page was "jumpy" on load. The review request
+  and review draft banners would display after the page loaded.
+  We now display these along with the page, minimizing the jumpiness
+  of the page.
+
+* Saved settings weren't always taking effect until after the server
+  was restarted. (:bug:`734`)
+
+* The comment dialog wasn't appearing on screenshots. (:bug:`1013`)
+
+* The comment dialog width was incorrect when showing existing
+  comments.
+
+* The Registration page wasn't working after upgrading to beta 1
+  until you forced a save on the General Settings page. (:bug:`1033`)
+
+* Comment flags weren't always being shown on diffs. (:bug:`1028`)
+
+* Site paths with spaces in the path resulted in broken web server
+  configuration files. (:bug:`1015`)
+
+* We were redirecting to the review request page when just saving
+  a review, instead of staying on the same page. (:bug:`1056`)
+
+* The left-hand side of a diff would be collapsed into a small
+  column when showing an interdiff for a newly added file. (:bug:`730`)
+
+* rb-site didn't properly allow for specifying a database host with
+  a port number. Patch by Eric Huss.
+
+* Different versions of a diff fragment were being cached with the
+  same cache key, causing display problems when switching between
+  diffs and interdiffs containing new or deleted files. This also
+  broke anchors in the diff viewer. (:bug:`1036`)
+
+* The review request page was caching the page contents without
+  taking into account whether the user had a pending review or
+  reply, making it appear as if the review/reply was lost.
+
+* Linkified URLs were breaking when the URL was followed by an
+  entity. Part of the entity was being embedded in the URL, breaking
+  both the URL and the display. (:bug:`1069`)
+
+* The black selection rectangle in the diff viewer was too far off
+  to the left in Internet Explorer 8.
+
+* Fixed some speed issues and warnings in our PNG transparency support
+  for Internet Explorer 6. (:bug:`817`)
+
+* LDAP and Active Directory broken on servers that don't support
+  "givenName" and "sn" fields. (:bug:`891`)
+
+* Bug tracker URLs that didn't include a ``%s`` marker caused breakages
+  on review requests using bug numbers. (:bug:`1091`)
+
+* The "Download Diff" link was displaying even when the diff wasn't
+  accessible. We now use the same rules as we use for the "View Diff"
+  link. Patch by Eric Huss.
+
+* Clicking the edit icon (the pencil) on review requests sometimes
+  caused the browser to scroll. (:bug:`1057`)
+
+
+.. comment: vim: ft=rst et
