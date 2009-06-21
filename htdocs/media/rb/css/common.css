@@ -162,9 +162,10 @@ ul.errorlist li {
   background-repeat: repeat-x;
   background-color: #6bc810;
   border: 1px #478a06 solid;
+  display: block;
   color: white;
   font-weight: bold;
-  padding: 0.1em 0.5em;
+  padding: 0.05em 0.5em;
   white-space: nowrap;
   -moz-border-radius: 10px;
   -webkit-border-radius: 8px; /* WebKit bug */
