@@ -17,7 +17,7 @@ def get_version_string():
         if VERSION[3] == 'rc':
             version += ' RC%s' % VERSION[4]
         else:
-            version += ' %s %s' % (release_tag, VERSION[4])
+            version += ' %s %s' % (VERSION[3], VERSION[4])
 
     if not is_release():
         version += " (dev)"
