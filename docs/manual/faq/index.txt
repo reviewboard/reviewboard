@@ -132,6 +132,17 @@ database instead of the relative path. See `this thread
 for more information.
 
 
+I installed a site using SQLite and every page generates an error
+-----------------------------------------------------------------
+
+This may mean the database isn't able to be written. If you see
+``OperationalError: attempt to write to a readonly database`` in your
+Apache's :file:`error_log`, then this is certainly the case.
+
+Make sure you've set the permissions of the site's :file:`db` directory to
+match the user for the web server.
+
+
 I'm having trouble installing post-review on Windows Vista
 ----------------------------------------------------------
 
