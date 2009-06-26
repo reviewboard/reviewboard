@@ -129,7 +129,7 @@ Download the tarball and do the following::
 
 
 .. _memcached: http://www.danga.com/memcached/
-.. _libmemcache: http://tangent.org/552/libmemcached.html
+.. _libmemcache: http://people.freebsd.org/~seanc/libmemcache
 .. _cmemcache: http://gijsbert.org/cmemcache/
 
 
@@ -357,7 +357,7 @@ On Debian_ and Ubuntu_, you can install these by typing::
     $ sudo apt-get install gcc g++ sun-java6-jdk ant python-dev
 
 Once these are installed, you'll need to download the `latest version
-<http://downloads.osafoundation.org/PyLucene/jcc/>`_ of PyLucene and extract
+<http://lucene.apache.org/pylucene/>`_ of PyLucene and extract
 the tarball.
 
 .. _Ant: http://ant.apache.org/
