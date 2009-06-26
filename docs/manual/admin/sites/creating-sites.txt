@@ -54,6 +54,11 @@ directories. For example, in Linux/UNIX/MacOS X with a ``www-data`` user::
 
     $ chown -R www-data /var/www/reviews.example.com/htdocs/media/uploaded
 
+If you're using SQLite as your database, you will also need to change the
+ownership of the site's :file:`db` directory to match the web server's
+user. Otherwise, you may receive an Internal Server Error when accessing
+the site.
+
 
 Web Server Configuration
 ========================
