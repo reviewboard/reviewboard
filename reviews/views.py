@@ -116,7 +116,6 @@ def review_detail(request, review_request_id,
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     reviews = review_request.get_public_reviews()
-    draft = review_request.get_draft(request.user)
     review = review_request.get_pending_review(request.user)
 
     if request.user.is_authenticated():
