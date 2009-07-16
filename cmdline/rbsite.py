@@ -13,6 +13,9 @@ from optparse import OptionGroup, OptionParser
 from random import choice
 
 
+DOCS_BASE = "http://www.review-board.org/docs/manual/dev/"
+
+
 # See if GTK is a possibility.
 try:
     # Disable the gtk warning we might hit. This is because pygtk will
@@ -448,6 +451,12 @@ class UIToolkit(object):
         """
         raise NotImplemented
 
+    def urllink(self, page, url):
+        """
+        Displays a URL to the user.
+        """
+        raise NotImplemented
+
     def itemized_list(self, page, title, items):
         """
         Displays an itemized list.
@@ -613,6 +622,12 @@ class ConsoleUI(UIToolkit):
             print
 
         print self.text_wrapper.fill(text)
+
+    def urllink(self, page, url):
+        """
+        Displays a URL to the user.
+        """
+        self.text(page, url)
 
     def itemized_list(self, page, title, items):
         """
@@ -888,6 +903,15 @@ class GtkUI(UIToolkit):
         label.show()
         page['widget'].pack_start(label, False, True, 0)
         label.set_alignment(0, 0)
+
+    def urllink(self, page, url):
+        """
+        Displays a URL to the user.
+        """
+        link_button = gtk.LinkButton(url)
+        link_button.show()
+        page['widget'].pack_start(link_button, False, False, 0)
+        link_button.set_alignment(0, 0)
 
     def itemized_list(self, page, title, items):
         """
@@ -1313,9 +1337,13 @@ class InstallCommand(Command):
         ui.text(page, "The site has been installed in %s" % site.install_dir)
         ui.text(page, "Sample configuration files for web servers and "
                       "cron are available in the conf/ directory.")
-        ui.text(page, "You need to modify the ownership of "
-                      "htdocs/media/uploaded directory and all of its "
+        ui.text(page, "You need to modify the ownership of the "
+                      "\"htdocs/media/uploaded\" directory and all of its "
                       "contents to be owned by the web server.")
+        ui.text(page, "If using SQLite, you will also need to modify the "
+                      "ownership of the \"db\" directory and its contents.")
+        ui.text(page, "For more information, visit:")
+        ui.urllink(page, "%sadmin/sites/creating-sites/" % DOCS_BASE)
 
     def save_settings(self):
         """
