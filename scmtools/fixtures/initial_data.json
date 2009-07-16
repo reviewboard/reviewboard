@@ -35,4 +35,10 @@
                 "class_name": "reviewboard.scmtools.bzr.BZRTool"
                }
     }
+    {"pk": "7",
+     "model": "scmtools.tool",
+     "fields": {"name": "ClearCase",
+                "class_name": "reviewboard.scmtools.clearcase.ClearCaseTool"
+               }
+    }
 ]
