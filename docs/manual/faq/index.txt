@@ -181,6 +181,15 @@ subdirectories are wrong. You need to make sure the contents are writable by
 the web server.
 
 
+The Edit Review page is really slow on Firefox
+----------------------------------------------
+
+The "It's All Text" extension has been known to have problems with
+Review Board. If you're encountering problems related to text areas or
+slowdown in the Edit Review page, try disabling this extension and seeing if
+it makes a difference.
+
+
 Developing Review Board
 =======================
 
