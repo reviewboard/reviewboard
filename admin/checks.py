@@ -1,8 +1,10 @@
 import imp
 import os
+import sys
 
 from django.conf import settings
 from django.utils.translation import gettext as _
+from djblets.util.filesystem import is_exe_in_path
 
 
 _updates_required = []
@@ -52,6 +54,19 @@ def check_updates_required():
             # hasn't run syncdb yet.
             _updates_required.append((
                 "admin/manual-updates/run-syncdb.html", {}
+            ))
+
+        if not is_exe_in_path('patch'):
+            if sys.platform == 'win32':
+                binaryname = 'patch.exe'
+            else:
+                binaryname = 'patch'
+
+            _updates_required.append((
+                "admin/manual-updates/install-patch.html", {
+                    'platform': sys.platform,
+                    'binaryname': binaryname,
+                }
             ))
 
 
