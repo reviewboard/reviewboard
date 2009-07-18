@@ -7,6 +7,7 @@ from os.path import abspath, dirname
 
 from django.core.management import execute_manager, setup_environ
 from django.template.defaultfilters import striptags
+from djblets.util.filesystem import is_exe_in_path
 
 # Add the parent directory of 'manage.py' to the python path, so manage.py can
 # be run from any directory.  From http://www.djangosnippets.org/snippets/281/
@@ -94,32 +95,15 @@ def check_dependencies():
         if not success:
             dependency_warning(striptags(reason))
 
-    cvs_found = False
-    git_found = False
-    mtn_found = False
-
-    for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
-        if (os.path.exists(os.path.join(dir, 'cvs')) or
-            os.path.exists(os.path.join(dir, 'cvs.exe'))):
-            cvs_found = True
-
-        if (os.path.exists(os.path.join(dir, 'git')) or
-            os.path.exists(os.path.join(dir, 'git.exe'))):
-            git_found = True
-
-        if (os.path.exists(os.path.join(dir, 'mtn')) or
-            os.path.exists(os.path.join(dir, 'mtn.exe'))):
-            mtn_found = True
-
-    if not cvs_found:
+    if not is_exe_in_path('cvs'):
         dependency_warning('cvs binary not found.  CVS integration '
                            'will not work.')
 
-    if not git_found:
+    if not is_exe_in_path('git'):
         dependency_warning('git binary not found.  Git integration '
                            'will not work.')
 
-    if not mtn_found:
+    if not is_exe_in_path('mtn'):
         dependency_warning('mtn binary not found.  Monotone integration '
                            'will not work.')
 
