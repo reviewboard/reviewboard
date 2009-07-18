@@ -1,0 +1,35 @@
+{% load i18n %}
+<h1 class="title">{% blocktrans %}Install GNU {{binaryname}}{% endblocktrans %}</h1>
+<div class="main">
+ <p>
+{% blocktrans %}
+  GNU {{binaryname}} must be in your executable search path for the diff viewer
+  to work.
+{% endblocktrans %}
+ </p>
+ <p>
+{% ifequal platform "win32" %}
+{%  blocktrans %}
+  You can install GNU {{binaryname}} by downloading and running the
+  <a href="http://gnuwin32.sourceforge.net/downlinks/patch.php">installer</a>.
+  Then add the directory containing {{binaryname}} to the system PATH
+  (Start &gt; Control Panel &gt; Advanced &gt; Environment Variables &gt;
+   System Variables &gt; PATH).
+{%  endblocktrans %}
+
+{% else %}{% ifequal platform "darwin" %}
+{%  blocktrans %}
+  {{binaryname}} should be installed on your system by default. Make sure
+  it's in the file path and accessible by your web server.
+{%  endblocktrans %}
+
+{% else %}
+{%  blocktrans %}
+  Most Linux/UNIX systems provide a native package containing {{binaryname}},
+  which is usually installed by default. Check with your distribution for
+  the proper package to install.
+
+{%  endblocktrans %}
+{% endifequal %}{% endifequal %}
+ </p>
+</div>
