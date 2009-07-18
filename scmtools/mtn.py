@@ -1,6 +1,8 @@
 import os
 import subprocess
 
+from djblets.util.filesystem import is_exe_in_path
+
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
@@ -65,12 +67,7 @@ class MonotoneDiffParser(DiffParser):
 
 class MonotoneClient:
     def __init__(self, path):
-        found = False
-        for dir in os.environ['PATH'].split(os.environ.get('IFS', ':')):
-            if os.path.exists(os.path.join(dir, 'mtn')):
-                found = True
-                break
-        if not found:
+        if not is_exe_in_path('cvs'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError

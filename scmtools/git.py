@@ -2,6 +2,8 @@ import os
 import re
 import subprocess
 
+from djblets.util.filesystem import is_exe_in_path
+
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
@@ -154,6 +156,11 @@ class GitDiffParser(DiffParser):
 
 class GitClient:
     def __init__(self, path):
+        if not is_exe_in_path('cvs'):
+            # This is technically not the right kind of error, but it's the
+            # pattern we use with all the other tools.
+            raise ImportError
+
         self.path = path
         p = subprocess.Popen(
             ['git', '--git-dir=%s' % self.path, 'config',
