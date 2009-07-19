@@ -119,13 +119,9 @@ cmemcache
 ---------
 
 Finally, you'll need to install cmemcache_. This may be provided by your
-distribution. If not, you can install it from http://gijsbert.org/cmemcache/.
+distribution. If not, you can install it by typing the following::
 
-Download the tarball and do the following::
-
-    $ ./configure --prefix=/usr
-    $ make
-    $ make install
+    $ easy_install http://gijsbert.org/downloads/cmemcache/cmemcache-0.95.tar.bz2
 
 
 .. _memcached: http://www.danga.com/memcached/
