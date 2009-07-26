@@ -67,7 +67,7 @@ class MonotoneDiffParser(DiffParser):
 
 class MonotoneClient:
     def __init__(self, path):
-        if not is_exe_in_path('cvs'):
+        if not is_exe_in_path('mtn'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError
