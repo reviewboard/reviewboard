@@ -19,7 +19,13 @@ class RepositoryForm(forms.ModelForm):
         label=_("Path"),
         max_length=128,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_("This should be the path to the repository. For most "
+                    "version control systems, this will be a URI of some "
+                    "form or another. For CVS, this should be a pserver "
+                    "path. For Perforce, this should be a port name. For "
+                    "git, this should be the path to the .git repository "
+                    "on the local disk."))
 
     mirror_path = forms.CharField(
         label=_("Mirror path"),
