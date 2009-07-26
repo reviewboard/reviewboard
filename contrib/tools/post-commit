@@ -160,7 +160,7 @@ log_message = subprocess.Popen(svnlook, stdout=subprocess.PIPE).communicate()[0]
 
 server = None
 
-for match in re.finditer(REVIEWBOARD_URL + '/r/(\d+)/', log_message):
+for match in re.finditer(REVIEWBOARD_URL + '/r/(\d+)', log_message):
     if server is None:
         server = ReviewBoardServer(REVIEWBOARD_URL)
         server.login()
