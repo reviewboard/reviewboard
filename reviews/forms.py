@@ -95,15 +95,22 @@ class NewReviewRequestForm(forms.Form):
         })
         diff_form.full_clean()
 
+        class SavedError(Exception):
+            """Empty exception class for when we already saved the error info"""
+            pass
+
         try:
             diff_form.create(diff_file, parent_diff_file,
                              review_request.diffset_history)
             if 'path' in diff_form.errors:
-                review_request.delete()
                 self.errors['diff_path'] = diff_form.errors['path']
+                raise SavedError
             elif 'base_diff_path' in diff_form.errors:
-                review_request.delete()
                 self.errors['base_diff_path'] = diff_form.errors['base_diff_path']
+                raise SavedError
+        except SavedError:
+            review_request.delete()
+            raise
         except EmptyDiffError:
             review_request.delete()
             self.errors['diff_path'] = forms.util.ErrorList([
