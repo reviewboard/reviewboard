@@ -425,6 +425,13 @@ class ReviewRequest(models.Model):
             self.status = self.PENDING_REVIEW
             self.save()
 
+    def update_changenum(self,changenum, user=None):
+        if (user and not self.is_mutable_by(user)):
+            raise PermissionError
+
+        self.changenum = changenum
+        self.save()
+
     def publish(self, user):
         """
         Save the current draft attached to this review request. Send out the

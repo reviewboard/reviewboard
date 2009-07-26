@@ -546,6 +546,17 @@ def review_request_close(request, review_request_id, type):
 
     return WebAPIResponse(request)
 
+@webapi_login_required
+def review_request_update_changenum(request, review_request_id, changenum):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.update_changenum(changenum, request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        return HttpResponseForbidden()
+
+    return WebAPIResponse(request)
 
 @webapi_login_required
 def review_request_reopen(request, review_request_id):
