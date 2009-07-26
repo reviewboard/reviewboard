@@ -134,8 +134,11 @@ class UploadDiffForm(forms.Form):
                 filename = os.path.join(basedir, f2).replace("\\", "/")
 
             # FIXME: this would be a good place to find permissions errors
-            if (revision != PRE_CREATION and revision != UNKNOWN and
-                (check_existance and not tool.file_exists(filename, revision))):
+            if (revision != PRE_CREATION and
+                revision != UNKNOWN and
+                not f.binary and
+                (check_existance and
+                 not tool.file_exists(filename, revision))):
                 raise FileNotFoundError(filename, revision)
 
             f.origFile = filename
