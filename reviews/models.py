@@ -38,12 +38,19 @@ def update_obj_with_changenum(obj, repository, changenum):
     if not changeset:
         raise InvalidChangeNumberError()
 
+    # If the SCM supports changesets, they should always include a number,
+    # summary and description, parsed from the changeset description. Some
+    # specialized systems may support the other fields, but we don't want to
+    # clobber the user-entered values if they don't.
     obj.changenum = changenum
     obj.summary = changeset.summary
     obj.description = changeset.description
-    obj.testing_done = changeset.testing_done
-    obj.branch = changeset.branch
-    obj.bugs_closed = ','.join(changeset.bugs_closed)
+    if changeset.testing_done:
+        obj.testing_done = changeset.testing_done
+    if changeset.branch:
+        obj.branch = changeset.branch
+    if changeset.bugs_closed:
+        obj.bugs_closed = ','.join(changeset.bugs_closed)
 
 def truncate(string, num):
    if len(string) > num:
