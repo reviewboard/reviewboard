@@ -265,6 +265,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                enable_syntax_highlighting):
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
                   oldmarkup, newmarkup):
+        # This function accesses the variable meta, defined in an outer context.
         if oldline and newline and oldline != newline:
             oldregion, newregion = get_line_changed_regions(oldline, newline)
         else:
@@ -272,18 +273,19 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
         return [vlinenum,
                 oldlinenum or '', mark_safe(oldmarkup or ''), oldregion,
-                newlinenum or '', mark_safe(newmarkup or ''), newregion]
+                newlinenum or '', mark_safe(newmarkup or ''), newregion,
+                (oldlinenum, newlinenum) in meta['whitespace_lines']]
 
-    def new_chunk(lines, numlines, tag, collapsable=False):
+    def new_chunk(lines, numlines, tag, collapsable=False, meta={}):
         return {
             'lines': lines,
             'numlines': numlines,
             'change': tag,
             'collapsable': collapsable,
+            'meta': meta,
         }
 
     def add_ranged_chunks(lines, start, end, collapsable=False):
-        numlines = end - start
         chunks.append(new_chunk(lines[start:end], end - start, 'equal',
                       collapsable))
 
@@ -423,7 +425,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     else:
         logging.debug("Generating diff chunks for filediff id %s", filediff.id)
 
-    for tag, i1, i2, j1, j2 in differ.get_opcodes():
+    for tag, i1, i2, j1, j2, meta in opcodes_with_metadata(differ):
         oldlines = markup_a[i1:i2]
         newlines = markup_b[j1:j2]
         numlines = max(len(oldlines), len(newlines))
@@ -450,7 +452,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                                       last_range_start, True)
                     add_ranged_chunks(lines, last_range_start, numlines)
         else:
-            chunks.append(new_chunk(lines, numlines, tag))
+            chunks.append(new_chunk(lines, numlines, tag, meta=meta))
 
     if interfilediff:
         logging.debug("Done generating diff chunks for interdiff ids %s-%s",
@@ -460,6 +462,33 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                       filediff.id)
 
     return chunks
+
+def opcodes_with_metadata(differ):
+    groups = []
+
+    ws_re = re.compile(r"\s")
+
+    for tag, i1, i2, j1, j2 in differ.get_opcodes():
+        meta = {
+            "whitespace_chunk": False, # True if this chunk is only whitespace.
+            "whitespace_lines": [], # List of tuples (x,y), with whitespace changes.
+        }
+
+        if tag == 'replace':
+            # replace groups are good for whitespace only changes.
+            assert (i2 - i1) == (j2 - j1)
+
+            for i, j in zip(xrange(i1, i2), xrange(j1, j2)):
+                if ws_re.sub("", differ.a[i]) == ws_re.sub("", differ.b[j]):
+                    meta["whitespace_lines"].append((i + 1, j + 1))
+
+            if len(meta["whitespace_lines"]) == (i2 - i1):
+                meta["whitespace_chunk"] = True
+
+        groups.append((tag, i1, i2, j1, j2, meta))
+
+    for group in groups:
+        yield group
 
 
 def get_revision_str(revision):
@@ -624,11 +653,14 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
             file['chunks'] = chunks
             file['changed_chunks'] = []
+            file['whitespace_only'] = True
 
             for j, chunk in enumerate(file['chunks']):
                 chunk['index'] = j
                 if chunk['change'] != 'equal':
                     file['changed_chunks'].append(chunk)
+                    if not chunk['meta'].get('whitespace_chunk', False):
+                        file['whitespace_only'] = False
 
             file['num_changes'] = len(file['changed_chunks'])
 
@@ -673,6 +705,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
       ``change``    The change type ("equal", "replace", "insert", "delete")
       ``numlines``  The number of lines in the chunk.
       ``lines``     The list of lines in the chunk.
+      ``meta``      A dictionary containing metadata on the chunk
       ============= ========================================================
 
 
@@ -688,6 +721,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
       4        Real line number in the patched file
       5        HTML markup of the patched file
       6        Changed regions of the patched line (for "replace" chunks)
+      7        True if line consists of only whitespace changes
       ======== =============================================================
     """
     interdiffset = None
@@ -725,6 +759,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 'lines': chunk['lines'][start_index:last_index],
                 'numlines': last_index - start_index,
                 'change': chunk['change'],
+                'meta': chunk['meta'],
             }
 
             yield new_chunk

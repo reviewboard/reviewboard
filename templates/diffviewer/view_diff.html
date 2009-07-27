@@ -188,6 +188,8 @@
 {% else %}
  <li><a href=".?collapse=1"><img src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
 {% endif %}
+ <li><a href="#" class="toggleWhitespaceButton"><img src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Hide Whitespace changes" %}</a></li>
+ <li style="display:none;"><a href="#" class="toggleWhitespaceButton"><img src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Show Whitespace changes" %}</a></li>
 </ul>
 {% endwith %}
 {% endwith %}

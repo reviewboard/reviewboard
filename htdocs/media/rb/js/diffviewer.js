@@ -1037,6 +1037,10 @@ function scrollToAnchor(anchor, noscroll) {
         return false;
     }
 
+    if (anchor.parent().is(":hidden")) {
+        return false;
+    }
+
     if (!noscroll) {
         $(window).scrollTop(anchor.offset().top - DIFF_SCROLLDOWN_AMOUNT);
     }
@@ -1185,6 +1189,44 @@ function loadFileDiff(filediff_id, filediff_revision,
 }
 
 
+/*
+ * Toggles the display state of Whitespace chunks and lines.
+ *
+ * When a diff is loaded, by default, all whitespace only changes are shown.
+ * This function hides the changes shown and show the hidden changes,
+ * toggling the state.
+ */
+function toggleWhitespaceChunks()
+{
+    var tables = $("table.sidebyside");
+    var chunks = tables.children("tbody.whitespace-chunk");
+
+    /* Dim the whole chunk */
+    chunks.toggleClass("replace");
+
+    /* Dim the anchor to each chunk in the file list */
+    chunks.each(function() {
+        var target = this.id.split("chunk")[1];
+        $("ol.index a[href=#" + target + "]").toggleClass("dimmed");
+    });
+
+    /* Remove chunk identifiers */
+    chunks.children(":first-child").toggleClass("first");
+    chunks.children(":last-child").toggleClass("last");
+
+    /* Toggle individual lines */
+    tables.find("tbody tr.whitespace-line").toggleClass("dimmed");
+
+    /* Toggle the display of the button itself */
+    $(".review-request ul.controls li:gt(0)").toggle();
+
+    /* Toggle adjacent chunks, and show the whitespace message */
+    tables.children("tbody.whitespace-file").toggle()
+                                            .siblings("tbody")
+                                                .toggle();
+}
+
+
 $(document).ready(function() {
     $(document).keypress(function(evt) {
         if (evt.altKey || evt.ctrlKey || evt.metaKey) {
@@ -1199,6 +1241,11 @@ $(document).ready(function() {
                 return false;
             }
         }
+    });
+
+    $("ul.controls li a.toggleWhitespaceButton").click(function() {
+        toggleWhitespaceChunks();
+        return false;
     });
 
     /*

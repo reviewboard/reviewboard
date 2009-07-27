@@ -31,11 +31,19 @@
   </tr>
  </tbody>
 {% else %}
+{% if file.whitespace_only %}
+    <tbody class="whitespace-file">
+     <tr>
+      <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
+     </tr>
+    </tbody>
+{% endif %}
 {% for chunk in file.chunks %}
 {%  if not chunk.collapsable or not collapseall %}
- <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
+ <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif%}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
 {% for line in chunk.lines %}
-  <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
+  <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %}
+  {% attr "class" %}{% if forloop.first %}first {% endif %}{% if forloop.last %}last {% endif %} {% if line.7 %}whitespace-line{% endif %}{% endattr %}{% endifnotequal %}>
 {% if forloop.first %}
    <th>{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}" class="chunk-anchor"></a>{% endifnotequal %}{{line.1}}</th>
 {% else %}

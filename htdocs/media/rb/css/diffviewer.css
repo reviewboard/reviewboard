@@ -69,7 +69,12 @@ table.sidebyside tr.last th {
   border-bottom: 1px #D0D0D0 solid;
 }
 
-table.sidebyside tbody.binary td {
+table.sidebyside tbody.whitespace-file {
+  display: none;
+}
+
+table.sidebyside tbody.binary td,
+table.sidebyside tbody.whitespace-file td {
   background: #dbebff;
   padding: 4px;
 }
@@ -127,6 +132,15 @@ table.sidebyside tbody.replace tr.selected * {
 
 table.sidebyside tbody.replace .hl {
   background: #eff23d;
+}
+
+table.sidebyside tbody.replace tr.dimmed,
+table.sidebyside tbody.replace tr.dimmed .hl {
+  background: #FFFFFF;
+}
+
+table.sidebyside tbody.replace tr.dimmed th {
+  background: #F0F0F0;
 }
 
 table.sidebyside tbody td {
@@ -206,6 +220,10 @@ table.sidebyside .commentflag.draft {
 
 ol.index li {
   padding: 2px 0;
+}
+
+ol.index li a.dimmed {
+  color: #ABABAB;
 }
 
 #diffs table.sidebyside {
