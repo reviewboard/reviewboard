@@ -156,7 +156,7 @@ setup(name="ReviewBoard",
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.0.2',
+          'Django>=1.1',
           'django_evolution',
           'Djblets>=0.5.1alpha1.dev_20090718',
           'Pygments>=0.10',
