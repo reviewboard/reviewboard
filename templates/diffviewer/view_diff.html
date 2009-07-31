@@ -40,6 +40,15 @@
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
+
+{% if not specific_diff_requested %}
+<script type="text/javascript">
+  $(document).ready(function() {
+	  /* Listen for updates to this review request. */
+	  registerForUpdates("{{last_activity_time|date:"Y-m-d H:i:s"}}", "diff");
+  });
+</script>
+{% endif %}
 {% endblock %}
 
 {% block content %}

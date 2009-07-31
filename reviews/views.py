@@ -106,6 +106,20 @@ fields_changed_name_map = {
     'diff': 'Diff',
 }
 
+def get_last_activity_time(review_request, draft):
+    """Utility function to generate a last activity timestamp.
+
+    This is used for ETags and update checking for review request-related
+    pages.
+    """
+    timestamps = [review_request.last_updated]
+
+    if draft:
+        timestamps.append(draft.last_updated)
+
+    return get_latest_timestamp(timestamps)
+
+
 @check_login_required
 def review_detail(request, review_request_id,
                   template_name="reviews/review_detail.html"):
@@ -141,14 +155,10 @@ def review_detail(request, review_request_id,
         except Review.DoesNotExist:
             pass
 
+    draft = review_request.get_draft(request.user)
+
     # Find out if we can bail early. Generate an ETag for this.
-    timestamps = [review_request.last_updated]
-    draft = review_request.get_draft()
-
-    if draft:
-        timestamps.append(draft.last_updated)
-
-    last_activity_time = get_latest_timestamp(timestamps)
+    last_activity_time = get_last_activity_time(review_request, draft)
 
     etag = "%s:%s:%s:%s" % (request.user, last_activity_time, review_timestamp,
                             settings.AJAX_SERIAL)
@@ -229,6 +239,7 @@ def review_detail(request, review_request_id,
         'review_request': review_request,
         'review_request_details': draft or review_request,
         'entries': entries,
+        'last_activity_time': last_activity_time,
         'review': review,
         'request': request,
         'upload_diff_form': UploadDiffForm(repository),
@@ -439,6 +450,8 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     if draft and draft.diffset:
         num_diffs += 1
 
+    last_activity_time = get_last_activity_time(review_request, draft)
+
     return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,
         'review_request': review_request,
@@ -450,6 +463,9 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
         'upload_diff_form': UploadDiffForm(repository),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
+        'last_activity_time': last_activity_time,
+        'specific_diff_requested': revision is not None or
+                                   interdiff_revision is not None,
     }, template_name)
 
 

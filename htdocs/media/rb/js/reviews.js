@@ -1,3 +1,7 @@
+// Constants
+var CHECK_UPDATES_MSECS = 5 * 60 * 1000; // Every 5 minutes
+
+
 // State variables
 var gPublishing = false;
 var gPendingSaveCount = 0;
@@ -1038,6 +1042,81 @@ $.fn.reviewFormCommentEditor = function(options) {
             });
         });
 };
+
+
+/*
+ * Registers for updates to the review request. This will cause a pop-up
+ * bubble to be displayed when updates of the specified type are displayed.
+ *
+ * @param {string} lastTimestamp  The last known update timestamp for
+ *                                comparison purposes.
+ * @param {string} type           The type of update to watch for, or
+ *                                undefined for all types.
+ */
+function registerForUpdates(lastTimestamp, type) {
+    var bubble = $("#updates-bubble");
+    var summaryEl;
+    var userEl;
+
+    function showUpdate(info) {
+        if (bubble.length == 0) {
+            bubble = $('<div id="updates-bubble"/>');
+            summaryEl = $('<span/>')
+                .appendTo(bubble);
+            bubble.append(" by ");
+            userEl = $('<a href="" id="updates-bubble-user"/>')
+                .appendTo(bubble);
+
+            bubble
+                .append(
+                    $('<span id="updates-bubble-buttons"/>')
+                        .append($('<a href="#">Update Page</a>')
+                            .click(function() {
+                                window.location = gReviewRequestPath;
+                                return false;
+                            }))
+                        .append(" | ")
+                        .append($('<a href="#">Ignore</a>')
+                            .click(function() {
+                                bubble.fadeOut();
+                                return false;
+                            }))
+                )
+                .appendTo(document.body);
+        }
+
+        summaryEl.text(info.summary);
+        userEl
+            .attr('href', info.user.url)
+            .text(info.user.fullname);
+
+        bubble
+            .hide()
+            .css("position", $.browser.msie && $.browser.version == 6
+                             ? "absolute" : "fixed")
+            .fadeIn();
+    }
+
+    function checkForUpdates() {
+        reviewRequestApiCall({
+            type: "GET",
+            noActivityIndicator: true,
+            path: '/last-update/',
+            success: function(rsp) {
+                if ((type == undefined || type == rsp.type) &&
+                    lastTimestamp != rsp.timestamp) {
+                    showUpdate(rsp);
+                }
+
+                lastTimestamp = rsp.timestamp;
+
+                setTimeout(checkForUpdates, CHECK_UPDATES_MSECS);
+            }
+        });
+    }
+
+    setTimeout(checkForUpdates, CHECK_UPDATES_MSECS);
+}
 
 
 /*

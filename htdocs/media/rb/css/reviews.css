@@ -538,6 +538,32 @@
 
 
 /****************************************************************************
+ * Updates Bubble
+ ****************************************************************************/
+
+#updates-bubble {
+  background: #FFF1AB;
+  border: 1px #666666 solid;
+  bottom: 1px;
+  font-size: 110%;
+  padding: 0.8em;
+  position: fixed;
+  right: 1px;
+}
+
+#updates-bubble a,
+#updates-bubble a:visited {
+  color: #0000CC;
+  text-decoration: none;
+}
+
+#updates-bubble-buttons {
+  margin-left: 2em;
+}
+
+
+
+/****************************************************************************
  * Review Form
  ****************************************************************************/
 #review-form {

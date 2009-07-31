@@ -204,17 +204,20 @@
 {%  endif %}
 {% endfor %}
 
-{% if request.GET.reply_id and request.GET.reply_type %}
 <script type="text/javascript">
   $(document).ready(function() {
+	  /* Listen for updates to this review request. */
+	  registerForUpdates("{{last_activity_time|date:"Y-m-d H:i:s"}}");
+
+{% if request.GET.reply_id and request.GET.reply_type %}
       $.funcQueue("diff_comments").add(function() {
           var link = $("#add_{{request.GET.reply_type}}_{{request.GET.reply_id}}");
           $(window).scrollTop(link.offset().top);
           link.click();
           $.funcQueue("diff_comments").next();
       });
+{% endif %}
   });
 </script>
-{% endif %}
 
 {% endblock %}

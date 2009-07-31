@@ -10,6 +10,7 @@ from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
 from django.template.defaultfilters import timesince
+from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from djblets.siteconfig.models import SiteConfiguration
@@ -461,6 +462,62 @@ def review_request(request, review_request_id):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
     return WebAPIResponse(request, {'review_request': review_request})
+
+
+@webapi_check_login_required
+def review_request_last_update(request, review_request_id):
+    """
+    Returns the last update made to the specified review request.
+    """
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    timestamp = review_request.last_updated
+    user = review_request.submitter
+    summary = _("Review request updated")
+    update_type = "review-request"
+
+    draft = review_request.get_draft(request.user)
+
+    if draft:
+        timestamp = draft.last_updated
+
+    # If the diff was updated along with this, then indicate it.
+    try:
+        diffset = review_request.diffset_history.diffsets.latest()
+
+        if diffset.timestamp >= timestamp:
+            timestamp = diffset.timestamp
+            summary = _("Diff updated")
+            update_type = "diff"
+    except DiffSet.DoesNotExist:
+        pass
+
+    # Check for the latest review.
+    try:
+        review = review_request.reviews.filter(public=True).latest()
+
+        if review.timestamp >= timestamp:
+            timestamp = review.timestamp
+            user = review.user
+
+            if review.is_reply():
+                summary = _("New reply")
+                update_type = "reply"
+            else:
+                summary = _("New review")
+                update_type = "review"
+    except Review.DoesNotExist:
+        pass
+
+    return WebAPIResponse(request, {
+        'timestamp': timestamp,
+        'user': user,
+        'summary': summary,
+        'type': update_type,
+    })
 
 
 @webapi_check_login_required

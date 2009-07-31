@@ -94,10 +94,12 @@ function rbApiCall(options) {
             options.buttons.attr("disabled", true);
         }
 
-        $("#activity-indicator")
-            .text((options.type || options.type == "GET")
-                  ? "Loading..." : "Saving...")
-            .show();
+        if (!options.noActivityIndicator) {
+            $("#activity-indicator")
+                .text((options.type || options.type == "GET")
+                      ? "Loading..." : "Saving...")
+                .show();
+        }
 
         var data = {
             type: options.type,
@@ -119,9 +121,11 @@ function rbApiCall(options) {
                     options.buttons.attr("disabled", false);
                 }
 
-                $("#activity-indicator")
-                    .delay(1000)
-                    .fadeOut("fast");
+                if (!options.noActivityIndicator) {
+                    $("#activity-indicator")
+                        .delay(1000)
+                        .fadeOut("fast");
+                }
 
                 if ($.isFunction(options.complete)) {
                     options.complete(xhr, status);
