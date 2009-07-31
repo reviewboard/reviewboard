@@ -173,6 +173,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'title': u'Screenshot: %s' % (o.caption or
                                               os.path.basename(o.image.path)),
                 'image_url': o.get_absolute_url(),
+                'thumbnail_url': o.get_thumbnail_url(),
             }
         elif isinstance(o, FileDiff):
             return {
@@ -1309,7 +1310,10 @@ def new_screenshot(request, review_request_id):
             },
         })
 
-    return WebAPIResponse(request, {'screenshot_id': screenshot.id})
+    return WebAPIResponse(request, {
+        'screenshot_id': screenshot.id, # For backwards-compatibility
+        'screenshot': screenshot,
+    })
 
 
 @webapi_check_login_required

@@ -132,12 +132,18 @@ class Screenshot(models.Model):
                               upload_to=os.path.join('uploaded', 'images',
                                                      '%Y', '%m', '%d'))
 
+    def get_thumbnail_url(self):
+        """
+        Returns the URL for the thumbnail, creating it if necessary.
+        """
+        return thumbnail(self.image)
+
     def thumb(self):
         """
         Creates a thumbnail of this screenshot and returns the HTML
         output embedding the thumbnail.
         """
-        url = thumbnail(self.image)
+        url = self.get_thumbnail_url()
         return mark_safe('<img src="%s" alt="%s" />' % (url, self.caption))
     thumb.allow_tags = True
 

@@ -66,10 +66,10 @@
   <label for="testing_done">{% trans "Testing Done" %}:</label>
   <pre id="testing_done" class="editable">{{review_request_details.testing_done|escape}}</pre>
  </div>
- {% if review_request_details.screenshots.count %}
- <div class="content clearfix">
+ <div class="content clearfix"{% ifequal review_request_details.screenshots.count 0 %} style="display: none;"{% endifequal %}>
   <label for="images">{% trans "Screenshots" %}:</label>
-  {% for image in review_request_details.screenshots.all %}
+  <div id="screenshot-thumbnails">
+{% for image in review_request_details.screenshots.all %}
    <div class="screenshot-container">
     <div class="screenshot"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
@@ -79,6 +79,7 @@
      {% endifuserorperm %}
     </div>
    </div>
-  {% endfor %}
+{% endfor %}
+   <br clear="both" />
+  </div>
  </div>
- {% endif %}

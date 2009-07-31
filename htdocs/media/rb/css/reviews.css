@@ -71,6 +71,10 @@
   padding: 0;
 }
 
+.review-request .content.sliding {
+  margin-top: -5px;
+}
+
 .review-request .content img {
   border: none;
 }
@@ -645,6 +649,10 @@
   vertical-align: bottom;
 }
 
+.screenshot-container .screenshot.loading {
+  background: white url("../images/spinner.gif") no-repeat center center;
+}
+
 .screenshot-container .screenshot img {
   vertical-align: middle;
 }
@@ -703,6 +711,26 @@
 #screenshot-display #selection-interactive {
   border: 1px #ff0000 dashed;
   position: absolute;
+}
+
+
+/****************************************************************************
+ * Screenshot Thumbnails
+ ****************************************************************************/
+#screenshot-thumbnails {
+  margin: 2px;
+  padding: 0.5em;
+}
+
+#screenshot-thumbnails.dragover {
+  border: 2px green dashed;
+  display: block;
+  margin: 0;
+}
+
+#screenshot-thumbnails h1.drop-indicator {
+  clear: both;
+  text-align: center;
 }
 
 

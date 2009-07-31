@@ -26,7 +26,11 @@
         path: "/reviewrequests/{{review_request.id}}/screenshot/new/",
         width: "50em",
         upload: true,
-        fields: {% form_dialog_fields upload_screenshot_form %}
+        fields: {% form_dialog_fields upload_screenshot_form %},
+        success: function(rsp) {
+          $.screenshotThumbnail(rsp.screenshot);
+          gDraftBanner.show();
+        }
       });
 
       return false;

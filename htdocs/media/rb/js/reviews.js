@@ -1045,6 +1045,91 @@ $.fn.reviewFormCommentEditor = function(options) {
 
 
 /*
+ * Adds inline editing capabilities to a field for a review request.
+ */
+$.fn.reviewRequestFieldEditor = function() {
+    return this.each(function() {
+        $(this)
+            .inlineEditor({
+                cls: this.id + "-editor",
+                editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                multiline: this.tagName == "PRE",
+                showButtons: !$(this).hasClass("screenshot-editable"),
+                startOpen: this.id == "changedescription",
+                useEditIconOnly: $(this).hasClass("comma-editable")
+            })
+            .bind("complete", function(e, value) {
+                setDraftField(this.id, value);
+            });
+    });
+}
+
+
+/*
+ * Adds a thumbnail to the thumbnail list.
+ *
+ * If a screenshot object is given, then this will display actual
+ * thumbnail data. Otherwise, this will display a spinner.
+ *
+ * @param {object} screenshot  The optional screenshot to display.
+ *
+ * @return {jQuery} The root screenshot thumbnail div.
+ */
+$.screenshotThumbnail = function(screenshot) {
+    var container = $('<div/>')
+        .addClass("screenshot-container");
+
+    var body = $('<div class="screenshot"/>')
+        .addClass("screenshot")
+        .appendTo(container);
+
+    var captionArea = $('<div/>')
+        .addClass("screenshot-caption")
+        .appendTo(container);
+
+    if (screenshot) {
+        body.append($("<a/>")
+            .attr("href", screenshot.image_url)
+            .append($("<img/>")
+                .attr({
+                    src: screenshot.thumbnail_url,
+                    alt: screenshot.caption
+                })
+            )
+        );
+
+        captionArea
+            .append($("<a/>")
+                .addClass("editable")
+                .addClass("screenshot-editable")
+                .attr({
+                    href: screenshot.image_url,
+                    id: "screenshot_" + screenshot.id + "_caption"
+                })
+            )
+            .append($("<a/>")
+                .attr("href", screenshot.image_url + "delete/")
+                .append($("<img/>")
+                    .attr({
+                        src: MEDIA_URL + "rb/images/delete.png?" +
+                             MEDIA_SERIAL,
+                        alt: "Delete Screenshot"
+                    })
+                )
+            );
+
+        container.find(".editable").reviewRequestFieldEditor()
+    } else {
+        body.addClass("loading");
+
+        captionArea.append("&nbsp;");
+    }
+
+    return container.insertBefore($("br", "#screenshot-thumbnails"));
+};
+
+
+/*
  * Registers for updates to the review request. This will cause a pop-up
  * bubble to be displayed when updates of the specified type are displayed.
  *
@@ -1208,6 +1293,185 @@ function loadDiffFragments(queue_name, container_prefix) {
     $.funcQueue(queue_name).start();
 }
 
+
+/*
+ * Initializes screenshot drag-and-drop support.
+ *
+ * This makes it possible to drag screenshots from a file manager
+ * and drop them into Review Board. This requires the support of
+ * Google Gears v0.5.21.0 or higher.
+ */
+function initScreenshotDnD() {
+    var desktop = google.gears.factory.create("beta.desktop");
+
+    if (!desktop) {
+        return;
+    }
+
+    var thumbnails = $("#screenshot-thumbnails");
+    var dropIndicator = null;
+    var thumbnailsContainer = $(thumbnails.parent()[0]);
+    var thumbnailsContainerVisible = thumbnailsContainer.is(":visible");
+
+    thumbnails
+        .bind("dragenter dragover", function(event) {
+            desktop.setDragCursor(event.originalEvent, "copy");
+        })
+        .bind("dragexit", function(event) {
+            desktop.setDragCursor(event.originalEvent, "none");
+        })
+        .bind("dragdrop", handleDrop);
+
+    var reviewRequestContainer =
+        $(".review-request")
+            .bind("dragenter", handleDragEnter)
+            .bind("dragexit", handleDragExit);
+
+    function handleDragEnter(event) {
+        if (!dropIndicator) {
+            thumbnails.addClass("dragover");
+
+            dropIndicator = $("<h1/>")
+                .addClass("drop-indicator")
+                .html("Drop screenshots here to upload")
+                .bind("dragdrop", handleDrop)
+                .appendTo(thumbnails);
+
+            thumbnailsContainer
+                .addClass("sliding")
+                .slideDown("normal", function() {
+                    thumbnailsContainer.removeClass("sliding");
+                });
+        }
+    }
+
+    function handleDragExit(event) {
+        if (event != null) {
+            var offset = reviewRequestContainer.offset();
+            var width = reviewRequestContainer.width();
+            var height = reviewRequestContainer.height();
+
+            if (event.pageX >= offset.left &&
+                event.pageX < offset.left + width &&
+                event.pageY >= offset.top &&
+                event.pageY < offset.top + height) {
+                return;
+            }
+        }
+
+        thumbnails.removeClass("dragover");
+
+        if (!thumbnailsContainerVisible) {
+            thumbnailsContainer
+                .addClass("sliding")
+                .slideUp("normal", function() {
+                    thumbnailsContainer.removeClass("sliding");
+                });
+        }
+
+        dropIndicator.remove();
+        dropIndicator = null;
+    }
+
+    function handleDrop(event) {
+        /* Do these early in case we hit some error. */
+        event.stopPropagation();
+        event.preventDefault();
+
+        var data = desktop.getDragData(event.originalEvent,
+                                       "application/x-gears-files");
+        var files = data && data.files;
+
+        if (!files) {
+            return;
+        }
+
+        var foundImages = false;
+
+        for (var i = 0; i < files.length; i++) {
+            var file = files[i];
+            var metadata = desktop.extractMetaData(file.blob);
+
+            if (metadata.mimeType == "image/jpeg" ||
+                metadata.mimeType == "image/pjpeg" ||
+                metadata.mimeType == "image/png" ||
+                metadata.mimeType == "image/bmp" ||
+                metadata.mimeType == "image/gif" ||
+                metadata.mimeType == "image/svg+xml") {
+
+                foundImages = true;
+
+                uploadScreenshot(file, metadata);
+            }
+        }
+
+        if (foundImages) {
+            thumbnailsContainerVisible = true;
+            handleDragExit(null);
+        } else {
+            dropIndicator.html("None of the dropped files were valid " +
+                               "images");
+
+            setTimeout(function() {
+                handleDragExit(null);
+            }, 1500);
+        }
+    }
+
+    function uploadScreenshot(file, metadata) {
+        /* Create a temporary screenshot thumbnail. */
+        var thumb = $.screenshotThumbnail()
+            .css("opacity", 0)
+            .fadeTo(1000, 1);
+
+        var boundary = "-----multipartformboundary" + new Date().getTime();
+
+        var blobBuilder = google.gears.factory.create("beta.blobbuilder");
+        blobBuilder.append("--" + boundary + "\r\n");
+        blobBuilder.append('Content-Disposition: form-data; name="path"; ' +
+                           'filename="' + file.name + '"\r\n');
+        blobBuilder.append('Content-Type: application/octet-stream\r\n');
+        blobBuilder.append('\r\n');
+        blobBuilder.append(file.blob);
+        blobBuilder.append('\r\n');
+        blobBuilder.append("--" + boundary + "--\r\n");
+        blobBuilder.append('\r\n');
+
+        var blob = blobBuilder.getAsBlob();
+
+        /*
+         * This is needed to prevent an error in jQuery.ajax, when it tries
+         * to match the data to e regex.
+         */
+        blob.match = function(regex) {
+            return false;
+        }
+
+        reviewRequestApiCall({
+            path: "/screenshot/new/",
+            buttons: gDraftBannerButtons,
+            data: blob,
+            processData: false,
+            contentType: "multipart/form-data; boundary=" + boundary,
+            xhr: function() {
+                return google.gears.factory.create("beta.httprequest");
+            },
+            errorPrefix: "Uploading the screenshot has failed " +
+                         "due to a server error:",
+            success: function(rsp) {
+                if (rsp.stat == "ok") {
+                    thumb.replaceWith($.screenshotThumbnail(rsp.screenshot));
+                    gDraftBanner.show();
+                } else {
+                    showError("Uploading the screenshot has failed: " +
+                              rsp.err.msg);
+                    thumb.remove();
+                }
+            }
+        });
+    }
+}
+
 $(document).ready(function() {
     /* Provide support for expanding submenus in the action list. */
     var menuitem = null;
@@ -1367,24 +1631,7 @@ $(document).ready(function() {
 
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
-            $(".editable").each(function() {
-                var editable = $(this);
-
-                editable
-                    .inlineEditor({
-                        cls: this.id + "-editor",
-                        editIconPath: MEDIA_URL + "rb/images/edit.png?" +
-                                      MEDIA_SERIAL,
-                        multiline: this.tagName == "PRE",
-                        showButtons:
-                            !$(editable).hasClass("screenshot-editable"),
-                        startOpen: this.id == "changedescription",
-                        useEditIconOnly: $(editable).hasClass("comma-editable")
-                    })
-                    .bind("complete", function(e, value) {
-                        setDraftField(editable[0].id, value);
-                    });
-            });
+            $(".editable").reviewRequestFieldEditor();
 
             var description = $("#description");
             var testing_done = $("#testing_done");
@@ -1407,6 +1654,10 @@ $(document).ready(function() {
                 targetPeopleEl
                     .inlineEditor("field")
                     .reviewsAutoComplete("users", "username");
+            }
+
+            if (window.google && google.gears) {
+                initScreenshotDnD();
             }
         }
 

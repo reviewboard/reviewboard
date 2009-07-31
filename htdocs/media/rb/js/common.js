@@ -101,12 +101,10 @@ function rbApiCall(options) {
                 .show();
         }
 
-        var data = {
-            type: options.type,
+        var data = $.extend(true, {
             url: options.url || (SITE_ROOT + "api/json" + options.path),
             data: options.data || {dummy: ""},
             dataType: options.dataType || "json",
-            success: options.success,
             error: function(xhr, textStatus, errorThrown) {
                 showServerError(options.errorPrefix + " " + xhr.status + " " +
                                 xhr.statusText,
@@ -133,7 +131,7 @@ function rbApiCall(options) {
 
                 $.funcQueue("rbapicall").next();
             }
-        };
+        }, options);
 
         if (options.form) {
             options.form.ajaxSubmit(data);
@@ -312,7 +310,8 @@ $.fn.formDlg = function(options) {
          */
         function checkForErrors(rsp) {
             if (rsp.stat == "ok") {
-                options.success();
+                options.success(rsp);
+                box.remove();
             } else if (rsp.fields) {
                 errors
                     .html(rsp.err.msg)
