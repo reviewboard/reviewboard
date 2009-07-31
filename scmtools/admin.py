@@ -9,14 +9,36 @@ class RepositoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'path')
     fieldsets = (
         (_('General Information'), {
-            'fields': ('name', 'path', 'mirror_path', 'tool', 'bug_tracker'),
+            'fields': ('name',),
             'classes': ('wide',),
         }),
-        (_('Authentication'), {
-            'fields': ('username', 'password'),
+        (_('Repository Hosting'), {
+            'fields': (
+                'hosting_type',
+                'tool',
+                'hosting_owner',
+                'hosting_project_name',
+                'path',
+                'mirror_path',
+                'username',
+                'password',
+            ),
+            'classes': ('wide',),
+        }),
+        (_('Bug Tracker'), {
+            'fields': (
+                'bug_tracker_use_hosting',
+                'bug_tracker_type',
+                'bug_tracker_owner',
+                'bug_tracker_project_name',
+                'bug_tracker_base_url',
+                'bug_tracker',
+            ),
+            'classes': ('wide',),
         }),
         (_('Advanced'), {
             'fields': ('encoding',),
+            'classes': ('wide',),
         }),
     )
     form = RepositoryForm

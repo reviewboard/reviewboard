@@ -14,6 +14,8 @@ class CVSTool(SCMTool):
     regex_rev = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
     regex_repopath = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
 
+    supports_authentication = True
+
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 

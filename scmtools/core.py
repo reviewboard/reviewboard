@@ -38,10 +38,12 @@ PRE_CREATION = Revision("PRE-CREATION")
 
 
 class SCMTool:
+    uses_atomic_revisions = False
+    diff_uses_changeset_ids = False
+    supports_authentication = False
+
     def __init__(self, repository):
         self.repository = repository
-        self.uses_atomic_revisions = False
-        self.diff_uses_changeset_ids = False
 
     def get_file(self, path, revision=None):
         raise NotImplementedError

@@ -13,6 +13,9 @@ from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError
 
 
 class PerforceTool(SCMTool):
+    uses_atomic_revisions = True
+    supports_authentication = True
+
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
@@ -26,8 +29,6 @@ class PerforceTool(SCMTool):
         # We defer actually connecting until just before we do some operation
         # that requires an active connection to the perforce depot.  This
         # connection is then left open as long as possible.
-
-        self.uses_atomic_revisions = True
 
     def __del__(self):
         try:

@@ -37,6 +37,9 @@ class SVNTool(SCMTool):
         'URL':                 URL_KEYWORDS,
     }
 
+    uses_atomic_revisions = True
+    supports_authentication = True
+
     def __init__(self, repository):
         self.repopath = repository.path
         if self.repopath[-1] == '/':
@@ -50,8 +53,6 @@ class SVNTool(SCMTool):
             self.client.set_default_username(str(repository.username))
         if repository.password:
             self.client.set_default_password(str(repository.password))
-
-        self.uses_atomic_revisions = True
 
         # svnlook uses 'rev 0', while svn diff uses 'revision 0'
         self.revision_re = re.compile("""
