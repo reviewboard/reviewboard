@@ -129,7 +129,17 @@ class HgWebClient:
 class HgClient:
     def __init__(self, repoPath):
         from mercurial import hg, ui
-        self.repo = hg.repository(ui.ui(interactive=False), path=repoPath)
+        from mercurial.__version__ import version
+
+        version_parts = [int(x) for x in version.split(".")]
+
+        if version_parts[0] == 1 and version_parts[1] <= 2:
+            hg_ui = ui.ui(interactive=False)
+        else:
+            hg_ui = ui.ui()
+            hg_ui.setconfig('ui', 'interactive', 'off')
+
+        self.repo = hg.repository(hg_ui, path=repoPath)
 
     def cat_file(self, path, rev="tip"):
         if rev == HEAD:
