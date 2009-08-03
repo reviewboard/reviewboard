@@ -33,7 +33,7 @@
     <script type="text/javascript">
         var editor = $("#screenshot-comment-{{comment.id}}")
             .reviewFormCommentEditor({
-                path: getScreenshotAPIPath("{{comment.id}}", {{comment.x}}, {{comment.y}}, {{comment.w}}, {{comment.h}})
+                path: getScreenshotAPIPath("{{comment.screenshot.id}}", {{comment.x}}, {{comment.y}}, {{comment.w}}, {{comment.h}})
             });
         $("#edit-screenshot-comment-{{comment.id").click(function() {
             editor.inlineEditor("startEdit");
