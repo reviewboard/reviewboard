@@ -1,0 +1,67 @@
+==============================
+Review Board 1.0.1 Release Notes
+==============================
+
+**Release date**: August 2, 2009.
+
+
+New Features
+============
+
+* Added compatibility with Mercurial 1.3.
+
+* One of the first-time problems people have had was getting :file:`patch`
+  installed, or even knowing to install it in the first place. Review Board
+  now checks for the existance of :file:`patch` or :file:`patch.exe` when
+  starting up. If it doesn't exist, an error page will appear saying it's
+  missing and giving instructions how to download and install it.
+
+* Added instructions at the end of rb-site to change ownership of the
+  :file:`db` directory. It also now links to the :ref:`creating-sites`
+  documentation for further instructions. (:bug:`1123`)
+
+* Added some useful help text for the repository path in the Repository
+  Administration page. It points out what values are expected for different
+  repository types. (:bug:`1160`)
+
+
+Bugs Fixed
+==========
+
+* Added ClearCase to the database by default. It was missing a database
+  entry in 1.0, preventing people from using it without modifications.
+
+* Fixed the checks for executables in the path. We had some issues in 1.0
+  in Windows checking for :file:`cvs.exe` and other executables in the path,
+  due to using the wrong separator for the ``PATH`` environment variable.
+  (:bug:`1180`)
+
+* Fixed a bug with Mercurial parent diffs when the parent diff included a
+  binary file. Instead of showing an entry for the file, an error would
+  be displayed. Fix by Colin Caughie.
+
+* Fixed a case where we would sometimes attempt to delete a review request
+  during creation (due to an error during the creation process) and then
+  save it. While the deletion was fine in this case, saving it made no sense,
+  and would just cause the user to see a 500 error. (:bug:`781`)
+
+* Updating a review request against a Perforce repository will no longer
+  clobber the :guilabel:`Branch`, :guilabel:`Testing Done` and
+  :guilabel:`Bugs` fields with empty text on standard installs. (:bug:`777`)
+
+* Modifying comments on a screenshot in the :guilabel:`Edit Review` dialog
+  caused the thumbnail to point to the wrong screenshot, due to the wrong
+  ID being passed in. This now works as expected. Patch by Eric Huss.
+  (:bug:`1240`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* Colin Caughie
+* David Trowbridge
+* Eric Huss
+* Helder Ribeiro
+
+.. comment: vim: ft=rst et
