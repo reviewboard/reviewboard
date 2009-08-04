@@ -100,8 +100,12 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/$',
      'review_request_draft'),
+
+    # draft/save is deprecated in favor of draft/publish
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
-     'review_request_draft_save'),
+     'review_request_draft_publish'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/publish/$',
+     'review_request_draft_publish'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
      'review_request_draft_discard'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',

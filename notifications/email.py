@@ -1,8 +1,53 @@
 from datetime import datetime
 
+from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
+from djblets.siteconfig.models import SiteConfiguration
+
+from reviewboard.reviews.signals import review_request_published, \
+                                        review_published, reply_published
+
+
+def review_request_published_cb(sender, user, review_request, changedesc,
+                                **kwargs):
+    """
+    Listens to the ``review_request_published`` signal and sends an
+    email if this type of notification is enabled (through
+    ``mail_send_review_mail`` site configuration).
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    if siteconfig.get("mail_send_review_mail"):
+        mail_review_request(user, review_request, changedesc)
+
+review_request_published.connect(review_request_published_cb)
+
+
+def review_published_cb(sender, user, review, **kwargs):
+    """
+    Listens to the ``review_published`` signal and sends an email if
+    this type of notification is enabled (through
+    ``mail_send_review_mail`` site configuration).
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    if siteconfig.get("mail_send_review_mail"):
+        mail_review(user, review)
+
+review_published.connect(review_published_cb)
+
+
+def reply_published_cb(sender, user, reply, **kwargs):
+    """
+    Listens to the ``reply_published`` signal and sends an email if
+    this type of notification is enabled (through
+    ``mail_send_review_mail`` site configuration).
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    if siteconfig.get("mail_send_review_mail"):
+        mail_reply(user, reply)
+
+reply_published.connect(reply_published_cb)
 
 
 def get_email_address_for_user(u):

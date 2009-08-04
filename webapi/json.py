@@ -30,8 +30,8 @@ from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
-from reviewboard.reviews.email import mail_review, mail_review_request, \
-                                      mail_reply
+from reviewboard.reviews.signals import review_request_published, \
+                                        review_published, reply_published
 from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
@@ -785,7 +785,7 @@ def review_request_draft_discard(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_request_draft_save(request, review_request_id):
+def review_request_draft_publish(request, review_request_id):
     try:
         draft = ReviewRequestDraft.objects.get(review_request=review_request_id)
         review_request = draft.review_request
@@ -798,9 +798,9 @@ def review_request_draft_save(request, review_request_id):
     changes = draft.publish()
     draft.delete()
 
-    siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail"):
-        mail_review_request(request.user, review_request, changes)
+    review_request_published.send(sender=None, user=request.user,
+                                  review_request=review_request,
+                                  changedesc=changes)
 
     return WebAPIResponse(request)
 
@@ -996,9 +996,8 @@ def review_draft_save(request, review_request_id, publish=False):
     else:
         review.save()
 
-    siteconfig = SiteConfiguration.objects.get_current()
-    if publish and siteconfig.get("mail_send_review_mail"):
-        mail_review(request.user, review)
+    if publish:
+        review_published.send(sender=None, user=request.user, review=review)
 
     return WebAPIResponse(request)
 
@@ -1164,9 +1163,7 @@ def review_reply_draft_save(request, review_request_id, review_id):
     if reply:
         reply.publish()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        if siteconfig.get("mail_send_review_mail"):
-            mail_reply(request.user, reply)
+        reply_published.send(sender=None, user=request.user, reply=reply)
 
         return WebAPIResponse(request)
     else:

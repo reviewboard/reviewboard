@@ -2,22 +2,30 @@ import os
 
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
+from django.core import mail
 from django.test import TestCase
 from django.utils import simplejson
+from djblets.siteconfig.models import SiteConfiguration
 
 import reviewboard.webapi.json as webapi
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        Comment, Screenshot, ScreenshotComment
 from reviewboard.scmtools.models import Repository, Tool
 
 
-class WebAPITests(TestCase):
+class WebAPITests(TestCase, EmailTestHelper):
     """Testing the webapi support."""
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("mail_send_review_mail", True)
+        siteconfig.save()
+        mail.outbox = []
+
         svn_repo_path = os.path.join(os.path.dirname(__file__),
                                      '../scmtools/testdata/svn_repo')
         self.repository = Repository(name='Subversion SVN',
@@ -451,6 +459,21 @@ class WebAPITests(TestCase):
         self.assertEqual(rsp['err']['code'], webapi.INVALID_ATTRIBUTE.code)
         self.assertEqual(rsp['attribute'], 'foobar')
 
+    def testReviewRequestPublishSendsEmail(self):
+        """Testing the reviewrequests/publish API"""
+        # Set some data first.
+        self.testReviewRequestDraftSet()
+
+        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
+
+        rsp = self.apiPost("reviewrequests/%s/publish" % review_request.id)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(mail.outbox), 1)
+
+    # draft/save is deprecated. Tests were copied to *DraftPublish*().
+    # This is still here only to make sure we don't break backwards
+    # compatibility.
     def testReviewRequestDraftSave(self):
         """Testing the reviewrequests/draft/save API"""
         # Set some data first.
@@ -473,6 +496,37 @@ class WebAPITests(TestCase):
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+
+    def testReviewRequestDraftPublish(self):
+        """Testing the reviewrequests/draft/publish API"""
+        # Set some data first.
+        self.testReviewRequestDraftSet()
+
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/publish" % review_request_id)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        self.assertEqual(review_request.summary, "My Summary")
+        self.assertEqual(review_request.description, "My Description")
+        self.assertEqual(review_request.testing_done, "My Testing Done")
+        self.assertEqual(review_request.branch, "My Branch")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
+        self.assertValidRecipients(["doc", "grumpy"], [])
+
+
+    def testReviewRequestDraftPublishDoesNotExist(self):
+        """Testing the reviewrequests/draft/publish API with Does Not Exist error"""
+        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
+        rsp = self.apiPost("reviewrequests/%s/draft/publish" %
+                           review_request.id)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
@@ -521,6 +575,8 @@ class WebAPITests(TestCase):
         self.assertEqual(review.body_bottom, body_bottom)
         self.assertEqual(review.public, False)
 
+        self.assertEqual(len(mail.outbox), 0)
+
     def testReviewDraftPublish(self):
         """Testing the reviewrequests/reviews/draft/publish API"""
         body_top = "My Body Top"
@@ -549,6 +605,12 @@ class WebAPITests(TestCase):
         self.assertEqual(review.body_top, body_top)
         self.assertEqual(review.body_bottom, body_bottom)
         self.assertEqual(review.public, True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject,
+                         "Re: Review Request: Interdiff Revision Test")
+        self.assertValidRecipients(["admin", "grumpy"], [])
+
 
     def testReviewDraftDelete(self):
         """Testing the reviewrequests/reviews/draft/delete API"""
@@ -725,6 +787,8 @@ class WebAPITests(TestCase):
 
         reply = Review.objects.get(pk=reply_id)
         self.assertEqual(reply.public, True)
+
+        self.assertEqual(len(mail.outbox), 1)
 
     def testReplyDraftDiscard(self):
         """Testing the reviewrequests/reviews/replies/draft/discard API"""
