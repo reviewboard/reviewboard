@@ -17,7 +17,7 @@ from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
 
 
-class CoreTests(unittest.TestCase):
+class CoreTests(DjangoTestCase):
     """Tests for the scmtools.core module"""
 
     def testInterface(self):
@@ -33,8 +33,9 @@ class CoreTests(unittest.TestCase):
         self.assert_(len(cs.files) == 0)
 
 
-class CVSTests(unittest.TestCase):
+class CVSTests(DjangoTestCase):
     """Unit tests for CVS."""
+    fixtures = ['test_scmtools.json']
 
     def setUp(self):
         self.cvs_repo_path = os.path.join(os.path.dirname(__file__),
@@ -196,8 +197,9 @@ class CVSTests(unittest.TestCase):
         self.assertRaises(SCMError, lambda: badtool.get_file(file, rev))
 
 
-class SubversionTests(unittest.TestCase):
+class SubversionTests(DjangoTestCase):
     """Unit tests for subversion."""
+    fixtures = ['test_scmtools.json']
 
     def setUp(self):
         svn_repo_path = os.path.join(os.path.dirname(__file__),
@@ -304,13 +306,14 @@ class SubversionTests(unittest.TestCase):
         patch(diff, file, filename)
 
 
-class PerforceTests(unittest.TestCase):
+class PerforceTests(DjangoTestCase):
     """Unit tests for perforce.
 
        This uses the open server at public.perforce.com to test various
        pieces.  Because we have no control over things like pending
        changesets, not everything can be tested.
        """
+    fixtures = ['test_scmtools.json']
 
     def setUp(self):
         self.repository = Repository(name='Perforce.com',
@@ -421,7 +424,7 @@ class PerforceTests(unittest.TestCase):
 
 class VMWareTests(DjangoTestCase):
     """Tests for VMware specific code"""
-    fixtures = ['vmware.json']
+    fixtures = ['vmware.json', 'test_scmtools.json']
 
     def setUp(self):
         self.repository = Repository(name='VMware Test',
@@ -502,7 +505,7 @@ class VMWareTests(DjangoTestCase):
 
 class MercurialTests(DjangoTestCase):
     """Unit tests for mercurial."""
-    fixtures = ['hg.json']
+    fixtures = ['hg.json', 'test_scmtools.json']
 
     def setUp(self):
         hg_repo_path = os.path.join(os.path.dirname(__file__),
@@ -628,6 +631,8 @@ class GitTests(DjangoTestCase):
     """
     Unit tests for Git
     """
+    fixtures = ['test_scmtools.json']
+
     def setUp(self):
         repo_path = os.path.join(os.path.dirname(__file__),
                                  'testdata', 'git_repo')
