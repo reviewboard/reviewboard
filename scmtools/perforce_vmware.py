@@ -8,6 +8,7 @@ class VMwarePerforceTool(PerforceTool):
        This is not terribly useful outside of VMware, except perhaps as an
        example of how to deal with a relatively common perforce customization.
        """
+    name = "Perforce (VMware)"
 
     @staticmethod
     def parse_change_desc(changedesc, changenum):

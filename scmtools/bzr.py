@@ -14,6 +14,8 @@ from reviewboard.scmtools.errors import SCMError
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 
 class BZRTool(SCMTool):
+    name = "Bazaar"
+
     # Timestamp format in bzr diffs.
     # This isn't totally accurate: there should be a %z at the end.
     # Unfortunately, strptime() doesn't support %z.

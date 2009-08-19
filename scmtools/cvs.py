@@ -11,6 +11,8 @@ from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 
 
 class CVSTool(SCMTool):
+    name = "CVS"
+
     regex_rev = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
     regex_repopath = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
 

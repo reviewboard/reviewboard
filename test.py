@@ -57,6 +57,7 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
 
     settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
     settings.ADMIN_MEDIA_PREFIX = settings.MEDIA_URL + 'admin/'
+    settings.RUNNING_TEST = True
 
     old_name = settings.DATABASE_NAME
     connection.creation.create_test_db(verbosity, autoclobber=not interactive)

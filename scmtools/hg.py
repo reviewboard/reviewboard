@@ -9,6 +9,7 @@ from reviewboard.scmtools.core import \
     FileNotFoundError, SCMTool, HEAD, PRE_CREATION
 
 class HgTool(SCMTool):
+    name = "Mercurial"
     supports_authentication = True
 
     def __init__(self, repository):

@@ -37,6 +37,7 @@ class SVNTool(SCMTool):
         'URL':                 URL_KEYWORDS,
     }
 
+    name = "Subversion"
     uses_atomic_revisions = True
     supports_authentication = True
 

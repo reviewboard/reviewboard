@@ -153,6 +153,15 @@ setup(name="ReviewBoard",
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
           ],
+          'reviewboard.scmtools': [
+              'bzr = reviewboard.scmtools.bzr:BZRTool',
+              'clearcase = reviewboard.scmtools.clearcase:ClearCaseTool',
+              'cvs = reviewboard.scmtools.cvs:CVSTool',
+              'git = reviewboard.scmtools.git:GitTool',
+              'hg = reviewboard.scmtools.hg:HgTool',
+              'perforce = reviewboard.scmtools.perforce:PerforceTool',
+              'svn = reviewboard.scmtools.svn:SVNTool',
+          ],
       },
       cmdclass=cmdclasses,
       install_requires=[

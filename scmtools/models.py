@@ -29,6 +29,9 @@ class Tool(models.Model):
             raise ImproperlyConfigured, \
                 'Module "%s" does not define a "%s" SCM Tool' % (module, attr)
 
+    class Meta:
+        ordering = ("name",)
+
 
 class Repository(models.Model):
     name = models.CharField(max_length=64, unique=True)

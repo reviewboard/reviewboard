@@ -13,6 +13,7 @@ from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError
 
 
 class PerforceTool(SCMTool):
+    name = "Perforce"
     uses_atomic_revisions = True
     supports_authentication = True
 
