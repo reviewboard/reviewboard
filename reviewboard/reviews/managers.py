@@ -2,13 +2,27 @@ import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
+from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 
 from djblets.util.db import ConcurrencyManager
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
+
+
+class DefaultReviewerManager(Manager):
+    """A manager for DefaultReviewer models."""
+
+    def for_repository(self, repository):
+        """Returns all DefaultReviewers that represent a repository.
+
+        These include both DefaultReviewers that have no repositories
+        (for backwards-compatibility) and DefaultReviewers that are
+        associated with the given repository.
+        """
+        return self.filter(Q(repository__isnull=True) |
+                           Q(repository=repository))
 
 
 class ReviewRequestQuerySet(QuerySet):

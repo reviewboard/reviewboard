@@ -6,8 +6,11 @@ from django.test import TestCase
 
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
+from reviewboard.reviews.models import DefaultReviewer, \
+                                       ReviewRequest, \
+                                       ReviewRequestDraft, \
                                        Review
+from reviewboard.scmtools.models import Repository, Tool
 
 
 class DbQueryTests(TestCase):
@@ -582,6 +585,36 @@ class ConcurrencyTests(TestCase):
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
         self.assertEqual(comments[2].text, comment_text_3)
+
+
+class DefaultReviewerTests(TestCase):
+    fixtures = ['test_scmtools.json']
+
+    def testForRepository(self):
+        """Testing DefaultReviewer.objects.for_repository"""
+        tool = Tool.objects.get(name='CVS')
+
+        default_reviewer1 = DefaultReviewer(name="Test", file_regex=".*")
+        default_reviewer1.save()
+
+        default_reviewer2 = DefaultReviewer(name="Bar", file_regex=".*")
+        default_reviewer2.save()
+
+        repo1 = Repository(name='Test1', path='path1', tool=tool)
+        repo1.save()
+        default_reviewer1.repository.add(repo1)
+
+        repo2 = Repository(name='Test2', path='path2', tool=tool)
+        repo2.save()
+
+        default_reviewers = DefaultReviewer.objects.for_repository(repo1)
+        self.assert_(len(default_reviewers) == 2)
+        self.assert_(default_reviewer1 in default_reviewers)
+        self.assert_(default_reviewer2 in default_reviewers)
+
+        default_reviewers = DefaultReviewer.objects.for_repository(repo2)
+        self.assert_(len(default_reviewers) == 1)
+        self.assert_(default_reviewer2 in default_reviewers)
 
 
 class IfNeatNumberTagTests(TestCase):

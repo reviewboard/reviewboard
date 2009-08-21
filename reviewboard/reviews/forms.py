@@ -1,16 +1,45 @@
 import re
+import sre_constants
 
 from django import forms
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.models import ReviewRequest, \
+from reviewboard.reviews.models import DefaultReviewer, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
+
+
+class DefaultReviewerForm(forms.ModelForm):
+    name = forms.CharField(
+        label=_("Name"),
+        max_length=64,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
+    file_regex = forms.CharField(
+        label=_("File regular expression"),
+        max_length=256,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('File paths are matched against this regular expression '
+                    'to determine if these reviewers should be added.'))
+
+    def clean_file_regex(self):
+        """Validates that the specified regular expression is valid."""
+        file_regex = self.cleaned_data['file_regex']
+
+        try:
+            re.compile(file_regex)
+        except Exception, e:
+            raise forms.ValidationError(e)
+
+        return file_regex
+
+    class Meta:
+        model = DefaultReviewer
 
 
 class NewReviewRequestForm(forms.Form):

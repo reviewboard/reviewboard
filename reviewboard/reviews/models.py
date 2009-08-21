@@ -20,7 +20,9 @@ from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.signals import review_request_published, \
                                         reply_published, review_published
 from reviewboard.reviews.errors import PermissionError
-from reviewboard.reviews.managers import ReviewRequestManager, ReviewManager
+from reviewboard.reviews.managers import DefaultReviewerManager, \
+                                         ReviewRequestManager, \
+                                         ReviewManager
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 
@@ -108,11 +110,20 @@ class DefaultReviewer(models.Model):
     file_regex = models.CharField(_("file regex"), max_length=256,
         help_text=_("File paths are matched against this regular expression "
                     "to determine if these reviewers should be added."))
+    repository = models.ManyToManyField(
+        Repository,
+        blank=True,
+        verbose_name=_("repositories"),
+        help_text=_('The list of repositories to specifically match this '
+                    'default reviewer for. If left empty, this will match '
+                    'all repositories.'))
     groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
                                     blank=True)
     people = models.ManyToManyField(User, verbose_name=_("default people"),
                                     related_name="default_review_paths",
                                     blank=True)
+
+    objects = DefaultReviewerManager()
 
     def __unicode__(self):
         return self.name
@@ -314,7 +325,7 @@ class ReviewRequest(models.Model):
         # some fancy way.  Certainly the most superficial optimization that
         # could be made would be to cache the compiled regexes somewhere.
         files = diffset.files.all()
-        for default in DefaultReviewer.objects.all():
+        for default in DefaultReviewer.objects.for_repository(self.repository):
             regex = re.compile(default.file_regex)
 
             for filediff in files:
@@ -675,7 +686,7 @@ class ReviewRequestDraft(models.Model):
         # some fancy way.  Certainly the most superficial optimization that
         # could be made would be to cache the compiled regexes somewhere.
         files = self.diffset.files.all()
-        for default in DefaultReviewer.objects.all():
+        for default in DefaultReviewer.objects.for_repository(self.repository):
             try:
                 regex = re.compile(default.file_regex)
             except:
