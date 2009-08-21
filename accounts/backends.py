@@ -1,9 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 from djblets.util.misc import get_object_or_none
-import crypt
 import logging
-import nis
 import sys
 
 
@@ -13,6 +11,8 @@ class NISBackend:
     """
 
     def authenticate(self, username, password):
+        import crypt
+        import nis
         try:
             passwd = nis.match(username, 'passwd').split(':')
             original_crypted = passwd[1]
@@ -26,6 +26,7 @@ class NISBackend:
             pass
 
     def get_or_create_user(self, username, passwd=None):
+        import nis
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
