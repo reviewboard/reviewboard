@@ -22,8 +22,6 @@ def review_request_published_cb(sender, user, review_request, changedesc,
     if siteconfig.get("mail_send_review_mail"):
         mail_review_request(user, review_request, changedesc)
 
-review_request_published.connect(review_request_published_cb)
-
 
 def review_published_cb(sender, user, review, **kwargs):
     """
@@ -34,8 +32,6 @@ def review_published_cb(sender, user, review, **kwargs):
     siteconfig = SiteConfiguration.objects.get_current()
     if siteconfig.get("mail_send_review_mail"):
         mail_review(user, review)
-
-review_published.connect(review_published_cb)
 
 
 def reply_published_cb(sender, user, reply, **kwargs):
@@ -48,7 +44,11 @@ def reply_published_cb(sender, user, reply, **kwargs):
     if siteconfig.get("mail_send_review_mail"):
         mail_reply(user, reply)
 
-reply_published.connect(reply_published_cb)
+
+def connect_signals():
+    review_request_published.connect(review_request_published_cb)
+    review_published.connect(review_published_cb)
+    reply_published.connect(reply_published_cb)
 
 
 def get_email_address_for_user(u):

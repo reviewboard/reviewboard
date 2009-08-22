@@ -13,6 +13,7 @@ from djblets.util.misc import generate_cache_serials
 log = __import__("djblets.log", {}, {}, ["log"])
 
 from reviewboard import get_version_string
+from reviewboard import signals
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
@@ -112,3 +113,6 @@ urlpatterns += patterns('',
     # This must be last.
     (r'^iphone/', include('reviewboard.iphone.urls')),
 )
+
+
+signals.initializing.send(sender=None)
