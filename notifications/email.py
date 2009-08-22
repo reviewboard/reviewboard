@@ -74,8 +74,10 @@ def get_email_addresses_for_group(g):
 
 
 class SpiffyEmailMessage(EmailMessage):
-    def __init__(self, subject, body, from_email, to, cc, in_reply_to):
-        EmailMessage.__init__(self, subject, body, from_email, to)
+    def __init__(self, subject, body, from_email, to, cc, in_reply_to,
+                 headers={}):
+        EmailMessage.__init__(self, subject, body, from_email, to,
+                              headers=headers)
 
         self.cc = cc or []
 
@@ -137,10 +139,11 @@ def send_review_mail(user, review_request, subject, in_reply_to,
                 recipients.add(get_email_address_for_user(recipient))
 
     siteconfig = current_site.config.get()
+    domain_method = siteconfig.get("site_domain_method")
 
     context['user'] = user
     context['domain'] = current_site.domain
-    context['domain_method'] = siteconfig.get("site_domain_method")
+    context['domain_method'] = domain_method
     context['review_request'] = review_request
     body = render_to_string(template_name, context)
 
@@ -153,9 +156,16 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         to_field = recipients
         cc_field = set()
 
-    message = SpiffyEmailMessage(subject.strip(), body, from_email,
-                                 list(to_field), list(cc_field), in_reply_to)
+    base_url = '%s://%s' % (domain_method, current_site.domain)
 
+    headers = {
+        'X-ReviewBoard-URL': base_url,
+        'X-ReviewRequest-URL': base_url + review_request.get_absolute_url(),
+    }
+
+    message = SpiffyEmailMessage(subject.strip(), body, from_email,
+                                 list(to_field), list(cc_field),
+                                 in_reply_to, headers)
     message.send()
 
     return message.message_id
