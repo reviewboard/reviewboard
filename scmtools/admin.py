@@ -20,6 +20,7 @@ class RepositoryAdmin(admin.ModelAdmin):
                 'hosting_project_name',
                 'path',
                 'mirror_path',
+                'raw_file_url',
                 'username',
                 'password',
             ),

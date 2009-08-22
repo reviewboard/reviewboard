@@ -38,6 +38,7 @@ table.sidebyside.newfile col.left {
 
 table.sidebyside col.line {
   border-right: 1px #C0C0C0 solid;
+  width: 1%; /* Make sure this doesn't stretch if the header stretches. */
 }
 
 table.sidebyside col.right {

@@ -8,6 +8,8 @@ class Tool(models.Model):
 
     supports_authentication = property(
         lambda x: x.get_scmtool_class().supports_authentication)
+    supports_raw_file_urls = property(
+        lambda x: x.get_scmtool_class().supports_raw_file_urls)
 
     def __unicode__(self):
         return self.name
@@ -37,6 +39,7 @@ class Repository(models.Model):
     name = models.CharField(max_length=64, unique=True)
     path = models.CharField(max_length=128, unique=True)
     mirror_path = models.CharField(max_length=128, blank=True)
+    raw_file_url = models.CharField(max_length=128, blank=True)
     username = models.CharField(max_length=32, blank=True)
     password = models.CharField(max_length=128, blank=True)
     tool = models.ForeignKey(Tool, related_name="repositories")

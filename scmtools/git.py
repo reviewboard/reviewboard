@@ -1,6 +1,14 @@
 import os
 import re
 import subprocess
+import urllib2
+
+# Python 2.5+ provides urllib2.quote, whereas Python 2.4 only
+# provides urllib.quote.
+try:
+    from urllib2 import quote as urllib_quote
+except ImportError:
+    from urllib import quote as urllib_quote
 
 from djblets.util.filesystem import is_exe_in_path
 
@@ -16,32 +24,24 @@ class GitTool(SCMTool):
     you do not have a bare repositry).
     """
     name = "Git"
+    supports_raw_file_urls = True
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
-        self.client = GitClient(repository.path)
-
-    def _resolve_head(self, revision, path):
-        if revision == HEAD:
-            if path == "":
-                raise SCMError("path must be supplied if revision is %s" % HEAD)
-            return "HEAD:%s" % path
-        else:
-            return revision
+        self.client = GitClient(repository.path, repository.raw_file_url)
 
     def get_file(self, path, revision=HEAD):
         if revision == PRE_CREATION:
             return ""
 
-        return self.client.cat_file(self._resolve_head(revision, path))
+        return self.client.get_file(path, revision)
 
     def file_exists(self, path, revision=HEAD):
         if revision == PRE_CREATION:
             return False
 
         try:
-            type = self.client.cat_file(self._resolve_head(revision, path), option="-t")
-            return type and type.strip() == "blob"
+            return self.client.get_file_exists(path, revision)
         except FileNotFoundError:
             return False
 
@@ -157,28 +157,68 @@ class GitDiffParser(DiffParser):
 
 
 class GitClient:
-    def __init__(self, path):
+    def __init__(self, path, raw_file_url):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError
 
         self.path = path
-        p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.path, 'config',
-                 'core.repositoryformatversion'],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
-        contents = p.stdout.read()
-        errmsg = p.stderr.read()
-        failure = p.wait()
+        self.raw_file_url = raw_file_url
 
-        if failure:
-            raise ImportError
+        if not raw_file_url:
+            p = subprocess.Popen(
+                ['git', '--git-dir=%s' % self.path, 'config',
+                     'core.repositoryformatversion'],
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                close_fds=(os.name != 'nt')
+            )
+            contents = p.stdout.read()
+            errmsg = p.stderr.read()
+            failure = p.wait()
 
-    def cat_file(self, commit, option="blob"):
+            if failure:
+                # TODO: Provide a better error if we're using a git://
+                #       or equivalent URL.
+                raise ImportError
+
+    def get_file(self, path, revision):
+        if self.raw_file_url:
+            # First, try to grab the file remotely.
+            try:
+                url = self._build_raw_url(path, revision)
+                return urllib2.urlopen(url).read()
+            except Exception, e:
+                logging.error("Git: Error fetching file from %s: %s" % (url, e))
+                raise SCMError("Error fetching file from %s: %s" % (url, e))
+        else:
+            return self._cat_file(path, revision, "blob")
+
+    def get_file_exists(self, path, revision):
+        if self.raw_file_url:
+            # First, try to grab the file remotely.
+            try:
+                url = self._build_raw_url(path, revision)
+                return urllib2.urlopen(url).geturl()
+            except urllib2.HTTPError, e:
+                if e.code != 404:
+                    logging.error("Git: HTTP error code %d when fetching "
+                                  "file from %s: %s" % (url, e))
+            except Exception, e:
+                logging.error("Git: Error fetching file from %s: %s" % (url, e))
+
+            return False
+        else:
+            return self._cat_file(path, revision, "-t")
+
+    def _build_raw_url(self, path, revision):
+        url = self.raw_file_url
+        url = url.replace("<revision>", revision)
+        url = url.replace("<filename>", urllib_quote(path))
+        return url
+
+    def _cat_file(self, path, revision, option):
         """
         Call git-cat-file(1) to get content or type information for a
         repository object.
@@ -189,9 +229,10 @@ class GitClient:
         Otherwise, "option" can be used to pass a switch to git-cat-file,
         e.g. to test or existence or get the type of "commit".
         """
+        commit = self._resolve_head(revision, path)
+
         p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.path, 'cat-file',
-                 '%s' % option, '%s' % commit],
+            ['git', '--git-dir=%s' % self.path, 'cat-file', option, commit],
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             close_fds=(os.name != 'nt')
@@ -206,4 +247,12 @@ class GitClient:
             else:
                 raise SCMError(errmsg)
 
-        return contents
+        return contents and contents.strip() == "blob"
+
+    def _resolve_head(self, revision, path):
+        if revision == HEAD:
+            if path == "":
+                raise SCMError("path must be supplied if revision is %s" % HEAD)
+            return "HEAD:%s" % path
+        else:
+            return str(revision)

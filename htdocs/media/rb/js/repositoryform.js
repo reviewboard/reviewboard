@@ -11,7 +11,7 @@ function forEachField(fields, wholeRows, func) {
     }
 }
 
-function updateFormDisplay(id, fields) {
+function updateFormDisplay(id, fields, excludeFields) {
     var type = $("#id_" + id)[0].value;
 
     for (var i in fields[prevTypes[id]]) {
@@ -20,6 +20,12 @@ function updateFormDisplay(id, fields) {
 
     for (var i in fields[type]) {
         $("." + fields[type][i]).show();
+    }
+
+    if (excludeFields) {
+        for (var i in excludeFields) {
+            $("." + excludeFields[i]).hide();
+        }
     }
 
     prevTypes[id] = type;
@@ -50,13 +56,14 @@ function updateRepositoryType() {
         }
     });
 
-    updateFormDisplay("tool", TOOLS_FIELDS);
+    updateFormDisplay("tool", TOOLS_FIELDS,
+                      HOSTING_SERVICE_HIDDEN_FIELDS[hostingType]);
 }
 
 $(document).ready(function() {
     prevTypes['bug_tracker_type'] = "none";
     prevTypes['hosting_type'] = "custom";
-    prevTypes['tool'] = null;
+    prevTypes['tool'] = "none";
 
     $("option", "#id_tool").each(function() {
         origRepoTypes.push({value: $(this).val(), text: $(this).text()});
@@ -132,7 +139,8 @@ $(document).ready(function() {
 
     $("#id_tool")
         .change(function() {
-            updateFormDisplay("tool", TOOLS_FIELDS);
+            updateFormDisplay("tool", TOOLS_FIELDS,
+                HOSTING_SERVICE_HIDDEN_FIELDS[hostingTypeEl[0].value]);
         })
         .triggerHandler("change");
 

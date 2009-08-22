@@ -30,6 +30,23 @@ class RepositoryForm(forms.ModelForm):
                 },
             },
         }),
+        ('github', {
+            'label': _('GitHub'),
+            'fields': ['hosting_project_name', 'hosting_owner'],
+            'hidden_fields': ['raw_file_url'],
+            'tools': {
+                'Git': {
+                    'path': 'git://github.com/%(hosting_owner)s/'
+                            '%(hosting_project_name)s.git',
+                    'mirror_path': 'git@github.com:%(hosting_owner)s/'
+                                   '%(hosting_project_name)s.git',
+                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
+                                    '%(hosting_owner)s/'
+                                    '%(hosting_project_name)s/'
+                                    '<revision>'
+                },
+            },
+        }),
         ('googlecode', {
             'label': _('Google Code'),
             'fields': ['hosting_project_name'],
@@ -91,8 +108,6 @@ class RepositoryForm(forms.ModelForm):
             'label': _('Custom'),
             'fields': ['path', 'mirror_path'],
         }),
-
-        # TODO: Add GitHub when we have remote Git support.
     ])
 
     BUG_TRACKER_INFO = SortedDict([
@@ -111,6 +126,12 @@ class RepositoryForm(forms.ModelForm):
             'label': 'Bugzilla',
             'fields': ['bug_tracker_base_url'],
             'format': '%(bug_tracker_base_url)s/show_bug.cgi?id=%%s',
+        }),
+        ('github', {
+            'label': 'GitHub',
+            'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
+            'format': 'http://github.com/%(bug_tracker_owner)s/'
+                      '%(bug_tracker_project_name)s/issues#issue/%%s',
         }),
         ('googlecode', {
             'label': 'Google Code',
@@ -195,6 +216,18 @@ class RepositoryForm(forms.ModelForm):
         max_length=128,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}))
+
+    raw_file_url = forms.CharField(
+        label=_("Raw file URL mask"),
+        max_length=128,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_("A URL mask used to check out a particular revision of a "
+                    "file using HTTP. This is needed for repository types "
+                    "that can't access remote files natively. "
+                    "Use <tt>&lt;revision&gt;</tt> and "
+                    "<tt>&lt;filename&gt;</tt> in the URL in place of the "
+                    "revision and filename parts of the path."))
 
     tool = forms.ModelChoiceField(
         label=_("Repository type"),
@@ -286,18 +319,25 @@ class RepositoryForm(forms.ModelForm):
                                field_info['path'],
                                info['fields'])
 
-            if is_path_match:
-                is_mirror_path_match = \
-                    self.match_url(self.instance.mirror_path,
-                                   field_info['mirror_path'], [])[0]
+            if not is_path_match:
+                continue
 
-                if is_mirror_path_match:
-                    self.fields['hosting_type'].initial = service_id
+            if not self.match_url(self.instance.mirror_path,
+                                  field_info['mirror_path'], [])[0]:
+                continue
 
-                    for key, value in field_data.iteritems():
-                        self.fields[key].initial = value
+            if ('raw_file_url' in field_info and
+                not self.match_url(self.instance.raw_file_url,
+                                   field_info['raw_file_url'], [])[0]):
+                continue
 
-                    break
+            # It all matched.
+            self.fields['hosting_type'].initial = service_id
+
+            for key, value in field_data.iteritems():
+                self.fields[key].initial = value
+
+            break
 
     def populate_bug_tracker_fields(self):
         if not self.instance or not self.instance.bug_tracker:

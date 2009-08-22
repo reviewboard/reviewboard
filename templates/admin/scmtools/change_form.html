@@ -26,10 +26,25 @@
 {% endfor %}
   }{% endspaceless %}
 
+  var HOSTING_SERVICE_HIDDEN_FIELDS = { {% spaceless %}
+{% for id, info in adminform.form.HOSTING_SERVICE_INFO.items %}
+      "{{id}}": [ {% spaceless %}
+{%  for field in info.hidden_fields %}
+          "{{field}}"{% if not forloop.last %},{% endif %}
+{%  endfor %}
+      {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+{% endfor %}
+  }{% endspaceless %}
+
   var TOOLS_FIELDS = { {% spaceless %}
-      "none": [ "username", "password" ],
+      "none": [ "raw_file_url", "username", "password" ],
 {% for tool in adminform.form.tool.field.queryset %}
       "{{tool.id}}": [ {% spaceless %}
+{%  if tool.supports_raw_file_urls %}
+           "raw_file_url"
+{#   This is kinda ugly. Need a template tag to simplify it. #}
+{%   if tool.supports_authentication %},{%   endif %}
+{%  endif %}
 {%  if tool.supports_authentication %}
            "username", "password"
 {%  endif %}

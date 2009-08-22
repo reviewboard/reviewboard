@@ -41,6 +41,7 @@ class SCMTool:
     uses_atomic_revisions = False
     diff_uses_changeset_ids = False
     supports_authentication = False
+    supports_raw_file_urls = False
     name = None
 
     def __init__(self, repository):
