@@ -921,14 +921,19 @@ class ScreenshotComment(models.Model):
         else:
             return self.replies.filter(review__public=True)
 
+    def get_image_url(self):
+        """
+        Returns the URL for the thumbnail, creating it if necessary.
+        """
+        return crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
+
     def image(self):
         """
         Generates the cropped part of the screenshot referenced by this
         comment and returns the HTML markup embedding it.
         """
-        url = crop_image(self.screenshot.image, self.x, self.y, self.w, self.h)
         return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
-            (url, self.w, self.h, escape(self.text))
+            (self.get_image_url(), self.w, self.h, escape(self.text))
 
     def get_review_url(self):
         return "%s#scomment%d" % \

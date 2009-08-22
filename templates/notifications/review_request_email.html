@@ -1,0 +1,86 @@
+{% extends "notifications/email_base.html" %}
+{% load reviewtags %}
+{% load djblets_email %}
+{% load djblets_utils %}
+
+{% block content %}
+<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="background-image: url('{{domain_method}}://{{domain}}{{MEDIA_URL}}rb/images/review_request_box_top_bg.png'); background-position: left top; background-repeat: repeat-x; border: 1px black solid;">
+ <tr>
+  <td>
+
+<div>Review request for {% reviewer_list review_request %}.</div>
+<div>By {{review_request.submitter|realname}}.</div>
+
+{% if review_request.email_message_id %}
+<p style="color: grey;"><i>Updated {{review_request.time_emailed}}</i></p>
+{% endif %}
+
+{% if change_text %}
+<h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Changes</h1>
+<table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0;">{{change_text}}</pre>
+  </td>
+ </tr>
+</table>
+{% endif %}
+
+<h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Description {% if changes %}{% if changes.summary or changes.description %} (updated){% endif %}{% endif %}</h1>
+<table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0;">{{review_request.description}}</pre>
+  </td>
+ </tr>
+</table>
+
+{% ifnotequal review_request.testing_done "" %}
+<h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Testing {% if changes and changes.testing_done %}(updated){% endif %}</h1>
+<table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
+ <tr>
+  <td>
+   <pre style="margin: 0; padding: 0;">{{review_request.testing_done}}</pre>
+  </td>
+ </tr>
+</table>
+{% endifnotequal %}
+
+{% ifnotequal review_request.bugs_closed "" %}
+<div style="margin-top: 1.5em;">
+ <b style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </b>
+{%  ifequal review_request.repository.bug_tracker "" %}
+{{review_request.get_bug_list|join:", "}}
+{%  else %}
+{%   for bug in review_request.get_bug_list %}
+ <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
+{%   endfor %}
+{%  endifequal %}
+</div>
+{% endifnotequal %}
+
+<h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Diffs</b> {% if changes and changes.diff %}(updated){% endif %}</h1>
+<ul style="margin-left: 3em; padding-left: 0;">
+{% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
+ <li>{{filediff.source_file}} <span style="color: grey">({{filediff.source_revision}})</span></li>
+{% endfor %}
+</ul>
+
+<p><a href="{{domain_method}}://{{domain}}{% url view_diff review_request.id %}" style="margin-left: 3em;">View Diff</a></p>
+
+
+{% if review_request.screenshots.count %}
+<h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Screenshots {% if changes and changes.screenshots %}(updated){% endif %}</h1>
+
+<div>
+{% for screenshot in review_request.screenshots.all %}
+ <a href="{{domain_method}}://{{domain}}{{screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{screenshot.get_thumbnail_url}}" style="border: 1px black solid;" alt="{{screenshot.caption}}" /></a>
+{% endfor %}
+</div>
+{% endif %}
+
+  </td>
+ </tr>
+</table>
+
+{% endblock content %}

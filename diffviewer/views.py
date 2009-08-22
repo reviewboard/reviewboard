@@ -240,7 +240,12 @@ def exception_traceback_string(request, e, template_name, extra_context={}):
     if e.__class__ is not UserVisibleError:
         context['trace'] = traceback.format_exc()
 
-    return render_to_string(template_name, RequestContext(request, context))
+    if not request:
+        request_context = RequestContext(request, context)
+    else:
+        request_context = context
+
+    return render_to_string(template_name, request_context)
 
 
 def exception_traceback(request, e, template_name, extra_context={}):

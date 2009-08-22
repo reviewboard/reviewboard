@@ -1,0 +1,49 @@
+{% extends "notifications/email_base.html" %}
+{% load djblets_email %}
+{% load djblets_utils %}
+
+{% block content %}
+{%  if review.ship_it %}
+ <p>Ship it!</p>
+{%  endif %}
+
+{% if review.body_top %}
+ <pre>{{review.body_top}}</pre>
+ <br />
+{% endif %}
+
+{% for comment in review.screenshot_comments.all %}
+<table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
+ <tr>
+  <td><a href="{{comment.screenshot.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.screenshot.image.name|basename}}</a></td>
+ </tr>
+ <tr>
+  <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
+ </tr>
+</table>
+<p style="margin-left: 2em">{{comment.text}}</p>
+<br />
+{% endfor %}
+
+{% for entry in comment_entries %}
+<div>
+{{entry.html|safe}}
+<p style="margin-left: 2em">{{entry.comment.text}}</p>
+</div>
+<br />
+{% endfor %}
+
+{% if review.body_bottom %}
+ <pre>{{review.body_bottom}}</pre>
+{% endif %}
+<p>- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}</p>
+{% endblock %}
+
+{% block footer %}
+<br />
+<p>On {{review_request.time_emailed|date:"F jS, Y, P"}}, {{review_request.submitter|user_displayname}} wrote:</p>
+
+{%  with 1 as embedded %}
+{%   include "notifications/review_request_email.html" %}
+{%  endwith %}
+{% endblock %}

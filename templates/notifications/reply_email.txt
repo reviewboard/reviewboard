@@ -2,10 +2,10 @@
 
 {% condense %}
 {% ifnotequal reply.body_top "" %}
-> On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 {{review.body_top|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_top "" %}{% ifnotequal reply_review reply %}
 > 
-> {% ifnotequal reply_review.user.get_full_name "" %}{{reply_review.user.get_full_name}}{% else %}{{reply_review.user.username}}{% endifnotequal %} wrote:
+> {{reply_review.user|user_displayname}} wrote:
 {{reply_review.body_top|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
 
 {{reply.body_top}}
@@ -13,13 +13,13 @@
 
 
 {% for comment in reply.screenshot_comments.all %}
-> On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 > > Screenshot: {{ comment.screenshot.caption }}
 > > <{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
 > >
 {{ comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
-> {% ifnotequal reply_comment.review_set.get.user.get_full_name "" %}{{reply_comment.review_set.get.user.get_full_name}}{% else %}{{reply_comment.review_set.get.user.username}}{% endifnotequal %} wrote:
+> {{reply_comment.review.get.user|user_displayname}} wrote:
 {{reply_comment.text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
 
 {{comment.text}}
@@ -27,13 +27,13 @@
 
 {% endfor %}
 {% for comment in reply.comments.all %}
-> On {{review.time_emailed}}, {% ifnotequal review.user.get_full_name "" %}{{review.user.get_full_name}}{% else %}{{review.user.username}}{% endifnotequal %} wrote:
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 > > {{comment.filediff.source_file}}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
 > > <{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
 > >
 {{comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
-> {% ifnotequal reply_comment.review_set.get.user.get_full_name "" %}{{reply_comment.review_set.get.user.get_full_name}}{% else %}{{reply_comment.review_set.get.user.username}}{% endifnotequal %} wrote:
+> {{reply_comment.review.get.user|user_displayname}} wrote:
 {{reply_comment.text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
 
 {{comment.text}}
@@ -42,10 +42,10 @@
 {% endfor %}
 
 {% ifnotequal reply.body_bottom "" %}
-On {{review.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+On {{review.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
 {{review.body_bottom|quote_text:2}}{% for reply_review in review.public_replies %}{% ifnotequal reply_review.body_bottom "" %}{% ifnotequal reply_review reply %}
 > 
-> {% ifnotequal reply_review.user.get_full_name "" %}{{reply_review.user.get_full_name}}{% else %}{{reply_review.user.username}}{% endifnotequal %} wrote:
+> {{reply_review.user|user_displayname}} wrote:
 {{reply_review.body_bottom|indent|quote_text}}{% endifnotequal %}{% endifnotequal %}{% endfor %}
 
 {{reply.body_bottom}}
@@ -61,6 +61,6 @@ This is an automatically generated e-mail. To reply, visit:
 -----------------------------------------------------------
 
 
-On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
-{% quoted_email "reviews/review_request_email.txt" %}
+On {{review_request.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
+{% quoted_email "notifications/review_request_email.txt" %}
 {% endautoescape %}

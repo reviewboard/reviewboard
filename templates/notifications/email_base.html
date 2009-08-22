@@ -1,0 +1,21 @@
+{% if not embedded %}
+<html>
+ <body>
+  <div style="font-family: Verdana, Arial, Helvetica, Sans-Serif;">
+   <table bgcolor="#f9f3c9" width="100%" cellpadding="8" style="border: 1px #c9c399 solid;">
+    <tr>
+     <td>
+      This is an automatically generated e-mail. To reply, visit:
+      <a href="{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}">{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}</a>
+     </td>
+    </tr>
+   </table>
+   <br />
+{% endif %}
+{% block content %}{% endblock %}
+{% block footer %}{% endblock %}
+{% if not embedded %}
+  </div>
+ </body>
+</html>
+{% endif %}

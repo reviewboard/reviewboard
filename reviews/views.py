@@ -493,12 +493,56 @@ def raw_diff(request, review_request_id, revision=None):
     return resp
 
 
-@check_login_required
-def comment_diff_fragments(
-        request, review_request_id, comment_ids,
-        template_name='reviews/load_diff_comment_fragments.js',
+def build_diff_comment_fragments(
+        comments, context,
         comment_template_name='reviews/diff_comment_fragment.html',
         error_template_name='diffviewer/diff_fragment_error.html'):
+
+    comment_entries = []
+    had_error = False
+
+    for comment in comments:
+        try:
+            content = render_to_string(comment_template_name, {
+                'comment': comment,
+                'chunks': list(get_file_chunks_in_range(context,
+                                                        comment.filediff,
+                                                        comment.interfilediff,
+                                                        comment.first_line,
+                                                        comment.num_lines))
+            })
+        except Exception, e:
+            content = exception_traceback_string(None, e,
+                                                 error_template_name, {
+                'comment': comment,
+                'file': {
+                    'depot_filename': comment.filediff.source_file,
+                    'index': None,
+                    'filediff': comment.filediff,
+                },
+            })
+
+            # It's bad that we failed, and we'll return a 500, but we'll
+            # still return content for anything we have. This will prevent any
+            # caching.
+            had_error = True
+
+        comment_entries.append({
+            'comment': comment,
+            'html': content,
+        })
+
+    return had_error, comment_entries
+
+
+@check_login_required
+def comment_diff_fragments(
+    request,
+    review_request_id,
+    comment_ids,
+    template_name='reviews/load_diff_comment_fragments.js',
+    comment_template_name='reviews/diff_comment_fragment.html',
+    error_template_name='diffviewer/diff_fragment_error.html'):
     """
     Returns the fragment representing the parts of a diff referenced by the
     specified list of comment IDs. This is used to allow batch lazy-loading
@@ -518,39 +562,11 @@ def comment_diff_fragments(
         'queue_name': request.GET.get('queue'),
     })
 
-    had_error = False
-
-    for comment in comments:
-        try:
-            content = render_to_string(comment_template_name,
-                                       RequestContext(request, {
-                'comment': comment,
-                'chunks': list(get_file_chunks_in_range(context,
-                                                        comment.filediff,
-                                                        comment.interfilediff,
-                                                        comment.first_line,
-                                                        comment.num_lines))
-            }))
-        except Exception, e:
-            content = exception_traceback_string(request, e,
-                                                 error_template_name, {
-                'comment': comment,
-                'file': {
-                    'depot_filename': comment.filediff.source_file,
-                    'index': None,
-                    'filediff': comment.filediff,
-                },
-            })
-
-            # It's bad that we failed, and we'll return a 500, but we'll
-            # still return content for anything we have. This will prevent any
-            # caching.
-            had_error = True
-
-        context['comment_entries'].append({
-            'comment': comment,
-            'html': content,
-        })
+    had_error, context['comment_entries'] = \
+        build_diff_comment_fragments(comments,
+                                     context,
+                                     comment_template_name,
+                                     error_template_name)
 
     page_content = render_to_string(template_name, context)
 
@@ -597,8 +613,11 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
 
 @check_login_required
 def preview_review_request_email(
-        request, review_request_id,
-        template_name='reviews/review_request_email.txt'):
+    request,
+    review_request_id,
+    format,
+    text_template_name='notifications/review_request_email.txt',
+    html_template_name='notifications/review_request_email.html'):
     """
     Previews the e-mail message that would be sent for an initial
     review request or an update.
@@ -608,6 +627,15 @@ def preview_review_request_email(
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     siteconfig = SiteConfiguration.objects.get_current()
 
+    if format == 'text':
+        template_name = text_template_name
+        mimetype = 'text/plain'
+    elif format == 'html':
+        template_name = html_template_name
+        mimetype = 'text/html'
+    else:
+        raise Http404
+
     return HttpResponse(render_to_string(template_name,
         RequestContext(request, {
             'review_request': review_request,
@@ -615,12 +643,14 @@ def preview_review_request_email(
             'domain': Site.objects.get_current().domain,
             'domain_method': siteconfig.get("site_domain_method"),
         }),
-    ), mimetype='text/plain')
+    ), mimetype=mimetype)
 
 
 @check_login_required
-def preview_review_email(request, review_request_id, review_id,
-                         template_name='reviews/review_email.txt'):
+def preview_review_email(request, review_request_id, review_id, format,
+                         text_template_name='notifications/review_email.txt',
+                         html_template_name='notifications/review_email.html',
+                         extra_context={}):
     """
     Previews the e-mail message that would be sent for a review of a
     review request.
@@ -635,20 +665,39 @@ def preview_review_email(request, review_request_id, review_id,
     review.ordered_comments = \
         review.comments.order_by('filediff', 'first_line')
 
-    return HttpResponse(render_to_string(template_name,
-        RequestContext(request, {
-            'review_request': review_request,
-            'review': review,
-            'user': request.user,
-            'domain': Site.objects.get_current().domain,
-            'domain_method': siteconfig.get("site_domain_method"),
-        }),
-    ), mimetype='text/plain')
+    if format == 'text':
+        template_name = text_template_name
+        mimetype = 'text/plain'
+    elif format == 'html':
+        template_name = html_template_name
+        mimetype = 'text/html'
+    else:
+        raise Http404
+
+    context = {
+        'review_request': review_request,
+        'review': review,
+        'user': request.user,
+        'domain': Site.objects.get_current().domain,
+        'domain_method': siteconfig.get("site_domain_method"),
+    }
+    context.update(extra_context)
+
+    has_error, context['comment_entries'] = \
+        build_diff_comment_fragments(
+            review.ordered_comments, context,
+            "notifications/email_diff_comment_fragment.html")
+
+    return HttpResponse(
+        render_to_string(template_name, RequestContext(request, context)),
+        mimetype=mimetype)
 
 
 @check_login_required
 def preview_reply_email(request, review_request_id, review_id, reply_id,
-                        template_name='reviews/reply_email.txt'):
+                        format,
+                        text_template_name='notifications/reply_email.txt',
+                        html_template_name='notifications/reply_email.html'):
     """
     Previews the e-mail message that would be sent for a reply to a
     review of a review request.
@@ -661,16 +710,35 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
     siteconfig = SiteConfiguration.objects.get_current()
 
-    return HttpResponse(render_to_string(template_name,
-        RequestContext(request, {
-            'review_request': review_request,
-            'review': review,
-            'reply': reply,
-            'user': request.user,
-            'domain': Site.objects.get_current().domain,
-            'domain_method': siteconfig.get("site_domain_method"),
-        }),
-    ), mimetype='text/plain')
+    reply.ordered_comments = \
+        reply.comments.order_by('filediff', 'first_line')
+
+    if format == 'text':
+        template_name = text_template_name
+        mimetype = 'text/plain'
+    elif format == 'html':
+        template_name = html_template_name
+        mimetype = 'text/html'
+    else:
+        raise Http404
+
+    context = {
+        'review_request': review_request,
+        'review': review,
+        'reply': reply,
+        'user': request.user,
+        'domain': Site.objects.get_current().domain,
+        'domain_method': siteconfig.get("site_domain_method"),
+    }
+
+    has_error, context['comment_entries'] = \
+        build_diff_comment_fragments(
+            reply.ordered_comments, context,
+            "notifications/email_diff_comment_fragment.html")
+
+    return HttpResponse(
+        render_to_string(template_name, RequestContext(request, context)),
+        mimetype=mimetype)
 
 
 @login_required

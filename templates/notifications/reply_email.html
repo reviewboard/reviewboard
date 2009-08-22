@@ -1,0 +1,121 @@
+{% extends "notifications/email_base.html" %}
+{% load djblets_email %}
+{% load djblets_utils %}
+
+{% block content %}
+
+{% if reply.body_top %}
+{%  if review.body_top %}
+<blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+  <pre>{{review.body_top}}</pre>
+ </blockquote>
+{%  endif %}
+{%  for reply_review in review.public_replies %}
+{%   if reply_review.body_top %}
+{%    ifnotequal reply_review reply %}
+ <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+  <pre>{{reply_review.body_top}}</pre>
+ </blockquote>
+{%    endifnotequal %}
+{%   endif %}
+{%  endfor %}
+{%  if review.body_top %}
+</blockquote>
+{%  endif %}
+<pre>{{reply.body_top}}</pre>
+<br />
+{% endif %}
+
+{% for comment in reply.screenshot_comments.all %}
+<blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
+  {# Prevents a display glitch on the table in Outlook 2007 #}
+  <br style="display: none;" />
+
+  <table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
+   <tr>
+    <td><a href="{{comment.screenshot.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.screenshot.image.name|basename}}</a></td>
+   </tr>
+   <tr>
+    <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
+   </tr>
+  </table>
+  <p>{{comment.reply_to.text}}</p>
+ </blockquote>
+{%  for reply_comment in comment.reply_to.public_replies %}
+{%   if reply_comment.text %}
+{%    ifnotequal reply_comment comment %}
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
+  <pre>{{reply_comment.text}}</pre>
+ </blockquote>
+{%    endifnotequal %}
+{%   endif %}
+{%  endfor %}
+</blockquote>
+<p style="margin-left: 1em">{{comment.text}}</p>
+<br />
+{% endfor %}
+
+{% for entry in comment_entries %}
+<blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+  {{entry.html|safe}}
+  <p>{{entry.comment.reply_to.text}}</p>
+ </blockquote>
+{%  for reply_comment in entry.comment.reply_to.public_replies %}
+{%   if reply_comment.text %}
+{%    ifnotequal reply_comment entry.comment %}
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+  <pre>{{reply_comment.text}}</pre>
+ </blockquote>
+{%    endifnotequal %}
+{%   endif %}
+{%  endfor %}
+</blockquote>
+<p style="margin-left: 1em">{{entry.comment.text}}</p>
+<br />
+{% endfor %}
+
+{% if reply.body_bottom %}
+{%  if review.body_bottom %}
+<blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+  <pre>{{review.body_bottom}}</pre>
+ </blockquote>
+{%  endif %}
+{%  for reply_review in review.public_replies %}
+{%   if reply_review.body_bottom %}
+{%    ifnotequal reply_review reply %}
+ <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+  <pre>{{reply_review.body_bottom}}</pre>
+ </blockquote>
+{%    endifnotequal %}
+{%   endif %}
+{%  endfor %}
+{%  if review.body_bottom %}
+</blockquote>
+{%  endif %}
+<pre>{{reply.body_bottom}}</pre>
+<br />
+{% endif %}
+
+<p>- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}</p>
+{% endblock %}
+
+{% block footer %}
+<br />
+<p>On {{review_request.time_emailed|date:"F jS, Y, P"}}, {{review_request.submitter|user_displayname}} wrote:</p>
+
+{%  with 1 as embedded %}
+{%   include "notifications/review_request_email.html" %}
+{%  endwith %}
+{% endblock %}

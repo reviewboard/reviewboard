@@ -49,11 +49,11 @@ urlpatterns = patterns('reviewboard.reviews.views',
      'delete_screenshot'),
 
     # E-mail previews
-    (r'^(?P<review_request_id>[0-9]+)/preview-email/$',
+    (r'^(?P<review_request_id>[0-9]+)/preview-email/(?P<format>(text|html))/$',
      'preview_review_request_email'),
-    (r'^(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/preview-email/$',
+    (r'^(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/preview-email/(?P<format>(text|html))/$',
      'preview_review_email'),
-    (r'^(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/(?P<reply_id>[0-9]+)/preview-email/$',
+    (r'^(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/(?P<reply_id>[0-9]+)/preview-email/(?P<format>(text|html))/$',
      'preview_reply_email'),
 
     # Search

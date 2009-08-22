@@ -1,0 +1,47 @@
+{% load djblets_utils %}
+{% load reviewtags %}
+{% load difftags %}
+<table width="100%" border="0" bgcolor="white" style="border: 1px solid #C0C0C0; border-collapse: collapse; margin: 2px padding: 2px;">
+ <thead>
+  <tr>
+   <th colspan="4" bgcolor="#F0F0F0" style="border-bottom: 1px solid #C0C0C0; font-size: 9pt; padding: 4px 8px; text-align: left;">
+    <a href="{{comment.get_absolute_url}}" style="color: black; font-weight: bold; text-decoration: underline;">{{comment.filediff.dest_file}}</a>
+    <span style="font-weight: normal;">
+{% if comment.interfilediff %}
+     (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
+{% else %}
+     (Diff revision {{comment.filediff.diffset.revision}})
+{% endif %}
+    </span>
+   </th>
+  </tr>
+ </thead>
+{% for chunk in chunks %}
+{% ifequal chunk.change "replace" %}
+ {% definevar "thcolor" %}#e9eaa8{% enddefinevar %}
+ {% definevar "bgcolor" %}#fdfebc{% enddefinevar %}
+{% endifequal %}
+{% ifequal chunk.change "insert" %}
+ {% definevar "thcolor" %}#b1ebb0{% enddefinevar %}
+ {% definevar "bgcolor" %}#c5ffc4{% enddefinevar %}
+{% endifequal %}
+{% ifequal chunk.change "delete" %}
+ {% definevar "thcolor" %}#ebb1ba{% enddefinevar %}
+ {% definevar "bgcolor" %}#ffc5ce{% enddefinevar %}
+{% endifequal %}
+{% ifequal chunk.change "equal" %}
+ {% definevar "thcolor" %}#f0f0f0{% enddefinevar %}
+ {% definevar "bgcolor" %}#ffffff{% enddefinevar %}
+{% endifequal %}
+ <tbody>
+{% for line in chunk.lines %}
+  <tr>
+    <th bgcolor="{{thcolor}}" style="border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.1}}</font></th>
+    <td bgcolor="{{bgcolor}}" width="50%"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
+    <th bgcolor="{{thcolor}}" style="border-left: 1px solid #C0C0C0; border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.4}}</font></th>
+    <td bgcolor="{{bgcolor}}" width="50%"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{line.5|highlightregion:line.6|showextrawhitespace}}</pre></td>
+  </tr>
+{% endfor %}
+ </tbody>
+{% endfor %}{# chunks #}
+</table>

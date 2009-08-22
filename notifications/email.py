@@ -2,12 +2,13 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.reviews.signals import review_request_published, \
                                         review_published, reply_published
+from reviewboard.reviews.views import build_diff_comment_fragments
 
 
 def review_request_published_cb(sender, user, review_request, changedesc,
@@ -73,16 +74,18 @@ def get_email_addresses_for_group(g):
                 for u in g.users.filter(is_active=True)]
 
 
-class SpiffyEmailMessage(EmailMessage):
-    def __init__(self, subject, body, from_email, to, cc, in_reply_to,
-                 headers={}):
-        EmailMessage.__init__(self, subject, body, from_email, to,
-                              headers=headers)
+class SpiffyEmailMessage(EmailMultiAlternatives):
+    def __init__(self, subject, text_body, html_body, from_email, to, cc,
+                 in_reply_to, headers={}):
+        EmailMultiAlternatives.__init__(self, subject, text_body,
+                                        from_email, to, headers=headers)
 
         self.cc = cc or []
 
         self.in_reply_to = in_reply_to
         self.message_id = None
+
+        self.attach_alternative(html_body, "text/html")
 
     def message(self):
         msg = super(SpiffyEmailMessage, self).message()
@@ -106,7 +109,8 @@ class SpiffyEmailMessage(EmailMessage):
 
 
 def send_review_mail(user, review_request, subject, in_reply_to,
-                     extra_recipients, template_name, context={}):
+                     extra_recipients, text_template_name,
+                     html_template_name, context={}):
     """
     Formats and sends an e-mail out with the current domain and review request
     being added to the template context. Returns the resulting message ID.
@@ -145,7 +149,8 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     context['domain'] = current_site.domain
     context['domain_method'] = domain_method
     context['review_request'] = review_request
-    body = render_to_string(template_name, context)
+    text_body = render_to_string(text_template_name, context)
+    html_body = render_to_string(html_template_name, context)
 
     # Set the cc field only when the to field (i.e People) are mentioned,
     # so that to field consists of Reviewers and cc consists of all the
@@ -163,8 +168,8 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         'X-ReviewRequest-URL': base_url + review_request.get_absolute_url(),
     }
 
-    message = SpiffyEmailMessage(subject.strip(), body, from_email,
-                                 list(to_field), list(cc_field),
+    message = SpiffyEmailMessage(subject.strip(), text_body, html_body,
+                                 from_email, list(to_field), list(cc_field),
                                  in_reply_to, headers)
     message.send()
 
@@ -235,7 +240,9 @@ def mail_review_request(user, review_request, changedesc=None):
     review_request.time_emailed = datetime.now()
     review_request.email_message_id = \
         send_review_mail(user, review_request, subject, reply_message_id,
-                         extra_recipients, 'reviews/review_request_email.txt',
+                         extra_recipients,
+                         'notifications/review_request_email.txt',
+                         'notifications/review_request_email.html',
                          extra_context)
     review_request.save()
 
@@ -250,14 +257,25 @@ def mail_review(user, review):
     review.ordered_comments = \
         review.comments.order_by('filediff', 'first_line')
 
+    extra_context = {
+        'user': user,
+        'review': review,
+    }
+
+    has_error, extra_context['comment_entries'] = \
+        build_diff_comment_fragments(
+            review.ordered_comments, extra_context,
+            "notifications/email_diff_comment_fragment.html")
+
     review.email_message_id = \
         send_review_mail(user,
                          review_request,
                          u"Re: Review Request: %s" % review_request.summary,
                          review_request.email_message_id,
                          None,
-                         'reviews/review_email.txt',
-                         {'review': review})
+                         'notifications/review_email.txt',
+                         'notifications/review_email.html',
+                         extra_context)
     review.time_emailed = datetime.now()
     review.save()
 
@@ -272,14 +290,26 @@ def mail_reply(user, reply):
     if not review_request.public:
         return
 
+    extra_context = {
+        'user': user,
+        'review': review,
+        'reply': reply,
+    }
+
+    has_error, extra_context['comment_entries'] = \
+        build_diff_comment_fragments(
+            reply.comments.order_by('filediff', 'first_line'),
+            extra_context,
+            "notifications/email_diff_comment_fragment.html")
+
     reply.email_message_id = \
         send_review_mail(user,
                          review_request,
                          u"Re: Review Request: %s" % review_request.summary,
                          review.email_message_id,
                          harvest_people_from_review(review),
-                         'reviews/reply_email.txt',
-                         {'review': review,
-                          'reply': reply})
+                         'notifications/reply_email.txt',
+                         'notifications/reply_email.html',
+                         extra_context)
     reply.time_emailed = datetime.now()
     reply.save()
