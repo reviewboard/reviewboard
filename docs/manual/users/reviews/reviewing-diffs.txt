@@ -27,10 +27,19 @@ the diffs.
 Commenting on Lines
 ===================
 
-To comment on a line on a diff, simply click the line number, or click and
-drag down to select multiple lines. A comment dialog will appear giving you
-a text entry for writing your comment. When you're done, you can click
+To comment on a line on a diff, simply click the line number. A
+comment dialog will appear giving you a text entry for writing your
+comment. When you're done, you can click
 :guilabel:`Save` to save the comment.
+
+Furthermore you can assign a comment to multiple code lines. This
+option is especially useful to provide additional code context to
+discussions as all commented code will appear on the review request
+page.
+
+To create a multiple line comment click and drag on the beginning line
+number down the column until you've selected all the lines needed for your
+comment.
 
 .. image:: comment-box.png
 
