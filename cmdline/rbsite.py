@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import getpass
+import imp
 import os
 import pkg_resources
 import platform
@@ -391,8 +392,16 @@ class Site(object):
         template = pkg_resources.resource_string("reviewboard", template_path)
         sitedir = os.path.abspath(self.install_dir).replace("\\", "/")
 
+        # Check if this is a .exe.
+        if (hasattr(sys, "frozen") or    # new py2exe
+            hasattr(sys, "importers") or # new py2exe
+            imp.is_frozen("__main__")):  # tools/freeze
+            rbsite_path = sys.executable
+        else:
+            rbsite_path = '"%s" "%s"' % (sys.executable, sys.argv[0])
+
         data = {
-            'rbsite': os.path.abspath(__file__),
+            'rbsite': rbsite_path,
             'sitedir': sitedir,
             'sitedomain': self.domain_name,
             'sitedomain_escaped': domain_name_escaped,
