@@ -210,7 +210,8 @@ class GitClient:
 
             return False
         else:
-            return self._cat_file(path, revision, "-t")
+            contents = self._cat_file(path, revision, "-t")
+            return contents and contents.strip() == "blob"
 
     def _build_raw_url(self, path, revision):
         url = self.raw_file_url
@@ -247,7 +248,7 @@ class GitClient:
             else:
                 raise SCMError(errmsg)
 
-        return contents and contents.strip() == "blob"
+        return contents
 
     def _resolve_head(self, revision, path):
         if revision == HEAD:
