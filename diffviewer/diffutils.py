@@ -659,7 +659,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                 chunk['index'] = j
                 if chunk['change'] != 'equal':
                     file['changed_chunks'].append(chunk)
-                    if not chunk['meta'].get('whitespace_chunk', False):
+                    meta = chunk.get('meta', {})
+
+                    if not meta.get('whitespace_chunk', False):
                         file['whitespace_only'] = False
 
             file['num_changes'] = len(file['changed_chunks'])
