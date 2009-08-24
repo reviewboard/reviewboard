@@ -37,6 +37,8 @@ class SVNTool(SCMTool):
         'URL':                 URL_KEYWORDS,
     }
 
+    name = "Subversion"
+
     def __init__(self, repository):
         self.repopath = repository.path
         if self.repopath[-1] == '/':

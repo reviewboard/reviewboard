@@ -9,6 +9,9 @@ class Tool(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        ordering = ("name",)
+
 
 class Repository(models.Model):
     name = models.CharField(max_length=64, unique=True)

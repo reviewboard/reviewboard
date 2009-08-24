@@ -13,6 +13,8 @@ from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError
 
 
 class PerforceTool(SCMTool):
+    name = "Perforce"
+
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 

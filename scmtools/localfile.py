@@ -1,6 +1,8 @@
 from scmtools.core import FileNotFoundError, SCMTool, HEAD
 
 class LocalFileTool(SCMTool):
+    name = "Local File"
+
     def __init__(self, repository):
         self.repopath = repository.path
 

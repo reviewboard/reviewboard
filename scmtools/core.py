@@ -38,6 +38,8 @@ PRE_CREATION = Revision("PRE-CREATION")
 
 
 class SCMTool:
+    name = None
+
     def __init__(self, repository):
         self.repository = repository
         self.uses_atomic_revisions = False

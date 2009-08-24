@@ -15,6 +15,8 @@ class GitTool(SCMTool):
     The repository path should be to the .git directory (important if
     you do not have a bare repositry).
     """
+    name = "Git"
+
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
         self.client = GitClient(repository.path)

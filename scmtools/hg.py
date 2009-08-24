@@ -9,6 +9,8 @@ from reviewboard.scmtools.core import \
     FileNotFoundError, SCMTool, HEAD, PRE_CREATION
 
 class HgTool(SCMTool):
+    name = "Mercurial"
+
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
         if repository.path.startswith('http'):

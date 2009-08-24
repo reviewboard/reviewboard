@@ -1,1 +1,66 @@
-[{"pk": "1", "model": "scmtools.tool", "fields": {"class_name": "reviewboard.scmtools.svn.SVNTool", "name": "Subversion"}}, {"pk": "2", "model": "scmtools.tool", "fields": {"class_name": "reviewboard.scmtools.perforce.PerforceTool", "name": "Perforce"}}, {"pk": "1", "model": "scmtools.repository", "fields": {"username": "", "name": "Review Board SVN", "tool": 1, "bug_tracker": "http:\/\/code.google.com\/p\/reviewboard\/issues\/detail?id=%s", "path": "http:\/\/reviewboard.googlecode.com\/svn", "password": ""}}, {"pk": "2", "model": "scmtools.repository", "fields": {"username": "", "name": "Navi SVN", "tool": 1, "bug_tracker": "", "path": "http:\/\/svn.navi.cx\/misc", "password": ""}}]
+[
+    {"pk": "1",
+     "model": "scmtools.tool",
+     "fields": {"name": "Subversion",
+                "class_name": "reviewboard.scmtools.svn.SVNTool"
+               }
+    },
+    {"pk": "2",
+     "model": "scmtools.tool",
+     "fields": {"name": "Perforce",
+                "class_name": "reviewboard.scmtools.perforce.PerforceTool"
+               }
+    },
+    {"pk": "3",
+     "model": "scmtools.tool",
+     "fields": {"name": "CVS",
+                "class_name": "reviewboard.scmtools.cvs.CVSTool"
+               }
+    },
+    {"pk": "4",
+     "model": "scmtools.tool",
+     "fields": {"name": "Mercurial",
+                "class_name": "reviewboard.scmtools.hg.HgTool"
+               }
+    },
+    {"pk": "5",
+     "model": "scmtools.tool",
+     "fields": {"name": "Git",
+                "class_name": "reviewboard.scmtools.git.GitTool"
+               }
+    },
+    {"pk": "6",
+     "model": "scmtools.tool",
+     "fields": {"name": "Bazaar",
+                "class_name": "reviewboard.scmtools.bzr.BZRTool"
+               }
+    },
+    {"pk": "7",
+     "model": "scmtools.tool",
+     "fields": {"name": "ClearCase",
+                "class_name": "reviewboard.scmtools.clearcase.ClearCaseTool"
+               }
+    },
+    {"pk": "1",
+     "model": "scmtools.repository",
+     "fields": {
+         "username": "",
+         "name": "Review Board SVN",
+         "tool": 1,
+         "bug_tracker": "http:\/\/code.google.com\/p\/reviewboard\/issues\/detail?id=%s",
+         "path": "http:\/\/reviewboard.googlecode.com\/svn",
+         "password": ""
+     }
+    },
+    {"pk": "2",
+     "model": "scmtools.repository",
+     "fields": {
+         "username": "",
+         "name": "Navi SVN",
+         "tool": 1,
+         "bug_tracker": "",
+         "path": "http:\/\/svn.navi.cx\/misc",
+         "password": ""
+     }
+    }
+]
