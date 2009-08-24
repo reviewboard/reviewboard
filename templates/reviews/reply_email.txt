@@ -19,7 +19,7 @@
 > >
 {{ comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
-> {% ifnotequal reply_comment.review_set.get.user.get_full_name "" %}{{reply_comment.review_set.get.user.get_full_name}}{% else %}{{reply_comment.review_set.get.user.username}}{% endifnotequal %} wrote:
+> {% ifnotequal reply_comment.review.get.user.get_full_name "" %}{{reply_comment.review.get.user.get_full_name}}{% else %}{{reply_comment.review.get.user.username}}{% endifnotequal %} wrote:
 {{reply_comment.text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
 
 {{comment.text}}
@@ -33,7 +33,7 @@
 > >
 {{comment.reply_to.text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
-> {% ifnotequal reply_comment.review_set.get.user.get_full_name "" %}{{reply_comment.review_set.get.user.get_full_name}}{% else %}{{reply_comment.review_set.get.user.username}}{% endifnotequal %} wrote:
+> {% ifnotequal reply_comment.review.get.user.get_full_name "" %}{{reply_comment.review.get.user.get_full_name}}{% else %}{{reply_comment.review.get.user.username}}{% endifnotequal %} wrote:
 {{reply_comment.text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
 
 {{comment.text}}
