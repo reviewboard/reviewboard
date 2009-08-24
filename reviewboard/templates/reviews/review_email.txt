@@ -1,0 +1,31 @@
+{% autoescape off %}{% load djblets_email %}{% load djblets_utils %}
+-----------------------------------------------------------
+This is an automatically generated e-mail. To reply, visit:
+{{domain_method}}://{{domain}}{{review.get_absolute_url}}
+-----------------------------------------------------------
+{% if review.ship_it %}
+Ship it!
+{% endif %}
+{% if review.body_top %}
+{{ review.body_top }}
+{% endif %}{% for comment in review.screenshot_comments.all %}
+
+Screenshot: {{ comment.screenshot.caption }}
+<{{domain_method}}://{{domain}}/{{comment.get_review_url}}>
+{{ comment.text|indent }}
+{% endfor %}{% for comment in review.ordered_comments %}
+
+{{ comment.filediff.source_file }}
+<{{domain_method}}://{{domain}}{{comment.get_review_url}}>
+
+{{ comment.text|indent }}
+
+{% endfor %}{% if review.body_bottom %}
+{{ review.body_bottom }}
+{% endif %}
+- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}
+
+
+On {{review_request.time_emailed}}, {% ifnotequal review_request.submitter.get_full_name "" %}{{review_request.submitter.get_full_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %} wrote:
+{% quoted_email "reviews/review_request_email.txt" %}
+{% endautoescape %}

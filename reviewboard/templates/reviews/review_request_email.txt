@@ -1,0 +1,59 @@
+{% autoescape off %}{% load reviewtags %}{% load djblets_email %}{% load djblets_utils %}
+-----------------------------------------------------------
+This is an automatically generated e-mail. To reply, visit:
+{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}
+-----------------------------------------------------------
+
+{% condense %}
+{% if review_request.email_message_id %}
+(Updated {{review_request.time_emailed}})
+
+{% endif %}
+Review request for {% reviewer_list review_request %}.
+
+{% if change_text %}
+Changes
+-------
+
+{{change_text}}
+{% endif %}
+
+Summary{% if changes %}{% if changes.summary or changes.description %} (updated){% endif %}{% endif %}
+-------
+
+{{ review_request.description }}
+
+{% ifnotequal review_request.bugs_closed "" %}
+This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.{% ifnotequal review_request.repository.bug_tracker "" %}{% for bug in review_request.get_bug_list %}
+    {{ bug|bug_url:review_request }}{% endfor %}
+{% endifnotequal %}
+{% endifnotequal %}
+
+
+Diffs{% if changes and changes.diff %} (updated){% endif %}
+-----
+{% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
+  {{ filediff.source_file }} {{ filediff.source_revision }} {% endfor %}
+
+Diff: {{domain_method}}://{{domain}}{{ review_request.get_absolute_url }}diff
+
+
+Testing{% if changes and changes.testing_done %} (updated){% endif %}
+-------
+
+{{ review_request.testing_done }}
+{% if review_request.screenshots.count %}
+
+Screenshots{% if changes and changes.screenshots %} (updated){% endif %}
+-----------
+{% for screenshot in review_request.screenshots.all %}
+{{ screenshot.caption }}
+  {{domain_method}}://{{domain}}{{ screenshot.get_absolute_url }}{% endfor %}
+
+{% endif %}
+
+Thanks,
+
+{% ifnotequal review_request.submitter.first_name "" %}{{review_request.submitter.first_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %}
+{% endcondense %}
+{% endautoescape %}
