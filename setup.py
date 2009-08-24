@@ -116,7 +116,3 @@ setup(name="ReviewBoard",
           "Topic :: Software Development :: Quality Assurance",
       ]
 )
-
-
-if not os.path.exists("PKG-INFO"):
-    shutil.rmtree("reviewboard")
