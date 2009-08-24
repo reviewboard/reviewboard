@@ -1,16 +1,9 @@
-recursive-include reviewboard/accounts/fixtures *
-recursive-include reviewboard/admin/fixtures *
-recursive-include reviewboard/contrib *
-recursive-include reviewboard/diffviewer/testdata *
-recursive-include reviewboard/htdocs *.css *.htc *.png *.jpg *.gif *.js *.html
-recursive-include reviewboard/locale *
-recursive-include reviewboard/reviews/fixtures *
-recursive-include reviewboard/scmtools/fixtures *
-recursive-include reviewboard/scmtools/testdata *
-recursive-include reviewboard/templates *.html *.txt *.js
-recursive-include reviewboard/docs *.txt *.png *.py Makefile
+recursive-include contrib *
+recursive-include docs *.txt *.png *.py Makefile
+recursive-include locale *
+recursive-include reviewboard *
+prune docs/*/_build
 prune reviewboard/htdocs/media/uploaded/images
-prune reviewboard/docs/*/_build
 include ez_setup.py
 include AUTHORS
 include COPYING
