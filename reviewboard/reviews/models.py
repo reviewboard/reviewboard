@@ -17,7 +17,8 @@ from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-from reviewboard.reviews.signals import review_request_published
+from reviewboard.reviews.signals import review_request_published, \
+                                        reply_published, review_published
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import ReviewRequestManager, ReviewManager
 from reviewboard.scmtools.errors import InvalidChangeNumberError
@@ -463,7 +464,7 @@ class ReviewRequest(models.Model):
         self.public = True
         self.save()
 
-        review_request_published.send(sender=self, user=user,
+        review_request_published.send(sender=self.__class__, user=user,
                                       review_request=self,
                                       changedesc=changes)
 
@@ -654,7 +655,7 @@ class ReviewRequestDraft(models.Model):
             if group not in existing_groups:
                 self.target_groups.add(group)
 
-    def publish(self, review_request=None):
+    def publish(self, review_request=None, user=None):
         """
         Publishes this draft. Uses the draft's assocated ReviewRequest
         object if one isn't passed in.
@@ -693,6 +694,9 @@ class ReviewRequestDraft(models.Model):
         """
         if not review_request:
             review_request = self.review_request
+
+        if not user:
+            user = review_request.submitter
 
         if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()
@@ -793,6 +797,9 @@ class ReviewRequestDraft(models.Model):
             review_request.changedescs.add(self.changedesc)
 
         review_request.save()
+
+        review_request_published.send(sender=review_request, user=user,
+                                      changedesc=self.changedesc)
 
         return self.changedesc
 
@@ -1054,13 +1061,16 @@ class Review(models.Model):
 
         super(Review, self).save()
 
-    def publish(self):
+    def publish(self, user=None):
         """
         Publishes this review.
 
         This will make the review public and update the timestamps of all
         contained comments.
         """
+        if not user:
+            user = self.user
+
         self.public = True
         self.save()
 
@@ -1079,6 +1089,13 @@ class Review(models.Model):
         # Atomicly update the shipit_count
         if self.ship_it:
             self.review_request.increment_ship_it()
+
+        if self.is_reply():
+            reply_published.send(sender=self.__class__,
+                                 user=user, reply=self)
+        else:
+            review_published.send(sender=self.__class__,
+                                  user=user, review=self)
 
     def delete(self):
         """

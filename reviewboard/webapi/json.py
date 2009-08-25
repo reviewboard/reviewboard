@@ -30,8 +30,6 @@ from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
-from reviewboard.reviews.signals import review_request_published, \
-                                        review_published, reply_published
 from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
@@ -795,12 +793,8 @@ def review_request_draft_publish(request, review_request_id):
     if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    changes = draft.publish()
+    changes = draft.publish(user=request.user)
     draft.delete()
-
-    review_request_published.send(sender=None, user=request.user,
-                                  review_request=review_request,
-                                  changedesc=changes)
 
     return WebAPIResponse(request)
 
@@ -992,12 +986,9 @@ def review_draft_save(request, review_request_id, publish=False):
         review.body_bottom = request.POST['body_bottom']
 
     if publish:
-        review.publish()
+        review.publish(user=request.user)
     else:
         review.save()
-
-    if publish:
-        review_published.send(sender=None, user=request.user, review=review)
 
     return WebAPIResponse(request)
 
@@ -1160,14 +1151,12 @@ def review_reply_draft_save(request, review_request_id, review_id):
 
     reply = review.get_pending_reply(request.user)
 
-    if reply:
-        reply.publish()
-
-        reply_published.send(sender=None, user=request.user, reply=reply)
-
-        return WebAPIResponse(request)
-    else:
+    if not reply:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    reply.publish(user=request.user)
+
+    return WebAPIResponse(request)
 
 
 @webapi_login_required
