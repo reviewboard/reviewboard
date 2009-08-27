@@ -456,7 +456,7 @@ class ReviewRequest(models.Model):
         draft = get_object_or_none(self.draft)
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
-            changes = draft.publish(self)
+            changes = draft.publish(self, send_notification=False)
             draft.delete()
         else:
             changes = None
@@ -655,7 +655,8 @@ class ReviewRequestDraft(models.Model):
             if group not in existing_groups:
                 self.target_groups.add(group)
 
-    def publish(self, review_request=None, user=None):
+    def publish(self, review_request=None, user=None,
+                send_notification=True):
         """
         Publishes this draft. Uses the draft's assocated ReviewRequest
         object if one isn't passed in.
@@ -691,6 +692,10 @@ class ReviewRequestDraft(models.Model):
 
         For the 'diff' field, there is only ever an 'added' field, containing
         the ID of the new diffset.
+
+        The 'send_notification' parameter is intended for internal use only,
+        and is there to prevent duplicate notifications when being called by
+        ReviewRequest.publish.
         """
         if not review_request:
             review_request = self.review_request
@@ -798,8 +803,11 @@ class ReviewRequestDraft(models.Model):
 
         review_request.save()
 
-        review_request_published.send(sender=review_request, user=user,
-                                      changedesc=self.changedesc)
+        if send_notification:
+            review_request_published.send(sender=review_request.__class__,
+                                          user=user,
+                                          review_request=review_request,
+                                          changedesc=self.changedesc)
 
         return self.changedesc
 

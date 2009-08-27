@@ -8,6 +8,7 @@ from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
 
 import reviewboard.webapi.json as webapi
+from reviewboard import initialize
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Group, ReviewRequest, \
@@ -21,6 +22,8 @@ class WebAPITests(TestCase, EmailTestHelper):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
+        initialize()
+
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
         siteconfig.save()
