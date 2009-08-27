@@ -312,6 +312,7 @@ class Site(object):
         Synchronizes the database.
         """
         self.run_manage_command("syncdb", ["--noinput"])
+        self.run_manage_command("registerscmtools")
 
     def migrate_database(self):
         """
