@@ -6,9 +6,7 @@ import sys
 
 
 class NISBackend:
-    """
-    Authenticate against a user on an NIS server.
-    """
+    """Authenticate against a user on an NIS server."""
 
     def authenticate(self, username, password):
         import crypt
@@ -60,9 +58,7 @@ class NISBackend:
 
 
 class LDAPBackend:
-    """
-    Authenticate against a user on an LDAP server.
-    """
+    """Authenticate against a user on an LDAP server."""
 
     def authenticate(self, username, password):
         username = username.strip()
@@ -174,6 +170,8 @@ class LDAPBackend:
 
 
 class ActiveDirectoryBackend:
+    """Authenticate a user against an Active Directory server."""
+
     def get_domain_name(self):
         return str(settings.AD_DOMAIN_NAME)
 
@@ -249,21 +247,25 @@ class ActiveDirectoryBackend:
         connections = self.get_ldap_connections()
 
         username = username.strip()
+        required_group = settings.AD_GROUP_NAME
 
         for con in connections:
             try:
                 bind_username ='%s@%s' % (username, self.get_domain_name())
                 con.simple_bind_s(bind_username, password)
                 user_data = self.search_ad(con, '(&(objectClass=user)(sAMAccountName=%s))' % username)
-                try:
-                    group_names = self.get_member_of(con, user_data)
-                except Exception, e:
-                    logging.error("Active Directory error: failed getting groups for user %s" % username)
-                    return None
-                required_group = settings.AD_GROUP_NAME
-                if required_group and not required_group in group_names:
-                    logging.warning("Active Directory: User %s is not in required group %s" % (username, required_group))
-                    return None
+
+                if required_group:
+                    try:
+                        group_names = self.get_member_of(con, user_data)
+                    except Exception, e:
+                        logging.error("Active Directory error: failed getting"
+                                      "groups for user '%s': %s" % (username, e))
+                        return None
+
+                    if required_group not in group_names:
+                        logging.warning("Active Directory: User %s is not in required group %s" % (username, required_group))
+                        return None
 
                 return self.get_or_create_user(username, user_data)
             except ldap.SERVER_DOWN:
