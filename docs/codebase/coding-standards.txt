@@ -54,10 +54,10 @@ Directory Layout
 ================
 
 Pieces of code that serve fundamentally different purposes should live in
-their own subdirectories. For example, diff viewer functionality lives within
-the ``diffviewer`` directory, while code to talk to repositories lives within
-the ``scmtools`` directory. These directories are referred to as
-"app directories."
+their own subdirectories of :file:`reviewboard`. For example, diff viewer
+functionality lives within the :file:`reviewboard/diffviewer` directory, while
+code to talk to repositories lives within the :file:`reviewboard/scmtools`
+directory. These directories are referred to as "app directories."
 
 
 App Directory Files
@@ -67,7 +67,8 @@ App directories may contain some of the following filenames or directories:
 
 * **admin.py:**
    Administration UI definitions for database models. There's usually a
-   one-to-one mapping between classes in admin.py and in models.py.
+   one-to-one mapping between classes in :file:`admin.py` and in
+   :file:`models.py`.
 
 * **feeds.py:**
    Code for definining RSS/Atom feeds for certain objects.
@@ -104,7 +105,7 @@ Templates
 ---------
 
 Template files contain content and some basic logic for use in rendering web
-pages, e-mails, and other files. They live in the ``reviewboard/templates``
+pages, e-mails, and other files. They live in the :file:`reviewboard/templates`
 tree, and are usually separated according to app directory names.
 
 
