@@ -131,11 +131,12 @@ class Dependencies(object):
 
 
 class Site(object):
-    def __init__(self, install_dir):
+    def __init__(self, install_dir, options):
         self.install_dir = install_dir
         self.abs_install_dir = os.path.abspath(install_dir)
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
+        self.options = options
 
         # State saved during installation
         self.domain_name = None
@@ -307,11 +308,16 @@ class Site(object):
 
         self.setup_settings()
 
-    def sync_database(self):
+    def sync_database(self, allow_input=False):
         """
         Synchronizes the database.
         """
-        self.run_manage_command("syncdb", ["--noinput"])
+        params = []
+
+        if not allow_input:
+            params.append("--noinput")
+
+        self.run_manage_command("syncdb", params)
         self.run_manage_command("registerscmtools")
 
     def migrate_database(self):
@@ -380,7 +386,7 @@ class Site(object):
             else:
                 shutil.rmtree(dest_dir)
 
-        if options.copy_media:
+        if self.options.copy_media:
             shutil.copytree(src_dir, dest_dir)
         else:
             os.symlink(src_dir, dest_dir)
@@ -1475,7 +1481,7 @@ def main():
 
     command_name, install_dir = parse_options(sys.argv[1:])
     command = COMMANDS[command_name]
-    site = Site(install_dir)
+    site = Site(install_dir, options)
 
     if command.needs_ui and can_use_gtk and not options.force_console:
         ui = GtkUI()
