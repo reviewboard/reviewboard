@@ -1,0 +1,236 @@
+#!/usr/bin/env python
+#
+# svn-hook-postcommit-review
+# This script should be invoked from the subversion post-commit hook like this:
+#
+# REPOS="$1"
+# REV="$2"
+# /usr/bin/python /some/path/svn-hook-postcommit-review "$REPOS" "$REV" || exit 1
+#
+# Searches the commit message for text in the form of:
+#   publish review - publishes a review request
+#   draft review - creates a draft review request
+#
+# The space before 'review' may be ommitted.
+#
+# The log message is interpreted for review request parameters:
+#    summary = up to first period+space, first new-line, or 250 chars
+#    description = entire log message
+#    existing review updated if log message includes 'update review:[0-9]+'
+#    bugs added to review if log message includes commands as defined in
+#      supported_ticket_cmds
+#
+# By default, the review request is created out of a diff between the current
+# revision (M) and the previous revision (M-1).
+#
+# To create a diff that spans multiple revisions, include
+# 'after revision:[0-9]+' in the log message.
+#
+# To limit the diff to changes in a certain path (e.g. a branch), include
+# 'base path:"<path>"' in the log message.  The path must be relative to
+# the root of the repository and be surrounded by single or double quotes.
+#
+# An example commit message is:
+#
+#    Changed blah and foo to do this or that.  Publish review ticket:1
+#      update review:2 after revision:3 base path:'internal/trunk/style'.
+#
+# This would update the existing review 2 with a diff of changes to files under
+# the style directory between this commit and revision 3.  It would place
+# the entire log message in the review summary and description, and put
+# bug id 1 in the bugs field.
+#
+# This script may only be run from outside a working copy.
+#
+
+#
+# User configurable variables
+#
+
+# Path to post-review script
+POSTREVIEW_PATH = "/reviewboard/contrib/tools/"
+# Username and password for Review Board user that will be connecting
+# to create all review requests.  This user must have 'submit as'
+# privileges, since it will submit requests in the name of svn committers.
+USERNAME = 'username'
+PASSWORD = 'password'
+
+# If true, runs post-review in debug mode and outputs its diff
+DEBUG = False
+
+#
+# end user configurable variables
+#
+
+import sys
+import os
+import subprocess
+import re
+import svn.fs
+import svn.core
+import svn.repos
+
+# list of trac commands from trac-post-commit-hook.py.
+# numbers following these commands will be added to the bugs
+# field of the review request.
+supported_ticket_cmds = {'review':         '_cmdReview',
+                         'publishreview':  '_cmdReview',
+                         'publish review': '_cmdReview',
+                         'draftreview':    '_cmdReview',
+                         'draft review':   '_cmdReview'}
+
+ticket_prefix = '(?:#|(?:ticket|issue|bug)[: ]?)'
+ticket_reference = ticket_prefix + '[0-9]+'
+ticket_command = (r'(?P<action>[A-Za-z]*).?'
+                  '(?P<ticket>%s(?:(?:[, &]*|[ ]?and[ ]?)%s)*)' %
+                  (ticket_reference, ticket_reference))
+
+def execute(command, env=None, ignore_errors=False):
+    """
+    Utility function to execute a command and return the output.
+    Derived from Review Board's post-review script.
+    """
+    if env:
+        env.update(os.environ)
+    else:
+        env = os.environ
+
+    p = subprocess.Popen(command,
+                         stdin = subprocess.PIPE,
+                         stdout = subprocess.PIPE,
+                         stderr = subprocess.STDOUT,
+                         shell = False,
+                         close_fds = sys.platform.startswith('win'),
+                         universal_newlines = True,
+                         env = env)
+    data = p.stdout.read()
+    rc = p.wait()
+    if rc and not ignore_errors:
+        sys.stderr.write('Failed to execute command: %s\n%s\n' % (command, data))
+        sys.exit(1)
+
+    return data
+
+def main():
+    if len(sys.argv) != 3:
+        sys.stderr.write('Usage: %s <repos> <rev>\n' % sys.argv[0])
+        sys.exit(1)
+
+    repos = sys.argv[1]
+    rev = sys.argv[2]
+
+    # verify that rev parameter is an int
+    try:
+        int(rev)
+    except ValueError:
+        sys.stderr.write("Parameter <rev> must be an int, was given %s\n" % rev)
+        sys.exit(1)
+
+    # get the svn file system object
+    fs_ptr = svn.repos.svn_repos_fs(svn.repos.svn_repos_open(
+            svn.core.svn_path_canonicalize(repos)))
+
+    # get the log message
+    log = svn.fs.svn_fs_revision_prop(fs_ptr, int(rev),
+                                    svn.core.SVN_PROP_REVISION_LOG)
+
+    # error if log message is blank
+    if len(log.strip()) < 1:
+        sys.stderr.write("Log message is empty, no review request created\n")
+        sys.exit(1)
+
+    # get the author
+    author = svn.fs.svn_fs_revision_prop(fs_ptr, int(rev),
+                                       svn.core.SVN_PROP_REVISION_AUTHOR)
+
+    # error if author is blank
+    if len(author.strip()) < 1:
+        sys.stderr.write("Author is blank, no review request created\n")
+        sys.exit(1)
+
+    # check whether to create a review, based on presence of word
+    # 'review' with prefix
+    review = r'(?:publish|draft)(?: )?review'
+    if not re.search(review, log, re.M | re.I):
+        print 'No review requested'
+        sys.exit(0)
+
+    # check for update to existing review
+    m = re.search(r'update(?: )?review:([0-9]+)', log, re.M | re.I)
+    if m:
+        reviewid = '--review-request-id=' + m.group(1)
+    else:
+        reviewid = ''
+
+    # check whether to publish or leave review as draft
+    if re.search(r'draft(?: )?review', log, re.M | re.I):
+        publish = ''
+    else:
+        publish = '-p'
+
+    # get previous revision number -- either 1 prior, or
+    # user-specified number
+    m = re.search(r'after(?: )?revision:([0-9]+)', log, re.M | re.I)
+    if m:
+        prevrev = m.group(1)
+    else:
+        prevrev = int(rev) - 1
+
+    # check for an explicitly-provided base path (must be contained
+    # within quotes)
+    m = re.search(r'base ?path:([\'"][^\'"]+[\'"])', log, re.M | re.I)
+    if m:
+        base_path = m.group(1)
+    else:
+        base_path = ''
+
+    # get bug numbers referenced in this log message
+    ticket_command_re = re.compile(ticket_command)
+    ticket_re = re.compile(ticket_prefix + '([0-9]+)')
+
+    ticket_ids = []
+    ticket_cmd_groups = ticket_command_re.findall(log)
+    for cmd, tkts in ticket_cmd_groups:
+        funcname = supported_ticket_cmds.get(cmd.lower(), '')
+        if funcname:
+            for tkt_id in ticket_re.findall(tkts):
+                ticket_ids.append(tkt_id)
+
+    if ticket_ids:
+        bugs = '--bugs-closed=' + ','.join(ticket_ids)
+    else:
+        bugs = ''
+
+    # summary is log up to first period+space / first new line / first 250 chars
+    # (whichever comes first)
+    summary = '--summary=' + log[:250].splitlines().pop(0).split('. ').pop(0)
+
+    # other parameters for postreview
+    repository_url  = '--repository-url=file://' + repos
+    password        = '--password=' + PASSWORD
+    username        = '--username=' + USERNAME
+    description     = "--description=(In [%s]) %s" % (rev, log)
+    submitas        = '--submit-as=' + author
+    revision        = '--revision-range=%s:%s' % (prevrev, rev)
+
+    # common arguments
+    args = [repository_url, username, password, publish,
+            submitas, revision, base_path, reviewid]
+
+    # if not updating an existing review, add extra arguments
+    if len(reviewid) == 0:
+        args += [summary, description, bugs]
+
+    if DEBUG:
+        args += ['-d', '--output-diff']
+        print [os.path.join(POSTREVIEW_PATH, 'post-review')] + args
+
+    # Run Review Board post-review script
+    data = execute([os.path.join(POSTREVIEW_PATH, 'post-review')] + args,
+                   env = {'LANG': 'en_US.UTF-8'})
+
+    if DEBUG:
+        print data
+
+if __name__ == '__main__':
+    main()
