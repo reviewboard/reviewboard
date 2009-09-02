@@ -378,6 +378,45 @@ class ReviewRequest(models.Model):
         """
         return Review.objects.get_pending_review(self, user)
 
+    def get_last_activity(self, user=None):
+        """Returns the last activity information on the review request.
+
+        If the user is specified, the user owns this review request and
+        there's an active draft, then the draft's timestamp will be
+        included in the comparisons.
+        """
+        timestamp = self.last_updated
+        updated_object = self
+
+        if user:
+            draft = self.get_draft(user)
+
+            if draft:
+                timestamp = draft.last_updated
+                updated_object = draft
+
+        # Check if the diff was updated along with this.
+        try:
+            diffset = self.diffset_history.diffsets.latest()
+
+            if diffset.timestamp >= timestamp:
+                timestamp = diffset.timestamp
+                updated_object = diffset
+        except DiffSet.DoesNotExist:
+            pass
+
+        # Check for the latest review.
+        try:
+            review = self.reviews.filter(public=True).latest()
+
+            if review.timestamp >= timestamp:
+                timestamp = review.timestamp
+                updated_object = timestamp
+        except Review.DoesNotExist:
+            pass
+
+        return timestamp, updated_object
+
     @permalink
     def get_absolute_url(self):
         return ('review-request-detail', None, {

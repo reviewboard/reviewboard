@@ -473,43 +473,31 @@ def review_request_last_update(request, review_request_id):
     if not review_request.is_accessible_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    timestamp = review_request.last_updated
-    user = review_request.submitter
-    summary = _("Review request updated")
-    update_type = "review-request"
+    timestamp, updated_object = review_request.get_last_activity(request.user)
+    user = None
+    summary = None
+    update_type = None
 
-    draft = review_request.get_draft(request.user)
+    if isinstance(updated_object, (ReviewRequest, ReviewRequestDraft)):
+        user = updated_object.submitter
+        summary = _("Review request updated")
+        update_type = "review-request"
+    elif isinstance(updated_object, DiffSet):
+        summary = _("Diff updated")
+        update_type = "diff"
+    elif isinstance(updated_object, Review):
+        user = updated_object.user
 
-    if draft:
-        timestamp = draft.last_updated
-
-    # If the diff was updated along with this, then indicate it.
-    try:
-        diffset = review_request.diffset_history.diffsets.latest()
-
-        if diffset.timestamp >= timestamp:
-            timestamp = diffset.timestamp
-            summary = _("Diff updated")
-            update_type = "diff"
-    except DiffSet.DoesNotExist:
-        pass
-
-    # Check for the latest review.
-    try:
-        review = review_request.reviews.filter(public=True).latest()
-
-        if review.timestamp >= timestamp:
-            timestamp = review.timestamp
-            user = review.user
-
-            if review.is_reply():
-                summary = _("New reply")
-                update_type = "reply"
-            else:
-                summary = _("New review")
-                update_type = "review"
-    except Review.DoesNotExist:
-        pass
+        if updated_object.is_reply():
+            summary = _("New reply")
+            update_type = "reply"
+        else:
+            summary = _("New review")
+            update_type = "review"
+    else:
+        # Should never be able to happen. The object will always at least
+        # be a ReviewRequest.
+        assert False
 
     return WebAPIResponse(request, {
         'timestamp': timestamp,
