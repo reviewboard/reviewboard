@@ -1,5 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% load djblets_deco %}
 {% load djblets_utils %}
 {% load i18n %}
 
@@ -95,6 +96,17 @@
    </form>
    {% endif %}
 {% endblock %}
+   <noscript>
+{%  box "important" %}
+     <h1>{% trans "JavaScript is turned off" %}</h1>
+     <p>{% blocktrans %}Review Board requires JavaScript in order to function.
+     Please turn it on in your browser preferences.{% endblocktrans %}
+     <p>{% blocktrans %}Firefox users: if you prefer to turn on JavaScript only
+     for specific sites, we recommend the
+     <a href="https://addons.mozilla.org/en-US/firefox/addon/722">NoScript
+     extension</a>.{% endblocktrans %}</p>
+{%  endbox %}
+   </noscript>
    <div id="error"></div>
    <div id="content">
 {% block content %}{% endblock %}
