@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db import connection, models
+from django.db import connection, models, transaction
 from django.db.models import Q, permalink
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
@@ -468,6 +468,8 @@ class ReviewRequest(models.Model):
                        "   SET shipit_count = shipit_count + 1"
                        " WHERE id = %s",
                        [self.id])
+
+        transaction.commit_unless_managed()
 
         # Update our copy.
         r = ReviewRequest.objects.get(pk=self.id)
