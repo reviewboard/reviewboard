@@ -19,9 +19,12 @@ The source code for Review Board is available from our `Git repository`_.
 Contributor Guides
 ==================
 
+* :ref:`Getting Started`
 * :ref:`Coding Standards`
 * :ref:`Contributing Patches`
+* :ref:`Maintaining Custom Forks of Review Board`
 * :ref:`Unit Test Fixtures`
+
 .. * :ref:`Creating SCMTools`
 
 
