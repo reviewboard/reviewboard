@@ -24,6 +24,10 @@
   padding: 4px 8px;
 }
 
+#admin-subnav li a {
+  border-top: 3px solid #333333;
+}
+
 #admin-nav li a:hover,
 #admin-subnav li a:hover {
   background-color: #2f5183;
@@ -32,7 +36,12 @@
 
 #admin-nav li a.active,
 #admin-subnav li a.active {
-  background-color: #173663;
+  color: black;
+  background: white url(../images/subnav-bg.png) repeat-x scroll 0 -6px;
+}
+
+div.breadcrumbs {
+  border-top-width: 0px;
 }
 
 #admin-subnav {
