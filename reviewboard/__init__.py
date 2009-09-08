@@ -50,6 +50,7 @@ def initialize():
     to work.
     """
     import logging
+    import os
 
     from djblets.util.misc import generate_cache_serials
     from djblets import log
@@ -59,7 +60,8 @@ def initialize():
 
     # Set up logging.
     log.init_logging()
-    logging.info("Log file for Review Board v%s" % get_version_string())
+    logging.info("Log file for Review Board v%s (PID %s)" %
+                 (get_version_string(), os.getpid()))
 
     # Generate cache serials
     generate_cache_serials()

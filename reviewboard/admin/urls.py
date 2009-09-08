@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls.defaults import include, patterns, url
 from django.contrib import admin
 
 from reviewboard.admin import forms
@@ -26,6 +26,8 @@ urlpatterns = patterns('reviewboard.admin.views',
 )
 
 urlpatterns += patterns('',
+    (r'^log/', include('djblets.log.urls')),
+
     ('^db/(.*)', admin.site.root),
     ('^feed/news/$', 'djblets.feedview.views.view_feed',
      {'template_name': 'admin/feed.html',
