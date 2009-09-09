@@ -422,7 +422,7 @@ class ReviewRequest(models.Model):
 
             if review.timestamp >= timestamp:
                 timestamp = review.timestamp
-                updated_object = timestamp
+                updated_object = review
         except Review.DoesNotExist:
             pass
 
