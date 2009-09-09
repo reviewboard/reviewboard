@@ -679,6 +679,7 @@ class ReviewRequestDraft(models.Model):
         if not self.diffset:
             return
 
+        repository = self.review_request.repository
         people = set()
         groups = set()
 
@@ -686,7 +687,7 @@ class ReviewRequestDraft(models.Model):
         # some fancy way.  Certainly the most superficial optimization that
         # could be made would be to cache the compiled regexes somewhere.
         files = self.diffset.files.all()
-        for default in DefaultReviewer.objects.for_repository(self.repository):
+        for default in DefaultReviewer.objects.for_repository(repository):
             try:
                 regex = re.compile(default.file_regex)
             except:
