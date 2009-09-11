@@ -57,6 +57,7 @@ MIDDLEWARE_CLASSES = (
 
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
+    'reviewboard.admin.middleware.X509AuthMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (

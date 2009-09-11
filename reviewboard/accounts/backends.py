@@ -1,11 +1,14 @@
+import logging
+import re
+import sre_constants
+import sys
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from djblets.util.misc import get_object_or_none
-import logging
-import sys
 
 
-class NISBackend:
+class NISBackend(object):
     """Authenticate against a user on an NIS server."""
 
     def authenticate(self, username, password):
@@ -57,7 +60,7 @@ class NISBackend:
         return get_object_or_none(User, pk=user_id)
 
 
-class LDAPBackend:
+class LDAPBackend(object):
     """Authenticate against a user on an LDAP server."""
 
     def authenticate(self, username, password):
@@ -169,7 +172,7 @@ class LDAPBackend:
         return get_object_or_none(User, pk=user_id)
 
 
-class ActiveDirectoryBackend:
+class ActiveDirectoryBackend(object):
     """Authenticate a user against an Active Directory server."""
 
     def get_domain_name(self):
@@ -303,6 +306,52 @@ class ActiveDirectoryBackend:
                 return user
             except:
                 return None
+
+    def get_user(self, user_id):
+        return get_object_or_none(User, pk=user_id)
+
+
+class X509Backend(object):
+    """
+    Authenticate a user from a X.509 client certificate passed in by the
+    browser. This backend relies on the X509AuthMiddleware to extract a
+    username field from the client certificate.
+    """
+    def authenticate(self, x509_field=""):
+        username = self.clean_username(x509_field)
+        return self.get_or_create_user(username)
+
+    def clean_username(self, username):
+        if settings.X509_USERNAME_REGEX:
+            try:
+                m = re.match(settings.X509_USERNAME_REGEX, username)
+                if m:
+                    username = m.group(1)
+                else:
+                    logging.warning("X509Backend: username '%s' didn't match "
+                                    "regex." % username)
+            except sre_constants.error, e:
+                logging.error("X509Backend: Invalid regex specified: %s" % e)
+
+        return username
+
+    def get_or_create_user(self, username):
+        user = None
+
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            # TODO Add the ability to get the first and last names in a
+            #      configurable manner; not all X.509 certificates will have
+            #      the same format.
+            if getattr(settings, 'X509_AUTOCREATE_USERS', False):
+                user = User(username=username, password='')
+                user.is_staff = False
+                user.is_superuser = False
+                user.set_unusable_password()
+                user.save()
+
+        return user
 
     def get_user(self, user_id):
         return get_object_or_none(User, pk=user_id)

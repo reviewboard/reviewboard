@@ -19,6 +19,7 @@ auth_backend_map = {
     'builtin': 'django.contrib.auth.backends.ModelBackend',
     'nis':     'reviewboard.accounts.backends.NISBackend',
     'ldap':    'reviewboard.accounts.backends.LDAPBackend',
+    'x509':    'reviewboard.accounts.backends.X509Backend',
     'ad':      'reviewboard.accounts.backends.ActiveDirectoryBackend',
 }
 
@@ -42,6 +43,9 @@ settings_map = {
     'auth_ad_group_name':         'AD_GROUP_NAME',
     'auth_ad_search_root':        'AD_SEARCH_ROOT',
     'auth_ad_recursion_depth':    'AD_RECURSION_DEPTH',
+    'auth_x509_username_field':   'X509_USERNAME_FIELD',
+    'auth_x509_username_regex':   'X509_USERNAME_REGEX',
+    'auth_x509_autocreate_users': 'X509_AUTOCREATE_USERS',
     'auth_nis_email_domain':      'NIS_EMAIL_DOMAIN',
     'site_domain_method':         'DOMAIN_METHOD',
 }
@@ -63,6 +67,9 @@ defaults.update({
     'auth_require_sitewide_login':         False,
     'auth_custom_backends':                [],
     'auth_enable_registration':            True,
+    'auth_x509_username_field':            'SSL_CLIENT_S_DN_CN',
+    'auth_x509_username_regex':            '',
+    'auth_x509_autocreate_users':          False,
     'diffviewer_context_num_lines':        5,
     'diffviewer_include_space_patterns':   [],
     'diffviewer_paginate_by':              20,
