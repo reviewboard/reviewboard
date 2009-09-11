@@ -152,7 +152,8 @@ class PerforceTool(SCMTool):
         # results.
         changeset.username = changedesc['user']
         changeset.description = changedesc['desc']
-
+        if changedesc['status'] == "pending":
+            changeset.pending = True
         try:
             changeset.files = changedesc['depotFile']
         except KeyError:

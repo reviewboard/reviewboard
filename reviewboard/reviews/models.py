@@ -23,7 +23,8 @@ from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import DefaultReviewerManager, \
                                          ReviewRequestManager, \
                                          ReviewManager
-from reviewboard.scmtools.errors import InvalidChangeNumberError
+from reviewboard.scmtools.errors import EmptyChangeSetError, \
+                                        InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 
 #the model for the summery only allows it to be 300 chars in length
@@ -427,6 +428,19 @@ class ReviewRequest(models.Model):
             pass
 
         return timestamp, updated_object
+
+    def changeset_is_pending(self):
+        """
+        Returns True if the current changeset associated with this review
+        request is pending under SCM.
+        """
+        changeset = None
+        if self.changenum:
+            try:
+                changeset = self.repository.get_scmtool().get_changeset(self.changenum)
+            except EmptyChangeSetError:
+                pass
+        return changeset and changeset.pending
 
     @permalink
     def get_absolute_url(self):

@@ -13,6 +13,7 @@ class ChangeSet:
         self.bugs_closed = []
         self.files = []
         self.username = ""
+        self.pending = False
 
 
 class Revision(object):

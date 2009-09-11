@@ -53,7 +53,7 @@
   </tr>
   <tr>
    <td class="label"><label for="changenum">{% trans "Change Number" %}:</label></td>
-   <td class="value"><span id="changenum">{{review_request.changenum}}</span></td>
+   <td class="value"><span id="changenum">{{review_request.changenum}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
    <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
    <td class="value"><span id="repository">{{review_request.repository}}</span></td>
   </tr>
