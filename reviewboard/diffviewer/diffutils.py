@@ -761,7 +761,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 'lines': chunk['lines'][start_index:last_index],
                 'numlines': last_index - start_index,
                 'change': chunk['change'],
-                'meta': chunk['meta'],
+                'meta': chunk.get('meta', {}),
             }
 
             yield new_chunk
