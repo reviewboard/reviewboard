@@ -198,8 +198,7 @@ class ReviewRequest(models.Model):
     summary = models.CharField(_("summary"), max_length=300)
     description = models.TextField(_("description"), blank=True)
     testing_done = models.TextField(_("testing done"), blank=True)
-    bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
-                                                    max_length=300, blank=True)
+    bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         related_name="review_request",
                                         verbose_name=_('diff set history'),
