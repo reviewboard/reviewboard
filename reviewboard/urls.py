@@ -78,7 +78,7 @@ urlpatterns += patterns('reviewboard.reviews.views',
 
     # Users
     url(r'^users/$', 'submitter_list', name="all-users"),
-    url(r'^users/(?P<username>[A-Za-z0-9_\-\.]+)/$', 'submitter',
+    url(r'^users/(?P<username>[A-Za-z0-9@_\-\.]+)/$', 'submitter',
         name="user"),
 
     # Groups
