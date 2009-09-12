@@ -67,4 +67,8 @@ class RepositoryForm(forms.ModelForm):
                     "sure you need it."))
 
 
+    def clean_path(self):
+        return self.cleaned_data['path'].strip()
 
+    def clean_mirror_path(self):
+        return self.cleaned_data['mirror_path'].strip()
