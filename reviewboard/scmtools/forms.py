@@ -442,6 +442,12 @@ class RepositoryForm(forms.ModelForm):
 
         return super(RepositoryForm, self).full_clean()
 
+    def clean_path(self):
+        return self.cleaned_data['path'].strip()
+
+    def clean_mirror_path(self):
+        return self.cleaned_data['mirror_path'].strip()
+
     def clean_bug_tracker_base_url(self):
         data = self.cleaned_data['bug_tracker_base_url']
         return data.rstrip("/")
