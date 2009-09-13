@@ -22,7 +22,7 @@ class GeneralSettingsForm(SiteSettingsForm):
     """
     General settings for Review Board.
     """
-    server = forms.URLField(
+    server = forms.CharField(
         label=_("Server"),
         help_text=_("The URL of this Review Board server. This should not "
                     "contain the subdirectory Review Board is installed in."),

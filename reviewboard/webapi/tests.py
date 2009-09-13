@@ -474,6 +474,18 @@ class WebAPITests(TestCase, EmailTestHelper):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(mail.outbox), 1)
 
+    def testReviewRequestDraftSetFieldNoPermission(self):
+        """Testing the reviewrequests/draft/set/<field> API without valid permissions"""
+        bugs_closed = '123,456'
+        review_request_id = ReviewRequest.objects.from_user('admin')[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
+                           review_request_id, {
+            'value': bugs_closed,
+        })
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+
     # draft/save is deprecated. Tests were copied to *DraftPublish*().
     # This is still here only to make sure we don't break backwards
     # compatibility.

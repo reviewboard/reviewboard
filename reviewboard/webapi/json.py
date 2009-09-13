@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -803,7 +804,7 @@ def find_user(username):
 
 def _prepare_draft(request, review_request):
     if not review_request.is_mutable_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
+        raise PermissionDenied
     return ReviewRequestDraft.create(review_request)
 
 
@@ -873,7 +874,11 @@ def review_request_draft_set_field(request, review_request_id, field_name):
             return WebAPIResponseError(request, INVALID_ATTRIBUTE,
                                        {'attribute': field_name})
 
-        draft = _prepare_draft(request, review_request)
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
         screenshot.draft_caption = data = request.POST['value']
         screenshot.save()
         draft.save()
@@ -881,7 +886,11 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         return WebAPIResponse(request, {field_name: data})
 
     if field_name == "changedescription":
-        draft = _prepare_draft(request, review_request)
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
         draft.changedesc.text = data = request.POST['value']
         draft.changedesc.save()
         draft.save()
@@ -892,7 +901,11 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         return WebAPIResponseError(request, INVALID_ATTRIBUTE,
                                    {'attribute': field_name})
 
-    draft = _prepare_draft(request, review_request)
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
     result = {}
 
     result[field_name], result['invalid_' + field_name] = \
@@ -912,7 +925,11 @@ mutable_review_request_fields = [
 @require_POST
 def review_request_draft_set(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    draft = _prepare_draft(request, review_request)
+
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     result = {}
 
@@ -933,7 +950,11 @@ def review_request_draft_set(request, review_request_id):
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    draft = _prepare_draft(request, review_request)
+
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     tool = review_request.repository.get_scmtool()
     changeset = tool.get_changeset(review_request.changenum)
@@ -1243,7 +1264,10 @@ def new_diff(request, review_request_id):
         if draft.diffset and draft.diffset != diffset:
             discarded_diffset = draft.diffset
     except ReviewRequestDraft.DoesNotExist:
-        draft = _prepare_draft(request, review_request)
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
 
     draft.diffset = diffset
 

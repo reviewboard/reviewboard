@@ -124,6 +124,8 @@ class ReviewRequestManager(ConcurrencyManager):
         if user and user.is_authenticated():
             query = query | Q(submitter=user)
 
+        query = query & Q(submitter__is_active=True)
+
         if status:
             query = query & Q(status=status)
 

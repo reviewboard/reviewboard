@@ -1,6 +1,8 @@
 import logging
 
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from django.core import mail
 from django.template import Context, Template
 from django.test import TestCase
 
@@ -304,6 +306,11 @@ class ViewTests(TestCase):
         self.siteconfig.save()
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 302)
+
+    def testSubmitterListChars(self):
+        """Testing the submitter list with various characters in the username"""
+        # Test if this throws an exception. Bug #1250
+        reverse('user', args=['user@example.com'])
 
     def testGroupList(self):
         """Testing group_list view"""
