@@ -4,9 +4,11 @@ import unittest
 from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
+from reviewboard.scmtools.models import Repository
 
 
 class MyersDifferTest(TestCase):
@@ -279,3 +281,24 @@ class HighlightRegionTest(TestCase):
             [(4, 9)]),
             'foo=<span class="ab"><span class="hl">&quot;foo&quot;' +
             '</span></span>)')
+
+
+class DbTests(TestCase):
+    """Unit tests for database operations."""
+    fixtures = ['test_scmtools.json']
+
+    def testLongFilenames(self):
+        """Testing using long filenames (1024 characters) in FileDiff."""
+        long_filename = 'x' * 1024
+
+        repository = Repository.objects.get(pk=1)
+        diffset = DiffSet.objects.create(name='test',
+                                         revision=1,
+                                         repository=repository)
+        filediff = FileDiff(source_file=long_filename,
+                            dest_file='foo',
+                            diffset=diffset)
+        filediff.save()
+
+        filediff = FileDiff.objects.get(pk=filediff.id)
+        self.assertEquals(filediff.source_file, long_filename)
