@@ -65,7 +65,7 @@
  <tbody class="collapsed" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
   <tr>
    <th>...</th>
-   <td colspan="3">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]</td>
+   <td colspan="3">{{ chunk.numlines }} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]</td>
   </tr>
  </tbody>
 {% endif %}
