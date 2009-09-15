@@ -398,6 +398,7 @@ class Site(object):
             'sitedomain': self.domain_name,
             'sitedomain_escaped': domain_name_escaped,
             'siteid': self.site_id,
+            'siteroot': self.site_root,
         }
 
         template = re.sub("@([a-z_]+)@", lambda m: data.get(m.group(1)),
