@@ -10,6 +10,7 @@ except ImportError:
         memcache = None
 
 from django.conf import settings
+from django.core.cache import parse_backend_uri
 
 
 def get_memcached_hosts():
@@ -19,10 +20,10 @@ def get_memcached_hosts():
     if not memcache:
         return None
 
-    m = re.match("memcached://([.\w]+:\d+;?)", settings.CACHE_BACKEND)
+    scheme, host, params = parse_backend_uri(settings.CACHE_BACKEND)
 
-    if m:
-        return m.group(1).split(";")
+    if scheme == "memcached":
+        return host.split(";")
 
     return None
 
