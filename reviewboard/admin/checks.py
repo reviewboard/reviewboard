@@ -1,3 +1,33 @@
+#
+# reviewboard/admin/checks.py -- Dependency checks for items which are used in
+#                                the admin UI. For the most part, when one of
+#                                these fails, some piece of UI is disabled with
+#                                the returned error message.
+#
+# Copyright (c) 2008-2009  Christian Hammond
+# Copyright (c) 2009  David Trowbridge
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
+
 import imp
 import os
 import sys
@@ -12,9 +42,10 @@ _install_fine = False
 
 
 def check_updates_required():
-    """
-    Checks if there are manual updates required before Review Board can be
-    used on this server.
+    """Checks if there are manual updates required.
+
+    Sometimes, especially in developer installs, some things need to be tweaked
+    by hand before Review Board can be used on this server.
     """
     global _updates_required
     global _install_fine
@@ -82,9 +113,9 @@ def check_updates_required():
 
 
 def reset_check_cache():
-    """
-    Resets the cached data of all checks. This is mainly useful during
-    unit tests.
+    """Resets the cached data of all checks.
+
+    This is mainly useful during unit tests.
     """
     global _updates_required
     global _install_fine
@@ -94,9 +125,7 @@ def reset_check_cache():
 
 
 def get_can_enable_search():
-    """
-    Checks whether the search functionality can be enabled.
-    """
+    """Checks whether the search functionality can be enabled."""
     try:
         imp.find_module("lucene")
         return (True, None)
@@ -108,9 +137,7 @@ def get_can_enable_search():
 
 
 def get_can_enable_syntax_highlighting():
-    """
-    Checks whether syntax highlighting can be enabled.
-    """
+    """Checks whether syntax highlighting can be enabled."""
     try:
         import pygments
 
@@ -133,9 +160,7 @@ def get_can_enable_syntax_highlighting():
 
 
 def get_can_enable_ldap():
-    """
-    Checks whether LDAP authentication can be enabled.
-    """
+    """Checks whether LDAP authentication can be enabled."""
     try:
         imp.find_module("ldap")
         return (True, None)
@@ -145,10 +170,9 @@ def get_can_enable_ldap():
             'is not installed.'
         ))
 
+
 def get_can_enable_dns():
-    """
-    Checks whether we can query DNS to find the domain controller to use.
-    """
+    """Checks whether we can query DNS to find the domain controller to use."""
     try:
         # XXX for reasons I don't understand imp.find_module doesn't work
         #imp.find_module("DNS")
@@ -159,3 +183,25 @@ def get_can_enable_dns():
             'PyDNS, which is required to find the domain controller, '
             'is not installed.'
             ))
+
+
+def get_can_use_amazon_s3():
+    """Checks whether django-storages (with the Amazon S3 backend) is installed."""
+    try:
+        from backends.s3 import S3Storage
+        return (True, None)
+    except ImportError:
+        return (False, _(
+            'Amazon S3 depends on django-storages, which is not installed'
+        ))
+
+
+def get_can_use_couchdb():
+    """Checks whether django-storages (with the CouchDB backend) is installed."""
+    try:
+        from backends.couchdb import CouchDBStorage
+        return (True, None)
+    except ImportError:
+        return (False, _(
+            'CouchDB depends on django-storages, which is not installed'
+        ))

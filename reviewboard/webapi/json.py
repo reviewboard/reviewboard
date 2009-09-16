@@ -169,8 +169,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
             return {
                 'id': o.id,
                 'caption': o.caption,
-                'title': u'Screenshot: %s' % (o.caption or
-                                              os.path.basename(o.image.path)),
+                'title': u'Screenshot: %s' % (o.caption or o.image.name),
                 'image_url': o.get_absolute_url(),
                 'thumbnail_url': o.get_thumbnail_url(),
             }
