@@ -22,6 +22,12 @@ New Features
 
   This should not affect any existing installations with custom SCMTools.
 
+* Improved logging of errors. If a 500 Internal Server Error is displayed,
+  the actual reason for the error will appear in the system log file,
+  along with the URL of the page and the user who tried to access it. This
+  should greatly help administrators track down problems and report bugs
+  back to us.
+
 
 Bugs Fixed
 ==========
