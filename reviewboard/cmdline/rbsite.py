@@ -255,13 +255,13 @@ class Site(object):
         conf_dir = os.path.join(self.install_dir, "conf")
         htdocs_dir = os.path.join(self.install_dir, "htdocs")
 
-        self.process_template("contrib/conf/%s.in" % web_conf_filename,
+        self.process_template("cmdline/conf/%s.in" % web_conf_filename,
                               os.path.join(conf_dir, web_conf_filename))
-        self.process_template("contrib/conf/search-cron.conf.in",
+        self.process_template("cmdline/conf/search-cron.conf.in",
                               os.path.join(conf_dir, "search-cron.conf"))
         if enable_fastcgi:
             fcgi_filename = os.path.join(htdocs_dir, "reviewboard.fcgi")
-            self.process_template("contrib/conf/reviewboard.fcgi.in",
+            self.process_template("cmdline/conf/reviewboard.fcgi.in",
                                   fcgi_filename)
             os.chmod(fcgi_filename, 0755)
 
