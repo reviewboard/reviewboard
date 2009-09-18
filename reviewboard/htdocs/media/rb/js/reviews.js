@@ -279,23 +279,36 @@ function setDraftField(field, value) {
  * format expected by jQuery.ui.autocomplete. It also adds some additional
  * explanatory text to the bottom of the autocomplete list.
  *
- * @param {string} fieldName  The field name ("groups" or "people").
- * @param {string} nameKey    The key containing the name in the result data.
+ * options has the following fields:
+ *
+ *    fieldName   - The field name ("groups" or "people").
+ *    nameKey     - The key containing the name in the result data.
+ *    descKey     - The key containing the description in the result
+ *                  data. This is optional.
+ *    extraParams - Extra parameters to send in the query. This is optional.
+ *
+ * @param {object} options    The options, as listed above.
  *
  * @return {jQuery} This jQuery set.
  */
-$.fn.reviewsAutoComplete = function(fieldName, nameKey) {
+$.fn.reviewsAutoComplete = function(options) {
     return this.each(function() {
         $(this)
             .autocomplete({
                 formatItem: function(data) {
-                    return data[nameKey];
+                    var s = data[options.nameKey];
+
+                    if (options.descKey) {
+                        s += " <span>(" + data[options.descKey] + ")</span>";
+                    }
+
+                    return s;
                 },
                 matchCase: false,
                 multiple: true,
                 parse: function(data) {
                     var jsonData = eval("(" + data + ")");
-                    var items = jsonData[fieldName];
+                    var items = jsonData[options.fieldName];
                     var parsed = [];
 
                     for (var i = 0; i < items.length; i++) {
@@ -303,14 +316,15 @@ $.fn.reviewsAutoComplete = function(fieldName, nameKey) {
 
                         parsed.push({
                             data: value,
-                            value: value[nameKey],
-                            result: value[nameKey]
+                            value: value[options.nameKey],
+                            result: value[options.nameKey]
                         });
                     }
 
                     return parsed;
                 },
-                url: SITE_ROOT + "api/json/" + fieldName + "/"
+                url: SITE_ROOT + "api/json/" + options.fieldName + "/",
+                extraParams: options.extraParams
             })
             .bind("autocompleteshow", function() {
                 /*
@@ -1649,13 +1663,27 @@ $(document).ready(function() {
             if (targetGroupsEl.length > 0) {
                 targetGroupsEl
                     .inlineEditor("field")
-                    .reviewsAutoComplete("groups", "name");
+                    .reviewsAutoComplete({
+                        fieldName: "groups",
+                        nameKey: "name",
+                        descKey: "display_name",
+                        extraParams: {
+                            displayname: 1
+                        }
+                    });
             }
 
             if (targetPeopleEl.length > 0) {
                 targetPeopleEl
                     .inlineEditor("field")
-                    .reviewsAutoComplete("users", "username");
+                    .reviewsAutoComplete({
+                        fieldName: "users",
+                        nameKey: "username",
+                        descKey: "fullname",
+                        extraParams: {
+                            fullname: 1
+                        }
+                    });
             }
 
             if (window.google && google.gears) {

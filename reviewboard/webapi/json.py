@@ -292,14 +292,23 @@ def user_list(request):
 
     If the q parameter is passed, users with a username beginning with
     the query value will be returned.
+
+    If the fullname parameter is passed along with the q parameter, then full
+    names will be searched as well.
     """
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    if not query:
-        u = User.objects.filter(is_active=True)
-    else:
-        u = User.objects.filter(is_active=True, username__istartswith=query)
+    u = User.objects.filter(is_active=True)
+
+    if query:
+        q = Q(username__istartswith=query)
+
+        if request.GET.get('fullname', None):
+            q = q | (Q(first_name__istartswith=query) |
+                     Q(last_name__istartswith=query))
+
+        u = u.filter(q)
 
     return WebAPIResponse(request, {
         'users': u,
@@ -312,14 +321,22 @@ def group_list(request):
 
     If the q parameter is passed, groups with a name beginning with
     the query value will be returned.
+
+    If the displayname parameter is passed along with the q parameter, then
+    full names will be searched as well.
     """
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    if not query:
-        u = Group.objects.all()
-    else:
-        u = Group.objects.filter(name__istartswith=query)
+    u = Group.objects.all()
+
+    if query:
+        q = Q(name__istartswith=query)
+
+        if request.GET.get('displayname', None):
+            q = q | Q(display_name__istartswith=query)
+
+        u = u.filter(q)
 
     return WebAPIResponse(request, {
         'groups': u,
