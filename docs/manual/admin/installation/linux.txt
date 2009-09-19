@@ -157,6 +157,9 @@ type::
 This will automatically download and install the latest stable release of
 Review Board and the required versions of its core dependencies.
 
+If you want to install an in-development release, see
+:ref:`installing-development-releases`.
+
 
 Installing Database Bindings
 ============================
