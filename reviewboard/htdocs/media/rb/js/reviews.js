@@ -1141,7 +1141,9 @@ $.screenshotThumbnail = function(screenshot) {
         captionArea.append("&nbsp;");
     }
 
-    return container.insertBefore($("br", "#screenshot-thumbnails"));
+    var thumbnails = $("#screenshot-thumbnails");
+    $(thumbnails.parent()[0]).show();
+    return container.insertBefore(thumbnails.find("br"));
 };
 
 
