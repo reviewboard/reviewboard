@@ -389,22 +389,15 @@ class ReviewRequest(models.Model):
         """
         return Review.objects.get_pending_review(self, user)
 
-    def get_last_activity(self, user=None):
-        """Returns the last activity information on the review request.
+    def get_last_activity(self):
+        """Returns the last public activity information on the review request.
 
-        If the user is specified, the user owns this review request and
-        there's an active draft, then the draft's timestamp will be
-        included in the comparisons.
+        This will return the last object updated, along with the timestamp
+        of that object. It can be used to judge whether something on a
+        review request has been made public more recently.
         """
         timestamp = self.last_updated
         updated_object = self
-
-        if user:
-            draft = self.get_draft(user)
-
-            if draft:
-                timestamp = draft.last_updated
-                updated_object = draft
 
         # Check if the diff was updated along with this.
         try:
@@ -416,7 +409,7 @@ class ReviewRequest(models.Model):
         except DiffSet.DoesNotExist:
             pass
 
-        # Check for the latest review.
+        # Check for the latest review or reply.
         try:
             review = self.reviews.filter(public=True).latest()
 

@@ -485,18 +485,22 @@ def review_request(request, review_request_id):
 def review_request_last_update(request, review_request_id):
     """
     Returns the last update made to the specified review request.
+
+    This does not take into account changes to a draft review request, as
+    that's generally not update information that the owner of the draft is
+    interested in.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not review_request.is_accessible_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    timestamp, updated_object = review_request.get_last_activity(request.user)
+    timestamp, updated_object = review_request.get_last_activity()
     user = None
     summary = None
     update_type = None
 
-    if isinstance(updated_object, (ReviewRequest, ReviewRequestDraft)):
+    if isinstance(updated_object, ReviewRequest):
         user = updated_object.submitter
         summary = _("Review request updated")
         update_type = "review-request"
