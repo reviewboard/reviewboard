@@ -74,6 +74,24 @@ need to then upgrade setuptools to the latest version by running::
 .. _`setuptools installation`: http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
 
 
+Installing Python Development Header
+s===================================
+
+You will need to install the Python development headers for your
+distribution.
+
+To install on on Debian_, Ubuntu_, or another Debian-based distribution,
+type::
+
+    $ apt-get install python-dev
+
+
+To install on a `RedHat Enterprise`_, Fedora_, CentOS_, or another
+RedHat-based distribution, type::
+
+    $ yum install python-devel
+
+
 .. index:: memcached
 
 Installing memcached
@@ -352,11 +370,10 @@ You'll need the following dependencies to build PyLucene:
 * gcc/g++
 * Sun's JDK
 * Ant_
-* Python development packages
 
 On Debian_ and Ubuntu_, you can install these by typing::
 
-    $ sudo apt-get install gcc g++ sun-java6-jdk ant python-dev
+    $ sudo apt-get install gcc g++ sun-java6-jdk ant
 
 Once these are installed, you'll need to download the `latest version
 <http://lucene.apache.org/pylucene/>`_ of PyLucene and extract
