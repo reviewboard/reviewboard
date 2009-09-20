@@ -279,6 +279,8 @@ Perforce
 
 To use Review Board with Perforce_, you'll first need to install
 :command:`p4` some place in your web server's path (usually :file:`/usr/bin`).
+You can download this from the `Perforce downloads`_ page.
+
 You'll then need to install the Python bindings by typing the following::
 
     $ easy_install P4PythonInstaller
@@ -288,6 +290,7 @@ compile it. This will require that you have standard build tools
 (:command:`gcc`, :command:`make`, etc.) installed on your system.
 
 
+.. _`Perforce downloads`: http://perforce.com/perforce/downloads/
 .. _Perforce: http://www.perforce.com/
 
 
