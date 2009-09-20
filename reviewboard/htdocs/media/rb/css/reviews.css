@@ -945,20 +945,24 @@
 }
 
 /* Results list */
-.ui-autocomplete-results ul
-{
+.ui-autocomplete-results ul {
   margin: 0;
   padding: 0;
   width: 100%;
 }
 
 /* Result item */
-.ui-autocomplete-results li
-{
+.ui-autocomplete-results li {
   cursor: pointer;
   margin: 0;
   padding: 3px 6px;
   white-space: nowrap;
+}
+
+.ui-autocomplete-results li span {
+  margin-left: 6px;
+  position: absolute;
+  right: 6px;
 }
 
 /* Pre-highlighted result item */

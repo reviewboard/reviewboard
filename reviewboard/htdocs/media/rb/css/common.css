@@ -245,6 +245,11 @@ form table td {
   padding: 8px 8px 4px 4px;
 }
 
+form table td.label {
+  text-align: right;
+  font-weight: bold;
+}
+
 .formdlg tr {
   padding-top: 4px;
 }

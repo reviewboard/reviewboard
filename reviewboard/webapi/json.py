@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
@@ -30,8 +31,6 @@ from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
-from reviewboard.reviews.signals import review_request_published, \
-                                        review_published, reply_published
 from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
@@ -293,14 +292,23 @@ def user_list(request):
 
     If the q parameter is passed, users with a username beginning with
     the query value will be returned.
+
+    If the fullname parameter is passed along with the q parameter, then full
+    names will be searched as well.
     """
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    if not query:
-        u = User.objects.filter(is_active=True)
-    else:
-        u = User.objects.filter(is_active=True, username__istartswith=query)
+    u = User.objects.filter(is_active=True)
+
+    if query:
+        q = Q(username__istartswith=query)
+
+        if request.GET.get('fullname', None):
+            q = q | (Q(first_name__istartswith=query) |
+                     Q(last_name__istartswith=query))
+
+        u = u.filter(q)
 
     return WebAPIResponse(request, {
         'users': u,
@@ -313,14 +321,22 @@ def group_list(request):
 
     If the q parameter is passed, groups with a name beginning with
     the query value will be returned.
+
+    If the displayname parameter is passed along with the q parameter, then
+    full names will be searched as well.
     """
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    if not query:
-        u = Group.objects.all()
-    else:
-        u = Group.objects.filter(name__istartswith=query)
+    u = Group.objects.all()
+
+    if query:
+        q = Q(name__istartswith=query)
+
+        if request.GET.get('displayname', None):
+            q = q | Q(display_name__istartswith=query)
+
+        u = u.filter(q)
 
     return WebAPIResponse(request, {
         'groups': u,
@@ -469,49 +485,41 @@ def review_request(request, review_request_id):
 def review_request_last_update(request, review_request_id):
     """
     Returns the last update made to the specified review request.
+
+    This does not take into account changes to a draft review request, as
+    that's generally not update information that the owner of the draft is
+    interested in.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not review_request.is_accessible_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    timestamp = review_request.last_updated
-    user = review_request.submitter
-    summary = _("Review request updated")
-    update_type = "review-request"
+    timestamp, updated_object = review_request.get_last_activity()
+    user = None
+    summary = None
+    update_type = None
 
-    draft = review_request.get_draft(request.user)
+    if isinstance(updated_object, ReviewRequest):
+        user = updated_object.submitter
+        summary = _("Review request updated")
+        update_type = "review-request"
+    elif isinstance(updated_object, DiffSet):
+        summary = _("Diff updated")
+        update_type = "diff"
+    elif isinstance(updated_object, Review):
+        user = updated_object.user
 
-    if draft:
-        timestamp = draft.last_updated
-
-    # If the diff was updated along with this, then indicate it.
-    try:
-        diffset = review_request.diffset_history.diffsets.latest()
-
-        if diffset.timestamp >= timestamp:
-            timestamp = diffset.timestamp
-            summary = _("Diff updated")
-            update_type = "diff"
-    except DiffSet.DoesNotExist:
-        pass
-
-    # Check for the latest review.
-    try:
-        review = review_request.reviews.filter(public=True).latest()
-
-        if review.timestamp >= timestamp:
-            timestamp = review.timestamp
-            user = review.user
-
-            if review.is_reply():
-                summary = _("New reply")
-                update_type = "reply"
-            else:
-                summary = _("New review")
-                update_type = "review"
-    except Review.DoesNotExist:
-        pass
+        if updated_object.is_reply():
+            summary = _("New reply")
+            update_type = "reply"
+        else:
+            summary = _("New review")
+            update_type = "review"
+    else:
+        # Should never be able to happen. The object will always at least
+        # be a ReviewRequest.
+        assert False
 
     return WebAPIResponse(request, {
         'timestamp': timestamp,
@@ -795,12 +803,8 @@ def review_request_draft_publish(request, review_request_id):
     if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    changes = draft.publish()
+    changes = draft.publish(user=request.user)
     draft.delete()
-
-    review_request_published.send(sender=None, user=request.user,
-                                  review_request=review_request,
-                                  changedesc=changes)
 
     return WebAPIResponse(request)
 
@@ -821,7 +825,7 @@ def find_user(username):
 
 def _prepare_draft(request, review_request):
     if not review_request.is_mutable_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
+        raise PermissionDenied
     return ReviewRequestDraft.create(review_request)
 
 
@@ -891,7 +895,11 @@ def review_request_draft_set_field(request, review_request_id, field_name):
             return WebAPIResponseError(request, INVALID_ATTRIBUTE,
                                        {'attribute': field_name})
 
-        draft = _prepare_draft(request, review_request)
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
         screenshot.draft_caption = data = request.POST['value']
         screenshot.save()
         draft.save()
@@ -899,7 +907,11 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         return WebAPIResponse(request, {field_name: data})
 
     if field_name == "changedescription":
-        draft = _prepare_draft(request, review_request)
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
         draft.changedesc.text = data = request.POST['value']
         draft.changedesc.save()
         draft.save()
@@ -910,7 +922,11 @@ def review_request_draft_set_field(request, review_request_id, field_name):
         return WebAPIResponseError(request, INVALID_ATTRIBUTE,
                                    {'attribute': field_name})
 
-    draft = _prepare_draft(request, review_request)
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
     result = {}
 
     result[field_name], result['invalid_' + field_name] = \
@@ -930,7 +946,11 @@ mutable_review_request_fields = [
 @require_POST
 def review_request_draft_set(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    draft = _prepare_draft(request, review_request)
+
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     result = {}
 
@@ -951,7 +971,11 @@ def review_request_draft_set(request, review_request_id):
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    draft = _prepare_draft(request, review_request)
+
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     tool = review_request.repository.get_scmtool()
     changeset = tool.get_changeset(review_request.changenum)
@@ -992,12 +1016,9 @@ def review_draft_save(request, review_request_id, publish=False):
         review.body_bottom = request.POST['body_bottom']
 
     if publish:
-        review.publish()
+        review.publish(user=request.user)
     else:
         review.save()
-
-    if publish:
-        review_published.send(sender=None, user=request.user, review=review)
 
     return WebAPIResponse(request)
 
@@ -1160,14 +1181,12 @@ def review_reply_draft_save(request, review_request_id, review_id):
 
     reply = review.get_pending_reply(request.user)
 
-    if reply:
-        reply.publish()
-
-        reply_published.send(sender=None, user=request.user, reply=reply)
-
-        return WebAPIResponse(request)
-    else:
+    if not reply:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    reply.publish(user=request.user)
+
+    return WebAPIResponse(request)
 
 
 @webapi_login_required
@@ -1266,7 +1285,10 @@ def new_diff(request, review_request_id):
         if draft.diffset and draft.diffset != diffset:
             discarded_diffset = draft.diffset
     except ReviewRequestDraft.DoesNotExist:
-        draft = _prepare_draft(request, review_request)
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
 
     draft.diffset = diffset
 

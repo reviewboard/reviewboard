@@ -7,7 +7,7 @@ fi
 
 if [ ! -e "settings_local.py" ]; then
 	echo "You must create a settings_local.py in the top-level source"
-	echo "directory. You can use contrib/internal/settings_local.py.tmpl"
+	echo "directory. You can use contrib/conf/settings_local.py.tmpl"
 	echo "as a basis."
 	exit 1
 fi
@@ -18,8 +18,12 @@ if [ ! -e "reviewboard/htdocs/media/djblets" ]; then
 	echo "reviewboard/htdocs/media/djblets"
 	echo
 	echo "For example:"
-	echo "$ ln -s ../djblets/djblets/media reviewboard/htdocs/media/djblets"
+	echo "$ ln -s /path/to/djblets/djblets/media reviewboard/htdocs/media/djblets"
 	exit 1
+fi
+
+if [ ! -e "ReviewBoard.egg-info" ]; then
+	./setup.py egg_info
 fi
 
 ./reviewboard/manage.py \

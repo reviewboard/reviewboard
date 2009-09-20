@@ -4,7 +4,8 @@
 Contributing Patches
 ====================
 
-New patches should always be based on our latest code in SVN.
+New patches should always be based on our latest code in the ``master``.
+branch on the official `Git repository`_.
 
 Patches should be posted on our project's Review Board server at
 http://reviews.review-board.org/. We'll review the patches there, and
@@ -20,6 +21,7 @@ Before submitting patches, please make sure the code adheres to the
 We also strongly encourage contributors to submit unit tests along with
 their code.
 
+.. _`Git repository`: http://github.com/reviewboard/reviewboard/
 .. _`mailing lists`: http://www.review-board.org/mailing-lists/
 .. _`bug tracker`: http://www.review-board.org/bugs/
 

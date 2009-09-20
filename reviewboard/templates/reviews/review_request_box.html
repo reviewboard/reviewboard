@@ -53,7 +53,7 @@
   </tr>
   <tr>
    <td class="label"><label for="changenum">{% trans "Change Number" %}:</label></td>
-   <td class="value"><span id="changenum">{{review_request.changenum}}</span></td>
+   <td class="value"><span id="changenum">{{review_request.changenum}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
    <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
    <td class="value"><span id="repository">{{review_request.repository}}</span></td>
   </tr>
@@ -73,7 +73,7 @@
    <div class="screenshot-container">
     <div class="screenshot"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
-     <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption" class="editable screenshot-editable">{{image.caption}}</a>
+     <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption" class="editable screenshot-editable">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
      {% ifuserorperm review_request.submitter "reviews.delete_screenshot" %}
       <a href="{{image.get_absolute_url}}delete/"><img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
      {% endifuserorperm %}

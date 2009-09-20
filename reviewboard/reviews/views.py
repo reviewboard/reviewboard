@@ -106,19 +106,6 @@ fields_changed_name_map = {
     'diff': 'Diff',
 }
 
-def get_last_activity_time(review_request, draft):
-    """Utility function to generate a last activity timestamp.
-
-    This is used for ETags and update checking for review request-related
-    pages.
-    """
-    timestamps = [review_request.last_updated]
-
-    if draft:
-        timestamps.append(draft.last_updated)
-
-    return get_latest_timestamp(timestamps)
-
 
 @check_login_required
 def review_detail(request, review_request_id,
@@ -158,10 +145,16 @@ def review_detail(request, review_request_id,
     draft = review_request.get_draft(request.user)
 
     # Find out if we can bail early. Generate an ETag for this.
-    last_activity_time = get_last_activity_time(review_request, draft)
+    last_activity_time, updated_object = review_request.get_last_activity()
 
-    etag = "%s:%s:%s:%s" % (request.user, last_activity_time, review_timestamp,
-                            settings.AJAX_SERIAL)
+    if draft:
+        draft_timestamp = draft.last_updated
+    else:
+        draft_timestamp = ""
+
+    etag = "%s:%s:%s:%s:%s" % (request.user, last_activity_time,
+                               draft_timestamp, review_timestamp,
+                               settings.AJAX_SERIAL)
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
@@ -450,7 +443,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     if draft and draft.diffset:
         num_diffs += 1
 
-    last_activity_time = get_last_activity_time(review_request, draft)
+    last_activity_time, updated_object = review_request.get_last_activity()
 
     return view_diff(request, diffset.id, interdiffset_id, {
         'review': review,

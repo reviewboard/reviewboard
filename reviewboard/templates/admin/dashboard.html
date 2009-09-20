@@ -3,7 +3,6 @@
 {% load i18n %}
 {% load log %}
 
-{% block stylesheet %}{% admin_media_prefix %}css/dashboard.css{% endblock %}
 {% block coltype %}colM{% endblock %}
 {% block bodyclass %}dashboard{% endblock %}
 {% block breadcrumbs %}{% endblock %}
@@ -56,8 +55,13 @@
       <td>{{version}}</td>
      </tr>
      <tr>
-      <th colspan="2"><a href="cache/">Server Cache</a></th>
+      <th colspan="2"><a href="cache/">{% trans "Server Cache" %}</a></th>
      </tr>
+{% if settings.LOGGING_ENABLED and settings.LOGGING_DIRECTORY %}
+     <tr>
+      <th colspan="2"><a href="{% url server-log %}">{% trans "Server Log" %}</a></th>
+     </tr>
+{% endif %}
     </tbody>
    </table>
   </div>

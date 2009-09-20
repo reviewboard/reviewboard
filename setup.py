@@ -17,7 +17,7 @@ from setuptools.command.build_py import build_py
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
-from reviewboard import get_package_version, is_release
+from reviewboard import get_package_version, is_release, VERSION
 
 
 # Make sure we're actually in the directory containing setup.py.
@@ -56,14 +56,17 @@ else:
     cmdclasses = {'install_data': install_data}
 
 
+PACKAGE_NAME = 'ReviewBoard'
+
 if is_release():
-    download_url = "http://downloads.review-board.org/releases/"
+    download_url = 'http://downloads.review-board.org/releases/%s/%s.%s/' % \
+                   (PACKAGE_NAME, VERSION[0], VERSION[1])
 else:
-    download_url = "http://downloads.review-board.org/nightlies/"
+    download_url = 'http://downloads.review-board.org/nightlies/'
 
 
 # Build the reviewboard package.
-setup(name="ReviewBoard",
+setup(name=PACKAGE_NAME,
       version=get_package_version(),
       license="MIT",
       description="Review Board, a web-based code review tool",
@@ -92,7 +95,7 @@ setup(name="ReviewBoard",
       install_requires=[
           'Django>=1.1',
           'django_evolution',
-          'Djblets>=0.5.1alpha1.dev_20090718',
+          'Djblets>=0.5.3',
           'Pygments>=0.10',
           'flup',
           'pytz'

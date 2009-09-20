@@ -1,3 +1,28 @@
+/* DASHBOARD */
+
+.dashboard .module table th {
+    width: 100%;
+}
+
+.dashboard .module table td {
+    white-space: nowrap;
+}
+
+.dashboard .module table td a {
+    display: block;
+    padding-right: .6em;
+}
+
+/* RECENT ACTIONS MODULE */
+
+.module ul.actionlist {
+    margin-left: 0;
+}
+
+ul.actionlist li {
+    list-style-type: none;
+}
+
 #admin-nav, #admin-subnav {
   background-color: #557ab1;
   float: left;
@@ -24,6 +49,10 @@
   padding: 4px 8px;
 }
 
+#admin-subnav li a {
+  border-top: 3px solid #333333;
+}
+
 #admin-nav li a:hover,
 #admin-subnav li a:hover {
   background-color: #2f5183;
@@ -32,7 +61,12 @@
 
 #admin-nav li a.active,
 #admin-subnav li a.active {
-  background-color: #173663;
+  color: black;
+  background: white url(../images/subnav-bg.png) repeat-x scroll 0 -6px;
+}
+
+div.breadcrumbs {
+  border-top-width: 0px;
 }
 
 #admin-subnav {
@@ -119,6 +153,55 @@ thead th a:link, thead th a:visited {
 
 #header {
   background-color: #2f5183;
+}
+
+#log-entries pre {
+  margin: 0;
+  padding: 0;
+}
+
+#log-entries td {
+  color: black;
+}
+
+#log-entries .level-debug.row1 {
+  background-color: #d5d5d5;
+}
+
+#log-entries .level-debug.row2 {
+  background-color: #e5e5e5;
+}
+
+#log-entries .level-info.row1 {
+  background-color: #eef4ff;
+}
+
+#log-entries .level-info.row2 {
+  background-color: #f5f8fc;
+}
+
+#log-entries .level-warning.row1 {
+  background-color: #fffaa9;
+}
+
+#log-entries .level-warning.row2 {
+  background-color: #fffdbe;
+}
+
+#log-entries .level-error.row1 {
+  background-color: #ffe493;
+}
+
+#log-entries .level-error.row2 {
+  background-color: #ffeba9;
+}
+
+#log-entries .level-critical.row1 {
+  background-color: #f4bcab;
+}
+
+#log-entries .level-critical.row2 {
+  background-color: #f6c8ba;
 }
 
 .dashboard #content {

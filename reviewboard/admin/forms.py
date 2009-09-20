@@ -1,5 +1,6 @@
 import pytz
 import re
+import sre_constants
 import urlparse
 
 from django import forms
@@ -21,7 +22,7 @@ class GeneralSettingsForm(SiteSettingsForm):
     """
     General settings for Review Board.
     """
-    server = forms.URLField(
+    server = forms.CharField(
         label=_("Server"),
         help_text=_("The URL of this Review Board server. This should not "
                     "contain the subdirectory Review Board is installed in."),
@@ -74,6 +75,7 @@ class GeneralSettingsForm(SiteSettingsForm):
             ("ad",      _("Active Directory")),
             ("ldap",    _("LDAP")),
             ("nis",     _("NIS")),
+            ("x509",    _("X.509 Public Key")),
             ("custom",  _("Custom"))
         ),
         help_text=_("The method Review Board should use for authenticating "
@@ -180,6 +182,36 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("Depth to recurse when checking group membership. 0 to turn off, -1 for unlimited."),
         required=False)
 
+    auth_x509_username_field = forms.ChoiceField(
+        label=_("Username Field"),
+        choices=(
+            # Note: These names correspond to environment variables set by
+            #       mod_ssl.
+            ("SSL_CLIENT_S_DN",        _("DN (Distinguished Name)")),
+            ("SSL_CLIENT_S_DN_CN",     _("CN (Common Name)")),
+            ("SSL_CLIENT_S_DN_Email",  _("Email address")),
+        ),
+        help_text=_("The X.509 certificate field from which the Review Board "
+                    "username will be extracted."),
+        required=True)
+
+    auth_x509_username_regex = forms.CharField(
+        label=_("Username Regex"),
+        help_text=_("Optional regex used to convert the selected X.509 "
+                    "certificate field to a usable Review Board username. For "
+                    "example, if using the email field to retrieve the "
+                    "username, use this regex to get the username from an "
+                    "e-mail address: '(\s+)@yoursite.com'. There must be only "
+                    "one group in the regex."),
+        required=False)
+
+    auth_x509_autocreate_users = forms.BooleanField(
+        label=_("Automatically create new user accounts."),
+        help_text=_("Enabling this option will cause new user accounts to be "
+                    "automatically created when a new user with an X.509 "
+                    "certificate accesses Review Board."),
+        required=False)
+
     custom_backends = forms.CharField(
         label=_("Backends"),
         help_text=_("A comma-separated list of custom auth backends. These "
@@ -265,6 +297,19 @@ class GeneralSettingsForm(SiteSettingsForm):
         # Reload any important changes into the Django settings.
         load_site_config()
 
+
+    def clean_auth_x509_username_regex(self):
+        """Validates that the specified regular expression is valid."""
+        regex = self.cleaned_data['auth_x509_username_regex']
+
+        try:
+            re.compile(regex)
+        except sre_constants.error, e:
+            raise forms.ValidationError(e)
+
+        return regex
+
+
     def full_clean(self):
         def set_fieldset_required(fieldset_id, required):
             for fieldset in self.Meta.fieldsets:
@@ -286,6 +331,9 @@ class GeneralSettingsForm(SiteSettingsForm):
 
             if auth_backend != "ad":
                 set_fieldset_required("auth_ad", False)
+
+            if auth_backend != 'x509':
+                set_fieldset_required("auth_x509", False)
 
             if auth_backend != "custom":
                 set_fieldset_required("auth_custom", False)
@@ -354,6 +402,15 @@ class GeneralSettingsForm(SiteSettingsForm):
                             'auth_ad_group_name',
                             'auth_ad_search_root',
                             'auth_ad_recursion_depth',
+                            ),
+            },
+            {
+                'id':      'auth_x509',
+                'classes': ('wide', 'hidden'),
+                'title':   _("X.509 Client Certificate Authentication settings"),
+                'fields':  ('auth_x509_username_field',
+                            'auth_x509_username_regex',
+                            'auth_x509_autocreate_users',
                             ),
             },
             {

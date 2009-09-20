@@ -8,6 +8,7 @@ from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
 
 import reviewboard.webapi.json as webapi
+from reviewboard import initialize
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Group, ReviewRequest, \
@@ -21,6 +22,8 @@ class WebAPITests(TestCase, EmailTestHelper):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
+        initialize()
+
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
         siteconfig.save()
@@ -470,6 +473,18 @@ class WebAPITests(TestCase, EmailTestHelper):
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(mail.outbox), 1)
+
+    def testReviewRequestDraftSetFieldNoPermission(self):
+        """Testing the reviewrequests/draft/set/<field> API without valid permissions"""
+        bugs_closed = '123,456'
+        review_request_id = ReviewRequest.objects.from_user('admin')[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
+                           review_request_id, {
+            'value': bugs_closed,
+        })
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
 
     # draft/save is deprecated. Tests were copied to *DraftPublish*().
     # This is still here only to make sure we don't break backwards

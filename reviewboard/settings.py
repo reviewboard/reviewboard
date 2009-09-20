@@ -57,6 +57,7 @@ MIDDLEWARE_CLASSES = (
 
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
+    'reviewboard.admin.middleware.X509AuthMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -95,6 +96,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'djblets.datagrid',
     'djblets.feedview',
+    'djblets.log',
     'djblets.siteconfig',
     'djblets.util',
     'djblets.webapi',
@@ -103,6 +105,7 @@ INSTALLED_APPS = (
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
     'reviewboard.iphone',
+    'reviewboard.notifications',
     'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',

@@ -1,5 +1,7 @@
 from django.contrib import admin
+from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.reviews.forms import DefaultReviewerForm
 from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
                                        Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot, \
@@ -14,7 +16,24 @@ class CommentAdmin(admin.ModelAdmin):
 
 
 class DefaultReviewerAdmin(admin.ModelAdmin):
-    filter_horizontal = ('people',)
+    form = DefaultReviewerForm
+    filter_horizontal = ('repository', 'groups', 'people',)
+    fieldsets = (
+        (_('General Information'), {
+            'fields': ('name', 'file_regex'),
+            'classes': ['wide'],
+        }),
+        (_('Reviewers'), {
+            'fields': ('groups', 'people'),
+        }),
+        (_('Repositories'), {
+            'description': _('<p>A default reviewer will cover all '
+                             'repositories, unless assigned one or more '
+                             'specific repositories below.</p>'),
+            'fields': ('repository',),
+        })
+    )
+    list_display = ('name', 'file_regex')
 
 
 class GroupAdmin(admin.ModelAdmin):

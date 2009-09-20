@@ -18,10 +18,12 @@ class FileDiff(models.Model):
                                 related_name='files',
                                 verbose_name=_("diff set"))
 
-    source_file = models.CharField(_("source file"), max_length=256)
-    dest_file = models.CharField(_("destination file"), max_length=256)
-    source_revision = models.CharField(_("source file revision"), max_length=512)
-    dest_detail = models.CharField(_("destination file details"), max_length=512)
+    source_file = models.CharField(_("source file"), max_length=1024)
+    dest_file = models.CharField(_("destination file"), max_length=1024)
+    source_revision = models.CharField(_("source file revision"),
+                                       max_length=512)
+    dest_detail = models.CharField(_("destination file details"),
+                                   max_length=512)
     diff = Base64Field(_("diff"), db_column="diff_base64")
     binary = models.BooleanField(_("binary file"), default=False)
     parent_diff = Base64Field(_("parent diff"), db_column="parent_diff_base64",

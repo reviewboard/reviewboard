@@ -23,7 +23,7 @@
  <h1 class="title">{% trans "User Preferences" %}</h1>
  <div class="main">
   <table>
-   {% ifequal siteconfig.settings.auth_backend "builtin" %}
+{% ifequal siteconfig.settings.auth_backend "builtin" %}
    <tr>
     <td><label for="id_first_name">{% trans "First Name:" %}</label></td>
     <td>{{form.first_name}}</td>
@@ -36,6 +36,8 @@
     <td><label for="id_email">{% trans "Email:" %}</label></td>
     <td>{{form.email}} {{form.errors.email}}</td>
    </tr>
+{% endifequal %}
+{% if can_change_password %}
    <tr>
     <td><label for="id_password">{% trans "Change Password:" %}</label></td>
     <td>{{form.password1}}</td>
@@ -44,7 +46,7 @@
     <td><label for="id_password2">{% trans "Verify New Password:" %}</label></td>
     <td>{{form.password2}} {{form.errors.password2}}</td>
    </tr>
-   {% endifequal %}
+{% endif %}
 {% if siteconfig.settings.diffviewer_syntax_highlighting %}
    <tr>
     <td></td>
