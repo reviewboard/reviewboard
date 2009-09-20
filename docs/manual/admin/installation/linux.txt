@@ -55,8 +55,12 @@ type::
     $ apt-get install python-setuptools
 
 
-To install on a `RedHat Enterprise`_, Fedora_, CentOS_, or another
-RedHat-based distribution, type::
+To install on Fedora_ 8 and above, type::
+
+    $ yum install -y python-setuptools-devel.noarch
+
+To install on a `RedHat Enterprise`_, CentOS_, Fedora_ 7 and earlier, or
+another RedHat-based distribution, type::
 
     $ yum install python-setuptools
 
