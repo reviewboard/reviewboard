@@ -222,8 +222,9 @@ special Review Board user and the :option:`--submit-as` option.
 To set this up, first register a new user. This user will be specific to
 your script, and will have special permissions, so make sure the password
 is protected. You'll then want to grant the
-:ref:`can-submit-as-user-permission` to the user. This will give this user to
-the ability to modify a review request as another user.
+:ref:`can-submit-as-user-permission` and
+:ref:`can-edit-review-request-permission` to the user. This will give this
+user to the ability to modify a review request as another user.
 
 You can then invoke :command:`post-review` by doing the following::
 
