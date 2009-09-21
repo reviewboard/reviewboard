@@ -1028,8 +1028,8 @@ class InstallCommand(Command):
                          help="run non-interactively using configuration "
                               "provided in command-line options")
         group.add_option("--domain-name",
-                         help="full domain name of the site, excluding the "
-                              "http://, port or path")
+                         help="fully-qualified host name of the site, "
+                         "excluding the http://, port or path")
         group.add_option("--site-root", default="/",
                          help="path to the site relative to the domain name")
         group.add_option("--media-url", default="media/",
@@ -1162,10 +1162,10 @@ class InstallCommand(Command):
 
 
     def ask_domain(self):
-        page = ui.page("What's the domain name for this site?")
+        page = ui.page("What's the host name for this site?")
 
-        ui.text(page, "This should be the full domain without the http://, "
-                      "port or path.")
+        ui.text(page, "This should be the fully-qualified host name without "
+                      "the http://, port or path.")
 
         ui.prompt_input(page, "Domain Name", site.domain_name,
                         save_obj=site, save_var="domain_name")
