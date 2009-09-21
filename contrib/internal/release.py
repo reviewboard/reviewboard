@@ -10,7 +10,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-from reviewboard import get_package_version, VERSION
+from reviewboard import get_package_version, is_release, VERSION
 
 
 PY_VERSIONS = ["2.4", "2.5", "2.6"]
@@ -29,6 +29,7 @@ built_files = []
 
 def execute(cmdline):
     print ">>> %s" % cmdline
+
     if os.system(cmdline) != 0:
         print "!!! Error invoking command."
         sys.exit(1)
@@ -71,11 +72,17 @@ def main():
                          "Review Board tree.\n")
         sys.exit(1)
 
+    if not is_release():
+        sys.stderr.write("This version is not listed as a release.\n")
+        sys.exit(1)
+
     clean()
     build_targets()
     upload_files()
     tag_release()
-    register_release()
+
+    if VERSION[3] == 'final':
+        register_release()
 
 
 if __name__ == "__main__":

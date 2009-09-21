@@ -2,7 +2,7 @@
 Review Board 1.1 Alpha 1 Release Notes
 ======================================
 
-**Release date**: September 19, 2009
+**Release date**: September 20, 2009
 
 
 New Features
