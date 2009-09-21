@@ -67,7 +67,7 @@
      <li>- <a href="http://www.review-board.org/bugs/new/">{% trans "Report bug" %}</a></li>
     </ul>
     <div>
-     <img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" />
+     <a href="{% url dashboard %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" /></a>
      <h1 id="title"><a href="{% url root %}">Review Board</a></h1>
      <h2 id="beta">{{version}}</h2>
     </div>
