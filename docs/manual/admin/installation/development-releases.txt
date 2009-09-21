@@ -31,7 +31,7 @@ parameter to :command:`easy_install`. For example::
 If you want to install from this directory by default in future upgrades, you
 can create a :file:`$HOME/.pydistutils.cfg` file and add the following::
 
-    [install]
+    [easy_install]
     find_links = http://downloads.review-board.org/releases/ReviewBoard/1.1/
 
 From then on, you can simply type::
