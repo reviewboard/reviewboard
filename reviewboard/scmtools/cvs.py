@@ -151,11 +151,6 @@ class CVSClient:
                 os.rmdir(self.tempdir)
 
     def cat_file(self, filename, revision):
-        # Somehow CVS sometimes seems to write .cvsignore files to current
-        # working directory even though we force stdout with -p.
-        self.tempdir = tempfile.mkdtemp()
-        os.chdir(self.tempdir)
-
         # We strip the repo off of the fully qualified path as CVS does
         # not like to be given absolute paths.
         repos_path = self.path.split(":")[-1]
@@ -166,8 +161,34 @@ class CVSClient:
         if filename.endswith(",v"):
             filename = filename.rstrip(",v")
 
-        # If the file is in the Attic, strip the Attic path element
-        filename = '/'.join(filename.rsplit('/Attic/', 1))
+        # We want to try to fetch the files with different permutations of
+        # "Attic" and no "Attic". This means there are 4 various permutations
+        # that we have to check, based on whether we're using windows- or
+        # unix-type paths
+
+        filenameAttic = filename
+
+        if '/Attic/' in filename:
+            filename = '/'.join(filename.rsplit('/Attic/', 1))
+        elif '\\Attic\\' in filename:
+            filename = '\\'.join(filename.rsplit('\\Attic\\', 1))
+        elif '\\' in filename:
+            pos = filename.rfind('\\')
+            filenameAttic = filename[0:pos] + "\\Attic" + filename[pos:]
+        else:
+            pos = filename.rfind('/')
+            filenameAttic = filename[0:pos] + "/Attic" + filename[pos:]
+
+        try:
+            return self._cat_specific_file(filename, revision)
+        except FileNotFoundError:
+            return self._cat_specific_file(filenameAttic, revision)
+
+    def _cat_specific_file(self, filename, revision):
+        # Somehow CVS sometimes seems to write .cvsignore files to current
+        # working directory even though we force stdout with -p.
+        self.tempdir = tempfile.mkdtemp()
+        os.chdir(self.tempdir)
 
         p = subprocess.Popen(['cvs', '-f', '-d', self.repository, 'checkout',
                               '-r', str(revision), '-p', filename],
