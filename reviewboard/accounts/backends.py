@@ -14,6 +14,9 @@ class NISBackend(object):
     def authenticate(self, username, password):
         import crypt
         import nis
+
+        username = username.strip()
+
         try:
             passwd = nis.match(username, 'passwd').split(':')
             original_crypted = passwd[1]
@@ -28,6 +31,9 @@ class NISBackend(object):
 
     def get_or_create_user(self, username, passwd=None):
         import nis
+
+        username = username.strip()
+
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -109,6 +115,8 @@ class LDAPBackend(object):
         return None
 
     def get_or_create_user(self, username):
+        username = username.strip()
+
         try:
             user = User.objects.get(username=username)
             return user
@@ -247,8 +255,8 @@ class ActiveDirectoryBackend(object):
 
     def authenticate(self, username, password):
         import ldap
-        connections = self.get_ldap_connections()
 
+        connections = self.get_ldap_connections()
         username = username.strip()
         required_group = settings.AD_GROUP_NAME
 
@@ -282,6 +290,8 @@ class ActiveDirectoryBackend(object):
         return None
 
     def get_or_create_user(self, username, ad_user_data):
+        username = username.strip()
+
         try:
             user = User.objects.get(username=username)
             return user
@@ -322,6 +332,8 @@ class X509Backend(object):
         return self.get_or_create_user(username)
 
     def clean_username(self, username):
+        username = username.strip()
+
         if settings.X509_USERNAME_REGEX:
             try:
                 m = re.match(settings.X509_USERNAME_REGEX, username)
@@ -337,6 +349,7 @@ class X509Backend(object):
 
     def get_or_create_user(self, username):
         user = None
+        username = username.strip()
 
         try:
             user = User.objects.get(username=username)

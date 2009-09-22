@@ -809,6 +809,8 @@ def review_request_draft_publish(request, review_request_id):
 
 
 def find_user(username):
+    username = username.strip()
+
     try:
         return User.objects.get(username=username)
     except User.DoesNotExist:
