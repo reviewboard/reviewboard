@@ -25,6 +25,7 @@
 #
 
 
+import os
 import re
 import sre_constants
 import urlparse
@@ -597,6 +598,22 @@ class LoggingSettingsForm(SiteSettingsForm):
                     "useful for debugging but may greatly increase the "
                     "size of log files."),
         required=False)
+
+    def clean_logging_directory(self):
+        """Validates that the logging_directory path is valid."""
+        logging_dir = self.cleaned_data['logging_directory']
+
+        if not os.path.exists(logging_dir):
+            raise forms.ValidationError(_("This path does not exist."))
+
+        if not os.path.isdir(logging_dir):
+            raise forms.ValidationError(_("This is not a directory."))
+
+        if not os.access(logging_dir, os.W_OK):
+            raise forms.ValidationError(
+                _("This path is not writable by the web server."))
+
+        return logging_dir
 
     def save(self):
         super(LoggingSettingsForm, self).save()
