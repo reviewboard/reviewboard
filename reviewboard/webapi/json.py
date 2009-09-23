@@ -1085,6 +1085,7 @@ def review_reply_draft(request, review_request_id, review_id):
         except Comment.DoesNotExist:
             comment = Comment(reply_to=context_comment,
                               filediff=context_comment.filediff,
+                              interfilediff=context_comment.interfilediff,
                               first_line=context_comment.first_line,
                               num_lines=context_comment.num_lines)
             comment_is_new = True
