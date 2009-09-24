@@ -144,6 +144,18 @@ you're configuring. This section provides some help for determining which
 value to use.
 
 
+ClearCase
+---------
+
+Review Board currently works with local ClearCase dynamic views, by utilizing
+version-extended paths to access specific file revisions.
+
+The `Path field`_ should point to the top of the very top of the view, which
+will be either a drive letter on Windows, or a mount point on Unix.
+
+The `Username and Password fields`_ should be blank.
+
+
 CVS
 ---
 
