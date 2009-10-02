@@ -14,7 +14,7 @@ var gDraftBannerButtons = $("input", gDraftBanner);
 var gEditorCompleteHandlers = {
     'bugs_closed': function(data) {
         if (gBugTrackerURL == "") {
-            return data;
+            return data.join(", ");
         } else {
             return urlizeList(data, function(item) {
                 return gBugTrackerURL.replace("%s", item);
