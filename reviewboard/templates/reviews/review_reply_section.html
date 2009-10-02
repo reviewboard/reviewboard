@@ -12,8 +12,7 @@
   </div>
 {% if user.is_authenticated %}
   <script language="javascript">
-  $(document).ready(function()
-  {
+  $(document).ready(function() {
       $("#{{context_id}}-{{review.id}}").commentSection("{{review.id}}",
           "{% ifequal comment "" %}{{review.id}}{% else %}{{comment.id}}{% endifequal %}", "{{context_type}}");
   });

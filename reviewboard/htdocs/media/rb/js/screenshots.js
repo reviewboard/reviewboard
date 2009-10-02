@@ -19,9 +19,8 @@ function CommentBlock(x, y, width, height, container, comments) {
     this.height = height;
     this.hasDraft = false;
     this.comments = [];
-    this.text = "";
     this.canDelete = false;
-    this.type = "screenshot_comment";
+    this.draftComment = null;
 
     this.el = $('<div class="selection"></div>').appendTo(container);
     this.tooltip = $.tooltip(this.el, {
@@ -34,17 +33,17 @@ function CommentBlock(x, y, width, height, container, comments) {
      * stored list of comments.
      */
     if (comments && comments.length > 0) {
-        for (comment in comments) {
-            if (comments[comment].localdraft) {
-                this.setText(comments[comment].text);
-                this.setHasDraft(true);
-                this.canDelete = true;
+        for (var i in comments) {
+            var comment = comments[i];
+
+            if (comment.localdraft) {
+                this._createDraftComment(comment.text);
             } else {
-                this.comments.push(comments[comment]);
+                this.comments.push(comment);
             }
         }
     } else {
-        this.setHasDraft(true);
+        this._createDraftComment();
     }
 
     this.el
@@ -60,79 +59,6 @@ function CommentBlock(x, y, width, height, container, comments) {
 
 jQuery.extend(CommentBlock.prototype, {
     /*
-     * Discards the comment block if it's empty.
-     */
-    discardIfEmpty: function() {
-        if (this.text == "" && this.comments.length == 0) {
-            var self = this;
-            this.el.fadeOut(350, function() { self.el.remove(); });
-        }
-    },
-
-    /*
-     * Saves the draft text in the comment block to the server.
-     */
-    save: function() {
-        var self = this;
-
-        rbApiCall({
-            url: this.getURL(),
-            data: {
-                action: "set",
-                text: this.text
-            },
-            success: function(data) {
-                self.canDelete = true;
-                self.setHasDraft(true);
-                self.updateCount();
-
-                self.notify("Comment Saved");
-                showReviewBanner();
-            }
-        });
-    },
-
-    /*
-     * Deletes the draft comment on the server, discarding the comment block
-     * afterward if empty.
-     */
-    deleteComment: function() {
-        if (!this.canDelete) {
-            // TODO: Script error. Report it.
-            return;
-        }
-
-        var self = this;
-
-        rbApiCall({
-            url: this.getURL(),
-            data: {
-                action: "delete"
-            },
-            success: function() {
-                self.canDelete = false;
-                self.text = "";
-                self.setHasDraft(false);
-                self.updateCount();
-                self.notify("Comment Deleted", function() {
-                    self.discardIfEmpty();
-                });
-            }
-        });
-    },
-
-    /*
-     * Sets the current text in the comment block.
-     *
-     * @param {string} text  The new text to set.
-     */
-    setText: function(text) {
-        this.text = text;
-
-        this.updateTooltip();
-    },
-
-    /*
      * Updates the tooltip contents.
      */
     updateTooltip: function() {
@@ -145,8 +71,8 @@ jQuery.extend(CommentBlock.prototype, {
         this.tooltip.empty();
         var list = $("<ul/>").appendTo(this.tooltip);
 
-        if (this.text != "") {
-            addEntry(this.text).addClass("draft");
+        if (this.draftComment != null) {
+            addEntry(this.draftComment.text).addClass("draft");
         }
 
         $(this.comments).each(function(i) {
@@ -163,30 +89,12 @@ jQuery.extend(CommentBlock.prototype, {
     updateCount: function() {
         var count = this.comments.length;
 
-        if (this.hasDraft) {
+        if (this.draftComment != null) {
             count++;
         }
 
         this.count = count;
         this.flag.html(count);
-    },
-
-    /*
-     * Sets whether or not this comment block has a draft comment.
-     *
-     * @param {bool} hasDraft  true if this has a draft comment, or false
-     *                         otherwise.
-     */
-    setHasDraft: function(hasDraft) {
-        if (hasDraft) {
-            this.el.addClass("draft");
-            this.flag.addClass("flag-draft");
-        } else {
-            this.el.removeClass("draft");
-            this.flag.removeClass("flag-draft");
-        }
-
-        this.hasDraft = hasDraft;
     },
 
     /*
@@ -198,7 +106,7 @@ jQuery.extend(CommentBlock.prototype, {
     notify: function(text, cb) {
         var offset = this.el.offset();
 
-        var bubble = $("<div></div>")
+        var bubble = $("<div/>")
             .addClass("bubble")
             .appendTo(this.el)
             .text(text);
@@ -211,7 +119,7 @@ jQuery.extend(CommentBlock.prototype, {
                 top: "-=10px",
                 opacity: 0.8
             }, 350, "swing")
-            .delay(2000)
+            .delay(1200)
             .animate({
                 top: "+=10px",
                 opacity: 0
@@ -224,18 +132,53 @@ jQuery.extend(CommentBlock.prototype, {
             });
     },
 
-    /*
-     * Returns the URL used for API calls.
-     *
-     * @return {string} The URL used for API calls for this comment block.
-     */
-    getURL: function() {
-        return getReviewRequestAPIPath(true) +
-               getScreenshotAPIPath(gScreenshotId,
-                                    Math.round(this.x),
-                                    Math.round(this.y),
-                                    Math.round(this.width),
-                                    Math.round(this.height));
+    _createDraftComment: function(textOnServer) {
+        if (this.draftComment != null) {
+            return;
+        }
+
+        var self = this;
+        var el = this.el;
+        var comment = new RB.ScreenshotComment(gScreenshotId,
+                                               this.x, this.y, this.width,
+                                               this.height, textOnServer);
+
+        $.event.add(comment, "textChanged", function() {
+            self.updateTooltip();
+        });
+
+        $.event.add(comment, "deleted", function() {
+            el.queue(function() {
+                self.notify("Comment Deleted", function() {
+                    el.dequeue();
+                });
+            });
+        });
+
+        $.event.add(comment, "destroyed", function() {
+            console.log("destroying");
+
+            /* Discard the comment block if empty. */
+            if (self.comments.length == 0) {
+                el.fadeOut(350, function() { el.remove(); })
+            } else {
+                el.removeClass("draft");
+                self.flag.removeClass("flag-draft");
+                self.updateCount();
+                self.updateTooltip();
+            }
+        });
+
+        $.event.add(comment, "saved", function() {
+            self.updateCount();
+            self.updateTooltip();
+            self.notify("Comment Saved");
+            showReviewBanner();
+        });
+
+        this.draftComment = comment;
+        el.addClass("draft");
+        this.flag.addClass("flag-draft");
     }
 });
 
@@ -425,9 +368,13 @@ jQuery.fn.screenshotCommentBox = function(regions) {
     function showCommentDlg(commentBlock) {
         commentDetail
             .one("close", function() {
+                commentBlock._createDraftComment();
                 activeCommentBlock = commentBlock;
+
                 commentDetail
-                    .setCommentBlock(commentBlock)
+                    .setDraftComment(commentBlock.draftComment)
+                    .setCommentsList(commentBlock.comments,
+                                     "screenshot_comment")
                     .positionToSide(commentBlock.flag, {
                         side: 'b',
                         fitOnScreen: true

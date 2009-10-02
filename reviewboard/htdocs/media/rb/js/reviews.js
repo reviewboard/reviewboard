@@ -1,7 +1,3 @@
-// Constants
-var CHECK_UPDATES_MSECS = 5 * 60 * 1000; // Every 5 minutes
-
-
 // State variables
 var gPublishing = false;
 var gPendingSaveCount = 0;
@@ -9,6 +5,8 @@ var gPendingDiffFragments = {};
 var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
+var gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
+                                          gReviewRequestPath);
 
 
 /*
@@ -40,111 +38,6 @@ var gEditorCompleteHandlers = {
     'description': linkifyText,
     'testing_done': linkifyText
 };
-
-
-/*
- * Returns the API path to the current review request. This may be an
- * absolute path or a path relative to the /api/json/ tree.
- *
- * @param {bool} fullPath  true if this should be the full, absolute path.
- *
- * @return {string} The API path.
- */
-function getReviewRequestAPIPath(fullPath) {
-    return (fullPath ? SITE_ROOT + "api/json" : "") +
-           "/reviewrequests/" + gReviewRequestId;
-}
-
-
-/*
- * Returns the API path of the current review draft relative to the
- * review request API tree.
- *
- * @return {string} The API path.
- */
-function getReviewDraftAPIPath() {
-    return "/reviews/draft";
-}
-
-
-/*
- * Returns the API path for diff comments relative to the review request
- * API tree.
- *
- * If dealing with interdiffs, interfilediff_revision and interfilediff_id
- * must not be null. Otherwise, they must both be null.
- *
- * @param {string} filediff_revision       The filediff revision.
- * @param {int}    filediff_id             The filediff ID.
- * @param {string} interfilediff_revision  The optional interfilediff revision.
- * @param {int}    interfilediff_id        The optional interfilediff ID.
- * @param {int}    beginLineNum            The beginning comment line number.
- *
- * @return {string} The API path.
- */
-function getDiffAPIPath(filediff_revision, filediff_id,
-                        interfilediff_revision, interfilediff_id,
-                        beginLineNum) {
-    return "/diff/" +
-           (interfilediff_revision == null
-            ? filediff_revision
-            : filediff_revision + "-" + interfilediff_revision) +
-           "/file/" +
-           (interfilediff_id == null
-            ? filediff_id
-            : filediff_id + "-" + interfilediff_id) +
-           "/line/" + beginLineNum + "/comments/";
-}
-
-
-/*
- * Returns the API path for screenshot comments relative to the review request
- * API tree.
- *
- * @param {int} screenshotId  The screenshot ID.
- * @param {int} x             The comment X location.
- * @param {int} y             The comment Y location.
- * @param {int} width         The comment width.
- * @param {int} height        The comment height.
- *
- * @return {string} The API path.
- */
-function getScreenshotAPIPath(screenshotId, x, y, width, height) {
-    return "/s/" + screenshotId + "/comments/" + width + "x" + height +
-           "+" + x + "+" + y + "/";
-}
-
-
-/*
- * Convenience wrapper for review request API functions. This will handle
- * any button disabling/enabling, write to the correct path prefix, and
- * provides default functionality for reloading the page upon success
- * (unless overridden) and displaying server errors.
- *
- * options has the following fields:
- *
- *    buttons  - An optional list of buttons to disable/enable.
- *    type     - The request type (defaults to "POST").
- *    path     - The relative path to the review request API tree.
- *    data     - Data to send with the request.
- *    success  - An optional success callback. The default one will reload
- *               the page.
- *    error    - An optional error callback, called after the error banner
- *               is displayed.
- *    complete - An optional complete callback, called after the success or
- *               error callbacks.
- *
- * @param {object} options  The options, listed above.
- */
-function reviewRequestApiCall(options) {
-    options.path = getReviewRequestAPIPath() + options.path;
-
-    if (!options.success) {
-        options.success = function() { window.location = gReviewRequestPath; };
-    }
-
-    rbApiCall(options);
-}
 
 
 /*
@@ -245,11 +138,10 @@ function linkifyText(text) {
  * @param {string} value  The field value.
  */
 function setDraftField(field, value) {
-    reviewRequestApiCall({
-        path: "/draft/set/" + field + "/",
+    gReviewRequest.setDraftField({
+        field: field,
+        value: value,
         buttons: gDraftBannerButtons,
-        data: { value: value },
-        errorPrefix: "Saving the draft has failed due to a server error:",
         success: function(rsp) {
             var func = gEditorCompleteHandlers[field];
 
@@ -361,11 +253,8 @@ function publishDraft() {
     } else if ($.trim($("#description").html()) == "") {
         alert("The draft must have a description.");
     } else {
-        reviewRequestApiCall({
-            path: "/publish/",
-            buttons: gDraftBannerButtons,
-            errorPrefix: "Publishing the draft has failed due to a " +
-                         "server error:"
+        gReviewRequest.publish({
+            buttons: gDraftBannerButtons
         });
     }
 }
@@ -385,6 +274,10 @@ function publishDraft() {
  */
 $.fn.commentSection = function(review_id, context_id, context_type) {
     var self = $(this);
+
+    var review = gReviewRequest.createReview(review_id);
+    var review_reply = review.createReply();
+
     var sectionId = context_id;
     var reviewEl = $("#review" + review_id);
     var commentsList = $(".reply-comments", self)
@@ -456,16 +349,13 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                 })
                 .bind("complete", function(e, value) {
                     self.html(linkifyText(self.text()));
-                    reviewRequestApiCall({
-                        path: "/reviews/" + review_id + "/replies/draft/",
-                        data: {
-                            value:     value,
-                            id:        context_id,
-                            type:      context_type,
-                            review_id: review_id
-                        },
+
+                    review_reply.addComment({
+                        context_id: context_id,
+                        context_type: context_type,
+                        text: value,
                         buttons: bannerButtonsEl,
-                        success: function(rsp) {
+                        success: function() {
                             removeCommentFormIfEmpty(self);
                             showReplyDraftBanner(review_id);
                         }
@@ -514,24 +404,22 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                 .append($('<input type="button"/>')
                     .val("Publish")
                     .click(function() {
-                        reviewRequestApiCall({
-                            path: '/reviews/' + review_id +
-                                  '/replies/draft/save/',
+                        review_reply.publish({
                             buttons: bannerButtonsEl,
-                            errorText: "Saving the reply draft has " +
-                                       "failed due to a server error:"
+                            success: function() {
+                                window.location = gReviewRequestPath;
+                            }
                         });
                     })
                 )
                 .append($('<input type="button"/>')
                     .val("Discard")
                     .click(function() {
-                        reviewRequestApiCall({
-                            path: '/reviews/' + review_id +
-                                  '/replies/draft/discard/',
+                        review_reply.discard({
                             buttons: bannerButtonsEl,
-                            errorText: "Discarding the reply draft " +
-                                       "has failed due to a server error:"
+                            success: function() {
+                                window.location = gReviewRequestPath;
+                            }
                         });
                     })
                 )
@@ -554,7 +442,7 @@ $.fn.commentDlg = function() {
     var self = this;
 
     /* State */
-    var commentBlock = null;
+    var comment = null;
     var textFieldWidthDiff = 0;
     var textFieldHeightDiff = 0;
     var dirty = false;
@@ -569,18 +457,18 @@ $.fn.commentDlg = function() {
     var statusField  = $(".status", draftForm);
     var cancelButton = $("#comment_cancel", draftForm)
         .click(function() {
-            commentBlock.discardIfEmpty();
+            comment.deleteIfEmpty();
             self.close();
         });
     var deleteButton = $("#comment_delete", this)
         .click(function() {
-            commentBlock.deleteComment();
+            comment.deleteComment();
             self.close();
         });
     var saveButton = $("#comment_save", this)
         .click(function() {
-            commentBlock.setText(textField.val());
-            commentBlock.save();
+            comment.setText(textField.val());
+            comment.save();
             self.close();
         });
 
@@ -608,10 +496,11 @@ $.fn.commentDlg = function() {
             }
         })
         .keyup(function(e) {
-            dirty = dirty || commentBlock.text != textField.val();
+            dirty = dirty || comment.text != textField.val();
+
+            saveButton.attr("disabled", textField.val() == "");
 
             if (dirty && !oldDirty) {
-                saveButton.attr("disabled", textField.val() == "");
                 statusField.html("This comment has unsaved changes.");
                 self.handleResize();
 
@@ -725,7 +614,7 @@ $.fn.commentDlg = function() {
                 opacity: 0
             }, 350, "swing", function() {
                 self.hide();
-                commentBlock = null;
+                self.comment = null;
                 self.trigger("close");
             });
         } else {
@@ -736,30 +625,14 @@ $.fn.commentDlg = function() {
     }
 
     /*
-     * Sets the active comment block. This will reset the default state of
-     * the comment dialog and update the UI to show any other comments in
-     * the block.
+     * Sets the list of existing comments to show.
      *
-     * @param {CommentBlock} newCommentBlock The new comment block to set.
+     * @param {array} comments    The array of comments to show.
+     * @param {string} replyType  The reply type for the comments listed.
      *
      * @return {jQuery} This jQuery.
      */
-    this.setCommentBlock = function(newCommentBlock) {
-        if (commentBlock && commentBlock != newCommentBlock) {
-            commentBlock.discardIfEmpty();
-        }
-
-        commentBlock = newCommentBlock;
-        textField.val(commentBlock.text);
-        dirty = false;
-
-        /* Set the initial button states */
-        deleteButton.setVisible(commentBlock.canDelete);
-        saveButton.attr("disabled", true);
-
-        /* Clear the status field. */
-        statusField.empty();
-
+    this.setCommentsList = function(comments, replyType) {
         commentsList.empty();
 
         /*
@@ -770,10 +643,10 @@ $.fn.commentDlg = function() {
 
         var showComments = false;
 
-        if (commentBlock.comments.length > 0) {
+        if (comments.length > 0) {
             var odd = true;
 
-            $(commentBlock.comments).each(function(i) {
+            $(comments).each(function(i) {
                 var item = $("<li/>")
                     .addClass(odd ? "odd" : "even");
                 var header = $("<h2/>").appendTo(item).html(this.user.name);
@@ -782,7 +655,7 @@ $.fn.commentDlg = function() {
                 $('<a href="' + this.url + '">View</a>').appendTo(actions);
                 $('<a href="' + gReviewRequestPath +
                   '?reply_id=' + this.comment_id +
-                  '&reply_type=' + commentBlock.type + '">Reply</a>')
+                  '&reply_type=' + replyType + '">Reply</a>')
                     .appendTo(actions);
                 $("<pre/>").appendTo(item).text(this.text);
 
@@ -811,6 +684,33 @@ $.fn.commentDlg = function() {
         self
             .width(width)
             .height(250);
+
+        return this;
+    }
+
+    /*
+     * Sets the draft comment to modify. This will reset the default state of
+     * the comment dialog.
+     *
+     * @param {RB.Comment} newComment The new draft comment to set.
+     *
+     * @return {jQuery} This jQuery.
+     */
+    this.setDraftComment = function(newComment) {
+        if (comment && comment != newComment) {
+            comment.deleteIfEmpty();
+        }
+
+        comment = newComment;
+        textField.val(comment.text);
+        dirty = false;
+
+        /* Set the initial button states */
+        deleteButton.setVisible(comment.saved);
+        saveButton.attr("disabled", true);
+
+        /* Clear the status field. */
+        statusField.empty();
 
         return this;
     }
@@ -868,9 +768,11 @@ $.fn.commentDlg = function() {
  * review. The list of comments are retrieved from the server, providing
  * context for the comments.
  *
+ * @param {RB.Review} review  The review to create or modify.
+ *
  * @return {jQuery} The new review form element.
  */
-$.reviewForm = function() {
+$.reviewForm = function(review) {
     rbApiCall({
         type: "GET",
         dataType: "html",
@@ -883,6 +785,7 @@ $.reviewForm = function() {
     });
 
     var dlg;
+    var buttons;
 
     /*
      * Creates the actual review form. This is called once we have
@@ -909,7 +812,9 @@ $.reviewForm = function() {
                     $('<input type="button"/>')
                         .val("Discard Review")
                         .click(function(e) {
-                            reviewAction("delete");
+                            review.deleteReview({
+                                buttons: buttons
+                            });
                         }),
                     $('<input type="button"/>')
                         .val("Cancel"),
@@ -923,6 +828,8 @@ $.reviewForm = function() {
             })
             .keypress(function(e) { e.stopPropagation(); })
             .trigger("ready");
+
+        buttons = $("input", dlg);
 
         $(".body-top, .body-bottom", dlg)
             .inlineEditor({
@@ -964,20 +871,21 @@ $.reviewForm = function() {
         });
 
         $.funcQueue("reviewForm").add(function() {
-            reviewAction(publish ? "publish" : "save",
-                $.funcQueue("reviewForm").next,
-                {
-                    shipit: function() {
-                        return $("#id_shipit", dlg)[0].checked ? 1 : 0;
-                    },
-                    body_top: function() {
-                        return $(".body-top", dlg).text();
-                    },
-                    body_bottom: function() {
-                        return $(".body-bottom", dlg).text();
-                    }
-                }
-            );
+            review.shipit = $("#id_shipit", dlg)[0].checked ? 1 : 0;
+            review.body_top = $(".body-top", dlg).text();;
+            review.body_bottom = $(".body-bottom", dlg).text();;
+
+            var options = {
+                buttons: buttons,
+                success: $.funcQueue("reviewForm").next
+            };
+
+            if (publish) {
+                review.publish(options);
+            }
+            else {
+                review.save(options);
+            }
         });
 
         $.funcQueue("reviewForm").add(function() {
@@ -995,48 +903,17 @@ $.reviewForm = function() {
 
         $.funcQueue("reviewForm").start();
     }
-
-    /*
-     * Invokes a review action.
-     *
-     * @param {string}   action   The action.
-     * @param {function} success  The optional success callback.
-     * @param {object}   data     The optional data.
-     */
-    function reviewAction(action, success, data) {
-        reviewRequestApiCall({
-            path: getReviewDraftAPIPath() + "/" + action + "/",
-            buttons: $("input", dlg),
-            data: data,
-            success: success
-        });
-    }
 };
 
 
 /*
  * Adds inline editing capabilities to a comment in the review form.
  *
- * options has the following fields:
- *
- *    path     - The relative API path.
- *    textKey  - The key in the data sent to the server containing the
- *               comment text.
- *    data     - The data sent to the server. Unless overridden, this has
- *               the field "action" set to "set".
- *
- * @param {object} options  The options, listed above.
+ * @param {object} comment  A RB.DiffComment or RB.ScreenshotComment instance
+ *                          to store the text on and save.
  */
-$.fn.reviewFormCommentEditor = function(options) {
+$.fn.reviewFormCommentEditor = function(comment) {
     var self = this;
-
-    options = $.extend({
-        path: "",
-        textKey: "text",
-        data: {
-            action: "set"
-        }
-    }, options);
 
     return this
         .inlineEditor({
@@ -1049,12 +926,11 @@ $.fn.reviewFormCommentEditor = function(options) {
             useEditIconOnly: false
         })
         .bind("complete", function(e, value) {
-            options.data[options.textKey] = value;
-
-            reviewRequestApiCall({
-                path: options.path,
-                data: options.data,
-                success: function() { self.trigger("saved"); }
+            comment.text = value;
+            comment.save({
+                success: function() {
+                    self.trigger("saved");
+                }
             });
         });
 };
@@ -1161,7 +1037,7 @@ function registerForUpdates(lastTimestamp, type) {
     var summaryEl;
     var userEl;
 
-    function showUpdate(info) {
+    $.event.add(gReviewRequest, "updated", function(evt, info) {
         if (bubble.length == 0) {
             bubble = $('<div id="updates-bubble"/>');
             summaryEl = $('<span/>')
@@ -1198,27 +1074,9 @@ function registerForUpdates(lastTimestamp, type) {
             .css("position", $.browser.msie && $.browser.version == 6
                              ? "absolute" : "fixed")
             .fadeIn();
-    }
+    });
 
-    function checkForUpdates() {
-        reviewRequestApiCall({
-            type: "GET",
-            noActivityIndicator: true,
-            path: '/last-update/',
-            success: function(rsp) {
-                if ((type == undefined || type == rsp.type) &&
-                    lastTimestamp != rsp.timestamp) {
-                    showUpdate(rsp);
-                }
-
-                lastTimestamp = rsp.timestamp;
-
-                setTimeout(checkForUpdates, CHECK_UPDATES_MSECS);
-            }
-        });
-    }
-
-    setTimeout(checkForUpdates, CHECK_UPDATES_MSECS);
+    gReviewRequest.beginCheckForUpdates(type, lastTimestamp);
 }
 
 
@@ -1442,49 +1300,16 @@ function initScreenshotDnD() {
             .css("opacity", 0)
             .fadeTo(1000, 1);
 
-        var boundary = "-----multipartformboundary" + new Date().getTime();
-
-        var blobBuilder = google.gears.factory.create("beta.blobbuilder");
-        blobBuilder.append("--" + boundary + "\r\n");
-        blobBuilder.append('Content-Disposition: form-data; name="path"; ' +
-                           'filename="' + file.name + '"\r\n');
-        blobBuilder.append('Content-Type: application/octet-stream\r\n');
-        blobBuilder.append('\r\n');
-        blobBuilder.append(file.blob);
-        blobBuilder.append('\r\n');
-        blobBuilder.append("--" + boundary + "--\r\n");
-        blobBuilder.append('\r\n');
-
-        var blob = blobBuilder.getAsBlob();
-
-        /*
-         * This is needed to prevent an error in jQuery.ajax, when it tries
-         * to match the data to e regex.
-         */
-        blob.match = function(regex) {
-            return false;
-        }
-
-        reviewRequestApiCall({
-            path: "/screenshot/new/",
+        var screenshot = gReviewRequest.createScreenshot();
+        screenshot.setFile(file);
+        screenshot.save({
             buttons: gDraftBannerButtons,
-            data: blob,
-            processData: false,
-            contentType: "multipart/form-data; boundary=" + boundary,
-            xhr: function() {
-                return google.gears.factory.create("beta.httprequest");
+            success: function(rsp, screenshot) {
+                thumb.replaceWith($.screenshotThumbnail(screenshot));
+                gDraftBanner.show();
             },
-            errorPrefix: "Uploading the screenshot has failed " +
-                         "due to a server error:",
-            success: function(rsp) {
-                if (rsp.stat == "ok") {
-                    thumb.replaceWith($.screenshotThumbnail(rsp.screenshot));
-                    gDraftBanner.show();
-                } else {
-                    showError("Uploading the screenshot has failed: " +
-                              rsp.err.msg);
-                    thumb.remove();
-                }
+            error: function(rsp, msg) {
+                thumb.remove();
             }
         });
     }
@@ -1526,25 +1351,18 @@ $(document).ready(function() {
     });
 
     $("#btn-draft-discard").click(function() {
-        reviewRequestApiCall({
-            path: "/draft/discard/",
-            buttons: gDraftBannerButtons,
-            errorPrefix: "Reverting the draft has failed due to a " +
-                         "server error:"
+        gReviewRequest.discardDraft({
+            options: gDraftBannerButtons
         });
-
         return false;
     });
 
     $("#btn-review-request-discard, #discard-review-request-link")
         .click(function() {
-            reviewRequestApiCall({
-                path: "/close/discarded/",
-                buttons: gDraftBannerButtons,
-                errorPrefix: "Discarding the review request has failed " +
-                             "due to a server error:"
+            gReviewRequest.close({
+                type: RB.ReviewRequest.CLOSE_DISCARDED,
+                buttons: gDraftBannerButtons
             });
-
             return false;
         });
 
@@ -1553,22 +1371,17 @@ $(document).ready(function() {
          * This is a non-destructive event, so don't confirm unless there's
          * a draft. (TODO)
          */
-        reviewRequestApiCall({
-            path: "/close/submitted/",
-            buttons: gDraftBannerButtons,
-            errorPrefix: "Setting the review request as submitted has failed " +
-                         "due to a server error:"
+        gReviewRequest.close({
+            type: RB.ReviewRequest.CLOSE_SUBMITTED,
+            buttons: gDraftBannerButtons
         });
 
         return false;
     });
 
     $("#btn-review-request-reopen").click(function() {
-        reviewRequestApiCall({
-            path: "/reopen/",
-            buttons: gDraftBannerButtons,
-            errorPrefix: "Reopening the review request has failed " +
-                         "due to a server error:"
+        gReviewRequest.reopen({
+            buttons: gDraftBannerButtons
         });
 
         return false;
@@ -1584,13 +1397,9 @@ $(document).ready(function() {
                     $('<input type="button" value="Cancel"/>'),
                     $('<input type="button" value="Delete"/>')
                         .click(function(e) {
-                            reviewRequestApiCall({
-                                path: "/delete/",
+                            gReviewRequest.deletePermanently({
                                 buttons: gDraftBannerButtons.add(
-                                         $("input", dlg.modalBox("buttons"))),
-                                errorPrefix: "Deleting the review request " +
-                                             "has failed due to a server " +
-                                             "error:",
+                                    $("input", dlg.modalBox("buttons"))),
                                 success: function() {
                                     window.location = SITE_ROOT;
                                 }
@@ -1602,15 +1411,16 @@ $(document).ready(function() {
         return false;
     });
 
+    var pendingReview = gReviewRequest.createReview();
+
     /* Edit Review buttons. */
     $("#review-link, #review-banner-edit").click(function() {
-        $.reviewForm();
+        $.reviewForm(pendingReview);
     });
 
     /* Review banner's Publish button. */
     $("#review-banner-publish").click(function() {
-        reviewRequestApiCall({
-            path: getReviewDraftAPIPath() + "/publish/",
+        pendingReview.publish({
             buttons: $("input", gReviewBanner),
             success: function() {
                 hideReviewBanner();
@@ -1632,8 +1442,7 @@ $(document).ready(function() {
                     $('<input type="button" value="Cancel"/>'),
                     $('<input type="button" value="Discard"/>')
                         .click(function(e) {
-                            reviewRequestApiCall({
-                                path: getReviewDraftAPIPath() + "/delete/",
+                            pendingReview.deleteReview({
                                 buttons: $("input", gReviewBanner),
                                 success: function() {
                                     hideReviewBanner();

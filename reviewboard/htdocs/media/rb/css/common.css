@@ -172,6 +172,9 @@ ul.errorlist li {
   border-radius: 10px;
 }
 
+.server-error-box .response-data {
+  margin-top: 2em;
+}
 
 
 /****************************************************************************
@@ -353,7 +356,21 @@ form table td.label {
   margin-left: -3em;
   padding: 0.5em 0.6em 0.5em 2.2em;
   width: 6em;
-  z-index: 2000;
+  z-index: 20000;
+}
+
+#activity-indicator.error {
+  background-color: #ffcd9c;
+  width: 28em;
+  margin-left: -14em;
+  background-image: none;
+  padding-left: 0.6em;
+}
+
+#activity-indicator.error a {
+  margin-left: 1em;
+  color: #0000CC;
+  text-decoration: none;
 }
 
 #beta {

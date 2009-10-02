@@ -32,9 +32,11 @@
 
     <script type="text/javascript">
         var editor = $("#screenshot-comment-{{comment.id}}")
-            .reviewFormCommentEditor({
-                path: getScreenshotAPIPath("{{comment.screenshot.id}}", {{comment.x}}, {{comment.y}}, {{comment.w}}, {{comment.h}})
-            });
+            .reviewFormCommentEditor(
+                new RB.ScreenshotComment({{comment.screenshot.id}},
+                                         {{comment.x}}, {{comment.y}},
+                                         {{comment.w}}, {{comment.h}},
+                                         "{{comment.text}}"));
         $("#edit-screenshot-comment-{{comment.id").click(function() {
             editor.inlineEditor("startEdit");
         });
@@ -81,22 +83,22 @@
 {% endcomment %}
 
     <script type="text/javascript">
-        var editor = $("#diff-comment-{{comment.id}}").reviewFormCommentEditor({
-            path: getDiffAPIPath({% spaceless %}
-                {{comment.filediff.diffset.revision}},
-                {{comment.filediff.id}},
+        var editor = $("#diff-comment-{{comment.id}}").reviewFormCommentEditor(
+            new RB.DiffComment(
+                {
+                    'id': {{comment.filediff.id}},
+                    'revision': {{comment.filediff.diffset.revision}}
+                },
 {% if comment.interfilediff %}
-                {{comment.interfilediff.diffset.revision}},
-                {{comment.interfilediff.id}},
+                {
+                    'id': {{comment.interfilediff.id}},
+                    'revision': {{comment.interfilediff.diffset.revision}}
+                },
 {% else %}
-                null, null,
+                null,
 {% endif %}
-                {{comment.first_line}}),{% endspaceless %}
-            data: {
-                action: "set",
-                num_lines: {{comment.num_lines}}
-            }
-        });
+                {{comment.first_line}}, {{comment.last_line}},
+                "{{comment.text}}"));
         $("#edit-diff-comment-{{comment.id}}").click(function() {
             editor.inlineEditor("startEdit");
         });
