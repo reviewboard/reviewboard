@@ -72,7 +72,6 @@
 	  <span class="version">{{version}}</span>
 	 </h1>
     </div>
-
    </div>
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
    <form method="get" action="{% url search %}">
