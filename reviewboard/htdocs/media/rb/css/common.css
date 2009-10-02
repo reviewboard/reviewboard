@@ -351,13 +351,6 @@ form table td {
   z-index: 2000;
 }
 
-#beta {
-  color: #808080;
-  display: inline;
-  font-size: 12pt;
-  font-weight: normal;
-}
-
 #error div {
   background: #ffcd9c;
   border: 1px #9a4306 solid;
@@ -377,10 +370,6 @@ form table td {
 
 #headerbar {
   margin-bottom: 8px;
-}
-
-#logo {
-  vertical-align: -100%;
 }
 
 #navbar-outer {
@@ -410,6 +399,10 @@ form table td {
   text-decoration: none;
 }
 
+#rbinfo {
+  position: relative;
+}
+
 #searchbar {
   position: absolute;
   right: 0;
@@ -421,17 +414,25 @@ form table td {
 }
 
 #title {
-  display: inline;
   font-size: 24pt;
   font-weight: normal;
-  margin: 0;
+  margin: -0.6em 0 0 2em;
   padding: 0;
+  position: absolute;
+  top: 50%;
 }
 
 #title a {
   color: black;
   text-decoration: none;
 }
+
+#title .version {
+  color: #808080;
+  font-size: 12pt;
+  font-weight: normal;
+}
+
 
 /*
  * clearfix hack. See http://www.webtoolkit.info/css-clearfix.html
