@@ -331,10 +331,12 @@ form table td.label {
 }
 
 #accountnav {
+  float: right;
   list-style: none;
   margin: 0;
   padding: 0;
-  float: right;
+  position: relative;
+  z-index: 1;
 }
 
 #accountnav li {
