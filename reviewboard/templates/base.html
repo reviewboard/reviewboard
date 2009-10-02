@@ -66,10 +66,12 @@
      <li>- <a href="http://www.review-board.org/bugs/">{% trans "Bugs" %}</a></li>
      <li>- <a href="http://www.review-board.org/bugs/new/">{% trans "Report bug" %}</a></li>
     </ul>
-    <div>
+    <div id="rbinfo">
      <a href="{% url dashboard %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" /></a>
-     <h1 id="title"><a href="{% url root %}">Review Board</a></h1>
-     <h2 id="beta">{{version}}</h2>
+     <h1 id="title">
+	  <a href="{% url root %}">Review Board</a>
+	  <span class="version">{{version}}</span>
+	 </h1>
     </div>
 
    </div>
