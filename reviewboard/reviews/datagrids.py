@@ -21,8 +21,8 @@ class StarColumn(Column):
         self.image_url = settings.MEDIA_URL + "rb/images/star_on.png"
         self.image_width = 16
         self.image_height = 15
-        self.image_alt = "Starred"
-        self.detailed_label = "Starred"
+        self.image_alt = _("Starred")
+        self.detailed_label = _("Starred")
         self.shrink = True
 
     def render_data(self, obj):
@@ -39,8 +39,8 @@ class ShipItColumn(Column):
         self.image_url = settings.MEDIA_URL + "rb/images/shipit.png"
         self.image_width = 16
         self.image_height = 16
-        self.image_alt = "Ship It!"
-        self.detailed_label = "Ship It!"
+        self.image_alt = _("Ship It!")
+        self.detailed_label = _("Ship It!")
         self.db_field = "shipit_count"
         self.sortable = True
         self.shrink = True
@@ -49,10 +49,10 @@ class ShipItColumn(Column):
         if review_request.shipit_count > 0:
             return '<span class="shipit-count">' \
                     '<img src="%srb/images/shipit_checkmark.png?%s" ' \
-                         'width="9" height="8" alt="%s" /> %s' \
+                         'width="9" height="8" alt="%s" title="%s" /> %s' \
                    '</span>' % \
                 (settings.MEDIA_URL, settings.MEDIA_SERIAL,
-                 self.image_alt, review_request.shipit_count)
+                 self.image_alt, self.image_alt, review_request.shipit_count)
 
         return ""
 
@@ -112,9 +112,10 @@ class MyCommentsColumn(Column):
                 image_url = settings.MEDIA_URL + "rb/images/comment-small.png"
                 image_alt = _("Comments published")
 
-        return '<img src="%s?%s" width="%s" height="%s" alt="%s" />' % \
+        return '<img src="%s?%s" width="%s" height="%s" alt="%s" ' \
+               'title="%s" />' % \
                 (image_url, settings.MEDIA_SERIAL, self.image_width,
-                 self.image_height, image_alt)
+                 self.image_height, image_alt, image_alt)
 
 
 class NewUpdatesColumn(Column):
@@ -134,9 +135,10 @@ class NewUpdatesColumn(Column):
     def render_data(self, review_request):
         user = self.datagrid.request.user
         if review_request.new_review_count > 0:
-            return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
+            return '<img src="%s" width="%s" height="%s" alt="%s" ' \
+                   'title="%s" />' % \
                 (self.image_url, self.image_width, self.image_height,
-                 self.image_alt)
+                 self.image_alt, self.image_alt)
 
         return ""
 

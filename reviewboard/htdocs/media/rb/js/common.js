@@ -218,6 +218,10 @@ $.fn.toggleStar = function(type, objid, default_) {
 
             obj.setStarred(on);
             self.attr("src", (on ? STAR_ON_IMG : STAR_OFF_IMG));
+
+            var alt_title = on ? "Starred" : "Click to star";
+            self.attr("alt", alt_title);
+            self.attr("title", alt_title);
         });
     });
 };

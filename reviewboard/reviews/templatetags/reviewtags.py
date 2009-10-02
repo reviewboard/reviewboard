@@ -5,6 +5,7 @@ from django.db.models.query import QuerySet
 from django.template import NodeList, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_utils import humanize_list
@@ -517,9 +518,15 @@ def render_star(user, obj):
             "star tag received an incompatible object type (%s)" % \
             type(obj)
 
+    if starred:
+        image_alt = _("Starred")
+    else:
+        image_alt = _("Click to star")
+
     return render_to_string('reviews/star.html', {
         'object': obj_info,
         'starred': int(starred),
+        'alt': image_alt,
         'user': user,
         'MEDIA_URL': settings.MEDIA_URL,
     })
