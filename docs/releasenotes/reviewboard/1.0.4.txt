@@ -20,6 +20,10 @@ Bugs Fixed
   review requests) weren't selectable in the administration UI. We now
   show a fake summary. (:bug:`984`)
 
+* On Google Chrome, the screenshot comment area would be wrong, showing
+  comment boxes in the wrong place. New comments would also be placed in
+  the wrong location. (:bug:`1050`)
+
 * On Google Chrome, the text areas would grow by a line with every key
   pressed. Patch by Cory McWilliams. (:bug:`1145`).
 
