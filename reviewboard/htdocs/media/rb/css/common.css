@@ -3,6 +3,8 @@ body {
   color: black;
   font-family: Verdana, Arial, Helvetica, Sans-Serif;
   font-size: 8pt;
+  margin: 0;
+  padding: 0;
 }
 
 h1 {
@@ -323,12 +325,13 @@ form table td {
 }
 
 #accountnav {
-  float: right;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.5em;
+  text-align: right;
   position: relative;
   z-index: 1;
+  border-bottom: 1px #DDDDDD solid;
 }
 
 #accountnav li {
@@ -370,10 +373,6 @@ form table td {
   margin-left: 10px;
 }
 
-#headerbar {
-  margin-bottom: 8px;
-}
-
 #navbar-outer {
   border: 1px #E0E0E0 solid;
   margin: 10px 0;
@@ -401,8 +400,18 @@ form table td {
   text-decoration: none;
 }
 
+#page-container {
+  padding: 0 0.8em 0.8em 0.8em;
+}
+
 #rbinfo {
   position: relative;
+  padding-left: 0.8em;
+}
+
+#rbinfo img {
+  display: inline;
+  vertical-align: middle;
 }
 
 #searchbar {
@@ -416,12 +425,10 @@ form table td {
 }
 
 #title {
+  display: inline;
+  vertical-align: middle;
   font-size: 24pt;
   font-weight: normal;
-  margin: -0.6em 0 0 2em;
-  padding: 0;
-  position: absolute;
-  top: 50%;
 }
 
 #title a {
