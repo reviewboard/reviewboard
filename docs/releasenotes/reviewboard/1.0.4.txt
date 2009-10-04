@@ -2,7 +2,7 @@
 Review Board 1.0.4 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: October 4, 2009
 
 
 Bugs Fixed
