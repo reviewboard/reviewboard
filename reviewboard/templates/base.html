@@ -67,6 +67,7 @@
      <li>- <a href="http://www.review-board.org/bugs/">{% trans "Bugs" %}</a></li>
      <li>- <a href="http://www.review-board.org/bugs/new/">{% trans "Report bug" %}</a></li>
     </ul>
+    <br />
     <div id="rbinfo">
      <a href="{% url dashboard %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" /></a>
      <h1 id="title">
@@ -75,30 +76,31 @@
 	 </h1>
     </div>
    </div>
+   <div id="page-container">
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
-   <form method="get" action="{% url search %}">
-    <div id="navbar-outer">
-     <ul id="navbar">
+    <form method="get" action="{% url search %}">
+     <div id="navbar-outer">
+      <ul id="navbar">
 {% if user.is_authenticated %}
-      <li><a href="{% url dashboard %}">{% trans "My Dashboard" %}</a></li>
-      <li><a href="{% url new-review-request %}">{% trans "New Review Request" %}</a></li>
-      <li>-</li>
+       <li><a href="{% url dashboard %}">{% trans "My Dashboard" %}</a></li>
+       <li><a href="{% url new-review-request %}">{% trans "New Review Request" %}</a></li>
+       <li>-</li>
 {% endif %}
-      <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
-      <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
-      <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
-      {% if siteconfig.settings.search_enable %}
-      <li id="searchbar">
-      <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
-       <input type="submit" value="{% trans "Search" %}" />
-      </li>
-      {% endif %}
-     </ul>
-    </div>
-   </form>
-   {% endif %}
+       <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
+       <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
+       <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
+       {% if siteconfig.settings.search_enable %}
+       <li id="searchbar">
+       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
+        <input type="submit" value="{% trans "Search" %}" />
+       </li>
+       {% endif %}
+      </ul>
+     </div>
+    </form>
+    {% endif %}
 {% endblock %}
-   <noscript>
+    <noscript>
 {%  box "important" %}
      <h1>{% trans "JavaScript is turned off" %}</h1>
      <p>{% blocktrans %}Review Board requires JavaScript in order to function.
@@ -108,13 +110,13 @@
      <a href="https://addons.mozilla.org/en-US/firefox/addon/722">NoScript
      extension</a>.{% endblocktrans %}</p>
 {%  endbox %}
-   </noscript>
-   <div id="error"></div>
-   <div id="content">
+    </noscript>
+    <div id="error"></div>
+    <div id="content">
 {% block content %}{% endblock %}
+    </div>
    </div>
   </div>
-
   <script type="text/javascript" src="{{MEDIA_URL}}rb/js/gears_init.js?{{MEDIA_SERIAL}}"></script>
   <script type="text/javascript" src="{{MEDIA_URL}}rb/js/datastore.js?{{MEDIA_SERIAL}}"></script>
 {% block scripts-post %}{% endblock %}

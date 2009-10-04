@@ -22,11 +22,11 @@ function CommentBlock(x, y, width, height, container, comments) {
     this.canDelete = false;
     this.draftComment = null;
 
-    this.el = $('<div class="selection"></div>').appendTo(container);
+    this.el = $('<div class="selection"/>').appendTo(container);
     this.tooltip = $.tooltip(this.el, {
         side: "lrbt"
     }).addClass("comments");
-    this.flag = $('<div class="selection-flag"></div>').appendTo(this.el);
+    this.flag = $('<div class="selection-flag"/>').appendTo(this.el);
 
     /*
      * Find out if there's any draft comments, and filter them out of the
@@ -200,11 +200,11 @@ jQuery.fn.screenshotCommentBox = function(regions) {
     var image = $("img", this);
 
     var selectionArea =
-        $('<div id="selection-container"></div>')
+        $('<div id="selection-container"/>')
         .prependTo(this);
 
     var activeSelection =
-        $('<div id="selection-interactive"></div>')
+        $('<div id="selection-interactive"/>')
         .prependTo(selectionArea)
         .hide();
 
@@ -319,8 +319,17 @@ jQuery.fn.screenshotCommentBox = function(regions) {
         .resize(function() {
             var offset = image.position();
 
+            /*
+             * The margin: 0 auto means that position.left() will return
+             * the left-most part of the entire block, rather than the actual
+             * position of the image on Chrome. Every other browser returns 0
+             * for this margin, as we'd expect. So, just play it safe and
+             * offset by the margin-left. (Bug #1050)
+             */
+            offset.left += image.getExtents("m", "l");
+
             if ($.browser.msie && $.browser.version == 6) {
-                offset.left -= self.getExtents("bmp", "l");
+                offset.left -= self.getExtents("mp", "l");
             }
 
             selectionArea
