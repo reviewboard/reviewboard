@@ -121,11 +121,22 @@ download the latest version that matches your Python version at the
 .. _`PIL website`: http://www.pythonware.com/products/pil/
 
 
+Installing PyCrypto
+===================
+
+Review Board requires PyCrypto_ for SSH repository support. To install this,
+download the latest version that matches your Python version at the
+`PyCrypto Win32 downloads page`_.
+
+.. _`PyCrypto Win32 downloads page`:
+   http://www.voidspace.org.uk/python/modules.shtml#pycrypto
+
+
 Installing Review Board
 =======================
 
 To install Review Board and its required dependencies (Djblets,
-`Django-Evolution`_, Django_, and flup_) in one go, type::
+`Django-Evolution`_, Django_, and paramiko_, flup_) in one go, type::
 
     easy_install ReviewBoard
 
@@ -139,6 +150,7 @@ If you want to install an in-development release, see
 
 .. _`Django-Evolution`: http://django-evolution.googlecode.com/
 .. _Django: http://www.djangoproject.com/
+.. _paramiko: http://www.lag.net/paramiko/
 .. _flup: http://www.saddi.com/software/flup
 
 

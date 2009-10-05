@@ -1,20 +1,33 @@
 import calendar
 from datetime import datetime, timedelta
+import os
 import time
+import urlparse
 
 try:
-    from bzrlib import bzrdir, revisionspec
+    from bzrlib import bzrdir, config, revisionspec
+    from bzrlib.errors import NotBranchError
 except ImportError:
     pass
 
+from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError
+from reviewboard.scmtools.errors import RepositoryNotFoundError, SCMError
+
+
+# Register these URI schemes so we can handle them properly.
+urlparse.uses_netloc.append('bzr+ssh')
+urlparse.uses_netloc.append('bzr')
+sshutils.ssh_uri_schemes.append('bzr+ssh')
 
 
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 
 class BZRTool(SCMTool):
     name = "Bazaar"
+    dependencies = {
+        'modules': ['bzrlib'],
+    }
 
     # Timestamp format in bzr diffs.
     # This isn't totally accurate: there should be a %z at the end.
@@ -76,7 +89,7 @@ class BZRTool(SCMTool):
 
     def _revspec_from_revision(self, revision):
         """Returns a revspec based on the revision found in the diff.
-        
+
         In addition to the standard date format from "bzr diff", this
         function supports the revid: syntax provided by the bzr diff-revid plugin.
         """
@@ -107,3 +120,25 @@ class BZRTool(SCMTool):
         # convert to local time
         return datetime.fromtimestamp(calendar.timegm(timestamp.timetuple()))
 
+    @classmethod
+    def check_repository(cls, path, username=None, password=None):
+        """
+        Performs checks on a repository to test its validity.
+
+        This should check if a repository exists and can be connected to.
+        This will also check if the repository requires an HTTPS certificate.
+
+        The result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception
+        will be thrown.
+        """
+        super(BZRTool, cls).check_repository(path, username, password)
+
+        try:
+            tree, branch, relpath = \
+                bzrdir.BzrDir.open_containing_tree_or_branch(path)
+        except NotBranchError, e:
+            raise RepositoryNotFoundError()
+        except Exception, e:
+            raise SCMError(e)

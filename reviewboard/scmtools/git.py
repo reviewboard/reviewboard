@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import urllib2
+import urlparse
 
 # Python 2.5+ provides urllib2.quote, whereas Python 2.4 only
 # provides urllib.quote.
@@ -15,7 +16,13 @@ from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.scmtools.errors import FileNotFoundError, \
+                                        RepositoryNotFoundError, \
+                                        SCMError
+
+
+# Register these URI schemes so we can handle them properly.
+urlparse.uses_netloc.append('git')
 
 
 class GitTool(SCMTool):
@@ -26,6 +33,9 @@ class GitTool(SCMTool):
     """
     name = "Git"
     supports_raw_file_urls = True
+    dependencies = {
+        'executables': ['git']
+    }
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
@@ -60,6 +70,28 @@ class GitTool(SCMTool):
 
     def get_parser(self, data):
         return GitDiffParser(data)
+
+    @classmethod
+    def check_repository(cls, path, username=None, password=None):
+        """
+        Performs checks on a repository to test its validity.
+
+        This should check if a repository exists and can be connected to.
+        This will also check if the repository requires an HTTPS certificate.
+
+        The result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception
+        will be thrown.
+        """
+        super(GitTool, cls).check_repository(path, username, password)
+
+        client = GitClient(path)
+
+        if not client.is_valid_repository():
+            raise RepositoryNotFoundError()
+
+        # TODO: Check for an HTTPS certificate. This will require pycurl.
 
 
 class GitDiffParser(DiffParser):
@@ -157,19 +189,25 @@ class GitDiffParser(DiffParser):
         return i + 1, None
 
 
-class GitClient:
-    def __init__(self, path, raw_file_url):
+class GitClient(object):
+    schemeless_url_re = re.compile(
+        r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
+        r'(?P<path>.*)')
+
+    def __init__(self, path, raw_file_url=None):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError
 
-        self.path = path
+        self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
 
-        if not raw_file_url:
+        url_parts = urlparse.urlparse(self.path)
+
+        if url_parts.scheme == 'file':
             p = subprocess.Popen(
-                ['git', '--git-dir=%s' % self.path, 'config',
+                ['git', '--git-dir=%s' % url_parts.path, 'config',
                      'core.repositoryformatversion'],
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -180,9 +218,22 @@ class GitClient:
             failure = p.wait()
 
             if failure:
-                # TODO: Provide a better error if we're using a git://
-                #       or equivalent URL.
-                raise ImportError
+                raise SCMError(_('Unable to retrieve information from local '
+                                 'Git repository'))
+
+    def is_valid_repository(self):
+        """Checks if this is a valid Git repository."""
+        p = subprocess.Popen(
+            ['git', 'ls-remote', self.path, 'HEAD'],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+        contents = p.stdout.read()
+        errmsg = p.stderr.read()
+        failure = p.wait()
+
+        return not failure
 
     def get_file(self, path, revision):
         if self.raw_file_url:
@@ -258,3 +309,26 @@ class GitClient:
             return "HEAD:%s" % path
         else:
             return str(revision)
+
+    def _normalize_git_url(self, path):
+        if path.startswith('file://'):
+            return path
+
+        url_parts = urlparse.urlparse(path)
+
+        if url_parts.netloc and url_parts.scheme:
+            return path
+
+        m = self.schemeless_url_re.match(path)
+
+        if m:
+            path = m.group('path')
+
+            if not path.startswith('/'):
+                path = '/' + path
+
+            return 'ssh://%s%s%s' % (m.group('username'),
+                                     m.group('hostname'),
+                                     path)
+
+        return "file://" + path

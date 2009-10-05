@@ -114,6 +114,54 @@ div.breadcrumbs {
 
 
 /***************************************************************************
+ * Change form
+ ***************************************************************************/
+.host-confirmation {
+  border: 1px solid #FFBD09;
+  color: black;
+  display: block;
+  margin: 1em 0;
+  padding: 6px 12px;
+  background: #FFFDC9;
+  -moz-border-radius: 10px;
+  -webkit-border-radius: 10px;
+  border-radius: 10px;
+}
+
+.host-confirmation li {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.host-confirmation .form-row {
+  border: 0;
+}
+
+.host-confirmation label {
+  color: #222222 !important;
+}
+
+.host-confirmation .cert-info {
+  margin: 2em 0;
+}
+
+.host-confirmation .cert-info h3 {
+  color: black;
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 1em;
+}
+
+.host-confirmation .cert-info label {
+  display: block;
+  float: left;
+  font-weight: bold !important;
+  margin-left: 2em;
+  width: 9em;
+}
+
+
+/***************************************************************************
  * Django Admin overrides
  ***************************************************************************/
 table thead th.ascending a {

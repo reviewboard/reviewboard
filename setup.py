@@ -98,6 +98,7 @@ setup(name=PACKAGE_NAME,
           'Djblets>=0.5.4',
           'Pygments>=0.10',
           'flup',
+          'paramiko',
           'pytz'
       ],
       dependency_links = [

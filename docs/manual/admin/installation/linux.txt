@@ -79,7 +79,7 @@ need to then upgrade setuptools to the latest version by running::
 
 
 Installing Python Development Header
-s===================================
+====================================
 
 You will need to install the Python development headers for your
 distribution.
@@ -170,8 +170,8 @@ Installing Review Board
 =======================
 
 To install Review Board and its required dependencies (Djblets,
-`Django-Evolution`_, Django_, flup_, and `Python Imaging Library`_) in one go,
-type::
+`Django-Evolution`_, Django_, flup_, paramiko_ and `Python Imaging Library`_)
+in one go, type::
 
     $ easy_install ReviewBoard
 
@@ -439,6 +439,7 @@ You can install these in one go by typing::
 .. _`Django-Evolution`: http://django-evolution.googlecode.com/
 .. _Django: http://www.djangoproject.com/
 .. _flup: http://www.saddi.com/software/flup
+.. _paramiko: http://www.lag.net/paramiko/
 .. _`Python Imaging Library`: http://www.pythonware.com/products/pil/
 
 

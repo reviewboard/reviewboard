@@ -5,58 +5,36 @@ import tempfile
 
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, FileNotFoundError
+from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
+                                        RepositoryNotFoundError
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
+
+
+# Register these URI schemes so we can handle them properly.
+sshutils.ssh_uri_schemes.append('svn+ssh')
 
 
 class CVSTool(SCMTool):
     name = "CVS"
-
-    regex_rev = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
-    regex_repopath = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
-
     supports_authentication = True
+    dependencies = {
+        'executables': ['cvs'],
+    }
+
+    rev_re = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
+    repopath_re = re.compile(r'^(?P<hostname>.*):(?P<port>\d+)?(?P<path>.*)')
+    ext_cvsroot_re = re.compile(r':ext:([^@]+@)?(?P<hostname>[^:/]+)')
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
-        self.cvsroot, self.repopath = self.build_cvsroot()
+        self.cvsroot, self.repopath = \
+            self.build_cvsroot(self.repository.path,
+                               self.repository.username,
+                               self.repository.password)
         self.client = CVSClient(self.cvsroot, self.repopath)
-
-    def build_cvsroot(self):
-        # NOTE: According to cvs, the following formats are valid.
-        #
-        #  :(gserver|kserver|pserver):[[user][:password]@]host[:[port]]/path
-        #  [:(ext|server):][[user]@]host[:]/path
-        #  :local:e:\path
-        #  :fork:/path
-
-        if not self.repository.path.startswith(":"):
-            # The user has a path or something. We'll want to parse out the
-            # server name, port (if specified) and path and build a :pserver:
-            # CVSROOT.
-            m = self.regex_repopath.match(self.repository.path)
-
-            if m:
-                path = m.group("path")
-                cvsroot = ":pserver:"
-
-                if self.repository.username:
-                    if self.repository.password:
-                        cvsroot += '%s:%s@' % (self.repository.username,
-                                               self.repository.password)
-                    else:
-                        cvsroot += '%s@' % (self.repository.username)
-
-                cvsroot += "%s:%s%s" % (m.group("hostname"),
-                                        m.group("port") or "",
-                                        path)
-                return cvsroot, path
-
-        # We couldn't parse this as a hostname:port/path. Assume it's a local
-        # path or a full CVSROOT and let CVS handle it.
-        return self.repository.path, self.repository.path
 
     def get_file(self, path, revision=HEAD):
         if not path:
@@ -68,7 +46,7 @@ class CVSTool(SCMTool):
         if revision_str == "PRE-CREATION":
             return file_str, PRE_CREATION
 
-        m = self.regex_rev.match(revision_str)
+        m = self.rev_re.match(revision_str)
         if not m:
             raise SCMError("Unable to parse diff revision header '%s'" %
                            revision_str)
@@ -83,11 +61,77 @@ class CVSTool(SCMTool):
     def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)
 
+    @classmethod
+    def build_cvsroot(cls, path, username, password):
+        # NOTE: According to cvs, the following formats are valid.
+        #
+        #  :(gserver|kserver|pserver):[[user][:password]@]host[:[port]]/path
+        #  [:(ext|server):][[user]@]host[:]/path
+        #  :local:e:\path
+        #  :fork:/path
+
+        if not path.startswith(":"):
+            # The user has a path or something. We'll want to parse out the
+            # server name, port (if specified) and path and build a :pserver:
+            # CVSROOT.
+            m = cls.repopath_re.match(path)
+
+            if m:
+                path = m.group("path")
+                cvsroot = ":pserver:"
+
+                if username:
+                    if password:
+                        cvsroot += '%s:%s@' % (username,
+                                               password)
+                    else:
+                        cvsroot += '%s@' % (username)
+
+                cvsroot += "%s:%s%s" % (m.group("hostname"),
+                                        m.group("port") or "",
+                                        path)
+                return cvsroot, path
+
+        # We couldn't parse this as a hostname:port/path. Assume it's a local
+        # path or a full CVSROOT and let CVS handle it.
+        return path, path
+
+    @classmethod
+    def check_repository(cls, path, username=None, password=None):
+        """
+        Performs checks on a repository to test its validity.
+
+        This should check if a repository exists and can be connected to.
+        This will also check if the repository requires an HTTPS certificate.
+
+        The result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception
+        will be thrown.
+        """
+        # CVS paths are a bit strange, so we can't actually use the
+        # SSH checking in SCMTool.check_repository. Do our own.
+        m = cls.ext_cvsroot_re.match(path)
+
+        if m:
+            sshutils.check_host(m.group('hostname'), username, password)
+
+        cvsroot, repopath = cls.build_cvsroot(path, username, password)
+        client = CVSClient(cvsroot, repopath)
+
+        try:
+            client.cat_file('CVSROOT/modules', HEAD)
+        except (SCMError, FileNotFoundError):
+            raise RepositoryNotFoundError()
+
+    @classmethod
+    def parse_hostname(cls, path):
+        """Parses a hostname from a repository path."""
+        return urlparse.urlparse(path).netloc
+
 
 class CVSDiffParser(DiffParser):
-    """
-        This class is able to parse diffs created with CVS.
-    """
+    """This class is able to parse diffs created with CVS. """
 
     regex_small = re.compile('^RCS file: (.+)$')
 

@@ -11,6 +11,9 @@ from reviewboard.scmtools.core import \
 class HgTool(SCMTool):
     name = "Mercurial"
     supports_authentication = True
+    dependencies = {
+        'modules': ['mercurial'],
+    }
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)

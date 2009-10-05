@@ -1,0 +1,132 @@
+{% extends "admin/change_form.html" %}
+{% load djblets_utils %}
+{% load djblets_deco %}
+{% load i18n %}
+
+{% block extrahead %}
+{{block.super}}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.3.2.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/repositoryform.js?{{MEDIA_SERIAL}"></script>
+
+<script type="text/javascript">
+  var BUG_TRACKER_FIELDS = { {% spaceless %}
+{% for id, info in adminform.form.BUG_TRACKER_INFO.items %}
+      "{{id}}": [ {% spaceless %}
+{%  for field in info.fields %}
+          "{{field}}"{% if not forloop.last %},{% endif %}
+{%  endfor %}
+      {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+{% endfor %}
+  }{% endspaceless %}
+
+  var HOSTING_SERVICE_FIELDS = { {% spaceless %}
+{% for id, info in adminform.form.HOSTING_SERVICE_INFO.items %}
+      "{{id}}": [ {% spaceless %}
+{%  for field in info.fields %}
+          "{{field}}"{% if not forloop.last %},{% endif %}
+{%  endfor %}
+      {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+{% endfor %}
+  }{% endspaceless %}
+
+  var HOSTING_SERVICE_HIDDEN_FIELDS = { {% spaceless %}
+{% for id, info in adminform.form.HOSTING_SERVICE_INFO.items %}
+      "{{id}}": [ {% spaceless %}
+{%  for field in info.hidden_fields %}
+          "{{field}}"{% if not forloop.last %},{% endif %}
+{%  endfor %}
+      {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+{% endfor %}
+  }{% endspaceless %}
+
+  var TOOLS_FIELDS = { {% spaceless %}
+      "none": [ "raw_file_url", "username", "password" ],
+{% for tool in adminform.form.tool.field.queryset %}
+      "{{tool.id}}": [ {% spaceless %}
+{%  if tool.supports_raw_file_urls %}
+           "raw_file_url",
+{%  endif %}
+           "username", "password"
+      {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+{% endfor %}
+  }{% endspaceless %}
+
+  var HOSTING_SERVICE_TOOLS = { {% spaceless %}
+{% for id, info in adminform.form.HOSTING_SERVICE_INFO.items %}
+      "{{id}}": [ {% spaceless %}
+{%  for tool in info.tools %}
+          "{{tool}}"{% if not forloop.last %},{% endif %}
+{%  endfor %}
+      {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+{% endfor %}
+  }{% endspaceless %}
+
+{% if adminform.form.hostkeyerror or adminform.form.certerror %}
+$(document).ready(function() {
+  var inputs = $("fieldset, .submit-row").find("input, select");
+
+  inputs.attr("disabled", true);
+
+  $(".host-confirmation input").click(function() {
+      inputs.attr("disabled", false);
+  })
+});
+{% endif %}
+
+</script>
+{% endblock %}
+
+{% block form_top %}
+{%  with adminform.form.hostkeyerror as hostkeyerror %}
+{%  with adminform.form.certerror as certerror %}
+{%  with adminform.form.certerror.certificate as certificate %}
+{%   if hostkeyerror or certerror %}
+<div class="host-confirmation">
+
+{%   if hostkeyerror %}
+ {{hostkeyerror|paragraphs}}
+{%    if hostkeyerror.key %}
+ <p>RSA key fingerprint is {{hostkeyerror.key}}.</p>
+{%    endif %}
+{%    if hostkeyerror.expected_key %}
+ <p>Expected fingerprint is {{hostkeyerror.expected_key}}.</p>
+{%    endif %}
+
+{%   else %}{% if certerror %}
+
+ {{certerror|paragraphs}}
+{%    if certificate.failures %}
+ <p>{% trans "There were errors validating this certificate:" %}</p>
+ <ul>
+{%     for failure in certificate.failures %}
+  <li>{{failure}}</li>
+{%     endfor %}
+ </ul>
+{%    endif %}
+ <div class="cert-info">
+  <h3>{% trans "Certificate information:" %}</h3>
+  <p><label>{% trans "Hostname:" %}</label> {{certificate.hostname}}</p>
+  <p><label>{% trans "Valid:" %}</label>
+{% blocktrans with certificate.valid_from as valid_from and certificate.valid_until as valid_until %}
+   from {{valid_from}} until {{valid_until}}
+{% endblocktrans %}
+  </p>
+  <p><label>{% trans "Issuer:" %}</label> {{certificate.issuer}}</p>
+  <p><label>{% trans "Fingerprint:" %}</label> {{certificate.fingerprint}}</p>
+ </div>
+{%   endif %}{% endif %}
+
+ <p>{% blocktrans %}
+  Do you trust this host, or do you want to go back and edit the
+  repository information?
+ {% endblocktrans %}</p>
+ <div class="form-row">
+  <input type="submit" name="trust_host" value="{% trans "I trust this host" %}" />
+  <input type="submit" name="reedit_repository" value="{% trans "Re-edit repository" %}" />
+ </div>
+</div>
+{%   endif %}
+{%  endwith %}
+{%  endwith %}
+{%  endwith %}
+{% endblock %}

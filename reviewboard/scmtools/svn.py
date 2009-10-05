@@ -8,12 +8,41 @@ try:
 except ImportError:
     pass
 
+from django.utils.translation import ugettext as _
+
 from reviewboard.diffviewer.parser import DiffParser
+from reviewboard.scmtools import sshutils
+from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
-from reviewboard.scmtools.errors import SCMError, FileNotFoundError
+from reviewboard.scmtools.errors import SCMError, \
+                                        FileNotFoundError, \
+                                        UnverifiedCertificateError, \
+                                        RepositoryNotFoundError
+
+
+# Register these URI schemes so we can handle them properly.
+sshutils.ssh_uri_schemes.append('svn+ssh')
+
+
+class SVNCertificateFailures:
+    """SVN HTTPS certificate failure codes.
+
+    These map to the various SVN HTTPS certificate failures in libsvn.
+    """
+    NOT_YET_VALID = 1 << 0
+    EXPIRED       = 1 << 1
+    CN_MISMATCH   = 1 << 2
+    UNKNOWN_CA    = 1 << 3
 
 
 class SVNTool(SCMTool):
+    name = "Subversion"
+    uses_atomic_revisions = True
+    supports_authentication = True
+    dependencies = {
+        'modules': ['pysvn'],
+    }
+
     AUTHOR_KEYWORDS   = ['Author', 'LastChangedBy']
     DATE_KEYWORDS     = ['Date', 'LastChangedDate']
     REVISION_KEYWORDS = ['Revision', 'LastChangedRevision', 'Rev']
@@ -36,10 +65,6 @@ class SVNTool(SCMTool):
         'Rev':                 REVISION_KEYWORDS,
         'URL':                 URL_KEYWORDS,
     }
-
-    name = "Subversion"
-    uses_atomic_revisions = True
-    supports_authentication = True
 
     def __init__(self, repository):
         self.repopath = repository.path
@@ -71,7 +96,6 @@ class SVNTool(SCMTool):
             \ *\([Rr]ev(?:ision)?\ (\d+)\)$ # svnlook uses 'rev 0' while svn diff
                                             # uses 'revision 0'
             """, re.VERBOSE)
-
 
     def get_file(self, path, revision=HEAD):
         if not path:
@@ -225,6 +249,109 @@ class SVNTool(SCMTool):
 
     def get_parser(self, data):
         return SVNDiffParser(data)
+
+    @classmethod
+    def check_repository(cls, path, username=None, password=None):
+        """
+        Performs checks on a repository to test its validity.
+
+        This should check if a repository exists and can be connected to.
+        This will also check if the repository requires an HTTPS certificate.
+
+        The result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception
+        will be thrown.
+        """
+        import pysvn
+
+        super(SVNTool, cls).check_repository(path, username, password)
+
+        cert_data = {}
+
+        def ssl_server_trust_prompt(trust_dict):
+            cert_data.update(trust_dict)
+            return False, 0, False
+
+        client = pysvn.Client()
+        client.callback_ssl_server_trust_prompt = ssl_server_trust_prompt
+
+        if username:
+            client.set_default_username(str(username))
+
+        if password:
+            client.set_default_password(str(password))
+
+        try:
+            info = client.info2(path, recurse=False)
+            print info
+        except ClientError, e:
+            stre = str(e)
+            print e
+
+            if 'callback_get_login required' in stre:
+                raise SCMError("Authentication failed") # XXX
+
+            if cert_data:
+                failures = cert_data['failures']
+
+                reasons = []
+
+                if failures & SVNCertificateFailures.NOT_YET_VALID:
+                    reasons.append(_('The certificate is not yet valid.'))
+
+                if failures & SVNCertificateFailures.EXPIRED:
+                    reasons.append(_('The certificate has expired.'))
+
+                if failures & SVNCertificateFailures.CN_MISMATCH:
+                    reasons.append(_('The certificate hostname does not '
+                                     'match.'))
+
+                if failures & SVNCertificateFailures.UNKNOWN_CA:
+                    reasons.append(_('The certificate is not issued by a '
+                                     'trusted authority. Use the fingerprint '
+                                     'to validate the certificate manually.'))
+
+                raise UnverifiedCertificateError(
+                    Certificate(valid_from=cert_data['valid_from'],
+                                valid_until=cert_data['valid_until'],
+                                hostname=cert_data['hostname'],
+                                realm=cert_data['realm'],
+                                fingerprint=cert_data['finger_print'],
+                                issuer=cert_data['issuer_dname'],
+                                failures=reasons))
+
+            raise RepositoryNotFoundError()
+
+    @classmethod
+    def accept_certificate(cls, path):
+        """Accepts the certificate for the given repository path."""
+        import pysvn
+
+        def ssl_server_trust_prompt(trust_dict):
+            return True, trust_dict['failures'], True
+
+        dirname = os.path.expanduser('~/.subversion')
+
+        if not os.path.exists(dirname):
+            # Make sure the .ssh directory exists.
+            try:
+                os.mkdir(dirname, 0700)
+            except OSError, e:
+                raise IOError(_("Unable to create directory %(dirname)s, "
+                                "which is needed for the Subversion "
+                                "configuration. Create this directory and set "
+                                "the web server's user as the the owner.") % {
+                    'dirname': dirname,
+                })
+
+        client = pysvn.Client()
+        client.callback_ssl_server_trust_prompt = ssl_server_trust_prompt
+
+        try:
+            info = client.info2(path, recurse=False)
+        except ClientError, e:
+            pass
 
 
 class SVNDiffParser(DiffParser):
