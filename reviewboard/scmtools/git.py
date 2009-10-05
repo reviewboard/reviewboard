@@ -202,12 +202,15 @@ class GitClient(object):
 
         self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
+        self.git_dir = None
 
         url_parts = urlparse.urlparse(self.path)
 
         if url_parts.scheme == 'file':
+            self.git_dir = url_parts.path
+
             p = subprocess.Popen(
-                ['git', '--git-dir=%s' % url_parts.path, 'config',
+                ['git', '--git-dir=%s' % self.git_dir, 'config',
                      'core.repositoryformatversion'],
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
@@ -285,7 +288,7 @@ class GitClient(object):
         commit = self._resolve_head(revision, path)
 
         p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.path, 'cat-file', option, commit],
+            ['git', '--git-dir=%s' % self.git_dir, 'cat-file', option, commit],
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             close_fds=(os.name != 'nt')
