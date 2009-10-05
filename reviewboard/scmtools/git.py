@@ -206,7 +206,7 @@ class GitClient(object):
 
         url_parts = urlparse.urlparse(self.path)
 
-        if url_parts.scheme == 'file':
+        if url_parts[0] == 'file':
             self.git_dir = url_parts.path
 
             p = subprocess.Popen(
@@ -318,9 +318,10 @@ class GitClient(object):
             return path
 
         url_parts = urlparse.urlparse(path)
+        scheme = url_parts[0]
         netloc = url_parts[1]
 
-        if netloc and url_parts.scheme:
+        if scheme and netloc:
             return path
 
         m = self.schemeless_url_re.match(path)

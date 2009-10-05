@@ -33,7 +33,7 @@ def get_host_keys_filename():
 
 def is_ssh_uri(url):
     """Returns whether or not a URL represents an SSH connection."""
-    return urlparse.urlparse(url).scheme in ssh_uri_schemes
+    return urlparse.urlparse(url)[0] in ssh_uri_schemes
 
 
 def get_ssh_client():
