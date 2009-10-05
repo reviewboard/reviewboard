@@ -207,7 +207,7 @@ class GitClient(object):
         url_parts = urlparse.urlparse(self.path)
 
         if url_parts[0] == 'file':
-            self.git_dir = url_parts.path
+            self.git_dir = url_parts[2]
 
             p = subprocess.Popen(
                 ['git', '--git-dir=%s' % self.git_dir, 'config',
