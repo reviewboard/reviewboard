@@ -111,7 +111,7 @@ class SCMTool(object):
         will be thrown.
         """
         if sshutils.is_ssh_uri(path):
-            sshutils.check_host(urlparse.urlparse(path).netloc,
+            sshutils.check_host(urlparse.urlparse(path)[1], # netloc
                                 username, password)
 
     @classmethod

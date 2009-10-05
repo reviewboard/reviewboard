@@ -127,7 +127,7 @@ class CVSTool(SCMTool):
     @classmethod
     def parse_hostname(cls, path):
         """Parses a hostname from a repository path."""
-        return urlparse.urlparse(path).netloc
+        return urlparse.urlparse(path)[1] # netloc
 
 
 class CVSDiffParser(DiffParser):

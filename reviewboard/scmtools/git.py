@@ -318,8 +318,9 @@ class GitClient(object):
             return path
 
         url_parts = urlparse.urlparse(path)
+        netloc = url_parts[1]
 
-        if url_parts.netloc and url_parts.scheme:
+        if netloc and url_parts.scheme:
             return path
 
         m = self.schemeless_url_re.match(path)
