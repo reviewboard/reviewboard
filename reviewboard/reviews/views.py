@@ -80,7 +80,7 @@ def new_review_request(request,
     # Repository ID : visible fields mapping.  This is so we can dynamically
     # show/hide the relevant fields with javascript.
     fields = {}
-    for repo in Repository.objects.all():
+    for repo in Repository.objects.filter(visible=True):
         try:
             fields[repo.id] = repo.get_scmtool().get_fields()
         except Exception, e:

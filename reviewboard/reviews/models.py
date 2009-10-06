@@ -111,13 +111,7 @@ class DefaultReviewer(models.Model):
     file_regex = models.CharField(_("file regex"), max_length=256,
         help_text=_("File paths are matched against this regular expression "
                     "to determine if these reviewers should be added."))
-    repository = models.ManyToManyField(
-        Repository,
-        blank=True,
-        verbose_name=_("repositories"),
-        help_text=_('The list of repositories to specifically match this '
-                    'default reviewer for. If left empty, this will match '
-                    'all repositories.'))
+    repository = models.ManyToManyField(Repository, blank=True)
     groups = models.ManyToManyField(Group, verbose_name=_("default groups"),
                                     blank=True)
     people = models.ManyToManyField(User, verbose_name=_("default people"),

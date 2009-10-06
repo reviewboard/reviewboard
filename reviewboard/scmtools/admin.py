@@ -6,10 +6,10 @@ from reviewboard.scmtools.models import Repository, Tool
 
 
 class RepositoryAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'path')
+    list_display = ('__unicode__', 'path', 'visible')
     fieldsets = (
         (_('General Information'), {
-            'fields': ('name',),
+            'fields': ('name', 'visible',),
             'classes': ('wide',),
         }),
         (_('Repository Hosting'), {

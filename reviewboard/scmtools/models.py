@@ -45,6 +45,7 @@ class Repository(models.Model):
     tool = models.ForeignKey(Tool, related_name="repositories")
     bug_tracker = models.CharField(max_length=256, blank=True)
     encoding = models.CharField(max_length=32, blank=True)
+    visible = models.BooleanField(default=True)
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()

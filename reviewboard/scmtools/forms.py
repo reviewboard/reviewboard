@@ -199,6 +199,13 @@ class RepositoryForm(forms.ModelForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
 
+    visible = forms.BooleanField(
+        label=_('Show this repository'),
+        help_text=_('Use this to control whether or not a repository is '
+                    'shown when creating new review requests. Existing '
+                    'review requests are unaffected.'),
+        required=False)
+
     hosting_type = forms.ChoiceField(
         label=_("Hosting service"),
         required=True,

@@ -2,6 +2,7 @@ import re
 import sre_constants
 
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
@@ -26,6 +27,15 @@ class DefaultReviewerForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('File paths are matched against this regular expression '
                     'to determine if these reviewers should be added.'))
+
+    repository = forms.ModelMultipleChoiceField(
+        label=_('Repositories'),
+        required=False,
+        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        help_text=_('The list of repositories to specifically match this '
+                    'default reviewer for. If left empty, this will match '
+                    'all repositories.'),
+        widget=FilteredSelectMultiple(_("Repositories"), False))
 
     def clean_file_regex(self):
         """Validates that the specified regular expression is valid."""
@@ -53,13 +63,13 @@ class NewReviewRequestForm(forms.Form):
     diff_path = forms.FileField(label=_("Diff"), required=True)
     parent_diff_path = forms.FileField(label=_("Parent Diff"),
                                        required=False)
-    repository = forms.ChoiceField(label=_("Repository"), required=True)
-    changenum = forms.IntegerField(label=_("Change Number"), required=False)
+    repository = forms.ModelChoiceField(
+        label=_("Repository"),
+        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        empty_label=None,
+        required=True)
 
-    def __init__(self, *args, **kwargs):
-        forms.Form.__init__(self, *args, **kwargs)
-        self.fields['repository'].choices = \
-            [(repo.id, repo.name) for repo in Repository.objects.order_by('name')]
+    changenum = forms.IntegerField(label=_("Change Number"), required=False)
 
     @staticmethod
     def create_from_list(data, constructor, error):
@@ -69,7 +79,7 @@ class NewReviewRequestForm(forms.Form):
         return set([constructor(name) for name in names])
 
     def create(self, user, diff_file, parent_diff_file):
-        repository = Repository.objects.get(pk=self.cleaned_data['repository'])
+        repository = self.cleaned_data['repository']
         changenum = self.cleaned_data['changenum'] or None
 
         # It's a little odd to validate this here, but we want to have access to

@@ -261,10 +261,10 @@ def server_info(request):
 @webapi_check_login_required
 def repository_list(request):
     """
-    Returns a list of all known repositories.
+    Returns a list of all known, visible repositories.
     """
     return WebAPIResponse(request, {
-        'repositories': Repository.objects.all(),
+        'repositories': Repository.objects.filter(visible=True),
     })
 
 
