@@ -224,12 +224,14 @@ RB.ReviewRequest = function(id, path) {
     return this;
 }
 
-$.extend(RB.ReviewRequest.prototype, {
+$.extend(RB.ReviewRequest, {
     /* Constants */
     CHECK_UPDATES_MSECS: 5 * 60 * 1000, // Every 5 minutes
     CLOSE_DISCARDED: 1,
-    CLOSE_SUBMITTED: 2,
+    CLOSE_SUBMITTED: 2
+});
 
+$.extend(RB.ReviewRequest.prototype, {
     /* Review request API */
     createDiff: function(revision, interdiff_revision) {
         return new RB.Diff(this, revision, interdiff_revision);
@@ -288,12 +290,12 @@ $.extend(RB.ReviewRequest.prototype, {
     },
 
     close: function(options) {
-        if (options.type == this.CLOSE_DISCARDED) {
+        if (options.type == RB.ReviewRequest.CLOSE_DISCARDED) {
             this._apiCall({
                 path: "/close/discarded/",
                 buttons: options.buttons
             });
-        } else if (options.type == this.CLOSE_SUBMITTED) {
+        } else if (options.type == RB.ReviewRequest.CLOSE_SUBMITTED) {
             this._apiCall({
                 path: "/close/submitted/",
                 buttons: options.buttons
@@ -327,7 +329,7 @@ $.extend(RB.ReviewRequest.prototype, {
         this.lastUpdateTimestamp = lastUpdateTimestamp;
 
         setTimeout(function() { self._checkForUpdates(); },
-                   this.CHECK_UPDATES_MSECS);
+                   RB.ReviewRequest.CHECK_UPDATES_MSECS);
     },
 
     _checkForUpdates: function() {
