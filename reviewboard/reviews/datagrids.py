@@ -155,27 +155,29 @@ class SummaryColumn(Column):
     def render_data(self, review_request):
         summary = conditional_escape(review_request.summary)
         if not summary:
-            summary = '&nbsp;<i>No Summary</i>'
+            summary = '&nbsp;<i>%s</i>' % _('No Summary')
 
         if review_request.submitter == self.datagrid.request.user:
             try:
                 draft = review_request.draft.get()
                 summary = conditional_escape(draft.summary)
-                return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       summary
+                return self.__labeled_summary('Draft', summary)
             except ReviewRequestDraft.DoesNotExist:
                 pass
 
-            if not review_request.public:
-                # XXX Do we want to say "Draft?"
-                return "<span class=\"draftlabel\">[Draft]</span> " + \
-                       summary
+            if (not review_request.public and
+                review_request.status == ReviewRequest.PENDING_REVIEW):
+                return self.__labeled_summary('Draft', summary)
 
-        if review_request.status == 'S':
-            return "<span class=\"draftlabel\">[Submitted]</span> " + \
-                   summary
+        if review_request.status == ReviewRequest.SUBMITTED:
+            return self.__labeled_summary('Submitted', summary)
+        elif review_request.status == ReviewRequest.DISCARDED:
+            return self.__labeled_summary('Discarded', summary)
 
         return summary
+
+    def __labeled_summary(self, label, summary):
+        return '<span class="draftlabel">[%s]</span> %s"' % (label, summary)
 
 
 class PendingCountColumn(Column):
