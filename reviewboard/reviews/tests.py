@@ -611,6 +611,18 @@ class DraftTests(TestCase):
             summary="Add permission checking for JSON API"))
 
 
+class FieldTests(TestCase):
+    # Bug #1352
+    def testLongBugNumbers(self):
+        """Testing review requests with very long bug numbers"""
+        review_request = ReviewRequest()
+        review_request.bugs_closed = \
+            '12006153200030304432010,12006153200030304432009'
+        self.assertEqual(review_request.get_bug_list(),
+                         ['12006153200030304432009',
+                          '12006153200030304432010'])
+
+
 class ConcurrencyTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
