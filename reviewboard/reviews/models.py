@@ -268,7 +268,7 @@ class ReviewRequest(models.Model):
         # case of bug trackers with numeric IDs.  If that fails, sort
         # alphabetically.
         try:
-            bugs.sort(cmp=lambda x,y: int(x) - int(y))
+            bugs.sort(cmp=lambda x,y: int(int(x) - int(y)))
         except ValueError:
             bugs.sort()
 
@@ -611,7 +611,7 @@ class ReviewRequestDraft(models.Model):
         # case of bug trackers with numeric IDs.  If that fails, sort
         # alphabetically.
         try:
-            bugs.sort(cmp=lambda x,y: int(x) - int(y))
+            bugs.sort(cmp=lambda x,y: int(int(x) - int(y)))
         except ValueError:
             bugs.sort()
 
