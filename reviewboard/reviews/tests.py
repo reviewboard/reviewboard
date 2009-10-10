@@ -604,7 +604,6 @@ class DraftTests(TestCase):
         self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
 
-
     def getDraft(self):
         """Convenience function for getting a new draft to work with."""
         return ReviewRequestDraft.create(ReviewRequest.objects.get(
@@ -617,10 +616,9 @@ class FieldTests(TestCase):
         """Testing review requests with very long bug numbers"""
         review_request = ReviewRequest()
         review_request.bugs_closed = \
-            '12006153200030304432010,12006153200030304432009'
+            '12006153200030304432010,4432009'
         self.assertEqual(review_request.get_bug_list(),
-                         ['12006153200030304432009',
-                          '12006153200030304432010'])
+                         ['4432009', '12006153200030304432010'])
 
 
 class ConcurrencyTests(TestCase):
