@@ -349,7 +349,7 @@ $.extend(RB.ReviewRequest.prototype, {
                 self.lastUpdateTimestamp = rsp.timestamp;
 
                 setTimeout(function() { self._checkForUpdates(); },
-                           self.CHECK_UPDATES_MSECS);
+                           RB.ReviewRequest.CHECK_UPDATES_MSECS);
             }
         });
     },
