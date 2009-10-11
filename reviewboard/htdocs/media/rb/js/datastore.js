@@ -91,7 +91,6 @@ $.extend(RB.DiffComment.prototype, {
 
     _deleteAndDestruct: function() {
         $.event.trigger("destroyed", null, this);
-        delete self;
     },
 
     /*
@@ -392,7 +391,7 @@ $.extend(RB.Review.prototype, {
             data: {
                 shipit: this.shipit,
                 body_top: this.body_top,
-                body_bottom: this.body_bottom,
+                body_bottom: this.body_bottom
             },
             buttons: options.buttons,
             success: options.success
@@ -405,7 +404,7 @@ $.extend(RB.Review.prototype, {
             data: {
                 shipit: this.shipit,
                 body_top: this.body_top,
-                body_bottom: this.body_bottom,
+                body_bottom: this.body_bottom
             },
             buttons: options.buttons,
             success: options.success
@@ -690,7 +689,6 @@ $.extend(RB.ScreenshotComment.prototype, {
 
     _deleteAndDestruct: function() {
         $.event.trigger("destroyed", null, this);
-        delete self;
     },
 
     /*
