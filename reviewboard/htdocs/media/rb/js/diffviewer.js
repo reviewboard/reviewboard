@@ -1044,14 +1044,10 @@ function loadFileDiff(filediff_id, filediff_revision,
         /* We already have this one. This is probably a pre-loaded file. */
         setupFileDiff();
     } else {
-        var revision_str = filediff_revision;
-
-        if (interfilediff_id) {
-            revision_str += "-" + interfilediff_revision;
-        }
-
         $.funcQueue("diff_files").add(function() {
-            gDiff.getDiffFile(filediff_id, file_index, onFileLoaded);
+            gDiff.getDiffFile(filediff_id, filediff_revision,
+                              interfilediff_id, interfilediff_revision,
+                              file_index, onFileLoaded);
         });
     }
 

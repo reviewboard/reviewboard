@@ -156,11 +156,19 @@ $.extend(RB.Diff.prototype, {
         });
     },
 
-    getDiffFile: function(filediff_id, file_index, onSuccess) {
+    getDiffFile: function(filediff_id, filediff_revision,
+                          interfilediff_id, interfilediff_revision,
+                          file_index, onSuccess) {
+        var revision_str = filediff_revision;
+
+        if (interfilediff_id) {
+            revision_str += "-" + interfilediff_revision;
+        }
+
         $.ajax({
             type: "GET",
             url: SITE_ROOT + "r/" + this.review_request.id + "/diff/" +
-                 this._getRevisionString() + "/fragment/" + filediff_id +
+                 revision_str + "/fragment/" + filediff_id +
                  "/?index=" + file_index + "&" + AJAX_SERIAL,
             complete: onSuccess
         });
@@ -201,16 +209,6 @@ $.extend(RB.Diff.prototype, {
                 }
             }
         });
-    },
-
-    _getRevisionString: function() {
-        var revision = this.revision;
-
-        if (this.interdiff_revision != null) {
-            revision += "-" + this.interdiff_revision;
-        }
-
-        return revision;
     }
 });
 
