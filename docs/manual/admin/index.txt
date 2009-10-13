@@ -25,6 +25,7 @@ Site Maintenance
    sites/rb-site
    sites/creating-sites
    sites/upgrading-sites
+   sites/enabling-search
    sites/management-commands
 
 

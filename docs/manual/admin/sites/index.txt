@@ -8,6 +8,7 @@ Site Maintenance
    rb-site
    creating-sites
    upgrading-sites
+   enabling-search
    management-commands
 
 
