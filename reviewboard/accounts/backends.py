@@ -231,10 +231,18 @@ class ActiveDirectoryBackend(object):
                 for group in new_groups:
                     if group in old_seen:
                         continue
-                    group_data = self.search_ad(con, '(&(objectClass=group)(saMAccountName=%s))' % group)
-                    seen.update(self.get_member_of(con, group_data, seen=seen, depth=depth))
+
+                    # Search for groups with the specified CN. Use the CN
+                    # rather than The sAMAccountName so that behavior is
+                    # correct when the values differ (e.g. if a
+                    # "pre-Windows 2000" group name is set in AD)
+                    group_data = self.search_ad(
+                        con, '(&(objectClass=group)(cn=%s))' % group)
+                    seen.update(self.get_member_of(con, group_data,
+                                                   seen=seen, depth=depth))
             else:
-                logging.warning('ActiveDirectory recursive group check reached maximum recursion depth.')
+                logging.warning('ActiveDirectory recursive group check '
+                                'reached maximum recursion depth.')
 
         return seen
 
