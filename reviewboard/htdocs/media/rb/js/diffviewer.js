@@ -1021,6 +1021,9 @@ function expandChunk(fileid, filediff_id, revision, interdiff_revision,
 
                 tbody.replaceWith(res.responseText);
                 addCommentFlags(table, gHiddenComments);
+
+                /* The selection rectangle may not update -- bug #1353. */
+                $(gAnchors[gSelectedAnchor]).highlightChunk();
             }
         }
     });
