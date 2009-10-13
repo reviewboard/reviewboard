@@ -161,18 +161,18 @@ class SummaryColumn(Column):
             try:
                 draft = review_request.draft.get()
                 summary = conditional_escape(draft.summary)
-                return self.__labeled_summary('Draft', summary)
+                return self.__labeled_summary(_('Draft'), summary)
             except ReviewRequestDraft.DoesNotExist:
                 pass
 
             if (not review_request.public and
                 review_request.status == ReviewRequest.PENDING_REVIEW):
-                return self.__labeled_summary('Draft', summary)
+                return self.__labeled_summary(_('Draft'), summary)
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            return self.__labeled_summary('Submitted', summary)
+            return self.__labeled_summary(_('Submitted'), summary)
         elif review_request.status == ReviewRequest.DISCARDED:
-            return self.__labeled_summary('Discarded', summary)
+            return self.__labeled_summary(_('Discarded'), summary)
 
         return summary
 
