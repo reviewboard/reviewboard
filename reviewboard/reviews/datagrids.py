@@ -177,7 +177,7 @@ class SummaryColumn(Column):
         return summary
 
     def __labeled_summary(self, label, summary):
-        return '<span class="draftlabel">[%s]</span> %s' % (label, summary)
+        return u'<span class="draftlabel">[%s]</span> %s' % (label, summary)
 
 
 class PendingCountColumn(Column):
