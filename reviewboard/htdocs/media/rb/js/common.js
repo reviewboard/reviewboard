@@ -26,7 +26,7 @@ function showError(text, data) {
                 .append(
                     '<p>The following error page should be saved and ' +
                     'attached when contacting your system administrator or ' +
-                    '<a href="http://www.review-board.org/bugs/new/">' +
+                    '<a href="http://www.reviewboard.org/bugs/new/">' +
                     'reporting a bug</a>. To save the page, right-click the ' +
                     'error below and choose "Save Page As," if available, ' +
                     'or "View Source" and save the result as a ' +

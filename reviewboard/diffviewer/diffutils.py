@@ -69,7 +69,7 @@ def convert_line_endings(data):
     # it into a \n.
     #
     # See http://code.google.com/p/reviewboard/issues/detail?id=386
-    # and http://reviews.review-board.org/r/286/
+    # and http://reviews.reviewboard.org/r/286/
     if data == "":
         return ""
 
