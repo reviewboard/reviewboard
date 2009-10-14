@@ -20,7 +20,7 @@ LATEST_PY_VERSION = PY_VERSIONS[-1]
 PACKAGE_NAME = 'ReviewBoard'
 
 RELEASES_URL = \
-    'review-board.org:/var/www/downloads.review-board.org/' \
+    'reviewboard.org:/var/www/downloads.reviewboard.org/' \
     'htdocs/releases/%s/%s.%s/' % (PACKAGE_NAME, VERSION[0], VERSION[1])
 
 

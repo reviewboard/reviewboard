@@ -59,10 +59,10 @@ else:
 PACKAGE_NAME = 'ReviewBoard'
 
 if is_release():
-    download_url = 'http://downloads.review-board.org/releases/%s/%s.%s/' % \
+    download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
                    (PACKAGE_NAME, VERSION[0], VERSION[1])
 else:
-    download_url = 'http://downloads.review-board.org/nightlies/'
+    download_url = 'http://downloads.reviewboard.org/nightlies/'
 
 
 # Build the reviewboard package.
@@ -70,7 +70,7 @@ setup(name=PACKAGE_NAME,
       version=get_package_version(),
       license="MIT",
       description="Review Board, a web-based code review tool",
-      url="http://www.review-board.org/",
+      url="http://www.reviewboard.org/",
       download_url=download_url,
       author="The Review Board Project",
       author_email="reviewboard@googlegroups.com",
@@ -102,7 +102,7 @@ setup(name=PACKAGE_NAME,
           'pytz'
       ],
       dependency_links = [
-          "http://downloads.review-board.org/mirror/",
+          "http://downloads.reviewboard.org/mirror/",
           download_url,
       ],
       include_package_data=True,

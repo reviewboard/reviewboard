@@ -14,7 +14,7 @@ from optparse import OptionGroup, OptionParser
 from random import choice
 
 
-DOCS_BASE = "http://www.review-board.org/docs/manual/dev/"
+DOCS_BASE = "http://www.reviewboard.org/docs/manual/dev/"
 
 
 # See if GTK is a possibility.

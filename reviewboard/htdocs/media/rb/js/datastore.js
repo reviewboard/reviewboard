@@ -824,7 +824,7 @@ function rbApiCall(options) {
             .append(
                 '<p>There may be useful error details below. The following ' +
                 'error page may be useful to your system administrator or ' +
-                'when <a href="http://www.review-board.org/bugs/new/">' +
+                'when <a href="http://www.reviewboard.org/bugs/new/">' +
                 'reporting a bug</a>. To save the page, right-click the ' +
                 'error below and choose "Save Page As," if available, ' +
                 'or "View Source" and save the result as a ' +
