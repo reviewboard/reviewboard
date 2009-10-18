@@ -89,6 +89,7 @@ class UploadDiffForm(forms.Form):
                     parent_changeset_id = f.origChangesetId
 
         diffset = DiffSet(name=diff_file.name, revision=0,
+                          basedir=basedir,
                           history=diffset_history,
                           diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
         diffset.repository = self.repository

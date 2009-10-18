@@ -41,6 +41,8 @@ class DiffSet(models.Model):
     name = models.CharField(_('name'), max_length=256)
     revision = models.IntegerField(_("revision"))
     timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
+    basedir = models.CharField(_('base directory'), max_length=256,
+                               blank=True, default='')
     history = models.ForeignKey('DiffSetHistory', null=True,
                                 related_name="diffsets",
                                 verbose_name=_("diff set history"))

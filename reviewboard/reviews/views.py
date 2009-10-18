@@ -30,7 +30,6 @@ from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
-from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
@@ -40,6 +39,7 @@ from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           SubmitterDataGrid, \
                                           WatchedGroupDataGrid
 from reviewboard.reviews.forms import NewReviewRequestForm, \
+                                      UploadDiffForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
@@ -225,7 +225,7 @@ def review_detail(request, review_request_id,
         'last_activity_time': last_activity_time,
         'review': review,
         'request': request,
-        'upload_diff_form': UploadDiffForm(repository),
+        'upload_diff_form': UploadDiffForm(review_request),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
         'PRE_CREATION': PRE_CREATION,
@@ -233,7 +233,6 @@ def review_detail(request, review_request_id,
     set_etag(response, etag)
 
     return response
-
 
 
 @login_required
@@ -443,7 +442,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
         'is_draft_diff': is_draft_diff,
         'is_draft_interdiff': is_draft_interdiff,
         'num_diffs': num_diffs,
-        'upload_diff_form': UploadDiffForm(repository),
+        'upload_diff_form': UploadDiffForm(review_request),
         'upload_screenshot_form': UploadScreenshotForm(),
         'scmtool': repository.get_scmtool(),
         'last_activity_time': last_activity_time,
@@ -772,7 +771,7 @@ def view_screenshot(request, review_request_id, screenshot_id,
         'screenshot': screenshot,
         'request': request,
         'comments': comments,
-        'upload_diff_form': UploadDiffForm(review_request.repository),
+        'upload_diff_form': UploadDiffForm(review_request),
         'upload_screenshot_form': UploadScreenshotForm(),
     }))
 
