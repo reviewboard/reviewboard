@@ -381,7 +381,7 @@ class ReviewRequest(models.Model):
         if self.summary:
             return self.summary
         else:
-            return _('(no summary)')
+            return unicode(_('(no summary)'))
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()

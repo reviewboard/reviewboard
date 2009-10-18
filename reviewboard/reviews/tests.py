@@ -620,6 +620,17 @@ class FieldTests(TestCase):
         self.assertEqual(review_request.get_bug_list(),
                          ['4432009', '12006153200030304432010'])
 
+    # Our _("(no summary)") string was failing in the admin UI, as
+    # django.template.defaultfilters.stringfilter would fail on a
+    # ugettext_lazy proxy object. We can use any stringfilter for this.
+    #
+    # Bug #1346
+    def testNoSummary(self):
+        """Testing review requests with no summary"""
+        from django.template.defaultfilters import lower
+        review_request = ReviewRequest()
+        lower(unicode(review_request))
+
 
 class ConcurrencyTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
