@@ -1,3 +1,4 @@
+import logging
 import re
 
 from django import forms
@@ -46,10 +47,27 @@ class NewReviewRequestForm(forms.Form):
 
     changenum = forms.IntegerField(label=_("Change Number"), required=False)
 
+    field_mapping = {}
+
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
-        self.fields['repository'].choices = \
-            [(repo.id, repo.name) for repo in Repository.objects.order_by('name')]
+
+        # Repository ID : visible fields mapping.  This is so we can
+        # dynamically show/hide the relevant fields with javascript.
+        valid_repos = []
+        repo_ids = [id for (id, name) in self.fields['repository'].choices]
+
+        for repo in Repository.objects.filter(pk__in=repo_ids).order_by("name"):
+            try:
+                self.field_mapping[repo.id] = repo.get_scmtool().get_fields()
+                valid_repos.append((repo.id, repo.name))
+            except Exception, e:
+                logging.error('Error loading SCMTool for repository '
+                              '%s (ID %d): %s' % (repo.name, repo.id, e),
+                              exc_info=1)
+
+        self.fields['repository'].choices = valid_repos
+
 
     @staticmethod
     def create_from_list(data, constructor, error):
@@ -59,7 +77,7 @@ class NewReviewRequestForm(forms.Form):
         return set([constructor(name) for name in names])
 
     def create(self, user, diff_file, parent_diff_file):
-        repository = Repository.objects.get(pk=self.cleaned_data['repository'])
+        repository = pk=self.cleaned_data['repository']
         changenum = self.cleaned_data['changenum'] or None
 
         # It's a little odd to validate this here, but we want to have access to

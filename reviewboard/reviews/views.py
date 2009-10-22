@@ -77,24 +77,9 @@ def new_review_request(request,
     else:
         form = NewReviewRequestForm()
 
-    # Repository ID : visible fields mapping.  This is so we can dynamically
-    # show/hide the relevant fields with javascript.
-    fields = {}
-    for repo in Repository.objects.all():
-        try:
-            fields[repo.id] = repo.get_scmtool().get_fields()
-        except Exception, e:
-            logging.error('Error loading SCMTool for repository '
-                          '%s (ID %d): %s' % (repo.name, repo.id, e),
-                          exc_info=1)
-
-    # Turn the selected index back into an int so we can compare it properly.
-    if 'repository' in form.data:
-        form.data['repository'] = int(form.data['repository'])
-
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
-        'fields': simplejson.dumps(fields),
+        'fields': simplejson.dumps(form.field_mapping),
     }))
 
 
