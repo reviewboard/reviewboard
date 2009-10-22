@@ -55,17 +55,8 @@
   <table>
    <tr>
     <td><label for="id_repository">{% trans "Repository" %}:</label></td>
-    {% spaceless %}<td>
-     <select name="repository" id="id_repository">
-      {% for repository in form.fields.repository.choices %}
-       {% ifequal form.data.repository repository.0 %}
-        <option value="{{repository.0}}" selected="selected">{{repository.1}}</option>
-       {% else %}
-        <option value="{{repository.0}}">{{repository.1}}</option>
-       {% endifequal %}
-      {% endfor %}
-     </select>
-    </td>{% endspaceless %}
+	<td>{{form.repository}}</td>
+	<td>{{form.repository.errors}}</td>
    </tr>
    <tr class="row_changenum">
     <td><label for="id_changenum">{{form.changenum.label}}:</label></td>
