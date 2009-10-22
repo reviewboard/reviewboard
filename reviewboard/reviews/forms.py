@@ -21,7 +21,7 @@ class NewReviewRequestForm(forms.Form):
     such as Perforce).
     """
     basedir = forms.CharField(
-        label=_("Base directory"),
+        label=_("Base Directory"),
         required=False,
         help_text=_("The absolute path in the repository the diff was "
                     "generated in."),
