@@ -32,6 +32,12 @@ span.draftlabel {
   color: #008000;
 }
 
+td.help {
+  font-size: 10px;
+  color: #333;
+  padding-top: 0;
+}
+
 ul.errorlist {
   color: #DD0000;
   display: inline;
@@ -92,6 +98,21 @@ ul.errorlist li {
 .box.important .box-inner {
   background: url("../images/important.png") no-repeat top left;
   padding: 0 0 0 50px;
+}
+
+.box.tip {
+  background-color: #fdf2a0;
+  background-image: url('../images/gold_box_top_bg.png');
+  border: 1px #b7a93e solid;
+  padding: 0px 10px;
+}
+
+.box.tip .box-inner {
+  background: transparent;
+}
+
+.box.tip h1 {
+  padding-left: 0;
 }
 
 .box.yay {
@@ -272,12 +293,6 @@ form table td {
 .formdlg .errorlist li {
   display: list-item;
   padding: 2px 4px;
-}
-
-.formdlg .help {
-  font-size: 10px;
-  color: #333;
-  padding-top: 0;
 }
 
 .formdlg .spinner {

@@ -20,11 +20,30 @@ class NewReviewRequestForm(forms.Form):
     optionally a changelist number (for use in certain repository types
     such as Perforce).
     """
-    basedir = forms.CharField(label=_("Base Diff Path"), required=False)
-    diff_path = forms.FileField(label=_("Diff"), required=True)
-    parent_diff_path = forms.FileField(label=_("Parent Diff"),
-                                       required=False)
-    repository = forms.ChoiceField(label=_("Repository"), required=True)
+    basedir = forms.CharField(
+        label=_("Base directory"),
+        required=False,
+        help_text=_("The absolute path in the repository the diff was "
+                    "generated in."),
+        widget=forms.TextInput(attrs={'size': '35'}))
+    diff_path = forms.FileField(
+        label=_("Diff"),
+        required=True,
+        help_text=_("The new diff to upload."),
+        widget=forms.FileInput(attrs={'size': '35'}))
+    parent_diff_path = forms.FileField(
+        label=_("Parent Diff"),
+        required=False,
+        help_text=_("An optional diff that the main diff is based on. "
+                    "This is usually used for distributed revision control "
+                    "systems (Git, Mercurial, etc.)."),
+        widget=forms.FileInput(attrs={'size': '35'}))
+    repository = forms.ModelChoiceField(
+        label=_("Repository"),
+        queryset=Repository.objects.order_by('name'),
+        empty_label=None,
+        required=True)
+
     changenum = forms.IntegerField(label=_("Change Number"), required=False)
 
     def __init__(self, *args, **kwargs):

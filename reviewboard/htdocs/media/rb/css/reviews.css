@@ -11,8 +11,8 @@
   font-weight: bold;
 }
 
-.new-review-request table td {
-  padding: 5px;
+.new-review-request tr {
+  padding-top: 4px;
 }
 
 .new-review-request .box-inner {
