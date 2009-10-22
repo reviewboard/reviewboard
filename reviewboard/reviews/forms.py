@@ -77,7 +77,7 @@ class NewReviewRequestForm(forms.Form):
         return set([constructor(name) for name in names])
 
     def create(self, user, diff_file, parent_diff_file):
-        repository = pk=self.cleaned_data['repository']
+        repository = self.cleaned_data['repository']
         changenum = self.cleaned_data['changenum'] or None
 
         # It's a little odd to validate this here, but we want to have access to
