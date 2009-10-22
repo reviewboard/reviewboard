@@ -19,14 +19,14 @@ class NoBaseDirError(ValueError):
 
 class UploadDiffForm(forms.Form):
     basedir = forms.CharField(
-        label=_("Base directory"),
+        label=_("Base Directory"),
         help_text=_("The absolute path in the repository the diff was "
                     "generated in."))
     path = forms.FileField(
         label=_("Diff"),
         help_text=_("The new diff to upload."))
     parent_diff_path = forms.FileField(
-        label=_("Parent diff"),
+        label=_("Parent Diff"),
         help_text=_("An optional diff that the main diff is based on. "
                     "This is usually used for distributed revision control "
                     "systems (Git, Mercurial, etc.)."),
