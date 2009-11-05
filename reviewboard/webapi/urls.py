@@ -157,6 +157,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Diffs
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
      'new_diff'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/$',
+     'review_request_diffsets'),
 
     # Screenshots
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',

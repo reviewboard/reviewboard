@@ -693,6 +693,24 @@ def count_review_requests(request, func, **kwargs):
     })
 
 
+@webapi_check_login_required
+def review_request_diffsets(request, review_request_id):
+    """
+    Returns a list of review request diffsets.
+    """
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not review_request.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    return WebAPIResponse(request, {
+        'diffsets': review_request.diffset_history.diffsets.all(),
+    })
+
+
 def _get_and_validate_review(request, review_request_id, review_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = get_object_or_404(Review, pk=review_id)

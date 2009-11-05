@@ -938,6 +938,13 @@ class WebAPITests(TestCase, EmailTestHelper):
 
         return rsp
 
+    def testReviewRequestDiffsets(self):
+        """Testing the reviewrequests/diffsets API"""
+        rsp = self.apiGet("reviewrequests/2/diffs")
+
+        self.assertEqual(rsp['diffsets'][0]["id"], 2)
+        self.assertEqual(rsp['diffsets'][0]["name"], 'cleaned_data.diff')
+
     def testDiffCommentsSet(self):
         """Testing the reviewrequests/diff/file/line/comments set API"""
         comment_text = "This is a test comment."
