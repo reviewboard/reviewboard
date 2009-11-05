@@ -940,7 +940,7 @@ class WebAPITests(TestCase, EmailTestHelper):
 
     def testReviewRequestDiffsets(self):
         """Testing the reviewrequests/diffsets API"""
-        rsp = self.apiGet("reviewrequests/2/diffs")
+        rsp = self.apiGet("reviewrequests/2/diff")
 
         self.assertEqual(rsp['diffsets'][0]["id"], 2)
         self.assertEqual(rsp['diffsets'][0]["name"], 'cleaned_data.diff')
