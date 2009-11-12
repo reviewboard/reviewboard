@@ -861,6 +861,11 @@ function findLineNumRow(table, linenum, startRow, endRow) {
         }
     }
 
+    if (startRow) {
+        // startRow already includes the offset, so we need to remove it
+        startRow -= row_offset;
+    }
+
     var low = startRow || 1;
     var high = Math.min(endRow || table.rows.length, table.rows.length);
 
