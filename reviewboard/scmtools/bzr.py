@@ -53,8 +53,8 @@ class BZRTool(SCMTool):
             try:
                 tree, branch, relpath = bzrdir.BzrDir.open_containing_tree_or_branch(filepath)
                 branch.lock_read()
+                fileid = tree.path2id(relpath)
                 revtree = revisionspec.RevisionSpec.from_string(revspec).as_tree(branch)
-                fileid = revtree.path2id(relpath)
                 contents = revtree.get_file_text(fileid)
             except Exception, e:
                 raise SCMError(e)
