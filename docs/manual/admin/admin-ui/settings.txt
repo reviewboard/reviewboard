@@ -17,6 +17,7 @@ available settings pages, which consists of:
    :maxdepth: 1
 
    general-settings
+   authentication-settings
    email-settings
    diffviewer-settings
    logging-settings

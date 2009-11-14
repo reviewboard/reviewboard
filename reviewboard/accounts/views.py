@@ -11,7 +11,7 @@ from djblets.auth.util import login_required
 from djblets.auth.views import register
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.forms import PreferencesForm
+from reviewboard.accounts.forms import PreferencesForm, RegistrationForm
 from reviewboard.accounts.models import Profile
 
 
@@ -25,7 +25,9 @@ def account_register(request):
 
     if (auth_backend == "builtin" and
         siteconfig.get("auth_enable_registration")):
-        return register(request, next_page=settings.SITE_ROOT + 'dashboard/')
+        return register(request,
+                        next_page=settings.SITE_ROOT + 'dashboard/',
+                        form_class=RegistrationForm)
 
     return HttpResponseRedirect(reverse("login"))
 

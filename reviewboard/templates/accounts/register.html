@@ -29,6 +29,24 @@
     <td class="field">{{form.email}}</td>
     <td class="errorbox">{{form.errors.email}}</td>
    </tr>
+{% if siteconfig.settings.auth_registration_show_captcha %}
+   <tr>
+    <td></td>
+	<td colspan="2">
+	 <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}">
+	 </script>
+
+	 <noscript>
+	  <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig.settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
+	          height="300" width="500" frameborder="0"></iframe>
+      <br />
+	  <textarea name="recaptcha_challenge_field" rows="3" cols="40">
+	  </textarea>
+	  <input type="hidden" name="recaptcha_response_field" value="manual_challenge" />
+	 </noscript>
+	</td>
+   </tr>
+{% endif %}
    <tr>
     <td><input type="submit" value="{% trans "Register" %}" /></td>
     <td>&nbsp;</td>

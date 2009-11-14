@@ -32,6 +32,7 @@ import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -76,12 +77,6 @@ class GeneralSettingsForm(SiteSettingsForm):
         choices=[(tz, tz) for tz in pytz.common_timezones],
         help_text=_("The time zone used for all dates on this server."))
 
-    auth_anonymous_access = forms.BooleanField(
-        label=_("Allow anonymous read-only access"),
-        help_text=_("If checked, users will be able to view review requests "
-                    "and diffs without logging in."),
-        required=False)
-
     search_enable = forms.BooleanField(
         label=_("Enable search"),
         help_text=_("Provides a search field for quickly searching through "
@@ -93,6 +88,77 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("The file that search index data should be stored in."),
         required=False,
         widget=forms.TextInput(attrs={'size': '50'}))
+
+    def load(self):
+        # First set some sane defaults.
+        domain_method = self.siteconfig.get("site_domain_method")
+        site = Site.objects.get_current()
+        self.fields['server'].initial = "%s://%s" % (domain_method,
+                                                     site.domain)
+
+        can_enable_search, reason = get_can_enable_search()
+        if not can_enable_search:
+            self.disabled_fields['search_enable'] = True
+            self.disabled_fields['search_index_file'] = True
+            self.disabled_reasons['search_enable'] = reason
+
+        super(GeneralSettingsForm, self).load()
+
+
+    def save(self):
+        server = self.cleaned_data['server']
+
+        if "://" not in server:
+            # urlparse doesn't properly handle URLs without a scheme. It
+            # believes the domain is actually the path. So we apply a prefix.
+            server = "http://" + server
+
+        url_parts = urlparse.urlparse(server)
+        domain_method = url_parts[0]
+        domain_name = url_parts[1]
+
+        if domain_name.endswith("/"):
+            domain_name = domain_name[:-1]
+
+        site = Site.objects.get_current()
+        site.domain = domain_name
+        site.save()
+
+        self.siteconfig.set("site_domain_method", domain_method)
+
+        super(GeneralSettingsForm, self).save()
+
+        # Reload any important changes into the Django settings.
+        load_site_config()
+
+
+    class Meta:
+        title = _("General Settings")
+        save_blacklist = ('server',)
+
+        fieldsets = (
+            {
+                'classes': ('wide',),
+                'title':   _("Site Settings"),
+                'fields':  ('server', 'site_media_url',
+                            'site_admin_name',
+                            'site_admin_email',
+                            'locale_timezone'),
+            },
+            {
+                'classes': ('wide',),
+                'title':   _("Search"),
+                'fields':  ('search_enable', 'search_index_file'),
+            },
+        )
+
+
+class AuthenticationSettingsForm(SiteSettingsForm):
+    auth_anonymous_access = forms.BooleanField(
+        label=_("Allow anonymous read-only access"),
+        help_text=_("If checked, users will be able to view review requests "
+                    "and diffs without logging in."),
+        required=False)
 
     auth_backend = forms.ChoiceField(
         label=_("Authentication Method"),
@@ -112,6 +178,29 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Enable registration"),
         help_text=_("Allow users to register new accounts."),
         required=False)
+
+    auth_registration_show_captcha = forms.BooleanField(
+        label=_('Show a captcha for registration'),
+        help_text=mark_safe(
+            _('Displays a captcha using <a href="%(recaptcha_url)s">'
+              'reCAPTCHA</a> on the registration page. To enable this, you '
+              'will need to go <a href="%(register_url)s">here</A> to register '
+              'an account and type in your new keys below.') % {
+                  'recaptcha_url': 'http://www.recaptcha.net/',
+                  'register_url': 'https://admin.recaptcha.net/recaptcha'
+                                  '/createsite/',
+            }),
+        required=False)
+
+    recaptcha_public_key = forms.CharField(
+        label=_('reCAPTCHA Public Key'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    recaptcha_private_key = forms.CharField(
+        label=_('reCAPTCHA Private Key'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_nis_email_domain = forms.CharField(
         label=_("E-Mail Domain"))
@@ -243,24 +332,12 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("A comma-separated list of custom auth backends. These "
                     "are represented as Python module paths."))
 
-
     def load(self):
-        # First set some sane defaults.
-        domain_method = self.siteconfig.get("site_domain_method")
-        site = Site.objects.get_current()
-        self.fields['server'].initial = "%s://%s" % (domain_method,
-                                                     site.domain)
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get("auth_require_sitewide_login")
 
         self.fields['custom_backends'].initial = \
             ', '.join(self.siteconfig.get('auth_custom_backends'))
-
-        can_enable_search, reason = get_can_enable_search()
-        if not can_enable_search:
-            self.disabled_fields['search_enable'] = True
-            self.disabled_fields['search_index_file'] = True
-            self.disabled_reasons['search_enable'] = reason
 
         can_enable_dns, reason = get_can_enable_dns()
         if not can_enable_dns:
@@ -289,40 +366,19 @@ class GeneralSettingsForm(SiteSettingsForm):
 
             self.disabled_reasons['auth_ldap_uri'] = reason
 
-        super(GeneralSettingsForm, self).load()
-
+        super(AuthenticationSettingsForm, self).load()
 
     def save(self):
-        server = self.cleaned_data['server']
-
-        if "://" not in server:
-            # urlparse doesn't properly handle URLs without a scheme. It
-            # believes the domain is actually the path. So we apply a prefix.
-            server = "http://" + server
-
-        url_parts = urlparse.urlparse(server)
-        domain_method = url_parts[0]
-        domain_name = url_parts[1]
-
-        if domain_name.endswith("/"):
-            domain_name = domain_name[:-1]
-
-        site = Site.objects.get_current()
-        site.domain = domain_name
-        site.save()
-
-        self.siteconfig.set("site_domain_method", domain_method)
         self.siteconfig.set("auth_require_sitewide_login",
                             not self.cleaned_data['auth_anonymous_access'])
 
         self.siteconfig.set('auth_custom_backends',
             re.split(r',\s*', self.cleaned_data['custom_backends']))
 
-        super(GeneralSettingsForm, self).save()
+        super(AuthenticationSettingsForm, self).save()
 
         # Reload any important changes into the Django settings.
         load_site_config()
-
 
     def clean_auth_x509_username_regex(self):
         """Validates that the specified regular expression is valid."""
@@ -335,6 +391,23 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         return regex
 
+    def clean_recaptcha_public_key(self):
+        """Validates that the reCAPTCHA public key is specified if needed."""
+        key = self.cleaned_data['recaptcha_public_key'].strip()
+
+        if self.cleaned_data['auth_registration_show_captcha'] and not key:
+            raise forms.ValidationError(_('This field is required.'))
+
+        return key
+
+    def clean_recaptcha_private_key(self):
+        """Validates that the reCAPTCHA private key is specified if needed."""
+        key = self.cleaned_data['recaptcha_private_key'].strip()
+
+        if self.cleaned_data['auth_registration_show_captcha'] and not key:
+            raise forms.ValidationError(_('This field is required.'))
+
+        return key
 
     def full_clean(self):
         def set_fieldset_required(fieldset_id, required):
@@ -364,38 +437,28 @@ class GeneralSettingsForm(SiteSettingsForm):
             if auth_backend != "custom":
                 set_fieldset_required("auth_custom", False)
 
-        super(GeneralSettingsForm, self).full_clean()
+        super(AuthenticationSettingsForm, self).full_clean()
 
 
     class Meta:
-        title = _("General Settings")
-        save_blacklist = ('server', 'auth_anonymous_access', 'custom_backends')
+        title = _('Authentication Settings')
+        save_blacklist = ('auth_anonymous_access', 'custom_backends')
 
         fieldsets = (
             {
                 'classes': ('wide',),
-                'title':   _("Site Settings"),
-                'fields':  ('server', 'site_media_url',
-                            'site_admin_name',
-                            'site_admin_email',
-                            'locale_timezone',
-                            'auth_anonymous_access'),
-            },
-            {
-                'classes': ('wide',),
-                'title':   _("Search"),
-                'fields':  ('search_enable', 'search_index_file'),
-            },
-            {
-                'classes': ('wide',),
-                'title':   _("Advanced Authentication"),
-                'fields':  ('auth_backend',),
+                'title':   _('General'),
+                'fields':  ('auth_anonymous_access',
+                            'auth_backend'),
             },
             {
                 'id':      'auth_builtin',
                 'classes': ('wide', 'hidden'),
                 'title':   _("Basic Authentication Settings"),
-                'fields':  ('auth_enable_registration',),
+                'fields':  ('auth_enable_registration',
+                            'auth_registration_show_captcha',
+                            'recaptcha_public_key',
+                            'recaptcha_private_key'),
             },
             {
                 'id':      'auth_nis',

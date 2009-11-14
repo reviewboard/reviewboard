@@ -99,7 +99,8 @@ setup(name=PACKAGE_NAME,
           'Pygments>=0.10',
           'flup',
           'paramiko',
-          'pytz'
+          'pytz',
+          'recaptcha_client',
       ],
       dependency_links = [
           "http://downloads.reviewboard.org/mirror/",
