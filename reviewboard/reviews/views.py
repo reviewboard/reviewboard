@@ -460,7 +460,8 @@ def raw_diff(request, review_request_id, revision=None):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     diffset = _query_for_diff(review_request, request.user, revision)
 
-    data = ''.join([filediff.diff for filediff in diffset.files.all()])
+    tool = review_request.repository.get_scmtool()
+    data = tool.get_parser('').raw_diff(diffset)
 
     resp = HttpResponse(data, mimetype='text/x-patch')
 
