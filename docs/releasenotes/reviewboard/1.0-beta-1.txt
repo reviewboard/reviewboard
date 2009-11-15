@@ -17,7 +17,7 @@ New Features
   instead.
 
 * Added new administration, user documentation, and a FAQ. This is
-  available on http://www.review-board.org/docs/, and is also
+  available on http://www.reviewboard.org/docs/, and is also
   available in the :file:`reviewboard/docs/ directory`.
 
 

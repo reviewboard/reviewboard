@@ -35,7 +35,7 @@ New Feature
   services and configured with raw URL support for fetching files from Git.
 
 .. _`post-review documentation`:
-    http://review-board.org/docs/manual/dev/users/tools/post-review/
+    http://reviewboard.org/docs/manual/dev/users/tools/post-review/
 
 
 Bugs Fixed

@@ -21,18 +21,18 @@ In-development releases can be found in directories matching the format
 :file:`{PackageName}/{majorVer}.{minorVer}` on the download server in the
 `releases directory`_. For example, in-development builds for the 1.1 release
 of the ReviewBoard package would live in
-http://downloads.review-board.org/releases/ReviewBoard/1.1/.
+http://downloads.reviewboard.org/releases/ReviewBoard/1.1/.
 
 To install a build from one of these directories, you can use the :option:`-f`
 parameter to :command:`easy_install`. For example::
 
-    $ easy_install -f http://downloads.review-board.org/releases/ReviewBoard/1.1/ -U ReviewBoard
+    $ easy_install -f http://downloads.reviewboard.org/releases/ReviewBoard/1.1/ -U ReviewBoard
 
 If you want to install from this directory by default in future upgrades, you
 can create a :file:`$HOME/.pydistutils.cfg` file and add the following::
 
     [easy_install]
-    find_links = http://downloads.review-board.org/releases/ReviewBoard/1.1/
+    find_links = http://downloads.reviewboard.org/releases/ReviewBoard/1.1/
 
 From then on, you can simply type::
 
@@ -41,7 +41,7 @@ From then on, you can simply type::
 And any new versions found in that directory will be installed.
 
 
-.. _`releases directory`: http://downloads.review-board.org/releases/
+.. _`releases directory`: http://downloads.reviewboard.org/releases/
 
 
 Installing Nightly Builds
@@ -49,18 +49,18 @@ Installing Nightly Builds
 
 Nightly builds are generally more unstable than the in-development releases.
 They're a snapshot of the build that day, even if nothing actually changed.
-Nightly builds are stored at http://downloads.review-board.org/nightlies/.
+Nightly builds are stored at http://downloads.reviewboard.org/nightlies/.
 
 To install a single nightly build, you can type::
 
-    $ easy_install -f http://downloads.review-board.org/nightlies/ -U ReviewBoard
+    $ easy_install -f http://downloads.reviewboard.org/nightlies/ -U ReviewBoard
 
 If you want to install from the nightly builds directory by default in future
 upgrades, you can create a :file:`$HOME/.pydistutils.cfg` file and add the
 following::
 
     [install]
-    find_links = http://downloads.review-board.org/nightlies/
+    find_links = http://downloads.reviewboard.org/nightlies/
 
 From then on, you can simply type::
 

@@ -53,7 +53,7 @@ memcached can be handy, so install that if you want to, but by default we're
 going to use the built-in local memory cache. This is a temporary cache that
 will persist only as long as the development web server is running.
 
-.. _`Administration Guide`: http://www.review-board.org/docs/manual/dev/admin/
+.. _`Administration Guide`: http://www.reviewboard.org/docs/manual/dev/admin/
 
 
 Djblets
@@ -116,7 +116,7 @@ RBTools
 
 You will need the latest version of RBTools both for development and
 (as of September 1, 2009) for a version of :command:`post-review` compatible
-with http://reviews.review-board.org/.
+with http://reviews.reviewboard.org/.
 
 Like Djblets and Review Board, you can find RBTools on GitHub_, and you can
 `browse the RBTools repository <http://github.com/reviewboard/rbtools>`_.
