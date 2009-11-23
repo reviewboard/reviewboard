@@ -110,7 +110,7 @@ CVS and Subversion
 
 CVS and Subversion don't have a concept of changesets, so instead the
 working copy's uncommitted changes are posted for review. To post a
-review request with all unchanged files in a tree, simply run::
+review request with all uncommitted files in a tree, simply run::
 
     $ post-review
 
