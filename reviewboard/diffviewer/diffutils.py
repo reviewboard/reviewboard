@@ -195,11 +195,11 @@ def convert_to_utf8(s, enc):
     is really, really hard).
     """
     if isinstance(s, unicode):
-        return s
+        return s.encode('utf-8')
     elif isinstance(s, basestring):
         try:
             u = unicode(s, 'utf-8')
-            return u
+            return s
         except UnicodeError:
             for e in enc.split(','):
                 try:
