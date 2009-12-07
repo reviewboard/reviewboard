@@ -66,13 +66,7 @@ def new_review_request(request,
                     diff_file=request.FILES['diff_path'],
                     parent_diff_file=request.FILES.get('parent_diff_path'))
                 return HttpResponseRedirect(review_request.get_absolute_url())
-            except:
-                # XXX - OwnershipError or ChangeSetError?
-                #
-                # We're preventing an exception from being thrown here so that
-                # we can display the errors that form.create() sets in
-                # a much nicer way in the template. Otherwise, the user would
-                # see a useless backtrace.
+            except (OwnershipError, ChangeSetError):
                 pass
     else:
         form = NewReviewRequestForm()
