@@ -420,10 +420,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     collapse_threshold = 2 * context_num_lines + 3
 
     if interfilediff:
-        logging.debug("Generating diff chunks for interdiff ids %s-%s",
-                      filediff.id, interfilediff.id)
+        log_timer = log_timed(
+            "Generating diff chunks for interdiff ids %s-%s (%s)" %
+            (filediff.id, interfilediff.id, filediff.source_file))
     else:
-        logging.debug("Generating diff chunks for filediff id %s", filediff.id)
+        log_timer = log_timed(
+            "Generating diff chunks for filediff id %s (%s)" %
+            (filediff.id, filediff.source_file))
 
     for tag, i1, i2, j1, j2, meta in opcodes_with_metadata(differ):
         oldlines = markup_a[i1:i2]
@@ -454,12 +457,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         else:
             chunks.append(new_chunk(lines, numlines, tag, meta=meta))
 
-    if interfilediff:
-        logging.debug("Done generating diff chunks for interdiff ids %s-%s",
-                      filediff.id, interfilediff.id)
-    else:
-        logging.debug("Done generating diff chunks for filediff id %s",
-                      filediff.id)
+    log_timer.done()
 
     return chunks
 
