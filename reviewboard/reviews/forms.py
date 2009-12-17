@@ -210,13 +210,13 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
     A specialized UploadDiffForm that knows how to interact with review
     requests.
     """
-    def __init__(self, review_request, form_data=None, *args, **kwargs):
+    def __init__(self, review_request, data=None, *args, **kwargs):
         super(UploadDiffForm, self).__init__(review_request.repository,
-                                             *args, **kwargs)
+                                             data, *args, **kwargs)
         self.review_request = review_request
 
         if ('basedir' in self.fields and
-            (not form_data or 'basedir' not in form_data)):
+            (not data or 'basedir' not in data)):
             try:
                 diffset = review_request.diffset_history.diffsets.latest()
                 self.fields['basedir'].initial = diffset.basedir

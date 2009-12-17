@@ -1,4 +1,5 @@
 import logging
+import os
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -253,7 +254,40 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
-    # TODO - test the rest of that form
+    def testNewReviewRequest1(self):
+        """Testing new_review_request view (uploading diffs)"""
+        self.client.login(username='grumpy', password='grumpy')
+
+        response = self.client.get('/r/new/')
+        self.assertEqual(response.status_code, 200)
+
+        testdata_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'scmtools', 'testdata')
+        svn_repo_path = os.path.join(testdata_dir, 'svn_repo')
+
+        repository = Repository(name='Subversion SVN',
+                                path='file://' + svn_repo_path,
+                                tool=Tool.objects.get(name='Subversion'))
+        repository.save()
+
+        diff_filename = os.path.join(testdata_dir, 'svn_makefile.diff')
+
+        f = open(diff_filename, 'r')
+
+        response = self.client.post('/r/new/', {
+            'repository': repository.id,
+            'diff_path': f,
+            'basedir': '/trunk',
+        })
+
+        f.close()
+
+        self.assertEqual(response.status_code, 302)
+
+        r = ReviewRequest.objects.order_by('-time_added')[0]
+        self.assertEqual(response['Location'],
+                         'http://testserver%s' % r.get_absolute_url())
 
     def testReviewList(self):
         """Testing all_review_requests view"""
