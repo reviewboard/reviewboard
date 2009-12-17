@@ -12,6 +12,7 @@ try:
 except ImportError:
     from urllib import quote as urllib_quote
 
+from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
