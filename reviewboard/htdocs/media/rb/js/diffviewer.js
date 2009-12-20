@@ -1178,6 +1178,16 @@ $(document).ready(function() {
     }
 
     $.funcQueue("diff_files").start();
+
+    $("table.sidebyside tr td a.moved-to," +
+      "table.sidebyside tr td a.moved-from").click(function() {
+        var destination = $(this).attr("line");
+
+        return !scrollToAnchor(
+            $("td a[target=" + destination + "]", $(this).parents("table"))
+                .parent().siblings().andSelf()
+                    .effect("highlight", {}, 2000), false);
+    });
 });
 
 // vim: set et:

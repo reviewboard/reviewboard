@@ -271,10 +271,19 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         else:
             oldregion = newregion = []
 
-        return [vlinenum,
-                oldlinenum or '', mark_safe(oldmarkup or ''), oldregion,
-                newlinenum or '', mark_safe(newmarkup or ''), newregion,
-                (oldlinenum, newlinenum) in meta['whitespace_lines']]
+        result = [vlinenum,
+                  oldlinenum or '', mark_safe(oldmarkup or ''), oldregion,
+                  newlinenum or '', mark_safe(newmarkup or ''), newregion,
+                  (oldlinenum, newlinenum) in meta['whitespace_lines']]
+
+        if oldlinenum and oldlinenum in meta.get('moved', {}):
+            destination = meta["moved"][oldlinenum]
+            result.append(destination)
+        elif newlinenum and newlinenum in meta.get('moved', {}):
+            destination = meta["moved"][newlinenum]
+            result.append(destination)
+
+        return result
 
     def new_chunk(lines, numlines, tag, collapsable=False, meta={}):
         return {
@@ -463,13 +472,18 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
 def opcodes_with_metadata(differ):
     groups = []
+    removes = {}
+    inserts = {}
 
     ws_re = re.compile(r"\s")
 
     for tag, i1, i2, j1, j2 in differ.get_opcodes():
         meta = {
-            "whitespace_chunk": False, # True if this chunk is only whitespace.
-            "whitespace_lines": [], # List of tuples (x,y), with whitespace changes.
+            # True if this chunk is only whitespace.
+            "whitespace_chunk": False,
+
+            # List of tuples (x,y), with whitespace changes.
+            "whitespace_lines": [],
         }
 
         if tag == 'replace':
@@ -478,15 +492,55 @@ def opcodes_with_metadata(differ):
 
             for i, j in zip(xrange(i1, i2), xrange(j1, j2)):
                 if ws_re.sub("", differ.a[i]) == ws_re.sub("", differ.b[j]):
+                    # Both original lines are equal when removing all
+                    # whitespace, so include their original line number in
+                    # the meta dict.
                     meta["whitespace_lines"].append((i + 1, j + 1))
 
+            # If all lines are considered to have only whitespace change,
+            # the whole chunk is considered a whitespace-only chunk.
             if len(meta["whitespace_lines"]) == (i2 - i1):
                 meta["whitespace_chunk"] = True
 
         groups.append((tag, i1, i2, j1, j2, meta))
 
-    for group in groups:
-        yield group
+        # Store delete/insert ranges for later lookup. We will be building
+        # keys that in most cases will be unique for the particular block
+        # of text being inserted/deleted. There is a chance of collision,
+        # so we a list of matching groups under that key are stored.
+        #
+        # Later, we will loop through the keys and attempt to find insert
+        # keys/groups that match remove keys/groups.
+        if tag == 'delete':
+            key = '%d-%d-%s-%s' % (j2 - j1, i2 - i1,
+                                   differ.a[i1], differ.a[i2 - 1])
+            removes.setdefault(key, []).append(groups[-1])
+        elif tag == 'insert':
+            key = '%d-%d-%s-%s' % (i2 - i1, j2 - j1,
+                                   differ.b[j1], differ.b[j2 - 1])
+            inserts.setdefault(key, []).append(groups[-1])
+
+    for insert_key, insert_groups in inserts.iteritems():
+        if insert_key not in removes:
+            continue
+
+        # There should be very few iterations in most cases. Generally one.
+        for insert_group in insert_groups:
+            for remove_group in removes[insert_key]:
+                itag, ii1, ii2, ij1, ij2, imeta = insert_group
+                rtag, ri1, ri2, rj1, rj2, rmeta = remove_group
+
+                if (((ri2 - ri1) == (ij2 - ij1)) and
+                    (differ.a[ri1:ri2] == differ.b[ij1:ij2])):
+                    a_lines = range(ri1 + 1, ri2 + 1)
+                    b_lines = range(ij1 + 1, ij2 + 1)
+                    rmeta.setdefault('moved', {}).update(dict(zip(a_lines,
+                                                                  b_lines)))
+                    imeta.setdefault('moved', {}).update(dict(zip(b_lines,
+                                                                  a_lines)))
+                    break
+
+    return groups
 
 
 def get_revision_str(revision):

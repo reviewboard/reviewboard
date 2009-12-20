@@ -54,9 +54,17 @@
    <th>{{line.4}}</th>
    <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
 {%      else %}
-   <td><pre>{{ line.2|showextrawhitespace }}</pre></td>
+   <td>{% ifequal chunk.change 'insert' %}{% if line.8 %}
+    <a href="#" class="moved-from" line="{{line.8}}" target="{{line.4}}">{% trans "Moved from" %} {{line.8}}</a>
+    {% endif %}{% endifequal %}
+    <pre>{{line.2|showextrawhitespace}}</pre>
+   </td>
    <th>{{line.4}}</th>
-   <td><pre>{{ line.5|showextrawhitespace }}</pre></td>
+   <td>{% ifequal chunk.change 'delete' %}{% if line.8 %}
+    <a href="#" class="moved-to" line="{{line.8}}" target="{{line.1}}">{% trans "Moved to" %} {{line.8}}</a>
+    {% endif %}{% endifequal %}
+    <pre>{{line.5|showextrawhitespace}}</pre>
+   </td>
 {%      endifequal %}
   </tr>
 {%     endfor %}
