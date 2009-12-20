@@ -32,6 +32,12 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 DEFAULT_DIFF_COMPAT_VERSION = 1
 
+NEW_FILE_STR = _("New File")
+NEW_CHANGE_STR = _("New Change")
+
+NEWLINES_RE = re.compile(r'\r?\n')
+NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
+
 
 class UserVisibleError(Exception):
     pass
@@ -76,10 +82,7 @@ def convert_line_endings(data):
     if data[-1] == "\r":
         data = data[:-1]
 
-    temp = data.replace('\r\r\n', '\n')
-    temp = data.replace('\r\n', '\n')
-    temp = temp.replace('\r', '\n')
-    return temp
+    return NEWLINE_CONVERSION_RE.sub('\n', data)
 
 
 def patch(diff, file, filename):
@@ -285,18 +288,18 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
         return result
 
-    def new_chunk(lines, numlines, tag, collapsable=False, meta={}):
+    def new_chunk(lines, start, end, collapsable=False,
+                  tag='equal', meta=None):
+        if not meta:
+            meta = {}
+
         return {
-            'lines': lines,
-            'numlines': numlines,
+            'lines': lines[start:end],
+            'numlines': end - start,
             'change': tag,
             'collapsable': collapsable,
             'meta': meta,
         }
-
-    def add_ranged_chunks(lines, start, end, collapsable=False):
-        chunks.append(new_chunk(lines[start:end], end - start, 'equal',
-                      collapsable))
 
     def apply_pygments(data, filename):
         # XXX Guessing is preferable but really slow, especially on XML
@@ -361,9 +364,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         new = get_patched_file(interdiff_orig, interfilediff)
     elif force_interdiff:
         # Basically, revert the change.
-        temp = old
-        old = new
-        new = temp
+        old, new = new, old
 
     encoding = diffset.repository.encoding or 'iso-8859-15'
     old = convert_to_utf8(old, encoding)
@@ -377,8 +378,8 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     if new and new[-1] != '\n':
         new += '\n'
 
-    a = re.split(r"\r?\n", old or '')
-    b = re.split(r"\r?\n", new or '')
+    a = NEWLINES_RE.split(old or '')
+    b = NEWLINES_RE.split(new or '')
 
     # Remove the trailing newline, now that we've split this. This will
     # prevent a duplicate line number at the end of the diff.
@@ -407,12 +408,11 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             pass
 
     if not markup_a:
-        markup_a = re.split(r"\r?\n", escape(old))
+        markup_a = NEWLINES_RE.split(escape(old))
 
     if not markup_b:
-        markup_b = re.split(r"\r?\n", escape(new))
+        markup_b = NEWLINES_RE.split(escape(new))
 
-    chunks = []
     linenum = 1
 
     ignore_space = True
@@ -446,29 +446,29 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                     xrange(linenum, linenum + numlines),
                     xrange(i1 + 1, i2 + 1), xrange(j1 + 1, j2 + 1),
                     a[i1:i2], b[j1:j2], oldlines, newlines)
-        linenum += numlines
 
         if tag == 'equal' and numlines > collapse_threshold:
             last_range_start = numlines - context_num_lines
 
-            if len(chunks) == 0:
-                add_ranged_chunks(lines, 0, last_range_start, True)
-                add_ranged_chunks(lines, last_range_start, numlines)
+            if linenum == 1:
+                yield new_chunk(lines, 0, last_range_start, True)
+                yield new_chunk(lines, last_range_start, numlines)
             else:
-                add_ranged_chunks(lines, 0, context_num_lines)
+                yield new_chunk(lines, 0, context_num_lines)
 
                 if i2 == a_num_lines and j2 == b_num_lines:
-                    add_ranged_chunks(lines, context_num_lines, numlines, True)
+                    yield new_chunk(lines, context_num_lines, numlines, True)
                 else:
-                    add_ranged_chunks(lines, context_num_lines,
-                                      last_range_start, True)
-                    add_ranged_chunks(lines, last_range_start, numlines)
+                    yield new_chunk(lines, context_num_lines,
+                                    last_range_start, True)
+                    yield new_chunk(lines, last_range_start, numlines)
         else:
-            chunks.append(new_chunk(lines, numlines, tag, meta=meta))
+            yield new_chunk(lines, 0, numlines, False, tag, meta)
+
+        linenum += numlines
 
     log_timer.done()
 
-    return chunks
 
 def opcodes_with_metadata(differ):
     groups = []
@@ -623,8 +623,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         # the source filediff and not specify an interdiff. Keeps things
         # simple, code-wise, since we really have no need to special-case
         # this.
-        for interdiff in interdiff_map.values():
-            filediff_parts.append((interdiff, None, False))
+        filediff_parts += [(interdiff, None, False)
+                           for interdiff in interdiff_map.values()]
 
 
     files = []
@@ -655,9 +655,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             source_revision = get_revision_str(filediff.source_revision)
 
             if newfile:
-                dest_revision = _("New File")
+                dest_revision = NEW_FILE_STR
             else:
-                dest_revision = _("New Change")
+                dest_revision = NEW_CHANGE_STR
 
         i = filediff.source_file.rfind('/')
 
@@ -697,26 +697,27 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
                 chunks = cache_memoize(
                     key,
-                    lambda: get_chunks(filediff.diffset,
-                                       filediff, interfilediff,
-                                       force_interdiff,
-                                       enable_syntax_highlighting),
+                    lambda: list(get_chunks(filediff.diffset,
+                                            filediff, interfilediff,
+                                            force_interdiff,
+                                            enable_syntax_highlighting)),
                     large_data=True)
 
             file['chunks'] = chunks
-            file['changed_chunks'] = []
+            file['changed_chunk_indexes'] = []
             file['whitespace_only'] = True
 
             for j, chunk in enumerate(file['chunks']):
                 chunk['index'] = j
+
                 if chunk['change'] != 'equal':
-                    file['changed_chunks'].append(chunk)
+                    file['changed_chunk_indexes'].append(j)
                     meta = chunk.get('meta', {})
 
                     if not meta.get('whitespace_chunk', False):
                         file['whitespace_only'] = False
 
-            file['num_changes'] = len(file['changed_chunks'])
+            file['num_changes'] = len(file['changed_chunk_indexes'])
 
         files.append(file)
 
@@ -724,7 +725,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         # Sort based on basepath in asc order
         if x["basepath"] != y["basepath"]:
             return cmp(x["basepath"], y["basepath"])
-        # Sort based on filename in asc order, then basod on extension in desc
+
+        # Sort based on filename in asc order, then based on extension in desc
         # order, to make *.h be ahead of *.c/cpp
         x_file, x_ext = os.path.splitext(x["basename"])
         y_file, y_ext = os.path.splitext(y["basename"])

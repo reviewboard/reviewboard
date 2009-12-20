@@ -6,7 +6,7 @@
 {{error}}
 {% endif %}
 
-{% if file.changed_chunks or file.binary %}
+{% if file.changed_chunk_indexes or file.binary %}
 {%  if not standalone %}
 <table class="sidebyside{% if not file.interfilediff and file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
