@@ -1,5 +1,6 @@
 from datetime import datetime
-import os.path
+import logging
+import os
 import re
 
 from django.conf import settings
@@ -1278,6 +1279,8 @@ def new_diff(request, review_request_id):
     except Exception, e:
         # This could be very wrong, but at least they'll see the error.
         # We probably want a new error type for this.
+        logging.error("Error uploading new diff: %s", e, exc_info=1)
+
         return WebAPIResponseError(request, INVALID_FORM_DATA, {
             'fields': {
                 'path': [str(e)]

@@ -237,7 +237,12 @@ class GitClient(object):
         errmsg = p.stderr.read()
         failure = p.wait()
 
-        return not failure
+        if failure:
+            logging.error("Git: Failed to find valid repository %s: %s" %
+                          (self.path, errmsg))
+            return False
+
+        return True
 
     def get_file(self, path, revision):
         if self.raw_file_url:
@@ -260,7 +265,7 @@ class GitClient(object):
             except urllib2.HTTPError, e:
                 if e.code != 404:
                     logging.error("Git: HTTP error code %d when fetching "
-                                  "file from %s: %s" % (url, e))
+                                  "file from %s: %s" % (e.code, url, e))
             except Exception, e:
                 logging.error("Git: Error fetching file from %s: %s" % (url, e))
 
