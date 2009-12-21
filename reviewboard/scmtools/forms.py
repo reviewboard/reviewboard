@@ -57,6 +57,24 @@ class RepositoryForm(forms.ModelForm):
                 },
             },
         }),
+        ('github-private', {
+            'label': _('GitHub (Private)'),
+            'fields': ['hosting_project_name', 'hosting_owner', 'api_token'],
+            'hidden_fields': ['raw_file_url'],
+            'tools': {
+                'Git': {
+                    'path': 'git@github.com:%(hosting_owner)s/'
+                            '%(hosting_project_name)s.git',
+                    'mirror_path': '',
+                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
+                                    '%(hosting_owner)s/'
+                                    '%(hosting_project_name)s/'
+                                    '<revision>'
+                                    '?login=%(hosting_owner)s'
+                                    '&token=%(api_token)s'
+                },
+            },
+        }),
         ('googlecode', {
             'label': _('Google Code'),
             'fields': ['hosting_project_name'],
@@ -143,6 +161,12 @@ class RepositoryForm(forms.ModelForm):
             'format': 'http://github.com/%(bug_tracker_owner)s/'
                       '%(bug_tracker_project_name)s/issues#issue/%%s',
         }),
+        ('github-private', {
+            'label': 'GitHub (Private)',
+            'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
+            'format': 'http://github.com/%(bug_tracker_owner)s/'
+                      '%(bug_tracker_project_name)s/issues#issue/%%s',
+        }),
         ('googlecode', {
             'label': 'Google Code',
             'fields': ['bug_tracker_project_name'],
@@ -173,6 +197,7 @@ class RepositoryForm(forms.ModelForm):
 
     HOSTING_FIELDS = [
         "path", "mirror_path", "hosting_owner", "hosting_project_name",
+        "api_token",
     ]
 
     BUG_TRACKER_FIELDS = [
@@ -254,6 +279,14 @@ class RepositoryForm(forms.ModelForm):
                     "Use <tt>&lt;revision&gt;</tt> and "
                     "<tt>&lt;filename&gt;</tt> in the URL in place of the "
                     "revision and filename parts of the path."))
+
+    api_token = forms.CharField(
+        label=_("API token"),
+        max_length=128,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_("The API token provided by the hosting service. This is "
+                    "needed in order to access files on this repository."))
 
     tool = forms.ModelChoiceField(
         label=_("Repository type"),
@@ -587,7 +620,10 @@ class RepositoryForm(forms.ModelForm):
         field_data = {}
 
         for field in fields:
-            field_data[field] = m.group(field)
+            try:
+                field_data[field] = m.group(field)
+            except IndexError, e:
+                pass
 
         return True, field_data
 

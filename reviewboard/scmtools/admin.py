@@ -21,6 +21,7 @@ class RepositoryAdmin(admin.ModelAdmin):
                 'path',
                 'mirror_path',
                 'raw_file_url',
+                'api_token',
                 'username',
                 'password',
             ),
