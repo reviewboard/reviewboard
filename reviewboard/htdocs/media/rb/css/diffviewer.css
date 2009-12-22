@@ -109,18 +109,18 @@ table.sidebyside tbody.whitespace-file td {
   padding: 4px;
 }
 
-table.sidebyside tbody.collapsed a {
+table.sidebyside tbody.diff-header a {
   text-decoration: underline;
   color: black;
 }
 
-table.sidebyside tbody.collapsed td {
+table.sidebyside tbody.diff-header td {
   background: #e4d9cb;
   font-size: x-small;
   text-align: center;
 }
 
-table.sidebyside tbody.collapsed th {
+table.sidebyside tbody.diff-header th {
   background: #e4d9cb;
 }
 

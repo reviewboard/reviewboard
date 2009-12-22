@@ -34,53 +34,135 @@ class MyersDifferTest(TestCase):
                           ("insert",  5, 5, 5, 9),
                           ("equal",   5, 8, 9, 12)])
 
-        self.__test_diff([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                          16, 15, 17, 13, 17],
-                         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 19, 20, 21,
-                          22, 13, 14, 15, 16, 15, 23, 13, 24, 25, 26, 27, 13,
-                          28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-                          41, 42, 43, 44, 45, 13, 46, 47, 48, 17, 13, 49, 50,
-                          51, 17, 13, 52, 53, 54, 55, 56, 57, 58, 17, 59, 60,
-                          17, 17, 61, 13, 62, 63, 53, 54, 55, 64, 57, 65, 17,
-                          59, 66, 17, 17, 13, 53, 54, 55, 67, 57, 68, 17, 59,
-                          69, 17, 17, 13, 53, 54, 55, 70, 57, 71, 17, 59, 72,
-                          17, 17, 13, 53, 54, 55, 73, 57, 74, 17, 59, 75, 17,
-                          17, 13, 53, 54, 55, 76, 57, 77, 17, 59, 78, 17, 17,
-                          13, 53, 54, 55, 79, 57, 80, 17, 59, 81, 17, 17, 13,
-                          53, 54, 55, 82, 57, 83, 17, 59, 84, 17, 17, 13, 53,
-                          54, 55, 85, 57, 86, 17, 59, 87, 17, 17, 13, 53, 54,
-                          55, 88, 57, 89, 17, 59, 90, 17, 17, 13, 53, 54, 55,
-                          91, 57, 92, 17, 59, 93, 17, 17, 13, 53, 54, 55, 94,
-                          57, 95, 17, 59, 96, 17, 17, 13, 53, 54, 55, 97, 57,
-                          98, 17, 59, 99, 17, 17, 13, 53, 54, 55, 100, 57, 101,
-                          17, 59, 102, 17, 17, 13, 53, 54, 55, 103, 57, 104, 17,
-                          59, 105, 17, 17, 13, 53, 54, 55, 106, 57, 107, 17, 59,
-                          108, 17, 17, 61, 13, 109, 110, 111, 112, 13, 113, 114,
-                          115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125,
-                          126, 127, 128, 129, 130, 13, 131, 13, 132, 133, 134,
-                          13, 135, 136, 137, 138, 139, 140, 141, 142, 143, 17,
-                          17, 144, 17, 17, 13, 145, 146, 17, 13, 147, 148, 149,
-                          150, 151, 17, 13, 152, 153, 154, 13, 155, 156, 157,
-                          158, 13, 17, 61, 13, 159, 160, 161, 162, 17, 13, 163,
-                          13, 17, 13, 164, 13, 17, 13, 165, 13, 17, 61, 13, 166,
-                          167, 168, 169, 17, 61, 13, 170, 171, 172, 173, 17, 13,
-                          174, 13, 17, 61, 13, 175, 176, 177, 178, 17, 61, 13,
-                          179, 180, 181, 182, 17, 61, 13, 183, 184, 185, 186,
-                          17, 61, 13, 187, 188, 189, 190, 17, 61, 13, 191, 192,
-                          110, 193, 194, 17, 13, 195, 110, 196, 197, 17, 61, 17,
-                          17],
-                         [("equal",   0, 12, 0, 12),
-                          ("insert", 12, 12, 12, 17),
-                          ("equal",  12, 17, 17, 22),
-                          ("insert", 17, 17, 22, 331),
-                          ("equal",  17, 19, 331, 333),
-                          ("insert", 19, 19, 333, 402),
-                          ("equal",  19, 20, 402, 403)])
-
 
     def __test_diff(self, a, b, expected):
         opcodes = list(diffutils.MyersDiffer(a, b).get_opcodes())
         self.assertEquals(opcodes, expected)
+
+
+class InterestingLinesTest(TestCase):
+    PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
+
+    def testCSharp(self):
+        """Testing interesting lines scanner with a C# file"""
+        lines = self.__get_lines("helloworld.cs")
+
+        self.assertEqual(len(lines[0]), 2)
+        self.assertEqual(lines[0][0], (0, 'public class HelloWorld {\n'))
+        self.assertEqual(lines[0][1], (1, '\tpublic static void Main() {\n'))
+
+        self.assertEqual(lines[1][0], (3, 'public class HelloWorld\n'))
+        self.assertEqual(lines[1][1], (8, '\tpublic static void Main()\n'))
+
+    def testJava(self):
+        """Testing interesting lines scanner with a Java file"""
+        lines = self.__get_lines("helloworld.java")
+
+        self.assertEqual(len(lines[0]), 2)
+        self.assertEqual(lines[0][0], (0, 'class HelloWorld {\n'))
+        self.assertEqual(lines[0][1],
+                         (1, '\tpublic static void main(String[] args) {\n'))
+
+        self.assertEqual(len(lines[1]), 2)
+        self.assertEqual(lines[1][0], (3, 'class HelloWorld\n'))
+        self.assertEqual(lines[1][1],
+                         (8, '\tpublic static void main(String[] args)\n'))
+
+    def testJavaScript(self):
+        """Testing interesting lines scanner with a JavaScript file"""
+        lines = self.__get_lines("helloworld.js")
+
+        self.assertEqual(len(lines[0]), 3)
+        self.assertEqual(lines[0][0], (0, 'function helloWorld() {\n'))
+        self.assertEqual(lines[0][1], (5, '\thelloWorld2: function() {\n'))
+        self.assertEqual(lines[0][2], (10, 'var helloWorld3 = function() {\n'))
+
+        self.assertEqual(len(lines[1]), 3)
+        self.assertEqual(lines[1][0], (3, 'function helloWorld()\n'))
+        self.assertEqual(lines[1][1], (12, '\thelloWorld2: function()\n'))
+        self.assertEqual(lines[1][2], (18, 'var helloWorld3 = function()\n'))
+
+    def testObjectiveC(self):
+        """Testing interesting lines scanner with an Objective C file"""
+        lines = self.__get_lines("helloworld.m")
+
+        self.assertEqual(len(lines[0]), 3)
+        self.assertEqual(lines[0][0], (0, '@interface MyClass : Object\n'))
+        self.assertEqual(lines[0][1], (4, '@implementation MyClass\n'))
+        self.assertEqual(lines[0][2], (5, '- (void) sayHello {\n'))
+
+        self.assertEqual(len(lines[1]), 3)
+        self.assertEqual(lines[1][0], (0, '@interface MyClass : Object\n'))
+        self.assertEqual(lines[1][1], (4, '@implementation MyClass\n'))
+        self.assertEqual(lines[1][2], (8, '- (void) sayHello\n'))
+
+    def testPerl(self):
+        """Testing interesting lines scanner with a Perl file"""
+        lines = self.__get_lines("helloworld.pl")
+
+        self.assertEqual(len(lines[0]), 1)
+        self.assertEqual(lines[0][0], (0, 'sub helloWorld {\n'))
+
+        self.assertEqual(len(lines[1]), 1)
+        self.assertEqual(lines[1][0], (1, 'sub helloWorld\n'))
+
+    def testPHP(self):
+        """Testing interesting lines scanner with a PHP file"""
+        lines = self.__get_lines("helloworld.php")
+
+        self.assertEqual(len(lines[0]), 2)
+        self.assertEqual(lines[0][0], (1, 'class HelloWorld {\n'))
+        self.assertEqual(lines[0][1], (2, '\tfunction helloWorld() {\n'))
+
+        self.assertEqual(len(lines[1]), 2)
+        self.assertEqual(lines[1][0], (4, 'class HelloWorld\n'))
+        self.assertEqual(lines[1][1], (9, '\tfunction helloWorld()\n'))
+
+    def testPython(self):
+        """Testing interesting lines scanner with a Python file"""
+        lines = self.__get_lines("helloworld.py")
+
+        self.assertEqual(len(lines[0]), 2)
+        self.assertEqual(lines[0][0], (0, 'class HelloWorld:\n'))
+        self.assertEqual(lines[0][1], (1, '    def main(self):\n'))
+
+        self.assertEqual(len(lines[1]), 2)
+        self.assertEqual(lines[1][0], (0, 'class HelloWorld:\n'))
+        self.assertEqual(lines[1][1], (3, '    def main(self):\n'))
+
+    def testRuby(self):
+        """Testing interesting lines scanner with a Ruby file"""
+        lines = self.__get_lines("helloworld.rb")
+
+        self.assertEqual(len(lines[0]), 2)
+        self.assertEqual(lines[0][0], (0, 'class HelloWorld\n'))
+        self.assertEqual(lines[0][1], (1, '\tdef helloWorld\n'))
+
+        self.assertEqual(len(lines[1]), 2)
+        self.assertEqual(lines[1][0], (1, 'class HelloWorld\n'))
+        self.assertEqual(lines[1][1], (3, '\tdef helloWorld()\n'))
+
+    def __get_lines(self, filename):
+        f = open(os.path.join(self.PREFIX, "orig_src", filename), "r")
+        a = f.readlines()
+        f.close()
+
+        f = open(os.path.join(self.PREFIX, "new_src", filename), "r")
+        b = f.readlines()
+        f.close()
+
+        differ = diffutils.MyersDiffer(a, b)
+        diffutils.register_interesting_lines_for_filename(differ, filename)
+
+        # Begin the scan.
+        list(differ.get_opcodes())
+
+        result = (differ.get_interesting_lines('header', False),
+                  differ.get_interesting_lines('header', True))
+
+        print result
+
+        return result
 
 
 class DiffParserTest(unittest.TestCase):
@@ -94,7 +176,7 @@ class DiffParserTest(unittest.TestCase):
         return data
 
     def compareDiffs(self, files, testdir):
-        self.assertEqual(len(files), 5)
+        self.assertEqual(len(files), 13)
         for file in files:
             f = open("%s/diffs/%s/%s.diff" %
                      (self.PREFIX, testdir, os.path.basename(file.newFile)))

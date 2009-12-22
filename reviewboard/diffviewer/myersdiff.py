@@ -31,6 +31,9 @@ class MyersDiffer:
         self.a_data = self.b_data = None
         self.ignore_space = ignore_space
         self.minimal_diff = False
+        self.interesting_line_regexes = []
+        self.interesting_lines = [{}, {}]
+        self.interesting_line_table = {}
 
         # SMS State
         self.max_lines = 0
@@ -44,6 +47,26 @@ class MyersDiffer:
 
         return 1.0 * (a_equals + b_equals) / \
                      (self.a_data.length + self.b_data.length)
+
+    def add_interesting_line_regex(self, name, regex):
+        """Registers a regular expression used to look for interesting lines.
+
+        All interesting lines found that match the regular expression will
+        be stored and tagged with the given name. Callers can use
+        get_interesting_lines to get the results.
+        """
+        self.interesting_line_regexes.append((name, regex))
+        self.interesting_lines[0][name] = []
+        self.interesting_lines[1][name] = []
+
+    def get_interesting_lines(self, name, is_modified_file):
+        """Returns the interesting lines tagged with the given name."""
+        if is_modified_file:
+            index = 1
+        else:
+            index = 0
+
+        return self.interesting_lines[index].get(name, [])
 
     def get_opcodes(self):
         """
@@ -137,8 +160,8 @@ class MyersDiffer:
         if self.a_data and self.b_data:
             return
 
-        self.a_data = self.DiffData(self._gen_diff_codes(self.a))
-        self.b_data = self.DiffData(self._gen_diff_codes(self.b))
+        self.a_data = self.DiffData(self._gen_diff_codes(self.a, False))
+        self.b_data = self.DiffData(self._gen_diff_codes(self.b, True))
 
         self._discard_confusing_lines()
 
@@ -157,33 +180,60 @@ class MyersDiffer:
         self._shift_chunks(self.a_data, self.b_data)
         self._shift_chunks(self.b_data, self.a_data)
 
-    def _gen_diff_codes(self, lines):
+    def _gen_diff_codes(self, lines, is_modified_file):
         """
         Converts all unique lines of text into unique numbers. Comparing
         lists of numbers is faster than comparing lists of strings.
         """
         codes = []
 
+        linenum = 0
+
+        if is_modified_file:
+            interesting_lines = self.interesting_lines[1]
+        else:
+            interesting_lines = self.interesting_lines[0]
+
         for line in lines:
             # TODO: Handle ignoring/triming spaces, ignoring casing, and
             #       special hooks
 
-            if self.ignore_space:
-                temp = line.lstrip()
+            raw_line = line
+            stripped_line = line.lstrip()
 
+            if self.ignore_space:
                 # We still want to show lines that contain only whitespace.
-                if temp != "":
-                    line = temp
+                if len(stripped_line) > 0:
+                    line = stripped_line
+
+            interesting_line_name = None
 
             try:
                 code = self.code_table[line]
+                interesting_line_name = \
+                    self.interesting_line_table.get(code, None)
             except KeyError:
                 # This is a new, unrecorded line, so mark it and store it.
                 self.last_code += 1
                 code = self.last_code
                 self.code_table[line] = code
 
+                # Check to see if this is an interesting line that the caller
+                # wants recorded.
+                if stripped_line:
+                    for name, regex in self.interesting_line_regexes:
+                        if regex.match(raw_line):
+                            interesting_line_name = name
+                            self.interesting_line_table[code] = name
+                            break
+
+            if interesting_line_name:
+                interesting_lines[interesting_line_name].append((linenum,
+                                                                 raw_line))
+
             codes.append(code)
+
+            linenum += 1
 
         return codes
 

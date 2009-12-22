@@ -39,6 +39,97 @@ NEWLINES_RE = re.compile(r'\r?\n')
 NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
 
 
+# A list of regular expressions for headers in the source code that we can
+# display in collapsed regions of diffs and diff fragments in reviews.
+HEADER_REGEXES = {
+    '.cs': [
+        re.compile(
+            r'^\s*((public|private|protected|static)\s+)+'
+            r'([a-zA-Z_][a-zA-Z0-9_\.\[\]]*\s+)+?'     # return arguments
+            r'[a-zA-Z_][a-zA-Z0-9_]*'                  # method name
+            r'\s*\('                                   # signature start
+        ),
+        re.compile(
+            r'^\s*('
+            r'(public|static|private|protected|internal|abstract|partial)'
+            r'\s+)*'
+            r'(class|struct)\s+([A-Za-z0-9_])+'
+        ),
+    ],
+
+    # This can match C/C++/Objective C header files
+    '.h': [
+        re.compile(r'^@(interface|implementation|class|protocol)'),
+        re.compile(r'^[A-Za-z0-9$_]'),
+    ],
+    '.java': [
+        re.compile(
+            r'^\s*((public|private|protected|static)\s+)+'
+            r'([a-zA-Z_][a-zA-Z0-9_\.\[\]]*\s+)+?'     # return arguments
+            r'[a-zA-Z_][a-zA-Z0-9_]*'                  # method name
+            r'\s*\('                                   # signature start
+        ),
+        re.compile(
+            r'^\s*('
+            r'(public|static|private|protected)'
+            r'\s+)*'
+            r'(class|struct)\s+([A-Za-z0-9_])+'
+        ),
+    ],
+    '.js': [
+        re.compile(r'^\s*function [A-Za-z0-9_]+\s*\('),
+        re.compile(r'^\s*(var\s+)?[A-Za-z0-9_]+\s*[=:]\s*function\s*\('),
+    ],
+    '.m': [
+        re.compile(r'^@(interface|implementation|class|protocol)'),
+        re.compile(r'^[-+]\s+\([^\)]+\)\s+[A-Za-z0-9_]+[^;]*$'),
+        re.compile(r'^[A-Za-z0-9$_]'),
+    ],
+    '.php': [
+        re.compile(r'^\s*(class|function) [A-Za-z0-9_]+'),
+    ],
+    '.pl': [
+        re.compile(r'^\s*sub [A-Za-z0-9_]+'),
+    ],
+    '.py': [
+        re.compile(r'^\s*(def|class) [A-Za-z0-9_]+\s*\(?'),
+    ],
+    '.rb': [
+        re.compile(r'^\s*(def|class) [A-Za-z0-9_]+\s*\(?'),
+    ],
+}
+
+HEADER_REGEX_ALIASES = {
+    # C/C++
+    '.cc': '.c',
+    '.cpp': '.c',
+    '.cxx': '.c',
+    '.c++': '.c',
+    '.hh': '.c',
+    '.hpp': '.c',
+    '.hxx': '.c',
+    '.h++': '.c',
+    '.C': '.c',
+    '.H': '.c',
+
+    # Perl
+    '.pm': '.pl',
+
+    # Python
+    'SConstruct': '.py',
+    'SConscript': '.py',
+    '.pyw': '.py',
+    '.sc': '.sc',
+
+    # Ruby
+    'Rakefile': '.rb',
+    '.rbw': '.rb',
+    '.rake': '.rb',
+    '.gemspec': '.rb',
+    '.rbx': '.rb',
+}
+
+
 class UserVisibleError(Exception):
     pass
 
@@ -264,6 +355,29 @@ def get_patched_file(buffer, filediff):
     return patch(filediff.diff, buffer, filediff.dest_file)
 
 
+def register_interesting_lines_for_filename(differ, filename):
+    """Registers regexes for interesting lines to a differ based on filename.
+
+    This will add watches for headers (functions, classes, etc.) to the diff
+    viewer. The regular expressions used are based on the filename provided.
+    """
+    # Add any interesting lines we may want to show.
+    regexes = []
+
+    if file in HEADER_REGEX_ALIASES:
+        regexes = HEADER_REGEXES[HEADER_REGEX_ALIASES[filename]]
+    else:
+        basename, ext = os.path.splitext(filename)
+
+        if ext in HEADER_REGEXES:
+            regexes = HEADER_REGEXES[ext]
+        elif ext in HEADER_REGEX_ALIASES:
+            regexes = HEADER_REGEXES[HEADER_REGEX_ALIASES[ext]]
+
+    for regex in regexes:
+        differ.add_interesting_line_regex('header', regex)
+
+
 def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                enable_syntax_highlighting):
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
@@ -293,6 +407,27 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         if not meta:
             meta = {}
 
+        left_headers = list(get_interesting_headers(differ, lines,
+                                                    start, end - 1, False))
+        right_headers = list(get_interesting_headers(differ, lines,
+                                                     start, end - 1, True))
+
+        meta['left_headers'] = left_headers
+        meta['right_headers'] = right_headers
+
+        if left_headers:
+            last_header[0] = left_headers[-1][1]
+
+        if right_headers:
+            last_header[1] = right_headers[-1][1]
+
+        if (collapsable and end < len(lines) and
+            (last_header[0] or last_header[1])):
+            meta['headers'] = [
+                (last_header[0] or "").strip(),
+                (last_header[1] or "").strip(),
+            ]
+
         return {
             'lines': lines[start:end],
             'numlines': end - start,
@@ -300,6 +435,42 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             'collapsable': collapsable,
             'meta': meta,
         }
+
+    def get_interesting_headers(differ, lines, start, end, is_modified_file):
+        """Returns all headers for a region of a diff.
+
+        This scans for all headers that fall within the specified range
+        of the specified lines on both the original and modified files.
+        """
+        possible_functions = differ.get_interesting_lines('header',
+                                                          is_modified_file)
+
+        if not possible_functions:
+            raise StopIteration
+
+        if is_modified_file:
+            last_index = last_header_index[1]
+            i1 = lines[start][4]
+            i2 = lines[end - 1][4]
+        else:
+            last_index = last_header_index[0]
+            i1 = lines[start][1]
+            i2 = lines[end - 1][1]
+
+        for i in xrange(last_index, len(possible_functions)):
+            linenum, line = possible_functions[i]
+            linenum += 1
+
+            if linenum > i2:
+                break
+            elif linenum >= i1:
+                last_index = i
+                yield (linenum, line)
+
+        if is_modified_file:
+            last_header_index[1] = last_index
+        else:
+            last_header_index[0] = last_index
 
     def apply_pygments(data, filename):
         # XXX Guessing is preferable but really slow, especially on XML
@@ -414,6 +585,8 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         markup_b = NEWLINES_RE.split(escape(new))
 
     linenum = 1
+    last_header = [None, None]
+    last_header_index = [0, 0]
 
     ignore_space = True
     for pattern in siteconfig.get("diffviewer_include_space_patterns"):
@@ -423,6 +596,9 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     differ = Differ(a, b, ignore_space=ignore_space,
                     compat_version=diffset.diffcompat)
+
+    # Register any regexes for interesting lines we may want to show.
+    register_interesting_lines_for_filename(differ, file)
 
     # TODO: Make this back into a preference if people really want it.
     context_num_lines = siteconfig.get("diffviewer_context_num_lines")
@@ -780,6 +956,11 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
       7        True if line consists of only whitespace changes
       ======== =============================================================
     """
+    def find_header(headers):
+        for header in reversed(headers):
+            if header[0] < first_line:
+                return header[1]
+
     interdiffset = None
 
     key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
@@ -800,9 +981,15 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
         raise StopIteration
 
     assert len(files) == 1
+    last_header = (None, None)
 
     for chunk in files[0]['chunks']:
+        if ('headers' in chunk['meta'] and
+            (chunk['meta']['headers'][0] or chunk['meta']['headers'][1])):
+            last_header = chunk['meta']['headers']
+
         lines = chunk['lines']
+
         if lines[-1][0] >= first_line >= lines[0][0]:
             start_index = first_line - lines[0][0]
 
@@ -817,6 +1004,22 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 'change': chunk['change'],
                 'meta': chunk.get('meta', {}),
             }
+
+            if 'left_headers' in chunk['meta']:
+                left_header = find_header(chunk['meta']['left_headers'])
+                right_header = find_header(chunk['meta']['right_headers'])
+                del new_chunk['meta']['left_headers']
+                del new_chunk['meta']['right_headers']
+
+                if left_header or right_header:
+                    header = (left_header, right_header)
+                else:
+                    header = last_header
+
+                new_chunk['meta']['headers'] = [
+                    (header[0] or "").strip(),
+                    (header[1] or "").strip(),
+                ]
 
             yield new_chunk
 
