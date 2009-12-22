@@ -284,12 +284,13 @@ class SVNTool(SCMTool):
 
         try:
             info = client.info2(path, recurse=False)
-            print info
+            logging.debug('SVN: Got repository information for %s: %s' %
+                          (path, info))
         except ClientError, e:
-            stre = str(e)
-            print e
+            logging.error('SVN: Failed to get repository information '
+                          'for %s: %s' % (path, e))
 
-            if 'callback_get_login required' in stre:
+            if 'callback_get_login required' in str(e):
                 raise SCMError("Authentication failed") # XXX
 
             if cert_data:
