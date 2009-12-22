@@ -22,8 +22,8 @@
    </th>
   </tr>
  </thead>
- <tbody class="diff-header">
 {% if chunks.0.meta.headers %}
+ <tbody class="diff-header">
   <tr>
 {%  ifequal chunks.0.meta.headers.0 chunks.0.meta.headers.1 %}
    <td colspan="4"><pre>{{chunks.0.meta.headers.0}}</pre></td>
@@ -32,8 +32,8 @@
    <td colspan="2"><pre>{{chunks.0.meta.headers.1}}</pre></td>
 {%  endifequal %}
   </tr>
-{% endif %}
  </tbody>
+{% endif %}
 {% for chunk in chunks %}
  <tbody class="{{chunk.change}}">
 {#  <tr><td colspan="4">{{chunk.meta}}</td></tr> #}
