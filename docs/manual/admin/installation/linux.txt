@@ -398,6 +398,10 @@ then type, as root::
     $ cd jcc
     $ python setup.py install
 
+If your JDK is in an unexpected place (such as using openjdk on older versions
+of Ubuntu), you may need to tweak the setup.py file to point to it instead of
+java-6-sun.
+
 
 Compile PyLucene
 ~~~~~~~~~~~~~~~~
@@ -407,7 +411,6 @@ PyLucene directory and type, as root::
 
     $ make
     $ make install
-
 
 Cleaning Up
 ~~~~~~~~~~~
