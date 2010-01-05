@@ -440,6 +440,24 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
+    def testDashboardSidebar(self):
+        """Testing dashboard view (to-group devgroup)"""
+        self.client.login(username='doc', password='doc')
+
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(datagrid.counts['outgoing'], 1)
+        self.assertEqual(datagrid.counts['incoming'], 4)
+        self.assertEqual(datagrid.counts['to-me'], 2)
+        self.assertEqual(datagrid.counts['starred'], 0)
+        self.assertEqual(datagrid.counts['mine'], 2)
+        self.assertEqual(datagrid.counts['groups']['devgroup'], 2)
+        self.assertEqual(datagrid.counts['groups']['privgroup'], 1)
+
+        self.client.logout()
+
     # Bug 892
     def testInterdiff(self):
         """Testing the diff viewer with interdiffs"""

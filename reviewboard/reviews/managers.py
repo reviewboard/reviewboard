@@ -101,20 +101,33 @@ class ReviewRequestManager(ConcurrencyManager):
             extra_query=Q(target_groups__users__username=username),
             *args, **kwargs)
 
-    def to_user_directly(self, username, *args, **kwargs):
-        query_user = User.objects.get(username=username)
+    def to_user_directly(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
         query = Q(starred_by__user=query_user) | Q(target_people=query_user)
         return self._query(extra_query=query, *args, **kwargs)
 
-    def to_user(self, username, *args, **kwargs):
-        query_user = User.objects.get(username=username)
+    def to_user(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
         query = Q(starred_by__user=query_user) | \
                 Q(target_people=query_user) | \
                 Q(target_groups__users=query_user)
         return self._query(extra_query=query, *args, **kwargs)
 
-    def from_user(self, username, *args, **kwargs):
-        return self._query(extra_query=Q(submitter__username=username),
+    def from_user(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
+        return self._query(extra_query=Q(submitter=query_user),
                            *args, **kwargs)
 
     def _query(self, user=None, status='P', with_counts=False,
