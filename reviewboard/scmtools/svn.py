@@ -1,7 +1,8 @@
+import logging
+import os
 import re
 import urllib
 import urlparse
-import os
 
 try:
     from pysvn import ClientError, Revision, opt_revision_kind
