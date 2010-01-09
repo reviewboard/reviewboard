@@ -4,12 +4,15 @@
 Review Board Release Notes
 ==========================
 
-1.1 Releases (in development)
+1.5 Releases (in development)
 =============================
+
+(The 1.5 release was known as 1.1 in the alphas.)
 
 .. toctree::
    :maxdepth: 1
 
+   1.5-beta-1
    1.1-alpha-2
    1.1-alpha-1
 
