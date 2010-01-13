@@ -7,7 +7,7 @@ from reviewboard import get_version_string
 from reviewboard.admin.siteconfig import settings_map, defaults
 
 
-def init_siteconfig(app, created_models, verbosity, **kwargs):
+def init_siteconfig(app, created_models, verbosity, db=None, **kwargs):
     """
     Initializes the site configuration with the current version of the
     software.
@@ -18,7 +18,7 @@ def init_siteconfig(app, created_models, verbosity, **kwargs):
         # This is an initial syncdb and we got called before Site's post_syncdb
         # handler did, so invoke it directly.
         from django.contrib.sites.management import create_default_site
-        create_default_site(app, created_models, verbosity)
+        create_default_site(app, created_models, verbosity, db=db)
         site = Site.objects.get_current()
 
     siteconfig, is_new = SiteConfiguration.objects.get_or_create(site=site)
