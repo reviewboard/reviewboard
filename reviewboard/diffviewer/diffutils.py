@@ -58,7 +58,7 @@ HEADER_REGEXES = {
     ],
 
     # This can match C/C++/Objective C header files
-    '.h': [
+    '.c': [
         re.compile(r'^@(interface|implementation|class|protocol)'),
         re.compile(r'^[A-Za-z0-9$_]'),
     ],
@@ -105,6 +105,7 @@ HEADER_REGEX_ALIASES = {
     '.cpp': '.c',
     '.cxx': '.c',
     '.c++': '.c',
+    '.h': '.c',
     '.hh': '.c',
     '.hpp': '.c',
     '.hxx': '.c',
