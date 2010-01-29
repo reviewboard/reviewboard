@@ -546,37 +546,17 @@ $.extend(RB.Screenshot.prototype, {
     },
 
     _saveFile: function(options) {
-        var blobBuilder;
-
-        try {
-            blobBuilder = google.gears.factory.create("beta.blobbuilder");
-        } catch (e) {
-            options.error("RB.Screenshot.save requires Google Gears, " +
-                          "which was not found. This is a script error. " +
-                          "Please report it.");
-            return;
-        }
-
         var boundary = "-----multipartformboundary" + new Date().getTime();
-        blobBuilder.append("--" + boundary + "\r\n");
-        blobBuilder.append('Content-Disposition: form-data; name="path"; ' +
-                           'filename="' + this.file.name + '"\r\n');
-        blobBuilder.append('Content-Type: application/octet-stream\r\n');
-        blobBuilder.append('\r\n');
-        blobBuilder.append(this.file.blob);
-        blobBuilder.append('\r\n');
-        blobBuilder.append("--" + boundary + "--\r\n");
-        blobBuilder.append('\r\n');
-
-        var blob = blobBuilder.getAsBlob();
-
-        /*
-         * This is needed to prevent an error in jQuery.ajax, when it tries
-         * to match the data to e regex.
-         */
-        blob.match = function(regex) {
-            return false;
-        }
+        var blob = "";
+        blob += "--" + boundary + "\r\n";
+        blob += 'Content-Disposition: form-data; name="path"; ' +
+                           'filename="' + this.file.name + '"\r\n';
+        blob += 'Content-Type: application/octet-stream\r\n';
+        blob += '\r\n';
+        blob += this.file.getAsBinary();
+        blob += '\r\n';
+        blob += "--" + boundary + "--\r\n";
+        blob += '\r\n';
 
         this._saveApiCall(options.success, options.error, {
             path: 'new/',
@@ -585,7 +565,12 @@ $.extend(RB.Screenshot.prototype, {
             processData: false,
             contentType: "multipart/form-data; boundary=" + boundary,
             xhr: function() {
-                return google.gears.factory.create("beta.httprequest");
+                var xhr = $.ajaxSettings.xhr()
+                xhr.send = function(data) {
+                    xhr.sendAsBinary(blob);
+                };
+
+                return xhr;
             }
         });
     },

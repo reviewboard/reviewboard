@@ -581,16 +581,7 @@ $.fn.commentDlg = function() {
                 top: "+=" + SLIDE_DISTANCE + "px",
                 opacity: 1
             }, 350, "swing", function() {
-                // Scroll the window so the box is on the screen if we need to.
-                var offset = self.offset();
-                var scrollTop = $(document).scrollTop();
-                var topDiff = (scrollTop + $(window).height()) -
-                              (offset.top + self.outerHeight(true));
-
-                if (topDiff < 0) {
-                    /* The box is off the screen. */
-                    $(window).scrollTop(scrollTop - topDiff);
-                }
+                self.scrollIntoView();
             });
 
         textField.focus();
@@ -1174,29 +1165,32 @@ function loadDiffFragments(queue_name, container_prefix) {
  * Initializes screenshot drag-and-drop support.
  *
  * This makes it possible to drag screenshots from a file manager
- * and drop them into Review Board. This requires the support of
- * Google Gears v0.5.21.0 or higher.
+ * and drop them into Review Board. This requires browser support for the
+ * HTML 5 file drag-and-drop.
  */
 function initScreenshotDnD() {
-    var desktop = google.gears.factory.create("beta.desktop");
-
-    if (!desktop) {
-        return;
-    }
-
     var thumbnails = $("#screenshot-thumbnails");
     var dropIndicator = null;
     var thumbnailsContainer = $(thumbnails.parent()[0]);
     var thumbnailsContainerVisible = thumbnailsContainer.is(":visible");
 
     thumbnails
-        .bind("dragenter dragover", function(event) {
-            desktop.setDragCursor(event.originalEvent, "copy");
+        .bind("dragenter", function(event) {
+            var dt = event.originalEvent.dataTransfer;
+            dt.dropEffect = "copy";
+            event.preventDefault();
+            return false;
+        })
+        .bind("dragover", function(event) {
+            return false;
         })
         .bind("dragexit", function(event) {
-            desktop.setDragCursor(event.originalEvent, "none");
+            var dt = event.originalEvent.dataTransfer;
+            dt.dropEffect = "none";
+            handleDragExit(event);
+            return false;
         })
-        .bind("dragdrop", handleDrop);
+        .bind("drop", handleDrop);
 
     var reviewRequestContainer =
         $(".review-request")
@@ -1205,13 +1199,15 @@ function initScreenshotDnD() {
 
     function handleDragEnter(event) {
         if (!dropIndicator) {
-            thumbnails.addClass("dragover");
-
             dropIndicator = $("<h1/>")
+                .css("border", "1px black solid")
                 .addClass("drop-indicator")
                 .html("Drop screenshots here to upload")
-                .bind("dragdrop", handleDrop)
                 .appendTo(thumbnails);
+
+            thumbnails
+                .addClass("dragover")
+                .scrollIntoView();
 
             thumbnailsContainer
                 .addClass("sliding")
@@ -1219,6 +1215,8 @@ function initScreenshotDnD() {
                     thumbnailsContainer.removeClass("sliding");
                 });
         }
+
+        return true;
     }
 
     function handleDragExit(event) {
@@ -1231,7 +1229,7 @@ function initScreenshotDnD() {
                 event.pageX < offset.left + width &&
                 event.pageY >= offset.top &&
                 event.pageY < offset.top + height) {
-                return;
+                return true;
             }
         }
 
@@ -1245,8 +1243,12 @@ function initScreenshotDnD() {
                 });
         }
 
-        dropIndicator.remove();
-        dropIndicator = null;
+        if (dropIndicator != null) {
+            dropIndicator.remove();
+            dropIndicator = null;
+        }
+
+        return true;
     }
 
     function handleDrop(event) {
@@ -1254,9 +1256,9 @@ function initScreenshotDnD() {
         event.stopPropagation();
         event.preventDefault();
 
-        var data = desktop.getDragData(event.originalEvent,
-                                       "application/x-gears-files");
-        var files = data && data.files;
+        var dt = event.originalEvent.dataTransfer;
+
+        var files = dt && dt.files;
 
         if (!files) {
             return;
@@ -1266,18 +1268,17 @@ function initScreenshotDnD() {
 
         for (var i = 0; i < files.length; i++) {
             var file = files[i];
-            var metadata = desktop.extractMetaData(file.blob);
 
-            if (metadata.mimeType == "image/jpeg" ||
-                metadata.mimeType == "image/pjpeg" ||
-                metadata.mimeType == "image/png" ||
-                metadata.mimeType == "image/bmp" ||
-                metadata.mimeType == "image/gif" ||
-                metadata.mimeType == "image/svg+xml") {
+            if (file.type == "image/jpeg" ||
+                file.type == "image/pjpeg" ||
+                file.type == "image/png" ||
+                file.type == "image/bmp" ||
+                file.type == "image/gif" ||
+                file.type == "image/svg+xml") {
 
                 foundImages = true;
 
-                uploadScreenshot(file, metadata);
+                uploadScreenshot(file);
             }
         }
 
@@ -1294,7 +1295,7 @@ function initScreenshotDnD() {
         }
     }
 
-    function uploadScreenshot(file, metadata) {
+    function uploadScreenshot(file) {
         /* Create a temporary screenshot thumbnail. */
         var thumb = $.screenshotThumbnail()
             .css("opacity", 0)
@@ -1497,9 +1498,7 @@ $(document).ready(function() {
                     });
             }
 
-            if (window.google && google.gears) {
-                initScreenshotDnD();
-            }
+            initScreenshotDnD();
         }
 
         $("pre.reviewtext").each(function() {
