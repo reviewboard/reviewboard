@@ -308,6 +308,10 @@ class ReviewRequestDataGrid(DataGrid):
     submitter    = Column(_("Submitter"), db_field="submitter__username",
                           shrink=True, sortable=True, link=True)
 
+    branch       = Column(_("Branch"), db_field="branch",
+                          shrink=True, sortable=True, link=False)
+    bugs_closed  = Column(_("Bugs"), db_field="bugs_closed",
+                          shrink=True, sortable=False, link=False)
     repository   = Column(_("Repository"), db_field="repository__name",
                           shrink=True, sortable=True, link=False)
     time_added   = DateTimeColumn(_("Posted"),
