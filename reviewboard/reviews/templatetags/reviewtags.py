@@ -500,7 +500,11 @@ def render_star(user, obj):
             'id': obj.name
         }
 
-        starred = profile.starred_groups.filter(pk=obj.id).count() > 0
+        if hasattr(obj, 'starred'):
+            starred = obj.starred
+        else:
+            starred = \
+                profile.starred_groups.filter(pk=obj.id).count() > 0
     else:
         raise template.TemplateSyntaxError, \
             "star tag received an incompatible object type (%s)" % \
