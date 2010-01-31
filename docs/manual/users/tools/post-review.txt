@@ -229,6 +229,25 @@ In order to update an existing review request, you can use the
 :option:`-r` parameter, as shown above.
 
 
+.. _postingexistingdiffs:
+
+Posting Existing Diffs
+======================
+
+:command:`post-review` will generate diffs automatically based on the
+repository type, but if you need to post a pre-existing diff, you can
+use the :option:`--diff-filename` parameter to specify the path to
+the diff file.
+
+For example::
+
+    $ post-review --diff-filename=mycode.diff
+
+You can also use the special value of ``-`` to pipe a diff into STDIN::
+
+    $ cat mycode.diff | post-review --diff-filename=-
+
+
 .. _automatingpost-review:
 
 Automating post-review
@@ -478,6 +497,12 @@ Field Defaults Options
 
    Sets the description for the review request to the contents of the
    specified file.
+
+.. cmdoption:: --diff-filename=<FILENAME>
+
+   Specifies an existing diff file to upload, instead of generating a new
+   diff. The special value of ``-`` allows the diff to be piped into
+   STDIN. See :ref:`Posting Existing Diffs` for usage information.
 
 .. cmdoption:: --summary=<SUMMARY>
 
