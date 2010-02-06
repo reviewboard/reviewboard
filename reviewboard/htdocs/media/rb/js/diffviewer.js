@@ -774,7 +774,6 @@ function gotoAnchor(name, scroll) {
  */
 function findLineNumRow(table, linenum, startRow, endRow) {
     var row = null;
-    var found = false;
     var row_offset = 1; // Get past the headers.
 
     if (table.rows.length - row_offset > linenum) {
@@ -804,7 +803,7 @@ function findLineNumRow(table, linenum, startRow, endRow) {
          * We collapsed the rows (unless someone mucked with the DB),
          * so the desired row is less than the row number retrieved.
          */
-        high = parseInt(row.getAttribute('line'))
+        high = Math.min(high, row_offset + linenum);
     }
 
     /* Binary search for this cell. */
@@ -812,22 +811,57 @@ function findLineNumRow(table, linenum, startRow, endRow) {
         row = table.rows[row_offset + i];
 
         if (!row) {
+            /*
+             * should not happen, unless we miscomputed high
+             */
             high--;
+            /*
+             * will not do much if low + high is odd
+             * but we'll catch up on the next iteration
+             */
+            i = Math.round((low + high) / 2);
             continue;
         }
 
         var value = parseInt(row.getAttribute('line'))
 
         if (!value) {
-            i++;
-            continue;
+            /*
+             * bad luck, let's look around.
+             * We'd expect to find a value on the first try
+             * but the following makes sure we explore all
+             * rows
+             */
+            var found = false;
+
+            for (var k = 1; k <= (high-low) / 2; k++) {
+                row = table.rows[row_offset + i + k];
+                if (row && parseInt(row.getAttribute('line'))) {
+                    i = i + k;
+                    found = true;
+                    break;
+                } else {
+                    row = table.rows[row_offset + i - k];
+                    if (row && parseInt(row.getAttribute('line'))) {
+                        i = i - k;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (found) {
+                value = parseInt(row.getAttribute('line'));
+            } else {
+                return null;
+            }
         }
 
         /* See if we can use simple math to find the row quickly. */
-        var guessRowNum = linenum - value;
+        var guessRowNum = linenum - value + row_offset + i;
 
         if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
-            var guessRow = table.rows[row_offset + i + guessRowNum];
+            var guessRow = table.rows[guessRowNum];
 
             if (guessRow
                 && parseInt(guessRow.getAttribute('line')) == linenum) {
