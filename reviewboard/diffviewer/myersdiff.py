@@ -368,7 +368,7 @@ class MyersDiffer:
                                         lambda y: b_lower + self.SNAKE_LIMIT <=
                                                   y < b_upper,
                                         lambda i,k: i - k,
-                                        1)
+                                        1, cost)
 
                 if best > 0:
                     return ret_x, ret_y, True, False
@@ -382,7 +382,7 @@ class MyersDiffer:
                                         lambda y: b_lower < y <= b_upper -
                                                   self.SNAKE_LIMIT,
                                         lambda i,k: i + k,
-                                        0)
+                                        0, cost)
 
                 if best > 0:
                     return ret_x, ret_y, False, True
@@ -432,9 +432,9 @@ class MyersDiffer:
 
         raise Exception("The function should not have reached here.")
 
-    def _find_diagonal(minimum, maximum, k, best, diagoff, vector,
+    def _find_diagonal(self, minimum, maximum, k, best, diagoff, vector,
                        vdiff_func, check_x_range, check_y_range,
-                       discard_index, k_offset):
+                       discard_index, k_offset, cost):
         for d in xrange(maximum, minimum - 1, -2):
             dd = d - k
             x = vector[diagoff + d]
