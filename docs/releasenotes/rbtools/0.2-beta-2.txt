@@ -2,7 +2,7 @@
 RBTools 0.2 Beta 2 Release Notes
 ================================
 
-**Release date**: March 28, 2009.
+**Release date**: September 21, 2009.
 
 
 post-review
