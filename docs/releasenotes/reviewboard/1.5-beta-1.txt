@@ -2,10 +2,10 @@
 Review Board 1.5 Beta 1 Release Notes
 =====================================
 
-**Release date**:
+**Release date**: February 14, 2010
 
 
-This release follows Review Board 1.1 Alpha 2. Due to the extensive feature
+This release follows Review Board 1.1 alpha 2. Due to the extensive feature
 list in the 1.1/1.5 release, we decided 1.5 would be more appropriate.
 
 
@@ -38,6 +38,15 @@ New Features
   Support for function/class headers exists for C, C++, C#, Objective-C,
   Java, JavaScript, Perl, PHP, Python, and Ruby files.
 
+* Screenshot drag-and-drop now works with newer HTML 5-capable browsers.
+
+  Previously, our screenshot drag-and-drop support required Google Gears,
+  and was broken on the more modern Firefox releases. We have since removed
+  the Google Gears support and moved to require newer browsers that support
+  the file drag-and-drop support in HTML 5. To date, this has been tested
+  with Firefox 3.6. It should work in newer Google Chrome and Safari
+  browsers, but this has not yet been tested.
+
 * Support for private GitHub repositories.
 
   We now have a new Hosting Type in the Repository configuration page for
@@ -60,6 +69,16 @@ New Features
 
   We now log attempts to access information on a Subversion repository, as
   well as any error information when accessing the repository fails.
+
+* Added new Branch and Bugs columns to the dashboard.
+
+  The Branch column is sortable and displays the branch specified on the
+  review request.
+
+  The Bugs column is a comma-separated list of bugs referenced in the
+  review request. This column is not sortable.
+
+  Patch by Alex Harvey. (:bug:`1441`)
 
 
 Performance Improvements
@@ -86,8 +105,16 @@ Bugs Fixed
 * The New Review Request page was broken in alpha 2, and is now fixed. Based
   on a patch by Ryan Oblak. (:bug:`1401`)
 
+* The cropped areas of screenshots containing comments were failing to save
+  to the storage. Python Image Library didn't know what format to save the
+  screenshots in. (:bug:`1396`)
+
 * The diff viewer should now always show utf-8 strings, regardless of the
   repository encoding. (:bug:`1409`)
+
+* The diff viewer would sometimes calculate the position of a comment flag
+  incorrectly and fail to show it. We're now more careful about calculating
+  the position. Patch by Laurent Nicolas. (:bug:`1165`)
 
 * Fixed an Index Out Of Range error with Subversion repositories when the
   last file in a diff was empty. Patch by Simon Morley. (:bug:`1402`)
@@ -97,10 +124,16 @@ Bugs Fixed
 
 * Fixed exceptions during error reporting for Git and Subversion.
 
+* Added a missing page title to the Server Log page.
+
+* Fixed a compatibility issue during site creation with the upcoming
+  Django 1.2.
+
 
 Contributors
 ============
 
+* Alex Harvey
 * Christian Hammond
 * David Trowbridge
 * Eduardo Felipe Castegnaro
