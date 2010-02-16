@@ -53,6 +53,23 @@ A form will appear with the following fields:
     See :ref:`determining-repository-information` below for more
     information on the URLs.
 
+.. _`Raw file URL mask`:
+
+* **Raw file URL mask** (optional)
+
+    This exists only for Git repositories. It's a path to a raw file blob
+    on a cgit or Gitweb server with special tags that will be substituted
+    to build a real URL to a file in the repository. This field is needed
+    when using Review Board with a remote Git repository.
+
+    For example:
+      * **cgit**:
+        ``http://git.gnome.org/browse/gtk+/plain/<filename>?id2=<revision>``
+      * **Gitweb**:
+        ``http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;hb=<revision>``
+
+    See :ref:`raw-file-urls` below for more information.
+
 .. _`Username and Password fields`:
 .. _`Username field`:
 
@@ -197,9 +214,20 @@ username, password or path as necessary.
 Git
 ---
 
-In order to use Git with Review Board, you'll first need a local checkout,
-which should be kept in sync regularly. Ideally, this checkout will be the
-master upstream repository, or a clone kept in sync on every commit.
+In order to use Git with Review Board, you'll need either a local clone
+on the server, or by using raw file URLs to a web front-end to Git (cgit,
+Gitweb, etc.) on the Git server. Git doesn't have a way of fetching an
+individual file of a given revision from a remote server without having an
+entire clone, so it works differently from other repository types.
+
+
+Local Clone
+~~~~~~~~~~~
+
+In order to work with Review Board, a local clone needs to be kept in
+sync regularly. It should either have direct access to a central Git
+server, or it needs to be updated on every commit to the central Git
+server.
 
 The `Path field`_ should be the full path of the ``.git`` directory inside
 this checkout.  For example: ``/var/git/projectname/.git``
@@ -213,6 +241,47 @@ The value shown as ``URL:`` should be entered as the mirror path.  For
 example: ``git@git.example.com:projectname.git``
 
 The `Username and Password fields`_ should be blank.
+
+
+.. _raw-file-urls:
+
+Raw File URLs
+~~~~~~~~~~~~~
+
+.. versionadded:: 1.5
+
+Review Board can access a remote file by talking to a cgit or gitweb server.
+This is done by filling out the `Raw file URL mask`_ field to tell Review
+Board how to access a single file based on revision.
+
+The URL can make use of the following tags, which will be replaced before
+attempting to fetch the file:
+
+* ``<revision>`` - The full SHA1 of the file blob.
+* ``<filename>`` - The unescaped path to the file.
+
+cgit
+^^^^
+
+For cgit, this path should be in the form of:
+
+:samp:`http://{servername}/browse/gtk+/plain/<filename>?id2=<revision>`
+
+For example:
+
+:samp:`http://git.gnome.org/browse/gtk+/plain/<filename>?id2=<revision>`
+
+
+Gitweb
+^^^^^^
+
+For Gitweb:
+
+:samp:`http://{servername}/?p={relative path to git repo};a=blob_plain;f=<filename>;hb=<revision>`
+
+For example:
+
+:samp:`http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;hb=<revision>`
 
 
 Perforce
