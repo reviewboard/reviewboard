@@ -158,11 +158,18 @@ $.fn.formDlg = function(options) {
          * @param {object} rsp  The server response.
          */
         function displayErrors(rsp) {
-            if (rsp.fields) {
-                errors
-                    .html(rsp.err.msg)
-                    .show();
+            var errorStr = rsp.err.msg;
 
+            if (options.dataStoreObject.getErrorString) {
+                errorStr = options.dataStoreObject.getErrorString(rsp);
+            }
+
+            errors
+                .html(errorStr)
+                .show();
+
+            if (rsp.fields) {
+                /* Invalid form data */
                 for (var fieldName in rsp.fields) {
                     if (!fieldInfo[fieldName]) {
                         continue;
