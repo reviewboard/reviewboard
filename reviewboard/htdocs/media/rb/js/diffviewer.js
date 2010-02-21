@@ -968,7 +968,7 @@ function expandChunk(fileid, filediff_id, revision, interdiff_revision,
                      chunk_index, link) {
     gDiff.getDiffFragment(fileid, filediff_id, revision, interdiff_revision,
                           chunk_index, function(html) {
-        var tbody = $(link).parents("tbody.collapsed");
+        var tbody = $(link).parents("tbody.diff-header");
         var table = tbody.parent();
 
         tbody.replaceWith(html);
