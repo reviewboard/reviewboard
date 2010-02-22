@@ -52,7 +52,7 @@ class UploadDiffForm(forms.Form):
         # Grab the base directory if there is one.
         if not tool.get_diffs_use_absolute_paths():
             try:
-                basedir = smart_unicode(self.cleaned_data['basedir'])
+                basedir = smart_unicode(self.cleaned_data['basedir'].strip())
             except AttributeError:
                 raise NoBaseDirError(_('The "Base Diff Path" field is required'))
         else:
