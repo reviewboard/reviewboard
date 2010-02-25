@@ -27,10 +27,13 @@ in the `Administration Guide`_. You'll want to install, at a minimum,
 the following packages:
 
 * Django (from Subversion)
+* django-evolution_
 * Git
 * nose
+* paramiko
 * patch
 * Python Setuptools
+* recaptcha-client
 * Sphinx
 * SQLite
 
@@ -54,6 +57,7 @@ going to use the built-in local memory cache. This is a temporary cache that
 will persist only as long as the development web server is running.
 
 .. _`Administration Guide`: http://www.reviewboard.org/docs/manual/dev/admin/
+.. _django-evolution: http://code.google.com/p/django-evolution
 
 
 Djblets
