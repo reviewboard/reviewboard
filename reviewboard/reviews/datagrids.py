@@ -481,10 +481,10 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         group_names = q.values_list('name', flat=True)
 
         q = Group.objects.filter(name__in=group_names)
-        q = q.filter(Q(review_requests__public=True) |
-                     Q(review_requests__submitter=user) &
-                     Q(review_requests__submitter__is_active=True) &
-                     Q(review_requests__status='P'))
+        q = q.filter((Q(review_requests__public=True) |
+                      Q(review_requests__submitter=user)) &
+                      Q(review_requests__submitter__is_active=True) &
+                      Q(review_requests__status='P'))
         q = q.annotate(Count('review_requests'))
 
         for group in q.values('name', 'review_requests__count'):
