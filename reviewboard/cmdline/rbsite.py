@@ -703,14 +703,21 @@ class GtkUI(UIToolkit):
         self.page_stack = []
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_title("Review Board Site Tool")
+        self.window.set_title("Review Board Site Installer")
         self.window.set_default_size(300, 550)
-        self.window.set_border_width(12)
+        self.window.set_border_width(0)
         self.window.set_resizable(False)
         self.window.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
         self.window.set_position(gtk.WIN_POS_CENTER_ALWAYS)
 
-        vbox = gtk.VBox(False, 12)
+        self.window.set_icon_list(*[
+            gtk.gdk.pixbuf_new_from_file(
+                pkg_resources.resource_filename(
+                    "reviewboard", "htdocs/media/rb/images/" + filename))
+            for filename in ["favicon.png", "logo.png"]
+        ])
+
+        vbox = gtk.VBox(False, 0)
         vbox.show()
         self.window.add(vbox)
 
@@ -720,9 +727,14 @@ class GtkUI(UIToolkit):
         self.notebook.set_show_border(False)
         self.notebook.set_show_tabs(False)
 
+        sep = gtk.HSeparator()
+        sep.show()
+        vbox.pack_start(sep, False, True, 0)
+
         self.bbox = gtk.HButtonBox()
         self.bbox.show()
         vbox.pack_start(self.bbox, False, False, 0)
+        self.bbox.set_border_width(12)
         self.bbox.set_layout(gtk.BUTTONBOX_END)
         self.bbox.set_spacing(6)
 
@@ -736,10 +748,13 @@ class GtkUI(UIToolkit):
         self.bbox.pack_start(self.prev_button, False, False, 0)
         self.prev_button.connect('clicked', self.previous_page)
 
-        self.next_button = gtk.Button(stock=gtk.STOCK_GO_FORWARD)
+        self.next_button = gtk.Button("_Next")
         self.next_button.show()
         self.bbox.pack_start(self.next_button, False, False, 0)
         self.next_button.connect('clicked', self.next_page)
+        self.next_button.set_image(
+            gtk.image_new_from_stock(gtk.STOCK_GO_FORWARD,
+                                     gtk.ICON_SIZE_BUTTON))
         self.next_button.set_flags(gtk.CAN_DEFAULT)
         self.next_button.grab_default()
         self.next_button.grab_focus()
@@ -806,19 +821,50 @@ class GtkUI(UIToolkit):
 
     def page(self, text, allow_back=True, is_visible_func=None,
              on_show_func=None):
-        vbox = gtk.VBox(False, 12)
+        vbox = gtk.VBox(False, 0)
         vbox.show()
         self.notebook.append_page(vbox)
 
+        hbox = gtk.HBox(False, 12)
+        hbox.show()
+        vbox.pack_start(hbox, False, True, 0)
+        hbox.set_border_width(12)
+
+        # Paint the title box as the base color (usually white)
+        hbox.connect(
+            'expose-event',
+            lambda w, e: w.get_window().draw_rectangle(
+                             w.get_style().base_gc[w.state], True,
+                             *w.get_allocation()))
+
+        # Add the logo
+        logo_file = pkg_resources.resource_filename(
+            "reviewboard",
+            "htdocs/media/rb/images/logo.png")
+        image = gtk.image_new_from_file(logo_file)
+        image.show()
+        hbox.pack_start(image, False, False, 0)
+
+        # Add the page title
         label = gtk.Label("<big><b>%s</b></big>" % text)
         label.show()
-        vbox.pack_start(label, False, True, 0)
-        label.set_alignment(0, 0)
+        hbox.pack_start(label, True, True, 0)
+        label.set_alignment(0, 0.5)
         label.set_use_markup(True)
+
+        # Add the separator
+        sep = gtk.HSeparator()
+        sep.show()
+        vbox.pack_start(sep, False, True, 0)
+
+        content_vbox = gtk.VBox(False, 12)
+        content_vbox.show()
+        vbox.pack_start(content_vbox, True, True, 0)
+        content_vbox.set_border_width(12)
 
         page = {
             'is_visible_func': is_visible_func,
-            'widget': vbox,
+            'widget': content_vbox,
             'index': len(self.pages),
             'allow_back': allow_back,
             'label_sizegroup': gtk.SizeGroup(gtk.SIZE_GROUP_HORIZONTAL),
@@ -1146,7 +1192,7 @@ class InstallCommand(Command):
             return False
 
     def print_introduction(self):
-        page = ui.page("Welcome to the Review Board site installation wizard.")
+        page = ui.page("Welcome to the Review Board site installation wizard")
 
         ui.text(page, "This will prepare a Review Board site installation in:")
         ui.text(page, site.abs_install_dir)
@@ -1159,13 +1205,13 @@ class InstallCommand(Command):
 
         if missing_dep_groups:
             if fatal:
-                page = ui.page("Required modules are missing.")
+                page = ui.page("Required modules are missing")
                 ui.text(page, "You are missing Python modules that are "
                               "needed before the installation process. "
                               "You will need to install the necessary "
                               "modules and restart the install.")
             else:
-                page = ui.page("Make sure you have the modules you need.")
+                page = ui.page("Make sure you have the modules you need")
                 ui.text(page, "Depending on your installation, you may need "
                               "certain Python modules and servers that are "
                               "missing.")
@@ -1233,7 +1279,7 @@ class InstallCommand(Command):
                                       "reviewboard.db")
 
         # Appears only if using sqlite.
-        page = ui.page("Determining database file path.",
+        page = ui.page("Determining database file path",
                        is_visible_func=lambda: site.db_type == "sqlite3",
                        on_show_func=determine_sqlite_path)
 
