@@ -41,6 +41,8 @@ class RBUserCreationForm(UserCreationForm):
 class RBUserAdmin(UserAdmin):
     form = RBUserChangeForm
     add_form = RBUserCreationForm
+    filter_vertical = ('user_permissions',)
+    filter_horizontal = ()
 
 
 class ProfileAdmin(admin.ModelAdmin):
