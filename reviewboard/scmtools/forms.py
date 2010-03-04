@@ -252,7 +252,7 @@ class RepositoryForm(forms.ModelForm):
 
     path = forms.CharField(
         label=_("Path"),
-        max_length=128,
+        max_length=256,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_("This should be the path to the repository. For most "
@@ -264,13 +264,13 @@ class RepositoryForm(forms.ModelForm):
 
     mirror_path = forms.CharField(
         label=_("Mirror path"),
-        max_length=128,
+        max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}))
 
     raw_file_url = forms.CharField(
         label=_("Raw file URL mask"),
-        max_length=128,
+        max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_("A URL mask used to check out a particular revision of a "
