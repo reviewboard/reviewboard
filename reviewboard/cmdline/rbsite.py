@@ -169,8 +169,7 @@ class Site(object):
         self.mkdir(os.path.join(self.install_dir, "tmp"))
         os.chmod(os.path.join(self.install_dir, "tmp"), 0777)
 
-        if self.db_type == "sqlite3":
-            self.mkdir(os.path.join(self.install_dir, "db"))
+        self.mkdir(os.path.join(self.install_dir, "data"))
 
         self.mkdir(htdocs_dir)
         self.mkdir(media_dir)
@@ -705,7 +704,7 @@ class GtkUI(UIToolkit):
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
         self.window.set_title("Review Board Site Tool")
-        self.window.set_default_size(300, 500)
+        self.window.set_default_size(300, 550)
         self.window.set_border_width(12)
         self.window.set_resizable(False)
         self.window.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
@@ -944,7 +943,7 @@ class GtkUI(UIToolkit):
         """
         Displays a URL to the user.
         """
-        link_button = gtk.LinkButton(url)
+        link_button = gtk.LinkButton(url, url)
         link_button.show()
         page['widget'].pack_start(link_button, False, False, 0)
         link_button.set_alignment(0, 0)
@@ -1230,7 +1229,7 @@ class InstallCommand(Command):
         def determine_sqlite_path():
             site.db_name = sqlite_db_name
 
-        sqlite_db_name = os.path.join(site.abs_install_dir, "db",
+        sqlite_db_name = os.path.join(site.abs_install_dir, "data",
                                       "reviewboard.db")
 
         # Appears only if using sqlite.
@@ -1370,14 +1369,19 @@ class InstallCommand(Command):
 
     def show_finished(self):
         page = ui.page("The site has been installed", allow_back=False)
-        ui.text(page, "The site has been installed in %s" % site.install_dir)
+        ui.text(page, "The site has been installed in %s" %
+                      site.abs_install_dir)
         ui.text(page, "Sample configuration files for web servers and "
                       "cron are available in the conf/ directory.")
         ui.text(page, "You need to modify the ownership of the "
-                      "\"htdocs/media/uploaded\" directory and all of its "
-                      "contents to be owned by the web server.")
-        ui.text(page, "If using SQLite, you will also need to modify the "
-                      "ownership of the \"db\" directory and its contents.")
+                      "following directories and their contents to be owned "
+                      "by the web server:")
+
+        ui.itemized_list(page, None, [
+            os.path.join(site.abs_install_dir, 'htdocs', 'media', 'uploaded'),
+            os.path.join(site.abs_install_dir, 'data'),
+        ])
+
         ui.text(page, "For more information, visit:")
         ui.urllink(page, "%sadmin/sites/creating-sites/" % DOCS_BASE)
 
@@ -1423,6 +1427,8 @@ class UpgradeCommand(Command):
     def run(self):
         site.setup_settings()
 
+        data_dir_exists = os.path.exists(os.path.join(site.install_dir, "data"))
+
         print "Rebuilding directory structure"
         site.rebuild_site_directory()
 
@@ -1430,6 +1436,25 @@ class UpgradeCommand(Command):
             print "Updating database. This may take a while."
             site.sync_database()
             site.migrate_database()
+
+        print "Upgrade complete."
+
+        if not data_dir_exists:
+            # This is an upgrade of a site that pre-dates the new $HOME
+            # directory ($sitedir/data). Tell the user how to upgrade things.
+            print
+            print "A new 'data' directory has been created inside of your site"
+            print "directory. This will act as the home directory for programs"
+            print "invoked by Review Board."
+            print
+            print "You need to change the ownership of this directory so that"
+            print "the web server can write to it."
+            print
+            print "If using mod_python, you will also need to add the following"
+            print "to your Review Board Apache configuration:"
+            print
+            print "    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
+                                                      "data")
 
 
 class ManageCommand(Command):
