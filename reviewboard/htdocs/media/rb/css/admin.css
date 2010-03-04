@@ -23,6 +23,15 @@ ul.actionlist li {
     list-style-type: none;
 }
 
+#logo {
+  float: left;
+  padding: 0.5em;
+}
+
+#site-name {
+  padding-top: 1.1em !important;
+}
+
 #admin-nav, #admin-subnav {
   background-color: #557ab1;
   float: left;
