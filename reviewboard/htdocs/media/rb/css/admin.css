@@ -24,12 +24,14 @@ ul.actionlist li {
 }
 
 #logo {
-  float: left;
   padding: 0.5em;
+  position: absolute;
 }
 
-#site-name {
-  padding-top: 1.1em !important;
+#branding h1 {
+  padding-top: 0.5em;
+  padding-bottom: 0.5em;
+  margin-left: 3.5em;
 }
 
 #admin-nav, #admin-subnav {
@@ -37,7 +39,7 @@ ul.actionlist li {
   float: left;
   list-style: none;
   margin: 0;
-  padding: 0 10px;
+  padding: 0 10px 0 5.5em;
   width: 100%;
 }
 

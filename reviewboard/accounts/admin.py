@@ -45,6 +45,11 @@ class RBUserAdmin(UserAdmin):
     filter_horizontal = ()
 
 
+class ReviewRequestVisitAdmin(admin.ModelAdmin):
+    list_display = ('review_request', 'user', 'timestamp')
+    raw_id_fields = ('review_request',)
+
+
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'first_time_setup_done')
     raw_id_fields = ('user', 'starred_review_requests', 'starred_groups')
@@ -54,5 +59,5 @@ class ProfileAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 admin.site.register(User, RBUserAdmin)
 
-admin.site.register(ReviewRequestVisit)
+admin.site.register(ReviewRequestVisit, ReviewRequestVisitAdmin)
 admin.site.register(Profile, ProfileAdmin)
