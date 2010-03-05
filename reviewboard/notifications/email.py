@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -173,7 +174,16 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     message = SpiffyEmailMessage(subject.strip(), text_body, html_body,
                                  from_email, list(to_field), list(cc_field),
                                  in_reply_to, headers)
-    message.send()
+    try:
+        message.send()
+    except Exception, e:
+        logging.error("Error sending e-mail notification with subject '%s' on "
+                      "behalf of '%s' to '%s': %s",
+                      subject.strip(),
+                      from_email,
+                      ','.join(list(to_field) + list(cc_field)),
+                      e,
+                      exc_info=1)
 
     return message.message_id
 
