@@ -345,7 +345,7 @@ class Site(object):
         os.chdir(self.abs_install_dir)
 
         try:
-            from django.core.management import execute_manager
+            from django.core.management import execute_manager, get_commands
             from reviewboard.admin.migration import fix_django_evolution_issues
             import reviewboard.settings
 
@@ -356,6 +356,25 @@ class Site(object):
                 params.append("--verbosity=0")
 
             fix_django_evolution_issues(reviewboard.settings)
+
+            commands_dir = os.path.join(self.abs_install_dir, 'commands')
+
+            if os.path.exists(commands_dir):
+                # Pre-fetch all the available management commands.
+                get_commands()
+
+                # Insert our own management commands into this list.
+                # Yes, this is a bit of a hack.
+                from django.core.management import _commands
+
+                for f in os.listdir(commands_dir):
+                    module_globals = {}
+                    execfile(os.path.join(commands_dir, f), module_globals)
+
+                    if 'Command' in module_globals:
+                        name = os.path.splitext(f)[0]
+                        _commands[name] = module_globals['Command']()
+
             execute_manager(reviewboard.settings, [__file__, cmd] + params)
         except ImportError, e:
             ui.error("Unable to execute the manager command %s: %s" %
