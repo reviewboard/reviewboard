@@ -252,7 +252,7 @@ class RepositoryForm(forms.ModelForm):
 
     path = forms.CharField(
         label=_("Path"),
-        max_length=256,
+        max_length=255,
         required=True,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_("This should be the path to the repository. For most "
