@@ -745,6 +745,21 @@ function rbApiCall(options) {
             data: options.data || {dummy: ""},
             dataType: options.dataType || "json",
             error: function(xhr, textStatus, errorThrown) {
+                var rsp = null;
+
+                try {
+                    rsp = $.httpData(xhr, options.dataType || "json");
+                } catch (e) {
+                }
+
+                if (rsp && rsp.stat) {
+                    if ($.isFunction(options.success)) {
+                        options.success(rsp, textStatus);
+                    }
+
+                    return;
+                }
+
                 var responseText = xhr.responseText;
                 activityIndicator
                     .addClass("error")
@@ -766,7 +781,6 @@ function rbApiCall(options) {
                                 return false;
                             })
                     );
-
 
                 if ($.isFunction(options.error)) {
                     options.error(xhr, textStatus, errorThrown);
