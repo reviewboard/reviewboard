@@ -435,7 +435,9 @@ $.extend(RB.Review.prototype, {
                        "/reviews/draft/" + options.path;
 
         if (!options.success) {
-            options.success = function() { window.location = self.path; };
+            options.success = function() {
+                window.location = self.review_request.path;
+            };
         }
 
         rbApiCall(options);
