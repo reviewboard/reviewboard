@@ -1,0 +1,91 @@
+=========
+Get Users
+=========
+
+:Path: ``api/json/users/``
+
+
+HTTP GET
+========
+
+Returns a list of users on the server.
+
+Note that this list can be quite large, as by default it contains every user
+known on the server. It's best to cache this information if needed, or filter
+it down using the ``q`` parameter.
+
+
+Request Parameters
+------------------
+
++-----------+---------+----------------------------------------------------+
+| Parameter | Type    | Description                                        |
++===========+=========+====================================================+
+| q         | String  | Display only users with a username beginning with  |
+|           |         | this string.                                       |
++-----------+---------+----------------------------------------------------+
+| fullname  | Boolean | If set, then the text in ``q`` will also be used   |
+|           |         | to match against the beginning of the first name   |
+|           |         | and the last name. All users with a matching       |
+|           |         | username, first name, or last name will be         |
+|           |         | returned.                                          |
++-----------+---------+----------------------------------------------------+
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/users/?q=j&fullname=1
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++---------+-----------------+----------------------------------------------+
+| Field   | Type            | Description                                  |
++=========+=================+==============================================+
+| users   | Array of User_  | The list of users.                           |
++---------+-----------------+----------------------------------------------+
+
+.. _User: ../../datatypes/user
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      users: [
+        {
+          id: 1,
+          username: "joe",
+          first_name: "Joe",
+          last_name: "User",
+          fullname: "Joe User",
+          email: "joe@example.com",
+          url: "/users/joe/"
+        }
+      ]
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+.. comment: vim: ft=rst et ts=3

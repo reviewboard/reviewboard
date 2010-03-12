@@ -1,0 +1,161 @@
+==============================================
+Update Review Request Draft From Change Number
+==============================================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/update_from_changenum/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+
+
+HTTP POST
+=========
+
+Creates or updates a draft on the review request based on information in
+the repository and the review request's change number.
+
+This requires that the review request first have a change number, and that
+the repository supports fetching information from the associated changeset.
+
+Upon success, a new draft will be created and returned, and the review
+request will be reopened.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    POST /api/json/reviewrequests/12982/update_from_changenum/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++----------------+---------------------+------------------------------------+
+| Field          | Type                | Description                        |
++================+=====================+====================================+
+| draft          | ReviewRequestDraft_ | The draft of the review request.   |
++----------------+---------------------+------------------------------------+
+| review_request | ReviewRequest_      | The review request information.    |
++----------------+---------------------+------------------------------------+
+
+.. _ReviewRequest: ../../datatypes/review-request
+.. _ReviewRequestDraft: ../../datatypes/review-request-draft
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok"
+      draft: {
+        branch: "main",
+        bugs_closed: [],
+        description: "This is the new description",
+        id: 17981,
+        last_updated: "2009-12-06 18:35:23",
+        testing_done: "Ran unit tests",
+        summary: "This is the new summary",
+        target_groups: [
+          {
+            url: "/groups/reviewboard/",
+            display_name: "Review Board",
+            id: 1,
+            mailing_list: "reviewboard@example.com",
+            name: "reviewboard"
+          }
+        ],
+        target_people: []
+      },
+      review_request: {
+        branch: "main",
+        bugs_closed: [],
+        changenum: 237891,
+        description: "This is the description of the review request.",
+        id: 12982,
+        last_updated: "2009-12-05 19:03:00",
+        public: 1,
+        status: "pending",
+        submitter: {
+          username: "joe",
+          first_name: "Joe",
+          last_name: "User",
+          url: "/users/joe/",
+          email: "joe@example.com",
+          fullname: "Joe User",
+          id: 1
+        },
+        testing_done: "Ran unit tests",
+        time_added: "2009-12-05 19:00:42",
+        summary: "This is the review request's summary",
+        repository: {
+          path: "perforce.example.com:1666"
+          tool: "Perforce",
+          id: 4,
+          name: "Main Perforce"
+        },
+        target_groups: [
+          {
+            url: "/groups/reviewboard/",
+            display_name: "Review Board",
+            id: 1,
+            mailing_list: "reviewboard@example.com",
+            name: "reviewboard"
+          }
+        ],
+        target_people: []
+      }
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in to the server.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 403: Forbidden
+~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to update the
+review request.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 203: Invalid Change Number
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The change number specified does not match any known change number in the
+repository.
+
+No Error Payload
+^^^^^^^^^^^^^^^^
+
+If there is no JSON payload, then the review request with the given
+``review_request_id`` does not exist on the server.
+
+
+.. comment: vim: ft=rst et ts=3

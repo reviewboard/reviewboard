@@ -1,0 +1,39 @@
+====================
+Review Request Draft
+====================
+
+Fields
+======
+
++----------------+--------------+-------------------------------------------+
+| Field          | Type         | Description                               |
++================+==============+===========================================+
+| branch         | String       | The branch the code applies to.           |
++----------------+--------------+-------------------------------------------+
+| bugs_closed    | Array of     | A list of bug numbers/IDs referenced in   |
+|                | Strings      | the review request.                       |
++----------------+--------------+-------------------------------------------+
+| description    | String       | The review request's description.         |
++----------------+--------------+-------------------------------------------+
+| id             | Integer      | The ID of the review request.             |
++----------------+--------------+-------------------------------------------+
+| last_updated   | String       | The time the review request was last      |
+|                |              | updated.                                  |
++----------------+--------------+-------------------------------------------+
+| summary        | String       | The review request's summary.             |
++----------------+--------------+-------------------------------------------+
+| target_groups  | Array of     | The list of target review groups.         |
+|                | ReviewGroup_ |                                           |
++----------------+--------------+-------------------------------------------+
+| target_people  | Array of     | The list of target reviewers.             |
+|                | User_        |                                           |
++----------------+--------------+-------------------------------------------+
+| testing_done   | String       | The testing done on the review request.   |
++----------------+--------------+-------------------------------------------+
+
+
+.. _ReviewGroup: ../review-group
+.. _User: ../user
+
+
+.. comment: vim: ft=rst et ts=3

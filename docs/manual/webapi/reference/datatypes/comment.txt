@@ -1,0 +1,39 @@
+=======
+Comment
+=======
+
+Fields
+======
+
++----------------+-------------+-------------------------------------------+
+| Field          | Type        | Description                               |
++================+=============+===========================================+
+| id             | Integer     | The ID number of the comment.             |
++----------------+-------------+-------------------------------------------+
+| filediff       | FileDiff_   | The filediff that the comment applies to. |
++----------------+-------------+-------------------------------------------+
+| text           | String      | The comment text.                         |
++----------------+-------------+-------------------------------------------+
+| timestamp      | String      | The date/time the comment was created or  |
+|                |             | updated.                                  |
++----------------+-------------+-------------------------------------------+
+| timesince      | String      | A human-readable string describing how    |
+|                |             | long since the comment was created or     |
+|                |             | updated.                                  |
++----------------+-------------+-------------------------------------------+
+| first_line     | Integer     | The first line in the diff that the       |
+|                |             | comment starts on.                        |
++----------------+-------------+-------------------------------------------+
+| num_lines      | Integer     | The number of lines that the comment      |
+|                |             | spans.                                    |
++----------------+-------------+-------------------------------------------+
+| public         | Boolean     | Whether or not the comment is public.     |
++----------------+-------------+-------------------------------------------+
+| user           | User_       | The user who made the comment.            |
++----------------+-------------+-------------------------------------------+
+
+.. _FileDiff: ../filediff
+.. _User: ../user
+
+
+.. comment: vim: ft=rst et ts=3

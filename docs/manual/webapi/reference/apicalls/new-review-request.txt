@@ -1,0 +1,155 @@
+==================
+New Review Request
+==================
+
+:Path: ``api/json/reviewrequests/new/``
+
+
+HTTP POST
+=========
+
+Creates a new, blank, unpublished review request.
+
+The only requirement in this call is that either ``repository_path`` or
+``repository_id`` must be provided.
+
+If the ``changenum`` field is provided and the repository supports pulling
+from changeset descriptions, then parts of the review request may be filled in
+automatically. This is only currently supported on Perforce repositories.
+
+Clients can create review requests on behalf of another user by setting the
+``submit_as`` parameter to the username of the user. The user that the
+client is currently logged in as must have the
+``reviews.can_submit_as_another_user`` permission set. This functionality
+is useful when writing automation scripts, such as post-commit hooks, that
+need to create review requests for another user.
+
+
+Request Parameters
+------------------
+
++---------------------+---------+--------------------------------------------+
+| Parameter           | Type    | Description                                |
++=====================+=========+============================================+
+| **repository_id**   | Integer | The ID of the repository to match against. |
+| (required)          |         | Either this *or* ``repository_path`` must  |
+|                     |         | be specified.                              |
++---------------------+---------+--------------------------------------------+
+| **repository_path** | String  | The repository path to match against. The  |
+| (required)          |         | server will compare against the Path and   |
+|                     |         | Mirror Path variables in the repositories. |
+|                     |         | Either this *or* ``repository_id`` must be |
+|                     |         | specified.                                 |
++---------------------+---------+--------------------------------------------+
+| **changenum**       | Integer | The change number to use for looking up    |
+| (optional)          |         | default values for the review request.     |
++---------------------+---------+--------------------------------------------+
+| **submit_as**       | String  | The username of a user to submit the       |
+| (optional)          |         | review request as.                         |
++---------------------+---------+--------------------------------------------+
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-----------------+----------------+--------------------------------+
+| Field           | Type           | Description                    |
++=================+================+================================+
+| review_request  | ReviewRequest_ | The new review request.        |
++-----------------+----------------+--------------------------------+
+
+
+HTTP 400: Bad Request
+~~~~~~~~~~~~~~~~~~~~~
+
+Error 205: Missing Repository Parameter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``repository_path`` or ``repository_id`` parameters weren't sent in the
+request.
+
+
+Error 206: Invalid Repository
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The repository information sent in the request does not match a valid
+repository on the server.
+
++-----------------+--------+------------------------------------+
+| Field           | Type   | Description                        |
++=================+========+====================================+
+| repository_path | String | The path specified in the request. |
++-----------------+--------+------------------------------------+
+
+
+Error 208: Invalid User
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The user specified in the ``submit_as`` parameter isn't a valid user on the
+server.
+
+
+Error 212: Empty Changeset
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The changeset that matches the specified change number is empty and doesn't
+contain any information on any files associated with the change number.
+Often this means that any generated diff against this changeset would also
+fail.
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 403: Forbidden
+~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to submit as
+the user specified in the ``submit_as`` parameter sent in the request.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 203: Invalid Change Number
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The change number specified does not match any known change number in the
+repository.
+
+
+HTTP 409: Conflict
+~~~~~~~~~~~~~~~~~~
+
+Error 204: Change Number In Use
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The change number specified in the request is already in use by another
+review request.
+
++-----------------+----------------+----------------------------------+
+| Field           | Type           | Description                      |
++=================+================+==================================+
+| review_request  | ReviewRequest_ | The review request that owns the |
+|                 |                | change number.                   |
++-----------------+----------------+----------------------------------+
+
+
+.. _ReviewRequest: ../../datatypes/review-request
+
+
+.. comment: vim: ft=rst et ts=3

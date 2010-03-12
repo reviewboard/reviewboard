@@ -1,0 +1,118 @@
+===========
+Get Replies
+===========
+
+:Path: ``api/json/reviewrequests/{review_request_id}/reviews/{review_id}/replies/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+| review_id         | Integer | The ID of the review.               |
++-------------------+---------+-------------------------------------+
+
+
+HTTP GET
+========
+
+Returns a list of public replies on a published review.
+
+This may include draft replies made by the requesting user.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/reviewrequests/12321/reviews/10/replies/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-----------------+------------------+--------------------------------+
+| Field           | Type             | Description                    |
++=================+==================+================================+
+| replies         | Array of Review_ | The list of replies.           |
++-----------------+------------------+--------------------------------+
+
+.. _Review: ../../datatypes/review
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      replies: [
+        {
+          id: 10,
+          user: {
+            username: "joe",
+            first_name: "Joe",
+            last_name: "User",
+            url: "/users/joe/",
+            email: "joe@example.com",
+            fullname: "Joe User",
+            id: 1
+          },
+          timestamp: "2010-02-16 16:15:10",
+          public: 1,
+          ship_it: 1,
+          body_top: "Okay.",
+          body_bottom: "",
+          comments: []
+        }
+      ]
+    }
+
+
+HTTP 400: Bad Request
+~~~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The review is a draft and the user doesn't have permission to view it.
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+There are four possibilities for this error:
+
+* The review request with the given ``review_request_id`` does not exist on the
+  server.
+
+* The review with the given ``review_id`` does not exist on the server.
+
+* The review with the given ``review_id`` is not a review on the given
+  review request.
+
+* The review with the given ``review_id`` is a reply to a review.
+
+
+.. comment: vim: ft=rst et ts=3

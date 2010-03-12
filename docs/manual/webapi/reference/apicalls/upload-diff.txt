@@ -1,0 +1,151 @@
+===========
+Upload Diff
+===========
+
+:Path: ``api/json/reviewrequests/{review_request_id}/diff/new/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+
+
+HTTP POST
+=========
+
+Uploads a new diff and associates it with a new or existing draft.
+
+This may have the side-effect of updating the list of reviewers based on
+any Default Reviewer entries that are set up on the server. These would be
+updated based on the file paths in the diffs. This would only happen for the
+first diff.
+
+The diff contents and fields must be sent as multi-part form data. The
+contents must be sent along with a filename.
+
+
+Request Parameters
+------------------
+
++----------------------+---------+-------------------------------------------+
+| Field                | Type    | Description                               |
++======================+=========+===========================================+
+| **basedir**          | String  | The base path between the top of the      |
+| (optional)           |         | repository and the path in which the      |
+|                      |         | diffs were generated. This is only needed |
+|                      |         | for certain repositories.                 |
++----------------------+---------+-------------------------------------------+
+| **path**             | File    | The contents of the diff file.            |
+| (required)           |         |                                           |
++----------------------+---------+-------------------------------------------+
+| **parent_diff_path** | File    | The contents of the optional parent diff  |
+| (optional)           |         | file.                                     |
++----------------------+---------+-------------------------------------------+
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    POST /api/json/reviewrequests/12321/diff/new/
+    --BOUNDARY_STRING
+    Content-Disposition: form-data; name="basedir"
+
+    /trunk/myproject
+    --BOUNDARY_STRING
+    Content-Disposition: form-data; name="path"; filename="mypatch.diff"
+
+    The diff content would go here...
+    --BOUNDARY_STRING--
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++------------+----------+------------------------------+
+| Field      | Type     | Description                  |
++============+==========+==============================+
+| diffset_id | Integer  | The ID of the new diffset.   |
++------------+----------+------------------------------+
+
+.. _DiffSet: ../../datatypes/diffset
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      diffset_id: 50
+    }
+
+
+HTTP 400: Bad Request
+~~~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to modify the
+draft.
+
+
+Error 105: Invalid Form Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There was a validation error with one or more fields specified.
+
++--------+-------------------------+------------------------------------+
+| Field  | Type                    | Description                        |
++========+=========================+====================================+
+| fields | Map of String to String | A map of field names to list of    |
+|        |                         | validation error messages.         |
++--------+-------------------------+------------------------------------+
+
+
+Error 207: File Not Found In Repository
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Indicates that a particular file referenced in the diff could not be found
+in the repository.
+
++----------+--------+-----------------------------------------------------+
+| Field    | Type   | Description                                         |
++==========+========+=====================================================+
+| file     | String | The path referenced in the diff that could not be   |
+|          |        | found in the repository.                            |
++----------+--------+-----------------------------------------------------+
+| revision | String | The revision of the file as referenced in the diff. |
++----------+--------+-----------------------------------------------------+
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+The review request with the given ``review_request_id`` does not exist on the
+server.
+
+
+.. comment: vim: ft=rst et ts=3

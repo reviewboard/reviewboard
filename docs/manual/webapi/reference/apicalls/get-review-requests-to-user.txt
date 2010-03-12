@@ -1,0 +1,127 @@
+===========================
+Get Review Requests to User
+===========================
+
+:Path: ``api/json/reviewrequests/to/user/{username}/``
+
+
+URL Parameters
+==============
+
++-------------+---------+--------------------------------------------------+
+| Parameter   | Type    | Description                                      |
++=============+=========+==================================================+
+| username    | String  | The name of the user.                            |
++-------------+---------+--------------------------------------------------+
+
+
+HTTP GET
+========
+
+Returns a list of public review requests on the server that have been sent
+directly or indirectly to the specified user. Review requests listing the
+user as a reviewer will be returned, as will review requests listing any
+group that the user belongs to.
+
+Note that this list can be quite large. It's best to filter this down
+using the ``status`` parameter, and to cache the results.
+
+
+Request Parameters
+------------------
+
++-------------+---------+--------------------------------------------------+
+| Parameter   | Type    | Description                                      |
++=============+=========+==================================================+
+| **status**  | String  | The status of the review requests to return.     |
+| (optional)  |         | This can be one of: ``pending``, ``submitted``,  |
+|             |         | ``discarded`` or ``all``. This defaults to       |
+|             |         | ``pending``.                                     |
++-------------+---------+--------------------------------------------------+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/reviewrequests/to/user/bob/?status=pending
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-----------------+-------------------------+--------------------------------+
+| Field           | Type                    | Description                    |
++=================+=========================+================================+
+| review_requests | Array of ReviewRequest_ | The list of review requests.   |
++-----------------+-------------------------+--------------------------------+
+
+.. _ReviewRequest: ../../datatypes/review-request
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      review_requests: [
+        {
+          branch: "master",
+          bugs_closed: ["12", "34"],
+          changenum: null,
+          description: "This is the description of the review request.",
+          id: 12321,
+          last_updated: "2009-12-05 19:03:00",
+          public: 1,
+          status: "pending",
+          submitter: {
+            username: "joe",
+            first_name: "Joe",
+            last_name: "User",
+            url: "/users/joe/",
+            email: "joe@example.com",
+            fullname: "Joe User",
+            id: 1
+          },
+          testing_done: "Ran unit tests",
+          time_added: "2009-12-05 19:00:42",
+          summary: "This is the review request's summary",
+          repository: {
+            path: "git://github.com/reviewboard/reviewboard.git",
+            tool: "Git",
+            id: 1,
+            name: "Review Board"
+          },
+          target_groups: [
+            {
+              url: "/groups/reviewboard/",
+              display_name: "Review Board",
+              id: 1,
+              mailing_list: "reviewboard@example.com",
+              name: "reviewboard"
+            }
+          ],
+          target_people: []
+        }
+      ]
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+.. comment: vim: ft=rst et ts=3

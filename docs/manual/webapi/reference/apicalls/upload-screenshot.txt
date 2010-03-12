@@ -1,0 +1,120 @@
+=================
+Create Screenshot
+=================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/screenshot/new/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+
+
+HTTP POST
+=========
+
+Uploads a new screenshot and associates it with a new or existing draft.
+
+The screenshot data and fields must be sent as multi-part form data. The
+contents must be sent along with a filename.
+
++----------------------+---------+-------------------------------------------+
+| Field                | Type    | Description                               |
++======================+=========+===========================================+
+| **path**             | File    | The contents of the screenshot.           |
+| (required)           |         |                                           |
++----------------------+---------+-------------------------------------------+
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    POST /api/json/reviewrequests/12321/screenshot/new/
+    --BOUNDARY_STRING
+    Content-Disposition: form-data; name="path"; filename="test.png"
+
+    Screenshot PNG data would go here...
+    --BOUNDARY_STRING--
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++---------------+-------------+-------------------------------+
+| Field         | Type        | Description                   |
++===============+=============+===============================+
+| screenshots   | Screenshot_ | The new screenshot object.    |
++---------------+-------------+-------------------------------+
+
+.. _Screenshot: ../../datatypes/screenshot
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      screenshot: {
+        id: 10,
+        caption: "",
+        title: "Screenshot: test.png",
+        image_url: "http://example.com/media/uploaded/images/2010/03/10/test.png",
+        thumbnail_url: "http://example.com/media/uploaded/images/2010/03/10/test_400x100.png"
+      }
+    }
+
+
+HTTP 400: Bad Request
+~~~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to modify the
+draft.
+
+
+Error 105: Invalid Form Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There was a validation error with one or more fields specified.
+
++--------+-------------------------+------------------------------------+
+| Field  | Type                    | Description                        |
++========+=========================+====================================+
+| fields | Map of String to String | A map of field names to list of    |
+|        |                         | validation error messages.         |
++--------+-------------------------+------------------------------------+
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+The review request with the given ``review_request_id`` does not exist on the
+server.
+
+
+.. comment: vim: ft=rst et ts=3

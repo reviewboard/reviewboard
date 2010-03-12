@@ -1,0 +1,36 @@
+.. _api-logout:
+
+=======
+Log Out
+=======
+
+:Path: ``api/json/accounts/logout/``
+
+
+HTTP POST
+=========
+
+Logs a user out, clearing the cookie and removing the server-side session
+information.
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
+On success, no payload data beyond the ``stat`` field will be sent.
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok"
+    }
+
+
+.. comment: vim: ft=rst et ts=3
