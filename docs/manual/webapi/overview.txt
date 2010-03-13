@@ -55,7 +55,8 @@ JSON Payloads
 -------------
 
 Many responses will contain data in a JSON_ payload. This is a JSON_
-dictionary containing keys for the response data.
+dictionary containing keys for the response data. These responses will
+use the mimetype ``application/json``.
 
 Every payload has, at the least, a ``stat`` key. The value will be either
 ``ok`` (for success) or ``fail`` (for a failed request).
