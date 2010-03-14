@@ -92,126 +92,25 @@ EMPTY_CHANGESET           = WebAPIError(212, "The change number specified "
 class ReviewBoardAPIEncoder(WebAPIEncoder):
     def encode(self, o):
         if isinstance(o, Group):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'display_name': o.display_name,
-                'mailing_list': o.mailing_list,
-                'url': o.get_absolute_url(),
-            }
+            return groupResource.serialize_object(o)
         elif isinstance(o, ReviewRequest):
-            if o.bugs_closed:
-                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
-            else:
-                bugs_closed = ''
-
-            return {
-                'id': o.id,
-                'submitter': o.submitter,
-                'time_added': o.time_added,
-                'last_updated': o.last_updated,
-                'status': status_to_string(o.status),
-                'public': o.public,
-                'changenum': o.changenum,
-                'repository': o.repository,
-                'summary': o.summary,
-                'description': o.description,
-                'testing_done': o.testing_done,
-                'bugs_closed': bugs_closed,
-                'branch': o.branch,
-                'target_groups': o.target_groups.all(),
-                'target_people': o.target_people.all(),
-            }
+            return reviewRequestResource.serialize_object(o)
         elif isinstance(o, ReviewRequestDraft):
-            if o.bugs_closed != "":
-                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
-            else:
-                bugs_closed = []
-
-            return {
-                'id': o.id,
-                'review_request': o.review_request,
-                'last_updated': o.last_updated,
-                'summary': o.summary,
-                'description': o.description,
-                'testing_done': o.testing_done,
-                'bugs_closed': bugs_closed,
-                'branch': o.branch,
-                'target_groups': o.target_groups.all(),
-                'target_people': o.target_people.all(),
-            }
+            return reviewRequestDraftResource.serialize_object(o)
         elif isinstance(o, Review):
-            return {
-                'id': o.id,
-                'user': o.user,
-                'timestamp': o.timestamp,
-                'public': o.public,
-                'ship_it': o.ship_it,
-                'body_top': o.body_top,
-                'body_bottom': o.body_bottom,
-                'comments': o.comments.all(),
-            }
+            return reviewResource.serialize_object(o)
         elif isinstance(o, Comment):
-            review = o.review.get()
-            return {
-                'id': o.id,
-                'filediff': o.filediff,
-                'interfilediff': o.interfilediff,
-                'text': o.text,
-                'timestamp': o.timestamp,
-                'timesince': timesince(o.timestamp),
-                'first_line': o.first_line,
-                'num_lines': o.num_lines,
-                'public': review.public,
-                'user': review.user,
-            }
+            return commentResource.serialize_object(o)
         elif isinstance(o, ScreenshotComment):
-            review = o.review.get()
-            return {
-                'id': o.id,
-                'screenshot': o.screenshot,
-                'text': o.text,
-                'timestamp': o.timestamp,
-                'timesince': timesince(o.timestamp),
-                'public': review.public,
-                'user': review.user,
-                'x': o.x,
-                'y': o.y,
-                'w': o.w,
-                'h': o.h,
-            }
+            return screenshotCommentResource.serialize_object(o)
         elif isinstance(o, Screenshot):
-            return {
-                'id': o.id,
-                'caption': o.caption,
-                'title': u'Screenshot: %s' % (o.caption or o.image.name),
-                'image_url': o.get_absolute_url(),
-                'thumbnail_url': o.get_thumbnail_url(),
-            }
+            return screenshotResource.serialize_object(o)
         elif isinstance(o, FileDiff):
-            return {
-                'id': o.id,
-                'diffset': o.diffset,
-                'source_file': o.source_file,
-                'dest_file': o.dest_file,
-                'source_revision': o.source_revision,
-                'dest_detail': o.dest_detail,
-            }
+            return fileDiffResource.serialize_object(o)
         elif isinstance(o, DiffSet):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'revision': o.revision,
-                'timestamp': o.timestamp,
-                'repository': o.repository,
-            }
+            return diffSetResource.serialize_object(o)
         elif isinstance(o, Repository):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'path': o.path,
-                'tool': o.tool.name
-            }
+            return repositoryResource.serialize_object(o)
         else:
             return super(ReviewBoardAPIEncoder, self).encode(o)
 
@@ -270,16 +169,6 @@ def server_info(request):
             'administrators': [{'name': name, 'email': email}
                                for name, email in settings.ADMINS],
         },
-    })
-
-
-@webapi_check_login_required
-def repository_list(request):
-    """
-    Returns a list of all known, visible repositories.
-    """
-    return WebAPIResponse(request, {
-        'repositories': Repository.objects.filter(visible=True),
     })
 
 
@@ -404,95 +293,6 @@ def group_unstar(request, group_name):
         profile.save()
 
     return WebAPIResponse(request)
-
-
-@webapi_login_required
-@require_POST
-def new_review_request(request):
-    """
-    Creates a new review request.
-
-    Required parameters:
-
-      * repository_path: The repository to create the review request against.
-                         If both this and repository_id are set,
-                         repository_path's value takes precedence.
-      * repository_id:   The ID of the repository to create the review
-                         request against.
-
-
-    Optional parameters:
-
-      * submit_as:       The optional user to submit the review request as.
-                         This requires that the actual logged in user is
-                         either a superuser or has the
-                         "reviews.can_submit_as_another_user" property.
-      * changenum:       The optional changenumber to look up for the review
-                         request details. This only works with repositories
-                         that support changesets.
-
-    Returned keys:
-
-      * 'review_request': The resulting review request
-
-    Errors:
-
-      * INVALID_REPOSITORY
-      * CHANGE_NUMBER_IN_USE
-      * INVALID_CHANGE_NUMBER
-    """
-    try:
-        repository_path = request.POST.get('repository_path', None)
-        repository_id = request.POST.get('repository_id', None)
-        submit_as = request.POST.get('submit_as')
-
-        if submit_as and request.user.username != submit_as:
-            if not request.user.has_perm('reviews.can_submit_as_another_user'):
-                return WebAPIResponseError(request, PERMISSION_DENIED)
-            try:
-                user = User.objects.get(username=submit_as)
-            except User.DoesNotExist:
-                return WebAPIResponseError(request, INVALID_USER)
-        else:
-            user = request.user
-
-        if repository_path == None and repository_id == None:
-            return WebAPIResponseError(request, MISSING_REPOSITORY)
-
-        if repository_path:
-            repository = Repository.objects.get(
-                Q(path=repository_path) |
-                Q(mirror_path=repository_path))
-        else:
-            repository = Repository.objects.get(id=repository_id)
-
-        review_request = ReviewRequest.objects.create(
-            user, repository, request.POST.get('changenum', None))
-
-        return WebAPIResponse(request, {'review_request': review_request})
-    except Repository.DoesNotExist, e:
-        return WebAPIResponseError(request, INVALID_REPOSITORY,
-                                 {'repository_path': repository_path})
-    except ChangeNumberInUseError, e:
-        return WebAPIResponseError(request, CHANGE_NUMBER_IN_USE,
-                                 {'review_request': e.review_request})
-    except InvalidChangeNumberError:
-        return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
-    except EmptyChangeSetError:
-        return WebAPIResponseError(request, EMPTY_CHANGESET)
-
-
-@webapi_check_login_required
-def review_request(request, review_request_id):
-    """
-    Returns the review request with the specified ID.
-    """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    if not review_request.is_accessible_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    return WebAPIResponse(request, {'review_request': review_request})
 
 
 @webapi_check_login_required
@@ -651,16 +451,6 @@ def review_request_reopen(request, review_request_id):
     return WebAPIResponse(request)
 
 
-@webapi_permission_required('reviews.delete_reviewrequest')
-def review_request_delete(request, review_request_id):
-    try:
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
-        review_request.delete()
-    except ReviewRequest.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    return WebAPIResponse(request)
-
 @webapi_login_required
 def review_request_updated(request, review_request_id):
     """
@@ -677,22 +467,6 @@ def review_request_updated(request, review_request_id):
         })
 
 @webapi_check_login_required
-def review_request_list(request, func, **kwargs):
-    """
-    Returns a list of review requests.
-
-    Optional parameters:
-
-      * status: The status of the returned review requests. This defaults
-                to "pending".
-    """
-    status = string_to_status(request.GET.get('status', 'pending'))
-    return WebAPIResponse(request, {
-        'review_requests': func(user=request.user, status=status, **kwargs)
-    })
-
-
-@webapi_check_login_required
 def count_review_requests(request, func, **kwargs):
     """
     Returns the number of review requests.
@@ -705,60 +479,6 @@ def count_review_requests(request, func, **kwargs):
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
         'count': func(user=request.user, status=status, **kwargs).count()
-    })
-
-
-@webapi_check_login_required
-def review_request_diffsets(request, review_request_id):
-    """
-    Returns a list of review request diffsets.
-    """
-    try:
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
-    except ReviewRequest.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    if not review_request.is_accessible_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    return WebAPIResponse(request, {
-        'diffsets': review_request.diffset_history.diffsets.all(),
-    })
-
-
-def _get_and_validate_review(request, review_request_id, review_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    review = get_object_or_404(Review, pk=review_id)
-
-    if review.review_request != review_request or review.base_reply_to != None:
-        raise Http404()
-
-    if not review.public and review.user != request.user:
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    return review
-
-
-@webapi_check_login_required
-def review(request, review_request_id, review_id):
-    review = _get_and_validate_review(request, review_request_id, review_id)
-
-    if isinstance(review, WebAPIResponseError):
-        return review
-
-    return WebAPIResponse(request, {'review': review})
-
-
-def _get_reviews(review_request):
-    return review_request.reviews.filter(public=True,
-                                         base_reply_to__isnull=True)
-
-
-@webapi_check_login_required
-def review_list(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    return WebAPIResponse(request, {
-        'reviews': _get_reviews(review_request)
     })
 
 
@@ -791,36 +511,6 @@ def count_review_comments(request, review_request_id, review_id):
         return review
 
     return WebAPIResponse(request, {'count': review.comments.count()})
-
-
-@webapi_login_required
-def review_request_draft(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request)
-    except ReviewRequestDraft.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    return WebAPIResponse(request, {'review_request_draft': draft})
-
-
-@webapi_login_required
-@require_POST
-def review_request_draft_discard(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request)
-    except ReviewRequestDraft.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    if not review_request.is_mutable_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    draft.delete()
-
-    return WebAPIResponse(request)
 
 
 @webapi_login_required
@@ -1055,19 +745,6 @@ def review_draft_save(request, review_request_id, publish=False):
         review.save()
 
     return WebAPIResponse(request)
-
-
-@webapi_login_required
-@require_POST
-def review_draft_delete(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    review = review_request.get_pending_review(request.user)
-
-    if review:
-        review.delete()
-        return WebAPIResponse(request)
-    else:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
 @webapi_login_required
