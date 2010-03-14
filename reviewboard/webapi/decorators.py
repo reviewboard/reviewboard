@@ -10,13 +10,12 @@ def webapi_check_login_required(view_func):
     and, if so, checks if the user is logged in. If login is required and
     the user is not logged in, they'll get a NOT_LOGGED_IN error.
     """
-    def _check(request, api_format="json", *args, **kwargs):
+    def _check(*args, **kwargs):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get("auth_require_sitewide_login"):
-            return webapi_login_required(view_func)(request, api_format,
-                                                    *args, **kwargs)
+            return webapi_login_required(view_func)(*args, **kwargs)
         else:
-            return view_func(request, *args, **kwargs)
+            return view_func(*args, **kwargs)
 
     return _check
