@@ -1,6 +1,12 @@
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.webapi.views import diffSetResource, \
+                                     repositoryResource, \
+                                     reviewResource, \
+                                     reviewDraftResource, \
+                                     reviewRequestResource, \
+                                     reviewRequestDraftResource
 
 
 urlpatterns = never_cache_patterns('djblets.webapi.auth',
@@ -15,7 +21,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^info/$', 'server_info'),
 
     # Repositories
-    (r'^repositories/$', 'repository_list'),
+    (r'^repositories/$', repositoryResource),
+    (r'^repositories/(?P<repository_id>[0-9]+)/$', repositoryResource),
     (r'^repositories/(?P<repository_id>[0-9]+)/info/$', 'repository_info'),
 
     # Users
@@ -32,43 +39,45 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'group_unstar'),
 
     # Review request lists
-    (r'^reviewrequests/all/$', 'review_request_list',
+    (r'^reviewrequests/$', reviewRequestResource),
+
+    (r'^reviewrequests/all/$', reviewRequestResource,
      {'func': ReviewRequest.objects.public}),
     (r'^reviewrequests/all/count/$', 'count_review_requests',
      {'func': ReviewRequest.objects.public}),
 
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/$',
-     'review_request_list',
+     reviewRequestResource,
      {'func': ReviewRequest.objects.to_group}),
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
      {'func': ReviewRequest.objects.to_group}),
 
     (r'^reviewrequests/to/user/(?P<user_or_username>[A-Za-z0-9_-]+)/$',
-     'review_request_list',
+     reviewRequestResource,
      {'func': ReviewRequest.objects.to_user}),
     (r'^reviewrequests/to/user/(?P<user_or_username>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
      {'func': ReviewRequest.objects.to_user}),
 
     (r'^reviewrequests/to/user/(?P<user_or_username>[A-Za-z0-9_-]+)/directly/$',
-     'review_request_list',
+     reviewRequestResource,
      {'func': ReviewRequest.objects.to_user_directly}),
     (r'^reviewrequests/to/user/(?P<user_or_username>[A-Za-z0-9_-]+)/directly/count/$',
      'count_review_requests',
      {'func': ReviewRequest.objects.to_user_directly}),
 
     (r'^reviewrequests/from/user/(?P<user_or_username>[A-Za-z0-9_-]+)/$',
-     'review_request_list',
+     reviewRequestResource,
      {'func': ReviewRequest.objects.from_user}),
     (r'^reviewrequests/from/user/(?P<user_or_username>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
      {'func': ReviewRequest.objects.from_user}),
 
     # Review requests
-    (r'^reviewrequests/new/$', 'new_review_request'),
+    (r'^reviewrequests/new/$', reviewRequestResource),
 
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', 'review_request'),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', reviewRequestResource),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/last-update/$',
      'review_request_last_update'),
 
@@ -90,7 +99,7 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_request_update_changenum'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/delete/$',
-     'review_request_delete'),
+     reviewRequestResource),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/publish/$',
      'review_request_publish'),
@@ -99,7 +108,7 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_request_draft_update_from_changenum'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/$',
-     'review_request_draft'),
+     reviewRequestDraftResource),
 
     # draft/save is deprecated in favor of draft/publish
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
@@ -107,7 +116,7 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/publish/$',
      'review_request_draft_publish'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
-     'review_request_draft_discard'),
+     reviewRequestDraftResource),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',
      'review_request_draft_set_field'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/$',
@@ -123,18 +132,18 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_draft_save',
      {'publish': True}),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/delete/$',
-     'review_draft_delete'),
+     reviewDraftResource),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/$',
      'review_draft_comments'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/$',
-     'review_draft'),
+     reviewDraftResource),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/$',
-     'review_list'),
+     reviewResource),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/count/$',
      'count_review_list'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/$',
-     'review'),
+     reviewResource),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/$',
      'review_comments_list'),
@@ -158,7 +167,7 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
      'new_diff'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/$',
-     'review_request_diffsets'),
+     diffSetResource),
 
     # Screenshots
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',

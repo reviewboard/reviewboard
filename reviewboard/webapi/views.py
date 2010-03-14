@@ -1,3 +1,25 @@
+from django.db.models import Q
+from djblets.webapi.decorators import webapi_login_required, \
+                                      webapi_permission_required
+from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource
+
+from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
+                                       Repository, ReviewRequest, \
+                                       ReviewRequestDraft, Review, \
+                                       ScreenshotComment, Screenshot
+from reviewboard.webapi.decorators import webapi_check_login_required
+
+
+class WebAPIResource(DjbletsWebAPIResource):
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        return super(WebAPIResource, self).get(request, *args, **kwargs)
+
+    @webapi_check_login_required
+    def get_list(self, *args, **kwargs):
+        return super(WebAPIResource, self).get_list(*args, **kwargs)
+
+
 class CommentResource(WebAPIResource):
     model = Comment
     fields = (
@@ -176,7 +198,7 @@ class ReviewRequestResource(WebAPIResource):
             return EMPTY_CHANGESET
 
     @webapi_permission_required('reviews.delete_reviewrequest')
-    def delete(self, *args, **kwargs)
+    def delete(self, *args, **kwargs):
         return super(ReviewRequestResource, self).delete(*args, **kwargs)
 
     def serialize_bugs_closed_field(self, obj):
@@ -202,10 +224,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         return self.model.objects.filter(review_request=review_request_id)
 
     def serialize_bugs_closed_field(self, obj):
-        if obj.bugs_closed:
-            return [b.strip() for b in obj.bugs_closed.split(',')]
-        else:
-            return ''
+        return [b.strip() for b in obj.bugs_closed.split(',')]
 
     def serialize_status_field(self, obj):
         return status_to_string(obj.status)
@@ -297,3 +316,42 @@ class ScreenshotResource(WebAPIResource):
 
     def serialize_thumbnail_url_field(self, obj):
         return obj.get_thumbnail_url()
+
+
+def status_to_string(status):
+    if status == "P":
+        return "pending"
+    elif status == "S":
+        return "submitted"
+    elif status == "D":
+        return "discarded"
+    elif status == None:
+        return "all"
+    else:
+        raise "Invalid status '%s'" % status
+
+
+def string_to_status(status):
+    if status == "pending":
+        return "P"
+    elif status == "submitted":
+        return "S"
+    elif status == "discarded":
+        return "D"
+    elif status == "all":
+        return None
+    else:
+        raise "Invalid status '%s'" % status
+
+
+commentResource = CommentResource()
+diffSetResource = DiffSetResource()
+fileDiffResource = FileDiffResource()
+groupResource = GroupResource()
+repositoryResource = RepositoryResource()
+reviewRequestResource = ReviewRequestResource()
+reviewRequestDraftResource = ReviewRequestDraftResource()
+reviewResource = ReviewResource()
+reviewDraftResource = ReviewDraftResource()
+screenshotCommentResource = ScreenshotCommentResource()
+screenshotResource = ScreenshotResource()

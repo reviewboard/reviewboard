@@ -870,20 +870,6 @@ def review_reply_draft(request, review_request_id, review_id):
 
     return WebAPIResponse(request, result)
 
-
-@webapi_login_required
-def review_draft(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    review = review_request.get_pending_review(request.user)
-
-    if review:
-        return WebAPIResponse(request, {
-            'review': review,
-        })
-    else:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-
 @webapi_login_required
 @require_POST
 def review_reply_draft_save(request, review_request_id, review_id):
