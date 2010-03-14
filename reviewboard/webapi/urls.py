@@ -1,12 +1,12 @@
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.webapi.views import diffSetResource, \
-                                     repositoryResource, \
-                                     reviewResource, \
-                                     reviewDraftResource, \
-                                     reviewRequestResource, \
-                                     reviewRequestDraftResource
+from reviewboard.webapi.resources import diffSetResource, \
+                                         repositoryResource, \
+                                         reviewResource, \
+                                         reviewDraftResource, \
+                                         reviewRequestResource, \
+                                         reviewRequestDraftResource
 
 
 urlpatterns = never_cache_patterns('djblets.webapi.auth',

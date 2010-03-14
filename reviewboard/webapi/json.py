@@ -43,6 +43,12 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.webapi.resources import diffSetResource, \
+                                         repositoryResource, \
+                                         reviewResource, \
+                                         reviewDraftResource, \
+                                         reviewRequestResource, \
+                                         reviewRequestDraftResource
 
 
 #
