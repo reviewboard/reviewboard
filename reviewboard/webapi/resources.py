@@ -37,7 +37,6 @@ class CommentResource(WebAPIResource):
 class DiffSetResource(WebAPIResource):
     model = DiffSet
     fields = ('id', 'name', 'revision', 'timestamp', 'repository')
-    object_result_key = "diffset"
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(
@@ -66,8 +65,11 @@ class GroupResource(WebAPIResource):
 class RepositoryResource(WebAPIResource):
     model = Repository
     fields = ('id', 'name', 'path', 'tool')
-    object_result_key = 'repository'
-    list_result_key = 'repositories'
+    name_plural = 'repositories'
+
+    allowed_methods = ('GET',)
+
+    uri_id_key = 'repository_id'
 
     @webapi_check_login_required
     def get_queryset(self, request, *args, **kwargs):
@@ -79,13 +81,13 @@ class RepositoryResource(WebAPIResource):
 
 class ReviewRequestResource(WebAPIResource):
     model = ReviewRequest
+    name = 'review_request'
     fields = (
         'id', 'submitter', 'time_added', 'last_updated', 'status',
         'public', 'changenum', 'repository', 'summary', 'description',
         'testing_done', 'bugs_closed', 'branch', 'target_groups',
         'target_people',
     )
-    object_result_key = 'review_request'
 
     def get_queryset(self, request, *args, **kwargs):
         q = Q()
@@ -213,7 +215,7 @@ class ReviewRequestResource(WebAPIResource):
 
 class ReviewRequestDraftResource(WebAPIResource):
     model = ReviewRequestDraft
-    object_result_key = 'review_request_draft'
+    name = 'review_request_draft'
     fields = (
         'id', 'review_request', 'last_updated', 'summary', 'description',
         'testing_done', 'bugs_closed', 'branch', 'target_groups',
@@ -235,7 +237,6 @@ class ReviewRequestDraftResource(WebAPIResource):
 
 class ReviewResource(WebAPIResource):
     model = Review
-    object_result_key = 'review'
     fields = (
         'id', 'user', 'timestamp', 'public', 'ship_it', 'body_top',
         'body_bottom', 'comments',
