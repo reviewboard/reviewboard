@@ -8,6 +8,7 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource, userResource
 
 from reviewboard import get_version_string, get_package_version, is_release
+from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
@@ -73,10 +74,46 @@ class ReviewGroupResource(WebAPIResource):
     uri_object_key_regex = '[A-Za-z0-9_-]+'
     model_object_key = 'name'
 
-    allowed_methods = ('GET',)
+    allowed_methods = ('GET', 'PUT')
 
     def serialize_url_field(self, group):
         return group.get_absolute_url()
+
+    @webapi_login_required
+    def action_star(self, request, group_name, *args, **kwargs):
+        """
+        Adds a group to the user's watched groups list.
+        """
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+        profile.starred_groups.add(group)
+        profile.save()
+
+        return 200, {}
+
+    @webapi_login_required
+    def action_unstar(self, request, group_name, *args, **kwargs):
+        """
+    Removes a group from the user's watched groups list.
+        """
+        try:
+            group = Group.objects.get(name=group_name)
+        except Group.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+
+        if not profile_is_new:
+            profile.starred_groups.remove(group)
+            profile.save()
+
+        return 200, {}
 
 
 class RepositoryInfoResource(WebAPIResource):

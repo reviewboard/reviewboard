@@ -233,23 +233,6 @@ def users_in_group(request, group_name):
     })
 
 @webapi_login_required
-def group_star(request, group_name):
-    """
-    Adds a group to the user's watched groups list.
-    """
-    try:
-        group = Group.objects.get(name=group_name)
-    except Group.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
-    profile.starred_groups.add(group)
-    profile.save()
-
-    return WebAPIResponse(request)
-
-
-@webapi_login_required
 def group_unstar(request, group_name):
     """
     Removes a group from the user's watched groups list.

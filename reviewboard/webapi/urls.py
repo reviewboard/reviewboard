@@ -27,13 +27,18 @@ urlpatterns += patterns('',
     url(r'^users/', include(userResource.get_url_patterns())),
 )
 
-urlpatterns += never_cache_patterns('reviewboard.webapi.json',
+# Deprecated URLs
+urlpatterns += never_cache_patterns('',
     # Review groups
-    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$',
-     'group_star'),
-    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/unstar/$',
-     'group_unstar'),
+    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$', reviewGroupResource,
+     {'action': 'star',
+      'method': 'PUT'}),
+    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/unstar/$', reviewGroupResource,
+     {'action': 'unstar',
+      'method': 'PUT'}),
+)
 
+urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Review request lists
     (r'^reviewrequests/$', reviewRequestResource),
 

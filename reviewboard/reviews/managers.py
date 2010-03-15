@@ -100,7 +100,7 @@ class ReviewRequestManager(ConcurrencyManager):
         """
         return Q(target_groups__name=group_name)
 
-    def get_to_user_groups_query(self, username):
+    def get_to_user_groups_query(self, user_or_username):
         """Returns the query targetting groups joined by a user.
 
         This is meant to be passed as an extra_query to
