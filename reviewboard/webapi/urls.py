@@ -7,7 +7,8 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          reviewResource, \
                                          reviewDraftResource, \
                                          reviewRequestResource, \
-                                         reviewRequestDraftResource
+                                         reviewRequestDraftResource, \
+                                         serverInfoResource
 
 
 urlpatterns = never_cache_patterns('djblets.webapi.auth',
@@ -19,12 +20,10 @@ urlpatterns = never_cache_patterns('djblets.webapi.auth',
 # Top-level resources
 urlpatterns += patterns('',
     url(r'^repositories/', include(repositoryResource.get_url_patterns())),
+    url(r'^info/', include(serverInfoResource.get_url_patterns())),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
-    # Server information
-    (r'^info/$', 'server_info'),
-
     # Users
     (r'^users/$', 'user_list'),
 

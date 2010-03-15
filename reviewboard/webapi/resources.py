@@ -1,8 +1,12 @@
+from django.conf import settings
+from django.contrib.sites.models import Site
 from django.db.models import Q
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource
 
+from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
@@ -341,6 +345,33 @@ class ScreenshotResource(WebAPIResource):
         return obj.get_thumbnail_url()
 
 
+class ServerInfoResource(WebAPIResource):
+    name = 'info'
+    name_plural = 'info'
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        site = Site.objects.get_current()
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
+                             settings.SITE_ROOT)
+
+        return 200, {
+            'product': {
+                'name': 'Review Board',
+                'version': get_version_string(),
+                'package_version': get_package_version(),
+                'is_release': is_release(),
+            },
+            'site': {
+                'url': url,
+                'administrators': [{'name': name, 'email': email}
+                                   for name, email in settings.ADMINS],
+            },
+        }
+
+
 def status_to_string(status):
     if status == "P":
         return "pending"
@@ -378,3 +409,4 @@ reviewResource = ReviewResource()
 reviewDraftResource = ReviewDraftResource()
 screenshotCommentResource = ScreenshotCommentResource()
 screenshotResource = ScreenshotResource()
+serverInfoResource = ServerInfoResource()

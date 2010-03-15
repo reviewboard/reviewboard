@@ -28,7 +28,6 @@ from djblets.webapi.errors import WebAPIError, \
                                   INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
                                   NOT_LOGGED_IN, SERVICE_NOT_CONFIGURED
 
-from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -159,44 +158,7 @@ def service_not_configured(request):
     return WebAPIResponseError(request, SERVICE_NOT_CONFIGURED)
 
 
-@webapi_check_login_required
-def server_info(request):
-    site = Site.objects.get_current()
-    siteconfig = site.config.get()
 
-    url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
-                         settings.SITE_ROOT)
-
-    return WebAPIResponse(request, {
-        'product': {
-            'name': 'Review Board',
-            'version': get_version_string(),
-            'package_version': get_package_version(),
-            'is_release': is_release(),
-        },
-        'site': {
-            'url': url,
-            'administrators': [{'name': name, 'email': email}
-                               for name, email in settings.ADMINS],
-        },
-    })
-
-
-@webapi_check_login_required
-def repository_info(request, repository_id):
-    try:
-        repository = Repository.objects.get(id=repository_id)
-    except Repository.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    try:
-        return WebAPIResponse(request, {
-            'info': repository.get_scmtool().get_repository_info()
-        })
-    except NotImplementedError:
-        return WebAPIResponseError(request, REPO_NOT_IMPLEMENTED)
-    except:
-        return WebAPIResponseError(request, REPO_INFO_ERROR)
 
 @webapi_check_login_required
 def user_list(request):
