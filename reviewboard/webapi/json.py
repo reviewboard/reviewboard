@@ -44,10 +44,11 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required
 from reviewboard.webapi.resources import diffSetResource, \
                                          repositoryResource, \
-                                         reviewResource, \
                                          reviewDraftResource, \
+                                         reviewGroupResource, \
                                          reviewRequestResource, \
-                                         reviewRequestDraftResource
+                                         reviewRequestDraftResource, \
+                                         reviewResource
 
 
 #
@@ -99,7 +100,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
         resource = None
 
         if isinstance(o, Group):
-            resource = groupResource
+            resource = reviewGroupResource
         elif isinstance(o, ReviewRequest):
             resource = reviewRequestResource
         elif isinstance(o, ReviewRequestDraft):

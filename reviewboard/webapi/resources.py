@@ -4,7 +4,8 @@ from django.db.models import Q
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
-from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource
+from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
+                                     UserResource, userResource
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
@@ -58,9 +59,21 @@ class FileDiffResource(WebAPIResource):
     )
 
 
-class GroupResource(WebAPIResource):
+class ReviewGroupUserResource(UserResource):
+    def get_queryset(self, request, group_name, *args, **kwargs):
+        return self.model.objects.filter(review_groups__name=group_name)
+
+
+class ReviewGroupResource(WebAPIResource):
     model = Group
     fields = ('id', 'name', 'display_name', 'mailing_list', 'url')
+    child_resources = [ReviewGroupUserResource()]
+
+    uri_object_key = 'group_name'
+    uri_object_key_regex = '[A-Za-z0-9_-]+'
+    model_object_key = 'name'
+
+    allowed_methods = ('GET',)
 
     def serialize_url_field(self, group):
         return group.get_absolute_url()
@@ -92,7 +105,7 @@ class RepositoryResource(WebAPIResource):
     model = Repository
     name_plural = 'repositories'
     fields = ('id', 'name', 'path', 'tool')
-    uri_id_key = 'repository_id'
+    uri_object_key = 'repository_id'
     child_resources = [RepositoryInfoResource()]
 
     allowed_methods = ('GET',)
@@ -401,7 +414,7 @@ def string_to_status(status):
 commentResource = CommentResource()
 diffSetResource = DiffSetResource()
 fileDiffResource = FileDiffResource()
-groupResource = GroupResource()
+reviewGroupResource = ReviewGroupResource()
 repositoryResource = RepositoryResource()
 reviewRequestResource = ReviewRequestResource()
 reviewRequestDraftResource = ReviewRequestDraftResource()

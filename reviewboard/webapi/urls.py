@@ -1,13 +1,15 @@
 from django.conf.urls.defaults import url, include, patterns
 from djblets.util.misc import never_cache_patterns
+from djblets.webapi.resources import userResource
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.webapi.resources import diffSetResource, \
                                          repositoryResource, \
-                                         reviewResource, \
                                          reviewDraftResource, \
+                                         reviewGroupResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
+                                         reviewResource, \
                                          serverInfoResource
 
 
@@ -19,18 +21,13 @@ urlpatterns = never_cache_patterns('djblets.webapi.auth',
 
 # Top-level resources
 urlpatterns += patterns('',
-    url(r'^repositories/', include(repositoryResource.get_url_patterns())),
     url(r'^info/', include(serverInfoResource.get_url_patterns())),
+    url(r'^groups/', include(reviewGroupResource.get_url_patterns())),
+    url(r'^repositories/', include(repositoryResource.get_url_patterns())),
+    url(r'^users/', include(userResource.get_url_patterns())),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
-    # Users
-    (r'^users/$', 'user_list'),
-
-    # Groups
-    (r'^groups/$', 'group_list'),
-    (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/users/$', 'users_in_group'),
-
     # Review groups
     (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$',
      'group_star'),
