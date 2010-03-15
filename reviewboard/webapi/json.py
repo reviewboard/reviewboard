@@ -96,29 +96,33 @@ EMPTY_CHANGESET           = WebAPIError(212, "The change number specified "
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
-    def encode(self, o):
+    def encode(self, o, api_format, *args, **kwargs):
+        resource = None
+
         if isinstance(o, Group):
-            return groupResource.serialize_object(o)
+            resource = groupResource
         elif isinstance(o, ReviewRequest):
-            return reviewRequestResource.serialize_object(o)
+            resource = reviewRequestResource
         elif isinstance(o, ReviewRequestDraft):
-            return reviewRequestDraftResource.serialize_object(o)
+            resource = reviewRequestDraftResource
         elif isinstance(o, Review):
-            return reviewResource.serialize_object(o)
+            resource = reviewResource
         elif isinstance(o, Comment):
-            return commentResource.serialize_object(o)
+            resource = commentResource
         elif isinstance(o, ScreenshotComment):
-            return screenshotCommentResource.serialize_object(o)
+            resource = screenshotCommentResource
         elif isinstance(o, Screenshot):
-            return screenshotResource.serialize_object(o)
+            resource = screenshotResource
         elif isinstance(o, FileDiff):
-            return fileDiffResource.serialize_object(o)
+            resource = fileDiffResource
         elif isinstance(o, DiffSet):
-            return diffSetResource.serialize_object(o)
+            resource = diffSetResource
         elif isinstance(o, Repository):
-            return repositoryResource.serialize_object(o)
+            resource = repositoryResource
         else:
-            return super(ReviewBoardAPIEncoder, self).encode(o)
+            return super(ReviewBoardAPIEncoder, self).encode(o, *args, **kwargs)
+
+        return resource.serialize_object(o, api_format=api_format)
 
 
 def status_to_string(status):
