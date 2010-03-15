@@ -62,14 +62,36 @@ class GroupResource(WebAPIResource):
         return group.get_absolute_url()
 
 
-class RepositoryResource(WebAPIResource):
-    model = Repository
-    fields = ('id', 'name', 'path', 'tool')
-    name_plural = 'repositories'
-
+class RepositoryInfoResource(WebAPIResource):
+    name = 'info'
+    name_plural = 'info'
     allowed_methods = ('GET',)
 
+    @webapi_check_login_required
+    def get(self, request, repository_id, *args, **kwargs):
+        try:
+            repository = Repository.objects.get(pk=repository_id)
+        except Repository.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        try:
+            return 200, {
+                self.name: repository.get_scmtool().get_repository_info()
+            }
+        except NotImplementedError:
+            return REPO_NOT_IMPLEMENTED
+        except:
+            return REPO_INFO_ERROR
+
+
+class RepositoryResource(WebAPIResource):
+    model = Repository
+    name_plural = 'repositories'
+    fields = ('id', 'name', 'path', 'tool')
     uri_id_key = 'repository_id'
+    child_resources = [RepositoryInfoResource()]
+
+    allowed_methods = ('GET',)
 
     @webapi_check_login_required
     def get_queryset(self, request, *args, **kwargs):

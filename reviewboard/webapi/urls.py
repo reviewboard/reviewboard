@@ -1,3 +1,4 @@
+from django.conf.urls.defaults import url, include, patterns
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
@@ -15,15 +16,14 @@ urlpatterns = never_cache_patterns('djblets.webapi.auth',
     (r'^accounts/logout/$', 'account_logout'),
 )
 
+# Top-level resources
+urlpatterns += patterns('',
+    url(r'^repositories/', include(repositoryResource.get_url_patterns())),
+)
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Server information
     (r'^info/$', 'server_info'),
-
-    # Repositories
-    (r'^repositories/$', repositoryResource),
-    (r'^repositories/(?P<repository_id>[0-9]+)/$', repositoryResource),
-    (r'^repositories/(?P<repository_id>[0-9]+)/info/$', 'repository_info'),
 
     # Users
     (r'^users/$', 'user_list'),
