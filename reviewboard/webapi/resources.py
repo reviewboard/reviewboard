@@ -164,6 +164,9 @@ class ReviewRequestResource(WebAPIResource):
         'testing_done', 'bugs_closed', 'branch', 'target_groups',
         'target_people',
     )
+    uri_object_key = 'review_request_id'
+
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, *args, **kwargs):
         q = Q()
