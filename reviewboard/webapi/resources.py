@@ -15,6 +15,7 @@ from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        ReviewRequestDraft, Review, \
                                        ScreenshotComment, Screenshot
 from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.webapi.errors import INVALID_REPOSITORY
 
 
 class WebAPIResource(DjbletsWebAPIResource):
