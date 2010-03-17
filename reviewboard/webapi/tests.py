@@ -1609,10 +1609,9 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
 
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/delete" % review_request_id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertRaises(ReviewRequest.DoesNotExist,
-                          ReviewRequest.objects.get, pk=review_request_id)
+        rsp = self.apiPost("reviewrequests/%s/delete" % review_request_id,
+                           expected_status=204)
+        self.assertEqual(rsp, None)
 
     def testReviewRequestDeletePermissionDenied(self):
         """Testing the deprecated reviewrequests/<id>/delete API with Permission Denied error"""
