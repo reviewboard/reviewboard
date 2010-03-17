@@ -75,26 +75,25 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         print "Post data: %s" % query
         response = self.client.post("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, expected_status)
-        print "Raw response: %s" % response.content
-        rsp = simplejson.loads(response.content)
-        print "Response: %s" % rsp
-        return rsp
+
+        return self._getResult(response, expected_status)
 
     def apiPut(self, path, query={}, expected_status=200):
         print "PUTing to /api/json/%s/" % path
         print "Post data: %s" % query
         response = self.client.put("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, expected_status)
-        print "Raw response: %s" % response.content
-        rsp = simplejson.loads(response.content)
-        print "Response: %s" % rsp
-        return rsp
+
+        return self._getResult(response, expected_status)
 
     def apiDelete(self, path, expected_status=204):
         print "DELETEing /api/json/%s/" % path
         response = self.client.delete("/api/json/%s/" % path)
         self.assertEqual(response.status_code, expected_status)
 
+        return self._getResult(response, expected_status)
+
+    def _getResult(self, response, expected_status):
         if expected_status == 204:
             self.assertEqual(response.content, '')
             rsp = None
