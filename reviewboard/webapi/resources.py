@@ -221,33 +221,38 @@ class ReviewRequestResource(WebAPIResource):
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, *args, **kwargs):
         q = Q()
 
-        if 'to-groups' in request.GET:
-            for group_name in request.GET.get('to-groups').split(','):
-                q = q & self.model.objects.get_to_group_query(group_name)
+        if is_list:
+            if 'to-groups' in request.GET:
+                for group_name in request.GET.get('to-groups').split(','):
+                    q = q & self.model.objects.get_to_group_query(group_name)
 
-        if 'to-users' in request.GET:
-            for username in request.GET.get('to-users').split(','):
-                q = q & self.model.objects.get_to_user_query(username)
+            if 'to-users' in request.GET:
+                for username in request.GET.get('to-users').split(','):
+                    q = q & self.model.objects.get_to_user_query(username)
 
-        if 'to-users-directly' in request.GET:
-            for username in request.GET.get('to-users-directly').split(','):
-                q = q & self.model.objects.get_to_user_directly_query(username)
+            if 'to-users-directly' in request.GET:
+                for username in request.GET.get('to-users-directly').split(','):
+                    q = q & self.model.objects.get_to_user_directly_query(
+                        username)
 
-        if 'to-users-groups' in request.GET:
-            for username in request.GET.get('to-users-groups').split(','):
-                q = q & self.model.objects.get_to_user_groups_query(username)
+            if 'to-users-groups' in request.GET:
+                for username in request.GET.get('to-users-groups').split(','):
+                    q = q & self.model.objects.get_to_user_groups_query(
+                        username)
 
-        if 'from-user' in request.GET:
-            q = q & self.model.objects.get_from_user_query(
-                request.GET.get('from-user'))
+            if 'from-user' in request.GET:
+                q = q & self.model.objects.get_from_user_query(
+                    request.GET.get('from-user'))
 
-        status = string_to_status(request.GET.get('status', 'pending'))
+            status = string_to_status(request.GET.get('status', 'pending'))
 
-        return self.model.objects.public(user=request.user, status=status,
-                                         extra_query=q)
+            return self.model.objects.public(user=request.user, status=status,
+                                             extra_query=q)
+        else:
+            return self.model.objects.all()
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
