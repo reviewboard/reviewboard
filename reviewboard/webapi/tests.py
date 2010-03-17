@@ -111,7 +111,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def testGroupListQuery(self):
         """Testing the groups API with custom query"""
-        rsp = self.apiGet("groups", {'query': 'dev'})
+        rsp = self.apiGet("groups", {'q': 'dev'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1) #devgroup
 
@@ -125,7 +125,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
                      self.user.get_profile().starred_groups.all())
 
     def testGroupStarDoesNotExist(self):
-        """Testing the groups/star API with Does Not Exist error"""
+        """Testing the groups?action=star API with Does Not Exist error"""
         rsp = self.apiGet("groups/invalidgroup/star", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
