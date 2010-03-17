@@ -3,6 +3,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.core import mail
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
@@ -39,23 +40,51 @@ class WebAPITests(TestCase, EmailTestHelper):
         self.client.login(username="grumpy", password="grumpy")
         self.user = User.objects.get(username="grumpy")
 
+        self.reviewrequests_url = \
+            reverse('review_requests-resource', kwargs={'api_format': 'json'})
+
     def tearDown(self):
         self.client.logout()
 
-    def apiGet(self, path, query={}, expected_status=200):
-        print "Getting /api/json/%s/" % path
+    def apiGet(self, path, query={}, follow_redirects=False,
+               expected_status=200, expected_redirects=[]):
+        print "GETing /api/json/%s/" % path
         print "Query data: %s" % query
-        response = self.client.get("/api/json/%s/" % path, query)
+
+        response = self.client.get("/api/json/%s/" % path, query,
+                                   follow=follow_redirects)
+        self.assertEqual(response.status_code, expected_status)
+
+        if expected_redirects:
+            self.assertEqual(len(response.redirect_chain),
+                             len(expected_redirects))
+
+            for redirect in expected_redirects:
+                self.assertEqual(response.redirect_chain[0],
+                                 ('http://testserver' + expected_redirects[0],
+                                  301))
+
+        print "Raw response: %s" % response.content
+
+        rsp = simplejson.loads(response.content)
+        print "Response: %s" % rsp
+
+        return rsp
+
+    def apiPost(self, path, query={}, expected_status=200):
+        print "POSTing to /api/json/%s/" % path
+        print "Post data: %s" % query
+        response = self.client.post("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, expected_status)
         print "Raw response: %s" % response.content
         rsp = simplejson.loads(response.content)
         print "Response: %s" % rsp
         return rsp
 
-    def apiPost(self, path, query={}, expected_status=200):
-        print "Posting to /api/json/%s/" % path
+    def apiPut(self, path, query={}, expected_status=200):
+        print "PUTing to /api/json/%s/" % path
         print "Post data: %s" % query
-        response = self.client.post("/api/json/%s/" % path, query)
+        response = self.client.put("/api/json/%s/" % path, query)
         self.assertEqual(response.status_code, expected_status)
         print "Raw response: %s" % response.content
         rsp = simplejson.loads(response.content)
@@ -93,8 +122,17 @@ class WebAPITests(TestCase, EmailTestHelper):
         self.assertEqual(len(rsp['groups']), 1) #devgroup
 
     def testGroupStar(self):
-        """Testing the groups/star API"""
-        rsp = self.apiGet("groups/devgroup/star")
+        """Testing the groups?action=star API"""
+        rsp = self.apiPut("groups/devgroup", {
+            'action': 'star',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assert_(Group.objects.get(name="devgroup") in
+                     self.user.get_profile().starred_groups.all())
+
+    def testGroupStarOld(self):
+        """Testing the deprecated groups/star API"""
+        rsp = self.apiPost("groups/devgroup/star")
         self.assertEqual(rsp['stat'], 'ok')
         self.assert_(Group.objects.get(name="devgroup") in
                      self.user.get_profile().starred_groups.all())
@@ -122,25 +160,65 @@ class WebAPITests(TestCase, EmailTestHelper):
         self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
 
     def testReviewRequestList(self):
-        """Testing the reviewrequests/all API"""
-        rsp = self.apiGet("reviewrequests/all")
+        """Testing the reviewrequests/ API"""
+        rsp = self.apiGet("reviewrequests")
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.public().count())
+
+    def testReviewRequestListOld(self):
+        """Testing the deprecated reviewrequests/all API"""
+        rsp = self.apiGet("reviewrequests/all", follow_redirects=True,
+                          expected_redirects=[self.reviewrequests_url])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public().count())
 
     def testReviewRequestListWithStatus(self):
-        """Testing the reviewrequests/all API with custom status"""
-        rsp = self.apiGet("reviewrequests/all", {'status': 'submitted'})
+        """Testing the reviewrequests/?status= API"""
+        rsp = self.apiGet("reviewrequests", {'status': 'submitted'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public(status='S').count())
 
-        rsp = self.apiGet("reviewrequests/all", {'status': 'discarded'})
+        rsp = self.apiGet("reviewrequests", {'status': 'discarded'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public(status='D').count())
 
-        rsp = self.apiGet("reviewrequests/all", {'status': 'all'})
+        rsp = self.apiGet("reviewrequests", {'status': 'all'})
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.public(status=None).count())
+
+    def testReviewRequestListWithStatusOld(self):
+        """Testing the deprecated reviewrequests/all?status= API"""
+        rsp = self.apiGet(
+            "reviewrequests/all",
+            {'status': 'submitted'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?status=submitted'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.public(status='S').count())
+
+        rsp = self.apiGet(
+            "reviewrequests/all",
+            {'status': 'discarded'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?status=discarded'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.public(status='D').count())
+
+        rsp = self.apiGet(
+            "reviewrequests/all",
+            {'status': 'all'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?status=all'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public(status=None).count())
@@ -152,8 +230,20 @@ class WebAPITests(TestCase, EmailTestHelper):
         self.assertEqual(rsp['count'], ReviewRequest.objects.public().count())
 
     def testReviewRequestsToGroup(self):
-        """Testing the reviewrequests/to/group API"""
-        rsp = self.apiGet("reviewrequests/to/group/devgroup")
+        """Testing the reviewrequests/?to-groups= API"""
+        rsp = self.apiGet("reviewrequests", {
+            'to-groups': 'devgroup',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.to_group("devgroup").count())
+
+    def testReviewRequestsToGroupOld(self):
+        """Testing the deprecated reviewrequests/to/group API"""
+        rsp = self.apiGet("reviewrequests/to/group/devgroup",
+                          follow_redirects=True,
+                          expected_redirects=[self.reviewrequests_url +
+                                              '?to-groups=devgroup'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_group("devgroup").count())
@@ -180,22 +270,61 @@ class WebAPITests(TestCase, EmailTestHelper):
                          ReviewRequest.objects.to_group("devgroup").count())
 
     def testReviewRequestsToUser(self):
-        """Testing the reviewrequests/to/user API"""
-        rsp = self.apiGet("reviewrequests/to/user/grumpy")
+        """Testing the reviewrequests/?to-users API"""
+        rsp = self.apiGet('reviewrequests', {
+            'to-users': 'grumpy',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.to_user("grumpy").count())
+
+    def testReviewRequestsToUserOld(self):
+        """Testing the deprecated reviewrequests/to/user API"""
+        rsp = self.apiGet("reviewrequests/to/user/grumpy",
+                          follow_redirects=True,
+                          expected_redirects=[self.reviewrequests_url +
+                                              '?to-users=grumpy'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user("grumpy").count())
 
     def testReviewRequestsToUserWithStatus(self):
-        """Testing the reviewrequests/to/user API with custom status"""
-        rsp = self.apiGet("reviewrequests/to/user/grumpy",
-                          {'status': 'submitted'})
+        """Testing the reviewrequests/?to-users API with custom status"""
+        rsp = self.apiGet("reviewrequests", {
+            'status': 'submitted',
+            'to-users': 'grumpy',
+        })
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_user("grumpy", status='S').count())
 
-        rsp = self.apiGet("reviewrequests/to/user/grumpy",
-                          {'status': 'discarded'})
+        rsp = self.apiGet("reviewrequests", {
+            'status': 'discarded',
+            'to-users': 'grumpy',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_user("grumpy", status='D').count())
+
+    def testReviewRequestsToUserWithStatusOld(self):
+        """Testing the deprecated reviewrequests/to/user API with custom status"""
+        rsp = self.apiGet(
+            "reviewrequests/to/user/grumpy",
+            {'status': 'submitted'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-users=grumpy&status=submitted'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_user("grumpy", status='S').count())
+
+        rsp = self.apiGet(
+            "reviewrequests/to/user/grumpy",
+            {'status': 'discarded'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-users=grumpy&status=discarded'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_user("grumpy", status='D').count())
@@ -208,22 +337,60 @@ class WebAPITests(TestCase, EmailTestHelper):
                          ReviewRequest.objects.to_user("grumpy").count())
 
     def testReviewRequestsToUserDirectly(self):
-        """Testing the reviewrequests/to/user/directly API"""
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly")
+        """Testing the reviewrequests?to-users-directly= API"""
+        rsp = self.apiGet('reviewrequests', {
+            'to-users-directly': 'doc',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.to_user_directly("doc").count())
+
+    def testReviewRequestsToUserDirectlyOld(self):
+        """Testing the deprecated reviewrequests/to/user/directly API"""
+        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
+                          follow_redirects=True,
+                          expected_redirects=[self.reviewrequests_url +
+                                              '?to-users-directly=doc'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user_directly("doc").count())
 
     def testReviewRequestsToUserDirectlyWithStatus(self):
-        """Testing the reviewrequests/to/user/directly API with custom status"""
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
-                          {'status': 'submitted'})
+        """Testing the reviewrequests?to=users-directly&status= API"""
+        rsp = self.apiGet('reviewrequests', {
+            'status': 'submitted',
+            'to-users-directly': 'doc'
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='S').count())
 
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
-                          {'status': 'discarded'})
+        rsp = self.apiGet('reviewrequests', {
+            'status': 'discarded',
+            'to-users-directly': 'doc'
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_user_directly("doc", status='D').count())
+
+    def testReviewRequestsToUserDirectlyWithStatusOld(self):
+        """Testing the deprecated reviewrequests/to/user/directly API with custom status"""
+        rsp = self.apiGet(
+            "reviewrequests/to/user/doc/directly",
+            {'status': 'submitted'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-users-directly=doc&status=submitted'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_user_directly("doc", status='S').count())
+
+        rsp = self.apiGet(
+            "reviewrequests/to/user/doc/directly",
+            {'status': 'discarded'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-users-directly=doc&status=discarded'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='D').count())
@@ -236,22 +403,60 @@ class WebAPITests(TestCase, EmailTestHelper):
                          ReviewRequest.objects.to_user_directly("doc").count())
 
     def testReviewRequestsFromUser(self):
-        """Testing the reviewrequests/from/user API"""
-        rsp = self.apiGet("reviewrequests/from/user/grumpy")
+        """Testing the reviewrequests?from-user API"""
+        rsp = self.apiGet('reviewrequests', {
+            'from-user': 'grumpy',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.from_user("grumpy").count())
+
+    def testReviewRequestsFromUserOld(self):
+        """Testing the deprecated reviewrequests/from/user API"""
+        rsp = self.apiGet("reviewrequests/from/user/grumpy",
+                          follow_redirects=True,
+                          expected_redirects=[self.reviewrequests_url +
+                                              '?from-user=grumpy'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.from_user("grumpy").count())
 
     def testReviewRequestsFromUserWithStatus(self):
-        """Testing the reviewrequests/from/user API with custom status"""
-        rsp = self.apiGet("reviewrequests/from/user/grumpy",
-                          {'status': 'submitted'})
+        """Testing the reviewrequests?from-user=&status= API"""
+        rsp = self.apiGet('reviewrequests', {
+            'status': 'submitted',
+            'from-user': 'grumpy',
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='S').count())
 
-        rsp = self.apiGet("reviewrequests/from/user/grumpy",
-                          {'status': 'discarded'})
+        rsp = self.apiGet('reviewrequests', {
+            'status': 'discarded',
+            'from-user': 'grumpy',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.from_user("grumpy", status='D').count())
+
+    def testReviewRequestsFromUserWithStatusOld(self):
+        """Testing the deprecated reviewrequests/from/user API with custom status"""
+        rsp = self.apiGet(
+            'reviewrequests/from/user/grumpy',
+            {'status': 'submitted'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?from-user=grumpy&status=submitted'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.from_user("grumpy", status='S').count())
+
+        rsp = self.apiGet(
+            'reviewrequests/from/user/grumpy',
+            {'status': 'discarded'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?from-user=grumpy&status=discarded'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='D').count())
