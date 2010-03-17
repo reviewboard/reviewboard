@@ -94,7 +94,6 @@ urlpatterns += never_cache_patterns('',
      {'url': '../../../../?repository=%(repository_id)s&changenum=%(changenum)s&_first-result-only=1',
       'permanent': True}),
 
-
     # Review request creation
     (r'^reviewrequests/new/$', reviewRequestResource),
 

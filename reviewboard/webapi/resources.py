@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.db.models import Q
 from djblets.siteconfig.models import SiteConfiguration
@@ -14,7 +15,9 @@ from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        ScreenshotComment, Screenshot
-from reviewboard.scmtools.errors import ChangeNumberInUseError
+from reviewboard.scmtools.errors import ChangeNumberInUseError, \
+                                        EmptyChangeSetError, \
+                                        InvalidChangeNumberError
 from reviewboard.webapi.decorators import webapi_check_login_required
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 

@@ -366,8 +366,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          ReviewRequest.objects.from_user("grumpy").count())
 
     def testNewReviewRequest(self):
-        """Testing the reviewrequests/new API"""
-        rsp = self.apiPost("reviewrequests/new", {
+        """Testing the POST reviewrequests/ API"""
+        rsp = self.apiPost("reviewrequests", {
             'repository_path': self.repository.path,
         })
         self.assertEqual(rsp['stat'], 'ok')
@@ -379,19 +379,19 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     def testNewReviewRequestWithInvalidRepository(self):
-        """Testing the reviewrequests/new API with Invalid Repository error"""
-        rsp = self.apiPost("reviewrequests/new", {
+        """Testing the POST reviewrequests/ API with Invalid Repository error"""
+        rsp = self.apiPost("reviewrequests", {
             'repository_path': 'gobbledygook',
         }, 400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     def testNewReviewRequestAsUser(self):
-        """Testing the reviewrequests/new API with submit_as"""
+        """Testing the POST reviewrequests/ API with submit_as"""
         self.user.is_superuser = True
         self.user.save()
 
-        rsp = self.apiPost("reviewrequests/new", {
+        rsp = self.apiPost("reviewrequests", {
             'repository_path': self.repository.path,
             'submit_as': 'doc',
         })
@@ -403,8 +403,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     def testNewReviewRequestAsUserPermissionDenied(self):
-        """Testing the reviewrequests/new API with submit_as and Permission Denied error"""
-        rsp = self.apiPost("reviewrequests/new", {
+        """Testing the POST reviewrequests/ API with submit_as and Permission Denied error"""
+        rsp = self.apiPost("reviewrequests", {
             'repository_path': self.repository.path,
             'submit_as': 'doc',
         }, 403)
@@ -1570,6 +1570,52 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
                          review_request.summary)
         self.assertEqual(rsp['review_request']['changenum'],
                          review_request.changenum)
+
+    def testNewReviewRequest(self):
+        """Testing the deprecated reviewrequests/new API"""
+        rsp = self.apiPost("reviewrequests/new", {
+            'repository_path': self.repository.path,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['repository']['id'],
+                         self.repository.id)
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+    def testNewReviewRequestWithInvalidRepository(self):
+        """Testing the deprecated reviewrequests/new API with Invalid Repository error"""
+        rsp = self.apiPost("reviewrequests/new", {
+            'repository_path': 'gobbledygook',
+        }, 400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+
+    def testNewReviewRequestAsUser(self):
+        """Testing the deprecated reviewrequests/new API with submit_as"""
+        self.user.is_superuser = True
+        self.user.save()
+
+        rsp = self.apiPost("reviewrequests/new", {
+            'repository_path': self.repository.path,
+            'submit_as': 'doc',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['repository']['id'],
+                         self.repository.id)
+        self.assertEqual(rsp['review_request']['submitter']['username'], 'doc')
+
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+    def testNewReviewRequestAsUserPermissionDenied(self):
+        """Testing the deprecated reviewrequests/new API with submit_as and Permission Denied error"""
+        rsp = self.apiPost("reviewrequests/new", {
+            'repository_path': self.repository.path,
+            'submit_as': 'doc',
+        }, 403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestStar(self):
         """Testing the deprecated reviewrequests/star API"""
