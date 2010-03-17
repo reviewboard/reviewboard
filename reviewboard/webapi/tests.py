@@ -202,8 +202,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          ReviewRequest.objects.public(status=None).count())
 
     def testReviewRequestListCount(self):
-        """Testing the reviewrequests/all/count API"""
-        rsp = self.apiGet("reviewrequests/all/count")
+        """Testing the reviewrequests?counts-only=1 API"""
+        rsp = self.apiGet('reviewrequests', {
+            'counts-only': 1,
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], ReviewRequest.objects.public().count())
 
@@ -235,8 +237,11 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             ReviewRequest.objects.to_group("devgroup", status='D').count())
 
     def testReviewRequestsToGroupCount(self):
-        """Testing the reviewrequests/to/group/count API"""
-        rsp = self.apiGet("reviewrequests/to/group/devgroup/count")
+        """Testing the reviewrequests?to-groups=&counts-only=1 API"""
+        rsp = self.apiGet('reviewrequests', {
+            'to-groups': 'devgroup',
+            'counts-only': 1,
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_group("devgroup").count())
@@ -270,8 +275,11 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             ReviewRequest.objects.to_user("grumpy", status='D').count())
 
     def testReviewRequestsToUserCount(self):
-        """Testing the reviewrequests/to/user/count API"""
-        rsp = self.apiGet("reviewrequests/to/user/grumpy/count")
+        """Testing the reviewrequests?to-users=&counts-only=1 API"""
+        rsp = self.apiGet('reviewrequests', {
+            'to-users': 'grumpy',
+            'counts-only': 1,
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_user("grumpy").count())
@@ -304,8 +312,11 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             ReviewRequest.objects.to_user_directly("doc", status='D').count())
 
     def testReviewRequestsToUserDirectlyCount(self):
-        """Testing the reviewrequests/to/user/directly/count API"""
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly/count")
+        """Testing the reviewrequests?to-users-directly=&counts-only=1 API"""
+        rsp = self.apiGet('reviewrequests', {
+            'to-users-directly': 'doc',
+            'counts-only': 1,
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_user_directly("doc").count())
@@ -338,8 +349,11 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             ReviewRequest.objects.from_user("grumpy", status='D').count())
 
     def testReviewRequestsFromUserCount(self):
-        """Testing the reviewrequests/from/user/count API"""
-        rsp = self.apiGet("reviewrequests/from/user/grumpy/count")
+        """Testing the reviewrequests?from-user=&counts-only=1 API"""
+        rsp = self.apiGet('reviewrequests', {
+            'from-user': 'grumpy',
+            'counts-only': 1,
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
@@ -1342,6 +1356,15 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public(status=None).count())
 
+    def testReviewRequestListCount(self):
+        """Testing the deprecated reviewrequests/all/count API"""
+        rsp = self.apiGet("reviewrequests/all/count",
+                          follow_redirects=True,
+                          expected_redirects=[self.reviewrequests_url +
+                                              '?counts-only=1'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], ReviewRequest.objects.public().count())
+
     def testReviewRequestsToGroup(self):
         """Testing the deprecated reviewrequests/to/group API"""
         rsp = self.apiGet("reviewrequests/to/group/devgroup",
@@ -1350,6 +1373,17 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
                                               '?to-groups=devgroup'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.to_group("devgroup").count())
+
+    def testReviewRequestsToGroupCount(self):
+        """Testing the deprecated reviewrequests/to/group/count API"""
+        rsp = self.apiGet(
+            "reviewrequests/to/group/devgroup/count",
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-groups=devgroup&counts-only=1'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_group("devgroup").count())
 
     def testReviewRequestsToGroupWithStatus(self):
@@ -1385,6 +1419,17 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user("grumpy").count())
 
+    def testReviewRequestsToUserCount(self):
+        """Testing the deprecated reviewrequests/to/user/count API"""
+        rsp = self.apiGet(
+            "reviewrequests/to/user/grumpy/count",
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-users=grumpy&counts-only=1'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         ReviewRequest.objects.to_user("grumpy").count())
+
     def testReviewRequestsToUserWithStatus(self):
         """Testing the deprecated reviewrequests/to/user API with custom status"""
         rsp = self.apiGet(
@@ -1417,6 +1462,18 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user_directly("doc").count())
 
+    def testReviewRequestsToUserDirectlyCount(self):
+        """Testing the deprecated reviewrequests/to/user/directly/count API"""
+        rsp = self.apiGet(
+            "reviewrequests/to/user/doc/directly/count",
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                               '?to-users-directly=doc&counts-only=1'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         ReviewRequest.objects.to_user_directly("doc").count())
+
+
     def testReviewRequestsToUserDirectlyWithStatus(self):
         """Testing the deprecated reviewrequests/to/user/directly API with custom status"""
         rsp = self.apiGet(
@@ -1447,6 +1504,17 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
                                               '?from-user=grumpy'])
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.from_user("grumpy").count())
+
+    def testReviewRequestsFromUserCount(self):
+        """Testing the deprecated reviewrequests/from/user/count API"""
+        rsp = self.apiGet(
+            "reviewrequests/from/user/grumpy/count",
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?from-user=grumpy&counts-only=1'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
 
     def testReviewRequestsFromUserWithStatus(self):

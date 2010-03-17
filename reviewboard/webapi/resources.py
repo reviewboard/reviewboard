@@ -23,8 +23,27 @@ class WebAPIResource(DjbletsWebAPIResource):
         return super(WebAPIResource, self).get(request, *args, **kwargs)
 
     @webapi_check_login_required
-    def get_list(self, *args, **kwargs):
-        return super(WebAPIResource, self).get_list(*args, **kwargs)
+    def get_list(self, request, *args, **kwargs):
+        if not self.model:
+            return HttpResponseNotAllowed(self.allowed_methods)
+
+        if request.GET.get('counts-only', False):
+            result = {
+                'count': self.get_queryset(request, is_list=True,
+                                           *args, **kwargs).count()
+            }
+
+            # Several old API functions had a field name other than 'count'.
+            # This is deprecated, but must be kept for backwards-compatibility.
+            field_alias = kwargs.get('count-field-alias', None)
+
+            if field_alias:
+                result[field_alias] = result['count']
+
+            return 200, result
+        else:
+            return super(WebAPIResource, self).get_list(request,
+                                                        *args, **kwargs)
 
 
 class CommentResource(WebAPIResource):
