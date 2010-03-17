@@ -7,8 +7,9 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED, \
+                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA
 
-import reviewboard.webapi.json as webapi
 from reviewboard import initialize
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
@@ -16,6 +17,7 @@ from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        Comment, Screenshot, ScreenshotComment
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.webapi.errors import INVALID_REPOSITORY
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
@@ -142,7 +144,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         """Testing the groups?action=star API with Does Not Exist error"""
         rsp = self.apiGet("groups/invalidgroup/star", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testGroupUnstar(self):
         """Testing the groups?action=unstar API"""
@@ -162,7 +164,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
                           {'action': 'unstar'},
                           expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
 
 class UserResourceTests(BaseWebAPITestCase):
@@ -382,7 +384,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'repository_path': 'gobbledygook',
         }, 400)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     def testNewReviewRequestAsUser(self):
         """Testing the reviewrequests/new API with submit_as"""
@@ -407,7 +409,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'submit_as': 'doc',
         }, 403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequest(self):
         """Testing the reviewrequests/<id> API"""
@@ -425,7 +427,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet("reviewrequests/%s" % review_request.id,
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestByChangenum(self):
         """Testing the reviewrequests/?repository=&changenum= API"""
@@ -460,7 +462,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                           {'action': 'star'},
                           expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestUnstar(self):
         """Testing the reviewrequests/<id>/?action=unstar API"""
@@ -481,7 +483,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                           {'action': 'unstar'},
                           expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDelete(self):
         """Testing the DELETE reviewrequests/<id> API"""
@@ -504,7 +506,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         rsp = self.apiDelete("reviewrequests/%s" % review_request_id,
                              expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestDeleteDoesNotExist(self):
         """Testing the DELETE reviewrequests/<id> API with Does Not Exist error"""
@@ -515,7 +517,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiDelete("reviewrequests/999", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
 
 class WebAPITests(BaseWebAPITestCase):
@@ -575,7 +577,7 @@ class WebAPITests(BaseWebAPITestCase):
         }, 400)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_ATTRIBUTE.code)
+        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
         self.assertEqual(rsp['attribute'], 'foobar')
 
     def testReviewRequestPublishSendsEmail(self):
@@ -600,7 +602,7 @@ class WebAPITests(BaseWebAPITestCase):
         }, 403)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     # draft/save is deprecated. Tests were copied to *DraftPublish*().
     # This is still here only to make sure we don't break backwards
@@ -630,7 +632,7 @@ class WebAPITests(BaseWebAPITestCase):
                            expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftPublish(self):
         """Testing the reviewrequests/draft/publish API"""
@@ -662,7 +664,7 @@ class WebAPITests(BaseWebAPITestCase):
                            expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftDiscard(self):
         """Testing the reviewrequests/draft/discard API"""
@@ -765,7 +767,7 @@ class WebAPITests(BaseWebAPITestCase):
         rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
                            review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewDraftComments(self):
         """Testing the reviewrequests/reviews/draft/comments API"""
@@ -1000,7 +1002,7 @@ class WebAPITests(BaseWebAPITestCase):
         rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id,
                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('path' in rsp['fields'])
         self.assert_('basedir' in rsp['fields'])
 
@@ -1036,7 +1038,7 @@ class WebAPITests(BaseWebAPITestCase):
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def postNewDiffComment(self, review_request, comment_text):
         """Utility function for posting a new diff comment."""
@@ -1322,7 +1324,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         """Testing the deprecated groups/unstar API with Does Not Exist error"""
         rsp = self.apiPost("groups/invalidgroup/unstar", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestList(self):
         """Testing the deprecated reviewrequests/all API"""
@@ -1581,7 +1583,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         """Testing the deprecated reviewrequests/star API with Does Not Exist error"""
         rsp = self.apiPost("reviewrequests/999/star", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestUnstar(self):
         """Testing the deprecated reviewrequests/unstar API"""
@@ -1598,7 +1600,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         """Testing the deprecated reviewrequests/unstar API with Does Not Exist error"""
         rsp = self.apiPost("reviewrequests/999/unstar", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDelete(self):
         """Testing the deprecated reviewrequests/<id>/delete API"""
@@ -1620,7 +1622,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         rsp = self.apiPost("reviewrequests/%s/delete" % review_request_id,
                            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestDeleteDoesNotExist(self):
         """Testing the deprecated reviewrequests/<id>/delete API with Does Not Exist error"""
@@ -1631,4 +1633,4 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
 
         rsp = self.apiPost("reviewrequests/999/delete", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
