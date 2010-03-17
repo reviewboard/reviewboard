@@ -4,6 +4,7 @@ from django.db.models import Q
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
+from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource
 
