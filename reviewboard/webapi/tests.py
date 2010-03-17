@@ -90,6 +90,15 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         print "Response: %s" % rsp
         return rsp
 
+    def apiDelete(self, path, expected_status=200):
+        print "DELETEing /api/json/%s/" % path
+        response = self.client.delete("/api/json/%s/" % path)
+        self.assertEqual(response.status_code, expected_status)
+        print "Raw response: %s" % response.content
+        rsp = simplejson.loads(response.content)
+        print "Response: %s" % rsp
+        return rsp
+
 
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
@@ -208,15 +217,19 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          ReviewRequest.objects.to_group("devgroup").count())
 
     def testReviewRequestsToGroupWithStatus(self):
-        """Testing the reviewrequests/to/group API with custom status"""
-        rsp = self.apiGet("reviewrequests/to/group/devgroup",
-                          {'status': 'submitted'})
+        """Testing the reviewrequests?to-groups=&status= API"""
+        rsp = self.apiGet('reviewrequests', {
+            'status': 'submitted',
+            'to-groups': 'devgroup',
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_group("devgroup", status='S').count())
 
-        rsp = self.apiGet("reviewrequests/to/group/devgroup",
-                          {'status': 'discarded'})
+        rsp = self.apiGet('reviewrequests', {
+            'status': 'discarded',
+            'to-groups': 'devgroup',
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_group("devgroup", status='D').count())
@@ -410,38 +423,46 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          review_request.changenum)
 
     def testReviewRequestStar(self):
-        """Testing the reviewrequests/star API"""
+        """Testing the reviewrequests/<id>/?action=star API"""
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiGet("reviewrequests/%s/star" % review_request.id)
+        rsp = self.apiPut("reviewrequests/%s" % review_request.id, {
+            'action': 'star',
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assert_(review_request in
                      self.user.get_profile().starred_review_requests.all())
 
     def testReviewRequestStarDoesNotExist(self):
-        """Testing the reviewrequests/star API with Does Not Exist error"""
-        rsp = self.apiGet("reviewrequests/999/star", expected_status=404)
+        """Testing the reviewrequests/<id>/?action=star API with Does Not Exist error"""
+        rsp = self.apiPut("reviewrequests/999",
+                          {'action': 'star'},
+                          expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
 
     def testReviewRequestUnstar(self):
-        """Testing the reviewrequests/unstar API"""
+        """Testing the reviewrequests/<id>/?action=unstar API"""
         # First, star it.
         self.testReviewRequestStar()
 
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiGet("reviewrequests/%s/unstar" % review_request.id)
+        rsp = self.apiPut("reviewrequests/%s" % review_request.id, {
+            'action': 'unstar',
+        })
         self.assertEqual(rsp['stat'], 'ok')
         self.assert_(review_request not in
                      self.user.get_profile().starred_review_requests.all())
 
     def testReviewRequestUnstarWithDoesNotExist(self):
-        """Testing the reviewrequests/unstar API with Does Not Exist error"""
-        rsp = self.apiGet("reviewrequests/999/unstar", expected_status=404)
+        """Testing the reviewrequests/<id>/?action=unstar API with Does Not Exist error"""
+        rsp = self.apiPut("reviewrequests/999",
+                          {'action': 'unstar'},
+                          expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
 
     def testReviewRequestDelete(self):
-        """Testing the reviewrequests/delete API"""
+        """Testing the DELETE reviewrequests/<id> API"""
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()
@@ -449,28 +470,28 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id)
+        rsp = self.apiDelete("reviewrequests/%s" % review_request_id)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertRaises(ReviewRequest.DoesNotExist,
                           ReviewRequest.objects.get, pk=review_request_id)
 
     def testReviewRequestDeletePermissionDenied(self):
-        """Testing the reviewrequests/delete API with Permission Denied error"""
+        """Testing the DELETE reviewrequests/<id> API with Permission Denied error"""
         review_request_id = \
             ReviewRequest.objects.exclude(submitter=self.user)[0].id
-        rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id,
-                          expected_status=403)
+        rsp = self.apiDelete("reviewrequests/%s" % review_request_id,
+                             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
 
     def testReviewRequestDeleteDoesNotExist(self):
-        """Testing the reviewrequests/delete API with Does Not Exist error"""
+        """Testing the DELETE reviewrequests/<id> API with Does Not Exist error"""
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()
         self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
 
-        rsp = self.apiGet("reviewrequests/999/delete", expected_status=404)
+        rsp = self.apiDelete("reviewrequests/999", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
 
@@ -1331,6 +1352,29 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_group("devgroup").count())
 
+    def testReviewRequestsToGroupWithStatus(self):
+        """Testing the deprecated reviewrequests/to/group API with custom status"""
+        rsp = self.apiGet(
+            "reviewrequests/to/group/devgroup",
+            {'status': 'submitted'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-groups=devgroup&status=submitted'])
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_group("devgroup", status='S').count())
+
+        rsp = self.apiGet(
+            "reviewrequests/to/group/devgroup",
+            {'status': 'discarded'},
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '?to-groups=devgroup&status=discarded'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+            ReviewRequest.objects.to_group("devgroup", status='D').count())
+
     def testReviewRequestsToUser(self):
         """Testing the deprecated reviewrequests/to/user API"""
         rsp = self.apiGet("reviewrequests/to/user/grumpy",
@@ -1427,3 +1471,67 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='D').count())
 
+    def testReviewRequestStar(self):
+        """Testing the deprecated reviewrequests/star API"""
+        review_request = ReviewRequest.objects.public()[0]
+        rsp = self.apiPost("reviewrequests/%s/star" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assert_(review_request in
+                     self.user.get_profile().starred_review_requests.all())
+
+    def testReviewRequestStarDoesNotExist(self):
+        """Testing the deprecated reviewrequests/star API with Does Not Exist error"""
+        rsp = self.apiPost("reviewrequests/999/star", expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+
+    def testReviewRequestUnstar(self):
+        """Testing the deprecated reviewrequests/unstar API"""
+        # First, star it.
+        self.testReviewRequestStar()
+
+        review_request = ReviewRequest.objects.public()[0]
+        rsp = self.apiPost("reviewrequests/%s/unstar" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assert_(review_request not in
+                     self.user.get_profile().starred_review_requests.all())
+
+    def testReviewRequestUnstarWithDoesNotExist(self):
+        """Testing the deprecated reviewrequests/unstar API with Does Not Exist error"""
+        rsp = self.apiPost("reviewrequests/999/unstar", expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+
+    def testReviewRequestDelete(self):
+        """Testing the deprecated reviewrequests/<id>/delete API"""
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+        self.user.save()
+        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
+
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/delete" % review_request_id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertRaises(ReviewRequest.DoesNotExist,
+                          ReviewRequest.objects.get, pk=review_request_id)
+
+    def testReviewRequestDeletePermissionDenied(self):
+        """Testing the deprecated reviewrequests/<id>/delete API with Permission Denied error"""
+        review_request_id = \
+            ReviewRequest.objects.exclude(submitter=self.user)[0].id
+        rsp = self.apiPost("reviewrequests/%s/delete" % review_request_id,
+                           expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+
+    def testReviewRequestDeleteDoesNotExist(self):
+        """Testing the deprecated reviewrequests/<id>/delete API with Does Not Exist error"""
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+        self.user.save()
+        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
+
+        rsp = self.apiPost("reviewrequests/999/delete", expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
