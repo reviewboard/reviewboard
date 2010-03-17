@@ -62,7 +62,7 @@ class FileDiffResource(WebAPIResource):
 
 
 class UserResource(DjbletsUserResource):
-    def get_queryset(self, request, group_name, *args, **kwargs):
+    def get_queryset(self, request, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
         query = self.model.objects.filter(is_active=True)

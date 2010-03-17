@@ -161,7 +161,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def testUserListQuery(self):
         """Testing the users API with custom query"""
-        rsp = self.apiGet("users", {'query': 'gru'})
+        rsp = self.apiGet("users", {'q': 'gru'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), 1) # grumpy
 
