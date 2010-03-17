@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import url, include, patterns
+from django.views.generic.simple import redirect_to
 from djblets.util.misc import never_cache_patterns
-from djblets.webapi.resources import userResource
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.webapi.resources import diffSetResource, \
@@ -10,7 +10,22 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
                                          reviewResource, \
-                                         serverInfoResource
+                                         serverInfoResource, \
+                                         userResource
+
+def redirect(request, url, *args, **kwargs):
+    """Redirects to a new URL, tacking on any specified parameters."""
+
+    extra_params = '&'.join(['%s=%s' % (key, value)
+                            for key, value in request.GET.iteritems()])
+
+    if extra_params:
+        if '?' in url:
+            url += '&' + extra_params
+        else:
+            url += '?' + extra_params
+
+    return redirect_to(request, url, *args, **kwargs)
 
 
 urlpatterns = never_cache_patterns('djblets.webapi.auth',
@@ -29,7 +44,7 @@ urlpatterns += patterns('',
 )
 
 # Deprecated URLs
-urlpatterns += never_cache_patterns('django.views.generic.simple',
+urlpatterns += never_cache_patterns('',
     # Review groups
     (r'^groups/(?P<group_name>[A-Za-z0-9_-]+)/star/$', reviewGroupResource,
      {'action': 'star',
@@ -38,30 +53,55 @@ urlpatterns += never_cache_patterns('django.views.generic.simple',
      {'action': 'unstar',
       'method': 'PUT'}),
 
-    (r'^reviewrequests/all/$', 'redirect_to',
+    # Review request lists
+    (r'^reviewrequests/all/$', redirect,
      {'url': '../',
       'permanent': True}),
-    (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/$',
-     'redirect_to',
+    (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/$', redirect,
      {'url': '../../../?to-groups=%(group_name)s',
       'permanent': True}),
-    (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/$',
-     'redirect_to',
+    (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/$', redirect,
      {'url': '../../../?to-users=%(username)s',
       'permanent': True}),
     (r'^reviewrequests/to/user/(?P<username>[A-Za-z0-9_-]+)/directly/$',
-     'redirect_to',
+     redirect,
      {'url': '../../../../?to-users-directly=%(username)s',
       'permanent': True}),
-    (r'^reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/$',
-     'redirect_to',
+    (r'^reviewrequests/from/user/(?P<username>[A-Za-z0-9_-]+)/$', redirect,
      {'url': '../../../?from-user=%(username)s',
       'permanent': True}),
+
+    # Review request creation
+    (r'^reviewrequests/new/$', reviewRequestResource),
+
+    # Review request actions
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/star/$',
+     reviewRequestResource,
+     {'action': 'star',
+      'method': 'PUT'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/unstar/$',
+     reviewRequestResource,
+     {'action': 'unstar',
+      'method': 'PUT'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/close/(?P<type>discarded|submitted)/$',
+     reviewRequestResource,
+     {'action': 'close',
+      'method': 'PUT'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reopen/$',
+     reviewRequestResource,
+     {'action': 'reopen',
+      'method': 'PUT'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/delete/$',
+     reviewRequestResource,
+     {'method': 'DELETE'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/publish/$',
+     reviewRequestResource,
+     {'action': 'publish',
+      'method': 'PUT'}),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Review request lists
-
     (r'^reviewrequests/all/$', reviewRequestResource,
      {'func': ReviewRequest.objects.public}),
     (r'^reviewrequests/all/count/$', 'count_review_requests',
@@ -84,34 +124,14 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      {'func': ReviewRequest.objects.from_user}),
 
     # Review requests
-    (r'^reviewrequests/new/$', reviewRequestResource),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/$', reviewRequestResource),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/last-update/$',
      'review_request_last_update'),
 
     (r'^reviewrequests/repository/(?P<repository_id>[0-9]+)/changenum/(?P<changenum>[0-9]+)/$',
      'review_request_by_changenum'),
 
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/star/$',
-     'review_request_star'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/unstar/$',
-     'review_request_unstar'),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/close/(?P<type>discarded|submitted)/$',
-     'review_request_close'),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reopen/$',
-     'review_request_reopen'),
-
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_changenum/(?P<changenum>[0-9]+)$',
      'review_request_update_changenum'),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/delete/$',
-     reviewRequestResource),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/publish/$',
-     'review_request_publish'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_from_changenum/$',
      'review_request_draft_update_from_changenum'),

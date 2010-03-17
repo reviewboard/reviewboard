@@ -5,7 +5,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
-                                     UserResource, userResource
+                                     UserResource as DjbletsUserResource
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
@@ -60,6 +60,24 @@ class FileDiffResource(WebAPIResource):
     )
 
 
+class UserResource(DjbletsUserResource):
+    def get_queryset(self, request, group_name, *args, **kwargs):
+        search_q = request.GET.get('q', None)
+
+        query = self.model.objects.filter(is_active=True)
+
+        if search_q:
+            q = Q(username__istartswith=search_q)
+
+            if request.GET.get('fullname', None):
+                q = q | (Q(first_name__istartswith=query) |
+                         Q(last_name__istartswith=query))
+
+            query = query.filter(q)
+
+        return query
+
+
 class ReviewGroupUserResource(UserResource):
     def get_queryset(self, request, group_name, *args, **kwargs):
         return self.model.objects.filter(review_groups__name=group_name)
@@ -75,6 +93,21 @@ class ReviewGroupResource(WebAPIResource):
     model_object_key = 'name'
 
     allowed_methods = ('GET', 'PUT')
+
+    def get_queryset(self, request, *args, **kwargs):
+        search_q = request.GET.get('q', None)
+
+        query = self.model.objects.all()
+
+        if search_q:
+            q = Q(name__istartswith=search_q)
+
+            if request.GET.get('displayname', None):
+                q = q | Q(display_name__istartswith=search_q)
+
+            query = query.filter(q)
+
+        return query
 
     def serialize_url_field(self, group):
         return group.get_absolute_url()
@@ -181,7 +214,7 @@ class ReviewRequestResource(WebAPIResource):
 
         if 'to-users-directly' in request.GET:
             for username in request.GET.get('to-users-directly').split(','):
-                q = q & self.model.objects.get_to_user_query(username)
+                q = q & self.model.objects.get_to_user_directly_query(username)
 
         if 'to-users-groups' in request.GET:
             for username in request.GET.get('to-users-groups').split(','):
@@ -198,6 +231,15 @@ class ReviewRequestResource(WebAPIResource):
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
+
+    def serialize_bugs_closed_field(self, obj):
+        if obj.bugs_closed:
+            return [b.strip() for b in obj.bugs_closed.split(',')]
+        else:
+            return ''
+
+    def serialize_status_field(self, obj):
+        return status_to_string(obj.status)
 
     @webapi_login_required
     def create(self, request, *args, **kwargs):
@@ -282,14 +324,87 @@ class ReviewRequestResource(WebAPIResource):
     def delete(self, *args, **kwargs):
         return super(ReviewRequestResource, self).delete(*args, **kwargs)
 
-    def serialize_bugs_closed_field(self, obj):
-        if obj.bugs_closed:
-            return [b.strip() for b in obj.bugs_closed.split(',')]
-        else:
-            return ''
+    @webapi_login_required
+    def action_star(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
 
-    def serialize_status_field(self, obj):
-        return status_to_string(obj.status)
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+        profile.starred_review_requests.add(review_request)
+        profile.save()
+
+        return 200, {}
+
+    @webapi_login_required
+    def action_unstar(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+
+        if not profile_is_new:
+            profile.starred_review_requests.remove(review_request)
+            profile.save()
+
+        return 200, {}
+
+    @webapi_login_required
+    def action_close(self, request, review_request_id, *args, **kwargs):
+        type_map = {
+            'submitted': ReviewRequest.SUBMITTED,
+            'discarded': ReviewRequest.DISCARDED,
+        }
+
+        close_type = request.POST.get('type', kwargs.get('type', None))
+
+        if close_type not in type_map:
+            return INVALID_ATTRIBUTE, {
+                'attribute': close_type,
+            }
+
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request.close(type_map[close_type], request.user)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+        except PermissionError:
+            return HttpResponseForbidden()
+
+        return 200, {}
+
+    @webapi_login_required
+    def action_reopen(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request.reopen(request.user)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+        except PermissionError:
+            return HttpResponseForbidden()
+
+        return 200, {}
+
+    @webapi_login_required
+    def action_publish(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+
+            if not review_request.can_publish():
+                return NOTHING_TO_PUBLISH
+
+            review_request.publish(request.user)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+        except PermissionError:
+            return HttpResponseForbidden()
+
+        return 200, {}
 
 
 class ReviewRequestDraftResource(WebAPIResource):
@@ -463,3 +578,4 @@ reviewDraftResource = ReviewDraftResource()
 screenshotCommentResource = ScreenshotCommentResource()
 screenshotResource = ScreenshotResource()
 serverInfoResource = ServerInfoResource()
+userResource = UserResource()
