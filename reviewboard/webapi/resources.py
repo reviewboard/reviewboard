@@ -44,8 +44,19 @@ class WebAPIResource(DjbletsWebAPIResource):
 
             return 200, result
         else:
-            return super(WebAPIResource, self).get_list(request,
-                                                        *args, **kwargs)
+            result = super(WebAPIResource, self).get_list(request,
+                                                          *args, **kwargs)
+
+            if request.GET.get('_first-result-only', False):
+                # This is intended ONLY for deprecated functions. It is not
+                # supported as a valid parameter for APIs and should be ignored.
+                # It may return broken results if used outside of its built-in
+                # intended uses.
+                result = (result[0], {
+                    self.name: result[1][self.name_plural][0],
+                })
+
+            return result
 
 
 class CommentResource(WebAPIResource):
@@ -248,6 +259,12 @@ class ReviewRequestResource(WebAPIResource):
             if 'from-user' in request.GET:
                 q = q & self.model.objects.get_from_user_query(
                     request.GET.get('from-user'))
+
+            if 'repository' in request.GET:
+                q = q & Q(repository=int(request.GET.get('repository')))
+
+            if 'changenum' in request.GET:
+                q = q & Q(changenum=int(request.GET.get('changenum')))
 
             status = string_to_status(request.GET.get('status', 'pending'))
 

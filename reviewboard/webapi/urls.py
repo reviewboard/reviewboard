@@ -89,6 +89,12 @@ urlpatterns += never_cache_patterns('',
      {'url': '../../../../?from-user=%(username)s&counts-only=1',
       'permanent': True}),
 
+    (r'^reviewrequests/repository/(?P<repository_id>[0-9]+)/changenum/(?P<changenum>[0-9]+)/$',
+     redirect,
+     {'url': '../../../../?repository=%(repository_id)s&changenum=%(changenum)s&_first-result-only=1',
+      'permanent': True}),
+
+
     # Review request creation
     (r'^reviewrequests/new/$', reviewRequestResource),
 
@@ -122,9 +128,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Review requests
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/last-update/$',
      'review_request_last_update'),
-
-    (r'^reviewrequests/repository/(?P<repository_id>[0-9]+)/changenum/(?P<changenum>[0-9]+)/$',
-     'review_request_by_changenum'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_changenum/(?P<changenum>[0-9]+)$',
      'review_request_update_changenum'),

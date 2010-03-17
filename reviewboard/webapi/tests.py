@@ -428,17 +428,20 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
 
     def testReviewRequestByChangenum(self):
-        """Testing the reviewrequests/repository/changenum API"""
+        """Testing the reviewrequests/?repository=&changenum= API"""
         review_request = \
             ReviewRequest.objects.filter(changenum__isnull=False)[0]
-        rsp = self.apiGet("reviewrequests/repository/%s/changenum/%s" %
-                          (review_request.repository.id,
-                           review_request.changenum))
+        rsp = self.apiGet('reviewrequests', {
+            'repository': review_request.repository.id,
+            'changenum': review_request.changenum,
+        })
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.id)
-        self.assertEqual(rsp['review_request']['summary'],
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.id)
+        self.assertEqual(rsp['review_requests'][0]['summary'],
                          review_request.summary)
-        self.assertEqual(rsp['review_request']['changenum'],
+        self.assertEqual(rsp['review_requests'][0]['changenum'],
                          review_request.changenum)
 
     def testReviewRequestStar(self):
@@ -1543,6 +1546,28 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='D').count())
+
+    def testReviewRequestByChangenum(self):
+        """Testing the deprecated reviewrequests/repository/changenum API"""
+        review_request = \
+            ReviewRequest.objects.filter(changenum__isnull=False)[0]
+
+        rsp = self.apiGet(
+            "reviewrequests/repository/%s/changenum/%s" %
+            (review_request.repository.id, review_request.changenum),
+            follow_redirects=True,
+            expected_redirects=[
+                self.reviewrequests_url +
+                '?repository=%s&changenum=%s&_first-result-only=1' %
+                (review_request.repository.id, review_request.changenum)
+            ])
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'], review_request.id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
+        self.assertEqual(rsp['review_request']['changenum'],
+                         review_request.changenum)
 
     def testReviewRequestStar(self):
         """Testing the deprecated reviewrequests/star API"""
