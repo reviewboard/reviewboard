@@ -14,6 +14,7 @@ from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        ScreenshotComment, Screenshot
+from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.webapi.decorators import webapi_check_login_required
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 

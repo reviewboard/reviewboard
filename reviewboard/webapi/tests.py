@@ -90,13 +90,19 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         print "Response: %s" % rsp
         return rsp
 
-    def apiDelete(self, path, expected_status=200):
+    def apiDelete(self, path, expected_status=204):
         print "DELETEing /api/json/%s/" % path
         response = self.client.delete("/api/json/%s/" % path)
         self.assertEqual(response.status_code, expected_status)
-        print "Raw response: %s" % response.content
-        rsp = simplejson.loads(response.content)
-        print "Response: %s" % rsp
+
+        if expected_status == 204:
+            self.assertEqual(response.content, '')
+            rsp = None
+        else:
+            print "Raw response: %s" % response.content
+            rsp = simplejson.loads(response.content)
+            print "Response: %s" % rsp
+
         return rsp
 
 
@@ -485,7 +491,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiDelete("reviewrequests/%s" % review_request_id)
-        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp, None)
         self.assertRaises(ReviewRequest.DoesNotExist,
                           ReviewRequest.objects.get, pk=review_request_id)
 
