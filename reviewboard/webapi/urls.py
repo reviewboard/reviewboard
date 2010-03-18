@@ -124,7 +124,9 @@ urlpatterns += never_cache_patterns('',
 
     # Review request draft actions
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/$',
-     reviewRequestDraftResource),
+     reviewRequestDraftResource,
+     {'method': 'PUT',
+      'action': 'deprecated_set'}),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',
      reviewRequestDraftResource,
      {'method': 'PUT',

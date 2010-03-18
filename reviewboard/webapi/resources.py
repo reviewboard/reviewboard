@@ -261,7 +261,8 @@ class ReviewRequestDraftResource(WebAPIResource):
         return self.update(*args, **kwargs)
 
     @webapi_login_required
-    def update(self, request, review_request_id, *args, **kwargs):
+    def update(self, request, review_request_id, always_save=False,
+               *args, **kwargs):
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
         except ReviewRequest.DoesNotExist:
@@ -291,19 +292,49 @@ class ReviewRequestDraftResource(WebAPIResource):
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
 
+        if always_save or not invalid_fields:
+            for obj in modified_objects:
+                obj.save()
+
+            draft.save()
+
         if invalid_fields:
             return INVALID_FORM_DATA, {
                 'fields': invalid_fields,
             }
 
-        for obj in modified_objects:
-            obj.save()
-
-        draft.save()
-
         return 200, {
             self.name: draft,
         }
+
+    @webapi_login_required
+    def action_deprecated_set(self, request, review_request_id, *args, **kwargs):
+        code, result = self.update(request, review_request_id,
+                                   always_save=True, *args, **kwargs)
+
+        if code == INVALID_FORM_DATA:
+            code = 200
+
+            for field in result['fields']:
+                result['invalid_' + field] = result['fields'][field][0]
+
+            del result['fields']
+
+            # These really should succeed, given that they did in update().
+            # Better safe than sorry, though.
+            try:
+                review_request = ReviewRequest.objects.get(pk=review_request_id)
+            except ReviewRequest.DoesNotExist:
+                return DOES_NOT_EXIST
+
+            try:
+                draft = self._prepare_draft(request, review_request)
+            except PermissionDenied:
+                return PERMISSION_DENIED
+
+            result[self.name] = draft
+
+        return code, result
 
     @webapi_login_required
     def action_deprecated_set_field(self, request, review_request_id,

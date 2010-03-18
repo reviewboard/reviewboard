@@ -1687,6 +1687,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         testing_done = "My Testing Done"
         branch = "My Branch"
         bugs = ""
+        target_groups = 'foooo'
 
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
@@ -1696,6 +1697,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
             'testing_done': testing_done,
             'branch': branch,
             'bugs_closed': bugs,
+            'target_groups': 'foooo',
         })
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -1704,6 +1706,7 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['draft']['testing_done'], testing_done)
         self.assertEqual(rsp['draft']['branch'], branch)
         self.assertEqual(rsp['draft']['bugs_closed'], [])
+        self.assertTrue('invalid_target_groups' in rsp)
 
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.assertEqual(draft.summary, summary)
