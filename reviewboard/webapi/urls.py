@@ -131,6 +131,17 @@ urlpatterns += never_cache_patterns('',
      reviewRequestDraftResource,
      {'method': 'PUT',
       'action': 'deprecated_set_field'}),
+    # draft/save is deprecated in favor of draft/publish. So, it's
+    # double-deprecated.
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/(save|publish)/$',
+     reviewRequestDraftResource,
+     {'method': 'PUT',
+      'action': 'publish'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
+     reviewRequestDraftResource,
+     {'method': 'PUT',
+      'action': 'deprecated_discard'}),
+
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
@@ -143,14 +154,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_from_changenum/$',
      'review_request_draft_update_from_changenum'),
-
-    # draft/save is deprecated in favor of draft/publish
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
-     'review_request_draft_publish'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/publish/$',
-     'review_request_draft_publish'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
-     reviewRequestDraftResource),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/updated/$',
      'review_request_updated'),

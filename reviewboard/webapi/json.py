@@ -256,24 +256,6 @@ def count_review_comments(request, review_request_id, review_id):
     return WebAPIResponse(request, {'count': review.comments.count()})
 
 
-@webapi_login_required
-@require_POST
-def review_request_draft_publish(request, review_request_id):
-    try:
-        draft = ReviewRequestDraft.objects.get(review_request=review_request_id)
-        review_request = draft.review_request
-    except ReviewRequestDraft.DoesNotExist:
-        return WebAPIResponseError(request, DOES_NOT_EXIST)
-
-    if not review_request.is_mutable_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    changes = draft.publish(user=request.user)
-    draft.delete()
-
-    return WebAPIResponse(request)
-
-
 def _prepare_draft(request, review_request):
     if not review_request.is_mutable_by(request.user):
         raise PermissionDenied

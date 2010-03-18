@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
@@ -310,6 +311,42 @@ class ReviewRequestDraftResource(WebAPIResource):
         }
 
     @webapi_login_required
+    def delete(self, request, review_request_id, *args, **kwargs):
+        # Make sure this exists. We don't want to use _prepare_draft, or
+        # we'll end up creating a new one.
+        try:
+            draft = ReviewRequestDraft.objects.get(
+                review_request=review_request_id)
+        except ReviewRequestDraft.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_delete_permissions(request, draft, *args, **kwargs):
+            return PERMISSION_DENIED
+
+        draft.delete()
+
+        return 204, {}
+
+    @webapi_login_required
+    def action_publish(self, request, review_request_id, *args, **kwargs):
+        # Make sure this exists. We don't want to use _prepare_draft, or
+        # we'll end up creating a new one.
+        try:
+            draft = ReviewRequestDraft.objects.get(
+                review_request=review_request_id)
+            review_request = draft.review_request
+        except ReviewRequestDraft.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return PERMISSION_DENIED
+
+        draft.publish(user=request.user)
+        draft.delete()
+
+        return 200, {}
+
+    @webapi_login_required
     def action_deprecated_set(self, request, review_request_id, *args, **kwargs):
         code, result = self.update(request, review_request_id,
                                    always_save=True, *args, **kwargs)
@@ -381,6 +418,16 @@ class ReviewRequestDraftResource(WebAPIResource):
             draft.save()
 
         return 200, result
+
+    @webapi_login_required
+    def action_deprecated_discard(self, *args, **kwargs):
+        code, result = self.delete(*args, **kwargs)
+
+        if code == 204:
+            # Discard returned a 200 on success.
+            code = 200
+
+        return code, result
 
     def _set_draft_field_data(self, draft, field_name, data):
         result = None
