@@ -142,6 +142,11 @@ urlpatterns += never_cache_patterns('',
      {'method': 'PUT',
       'action': 'deprecated_discard'}),
 
+    # Review lists
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/count/$',
+     redirect,
+     {'url': '../?counts-only=1&_count-field-alias=reviews',
+      'permanent': True}),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
@@ -170,13 +175,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_draft_comments'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/$',
      reviewDraftResource),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/$',
-     reviewResource),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/count/$',
-     'count_review_list'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/$',
-     reviewResource),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/$',
      'review_comments_list'),

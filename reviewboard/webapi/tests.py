@@ -651,8 +651,27 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(review_request.description, description)
 
 
-class WebAPITests(BaseWebAPITestCase):
-    """Testing the webapi support."""
+class ReviewResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewResource APIs."""
+    def testReviewsList(self):
+        """Testing the GET reviewrequests/<id>/reviews/ API"""
+        review_request = Review.objects.all()[0].review_request
+        rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
+
+    def testReviewsListCount(self):
+        """Testing the GET reviewrequests/<id>/reviews/?counts-only=1 API"""
+        review_request = Review.objects.all()[0].review_request
+        rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id, {
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], review_request.reviews.count())
+
+
+class ReviewDraftResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewDraftResource APIs."""
     def testReviewDraftSave(self):
         """Testing the reviewrequests/reviews/draft/save API"""
         body_top = ""
@@ -739,6 +758,9 @@ class WebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+
+class WebAPITests(BaseWebAPITestCase):
+    """Testing the webapi support."""
     def testReviewDraftComments(self):
         """Testing the reviewrequests/reviews/draft/comments API"""
         diff_comment_text = "Test diff comment"
@@ -764,21 +786,6 @@ class WebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comments'][0]['text'],
                          screenshot_comment_text)
 
-
-    def testReviewsList(self):
-        """Testing the reviewrequests/reviews API"""
-        review_request = Review.objects.all()[0].review_request
-        rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
-
-    def testReviewsListCount(self):
-        """Testing the reviewrequests/reviews/count API"""
-        review_request = Review.objects.all()[0].review_request
-        rsp = self.apiGet("reviewrequests/%s/reviews/count" %
-                          review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['reviews'], review_request.reviews.count())
 
     def testReviewCommentsList(self):
         """Testing the reviewrequests/reviews/comments API"""
@@ -1815,3 +1822,16 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.summary, summary)
         self.assertEqual(review_request.description, description)
+
+    def testReviewsListCount(self):
+        """Testing the deprecated reviewrequests/reviews/count API"""
+        review_request = Review.objects.all()[0].review_request
+        rsp = self.apiGet(
+            "reviewrequests/%s/reviews/count" % review_request.id,
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '%s/reviews/?counts-only=1'
+                                '&_count-field-alias=reviews' %
+                                review_request.id])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['reviews'], review_request.reviews.count())

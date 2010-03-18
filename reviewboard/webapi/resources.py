@@ -44,7 +44,9 @@ class WebAPIResource(DjbletsWebAPIResource):
 
             # Several old API functions had a field name other than 'count'.
             # This is deprecated, but must be kept for backwards-compatibility.
-            field_alias = kwargs.get('count-field-alias', None)
+            field_alias = \
+                request.GET.get('_count-field-alias',
+                                kwargs.get('_count-field-alias', None))
 
             if field_alias:
                 result[field_alias] = result['count']
@@ -529,6 +531,40 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return None
 
+reviewRequestDraftResource = ReviewRequestDraftResource()
+
+
+class ReviewResource(WebAPIResource):
+    model = Review
+    fields = (
+        'id', 'user', 'timestamp', 'public', 'ship_it', 'body_top',
+        'body_bottom', 'comments',
+    )
+    uri_object_key = 'review_id'
+
+    allowed_methods = ('GET',)
+
+    def get_queryset(self, request, review_request_id, is_list=False,
+                     *args, **kwargs):
+        q = Q(base_reply_to__isnull=True) & \
+            Q(review_request=review_request_id)
+
+        if is_list:
+            # We don't want to show drafts in the list.
+            q = q & Q(public=True)
+
+        return self.model.objects.filter(q)
+
+    def has_access_permissions(self, request, review, *args, **kwargs):
+        return review.public or review.user == request.user
+
+    def get_href_parent_ids(self, review, *args, **kwargs):
+        return {
+            'review_request_id': review.review_request.id,
+        }
+
+reviewResource = ReviewResource()
+
 
 class ReviewRequestResource(WebAPIResource):
     model = ReviewRequest
@@ -540,7 +576,10 @@ class ReviewRequestResource(WebAPIResource):
         'target_people',
     )
     uri_object_key = 'review_request_id'
-    child_resources = [ReviewRequestDraftResource()]
+    child_resources = [
+        reviewRequestDraftResource,
+        reviewResource,
+    ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -761,28 +800,6 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
 
-class ReviewResource(WebAPIResource):
-    model = Review
-    fields = (
-        'id', 'user', 'timestamp', 'public', 'ship_it', 'body_top',
-        'body_bottom', 'comments',
-    )
-
-    def get_queryset(self, request, review_request_id, is_list=False,
-                     *args, **kwargs):
-        q = Q(base_reply_to__isnull=True) & \
-            Q(review_request=review_request_id)
-
-        if is_list:
-            # We don't want to show drafts in the list.
-            q = q & Q(public=True)
-
-        return self.model.objects.filter(q)
-
-    def has_access_permissions(self, request, review, *args, **kwargs):
-        return review.public or review.user == request.user
-
-
 class ReviewDraftResource(ReviewResource):
     @webapi_login_required
     def get(self, request, api_format, review_request_id, *args, **kwargs):
@@ -904,8 +921,6 @@ fileDiffResource = FileDiffResource()
 reviewGroupResource = ReviewGroupResource()
 repositoryResource = RepositoryResource()
 reviewRequestResource = ReviewRequestResource()
-reviewRequestDraftResource = ReviewRequestDraftResource()
-reviewResource = ReviewResource()
 reviewDraftResource = ReviewDraftResource()
 screenshotCommentResource = ScreenshotCommentResource()
 screenshotResource = ScreenshotResource()
