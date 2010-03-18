@@ -563,18 +563,17 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         """Testing the POST reviewrequests/draft/ API"""
         self._testReviewRequestDraftSetCommon(self.apiPost)
 
-    def testReviewRequestDraftSetFieldInvalidName(self):
-        """Testing the reviewrequests/draft/set/<field> API with invalid name"""
+    def testReviewRequestDraftPUTInvalidName(self):
+        """Testing the PUT reviewrequests/draft/ API with invalid field name"""
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set/foobar" %
-                           review_request_id, {
-            'value': 'foo',
+        rsp = self.apiPut("reviewrequests/%s/draft" % review_request_id, {
+            'foobar': 'foo',
         }, 400)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
-        self.assertEqual(rsp['attribute'], 'foobar')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertTrue('foobar' in rsp['fields'])
 
     def testReviewRequestPublishSendsEmail(self):
         """Testing the reviewrequests/publish API"""

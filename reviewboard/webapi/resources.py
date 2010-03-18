@@ -7,8 +7,8 @@ from django.db.models import Q
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
-from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED, \
-                                  INVALID_FORM_DATA
+from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
+                                  INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource
 
@@ -291,6 +291,8 @@ class ReviewRequestDraftResource(WebAPIResource):
                     invalid_fields[field_name] = invalid
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
+            else:
+                invalid_fields[field_name] = ['Field is not supported']
 
         if always_save or not invalid_fields:
             for obj in modified_objects:
