@@ -521,6 +521,23 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    def testReviewRequestPublishSendsEmail(self):
+        """Testing the reviewrequests/publish API"""
+        # Set some data first.
+        review_request = \
+            ReviewRequest.objects.from_user(self.user.username)[0]
+        rsp = self.apiPost("reviewrequests/%s/draft" % review_request.id, {
+            'summary': 'This is a test',
+        })
+
+        rsp = self.apiPut("reviewrequests/%s" % review_request.id, {
+            'action': 'publish',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(mail.outbox), 1)
+
+
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
@@ -574,18 +591,6 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('foobar' in rsp['fields'])
-
-    def testReviewRequestPublishSendsEmail(self):
-        """Testing the reviewrequests/publish API"""
-        # Set some data first.
-        self.testReviewRequestDraftSet()
-
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/publish" % review_request.id)
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(mail.outbox), 1)
 
     def testReviewRequestDraftSetFieldNoPermission(self):
         """Testing the reviewrequests/draft/set/<field> API without valid permissions"""

@@ -22,7 +22,7 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.errors import INVALID_REPOSITORY
+from reviewboard.webapi.errors import INVALID_REPOSITORY, MISSING_REPOSITORY
 
 
 class WebAPIResource(DjbletsWebAPIResource):
