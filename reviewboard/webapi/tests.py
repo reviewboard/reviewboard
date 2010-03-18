@@ -76,6 +76,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         print "POSTing to /api/json/%s/" % path
         print "Post data: %s" % query
         response = self.client.post("/api/json/%s/" % path, query)
+        print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
         return self._getResult(response, expected_status)
@@ -84,6 +85,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         print "PUTing to /api/json/%s/" % path
         print "Post data: %s" % query
         response = self.client.put("/api/json/%s/" % path, query)
+        print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
         return self._getResult(response, expected_status)
@@ -91,6 +93,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def apiDelete(self, path, expected_status=204):
         print "DELETEing /api/json/%s/" % path
         response = self.client.delete("/api/json/%s/" % path)
+        print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
         return self._getResult(response, expected_status)
@@ -100,7 +103,6 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             self.assertEqual(response.content, '')
             rsp = None
         else:
-            print "Raw response: %s" % response.content
             rsp = simplejson.loads(response.content)
             print "Response: %s" % rsp
 
@@ -520,19 +522,18 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
 
-class WebAPITests(BaseWebAPITestCase):
-    """Testing the webapi support."""
-    def testReviewRequestDraftSet(self):
-        """Testing the reviewrequests/draft/set API"""
+class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewRequestDraftResource API tests."""
+    def _testReviewRequestDraftSetCommon(self, apiFunc):
         summary = "My Summary"
         description = "My Description"
         testing_done = "My Testing Done"
         branch = "My Branch"
-        bugs = ""
+        bugs = "#123,456"
 
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set" % review_request_id, {
+        rsp = apiFunc("reviewrequests/%s/draft" % review_request_id, {
             'summary': summary,
             'description': description,
             'testing_done': testing_done,
@@ -545,27 +546,22 @@ class WebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['draft']['description'], description)
         self.assertEqual(rsp['draft']['testing_done'], testing_done)
         self.assertEqual(rsp['draft']['branch'], branch)
-        self.assertEqual(rsp['draft']['bugs_closed'], [])
+        self.assertEqual(rsp['draft']['bugs_closed'], ['123', '456'])
 
         draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
         self.assertEqual(draft.summary, summary)
         self.assertEqual(draft.description, description)
         self.assertEqual(draft.testing_done, testing_done)
         self.assertEqual(draft.branch, branch)
-        self.assertEqual(draft.get_bug_list(), [])
+        self.assertEqual(draft.get_bug_list(), ['123', '456'])
 
-    def testReviewRequestDraftSetField(self):
-        """Testing the reviewrequests/draft/set/<field> API"""
-        bugs_closed = '123,456'
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
-                           review_request_id, {
-            'value': bugs_closed,
-        })
+    def testReviewRequestDraftPUT(self):
+        """Testing the PUT reviewrequests/draft/ API"""
+        self._testReviewRequestDraftSetCommon(self.apiPut)
 
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['bugs_closed'], bugs_closed.split(","))
+    def testReviewRequestDraftPOST(self):
+        """Testing the POST reviewrequests/draft/ API"""
+        self._testReviewRequestDraftSetCommon(self.apiPost)
 
     def testReviewRequestDraftSetFieldInvalidName(self):
         """Testing the reviewrequests/draft/set/<field> API with invalid name"""
@@ -794,6 +790,9 @@ class WebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['screenshot_comments'][0]['text'],
                          screenshot_comment_text)
 
+
+class WebAPITests(BaseWebAPITestCase):
+    """Testing the webapi support."""
     def testReviewsList(self):
         """Testing the reviewrequests/reviews API"""
         review_request = Review.objects.all()[0].review_request
@@ -1680,3 +1679,49 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         rsp = self.apiPost("reviewrequests/999/delete", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def testReviewRequestDraftSet(self):
+        """Testing the deprecated reviewrequests/draft/set API"""
+        summary = "My Summary"
+        description = "My Description"
+        testing_done = "My Testing Done"
+        branch = "My Branch"
+        bugs = ""
+
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/set" % review_request_id, {
+            'summary': summary,
+            'description': description,
+            'testing_done': testing_done,
+            'branch': branch,
+            'bugs_closed': bugs,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['summary'], summary)
+        self.assertEqual(rsp['draft']['description'], description)
+        self.assertEqual(rsp['draft']['testing_done'], testing_done)
+        self.assertEqual(rsp['draft']['branch'], branch)
+        self.assertEqual(rsp['draft']['bugs_closed'], [])
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(draft.summary, summary)
+        self.assertEqual(draft.description, description)
+        self.assertEqual(draft.testing_done, testing_done)
+        self.assertEqual(draft.branch, branch)
+        self.assertEqual(draft.get_bug_list(), [])
+
+    def testReviewRequestDraftSetField(self):
+        """Testing the deprecated reviewrequests/draft/set/<field> API"""
+        bugs_closed = '123,456'
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
+                           review_request_id, {
+            'value': bugs_closed,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['bugs_closed'], bugs_closed.split(","))
+

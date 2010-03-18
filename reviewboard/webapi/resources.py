@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -5,7 +7,8 @@ from django.db.models import Q
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
-from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
+from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED, \
+                                  INVALID_FORM_DATA
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource
 
@@ -224,6 +227,229 @@ class RepositoryResource(WebAPIResource):
         return obj.tool.name
 
 
+class ReviewRequestDraftResource(WebAPIResource):
+    model = ReviewRequestDraft
+    name = 'draft'
+    name_plural = 'draft'
+    mutable_fields = (
+        'summary', 'description', 'testing_done', 'bugs_closed',
+        'branch', 'target_groups', 'target_people'
+    )
+    fields = ('id', 'review_request', 'last_updated') + mutable_fields
+
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    SCREENSHOT_CAPTION_FIELD_RE = \
+        re.compile(r'screenshot_(?P<id>[0-9]+)_caption')
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(review_request=review_request_id)
+
+    def serialize_bugs_closed_field(self, obj):
+        return obj.get_bug_list()
+
+    def serialize_status_field(self, obj):
+        return status_to_string(obj.status)
+
+    def has_delete_permissions(self, request, draft, *args, **kwargs):
+        return draft.review_request.is_mutable_by(request.user)
+
+    @webapi_login_required
+    def create(self, *args, **kwargs):
+        # A draft is a singleton. Creating and updating it are the same
+        # operations in practice.
+        return self.update(*args, **kwargs)
+
+    @webapi_login_required
+    def update(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        try:
+            draft = self._prepare_draft(request, review_request)
+        except PermissionDenied:
+            return PERMISSION_DENIED
+
+        modified_objects = []
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if (field_name in self.mutable_fields or
+                self.SCREENSHOT_CAPTION_FIELD_RE.match(field_name)):
+                field_result, field_modified_objects, invalid = \
+                    self._set_draft_field_data(draft, field_name,
+                                               request.POST[field_name])
+
+                if invalid:
+                    invalid_fields[field_name] = invalid
+                elif field_modified_objects:
+                    modified_objects += field_modified_objects
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        for obj in modified_objects:
+            obj.save()
+
+        draft.save()
+
+        return 200, {
+            self.name: draft,
+        }
+
+    @webapi_login_required
+    def action_deprecated_set_field(self, request, review_request_id,
+                                    field_name, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        try:
+            draft = self._prepare_draft(request, review_request)
+        except PermissionDenied:
+            return PERMISSION_DENIED
+
+        if field_name not in self.mutable_fields:
+            return INVALID_ATTRIBUTE, {
+                'attribute': field_name,
+            }
+
+        field_result, modified_objects, invalid = \
+            self._set_draft_field_data(draft, field_name,
+                                       request.POST['value'])
+
+        result = {}
+
+        if invalid:
+            if field_name == 'summary':
+                # The summary field returned an INVALID_FORM_DATA, rather
+                # than setting the invalid_summary field.
+                return INVALID_FORM_DATA, {
+                    'attribute': field_name,
+                    'detail': invalid[0]
+                }
+
+            result['invalid_' + field_name] = invalid[0]
+        else:
+            result[field_name] = field_result
+
+            for obj in modified_objects:
+                obj.save()
+
+            draft.save()
+
+        return 200, result
+
+    def _set_draft_field_data(self, draft, field_name, data):
+        result = None
+        modified_objects = []
+        invalid_entries = []
+
+        if field_name in ('target_groups', 'target_people'):
+            values = re.split(r",\s*", data)
+            target = getattr(draft, field_name)
+            target.clear()
+
+            for value in values:
+                # Prevent problems if the user leaves a trailing comma,
+                # generating an empty value.
+                if not value:
+                    continue
+
+                try:
+                    if field_name == "target_groups":
+                        obj = Group.objects.get(Q(name__iexact=value) |
+                                                Q(display_name__iexact=value))
+                    elif field_name == "target_people":
+                        obj = self._find_user(username=value)
+
+                    target.add(obj)
+                except:
+                    invalid_entries.append(value)
+
+            result = target.all()
+        elif field_name == 'bugs_closed':
+            data = list(self._sanitize_bug_ids(data))
+            setattr(draft, field_name, ','.join(data))
+            result = data
+        elif field_name.startswith('screenshot_'):
+            m = self.SCREENSHOT_CAPTION_FIELD_RE.match(field_name)
+
+            if not m:
+                # We've already checked this. It should never happen.
+                raise AssertionError('Should not be reached')
+
+            screenshot_id = int(m.group('id'))
+
+            try:
+                screenshot = Screenshot.objects.get(pk=screenshot_id)
+            except Screenshot.DoesNotExist:
+                return ['Screenshot with ID %s does not exist' %
+                        screenshot_id], []
+
+            screenshot.draft_caption = data
+
+            result = data
+            modified_objects.append(screenshot)
+        elif field_name == 'changedescription':
+            draft.changedesc.text = data
+
+            modified_objects.append(draft.changedesc)
+            result = data
+        else:
+            if field_name == 'summary' and '\n' in data:
+                return ['Summary cannot contain newlines'], []
+
+            setattr(draft, field_name, data)
+            result = data
+
+        return data, modified_objects, invalid_entries
+
+    def _sanitize_bug_ids(self, entries):
+        for bug in entries.split(','):
+            bug = bug.strip()
+
+            if bug:
+                # RB stores bug numbers as numbers, but many people have the
+                # habit of prepending #, so filter it out:
+                if bug[0] == '#':
+                    bug = bug[1:]
+
+                yield bug
+
+    def _prepare_draft(self, request, review_request):
+        if not review_request.is_mutable_by(request.user):
+            raise PermissionDenied
+
+        return ReviewRequestDraft.create(review_request)
+
+    def _find_user(self, username):
+        username = username.strip()
+
+        try:
+            return User.objects.get(username=username)
+        except User.DoesNotExist:
+            for backend in auth.get_backends():
+                try:
+                    user = backend.get_or_create_user(username)
+                except:
+                    pass
+
+                if user:
+                    return user
+
+        return None
+
+
 class ReviewRequestResource(WebAPIResource):
     model = ReviewRequest
     name = 'review_request'
@@ -234,6 +460,7 @@ class ReviewRequestResource(WebAPIResource):
         'target_people',
     )
     uri_object_key = 'review_request_id'
+    child_resources = [ReviewRequestDraftResource()]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -452,28 +679,6 @@ class ReviewRequestResource(WebAPIResource):
             return HttpResponseForbidden()
 
         return 200, {}
-
-
-class ReviewRequestDraftResource(WebAPIResource):
-    model = ReviewRequestDraft
-    name = 'review_request_draft'
-    fields = (
-        'id', 'review_request', 'last_updated', 'summary', 'description',
-        'testing_done', 'bugs_closed', 'branch', 'target_groups',
-        'target_people',
-    )
-
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id)
-
-    def serialize_bugs_closed_field(self, obj):
-        return [b.strip() for b in obj.bugs_closed.split(',')]
-
-    def serialize_status_field(self, obj):
-        return status_to_string(obj.status)
-
-    def has_delete_permissions(self, request, draft, *args, **kwargs):
-        return draft.review_request.is_mutable_by(request.user)
 
 
 class ReviewResource(WebAPIResource):

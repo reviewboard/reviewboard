@@ -121,6 +121,14 @@ urlpatterns += never_cache_patterns('',
      reviewRequestResource,
      {'action': 'publish',
       'method': 'PUT'}),
+
+    # Review request draft actions
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/$',
+     reviewRequestDraftResource),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',
+     reviewRequestDraftResource,
+     {'method': 'PUT',
+      'action': 'deprecated_set_field'}),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
@@ -134,9 +142,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/update_from_changenum/$',
      'review_request_draft_update_from_changenum'),
 
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/$',
-     reviewRequestDraftResource),
-
     # draft/save is deprecated in favor of draft/publish
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/save/$',
      'review_request_draft_publish'),
@@ -144,10 +149,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_request_draft_publish'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/discard/$',
      reviewRequestDraftResource),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/(?P<field_name>[A-Za-z0-9_-]+)/$',
-     'review_request_draft_set_field'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/draft/set/$',
-     'review_request_draft_set'),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/updated/$',
      'review_request_updated'),
