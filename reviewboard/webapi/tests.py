@@ -1727,3 +1727,204 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['bugs_closed'], bugs_closed.split(","))
 
+    def testReviewRequestDraftSetFieldInvalidName(self):
+        """Testing the deprecated reviewrequests/draft/set/<field> API with invalid name"""
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/set/foobar" %
+                           review_request_id, {
+            'value': 'foo',
+        }, 400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
+        self.assertEqual(rsp['attribute'], 'foobar')
+
+    def testReviewRequestPublishSendsEmail(self):
+        """Testing the deprecated reviewrequests/publish API"""
+        # Set some data first.
+        self.testReviewRequestDraftSet()
+
+        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
+
+        rsp = self.apiPost("reviewrequests/%s/publish" % review_request.id)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(mail.outbox), 1)
+
+    def testReviewRequestDraftSetFieldNoPermission(self):
+        """Testing the deprecated reviewrequests/draft/set/<field> API without valid permissions"""
+        bugs_closed = '123,456'
+        review_request_id = ReviewRequest.objects.from_user('admin')[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
+                           review_request_id, {
+            'value': bugs_closed,
+        }, 403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    # draft/save is deprecated. Tests were copied to *DraftPublish*().
+    # This is still here only to make sure we don't break backwards
+    # compatibility.
+    def testReviewRequestDraftSave(self):
+        """Testing the deprecated reviewrequests/draft/save API"""
+        # Set some data first.
+        self.testReviewRequestDraftSet()
+
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        self.assertEqual(review_request.summary, "My Summary")
+        self.assertEqual(review_request.description, "My Description")
+        self.assertEqual(review_request.testing_done, "My Testing Done")
+        self.assertEqual(review_request.branch, "My Branch")
+
+    def testReviewRequestDraftSaveDoesNotExist(self):
+        """Testing the deprecated reviewrequests/draft/save API with Does Not Exist error"""
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id,
+                           expected_status=404)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def testReviewRequestDraftPublish(self):
+        """Testing the deprecated reviewrequests/draft/publish API"""
+        # Set some data first.
+        self.testReviewRequestDraftSet()
+
+        review_request_id = \
+            ReviewRequest.objects.from_user(self.user.username)[0].id
+        rsp = self.apiPost("reviewrequests/%s/draft/publish" % review_request_id)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        self.assertEqual(review_request.summary, "My Summary")
+        self.assertEqual(review_request.description, "My Description")
+        self.assertEqual(review_request.testing_done, "My Testing Done")
+        self.assertEqual(review_request.branch, "My Branch")
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
+        self.assertValidRecipients(["doc", "grumpy"], [])
+
+
+    def testReviewRequestDraftPublishDoesNotExist(self):
+        """Testing the deprecated reviewrequests/draft/publish API with Does Not Exist error"""
+        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
+        rsp = self.apiPost("reviewrequests/%s/draft/publish" %
+                           review_request.id,
+                           expected_status=404)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def testReviewRequestDraftDiscard(self):
+        """Testing the deprecated reviewrequests/draft/discard API"""
+        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
+        summary = review_request.summary
+        description = review_request.description
+
+        # Set some data.
+        self.testReviewRequestDraftSet()
+
+        rsp = self.apiPost("reviewrequests/%s/draft/discard" %
+                           review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, summary)
+        self.assertEqual(review_request.description, description)
+
+    def testReviewDraftSave(self):
+        """Testing the deprecated reviewrequests/reviews/draft/save API"""
+        body_top = ""
+        body_bottom = "My Body Bottom"
+        ship_it = True
+
+        # Clear out any reviews on the first review request we find.
+        review_request = ReviewRequest.objects.public()[0]
+        review_request.reviews = []
+        review_request.save()
+
+        rsp = self.apiPost("reviewrequests/%s/reviews/draft/save" %
+                           review_request.id, {
+            'shipit': ship_it,
+            'body_top': body_top,
+            'body_bottom': body_bottom,
+        })
+
+        reviews = review_request.reviews.filter(user=self.user)
+        self.assertEqual(len(reviews), 1)
+        review = reviews[0]
+
+        self.assertEqual(review.ship_it, ship_it)
+        self.assertEqual(review.body_top, body_top)
+        self.assertEqual(review.body_bottom, body_bottom)
+        self.assertEqual(review.public, False)
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def testReviewDraftPublish(self):
+        """Testing the deprecated reviewrequests/reviews/draft/publish API"""
+        body_top = "My Body Top"
+        body_bottom = ""
+        ship_it = True
+
+        # Clear out any reviews on the first review request we find.
+        review_request = ReviewRequest.objects.public()[0]
+        review_request.reviews = []
+        review_request.save()
+
+        rsp = self.apiPost("reviewrequests/%s/reviews/draft/publish" %
+                           review_request.id, {
+            'shipit': ship_it,
+            'body_top': body_top,
+            'body_bottom': body_bottom,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reviews = review_request.reviews.filter(user=self.user)
+        self.assertEqual(len(reviews), 1)
+        review = reviews[0]
+
+        self.assertEqual(review.ship_it, ship_it)
+        self.assertEqual(review.body_top, body_top)
+        self.assertEqual(review.body_bottom, body_bottom)
+        self.assertEqual(review.public, True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject,
+                         "Re: Review Request: Interdiff Revision Test")
+        self.assertValidRecipients(["admin", "grumpy"], [])
+
+
+    def testReviewDraftDelete(self):
+        """Testing the deprecated reviewrequests/reviews/draft/delete API"""
+        # Set up the draft to delete.
+        self.testReviewDraftSave()
+
+        review_request = ReviewRequest.objects.public()[0]
+        rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
+                           review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(review_request.reviews.count(), 0)
+
+    def testReviewDraftDeleteDoesNotExist(self):
+        """Testing the deprecated reviewrequests/reviews/draft/delete API with Does Not Exist error"""
+        # Set up the draft to delete
+        self.testReviewDraftPublish()
+
+        review_request = ReviewRequest.objects.public()[0]
+        rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
+                           review_request.id, expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
