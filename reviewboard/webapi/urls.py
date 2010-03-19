@@ -147,6 +147,19 @@ urlpatterns += never_cache_patterns('',
      redirect,
      {'url': '../?counts-only=1&_count-field-alias=reviews',
       'permanent': True}),
+
+    # Review draft actions
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/save/$',
+     reviewDraftResource,
+     {'method': 'PUT'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/publish/$',
+     reviewDraftResource,
+     {'method': 'PUT',
+      'action': 'publish'}),
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/delete/$',
+     reviewDraftResource,
+     {'method': 'PUT',
+      'action': 'deprecated_delete'}),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
@@ -163,18 +176,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/updated/$',
      'review_request_updated'),
 
-    # Reviews
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/save/$',
-     'review_draft_save'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/publish/$',
-     'review_draft_save',
-     {'publish': True}),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/delete/$',
-     reviewDraftResource),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/$',
      'review_draft_comments'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/$',
-     reviewDraftResource),
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/$',
      'review_comments_list'),

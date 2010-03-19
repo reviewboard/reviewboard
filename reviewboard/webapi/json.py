@@ -291,34 +291,6 @@ def review_request_draft_update_from_changenum(request, review_request_id):
 
 
 @webapi_login_required
-@require_POST
-def review_draft_save(request, review_request_id, publish=False):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    review, review_is_new = Review.objects.get_or_create(
-        user=request.user,
-        review_request=review_request,
-        public=False,
-        base_reply_to__isnull=True)
-
-    if 'shipit' in request.POST:
-        review.ship_it = request.POST['shipit'] in (1, "1", True, "True")
-
-    if 'body_top' in request.POST:
-        review.body_top = request.POST['body_top']
-
-    if 'body_bottom' in request.POST:
-        review.body_bottom = request.POST['body_bottom']
-
-    if publish:
-        review.publish(user=request.user)
-    else:
-        review.save()
-
-    return WebAPIResponse(request)
-
-
-@webapi_login_required
 def review_draft_comments(request, review_request_id):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = review_request.get_pending_review(request.user)

@@ -534,6 +534,116 @@ class ReviewRequestDraftResource(WebAPIResource):
 reviewRequestDraftResource = ReviewRequestDraftResource()
 
 
+class ReviewDraftResource(WebAPIResource):
+    model = Review
+    name = 'draft'
+    name_plural = 'draft'
+    deprecated_fields = ('shipit',)
+    mutable_fields = ('ship_it', 'body_top', 'body_bottom')
+    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
+
+    allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
+
+    @webapi_login_required
+    def get(self, request, api_format, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        review = review_request.get_pending_review(request.user)
+
+        if not review:
+            return DOES_NOT_EXIST
+
+        return 200, {
+            'review': review,
+        }
+
+    @webapi_login_required
+    def create(self, *args, **kwargs):
+        # A draft is a singleton. Creating and updating it are the same
+        # operations in practice.
+        return self.update(*args, **kwargs)
+
+    @webapi_login_required
+    def update(self, request, review_request_id, publish=False,
+               *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        review, review_is_new = Review.objects.get_or_create(
+            user=request.user,
+            review_request=review_request,
+            public=False,
+            base_reply_to__isnull=True)
+
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if (field_name not in self.mutable_fields and
+                field_name not in self.deprecated_fields):
+                invalid_fields[field_name] = ['Field is not supported']
+            elif field_name in ('shipit', 'ship_it'):
+                # NOTE: "shipit" is deprecated.
+                review.ship_it = request.POST[field_name] in \
+                                 (1, "1", True, "True")
+            elif field_name in ('body_top', 'body_bottom'):
+                setattr(review, field_name, request.POST.get(field_name))
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        review.save()
+
+        if publish:
+            review.publish(user=request.user)
+        else:
+            review.save()
+
+        return 200, {}
+
+    @webapi_login_required
+    def delete(self, request, api_format, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        review = review_request.get_pending_review(request.user)
+
+        if not review:
+            return DOES_NOT_EXIST
+
+        review.delete()
+
+        return 204, {}
+
+    @webapi_login_required
+    def action_publish(self, *args, **kwargs):
+        return self.update(publish=True, *args, **kwargs)
+
+    @webapi_login_required
+    def action_deprecated_delete(self, *args, **kwargs):
+        result = self.delete(*args, **kwargs)
+
+        if isinstance(result, tuple) and result[0] == 204:
+            # Delete returned a 200 on success.
+            return 200, result[1]
+
+        return result
+
+reviewDraftResource = ReviewDraftResource()
+
+
 class ReviewResource(WebAPIResource):
     model = Review
     fields = (
@@ -541,6 +651,9 @@ class ReviewResource(WebAPIResource):
         'body_bottom', 'comments',
     )
     uri_object_key = 'review_id'
+    child_resources = [
+        reviewDraftResource,
+    ]
 
     allowed_methods = ('GET',)
 
@@ -800,40 +913,6 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
 
-class ReviewDraftResource(ReviewResource):
-    @webapi_login_required
-    def get(self, request, api_format, review_request_id, *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        review = review_request.get_pending_review(request.user)
-
-        if not review:
-            return DOES_NOT_EXIST
-
-        return 200, {
-            'review': review,
-        }
-
-    @webapi_login_required
-    def delete(self, request, api_format, review_request_id, *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        review = review_request.get_pending_review(request.user)
-
-        if not review:
-            return DOES_NOT_EXIST
-
-        review.delete()
-
-        return 204, {}
-
-
 class ScreenshotCommentResource(WebAPIResource):
     model = ScreenshotComment
     fields = (
@@ -921,7 +1000,6 @@ fileDiffResource = FileDiffResource()
 reviewGroupResource = ReviewGroupResource()
 repositoryResource = RepositoryResource()
 reviewRequestResource = ReviewRequestResource()
-reviewDraftResource = ReviewDraftResource()
 screenshotCommentResource = ScreenshotCommentResource()
 screenshotResource = ScreenshotResource()
 serverInfoResource = ServerInfoResource()
