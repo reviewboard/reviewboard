@@ -571,7 +571,8 @@ class ReviewRequestDraft(models.Model):
     bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
                                                     max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
-                                blank=True, null=True)
+                                blank=True, null=True,
+                                related_name='review_request_draft')
     changedesc = models.ForeignKey(ChangeDescription,
                                    verbose_name=_('change description'),
                                    blank=True, null=True)
