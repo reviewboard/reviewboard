@@ -276,7 +276,8 @@ class DiffSetResource(WebAPIResource):
                 discarded_diffset = draft.diffset
         except ReviewRequestDraft.DoesNotExist:
             try:
-                draft = _prepare_draft(request, review_request)
+                draft = ReviewRequestDraftResource.prepare_draft(
+                    request, review_request)
             except PermissionDenied:
                 return PERMISSION_DENIED
 
@@ -444,6 +445,13 @@ class ReviewRequestDraftResource(WebAPIResource):
     SCREENSHOT_CAPTION_FIELD_RE = \
         re.compile(r'screenshot_(?P<id>[0-9]+)_caption')
 
+    @classmethod
+    def prepare_draft(self, request, review_request):
+        if not review_request.is_mutable_by(request.user):
+            raise PermissionDenied
+
+        return ReviewRequestDraft.create(review_request)
+
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(review_request=review_request_id)
 
@@ -471,7 +479,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            draft = self._prepare_draft(request, review_request)
+            draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
             return PERMISSION_DENIED
 
@@ -513,7 +521,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_login_required
     def delete(self, request, review_request_id, *args, **kwargs):
-        # Make sure this exists. We don't want to use _prepare_draft, or
+        # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
             draft = ReviewRequestDraft.objects.get(
@@ -530,7 +538,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_login_required
     def action_publish(self, request, review_request_id, *args, **kwargs):
-        # Make sure this exists. We don't want to use _prepare_draft, or
+        # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
             draft = ReviewRequestDraft.objects.get(
@@ -568,7 +576,7 @@ class ReviewRequestDraftResource(WebAPIResource):
                 return DOES_NOT_EXIST
 
             try:
-                draft = self._prepare_draft(request, review_request)
+                draft = self.prepare_draft(request, review_request)
             except PermissionDenied:
                 return PERMISSION_DENIED
 
@@ -585,7 +593,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         try:
-            draft = self._prepare_draft(request, review_request)
+            draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
             return PERMISSION_DENIED
 
@@ -706,12 +714,6 @@ class ReviewRequestDraftResource(WebAPIResource):
                     bug = bug[1:]
 
                 yield bug
-
-    def _prepare_draft(self, request, review_request):
-        if not review_request.is_mutable_by(request.user):
-            raise PermissionDenied
-
-        return ReviewRequestDraft.create(review_request)
 
     def _find_user(self, username):
         username = username.strip()
