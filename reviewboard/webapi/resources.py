@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.template.defaultfilters import timesince
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
@@ -80,6 +81,9 @@ class CommentResource(WebAPIResource):
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
+
+    def serialize_timesince_field(self, obj):
+        return timesince(obj.timestamp)
 
     def serialize_user_field(self, obj):
         return obj.review.get().user
@@ -1005,6 +1009,9 @@ class ScreenshotCommentResource(WebAPIResource):
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
+
+    def serialize_timesince_field(self, obj):
+        return timesince(obj.timestamp)
 
     def serialize_user_field(self, obj):
         return obj.review.get().user

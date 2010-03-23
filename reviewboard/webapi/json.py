@@ -11,7 +11,6 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
@@ -42,14 +41,17 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.resources import diffSetResource, \
+from reviewboard.webapi.resources import commentResource, \
+                                         diffSetResource, \
+                                         fileDiffResource, \
                                          repositoryResource, \
                                          reviewDraftResource, \
                                          reviewGroupResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
                                          reviewResource, \
-                                         screenshotResource
+                                         screenshotResource, \
+                                         screenshotCommentResource
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
