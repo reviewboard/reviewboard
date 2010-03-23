@@ -164,7 +164,8 @@ urlpatterns += never_cache_patterns('',
 
     # DiffSet actions
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
-     diffSetResource),
+     diffSetResource,
+     {'method': 'POST'}),
 
     # Screenshot actions
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',
@@ -206,10 +207,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'review_replies_list'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/count/$',
      'count_review_replies'),
-
-    # Diffs
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/$',
-     diffSetResource),
 
     # Diff comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',

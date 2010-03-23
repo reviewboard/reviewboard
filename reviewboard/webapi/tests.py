@@ -129,11 +129,11 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         filediff = diffset.files.all()[0]
 
         rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10),
+            "reviewrequests/%s/diffs/%s/files/%s/comments" %
+            (review_request.id, diffset.revision, filediff.id),
             {
-                'action': 'set',
                 'text': comment_text,
+                'line': 10,
                 'num_lines': 5,
             }
         )
@@ -146,11 +146,14 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                   comment_text, x, y, w, h):
         """Utility function for posting a new screenshot comment."""
         rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, w, h, x, y),
+            "reviewrequests/%s/screenshots/%s/comments" %
+            (review_request.id, screenshot.id),
             {
-                'action': 'set',
                 'text': comment_text,
+                'x': x,
+                'y': y,
+                'width': w,
+                'height': h,
             }
         )
 

@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 
 from django.conf import settings
@@ -79,6 +80,20 @@ class CommentResource(WebAPIResource):
         'timesince', 'first_line', 'num_lines', 'public', 'user',
     )
 
+    uri_object_key = 'comment_id'
+
+    allowed_methods = ('GET', 'POST')
+
+    def get_queryset(self, request, review_request_id, diff_revision,
+                     *args, **kwargs):
+        query = self.model.objects.filter(
+            Q(review__public=True) | Q(review__user=request.user),
+            filediff__diffset__history__review_request=review_request_id,
+            filediff__diffset__revision=diff_revision,
+            interfilediff__isnull=True)
+
+        return query
+
     def serialize_public_field(self, obj):
         return obj.review.get().public
 
@@ -88,17 +103,128 @@ class CommentResource(WebAPIResource):
     def serialize_user_field(self, obj):
         return obj.review.get().user
 
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        filediff = comment.filediff
+        diffset = filediff.diffset
+        review_request = diffset.history.review_request.get()
+
+        return {
+            'review_request_id': review_request.id,
+            'diff_revision': diffset.revision,
+            'filediff_id': filediff.id,
+        }
+
+    @webapi_login_required
+    def create(self, request, review_request_id, diff_revision, filediff_id,
+               *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            filediff = FileDiff.objects.get(
+                pk=filediff_id,
+                diffset__revision=diff_revision,
+                diffset__history__review_request=review_request)
+        except (ReviewRequest.DoesNotExist, FileDiff.DoesNotExist):
+            return DOES_NOT_EXIST
+
+        line = request.POST.get('line')
+        num_lines = request.POST.get('num_lines')
+        text = request.POST.get('text')
+
+        interfilediff = None # XXX
+
+        review, review_is_new = Review.objects.get_or_create(
+            review_request=review_request,
+            user=request.user,
+            public=False,
+            base_reply_to__isnull=True)
+
+        if interfilediff:
+            comment, comment_is_new = review.comments.get_or_create(
+                filediff=filediff,
+                interfilediff=interfilediff,
+                first_line=line)
+        else:
+            comment, comment_is_new = review.comments.get_or_create(
+                filediff=filediff,
+                interfilediff__isnull=True,
+                first_line=line)
+
+        comment.text = text
+        comment.num_lines = num_lines
+        comment.timestamp = datetime.now()
+        comment.save()
+
+        if comment_is_new:
+            review.comments.add(comment)
+            review.save()
+
+        return 200, {
+            self.name: comment,
+        }
+
+commentResource = CommentResource()
+
+
+class FileDiffResource(WebAPIResource):
+    model = FileDiff
+    name = 'file'
+    fields = (
+        'id', 'diffset', 'source_file', 'dest_file',
+        'source_revision', 'dest_detail',
+    )
+    item_child_resources = [commentResource]
+
+    uri_object_key = 'filediff_id'
+
+    def get_queryset(self, request, review_request_id, diff_revision,
+                     *args, **kwargs):
+        return self.model.objects.filter(
+            diffset__history__review_request=review_request_id,
+            diffset__revision=diff_revision)
+
+    def get_href_parent_ids(self, filediff, *args, **kwargs):
+        diffset = filediff.diffset
+        review_request = diffset.history.review_request.get()
+
+        return {
+            'diff_revision': diffset.revision,
+            'review_request_id': review_request.id,
+        }
+
+fileDiffResource = FileDiffResource()
+
 
 class DiffSetResource(WebAPIResource):
     model = DiffSet
+    name = 'diff'
     fields = ('id', 'name', 'revision', 'timestamp', 'repository')
+    item_child_resources = [fileDiffResource]
+
+    allowed_methods = ('GET', 'POST')
+
+    uri_object_key = 'diff_revision'
+    model_object_key = 'revision'
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(
             history__review_request=review_request_id)
 
+    def get_href_parent_ids(self, diffset, *args, **kwargs):
+        history = diffset.history
+
+        if history:
+            review_request = history.review_request.get()
+        else:
+            # This isn't in a history yet. It's part of a draft.
+            review_request = diffset.review_request_draft.get().review_request
+
+        return {
+            'review_request_id': review_request.id,
+        }
+
     def has_access_permissions(self, request, diffset, *args, **kwargs):
-        return diffset.history.review_request.is_accessible_by(request.user)
+        review_request = diffset.history.review_request.get()
+        return review_request.is_accessible_by(request.user)
 
     @webapi_login_required
     def create(self, request, review_request_id, *args, **kwargs):
@@ -173,14 +299,6 @@ class DiffSetResource(WebAPIResource):
         }
 
 diffSetResource = DiffSetResource()
-
-
-class FileDiffResource(WebAPIResource):
-    model = FileDiff
-    fields = (
-        'id', 'diffset', 'source_file', 'dest_file',
-        'source_revision', 'dest_detail',
-    )
 
 
 class UserResource(DjbletsUserResource):
@@ -766,6 +884,146 @@ class ReviewResource(WebAPIResource):
 reviewResource = ReviewResource()
 
 
+class ScreenshotCommentResource(WebAPIResource):
+    model = ScreenshotComment
+    name = 'comment'
+    fields = (
+        'id', 'screenshot', 'text', 'timestamp', 'timesince',
+        'public', 'user', 'x', 'y', 'w', 'h',
+    )
+
+    uri_object_key = 'comment_id'
+
+    allowed_methods = ('GET', 'POST')
+
+    def get_queryset(self, request, review_request_id, screenshot_id,
+                     *args, **kwargs):
+        return self.model.objects.filter(
+            screenshot=screenshot_id,
+            screenshot__review_request=review_request_id,
+            review__isnull=False)
+
+    def serialize_public_field(self, obj):
+        return obj.review.get().public
+
+    def serialize_timesince_field(self, obj):
+        return timesince(obj.timestamp)
+
+    def serialize_user_field(self, obj):
+        return obj.review.get().user
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        screenshot = comment.screenshot
+        review_request = screenshot.review_request.get()
+
+        return {
+            'review_request_id': review_request.id,
+            'screenshot_id': screenshot.id,
+        }
+
+    @webapi_login_required
+    def create(self, request, review_request_id, screenshot_id,
+               *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            screenshot = Screenshot.objects.get(
+                pk=screenshot_id,
+                review_request=review_request)
+        except (ReviewRequest.DoesNotExist, Screenshot.DoesNotExist):
+            return DOES_NOT_EXIST
+
+        text = request.POST.get('text', None)
+        x = request.POST.get('x', None)
+        y = request.POST.get('y', None)
+        width = request.POST.get('width', None)
+        height = request.POST.get('height', None)
+
+        review, review_is_new = Review.objects.get_or_create(
+            review_request=review_request,
+            user=request.user,
+            public=False,
+            base_reply_to__isnull=True)
+
+        comment, comment_is_new = review.screenshot_comments.get_or_create(
+           screenshot=screenshot,
+           x=x, y=y, w=width, h=height)
+
+        comment.text = text
+        comment.timestamp = datetime.now()
+        comment.save()
+
+        if comment_is_new:
+            review.screenshot_comments.add(comment)
+            review.save()
+
+        return 200, {
+            self.name: comment,
+        }
+
+screenshotCommentResource = ScreenshotCommentResource()
+
+
+class ScreenshotResource(WebAPIResource):
+    model = Screenshot
+    name = 'screenshot'
+    fields = ('id', 'caption', 'title', 'image_url', 'thumbnail_url')
+
+    uri_object_key = 'screenshot_id'
+
+    item_child_resources = [
+        screenshotCommentResource,
+    ]
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(review_request=review_request_id)
+
+    def serialize_title_field(self, obj):
+        return u'Screenshot: %s' % (obj.caption or obj.image.name),
+
+    def serialize_image_url_field(self, obj):
+        return obj.get_absolute_url()
+
+    def serialize_thumbnail_url_field(self, obj):
+        return obj.get_thumbnail_url()
+
+    def get_href_parent_ids(self, screenshot, *args, **kwargs):
+        return {
+            'review_request_id': screenshot.review_request.get().id,
+        }
+
+    @webapi_login_required
+    def create(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return PERMISSION_DENIED
+
+        form_data = request.POST.copy()
+        form = UploadScreenshotForm(form_data, request.FILES)
+
+        if not form.is_valid():
+            return WebAPIResponseFormError(request, form)
+
+        try:
+            screenshot = form.create(request.FILES['path'], review_request)
+        except ValueError, e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'path': [str(e)],
+                },
+            }
+
+        return 200, {
+            'screenshot_id': screenshot.id, # For backwards-compatibility
+            'screenshot': screenshot,
+        }
+
+screenshotResource = ScreenshotResource()
+
+
 class ReviewRequestResource(WebAPIResource):
     model = ReviewRequest
     name = 'review_request'
@@ -777,8 +1035,10 @@ class ReviewRequestResource(WebAPIResource):
     )
     uri_object_key = 'review_request_id'
     item_child_resources = [
+        diffSetResource,
         reviewRequestDraftResource,
         reviewResource,
+        screenshotResource,
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -1000,69 +1260,6 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
 
-class ScreenshotCommentResource(WebAPIResource):
-    model = ScreenshotComment
-    fields = (
-        'id', 'screenshot', 'text', 'timestamp', 'timesince',
-        'public', 'user', 'x', 'y', 'w', 'h',
-    )
-
-    def serialize_public_field(self, obj):
-        return obj.review.get().public
-
-    def serialize_timesince_field(self, obj):
-        return timesince(obj.timestamp)
-
-    def serialize_user_field(self, obj):
-        return obj.review.get().user
-
-
-class ScreenshotResource(WebAPIResource):
-    model = Screenshot
-    fields = ('id', 'caption', 'title', 'image_url', 'thumbnail_url')
-
-    def serialize_title_field(self, obj):
-        return u'Screenshot: %s' % (obj.caption or obj.image.name),
-
-    def serialize_image_url_field(self, obj):
-        return obj.get_absolute_url()
-
-    def serialize_thumbnail_url_field(self, obj):
-        return obj.get_thumbnail_url()
-
-    @webapi_login_required
-    def create(self, request, review_request_id, *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        if not review_request.is_mutable_by(request.user):
-            return PERMISSION_DENIED
-
-        form_data = request.POST.copy()
-        form = UploadScreenshotForm(form_data, request.FILES)
-
-        if not form.is_valid():
-            return WebAPIResponseFormError(request, form)
-
-        try:
-            screenshot = form.create(request.FILES['path'], review_request)
-        except ValueError, e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'path': [str(e)],
-                },
-            }
-
-        return 200, {
-            'screenshot_id': screenshot.id, # For backwards-compatibility
-            'screenshot': screenshot,
-        }
-
-screenshotResource = ScreenshotResource()
-
-
 class ServerInfoResource(WebAPIResource):
     name = 'info'
     name_plural = 'info'
@@ -1116,7 +1313,6 @@ def string_to_status(status):
         raise "Invalid status '%s'" % status
 
 
-commentResource = CommentResource()
 diffSetResource = DiffSetResource()
 fileDiffResource = FileDiffResource()
 reviewGroupResource = ReviewGroupResource()
