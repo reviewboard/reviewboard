@@ -133,7 +133,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             (review_request.id, diffset.revision, filediff.id),
             {
                 'text': comment_text,
-                'line': 10,
+                'first_line': 10,
                 'num_lines': 5,
             }
         )

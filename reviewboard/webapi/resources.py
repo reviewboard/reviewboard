@@ -75,9 +75,10 @@ class WebAPIResource(DjbletsWebAPIResource):
 
 class CommentResource(WebAPIResource):
     model = Comment
-    fields = (
-        'id', 'filediff', 'interfilediff', 'text', 'timestamp',
-        'timesince', 'first_line', 'num_lines', 'public', 'user',
+    mutable_fields = ('first_line', 'num_lines', 'text')
+    fields = mutable_fields + (
+        'id', 'filediff', 'interfilediff', 'timestamp',
+        'timesince', 'public', 'user',
     )
 
     uri_object_key = 'comment_id'
@@ -126,9 +127,30 @@ class CommentResource(WebAPIResource):
         except (ReviewRequest.DoesNotExist, FileDiff.DoesNotExist):
             return DOES_NOT_EXIST
 
-        line = request.POST.get('line')
-        num_lines = request.POST.get('num_lines')
-        text = request.POST.get('text')
+        self._scan_deprecated_fields(request, **kwargs)
+
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if field_name not in self.mutable_fields:
+                invalid_fields[field_name] = ['Field is not supported']
+
+        for field_name in self.mutable_fields:
+            if request.POST.get(field_name, None) is None:
+                invalid_fields[field_name] = ['This field is required']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        line = request.POST['first_line']
+        num_lines = request.POST['num_lines']
+        text = request.POST['text']
 
         interfilediff = None # XXX
 
@@ -161,6 +183,17 @@ class CommentResource(WebAPIResource):
         return 200, {
             self.name: comment,
         }
+
+    def _scan_deprecated_fields(self, request, **kwargs):
+        """Scans the keyword URL argument list for deprecated fields.
+
+        This is used for the old Review Board 1.0.x version of the
+        screenshot comment API, which passed these fields into the
+        URL. This will stick them back in request.POST.
+        """
+        for field_name in self.mutable_fields:
+            if field_name in kwargs:
+                request.POST[field_name] = kwargs[field_name]
 
 commentResource = CommentResource()
 
@@ -889,9 +922,10 @@ reviewResource = ReviewResource()
 class ScreenshotCommentResource(WebAPIResource):
     model = ScreenshotComment
     name = 'comment'
-    fields = (
-        'id', 'screenshot', 'text', 'timestamp', 'timesince',
-        'public', 'user', 'x', 'y', 'w', 'h',
+    mutable_fields = ('text', 'x', 'y', 'w', 'h')
+    fields = mutable_fields + (
+        'id', 'screenshot', 'timestamp', 'timesince',
+        'public', 'user'
     )
 
     uri_object_key = 'comment_id'
@@ -934,11 +968,32 @@ class ScreenshotCommentResource(WebAPIResource):
         except (ReviewRequest.DoesNotExist, Screenshot.DoesNotExist):
             return DOES_NOT_EXIST
 
-        text = request.POST.get('text', None)
-        x = request.POST.get('x', None)
-        y = request.POST.get('y', None)
-        width = request.POST.get('width', None)
-        height = request.POST.get('height', None)
+        self._scan_deprecated_fields(request, **kwargs)
+
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if field_name not in self.mutable_fields:
+                invalid_fields[field_name] = ['Field is not supported']
+
+        for field_name in self.mutable_fields:
+            if request.POST.get(field_name, None) is None:
+                invalid_fields[field_name] = ['This field is required']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        text = request.POST['text']
+        x = request.POST['x']
+        y = request.POST['y']
+        width = request.POST['w']
+        height = request.POST['h']
 
         review, review_is_new = Review.objects.get_or_create(
             review_request=review_request,
@@ -961,6 +1016,17 @@ class ScreenshotCommentResource(WebAPIResource):
         return 200, {
             self.name: comment,
         }
+
+    def _scan_deprecated_fields(self, request, **kwargs):
+        """Scans the keyword URL argument list for deprecated fields.
+
+        This is used for the old Review Board 1.0.x version of the
+        screenshot comment API, which passed these fields into the
+        URL. This will stick them back in request.POST.
+        """
+        for field_name in self.mutable_fields:
+            if field_name in kwargs:
+                request.POST[field_name] = kwargs[field_name]
 
 screenshotCommentResource = ScreenshotCommentResource()
 
@@ -1320,7 +1386,5 @@ fileDiffResource = FileDiffResource()
 reviewGroupResource = ReviewGroupResource()
 repositoryResource = RepositoryResource()
 reviewRequestResource = ReviewRequestResource()
-screenshotCommentResource = ScreenshotCommentResource()
-screenshotResource = ScreenshotResource()
 serverInfoResource = ServerInfoResource()
 userResource = UserResource()

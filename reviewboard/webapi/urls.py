@@ -3,13 +3,15 @@ from django.views.generic.simple import redirect_to
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.webapi.resources import diffSetResource, \
+from reviewboard.webapi.resources import commentResource, \
+                                         diffSetResource, \
                                          repositoryResource, \
                                          reviewDraftResource, \
                                          reviewGroupResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
                                          reviewResource, \
+                                         screenshotCommentResource, \
                                          screenshotResource, \
                                          serverInfoResource, \
                                          userResource
@@ -171,6 +173,14 @@ urlpatterns += never_cache_patterns('',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',
      screenshotResource,
      {'method': 'POST'}),
+
+    # Diff comments
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<first_line>[0-9]+)/comments/$',
+     commentResource),
+
+    # Screenshot comments
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/comments/(?P<w>[0-9]+)x(?P<h>[0-9]+)\+(?P<x>[0-9]+)\+(?P<y>[0-9]+)/$',
+     screenshotCommentResource),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
@@ -208,15 +218,7 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/count/$',
      'count_review_replies'),
 
-    # Diff comments
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',
-     'diff_line_comments'),
-
     # Interdiff comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)-(?P<interfilediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',
      'diff_line_comments'),
-
-    # Screenshot comments
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/comments/(?P<w>[0-9]+)x(?P<h>[0-9]+)\+(?P<x>[0-9]+)\+(?P<y>[0-9]+)/$',
-     'screenshot_comments'),
 )
