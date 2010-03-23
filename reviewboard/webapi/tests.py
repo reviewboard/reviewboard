@@ -2033,3 +2033,79 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
         self.assertEqual(rsp['screenshot_comments'][0]['text'],
                          screenshot_comment_text)
+
+    def testNewDiff(self, review_request=None):
+        """Testing the reviewrequests/diff/new API"""
+
+        if review_request is None:
+            review_request = self.testNewReviewRequest()
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+        f = open(diff_filename, "r")
+        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
+            'path': f,
+            'basedir': "/trunk",
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # Return this so it can be used in other tests.
+        return DiffSet.objects.get(pk=rsp['diffset_id'])
+
+    def testNewScreenshot(self):
+        """Testing the reviewrequests/screenshot/new API"""
+        review_request = self.testNewReviewRequest()
+
+        f = open(self.__getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
+                           review_request.id, {
+            'path': f,
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # Return the screenshot so we can use it in other tests.
+        return Screenshot.objects.get(pk=rsp['screenshot_id'])
+
+    def postNewDiffComment(self, review_request, comment_text):
+        """Utility function for posting a new diff comment."""
+        diffset = review_request.diffset_history.diffsets.latest()
+        filediff = diffset.files.all()[0]
+
+        rsp = self.apiPost(
+            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
+            (review_request.id, diffset.revision, filediff.id, 10),
+            {
+                'action': 'set',
+                'text': comment_text,
+                'num_lines': 5,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def postNewScreenshotComment(self, review_request, screenshot,
+                                 comment_text, x, y, w, h):
+        """Utility function for posting a new screenshot comment."""
+        rsp = self.apiPost(
+            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
+            (review_request.id, screenshot.id, w, h, x, y),
+            {
+                'action': 'set',
+                'text': comment_text,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+        return rsp
+
+    def __getTrophyFilename(self):
+        return os.path.join(settings.HTDOCS_ROOT,
+                            "media", "rb", "images", "trophy.png")
