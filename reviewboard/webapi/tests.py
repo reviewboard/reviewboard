@@ -108,6 +108,91 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
+    #
+    # Some utility functions shared across test suites.
+    #
+    def _postNewReviewRequest(self):
+        """Testing the POST reviewrequests/ API"""
+        rsp = self.apiPost("reviewrequests", {
+            'repository_path': self.repository.path,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['repository']['id'],
+                         self.repository.id)
+
+        return rsp
+
+    def _postNewDiffComment(self, review_request, comment_text):
+        """Utility function for posting a new diff comment."""
+        diffset = review_request.diffset_history.diffsets.latest()
+        filediff = diffset.files.all()[0]
+
+        rsp = self.apiPost(
+            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
+            (review_request.id, diffset.revision, filediff.id, 10),
+            {
+                'action': 'set',
+                'text': comment_text,
+                'num_lines': 5,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def _postNewScreenshotComment(self, review_request, screenshot,
+                                  comment_text, x, y, w, h):
+        """Utility function for posting a new screenshot comment."""
+        rsp = self.apiPost(
+            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
+            (review_request.id, screenshot.id, w, h, x, y),
+            {
+                'action': 'set',
+                'text': comment_text,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def _postNewScreenshot(self, review_request):
+        """Utility function for posting a new screenshot"""
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
+                           review_request.id, {
+            'path': f,
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def _postNewDiff(self, review_request):
+        """Utility function for posting a new diff"""
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+
+        f = open(diff_filename, "r")
+        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
+            'path': f,
+            'basedir': "/trunk",
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def _getTrophyFilename(self):
+        return os.path.join(settings.HTDOCS_ROOT,
+                            "media", "rb", "images", "trophy.png")
+
 
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
@@ -736,7 +821,6 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
                          "Re: Review Request: Interdiff Revision Test")
         self.assertValidRecipients(["admin", "grumpy"], [])
 
-
     def testReviewDraftDelete(self):
         """Testing the DELETE reviewrequests/<id>/reviews/draft/ API"""
         # Set up the draft to delete.
@@ -754,6 +838,44 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
                              review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def testReviewDraftComments(self):
+        """Testing the GET reviewrequests/<id>/reviews/draft/comments API"""
+        diff_comment_text = "Test diff comment"
+        screenshot_comment_text = "Test screenshot comment"
+        x, y, w, h = 2, 2, 10, 10
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        diffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost("reviewrequests/%s/draft" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self._postNewDiffComment(review_request, diff_comment_text)
+        self._postNewScreenshotComment(review_request, screenshot,
+                                       screenshot_comment_text, x, y, w, h)
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/draft/comments" %
+                          review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['comments']), 1)
+        self.assertEqual(len(rsp['screenshot_comments']), 1)
+        self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
+        self.assertEqual(rsp['screenshot_comments'][0]['text'],
+                         screenshot_comment_text)
 
 
 class WebAPITests(BaseWebAPITestCase):
@@ -1015,25 +1137,6 @@ class WebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def postNewDiffComment(self, review_request, comment_text):
-        """Utility function for posting a new diff comment."""
-        diffset = review_request.diffset_history.diffsets.latest()
-        filediff = diffset.files.all()[0]
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10),
-            {
-                'action': 'set',
-                'text': comment_text,
-                'num_lines': 5,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        return rsp
-
     def testReviewRequestDiffsets(self):
         """Testing the reviewrequests/diffsets API"""
         rsp = self.apiGet("reviewrequests/2/diff")
@@ -1177,21 +1280,6 @@ class WebAPITests(BaseWebAPITestCase):
 
         for i in range(0, len(rsp['comments'])):
             self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
-
-    def postNewScreenshotComment(self, review_request, screenshot,
-                                 comment_text, x, y, w, h):
-        """Utility function for posting a new screenshot comment."""
-        rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, w, h, x, y),
-            {
-                'action': 'set',
-                'text': comment_text,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        return rsp
 
     def testScreenshotCommentsSet(self):
         """Testing the reviewrequests/s/comments set API"""
@@ -1896,7 +1984,6 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
                          "Re: Review Request: Interdiff Revision Test")
         self.assertValidRecipients(["admin", "grumpy"], [])
 
-
     def testReviewDraftDelete(self):
         """Testing the deprecated reviewrequests/reviews/draft/delete API"""
         # Set up the draft to delete.
@@ -1918,3 +2005,28 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
                            review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def testReviewDraftComments(self):
+        """Testing the reviewrequests/reviews/draft/comments API"""
+        diff_comment_text = "Test diff comment"
+        screenshot_comment_text = "Test screenshot comment"
+        x, y, w, h = 2, 2, 10, 10
+
+        screenshot = self.testNewScreenshot()
+        review_request = screenshot.review_request.get()
+        diffset = self.testNewDiff(review_request)
+        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.postNewDiffComment(review_request, diff_comment_text)
+        self.postNewScreenshotComment(review_request, screenshot,
+                                      screenshot_comment_text, x, y, w, h)
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/draft/comments" %
+                          review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['comments']), 1)
+        self.assertEqual(len(rsp['screenshot_comments']), 1)
+        self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
+        self.assertEqual(rsp['screenshot_comments'][0]['text'],
+                         screenshot_comment_text)

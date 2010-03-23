@@ -15,15 +15,18 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        ScreenshotComment, Screenshot
 from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
+                                        FileNotFoundError, \
                                         InvalidChangeNumberError
 from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.errors import INVALID_REPOSITORY, MISSING_REPOSITORY
+from reviewboard.webapi.errors import INVALID_REPOSITORY, MISSING_REPOSITORY, \
+                                      REPO_FILE_NOT_FOUND
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -92,6 +95,80 @@ class DiffSetResource(WebAPIResource):
 
     def has_access_permissions(self, request, diffset, *args, **kwargs):
         return diffset.history.review_request.is_accessible_by(request.user)
+
+    @webapi_login_required
+    def create(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return PERMISSION_DENIED
+
+        form_data = request.POST.copy()
+        form = UploadDiffForm(review_request, form_data, request.FILES)
+
+        if not form.is_valid():
+            return WebAPIResponseFormError(request, form)
+
+        try:
+            diffset = form.create(request.FILES['path'],
+                                  request.FILES.get('parent_diff_path'))
+        except FileNotFoundError, e:
+            return REPO_FILE_NOT_FOUND, {
+                'file': e.path,
+                'revision': e.revision
+            }
+        except EmptyDiffError, e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'path': [str(e)]
+                }
+            }
+        except Exception, e:
+            # This could be very wrong, but at least they'll see the error.
+            # We probably want a new error type for this.
+            logging.error("Error uploading new diff: %s", e, exc_info=1)
+
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'path': [str(e)]
+                }
+            }
+
+        discarded_diffset = None
+
+        try:
+            draft = review_request.draft.get()
+
+            if draft.diffset and draft.diffset != diffset:
+                discarded_diffset = draft.diffset
+        except ReviewRequestDraft.DoesNotExist:
+            try:
+                draft = _prepare_draft(request, review_request)
+            except PermissionDenied:
+                return PERMISSION_DENIED
+
+        draft.diffset = diffset
+
+        # We only want to add default reviewers the first time.  Was bug 318.
+        if review_request.diffset_history.diffsets.count() == 0:
+            draft.add_default_reviewers();
+
+        draft.save()
+
+        if discarded_diffset:
+            discarded_diffset.delete()
+
+        # E-mail gets sent when the draft is saved.
+
+        return 200, {
+            'diffset': diffset,
+            'diffset_id': diffset.id, # Deprecated
+        }
+
+diffSetResource = DiffSetResource()
 
 
 class FileDiffResource(WebAPIResource):
@@ -534,6 +611,12 @@ class ReviewRequestDraftResource(WebAPIResource):
 reviewRequestDraftResource = ReviewRequestDraftResource()
 
 
+class ReviewDraftCommentsResource(CommentResource):
+    mutable_fields = ('text', 'first_line', 'num_lines')
+
+    allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
+
+
 class ReviewDraftResource(WebAPIResource):
     model = Review
     name = 'draft'
@@ -939,6 +1022,38 @@ class ScreenshotResource(WebAPIResource):
 
     def serialize_thumbnail_url_field(self, obj):
         return obj.get_thumbnail_url()
+
+    @webapi_login_required
+    def create(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return PERMISSION_DENIED
+
+        form_data = request.POST.copy()
+        form = UploadScreenshotForm(form_data, request.FILES)
+
+        if not form.is_valid():
+            return WebAPIResponseFormError(request, form)
+
+        try:
+            screenshot = form.create(request.FILES['path'], review_request)
+        except ValueError, e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'path': [str(e)],
+                },
+            }
+
+        return 200, {
+            'screenshot_id': screenshot.id, # For backwards-compatibility
+            'screenshot': screenshot,
+        }
+
+screenshotResource = ScreenshotResource()
 
 
 class ServerInfoResource(WebAPIResource):

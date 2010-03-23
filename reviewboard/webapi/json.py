@@ -48,8 +48,8 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          reviewGroupResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
-                                         reviewResource
-
+                                         reviewResource, \
+                                         screenshotResource
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -465,103 +465,6 @@ def count_review_replies(request, review_request_id, review_id):
 
     return WebAPIResponse(request, {
         'count': review.public_replies().count()
-    })
-
-
-@webapi_login_required
-@require_POST
-def new_diff(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    if not review_request.is_mutable_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    form_data = request.POST.copy()
-    form = UploadDiffForm(review_request, form_data, request.FILES)
-
-    if not form.is_valid():
-        return WebAPIResponseFormError(request, form)
-
-    try:
-        diffset = form.create(request.FILES['path'],
-                              request.FILES.get('parent_diff_path'))
-    except FileNotFoundError, e:
-        return WebAPIResponseError(request, REPO_FILE_NOT_FOUND, {
-            'file': e.path,
-            'revision': e.revision
-        })
-    except EmptyDiffError, e:
-        return WebAPIResponseError(request, INVALID_FORM_DATA, {
-            'fields': {
-                'path': [str(e)]
-            }
-        })
-    except Exception, e:
-        # This could be very wrong, but at least they'll see the error.
-        # We probably want a new error type for this.
-        logging.error("Error uploading new diff: %s", e, exc_info=1)
-
-        return WebAPIResponseError(request, INVALID_FORM_DATA, {
-            'fields': {
-                'path': [str(e)]
-            }
-        })
-
-    discarded_diffset = None
-
-    try:
-        draft = review_request.draft.get()
-
-        if draft.diffset and draft.diffset != diffset:
-            discarded_diffset = draft.diffset
-    except ReviewRequestDraft.DoesNotExist:
-        try:
-            draft = _prepare_draft(request, review_request)
-        except PermissionDenied:
-            return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    draft.diffset = diffset
-
-    # We only want to add default reviewers the first time.  Was bug 318.
-    if review_request.diffset_history.diffsets.count() == 0:
-        draft.add_default_reviewers();
-
-    draft.save()
-
-    if discarded_diffset:
-        discarded_diffset.delete()
-
-    # E-mail gets sent when the draft is saved.
-
-    return WebAPIResponse(request, {'diffset_id': diffset.id})
-
-
-@webapi_login_required
-@require_POST
-def new_screenshot(request, review_request_id):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-    if not review_request.is_mutable_by(request.user):
-        return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    form_data = request.POST.copy()
-    form = UploadScreenshotForm(form_data, request.FILES)
-
-    if not form.is_valid():
-        return WebAPIResponseFormError(request, form)
-
-    try:
-        screenshot = form.create(request.FILES['path'], review_request)
-    except ValueError, e:
-        return WebAPIResponseError(request, INVALID_FORM_DATA, {
-            'fields': {
-                'path': [str(e)],
-            },
-        })
-
-    return WebAPIResponse(request, {
-        'screenshot_id': screenshot.id, # For backwards-compatibility
-        'screenshot': screenshot,
     })
 
 

@@ -10,6 +10,7 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
                                          reviewResource, \
+                                         screenshotResource, \
                                          serverInfoResource, \
                                          userResource
 
@@ -160,6 +161,15 @@ urlpatterns += never_cache_patterns('',
      reviewDraftResource,
      {'method': 'PUT',
       'action': 'deprecated_delete'}),
+
+    # DiffSet actions
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
+     diffSetResource),
+
+    # Screenshot actions
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',
+     screenshotResource,
+     {'method': 'POST'}),
 )
 
 urlpatterns += never_cache_patterns('reviewboard.webapi.json',
@@ -198,14 +208,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
      'count_review_replies'),
 
     # Diffs
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
-     'new_diff'),
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/$',
      diffSetResource),
-
-    # Screenshots
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/screenshot/new/$',
-     'new_screenshot'),
 
     # Diff comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<line>[0-9]+)/comments/$',
