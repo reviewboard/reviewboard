@@ -128,7 +128,7 @@ class ReviewGroupUserResource(UserResource):
 class ReviewGroupResource(WebAPIResource):
     model = Group
     fields = ('id', 'name', 'display_name', 'mailing_list', 'url')
-    child_resources = [ReviewGroupUserResource()]
+    item_child_resources = [ReviewGroupUserResource()]
 
     uri_object_key = 'group_name'
     uri_object_key_regex = '[A-Za-z0-9_-]+'
@@ -218,7 +218,7 @@ class RepositoryResource(WebAPIResource):
     name_plural = 'repositories'
     fields = ('id', 'name', 'path', 'tool')
     uri_object_key = 'repository_id'
-    child_resources = [RepositoryInfoResource()]
+    item_child_resources = [RepositoryInfoResource()]
 
     allowed_methods = ('GET',)
 
@@ -651,7 +651,7 @@ class ReviewResource(WebAPIResource):
         'body_bottom', 'comments',
     )
     uri_object_key = 'review_id'
-    child_resources = [
+    list_child_resources = [
         reviewDraftResource,
     ]
 
@@ -689,7 +689,7 @@ class ReviewRequestResource(WebAPIResource):
         'target_people',
     )
     uri_object_key = 'review_request_id'
-    child_resources = [
+    item_child_resources = [
         reviewRequestDraftResource,
         reviewResource,
     ]
