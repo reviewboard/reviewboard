@@ -165,7 +165,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         """Utility function for posting a new screenshot"""
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
+        rsp = self.apiPost("reviewrequests/%s/screenshots" %
                            review_request.id, {
             'path': f,
         })
@@ -182,7 +182,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             "scmtools", "testdata", "svn_makefile.diff")
 
         f = open(diff_filename, "r")
-        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
+        rsp = self.apiPost("reviewrequests/%s/diffs" % review_request.id, {
             'path': f,
             'basedir': "/trunk",
         })

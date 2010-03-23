@@ -293,7 +293,7 @@ def review_request_draft_update_from_changenum(request, review_request_id):
 
 
 @webapi_login_required
-def review_draft_comments(request, review_request_id):
+def review_draft_comments(request, review_request_id, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = review_request.get_pending_review(request.user)
 
@@ -473,7 +473,7 @@ def count_review_replies(request, review_request_id, review_id):
 @webapi_check_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
-                       interfilediff_id=None):
+                       interfilediff_id=None, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     filediff = get_object_or_404(FileDiff,
         pk=filediff_id, diffset__history=review_request.diffset_history,
@@ -567,7 +567,8 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
 
 
 @webapi_check_login_required
-def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
+def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h,
+                        **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
 
