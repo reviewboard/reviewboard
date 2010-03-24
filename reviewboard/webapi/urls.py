@@ -3,8 +3,8 @@ from django.views.generic.simple import redirect_to
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.webapi.resources import commentResource, \
-                                         diffSetResource, \
+from reviewboard.webapi.resources import diffSetResource, \
+                                         fileDiffCommentResource, \
                                          repositoryResource, \
                                          reviewDraftResource, \
                                          reviewGroupResource, \
@@ -164,6 +164,18 @@ urlpatterns += never_cache_patterns('',
      {'method': 'PUT',
       'action': 'deprecated_delete'}),
 
+    # Review draft diff comments list
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/count/$',
+     redirect,
+     {'url': '../?counts-only=1',
+      'permanent': True}),
+
+    # Review diff comments list
+    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/count/$',
+     redirect,
+     {'url': '../../diff-comments/?counts-only=1',
+      'permanent': True}),
+
     # DiffSet actions
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/new/$',
      diffSetResource,
@@ -176,7 +188,7 @@ urlpatterns += never_cache_patterns('',
 
     # Diff comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/diff/(?P<diff_revision>[0-9]+)/file/(?P<filediff_id>[0-9]+)/line/(?P<first_line>[0-9]+)/comments/$',
-     commentResource),
+     fileDiffCommentResource),
 
     # Screenshot comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/comments/(?P<w>[0-9]+)x(?P<h>[0-9]+)\+(?P<x>[0-9]+)\+(?P<y>[0-9]+)/$',
@@ -199,11 +211,6 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
 
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/draft/comments/$',
      'review_draft_comments'),
-
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/$',
-     'review_comments_list'),
-    (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/comments/count/$',
-     'count_review_comments'),
 
     # Replies
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/reviews/(?P<review_id>[0-9]+)/replies/draft/$',

@@ -41,10 +41,10 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.resources import commentResource, \
-                                         diffSetResource, \
+from reviewboard.webapi.resources import diffSetResource, \
                                          fileDiffResource, \
                                          repositoryResource, \
+                                         reviewCommentResource, \
                                          reviewDraftResource, \
                                          reviewGroupResource, \
                                          reviewRequestResource, \
@@ -67,7 +67,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
         elif isinstance(o, Review):
             resource = reviewResource
         elif isinstance(o, Comment):
-            resource = commentResource
+            resource = reviewCommentResource
         elif isinstance(o, ScreenshotComment):
             resource = screenshotCommentResource
         elif isinstance(o, Screenshot):

@@ -129,7 +129,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         filediff = diffset.files.all()[0]
 
         rsp = self.apiPost(
-            "reviewrequests/%s/diffs/%s/files/%s/comments" %
+            "reviewrequests/%s/diffs/%s/files/%s/diff-comments" %
             (review_request.id, diffset.revision, filediff.id),
             {
                 'text': comment_text,
@@ -146,14 +146,14 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                   comment_text, x, y, w, h):
         """Utility function for posting a new screenshot comment."""
         rsp = self.apiPost(
-            "reviewrequests/%s/screenshots/%s/comments" %
+            "reviewrequests/%s/screenshots/%s/screenshot-comments" %
             (review_request.id, screenshot.id),
             {
                 'text': comment_text,
                 'x': x,
                 'y': y,
-                'width': w,
-                'height': h,
+                'w': w,
+                'h': h,
             }
         )
 
@@ -757,6 +757,26 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review_request.reviews.count())
 
+    def testReviewCommentsList(self):
+        """Testing the GET reviewrequests/<id>/reviews/<id>/comments API"""
+        review = Review.objects.filter(comments__pk__gt=0)[0]
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['diff-comments']), review.comments.count())
+
+    def testReviewCommentsCount(self):
+        """Testing the GET reviewrequests/<id>/reviews/<id>/comments/?counts-only=1 API"""
+        review = Review.objects.filter(comments__pk__gt=0)[0]
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review.review_request.id, review.id), {
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], review.comments.count())
+
 
 class ReviewDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewDraftResource APIs."""
@@ -830,20 +850,20 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
         self.testReviewDraftPUT()
 
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiDelete("reviewrequests/%s/reviews/draft/delete" %
+        rsp = self.apiDelete("reviewrequests/%s/reviews/draft" %
                              review_request.id)
         self.assertEqual(review_request.reviews.count(), 0)
 
     def testReviewDraftDeleteDoesNotExist(self):
         """Testing the DELETE reviewrequests/reviews/draft/ API with Does Not Exist error"""
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiDelete("reviewrequests/%s/reviews/draft/delete" %
+        rsp = self.apiDelete("reviewrequests/%s/reviews/draft" %
                              review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewDraftComments(self):
-        """Testing the GET reviewrequests/<id>/reviews/draft/comments API"""
+        """Testing the GET reviewrequests/<id>/reviews/draft/diff-comments API"""
         diff_comment_text = "Test diff comment"
         screenshot_comment_text = "Test screenshot comment"
         x, y, w, h = 2, 2, 10, 10
@@ -868,39 +888,29 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         self._postNewDiffComment(review_request, diff_comment_text)
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/draft/diff-comments" %
+                          review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+
         self._postNewScreenshotComment(review_request, screenshot,
                                        screenshot_comment_text, x, y, w, h)
 
-        rsp = self.apiGet("reviewrequests/%s/reviews/draft/comments" %
-                          review_request.id)
+        rsp = self.apiGet(
+            "reviewrequests/%s/reviews/draft/screenshot-comments" %
+            review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 1)
+        self.assertTrue('screenshot_comments' in rsp)
         self.assertEqual(len(rsp['screenshot_comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
         self.assertEqual(rsp['screenshot_comments'][0]['text'],
                          screenshot_comment_text)
 
 
 class WebAPITests(BaseWebAPITestCase):
     """Testing the webapi support."""
-    def testReviewCommentsList(self):
-        """Testing the reviewrequests/reviews/comments API"""
-        review = Review.objects.filter(comments__pk__gt=0)[0]
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/comments" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), review.comments.count())
-
-    def testReviewCommentsCount(self):
-        """Testing the reviewrequests/reviews/comments/count API"""
-        review = Review.objects.filter(comments__pk__gt=0)[0]
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/comments/count" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], review.comments.count())
-
     def testReplyDraftComment(self):
         """Testing the reviewrequests/reviews/replies/draft API with comment"""
         comment_text = "My Comment Text"
@@ -2007,6 +2017,29 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
         self.assertEqual(rsp['screenshot_comments'][0]['text'],
                          screenshot_comment_text)
+
+    def testReviewCommentsList(self):
+        """Testing the deprecated reviewrequests/reviews/comments API"""
+        review = Review.objects.filter(comments__pk__gt=0)[0]
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/comments" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['comments']), review.comments.count())
+
+    def testReviewCommentsCount(self):
+        """Testing the deprecated reviewrequests/reviews/comments/count API"""
+        review = Review.objects.filter(comments__pk__gt=0)[0]
+
+        rsp = self.apiGet(
+            "reviewrequests/%s/reviews/%s/comments/count" %
+            (review.review_request.id, review.id),
+            follow_redirects=True,
+            expected_redirects=[self.reviewrequests_url +
+                                '%s/reviews/%s/diff-comments/?counts-only=1' %
+                                (review.review_request.id, review.id)])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], review.comments.count())
 
     def testNewDiff(self, review_request=None):
         """Testing the reviewrequests/diff/new API"""

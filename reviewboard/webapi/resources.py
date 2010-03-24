@@ -73,8 +73,9 @@ class WebAPIResource(DjbletsWebAPIResource):
             return result
 
 
-class CommentResource(WebAPIResource):
+class BaseCommentResource(WebAPIResource):
     model = Comment
+    name = 'diff-comment'
     mutable_fields = ('first_line', 'num_lines', 'text')
     fields = mutable_fields + (
         'id', 'filediff', 'interfilediff', 'timestamp',
@@ -83,17 +84,13 @@ class CommentResource(WebAPIResource):
 
     uri_object_key = 'comment_id'
 
-    allowed_methods = ('GET', 'POST')
+    allowed_methods = ('GET',)
 
-    def get_queryset(self, request, review_request_id, diff_revision,
-                     *args, **kwargs):
-        query = self.model.objects.filter(
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(
             Q(review__public=True) | Q(review__user=request.user),
             filediff__diffset__history__review_request=review_request_id,
-            filediff__diffset__revision=diff_revision,
             interfilediff__isnull=True)
-
-        return query
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
@@ -103,6 +100,16 @@ class CommentResource(WebAPIResource):
 
     def serialize_user_field(self, obj):
         return obj.review.get().user
+
+
+class FileDiffCommentResource(BaseCommentResource):
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_queryset(self, request, review_request_id, diff_revision,
+                     *args, **kwargs):
+        return super(FileDiffCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs).filter(
+                filediff__diffset__revision=diff_revision)
 
     def get_href_parent_ids(self, comment, *args, **kwargs):
         filediff = comment.filediff
@@ -195,7 +202,27 @@ class CommentResource(WebAPIResource):
             if field_name in kwargs:
                 request.POST[field_name] = kwargs[field_name]
 
-commentResource = CommentResource()
+fileDiffCommentResource = FileDiffCommentResource()
+
+
+class ReviewCommentResource(BaseCommentResource):
+    def get_queryset(self, request, review_request_id, review_id,
+                     *args, **kwargs):
+        query = super(ReviewCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+
+        return query.filter(review=review_id)
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        review = comment.review.get()
+        review_request = review.review_request
+
+        return {
+            'review_request_id': review_request.id,
+            'review_id': review.id,
+        }
+
+reviewCommentResource = ReviewCommentResource()
 
 
 class FileDiffResource(WebAPIResource):
@@ -205,7 +232,7 @@ class FileDiffResource(WebAPIResource):
         'id', 'diffset', 'source_file', 'dest_file',
         'source_revision', 'dest_detail',
     )
-    item_child_resources = [commentResource]
+    item_child_resources = [fileDiffCommentResource]
 
     uri_object_key = 'filediff_id'
 
@@ -768,10 +795,207 @@ class ReviewRequestDraftResource(WebAPIResource):
 reviewRequestDraftResource = ReviewRequestDraftResource()
 
 
-class ReviewDraftCommentsResource(CommentResource):
+class ReviewDraftCommentResource(BaseCommentResource):
     mutable_fields = ('text', 'first_line', 'num_lines')
 
     allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
+
+reviewDraftCommentResource = ReviewDraftCommentResource()
+
+
+class BaseScreenshotCommentResource(WebAPIResource):
+    model = ScreenshotComment
+    name = 'screenshot-comment'
+    mutable_fields = ('text', 'x', 'y', 'w', 'h')
+    fields = mutable_fields + (
+        'id', 'screenshot', 'timestamp', 'timesince',
+        'public', 'user'
+    )
+
+    uri_object_key = 'comment_id'
+
+    allowed_methods = ('GET',)
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(
+            screenshot__review_request=review_request_id,
+            review__isnull=False)
+
+    def serialize_public_field(self, obj):
+        return obj.review.get().public
+
+    def serialize_timesince_field(self, obj):
+        return timesince(obj.timestamp)
+
+    def serialize_user_field(self, obj):
+        return obj.review.get().user
+
+
+class ScreenshotCommentResource(BaseScreenshotCommentResource):
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_queryset(self, request, review_request_id, screenshot_id,
+                     *args, **kwargs):
+        query = super(ScreenshotCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+
+        return query.filter(screenshot=screenshot_id)
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        screenshot = comment.screenshot
+        review_request = screenshot.review_request.get()
+
+        return {
+            'review_request_id': review_request.id,
+            'screenshot_id': screenshot.id,
+        }
+
+    @webapi_login_required
+    def create(self, request, review_request_id, screenshot_id,
+               *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            screenshot = Screenshot.objects.get(
+                pk=screenshot_id,
+                review_request=review_request)
+        except (ReviewRequest.DoesNotExist, Screenshot.DoesNotExist):
+            return DOES_NOT_EXIST
+
+        self._scan_deprecated_fields(request, **kwargs)
+
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if field_name not in self.mutable_fields:
+                invalid_fields[field_name] = ['Field is not supported']
+
+        for field_name in self.mutable_fields:
+            if request.POST.get(field_name, None) is None:
+                invalid_fields[field_name] = ['This field is required']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        text = request.POST['text']
+        x = request.POST['x']
+        y = request.POST['y']
+        width = request.POST['w']
+        height = request.POST['h']
+
+        review, review_is_new = Review.objects.get_or_create(
+            review_request=review_request,
+            user=request.user,
+            public=False,
+            base_reply_to__isnull=True)
+
+        comment, comment_is_new = review.screenshot_comments.get_or_create(
+           screenshot=screenshot,
+           x=x, y=y, w=width, h=height)
+
+        comment.text = text
+        comment.timestamp = datetime.now()
+        comment.save()
+
+        if comment_is_new:
+            review.screenshot_comments.add(comment)
+            review.save()
+
+        return 200, {
+            self.name: comment,
+        }
+
+    def _scan_deprecated_fields(self, request, **kwargs):
+        """Scans the keyword URL argument list for deprecated fields.
+
+        This is used for the old Review Board 1.0.x version of the
+        screenshot comment API, which passed these fields into the
+        URL. This will stick them back in request.POST.
+        """
+        for field_name in self.mutable_fields:
+            if field_name in kwargs:
+                request.POST[field_name] = kwargs[field_name]
+
+screenshotCommentResource = ScreenshotCommentResource()
+
+
+class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
+    allowed_methods = ('GET',)
+
+    def get_queryset(self, request, review_request_id, review_id,
+                     *args, **kwargs):
+        query = super(ReviewScreenshotCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+
+        return query.filter(review=review_id)
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        review = comment.review.get()
+        review_request = review.review_request
+
+        return {
+            'review_request_id': review_request.id,
+            'review_id': review.id,
+        }
+
+reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
+
+
+class ReviewDraftScreenshotCommentResource(BaseScreenshotCommentResource):
+    allowed_methods = ('GET',)
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        query = super(ReviewDraftScreenshotCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+
+        return query.filter(review__user=request.user,
+                            review__public=False,
+                            review__base_reply_to__isnull=True)
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        review = comment.review.get()
+        review_request = review.review_request
+
+        return {
+            'review_request_id': review_request.id,
+        }
+
+reviewDraftScreenshotCommentResource = ReviewDraftScreenshotCommentResource()
+
+
+class DeprecatedReviewDraftCommentsResource(WebAPIResource):
+    name = 'comment'
+    allowed_methods = ('GET',)
+
+    @webapi_check_login_required
+    def get(self, *args, **kwargs):
+        """Returns a list of combined diff and screenshot comments.
+
+        This is deprecated and is provided only for backwards-compatibility.
+        """
+        diff_result = reviewDraftCommentResource.get_list(*args, **kwargs)
+
+        if not isinstance(diff_result, tuple) or diff_result[0] != 200:
+            # This is an error
+            return diff_result
+
+        screenshot_result = \
+            reviewDraftScreenshotCommentResource.get_list(*args, **kwargs)
+
+        if (not isinstance(screenshot_result, tuple) or
+            screenshot_result[0] != 200):
+            # This is an error
+            return diff_result
+
+        return 200, {
+            'comments': diff_result[1]['diff_comments'],
+            'screenshot_comments': screenshot_result[1]['screenshot_comments'],
+        }
 
 
 class ReviewDraftResource(WebAPIResource):
@@ -781,6 +1005,12 @@ class ReviewDraftResource(WebAPIResource):
     deprecated_fields = ('shipit',)
     mutable_fields = ('ship_it', 'body_top', 'body_bottom')
     fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
+
+    list_child_resources = [
+        reviewDraftCommentResource,
+        reviewDraftScreenshotCommentResource,
+        DeprecatedReviewDraftCommentsResource()
+    ]
 
     allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
 
@@ -884,15 +1114,49 @@ class ReviewDraftResource(WebAPIResource):
 reviewDraftResource = ReviewDraftResource()
 
 
+class DeprecatedReviewCommentsResource(WebAPIResource):
+    name = 'comment'
+    allowed_methods = ('GET',)
+
+    @webapi_check_login_required
+    def get(self, *args, **kwargs):
+        """Returns a list of combined diff and screenshot comments.
+
+        This is deprecated and is provided only for backwards-compatibility.
+        """
+        diff_result = reviewCommentResource.get_list(*args, **kwargs)
+
+        if not isinstance(diff_result, tuple) or diff_result[0] != 200:
+            # This is an error
+            return diff_result
+
+        screenshot_result = \
+            reviewScreenshotCommentResource.get_list(*args, **kwargs)
+
+        if (not isinstance(screenshot_result, tuple) or
+            screenshot_result[0] != 200):
+            # This is an error
+            return diff_result
+
+        return 200, {
+            'comments': diff_result[1]['diff_comments'],
+            'screenshot_comments': screenshot_result[1]['screenshot_comments'],
+        }
+
+
 class ReviewResource(WebAPIResource):
     model = Review
     fields = (
         'id', 'user', 'timestamp', 'public', 'ship_it', 'body_top',
         'body_bottom', 'comments',
     )
+
     uri_object_key = 'review_id'
-    list_child_resources = [
-        reviewDraftResource,
+
+    list_child_resources = [reviewDraftResource]
+    item_child_resources = [
+        reviewCommentResource,
+        DeprecatedReviewCommentsResource()
     ]
 
     allowed_methods = ('GET',)
@@ -917,118 +1181,6 @@ class ReviewResource(WebAPIResource):
         }
 
 reviewResource = ReviewResource()
-
-
-class ScreenshotCommentResource(WebAPIResource):
-    model = ScreenshotComment
-    name = 'comment'
-    mutable_fields = ('text', 'x', 'y', 'w', 'h')
-    fields = mutable_fields + (
-        'id', 'screenshot', 'timestamp', 'timesince',
-        'public', 'user'
-    )
-
-    uri_object_key = 'comment_id'
-
-    allowed_methods = ('GET', 'POST')
-
-    def get_queryset(self, request, review_request_id, screenshot_id,
-                     *args, **kwargs):
-        return self.model.objects.filter(
-            screenshot=screenshot_id,
-            screenshot__review_request=review_request_id,
-            review__isnull=False)
-
-    def serialize_public_field(self, obj):
-        return obj.review.get().public
-
-    def serialize_timesince_field(self, obj):
-        return timesince(obj.timestamp)
-
-    def serialize_user_field(self, obj):
-        return obj.review.get().user
-
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        return {
-            'review_request_id': review_request.id,
-            'screenshot_id': screenshot.id,
-        }
-
-    @webapi_login_required
-    def create(self, request, review_request_id, screenshot_id,
-               *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-            screenshot = Screenshot.objects.get(
-                pk=screenshot_id,
-                review_request=review_request)
-        except (ReviewRequest.DoesNotExist, Screenshot.DoesNotExist):
-            return DOES_NOT_EXIST
-
-        self._scan_deprecated_fields(request, **kwargs)
-
-        invalid_fields = {}
-
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
-
-            if field_name not in self.mutable_fields:
-                invalid_fields[field_name] = ['Field is not supported']
-
-        for field_name in self.mutable_fields:
-            if request.POST.get(field_name, None) is None:
-                invalid_fields[field_name] = ['This field is required']
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
-
-        text = request.POST['text']
-        x = request.POST['x']
-        y = request.POST['y']
-        width = request.POST['w']
-        height = request.POST['h']
-
-        review, review_is_new = Review.objects.get_or_create(
-            review_request=review_request,
-            user=request.user,
-            public=False,
-            base_reply_to__isnull=True)
-
-        comment, comment_is_new = review.screenshot_comments.get_or_create(
-           screenshot=screenshot,
-           x=x, y=y, w=width, h=height)
-
-        comment.text = text
-        comment.timestamp = datetime.now()
-        comment.save()
-
-        if comment_is_new:
-            review.screenshot_comments.add(comment)
-            review.save()
-
-        return 200, {
-            self.name: comment,
-        }
-
-    def _scan_deprecated_fields(self, request, **kwargs):
-        """Scans the keyword URL argument list for deprecated fields.
-
-        This is used for the old Review Board 1.0.x version of the
-        screenshot comment API, which passed these fields into the
-        URL. This will stick them back in request.POST.
-        """
-        for field_name in self.mutable_fields:
-            if field_name in kwargs:
-                request.POST[field_name] = kwargs[field_name]
-
-screenshotCommentResource = ScreenshotCommentResource()
 
 
 class ScreenshotResource(WebAPIResource):
@@ -1382,7 +1534,6 @@ def string_to_status(status):
 
 
 diffSetResource = DiffSetResource()
-fileDiffResource = FileDiffResource()
 reviewGroupResource = ReviewGroupResource()
 repositoryResource = RepositoryResource()
 reviewRequestResource = ReviewRequestResource()
