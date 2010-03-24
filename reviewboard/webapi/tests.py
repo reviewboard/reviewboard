@@ -883,32 +883,6 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
 
 class WebAPITests(BaseWebAPITestCase):
     """Testing the webapi support."""
-    def testReviewDraftComments(self):
-        """Testing the reviewrequests/reviews/draft/comments API"""
-        diff_comment_text = "Test diff comment"
-        screenshot_comment_text = "Test screenshot comment"
-        x, y, w, h = 2, 2, 10, 10
-
-        screenshot = self.testNewScreenshot()
-        review_request = screenshot.review_request.get()
-        diffset = self.testNewDiff(review_request)
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        self.postNewDiffComment(review_request, diff_comment_text)
-        self.postNewScreenshotComment(review_request, screenshot,
-                                      screenshot_comment_text, x, y, w, h)
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/draft/comments" %
-                          review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(len(rsp['screenshot_comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
-        self.assertEqual(rsp['screenshot_comments'][0]['text'],
-                         screenshot_comment_text)
-
-
     def testReviewCommentsList(self):
         """Testing the reviewrequests/reviews/comments API"""
         review = Review.objects.filter(comments__pk__gt=0)[0]
