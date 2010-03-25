@@ -244,6 +244,16 @@ class SummaryColumn(Column):
         return u'<span class="draftlabel">[%s]</span> %s' % (label, summary)
 
 
+class SubmitterColumn(Column):
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, _("Submitter"), db_field="submitter__username",
+                        shrink=True, sortable=True, link=True,
+                        *args, **kwargs)
+
+    def augment_queryset(self, queryset):
+        return queryset.select_related('submitter')
+
+
 class PendingCountColumn(Column):
     """
     A column used to show the pending number of review requests for a
@@ -303,8 +313,7 @@ class ReviewRequestDataGrid(DataGrid):
     star         = ReviewRequestStarColumn()
     ship_it      = ShipItColumn()
     summary      = SummaryColumn(expand=True, link=True, css_class="summary")
-    submitter    = Column(_("Submitter"), db_field="submitter__username",
-                          shrink=True, sortable=True, link=True)
+    submitter    = SubmitterColumn()
 
     repository   = Column(_("Repository"), db_field="repository__name",
                           shrink=True, sortable=True, link=False)
