@@ -236,7 +236,7 @@ class SVNDiffParser(DiffParser):
     def parse_special_header(self, linenum, info):
         linenum = super(SVNDiffParser, self).parse_special_header(linenum, info)
 
-        if 'index' in info:
+        if 'index' in info and linenum != len(self.lines):
             if self.lines[linenum] == self.BINARY_STRING:
                 # Skip this and the svn:mime-type line.
                 linenum += 2
