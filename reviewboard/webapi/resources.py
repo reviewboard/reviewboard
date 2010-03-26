@@ -1027,7 +1027,7 @@ class ReviewDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         return 200, {
-            'review': review,
+            self.name: review,
         }
 
     @webapi_login_required
@@ -1037,18 +1037,23 @@ class ReviewDraftResource(WebAPIResource):
         return self.update(*args, **kwargs)
 
     @webapi_login_required
-    def update(self, request, review_request_id, publish=False,
+    def update(self, request, review_request_id, review_id=None, publish=False,
                *args, **kwargs):
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
+        if review_id is None:
+            q = Q(base_reply_to__isnull=True)
+        else:
+            q = Q(base_reply_to=review_id)
+
         review, review_is_new = Review.objects.get_or_create(
+            q,
             user=request.user,
             review_request=review_request,
-            public=False,
-            base_reply_to__isnull=True)
+            public=False)
 
         invalid_fields = {}
 
@@ -1114,6 +1119,176 @@ class ReviewDraftResource(WebAPIResource):
 reviewDraftResource = ReviewDraftResource()
 
 
+class ReviewReplyDraftResource(WebAPIResource):
+    name = 'reply'
+    name_plural = 'replies'
+    allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
+    mutable_fields = ('body_top', 'body_bottom')
+    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
+
+    @webapi_login_required
+    def get(self, request, api_format, review_request_id, review_id,
+            *args, **kwargs):
+        try:
+            return 200, {
+                self.name: Review.objects.get(review_request=review_request_id,
+                                              user=request.user,
+                                              public=False,
+                                              base_reply_to=review_id)
+            }
+        except (ReviewRequest.DoesNotExist, Review.DoesNotExist):
+            return DOES_NOT_EXIST
+
+    @webapi_login_required
+    def create(self, *args, **kwargs):
+        # A draft is a singleton. Creating and updating it are the same
+        # operations in practice.
+        return self.update(*args, **kwargs)
+
+    @webapi_login_required
+    def update(self, request, review_request_id, review_id, publish=False,
+               *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review = ReviewRequest.objects.get(pk=review_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        reply, reply_is_new = Review.objects.get_or_create(
+            user=request.user,
+            review_request=review_request,
+            public=False,
+            base_reply_to=review)
+
+        invalid_fields = {}
+
+        # XXX This is deprecated
+        if 'type' in request.POST:
+            context_type = request.POST['type']
+
+            if context_type in ('body_top', 'body_bottom'):
+                request.POST[context_type] = request.POST['value']
+            elif context_type == 'comment':
+                pass
+            elif context_type == 'screenshot_comment':
+                pass
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback', 'type', 'value'):
+                # These are special names and can be ignored.
+                continue
+
+            if (field_name not in self.mutable_fields):
+                invalid_fields[field_name] = ['Field is not supported']
+            elif field_name in ('body_top', 'body_bottom'):
+                value = request.POST[field_name]
+                setattr(reply, field_name, value)
+
+                if value == "":
+                    reply_to = None
+                else:
+                    reply_to = review
+
+                setattr(reply, '%s_reply_to' % field_name, reply_to)
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        result = {}
+
+        if (not reply_is_new and
+            reply.body_top == "" and
+            reply.body_bottom == "" and
+            reply.comments.count() == 0 and
+            reply.screenshot_comments.count() == 0):
+            # This is empty, so let's go ahead and delete it.
+            reply.delete()
+            reply = None
+            result = {
+                'discarded': True,
+            }
+        elif publish:
+            reply.publish(user=request.user)
+        else:
+            reply.save()
+
+        result[self.name] = reply
+
+        return 200, result
+
+    @webapi_login_required
+    def delete(self, request, api_format, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        review = review_request.get_pending_review(request.user)
+
+        if not review:
+            return DOES_NOT_EXIST
+
+        review.delete()
+
+        return 204, {}
+
+    @webapi_login_required
+    def action_publish(self, *args, **kwargs):
+        return self.update(publish=True, *args, **kwargs)
+
+    @webapi_login_required
+    def action_deprecated_delete(self, *args, **kwargs):
+        result = self.delete(*args, **kwargs)
+
+        if isinstance(result, tuple) and result[0] == 204:
+            # Delete returned a 200 on success.
+            return 200, result[1]
+
+        return result
+
+reviewReplyDraftResource = ReviewReplyDraftResource()
+
+
+class ReviewReplyResource(WebAPIResource):
+    model = Review
+    name = 'reply'
+    name_plural = 'replies'
+    fields = (
+        'id', 'user', 'timestamp', 'public', 'ship_it', 'body_top',
+        'body_bottom', 'comments',
+    )
+
+    list_child_resources = [reviewReplyDraftResource]
+
+    uri_object_key = 'reply_id'
+
+    allowed_methods = ('GET',)
+
+    def get_queryset(self, request, review_request_id, review_id,
+                     is_list=False, *args, **kwargs):
+        q = Q(base_reply_to=review_id) & \
+            Q(review_request=review_request_id)
+
+        if is_list:
+            # We don't want to show drafts in the list.
+            q = q & Q(public=True)
+
+        return self.model.objects.filter(q)
+
+    def has_access_permissions(self, request, reply, *args, **kwargs):
+        return reply.public or reply.user == request.user
+
+    def get_href_parent_ids(self, reply, *args, **kwargs):
+        return {
+            'review_request_id': reply.review_request.id,
+            'review_id': reply.base_reply_to.id,
+        }
+
+reviewReplyResource = ReviewReplyResource()
+
+
 class DeprecatedReviewCommentsResource(WebAPIResource):
     name = 'comment'
     allowed_methods = ('GET',)
@@ -1156,6 +1331,7 @@ class ReviewResource(WebAPIResource):
     list_child_resources = [reviewDraftResource]
     item_child_resources = [
         reviewCommentResource,
+        reviewReplyResource,
         DeprecatedReviewCommentsResource()
     ]
 

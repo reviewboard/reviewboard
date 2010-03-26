@@ -909,6 +909,37 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
                          screenshot_comment_text)
 
 
+class ReviewReplyResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyResource APIs."""
+    def testRepliesList(self):
+        """Testing the GET reviewrequests/<id>/reviews/<id>/replies API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.testReplyDraftSave()
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['replies']), len(review.public_replies()))
+
+        for reply in review.public_replies():
+            self.assertEqual(rsp['replies'][0]['id'], reply.id)
+            self.assertEqual(rsp['replies'][0]['body_top'], reply.body_top)
+            self.assertEqual(rsp['replies'][0]['body_bottom'],
+                             reply.body_bottom)
+
+    def testRepliesListCount(self):
+        """Testing the reviewrequests/reviews/replies/count API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.testReplyDraftSave()
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies/count" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], len(review.public_replies()))
+
+
 class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewDraftResource APIs."""
     def testReplyDraftComment(self):
@@ -1033,34 +1064,6 @@ class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
 
 class WebAPITests(BaseWebAPITestCase):
     """Testing the webapi support."""
-    def testRepliesList(self):
-        """Testing the reviewrequests/reviews/replies API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-        self.testReplyDraftSave()
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['replies']), len(review.public_replies()))
-
-        for reply in review.public_replies():
-            self.assertEqual(rsp['replies'][0]['id'], reply.id)
-            self.assertEqual(rsp['replies'][0]['body_top'], reply.body_top)
-            self.assertEqual(rsp['replies'][0]['body_bottom'],
-                             reply.body_bottom)
-
-    def testRepliesListCount(self):
-        """Testing the reviewrequests/reviews/replies/count API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-        self.testReplyDraftSave()
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies/count" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], len(review.public_replies()))
-
     def testNewDiff(self, review_request=None):
         """Testing the reviewrequests/diff/new API"""
 
@@ -2162,6 +2165,34 @@ class DeprecatedWebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
+
+    def testRepliesList(self):
+        """Testing the deprecated reviewrequests/reviews/replies API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.testReplyDraftSave()
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['replies']), len(review.public_replies()))
+
+        for reply in review.public_replies():
+            self.assertEqual(rsp['replies'][0]['id'], reply.id)
+            self.assertEqual(rsp['replies'][0]['body_top'], reply.body_top)
+            self.assertEqual(rsp['replies'][0]['body_bottom'],
+                             reply.body_bottom)
+
+    def testRepliesListCount(self):
+        """Testing the deprecated reviewrequests/reviews/replies/count API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        self.testReplyDraftSave()
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies/count" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], len(review.public_replies()))
 
     def testNewDiff(self, review_request=None):
         """Testing the reviewrequests/diff/new API"""
