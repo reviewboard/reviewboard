@@ -11,6 +11,9 @@ Feature Improvements
 * Added a :guilabel:`[Discarded]` label for discarded review requests on the
   :guilabel:`All My Requests` page. (:bug:`1350`)
 
+* Changed the ``...`` icon next to the dashboard columns to be a
+  pencil icon, which is more recognizable and easy to find.
+
 
 Performance Improvements
 ========================
@@ -23,7 +26,21 @@ Performance Improvements
 Bugs Fixed
 ==========
 
+* Fixed the stale settings problem, where saved settings would sometimes
+  appear to revert. This was dependent on the web server setup, but would
+  sometimes result in saving settings and not seeing them take effect until
+  the web server was restarted. We need testing in more real deployments
+  to verify that this has been fixed, but initial testing is promising.
+  (:bug:`1105`)
+
+* Fixed an issue with cropping uploaded images and saving them to disk.
+  This would sometimes result in comments on screenshots not displaying
+  in the review. (:bug:`1396`, :bug:`1490`)
+
 * Fixed compatibility issues with Django 1.2 and newer versions of Djblets.
+
+* Fixed a breakage in Python 2.6 with saving the mail username and password
+  fields.
 
 * Fixed a badly generated path in the search-cron.conf. rb-site was putting
   the wrong path in this file, making it unusable without modification.
