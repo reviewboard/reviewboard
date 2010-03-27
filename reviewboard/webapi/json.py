@@ -90,7 +90,7 @@ EMPTY_CHANGESET           = WebAPIError(212, "The change number specified "
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
-    def encode(self, o):
+    def encode(self, o, *args, **kwargs):
         if isinstance(o, Group):
             return {
                 'id': o.id,
@@ -213,7 +213,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
                 'tool': o.tool.name
             }
         else:
-            return super(ReviewBoardAPIEncoder, self).encode(o)
+            return super(ReviewBoardAPIEncoder, self).encode(o, *args, **kwargs)
 
 
 def status_to_string(status):
@@ -243,7 +243,7 @@ def string_to_status(status):
 
 
 @webapi
-def service_not_configured(request):
+def service_not_configured(request, *args, **kwargs):
     """
     Returns an error specifying that the service has not yet been configured.
     """
@@ -251,7 +251,7 @@ def service_not_configured(request):
 
 
 @webapi_check_login_required
-def server_info(request):
+def server_info(request, *args, **kwargs):
     site = Site.objects.get_current()
     siteconfig = site.config.get()
 
@@ -274,7 +274,7 @@ def server_info(request):
 
 
 @webapi_check_login_required
-def repository_list(request):
+def repository_list(request, *args, **kwargs):
     """
     Returns a list of all known, visible repositories.
     """
@@ -284,7 +284,7 @@ def repository_list(request):
 
 
 @webapi_check_login_required
-def repository_info(request, repository_id):
+def repository_info(request, repository_id, *args, **kwargs):
     try:
         repository = Repository.objects.get(id=repository_id)
     except Repository.DoesNotExist:
@@ -300,7 +300,7 @@ def repository_info(request, repository_id):
         return WebAPIResponseError(request, REPO_INFO_ERROR)
 
 @webapi_check_login_required
-def user_list(request):
+def user_list(request, *args, **kwargs):
     """
     Returns a list of all users.
 
@@ -329,7 +329,7 @@ def user_list(request):
     })
 
 @webapi_check_login_required
-def group_list(request):
+def group_list(request, *args, **kwargs):
     """
     Returns a list of all review groups.
 
@@ -357,7 +357,7 @@ def group_list(request):
     })
 
 @webapi_check_login_required
-def users_in_group(request, group_name):
+def users_in_group(request, group_name, *args, **kwargs):
     """
     Returns a list of users in a group.
     """
@@ -371,7 +371,7 @@ def users_in_group(request, group_name):
     })
 
 @webapi_login_required
-def group_star(request, group_name):
+def group_star(request, group_name, *args, **kwargs):
     """
     Adds a group to the user's watched groups list.
     """
@@ -388,7 +388,7 @@ def group_star(request, group_name):
 
 
 @webapi_login_required
-def group_unstar(request, group_name):
+def group_unstar(request, group_name, *args, **kwargs):
     """
     Removes a group from the user's watched groups list.
     """
@@ -408,7 +408,7 @@ def group_unstar(request, group_name):
 
 @webapi_login_required
 @require_POST
-def new_review_request(request):
+def new_review_request(request, *args, **kwargs):
     """
     Creates a new review request.
 
@@ -483,7 +483,7 @@ def new_review_request(request):
 
 
 @webapi_check_login_required
-def review_request(request, review_request_id):
+def review_request(request, review_request_id, *args, **kwargs):
     """
     Returns the review request with the specified ID.
     """
@@ -496,7 +496,7 @@ def review_request(request, review_request_id):
 
 
 @webapi_check_login_required
-def review_request_last_update(request, review_request_id):
+def review_request_last_update(request, review_request_id, *args, **kwargs):
     """
     Returns the last update made to the specified review request.
 
@@ -544,7 +544,8 @@ def review_request_last_update(request, review_request_id):
 
 
 @webapi_check_login_required
-def review_request_by_changenum(request, repository_id, changenum):
+def review_request_by_changenum(request, repository_id, changenum,
+                                *args, **kwargs):
     """
     Returns a review request with the specified changenum.
     """
@@ -561,7 +562,7 @@ def review_request_by_changenum(request, repository_id, changenum):
 
 
 @webapi_login_required
-def review_request_star(request, review_request_id):
+def review_request_star(request, review_request_id, *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
     except ReviewRequest.DoesNotExist:
@@ -575,7 +576,7 @@ def review_request_star(request, review_request_id):
 
 
 @webapi_login_required
-def review_request_unstar(request, review_request_id):
+def review_request_unstar(request, review_request_id, *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
     except ReviewRequest.DoesNotExist:
@@ -591,7 +592,7 @@ def review_request_unstar(request, review_request_id):
 
 
 @webapi_login_required
-def review_request_publish(request, review_request_id):
+def review_request_publish(request, review_request_id, *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         if not review_request.can_publish():
@@ -606,7 +607,7 @@ def review_request_publish(request, review_request_id):
 
 
 @webapi_login_required
-def review_request_close(request, review_request_id, type):
+def review_request_close(request, review_request_id, type, *args, **kwargs):
     type_map = {
         'submitted': ReviewRequest.SUBMITTED,
         'discarded': ReviewRequest.DISCARDED,
@@ -639,7 +640,7 @@ def review_request_update_changenum(request, review_request_id, changenum):
     return WebAPIResponse(request)
 
 @webapi_login_required
-def review_request_reopen(request, review_request_id):
+def review_request_reopen(request, review_request_id, *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         review_request.reopen(request.user)
@@ -652,7 +653,7 @@ def review_request_reopen(request, review_request_id):
 
 
 @webapi_permission_required('reviews.delete_reviewrequest')
-def review_request_delete(request, review_request_id):
+def review_request_delete(request, review_request_id, *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         review_request.delete()
@@ -662,7 +663,7 @@ def review_request_delete(request, review_request_id):
     return WebAPIResponse(request)
 
 @webapi_login_required
-def review_request_updated(request, review_request_id):
+def review_request_updated(request, review_request_id, *args, **kwargs):
     """
     Determines if a review has been updated since the user last viewed
     it.
@@ -677,7 +678,7 @@ def review_request_updated(request, review_request_id):
         })
 
 @webapi_check_login_required
-def review_request_list(request, func, **kwargs):
+def review_request_list(request, func, api_format='json', *args, **kwargs):
     """
     Returns a list of review requests.
 
@@ -693,7 +694,7 @@ def review_request_list(request, func, **kwargs):
 
 
 @webapi_check_login_required
-def count_review_requests(request, func, **kwargs):
+def count_review_requests(request, func, api_format='json', *args, **kwargs):
     """
     Returns the number of review requests.
 
@@ -740,7 +741,7 @@ def _get_and_validate_review(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def review(request, review_request_id, review_id):
+def review(request, review_request_id, review_id, *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, WebAPIResponseError):
@@ -755,7 +756,7 @@ def _get_reviews(review_request):
 
 
 @webapi_check_login_required
-def review_list(request, review_request_id):
+def review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
         'reviews': _get_reviews(review_request)
@@ -763,7 +764,7 @@ def review_list(request, review_request_id):
 
 
 @webapi_check_login_required
-def count_review_list(request, review_request_id):
+def count_review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
         'reviews': _get_reviews(review_request).count()
@@ -771,7 +772,8 @@ def count_review_list(request, review_request_id):
 
 
 @webapi_check_login_required
-def review_comments_list(request, review_request_id, review_id):
+def review_comments_list(request, review_request_id, review_id,
+                         *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, WebAPIResponseError):
@@ -784,7 +786,8 @@ def review_comments_list(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def count_review_comments(request, review_request_id, review_id):
+def count_review_comments(request, review_request_id, review_id,
+                          *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, WebAPIResponseError):
@@ -794,7 +797,7 @@ def count_review_comments(request, review_request_id, review_id):
 
 
 @webapi_login_required
-def review_request_draft(request, review_request_id):
+def review_request_draft(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
@@ -807,7 +810,7 @@ def review_request_draft(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_request_draft_discard(request, review_request_id):
+def review_request_draft_discard(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
@@ -825,7 +828,7 @@ def review_request_draft_discard(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_request_draft_publish(request, review_request_id):
+def review_request_draft_publish(request, review_request_id, *args, **kwargs):
     try:
         draft = ReviewRequestDraft.objects.get(review_request=review_request_id)
         review_request = draft.review_request
@@ -909,7 +912,8 @@ def _set_draft_field_data(draft, field_name, data):
 
 @webapi_login_required
 @require_POST
-def review_request_draft_set_field(request, review_request_id, field_name):
+def review_request_draft_set_field(request, review_request_id, field_name,
+                                   *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if field_name == 'summary' and '\n' in request.POST['value']:
@@ -978,7 +982,7 @@ mutable_review_request_fields = [
 
 @webapi_login_required
 @require_POST
-def review_request_draft_set(request, review_request_id):
+def review_request_draft_set(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
@@ -1003,7 +1007,8 @@ def review_request_draft_set(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_request_draft_update_from_changenum(request, review_request_id):
+def review_request_draft_update_from_changenum(request, review_request_id,
+                                               *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
@@ -1031,7 +1036,8 @@ def review_request_draft_update_from_changenum(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_draft_save(request, review_request_id, publish=False):
+def review_draft_save(request, review_request_id, publish=False,
+                      *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     review, review_is_new = Review.objects.get_or_create(
@@ -1059,7 +1065,7 @@ def review_draft_save(request, review_request_id, publish=False):
 
 @webapi_login_required
 @require_POST
-def review_draft_delete(request, review_request_id):
+def review_draft_delete(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = review_request.get_pending_review(request.user)
 
@@ -1071,7 +1077,7 @@ def review_draft_delete(request, review_request_id):
 
 
 @webapi_login_required
-def review_draft_comments(request, review_request_id):
+def review_draft_comments(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = review_request.get_pending_review(request.user)
 
@@ -1090,7 +1096,7 @@ def review_draft_comments(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_reply_draft(request, review_request_id, review_id):
+def review_reply_draft(request, review_request_id, review_id, *args, **kwargs):
     source_review = _get_and_validate_review(request, review_request_id,
                                              review_id)
     if isinstance(source_review, WebAPIResponseError):
@@ -1195,7 +1201,7 @@ def review_reply_draft(request, review_request_id, review_id):
 
 
 @webapi_login_required
-def review_draft(request, review_request_id):
+def review_draft(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = review_request.get_pending_review(request.user)
 
@@ -1209,7 +1215,8 @@ def review_draft(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def review_reply_draft_save(request, review_request_id, review_id):
+def review_reply_draft_save(request, review_request_id, review_id,
+                            *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -1226,7 +1233,8 @@ def review_reply_draft_save(request, review_request_id, review_id):
 
 @webapi_login_required
 @require_POST
-def review_reply_draft_discard(request, review_request_id, review_id):
+def review_reply_draft_discard(request, review_request_id, review_id,
+                               *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -1241,7 +1249,8 @@ def review_reply_draft_discard(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def review_replies_list(request, review_request_id, review_id):
+def review_replies_list(request, review_request_id, review_id,
+                        *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -1252,7 +1261,8 @@ def review_replies_list(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def count_review_replies(request, review_request_id, review_id):
+def count_review_replies(request, review_request_id, review_id,
+                        *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -1264,7 +1274,7 @@ def count_review_replies(request, review_request_id, review_id):
 
 @webapi_login_required
 @require_POST
-def new_diff(request, review_request_id):
+def new_diff(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not review_request.is_mutable_by(request.user):
@@ -1332,7 +1342,7 @@ def new_diff(request, review_request_id):
 
 @webapi_login_required
 @require_POST
-def new_screenshot(request, review_request_id):
+def new_screenshot(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     if not review_request.is_mutable_by(request.user):
@@ -1362,7 +1372,7 @@ def new_screenshot(request, review_request_id):
 @webapi_check_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
-                       interfilediff_id=None):
+                       interfilediff_id=None, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     filediff = get_object_or_404(FileDiff,
         pk=filediff_id, diffset__history=review_request.diffset_history,
@@ -1456,7 +1466,8 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
 
 
 @webapi_check_login_required
-def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h):
+def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h,
+                        *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
 

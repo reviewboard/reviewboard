@@ -95,5 +95,5 @@ urlpatterns += patterns('',
         name="root"),
 
     # This must be last.
-    (r'^iphone/', include('reviewboard.iphone.urls')),
+    url(r'^iphone/', include('reviewboard.iphone.urls', namespace='iphone')),
 )

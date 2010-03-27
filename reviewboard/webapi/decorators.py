@@ -14,7 +14,8 @@ def webapi_check_login_required(view_func):
         siteconfig = SiteConfiguration.objects.get_current()
 
         if siteconfig.get("auth_require_sitewide_login"):
-            return webapi_login_required(view_func)(request, api_format,
+            return webapi_login_required(view_func)(request,
+                                                    api_format=api_format,
                                                     *args, **kwargs)
         else:
             return view_func(request, *args, **kwargs)
