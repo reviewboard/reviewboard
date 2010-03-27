@@ -312,40 +312,24 @@ def dashboard_entry(context, level, text, view, group=None):
     :template:`reviews/dashboard_entry.html`.
     """
     user = context.get('user', None)
+    datagrid = context.get('datagrid', None)
     starred = False
     show_count = True
     count = 0
 
-    if view == 'all':
-        review_requests = ReviewRequest.objects.public(user)
-    elif view == 'outgoing':
-        review_requests = ReviewRequest.objects.from_user(user.username, user)
-    elif view == 'mine':
-        review_requests = ReviewRequest.objects.from_user(user.username, user,
-                                                          None)
-    elif view == 'incoming':
-        review_requests = ReviewRequest.objects.to_user(user.username, user)
-    elif view == 'to-me':
-        review_requests = ReviewRequest.objects.to_user_directly(user.username,
-                                                                 user)
-    elif view == 'to-group':
-        review_requests = ReviewRequest.objects.to_group(group.name, user)
-    elif view == 'starred':
-        review_requests = \
-            user.get_profile().starred_review_requests.public(user)
-        starred = True
+    if view == 'to-group':
+        count = datagrid.counts['groups'].get(group.name, 0)
     elif view == 'watched-groups':
         starred = True
         show_count = False
+    elif view in datagrid.counts:
+        count = datagrid.counts[view]
+
+        if view == 'starred':
+            starred = True
     else:
         raise template.TemplateSyntaxError, \
             "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
-
-    if show_count:
-        if type(review_requests) == QuerySet:
-            count = review_requests.count()
-        else:
-            count = len(review_requests)
 
     return {
         'MEDIA_URL': settings.MEDIA_URL,
@@ -491,10 +475,13 @@ def render_star(user, obj):
     if user.is_anonymous():
         return ""
 
-    try:
-        profile = user.get_profile()
-    except Profile.DoesNotExist:
-        return ""
+    profile = None
+
+    if not hasattr(obj, 'starred'):
+        try:
+            profile = user.get_profile()
+        except Profile.DoesNotExist:
+            return ""
 
     if isinstance(obj, ReviewRequest):
         obj_info = {
@@ -502,16 +489,18 @@ def render_star(user, obj):
             'id': obj.id
         }
 
-        starred = bool(get_object_or_none(profile.starred_review_requests,
-                                          pk=obj.id))
+        if hasattr(obj, 'starred'):
+            starred = obj.starred
+        else:
+            starred = \
+                profile.starred_review_requests.filter(pk=obj.id).count() > 0
     elif isinstance(obj, Group):
         obj_info = {
             'type': 'groups',
             'id': obj.name
         }
 
-        starred = bool(get_object_or_none(profile.starred_groups,
-                                          pk=obj.id))
+        starred = profile.starred_groups.filter(pk=obj.id).count() > 0
     else:
         raise template.TemplateSyntaxError, \
             "star tag received an incompatible object type (%s)" % \
