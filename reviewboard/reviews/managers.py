@@ -2,13 +2,27 @@ import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
+from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 
 from djblets.util.db import ConcurrencyManager
 
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.scmtools.errors import ChangeNumberInUseError
+
+
+class DefaultReviewerManager(Manager):
+    """A manager for DefaultReviewer models."""
+
+    def for_repository(self, repository):
+        """Returns all DefaultReviewers that represent a repository.
+
+        These include both DefaultReviewers that have no repositories
+        (for backwards-compatibility) and DefaultReviewers that are
+        associated with the given repository.
+        """
+        return self.filter(Q(repository__isnull=True) |
+                           Q(repository=repository))
 
 
 class ReviewRequestQuerySet(QuerySet):
@@ -87,20 +101,33 @@ class ReviewRequestManager(ConcurrencyManager):
             extra_query=Q(target_groups__users__username=username),
             *args, **kwargs)
 
-    def to_user_directly(self, username, *args, **kwargs):
-        query_user = User.objects.get(username=username)
+    def to_user_directly(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
         query = Q(starred_by__user=query_user) | Q(target_people=query_user)
         return self._query(extra_query=query, *args, **kwargs)
 
-    def to_user(self, username, *args, **kwargs):
-        query_user = User.objects.get(username=username)
+    def to_user(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
         query = Q(starred_by__user=query_user) | \
                 Q(target_people=query_user) | \
                 Q(target_groups__users=query_user)
         return self._query(extra_query=query, *args, **kwargs)
 
-    def from_user(self, username, *args, **kwargs):
-        return self._query(extra_query=Q(submitter__username=username),
+    def from_user(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
+        return self._query(extra_query=Q(submitter=query_user),
                            *args, **kwargs)
 
     def _query(self, user=None, status='P', with_counts=False,
@@ -109,6 +136,8 @@ class ReviewRequestManager(ConcurrencyManager):
 
         if user and user.is_authenticated():
             query = query | Q(submitter=user)
+
+        query = query & Q(submitter__is_active=True)
 
         if status:
             query = query & Q(status=status)

@@ -1,8 +1,39 @@
+#
+# reviewboard/admin/siteconfig.py -- Siteconfig definitions for the admin app in
+#                                    Review Board. This expands on
+#                                    djblets.siteconfig to let administrators
+#                                    configure special authentication and
+#                                    storage methods, as well as all our
+#                                    reviewboard-specific settings.
+#
+# Copyright (c) 2008-2009  Christian Hammond
+# Copyright (c) 2009  David Trowbridge
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
+
 import os.path
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-
 from djblets.log import siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import apply_django_settings, \
                                                get_django_defaults, \
@@ -19,7 +50,15 @@ auth_backend_map = {
     'builtin': 'django.contrib.auth.backends.ModelBackend',
     'nis':     'reviewboard.accounts.backends.NISBackend',
     'ldap':    'reviewboard.accounts.backends.LDAPBackend',
+    'x509':    'reviewboard.accounts.backends.X509Backend',
     'ad':      'reviewboard.accounts.backends.ActiveDirectoryBackend',
+}
+
+
+# A mapping of our supported storage backend names to backend class paths.
+storage_backend_map = {
+    'builtin': 'django.core.files.storage.FileSystemStorage',
+    's3':      'backends.s3.S3Storage',
 }
 
 
@@ -42,11 +81,29 @@ settings_map = {
     'auth_ad_group_name':         'AD_GROUP_NAME',
     'auth_ad_search_root':        'AD_SEARCH_ROOT',
     'auth_ad_recursion_depth':    'AD_RECURSION_DEPTH',
+    'auth_x509_username_field':   'X509_USERNAME_FIELD',
+    'auth_x509_username_regex':   'X509_USERNAME_REGEX',
+    'auth_x509_autocreate_users': 'X509_AUTOCREATE_USERS',
     'auth_nis_email_domain':      'NIS_EMAIL_DOMAIN',
     'site_domain_method':         'DOMAIN_METHOD',
 }
 settings_map.update(get_django_settings_map())
 settings_map.update(log_siteconfig.settings_map)
+
+# Settings for django-storages
+settings_map.update({
+    'aws_access_key_id':       'AWS_ACCESS_KEY_ID',
+    'aws_secret_access_key':   'AWS_SECRET_ACCESS_KEY',
+    'aws_headers':             'AWS_HEADERS',
+    'aws_calling_format':      'AWS_CALLING_FORMAT',
+    'aws_default_acl':         'AWS_DEFAULT_ACL',
+    'aws_querystring_active':  'AWS_QUERYSTRING_ACTIVE',
+    'aws_querystring_expire':  'AWS_QUERYSTRING_EXPIRE',
+    'aws_s3_secure_urls':      'AWS_S3_SECURE_URLS',
+    'aws_s3_bucket_name':      'AWS_STORAGE_BUCKET_NAME',
+    'couchdb_default_server':  'COUCHDB_DEFAULT_SERVER',
+    'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
+})
 
 
 # All the default values for settings.
@@ -63,6 +120,9 @@ defaults.update({
     'auth_require_sitewide_login':         False,
     'auth_custom_backends':                [],
     'auth_enable_registration':            True,
+    'auth_x509_username_field':            'SSL_CLIENT_S_DN_CN',
+    'auth_x509_username_regex':            '',
+    'auth_x509_autocreate_users':          False,
     'diffviewer_context_num_lines':        5,
     'diffviewer_include_space_patterns':   [],
     'diffviewer_paginate_by':              20,
@@ -80,6 +140,20 @@ defaults.update({
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/"
+})
+
+defaults.update({
+    'aws_access_key_id':       '',
+    'aws_secret_access_key':   '',
+    'aws_headers':             {},
+    'aws_calling_format':      2,
+    'aws_default_acl':         'public-read',
+    'aws_querystring_active':  False,
+    'aws_querystring_expire':  60,
+    'aws_s3_secure_urls':      False,
+    'aws_s3_bucket_name':      '',
+    'couchdb_default_server':  '',
+    'couchdb_storage_options': {},
 })
 
 
@@ -161,3 +235,17 @@ def load_site_config():
             (auth_backend_map[auth_backend], builtin_backend)
     else:
         settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
+
+    # Set the storage backend
+    storage_backend = siteconfig.settings.get('storage_backend', 'builtin')
+
+    if storage_backend in storage_backend_map:
+        settings.DEFAULT_FILE_STORAGE = storage_backend_map[storage_backend]
+    else:
+        settings.DEFAULT_FILE_STORAGE = storage_backend_map['builtin']
+
+    # These blow up if they're not the perfectly right types
+    settings.AWS_ACCESS_KEY_ID = str(siteconfig.get('aws_access_key_id'))
+    settings.AWS_SECRET_ACCESS_KEY = str(siteconfig.get('aws_secret_access_key'))
+    settings.AWS_STORAGE_BUCKET_NAME = str(siteconfig.get('aws_s3_bucket_name'))
+    settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))

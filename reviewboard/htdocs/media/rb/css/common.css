@@ -3,6 +3,8 @@ body {
   color: black;
   font-family: Verdana, Arial, Helvetica, Sans-Serif;
   font-size: 8pt;
+  margin: 0;
+  padding: 0;
 }
 
 h1 {
@@ -28,6 +30,12 @@ pre {
 
 span.draftlabel {
   color: #008000;
+}
+
+td.help {
+  font-size: 10px;
+  color: #333;
+  padding-top: 0;
 }
 
 ul.errorlist {
@@ -90,6 +98,21 @@ ul.errorlist li {
 .box.important .box-inner {
   background: url("../images/important.png") no-repeat top left;
   padding: 0 0 0 50px;
+}
+
+.box.tip {
+  background-color: #fdf2a0;
+  background-image: url('../images/gold_box_top_bg.png');
+  border: 1px #b7a93e solid;
+  padding: 0px 10px;
+}
+
+.box.tip .box-inner {
+  background: transparent;
+}
+
+.box.tip h1 {
+  padding-left: 0;
 }
 
 .box.yay {
@@ -172,6 +195,9 @@ ul.errorlist li {
   border-radius: 10px;
 }
 
+.server-error-box .response-data {
+  margin-top: 2em;
+}
 
 
 /****************************************************************************
@@ -245,6 +271,11 @@ form table td {
   padding: 8px 8px 4px 4px;
 }
 
+form table td.label {
+  text-align: right;
+  font-weight: bold;
+}
+
 .formdlg tr {
   padding-top: 4px;
 }
@@ -270,12 +301,6 @@ form table td {
 .formdlg .errorlist li {
   display: list-item;
   padding: 2px 4px;
-}
-
-.formdlg .help {
-  font-size: 10px;
-  color: #333;
-  padding-top: 0;
 }
 
 .formdlg .spinner {
@@ -325,8 +350,11 @@ form table td {
 #accountnav {
   list-style: none;
   margin: 0;
-  padding: 0;
-  float: right;
+  padding: 0.5em;
+  text-align: right;
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px #DDDDDD solid;
 }
 
 #accountnav li {
@@ -348,14 +376,21 @@ form table td {
   margin-left: -3em;
   padding: 0.5em 0.6em 0.5em 2.2em;
   width: 6em;
-  z-index: 2000;
+  z-index: 20000;
 }
 
-#beta {
-  color: #808080;
-  display: inline;
-  font-size: 12pt;
-  font-weight: normal;
+#activity-indicator.error {
+  background-color: #ffcd9c;
+  width: 28em;
+  margin-left: -14em;
+  background-image: none;
+  padding-left: 0.6em;
+}
+
+#activity-indicator.error a {
+  margin-left: 1em;
+  color: #0000CC;
+  text-decoration: none;
 }
 
 #error div {
@@ -373,14 +408,6 @@ form table td {
 
 #error input[type='submit'] {
   margin-left: 10px;
-}
-
-#headerbar {
-  margin-bottom: 8px;
-}
-
-#logo {
-  vertical-align: -100%;
 }
 
 #navbar-outer {
@@ -410,6 +437,20 @@ form table td {
   text-decoration: none;
 }
 
+#page-container {
+  padding: 0 0.8em 0.8em 0.8em;
+}
+
+#rbinfo {
+  position: relative;
+  padding-left: 0.8em;
+}
+
+#rbinfo img {
+  display: inline;
+  vertical-align: middle;
+}
+
 #searchbar {
   position: absolute;
   right: 0;
@@ -422,16 +463,22 @@ form table td {
 
 #title {
   display: inline;
+  vertical-align: middle;
   font-size: 24pt;
   font-weight: normal;
-  margin: 0;
-  padding: 0;
 }
 
 #title a {
   color: black;
   text-decoration: none;
 }
+
+#title .version {
+  color: #808080;
+  font-size: 12pt;
+  font-weight: normal;
+}
+
 
 /*
  * clearfix hack. See http://www.webtoolkit.info/css-clearfix.html

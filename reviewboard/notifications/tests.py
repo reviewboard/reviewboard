@@ -5,10 +5,9 @@ from django.core import mail
 from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard import initialize
 from reviewboard.notifications.email import get_email_address_for_user, \
-                                            get_email_addresses_for_group, \
-                                            mail_review_request, mail_review, \
-                                            mail_reply
+                                            get_email_addresses_for_group
 from reviewboard.reviews.models import Group, Review, ReviewRequest
 
 
@@ -34,6 +33,7 @@ class EmailTests(TestCase, EmailTestHelper):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
     def setUp(self):
+        initialize()
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
         siteconfig.save()
@@ -43,7 +43,7 @@ class EmailTests(TestCase, EmailTestHelper):
         """Testing sending an e-mail when creating a new review request"""
         review_request = ReviewRequest.objects.get(
             summary="Made e-mail improvements")
-        mail_review_request(review_request.submitter, review_request)
+        review_request.publish(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject,
@@ -54,11 +54,16 @@ class EmailTests(TestCase, EmailTestHelper):
         """Testing sending an e-mail when replying to a review request"""
         review_request = ReviewRequest.objects.get(
             summary="Add permission checking for JSON API")
+        review_request.publish(review_request.submitter)
+
+        # Clear the outbox.
+        mail.outbox = []
+
         review = Review.objects.get(review_request=review_request,
                                     user__username="doc",
                                     base_reply_to__isnull=True)
         self.assertEqual(review.body_top, "Test")
-        mail_review(review.user, review)
+        review.publish()
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject,
@@ -70,12 +75,19 @@ class EmailTests(TestCase, EmailTestHelper):
         """Testing sending an e-mail when replying to a review"""
         review_request = ReviewRequest.objects.get(
             summary="Add permission checking for JSON API")
+        review_request.publish(review_request.submitter)
+
         base_review = Review.objects.get(review_request=review_request,
                                          user__username="doc",
                                          base_reply_to__isnull=True)
+        base_review.publish()
+
+        # Clear the outbox.
+        mail.outbox = []
+
         reply = Review.objects.get(base_reply_to=base_review,
                                    user__username="dopey")
-        mail_reply(reply.user, reply)
+        reply.publish()
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject,
@@ -88,7 +100,7 @@ class EmailTests(TestCase, EmailTestHelper):
         review_request = ReviewRequest.objects.get(
             summary="Update for cleaned_data changes")
         review_request.email_message_id = "junk"
-        mail_review_request(review_request.submitter, review_request)
+        review_request.publish(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject,

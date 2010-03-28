@@ -1,0 +1,25 @@
+=======
+DiffSet
+=======
+
+Fields
+======
+
++----------------+-------------+-----------------------------------------+
+| Field          | Type        | Description                             |
++================+=============+=========================================+
+| id             | Integer     | The ID number of the diffset.           |
++----------------+-------------+-----------------------------------------+
+| name           | String      | The name of the diffset.                |
++----------------+-------------+-----------------------------------------+
+| repository     | Repository_ | The repository the diffset applies to.  |
++----------------+-------------+-----------------------------------------+
+| revision       | Integer     | The diffset's revision number.          |
++----------------+-------------+-----------------------------------------+
+| timestamp      | String      | The creation date/time of the diffset.  |
++----------------+-------------+-----------------------------------------+
+
+.. _Repository: ../repository
+
+
+.. comment: vim: ft=rst et ts=3

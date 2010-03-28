@@ -57,6 +57,7 @@ MIDDLEWARE_CLASSES = (
 
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
+    'reviewboard.admin.middleware.X509AuthMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -96,6 +97,7 @@ INSTALLED_APPS = (
     'djblets.datagrid',
     'djblets.extensions',
     'djblets.feedview',
+    'djblets.log',
     'djblets.siteconfig',
     'djblets.util',
     'djblets.webapi',
@@ -105,6 +107,7 @@ INSTALLED_APPS = (
     'reviewboard.diffviewer',
     'reviewboard.extensions',
     'reviewboard.iphone',
+    'reviewboard.notifications',
     'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',
@@ -113,8 +116,8 @@ INSTALLED_APPS = (
 )
 
 WEB_API_ENCODERS = (
-    'djblets.webapi.core.BasicAPIEncoder',
     'reviewboard.webapi.json.ReviewBoardAPIEncoder',
+    'djblets.webapi.core.BasicAPIEncoder',
 )
 
 LOGGING_NAME = "reviewboard"
@@ -134,7 +137,7 @@ TEST_RUNNER = 'reviewboard.test.runner'
 # out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
 install_help = '''
-Please see http://www.review-board.org/docs/manual/dev/admin/
+Please see http://www.reviewboard.org/docs/manual/dev/admin/
 for help setting up Review Board.
 '''
 def dependency_error(string):

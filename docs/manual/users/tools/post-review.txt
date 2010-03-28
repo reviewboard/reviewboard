@@ -110,7 +110,7 @@ CVS and Subversion
 
 CVS and Subversion don't have a concept of changesets, so instead the
 working copy's uncommitted changes are posted for review. To post a
-review request with all unchanged files in a tree, simply run::
+review request with all uncommitted files in a tree, simply run::
 
     $ post-review
 
@@ -176,7 +176,27 @@ that users will only see changes made on ``topicB``.
 ClearCase
 ---------
 
-.. todo::
+:command:`post-review` provides basic support for posting ClearCase reviews,
+but requires some initial setup to be used. Edit the :attr:`cc_rootpath`
+variable in the :class:`ClearcaseClient` class to point to a view from which
+you want to create a review request. Change the :attr:`viewtype` variable::
+
+    viewtype = "dynamic"
+
+.. note:: Snapshot views are not currently supported.
+
+To post the review request, you must pass a list of modified files to
+:command:`post-review`. If you want to post a review of all checked out files
+in your view, you can do this with the following command line in a suitable
+shell::
+
+    $ cleartool lsco -cview -me -recurse -short | xargs post-review
+
+On Windows, you'll need to fix the paths to contain forward-slashes::
+
+    $ cleartool lsco -cview -me -recurse -short | sed "s/\\\\/\//g" | xargs post-review
+
+.. note:: Only uncommited code reviews are currently supported.
 
 
 .. index:: post-commit review
@@ -209,6 +229,25 @@ In order to update an existing review request, you can use the
 :option:`-r` parameter, as shown above.
 
 
+.. _postingexistingdiffs:
+
+Posting Existing Diffs
+======================
+
+:command:`post-review` will generate diffs automatically based on the
+repository type, but if you need to post a pre-existing diff, you can
+use the :option:`--diff-filename` parameter to specify the path to
+the diff file.
+
+For example::
+
+    $ post-review --diff-filename=mycode.diff
+
+You can also use the special value of ``-`` to pipe a diff into STDIN::
+
+    $ cat mycode.diff | post-review --diff-filename=-
+
+
 .. _automatingpost-review:
 
 Automating post-review
@@ -222,8 +261,9 @@ special Review Board user and the :option:`--submit-as` option.
 To set this up, first register a new user. This user will be specific to
 your script, and will have special permissions, so make sure the password
 is protected. You'll then want to grant the
-:ref:`can-submit-as-user-permission` to the user. This will give this user to
-the ability to modify a review request as another user.
+:ref:`can-submit-as-user-permission` and
+:ref:`can-edit-review-request-permission` to the user. This will give this
+user to the ability to modify a review request as another user.
 
 You can then invoke :command:`post-review` by doing the following::
 
@@ -457,6 +497,12 @@ Field Defaults Options
 
    Sets the description for the review request to the contents of the
    specified file.
+
+.. cmdoption:: --diff-filename=<FILENAME>
+
+   Specifies an existing diff file to upload, instead of generating a new
+   diff. The special value of ``-`` allows the diff to be piped into
+   STDIN. See :ref:`Posting Existing Diffs` for usage information.
 
 .. cmdoption:: --summary=<SUMMARY>
 

@@ -1,0 +1,16 @@
+.. _webapiguide:
+
+=============
+Web API Guide
+=============
+
+
+.. toctree::
+   :maxdepth: 1
+
+   overview
+   authenticating
+   reference/index
+
+
+.. comment: vim: ft=rst et ts=3

@@ -45,7 +45,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'Release Notes'
 copyright = u'2009, Christian Hammond'
-bugtracker_url = 'http://www.review-board.org/bugs/%s'
+bugtracker_url = 'http://www.reviewboard.org/bugs/%s'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -196,4 +196,4 @@ latex_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-#intersphinx_mapping = {'http://docs.python.org/dev': None}
+intersphinx_mapping = {'http://www.reviewboard.org/docs/manual/dev': None}

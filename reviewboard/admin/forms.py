@@ -1,27 +1,55 @@
-import pytz
+#
+# reviewboard/admin/forms.py -- Form classes for the admin UI
+#
+# Copyright (c) 2008-2009  Christian Hammond
+# Copyright (c) 2008-2009  David Trowbridge
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+
+
+import os
 import re
+import sre_constants
 import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
+import pytz
 
 from reviewboard.admin.checks import get_can_enable_dns, \
                                      get_can_enable_ldap, \
                                      get_can_enable_search, \
-                                     get_can_enable_syntax_highlighting
-
+                                     get_can_enable_syntax_highlighting, \
+                                     get_can_use_amazon_s3, \
+                                     get_can_use_couchdb
 from reviewboard.admin.siteconfig import load_site_config
 
 
 class GeneralSettingsForm(SiteSettingsForm):
-    """
-    General settings for Review Board.
-    """
-    server = forms.URLField(
+    """General settings for Review Board."""
+    server = forms.CharField(
         label=_("Server"),
         help_text=_("The URL of this Review Board server. This should not "
                     "contain the subdirectory Review Board is installed in."),
@@ -49,12 +77,6 @@ class GeneralSettingsForm(SiteSettingsForm):
         choices=[(tz, tz) for tz in pytz.common_timezones],
         help_text=_("The time zone used for all dates on this server."))
 
-    auth_anonymous_access = forms.BooleanField(
-        label=_("Allow anonymous read-only access"),
-        help_text=_("If checked, users will be able to view review requests "
-                    "and diffs without logging in."),
-        required=False)
-
     search_enable = forms.BooleanField(
         label=_("Enable search"),
         help_text=_("Provides a search field for quickly searching through "
@@ -67,6 +89,77 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '50'}))
 
+    def load(self):
+        # First set some sane defaults.
+        domain_method = self.siteconfig.get("site_domain_method")
+        site = Site.objects.get_current()
+        self.fields['server'].initial = "%s://%s" % (domain_method,
+                                                     site.domain)
+
+        can_enable_search, reason = get_can_enable_search()
+        if not can_enable_search:
+            self.disabled_fields['search_enable'] = True
+            self.disabled_fields['search_index_file'] = True
+            self.disabled_reasons['search_enable'] = reason
+
+        super(GeneralSettingsForm, self).load()
+
+
+    def save(self):
+        server = self.cleaned_data['server']
+
+        if "://" not in server:
+            # urlparse doesn't properly handle URLs without a scheme. It
+            # believes the domain is actually the path. So we apply a prefix.
+            server = "http://" + server
+
+        url_parts = urlparse.urlparse(server)
+        domain_method = url_parts[0]
+        domain_name = url_parts[1]
+
+        if domain_name.endswith("/"):
+            domain_name = domain_name[:-1]
+
+        site = Site.objects.get_current()
+        site.domain = domain_name
+        site.save()
+
+        self.siteconfig.set("site_domain_method", domain_method)
+
+        super(GeneralSettingsForm, self).save()
+
+        # Reload any important changes into the Django settings.
+        load_site_config()
+
+
+    class Meta:
+        title = _("General Settings")
+        save_blacklist = ('server',)
+
+        fieldsets = (
+            {
+                'classes': ('wide',),
+                'title':   _("Site Settings"),
+                'fields':  ('server', 'site_media_url',
+                            'site_admin_name',
+                            'site_admin_email',
+                            'locale_timezone'),
+            },
+            {
+                'classes': ('wide',),
+                'title':   _("Search"),
+                'fields':  ('search_enable', 'search_index_file'),
+            },
+        )
+
+
+class AuthenticationSettingsForm(SiteSettingsForm):
+    auth_anonymous_access = forms.BooleanField(
+        label=_("Allow anonymous read-only access"),
+        help_text=_("If checked, users will be able to view review requests "
+                    "and diffs without logging in."),
+        required=False)
+
     auth_backend = forms.ChoiceField(
         label=_("Authentication Method"),
         choices=(
@@ -74,6 +167,7 @@ class GeneralSettingsForm(SiteSettingsForm):
             ("ad",      _("Active Directory")),
             ("ldap",    _("LDAP")),
             ("nis",     _("NIS")),
+            ("x509",    _("X.509 Public Key")),
             ("custom",  _("Custom"))
         ),
         help_text=_("The method Review Board should use for authenticating "
@@ -84,6 +178,29 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Enable registration"),
         help_text=_("Allow users to register new accounts."),
         required=False)
+
+    auth_registration_show_captcha = forms.BooleanField(
+        label=_('Show a captcha for registration'),
+        help_text=mark_safe(
+            _('Displays a captcha using <a href="%(recaptcha_url)s">'
+              'reCAPTCHA</a> on the registration page. To enable this, you '
+              'will need to go <a href="%(register_url)s">here</A> to register '
+              'an account and type in your new keys below.') % {
+                  'recaptcha_url': 'http://www.recaptcha.net/',
+                  'register_url': 'https://admin.recaptcha.net/recaptcha'
+                                  '/createsite/',
+            }),
+        required=False)
+
+    recaptcha_public_key = forms.CharField(
+        label=_('reCAPTCHA Public Key'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    recaptcha_private_key = forms.CharField(
+        label=_('reCAPTCHA Private Key'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_nis_email_domain = forms.CharField(
         label=_("E-Mail Domain"))
@@ -180,33 +297,51 @@ class GeneralSettingsForm(SiteSettingsForm):
         help_text=_("Depth to recurse when checking group membership. 0 to turn off, -1 for unlimited."),
         required=False)
 
+    auth_x509_username_field = forms.ChoiceField(
+        label=_("Username Field"),
+        choices=(
+            # Note: These names correspond to environment variables set by
+            #       mod_ssl.
+            ("SSL_CLIENT_S_DN",        _("DN (Distinguished Name)")),
+            ("SSL_CLIENT_S_DN_CN",     _("CN (Common Name)")),
+            ("SSL_CLIENT_S_DN_Email",  _("Email address")),
+        ),
+        help_text=_("The X.509 certificate field from which the Review Board "
+                    "username will be extracted."),
+        required=True)
+
+    auth_x509_username_regex = forms.CharField(
+        label=_("Username Regex"),
+        help_text=_("Optional regex used to convert the selected X.509 "
+                    "certificate field to a usable Review Board username. For "
+                    "example, if using the email field to retrieve the "
+                    "username, use this regex to get the username from an "
+                    "e-mail address: '(\s+)@yoursite.com'. There must be only "
+                    "one group in the regex."),
+        required=False)
+
+    auth_x509_autocreate_users = forms.BooleanField(
+        label=_("Automatically create new user accounts."),
+        help_text=_("Enabling this option will cause new user accounts to be "
+                    "automatically created when a new user with an X.509 "
+                    "certificate accesses Review Board."),
+        required=False)
+
     custom_backends = forms.CharField(
         label=_("Backends"),
         help_text=_("A comma-separated list of custom auth backends. These "
                     "are represented as Python module paths."))
 
-
     def load(self):
-        # First set some sane defaults.
-        domain_method = self.siteconfig.get("site_domain_method")
-        site = Site.objects.get_current()
-        self.fields['server'].initial = "%s://%s" % (domain_method,
-                                                     site.domain)
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get("auth_require_sitewide_login")
 
         self.fields['custom_backends'].initial = \
             ', '.join(self.siteconfig.get('auth_custom_backends'))
 
-        can_enable_search, reason = get_can_enable_search()
-        if not can_enable_search:
-            self.disabled_fields['search_enable'] = True
-            self.disabled_fields['search_index_file'] = True
-            self.disabled_reasons['search_enable'] = _(reason)
-
         can_enable_dns, reason = get_can_enable_dns()
         if not can_enable_dns:
-            self.disabled_fields['auth_ad_find_dc_from_dns'] = _(reason)
+            self.disabled_fields['auth_ad_find_dc_from_dns'] = reason
 
         can_enable_ldap, reason = get_can_enable_ldap()
 
@@ -229,41 +364,50 @@ class GeneralSettingsForm(SiteSettingsForm):
             self.disabled_fields['auth_ad_domain_controller'] = True
             self.disabled_fields['auth_ad_domain_name'] = _(reason)
 
-            self.disabled_reasons['auth_ldap_uri'] = _(reason)
+            self.disabled_reasons['auth_ldap_uri'] = reason
 
-        super(GeneralSettingsForm, self).load()
-
+        super(AuthenticationSettingsForm, self).load()
 
     def save(self):
-        server = self.cleaned_data['server']
-
-        if "://" not in server:
-            # urlparse doesn't properly handle URLs without a scheme. It
-            # believes the domain is actually the path. So we apply a prefix.
-            server = "http://" + server
-
-        url_parts = urlparse.urlparse(server)
-        domain_method = url_parts[0]
-        domain_name = url_parts[1]
-
-        if domain_name.endswith("/"):
-            domain_name = domain_name[:-1]
-
-        site = Site.objects.get_current()
-        site.domain = domain_name
-        site.save()
-
-        self.siteconfig.set("site_domain_method", domain_method)
         self.siteconfig.set("auth_require_sitewide_login",
                             not self.cleaned_data['auth_anonymous_access'])
 
         self.siteconfig.set('auth_custom_backends',
             re.split(r',\s*', self.cleaned_data['custom_backends']))
 
-        super(GeneralSettingsForm, self).save()
+        super(AuthenticationSettingsForm, self).save()
 
         # Reload any important changes into the Django settings.
         load_site_config()
+
+    def clean_auth_x509_username_regex(self):
+        """Validates that the specified regular expression is valid."""
+        regex = self.cleaned_data['auth_x509_username_regex']
+
+        try:
+            re.compile(regex)
+        except sre_constants.error, e:
+            raise forms.ValidationError(e)
+
+        return regex
+
+    def clean_recaptcha_public_key(self):
+        """Validates that the reCAPTCHA public key is specified if needed."""
+        key = self.cleaned_data['recaptcha_public_key'].strip()
+
+        if self.cleaned_data['auth_registration_show_captcha'] and not key:
+            raise forms.ValidationError(_('This field is required.'))
+
+        return key
+
+    def clean_recaptcha_private_key(self):
+        """Validates that the reCAPTCHA private key is specified if needed."""
+        key = self.cleaned_data['recaptcha_private_key'].strip()
+
+        if self.cleaned_data['auth_registration_show_captcha'] and not key:
+            raise forms.ValidationError(_('This field is required.'))
+
+        return key
 
     def full_clean(self):
         def set_fieldset_required(fieldset_id, required):
@@ -287,41 +431,34 @@ class GeneralSettingsForm(SiteSettingsForm):
             if auth_backend != "ad":
                 set_fieldset_required("auth_ad", False)
 
+            if auth_backend != 'x509':
+                set_fieldset_required("auth_x509", False)
+
             if auth_backend != "custom":
                 set_fieldset_required("auth_custom", False)
 
-        super(GeneralSettingsForm, self).full_clean()
+        super(AuthenticationSettingsForm, self).full_clean()
 
 
     class Meta:
-        title = _("General Settings")
-        save_blacklist = ('server', 'auth_anonymous_access', 'custom_backends')
+        title = _('Authentication Settings')
+        save_blacklist = ('auth_anonymous_access', 'custom_backends')
 
         fieldsets = (
             {
                 'classes': ('wide',),
-                'title':   _("Site Settings"),
-                'fields':  ('server', 'site_media_url',
-                            'site_admin_name',
-                            'site_admin_email',
-                            'locale_timezone',
-                            'auth_anonymous_access'),
-            },
-            {
-                'classes': ('wide',),
-                'title':   _("Search"),
-                'fields':  ('search_enable', 'search_index_file'),
-            },
-            {
-                'classes': ('wide',),
-                'title':   _("Advanced Authentication"),
-                'fields':  ('auth_backend',),
+                'title':   _('General'),
+                'fields':  ('auth_anonymous_access',
+                            'auth_backend'),
             },
             {
                 'id':      'auth_builtin',
                 'classes': ('wide', 'hidden'),
                 'title':   _("Basic Authentication Settings"),
-                'fields':  ('auth_enable_registration',),
+                'fields':  ('auth_enable_registration',
+                            'auth_registration_show_captcha',
+                            'recaptcha_public_key',
+                            'recaptcha_private_key'),
             },
             {
                 'id':      'auth_nis',
@@ -354,6 +491,15 @@ class GeneralSettingsForm(SiteSettingsForm):
                             'auth_ad_group_name',
                             'auth_ad_search_root',
                             'auth_ad_recursion_depth',
+                            ),
+            },
+            {
+                'id':      'auth_x509',
+                'classes': ('wide', 'hidden'),
+                'title':   _("X.509 Client Certificate Authentication settings"),
+                'fields':  ('auth_x509_username_field',
+                            'auth_x509_username_regex',
+                            'auth_x509_autocreate_users',
                             ),
             },
             {
@@ -401,9 +547,7 @@ class EMailSettingsForm(SiteSettingsForm):
 
 
 class DiffSettingsForm(SiteSettingsForm):
-    """
-    Diff settings for Review Board.
-    """
+    """Diff settings for Review Board."""
     diffviewer_syntax_highlighting = forms.BooleanField(
         label=_("Show syntax highlighting"),
         required=False)
@@ -497,9 +641,7 @@ class DiffSettingsForm(SiteSettingsForm):
 
 
 class LoggingSettingsForm(SiteSettingsForm):
-    """
-    Logging settings for Review Board.
-    """
+    """Logging settings for Review Board."""
     logging_enabled = forms.BooleanField(
         label=_("Enable logging"),
         help_text=_("Enables logging of Review Board operations. This is in "
@@ -519,6 +661,22 @@ class LoggingSettingsForm(SiteSettingsForm):
                     "useful for debugging but may greatly increase the "
                     "size of log files."),
         required=False)
+
+    def clean_logging_directory(self):
+        """Validates that the logging_directory path is valid."""
+        logging_dir = self.cleaned_data['logging_directory']
+
+        if not os.path.exists(logging_dir):
+            raise forms.ValidationError(_("This path does not exist."))
+
+        if not os.path.isdir(logging_dir):
+            raise forms.ValidationError(_("This is not a directory."))
+
+        if not os.access(logging_dir, os.W_OK):
+            raise forms.ValidationError(
+                _("This path is not writable by the web server."))
+
+        return logging_dir
 
     def save(self):
         super(LoggingSettingsForm, self).save()
@@ -541,4 +699,134 @@ class LoggingSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'fields':  ('logging_allow_profiling',),
             }
+        )
+
+
+class StorageSettingsForm(SiteSettingsForm):
+    """File storage backend settings for Review Board."""
+
+    storage_backend = forms.ChoiceField(
+        label=_('File storage method'),
+        choices=(
+            ('filesystem', _('Host file system')),
+            ('s3',         _('Amazon S3')),
+            # TODO: I haven't tested CouchDB at all, so it's turned off
+            #('couchdb',    _('CouchDB')),
+        ),
+        help_text=_('Storage method and location for uploaded files, such as '
+                    'screenshots.'),
+        required=True)
+
+    aws_access_key_id = forms.CharField(
+        label=_('Amazon AWS access key'),
+        help_text=_('Your Amazon AWS access key ID. This can be found in '
+                    'the "Security Credentials" section of the AWS site.'),
+        required=True)
+
+    aws_secret_access_key = forms.CharField(
+        label=_('Amazon AWS secret access key'),
+        help_text=_('Your Amazon AWS secret access ID. This can be found in '
+                    'the "Security Credentials" section of the AWS site.'),
+        required=True)
+
+    aws_s3_bucket_name = forms.CharField(
+        label=_('S3 bucket name'),
+        help_text=_('Bucket name inside Amazon S3.'),
+        required=True)
+
+    aws_calling_format = forms.ChoiceField(
+        label=_('Amazon AWS calling format'),
+        choices=(
+            (1, 'Path'),
+            (2, 'Subdomain'),
+            (3, 'Vanity'),
+        ),
+        help_text=_('Calling format for AWS requests.'), # FIXME: what do these mean?
+        required=True)
+
+    # TODO: these items are consumed in the S3Storage backend, but I'm not
+    # totally sure what they mean, or how to let users set them via siteconfig
+    # (especially AWS_HEADERS, which is a dictionary). For now, defaults will
+    # suffice.
+    #
+    #'aws_headers':            'AWS_HEADERS',
+    #'aws_default_acl':        'AWS_DEFAULT_ACL',
+    #'aws_querystring_active': 'AWS_QUERYSTRING_ACTIVE',
+    #'aws_querystring_expire': 'AWS_QUERYSTRING_EXPIRE',
+    #'aws_s3_secure_urls':     'AWS_S3_SECURE_URLS',
+
+    couchdb_default_server = forms.CharField(
+        label=_('Default server'),
+        help_text=_('For example, "http://couchdb.local:5984"'),
+        required=True)
+
+    # TODO: this is consumed in the CouchDBStorage backend, but I'm not sure how
+    # to let users set it via siteconfig, since it's a dictionary. Since I
+    # haven't tested the CouchDB backend at all, it'll just sit here for now.
+    #
+    #'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
+
+    def load(self):
+        can_use_amazon_s3, reason = get_can_use_amazon_s3()
+        if not can_use_amazon_s3:
+            self.disabled_fields['aws_access_key_id'] = True
+            self.disabled_fields['aws_secret_access_key'] = True
+            self.disabled_fields['aws_s3_bucket_name'] = True
+            self.disabled_fields['aws_calling_format'] = True
+            self.disabled_reasons['aws_access_key_id'] = reason
+
+        can_use_couchdb, reason = get_can_use_couchdb()
+        if not can_use_couchdb:
+            self.disabled_fields['couchdb_default_server'] = True
+            self.disabled_reasons['couchdb_default_server'] = reason
+
+    def save(self):
+        super(StorageSettingsForm, self).save()
+        load_site_config()
+
+    def full_clean(self):
+        def set_fieldset_required(fieldset_id, required):
+            for fieldset in self.Meta.fieldsets:
+                if 'id' in fieldset and fieldset['id'] == fieldset_id:
+                    for field in fieldset['fields']:
+                        self.fields[field].required = required
+
+        if self.data:
+            # Note that this isn't validated yet, but that's okay given our
+            # usage. It's a bit of a hack though.
+            storage_backend = self['storage_backend'].data or \
+                              self.fields['storage_backend'].initial
+
+            if storage_backend != 's3':
+                set_fieldset_required('storage_s3', False)
+
+            if storage_backend != 'couchdb':
+                set_fieldset_required('storage_couchdb', False)
+
+        super(StorageSettingsForm, self).full_clean()
+
+    class Meta:
+        title = _('File Storage Settings')
+
+        fieldsets = (
+            {
+                'classes': ('wide',),
+                'title':   _('File Storage Settings'),
+                'fields':  ('storage_backend',),
+            },
+            {
+                'id':      'storage_s3',
+                'classes': ('wide', 'hidden'),
+                'title':   _('Amazon S3 Settings'),
+                'fields':  ('aws_access_key_id',
+                            'aws_secret_access_key',
+                            'aws_s3_bucket_name',
+                            'aws_calling_format'),
+            },
+            {
+                'id':      'storage_couchdb',
+                'classes': ('wide' 'hidden'),
+                'title':   _('CouchDB Settings'),
+                'fields':  ('couchdb_default_server',),
+            },
         )

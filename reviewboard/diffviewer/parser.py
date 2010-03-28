@@ -176,3 +176,11 @@ class DiffParser(object):
         raise DiffParserError("No valid separator after the filename was " +
                               "found in the diff header",
                               linenum)
+
+    def raw_diff(self, diffset):
+        """Returns a raw diff as a string.
+
+        The returned diff as composed of all FileDiffs in the provided diffset.
+        """
+        return ''.join([filediff.diff for filediff in diffset.files.all()])
+

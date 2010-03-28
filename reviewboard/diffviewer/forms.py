@@ -19,14 +19,14 @@ class NoBaseDirError(ValueError):
 
 class UploadDiffForm(forms.Form):
     basedir = forms.CharField(
-        label=_("Base directory"),
+        label=_("Base Directory"),
         help_text=_("The absolute path in the repository the diff was "
                     "generated in."))
     path = forms.FileField(
         label=_("Diff"),
         help_text=_("The new diff to upload."))
     parent_diff_path = forms.FileField(
-        label=_("Parent diff"),
+        label=_("Parent Diff"),
         help_text=_("An optional diff that the main diff is based on. "
                     "This is usually used for distributed revision control "
                     "systems (Git, Mercurial, etc.)."),
@@ -52,7 +52,7 @@ class UploadDiffForm(forms.Form):
         # Grab the base directory if there is one.
         if not tool.get_diffs_use_absolute_paths():
             try:
-                basedir = smart_unicode(self.cleaned_data['basedir'])
+                basedir = smart_unicode(self.cleaned_data['basedir'].strip())
             except AttributeError:
                 raise NoBaseDirError(_('The "Base Diff Path" field is required'))
         else:
@@ -89,6 +89,7 @@ class UploadDiffForm(forms.Form):
                     parent_changeset_id = f.origChangesetId
 
         diffset = DiffSet(name=diff_file.name, revision=0,
+                          basedir=basedir,
                           history=diffset_history,
                           diffcompat=DEFAULT_DIFF_COMPAT_VERSION)
         diffset.repository = self.repository

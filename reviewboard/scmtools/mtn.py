@@ -10,6 +10,9 @@ from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 class MonotoneTool(SCMTool):
     name = "Monotone"
+    dependencies = {
+        'executables': ['mtn'],
+    }
 
     # Known limitations of this tool include:
     #    - It depends on a local database which we somehow need to determine

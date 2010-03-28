@@ -11,7 +11,7 @@ from djblets.auth.util import login_required
 from djblets.auth.views import register
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.forms import PreferencesForm
+from reviewboard.accounts.forms import PreferencesForm, RegistrationForm
 from reviewboard.accounts.models import Profile
 
 
@@ -25,7 +25,9 @@ def account_register(request):
 
     if (auth_backend == "builtin" and
         siteconfig.get("auth_enable_registration")):
-        return register(request, next_page=settings.SITE_ROOT + 'dashboard/')
+        return register(request,
+                        next_page=settings.SITE_ROOT + 'dashboard/',
+                        form_class=RegistrationForm)
 
     return HttpResponseRedirect(reverse("login"))
 
@@ -40,20 +42,23 @@ def user_preferences(request, template_name='accounts/prefs.html'):
     must_configure = not profile.first_time_setup_done
     profile.save()
 
+    siteconfig = SiteConfiguration.objects.get_current()
+    auth_backend = siteconfig.get("auth_backend")
+    can_change_password = auth_backend in ['builtin', 'x509']
+
     if request.POST:
         form = PreferencesForm(request.POST)
 
         if form.is_valid():
-            siteconfig = SiteConfiguration.objects.get_current()
-            auth_backend = siteconfig.get("auth_backend")
+            password = form.cleaned_data['password1']
+
+            if can_change_password and password:
+                salt = sha(str(time.time())).hexdigest()[:5]
+                hash = sha(salt + password)
+                newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
+                request.user.password = newpassword
 
             if auth_backend == "builtin":
-                if form.cleaned_data['password1']:
-                    salt = sha(str(time.time())).hexdigest()[:5]
-                    hash = sha(salt + form.cleaned_data['password1'])
-                    newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
-                    request.user.password = newpassword
-
                 request.user.first_name = form.cleaned_data['first_name']
                 request.user.last_name = form.cleaned_data['last_name']
                 request.user.email = form.cleaned_data['email']
@@ -81,5 +86,6 @@ def user_preferences(request, template_name='accounts/prefs.html'):
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
         'settings': settings,
+        'can_change_password': can_change_password,
         'must_configure': must_configure,
     }))

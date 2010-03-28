@@ -1,16 +1,57 @@
+import logging
 import re
+import sre_constants
 
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
 
-from reviewboard.diffviewer.forms import UploadDiffForm, EmptyDiffError
+from reviewboard.diffviewer import forms as diffviewer_forms
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.models import ReviewRequest, \
+from reviewboard.reviews.models import DefaultReviewer, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
+
+
+class DefaultReviewerForm(forms.ModelForm):
+    name = forms.CharField(
+        label=_("Name"),
+        max_length=64,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
+    file_regex = forms.CharField(
+        label=_("File regular expression"),
+        max_length=256,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('File paths are matched against this regular expression '
+                    'to determine if these reviewers should be added.'))
+
+    repository = forms.ModelMultipleChoiceField(
+        label=_('Repositories'),
+        required=False,
+        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        help_text=_('The list of repositories to specifically match this '
+                    'default reviewer for. If left empty, this will match '
+                    'all repositories.'),
+        widget=FilteredSelectMultiple(_("Repositories"), False))
+
+    def clean_file_regex(self):
+        """Validates that the specified regular expression is valid."""
+        file_regex = self.cleaned_data['file_regex']
+
+        try:
+            re.compile(file_regex)
+        except Exception, e:
+            raise forms.ValidationError(e)
+
+        return file_regex
+
+    class Meta:
+        model = DefaultReviewer
 
 
 class NewReviewRequestForm(forms.Form):
@@ -20,17 +61,53 @@ class NewReviewRequestForm(forms.Form):
     optionally a changelist number (for use in certain repository types
     such as Perforce).
     """
-    basedir = forms.CharField(label=_("Base Diff Path"), required=False)
-    diff_path = forms.FileField(label=_("Diff"), required=True)
-    parent_diff_path = forms.FileField(label=_("Parent Diff"),
-                                       required=False)
-    repository = forms.ChoiceField(label=_("Repository"), required=True)
+    basedir = forms.CharField(
+        label=_("Base Directory"),
+        required=False,
+        help_text=_("The absolute path in the repository the diff was "
+                    "generated in."),
+        widget=forms.TextInput(attrs={'size': '35'}))
+    diff_path = forms.FileField(
+        label=_("Diff"),
+        required=True,
+        help_text=_("The new diff to upload."),
+        widget=forms.FileInput(attrs={'size': '35'}))
+    parent_diff_path = forms.FileField(
+        label=_("Parent Diff"),
+        required=False,
+        help_text=_("An optional diff that the main diff is based on. "
+                    "This is usually used for distributed revision control "
+                    "systems (Git, Mercurial, etc.)."),
+        widget=forms.FileInput(attrs={'size': '35'}))
+    repository = forms.ModelChoiceField(
+        label=_("Repository"),
+        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        empty_label=None,
+        required=True)
+
     changenum = forms.IntegerField(label=_("Change Number"), required=False)
+
+    field_mapping = {}
 
     def __init__(self, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
-        self.fields['repository'].choices = \
-            [(repo.id, repo.name) for repo in Repository.objects.order_by('name')]
+
+        # Repository ID : visible fields mapping.  This is so we can
+        # dynamically show/hide the relevant fields with javascript.
+        valid_repos = []
+        repo_ids = [id for (id, name) in self.fields['repository'].choices]
+
+        for repo in Repository.objects.filter(pk__in=repo_ids).order_by("name"):
+            try:
+                self.field_mapping[repo.id] = repo.get_scmtool().get_fields()
+                valid_repos.append((repo.id, repo.name))
+            except Exception, e:
+                logging.error('Error loading SCMTool for repository '
+                              '%s (ID %d): %s' % (repo.name, repo.id, e),
+                              exc_info=1)
+
+        self.fields['repository'].choices = valid_repos
+
 
     @staticmethod
     def create_from_list(data, constructor, error):
@@ -40,7 +117,7 @@ class NewReviewRequestForm(forms.Form):
         return set([constructor(name) for name in names])
 
     def create(self, user, diff_file, parent_diff_file):
-        repository = Repository.objects.get(pk=self.cleaned_data['repository'])
+        repository = self.cleaned_data['repository']
         changenum = self.cleaned_data['changenum'] or None
 
         # It's a little odd to validate this here, but we want to have access to
@@ -86,13 +163,15 @@ class NewReviewRequestForm(forms.Form):
 
             review_request.save()
 
-        diff_form = UploadDiffForm(repository, data={
-            'basedir': self.cleaned_data['basedir'],
-        },
-        files={
-            'path': diff_file,
-            'parent_diff_path': parent_diff_file,
-        })
+        diff_form = UploadDiffForm(
+            review_request,
+            data={
+                'basedir': self.cleaned_data['basedir'],
+            },
+            files={
+                'path': diff_file,
+                'parent_diff_path': parent_diff_file,
+            })
         diff_form.full_clean()
 
         class SavedError(Exception):
@@ -101,7 +180,7 @@ class NewReviewRequestForm(forms.Form):
 
         try:
             diff_form.create(diff_file, parent_diff_file,
-                             review_request.diffset_history)
+                             attach_to_history=True)
             if 'path' in diff_form.errors:
                 self.errors['diff_path'] = diff_form.errors['path']
                 raise SavedError
@@ -111,7 +190,7 @@ class NewReviewRequestForm(forms.Form):
         except SavedError:
             review_request.delete()
             raise
-        except EmptyDiffError:
+        except diffviewer_forms.EmptyDiffError:
             review_request.delete()
             self.errors['diff_path'] = forms.util.ErrorList([
                 'The selected file does not appear to be a diff.'])
@@ -124,6 +203,54 @@ class NewReviewRequestForm(forms.Form):
         review_request.add_default_reviewers()
         review_request.save()
         return review_request
+
+
+class UploadDiffForm(diffviewer_forms.UploadDiffForm):
+    """
+    A specialized UploadDiffForm that knows how to interact with review
+    requests.
+    """
+    def __init__(self, review_request, data=None, *args, **kwargs):
+        super(UploadDiffForm, self).__init__(review_request.repository,
+                                             data, *args, **kwargs)
+        self.review_request = review_request
+
+        if ('basedir' in self.fields and
+            (not data or 'basedir' not in data)):
+            try:
+                diffset = review_request.diffset_history.diffsets.latest()
+                self.fields['basedir'].initial = diffset.basedir
+            except DiffSet.DoesNotExist:
+                pass
+
+    def create(self, diff_file, parent_diff_file=None,
+               attach_to_history=False):
+        history = None
+
+        if attach_to_history:
+            history = self.review_request.diffset_history
+
+        diffset = super(UploadDiffForm, self).create(diff_file,
+                                                     parent_diff_file,
+                                                     history)
+
+        if not attach_to_history:
+            # Set the initial revision to be one newer than the most recent
+            # public revision, so we can reference it in the diff viewer.
+            #
+            # TODO: It would be nice to later consolidate this with the logic
+            #       in DiffSet.save.
+            public_diffsets = self.review_request.diffset_history.diffsets
+
+            try:
+                latest_diffset = public_diffsets.latest()
+                diffset.revision = latest_diffset.revision + 1
+            except DiffSet.DoesNotExist:
+                diffset.revision = 1
+
+            diffset.save()
+
+        return diffset
 
 
 class UploadScreenshotForm(forms.Form):

@@ -1,0 +1,23 @@
+*** orig_src/helloworld.m	2009-12-19 01:20:53.000000000 -0800
+--- new_src/helloworld.m	2009-12-19 01:20:53.000000000 -0800
+***************
+*** 3,9 ****
+  @end
+  
+  @implementation MyClass
+! - (void) sayHello {
+  	printf("Hello world!");
+  }
+  @end
+--- 3,13 ----
+  @end
+  
+  @implementation MyClass
+! /*
+!  * Prints Hello world!
+!  */
+! - (void) sayHello
+! {
+  	printf("Hello world!");
+  }
+  @end

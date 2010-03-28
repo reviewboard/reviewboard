@@ -55,8 +55,12 @@ type::
     $ apt-get install python-setuptools
 
 
-To install on a `RedHat Enterprise`_, Fedora_, CentOS_, or another
-RedHat-based distribution, type::
+To install on Fedora_ 8 and above, type::
+
+    $ yum install -y python-setuptools-devel.noarch
+
+To install on a `RedHat Enterprise`_, CentOS_, Fedora_ 7 and earlier, or
+another RedHat-based distribution, type::
 
     $ yum install python-setuptools
 
@@ -72,6 +76,24 @@ need to then upgrade setuptools to the latest version by running::
 
 .. _`Python setuptools`: http://peak.telecommunity.com/DevCenter/setuptools
 .. _`setuptools installation`: http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
+
+
+Installing Python Development Header
+====================================
+
+You will need to install the Python development headers for your
+distribution.
+
+To install on on Debian_, Ubuntu_, or another Debian-based distribution,
+type::
+
+    $ apt-get install python-dev
+
+
+To install on a `RedHat Enterprise`_, Fedora_, CentOS_, or another
+RedHat-based distribution, type::
+
+    $ yum install python-devel
 
 
 .. index:: memcached
@@ -148,14 +170,17 @@ Installing Review Board
 =======================
 
 To install Review Board and its required dependencies (Djblets,
-`Django-Evolution`_, Django_, flup_, and `Python Imaging Library`_) in one go,
-type::
+`Django-Evolution`_, Django_, flup_, paramiko_ and `Python Imaging Library`_)
+in one go, type::
 
     $ easy_install ReviewBoard
 
 
 This will automatically download and install the latest stable release of
 Review Board and the required versions of its core dependencies.
+
+If you want to install an in-development release, see
+:ref:`installing-development-releases`.
 
 
 Installing Database Bindings
@@ -276,6 +301,8 @@ Perforce
 
 To use Review Board with Perforce_, you'll first need to install
 :command:`p4` some place in your web server's path (usually :file:`/usr/bin`).
+You can download this from the `Perforce downloads`_ page.
+
 You'll then need to install the Python bindings by typing the following::
 
     $ easy_install P4PythonInstaller
@@ -285,6 +312,7 @@ compile it. This will require that you have standard build tools
 (:command:`gcc`, :command:`make`, etc.) installed on your system.
 
 
+.. _`Perforce downloads`: http://perforce.com/perforce/downloads/
 .. _Perforce: http://www.perforce.com/
 
 
@@ -346,11 +374,10 @@ You'll need the following dependencies to build PyLucene:
 * gcc/g++
 * Sun's JDK
 * Ant_
-* Python development packages
 
 On Debian_ and Ubuntu_, you can install these by typing::
 
-    $ sudo apt-get install gcc g++ sun-java6-jdk ant python-dev
+    $ sudo apt-get install gcc g++ sun-java6-jdk ant
 
 Once these are installed, you'll need to download the `latest version
 <http://lucene.apache.org/pylucene/>`_ of PyLucene and extract
@@ -371,6 +398,10 @@ then type, as root::
     $ cd jcc
     $ python setup.py install
 
+If your JDK is in an unexpected place (such as using openjdk on older versions
+of Ubuntu), you may need to tweak the setup.py file to point to it instead of
+java-6-sun.
+
 
 Compile PyLucene
 ~~~~~~~~~~~~~~~~
@@ -380,7 +411,6 @@ PyLucene directory and type, as root::
 
     $ make
     $ make install
-
 
 Cleaning Up
 ~~~~~~~~~~~
@@ -412,6 +442,7 @@ You can install these in one go by typing::
 .. _`Django-Evolution`: http://django-evolution.googlecode.com/
 .. _Django: http://www.djangoproject.com/
 .. _flup: http://www.saddi.com/software/flup
+.. _paramiko: http://www.lag.net/paramiko/
 .. _`Python Imaging Library`: http://www.pythonware.com/products/pil/
 
 

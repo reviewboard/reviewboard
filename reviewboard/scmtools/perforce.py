@@ -16,6 +16,9 @@ class PerforceTool(SCMTool):
     name = "Perforce"
     uses_atomic_revisions = True
     supports_authentication = True
+    dependencies = {
+        'modules': ['P4'],
+    }
 
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
@@ -152,7 +155,8 @@ class PerforceTool(SCMTool):
         # results.
         changeset.username = changedesc['user']
         changeset.description = changedesc['desc']
-
+        if changedesc['status'] == "pending":
+            changeset.pending = True
         try:
             changeset.files = changedesc['depotFile']
         except KeyError:

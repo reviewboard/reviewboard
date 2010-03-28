@@ -14,7 +14,7 @@ from optparse import OptionGroup, OptionParser
 from random import choice
 
 
-DOCS_BASE = "http://www.review-board.org/docs/manual/dev/"
+DOCS_BASE = "http://www.reviewboard.org/docs/manual/dev/"
 
 
 # See if GTK is a possibility.
@@ -131,11 +131,12 @@ class Dependencies(object):
 
 
 class Site(object):
-    def __init__(self, install_dir):
+    def __init__(self, install_dir, options):
         self.install_dir = install_dir
         self.abs_install_dir = os.path.abspath(install_dir)
         self.site_id = \
             os.path.basename(install_dir).replace(" ", "_").replace(".", "_")
+        self.options = options
 
         # State saved during installation
         self.domain_name = None
@@ -168,8 +169,7 @@ class Site(object):
         self.mkdir(os.path.join(self.install_dir, "tmp"))
         os.chmod(os.path.join(self.install_dir, "tmp"), 0777)
 
-        if self.db_type == "sqlite3":
-            self.mkdir(os.path.join(self.install_dir, "db"))
+        self.mkdir(os.path.join(self.install_dir, "data"))
 
         self.mkdir(htdocs_dir)
         self.mkdir(media_dir)
@@ -254,13 +254,13 @@ class Site(object):
         conf_dir = os.path.join(self.install_dir, "conf")
         htdocs_dir = os.path.join(self.install_dir, "htdocs")
 
-        self.process_template("contrib/conf/%s.in" % web_conf_filename,
+        self.process_template("cmdline/conf/%s.in" % web_conf_filename,
                               os.path.join(conf_dir, web_conf_filename))
-        self.process_template("contrib/conf/search-cron.conf.in",
+        self.process_template("cmdline/conf/search-cron.conf.in",
                               os.path.join(conf_dir, "search-cron.conf"))
         if enable_fastcgi:
             fcgi_filename = os.path.join(htdocs_dir, "reviewboard.fcgi")
-            self.process_template("contrib/conf/reviewboard.fcgi.in",
+            self.process_template("cmdline/conf/reviewboard.fcgi.in",
                                   fcgi_filename)
             os.chmod(fcgi_filename, 0755)
 
@@ -307,11 +307,17 @@ class Site(object):
 
         self.setup_settings()
 
-    def sync_database(self):
+    def sync_database(self, allow_input=False):
         """
         Synchronizes the database.
         """
-        self.run_manage_command("syncdb", ["--noinput"])
+        params = []
+
+        if not allow_input:
+            params.append("--noinput")
+
+        self.run_manage_command("syncdb", params)
+        self.run_manage_command("registerscmtools")
 
     def migrate_database(self):
         """
@@ -338,7 +344,7 @@ class Site(object):
         os.chdir(self.abs_install_dir)
 
         try:
-            from django.core.management import execute_manager
+            from django.core.management import execute_manager, get_commands
             from reviewboard.admin.migration import fix_django_evolution_issues
             import reviewboard.settings
 
@@ -349,6 +355,25 @@ class Site(object):
                 params.append("--verbosity=0")
 
             fix_django_evolution_issues(reviewboard.settings)
+
+            commands_dir = os.path.join(self.abs_install_dir, 'commands')
+
+            if os.path.exists(commands_dir):
+                # Pre-fetch all the available management commands.
+                get_commands()
+
+                # Insert our own management commands into this list.
+                # Yes, this is a bit of a hack.
+                from django.core.management import _commands
+
+                for f in os.listdir(commands_dir):
+                    module_globals = {}
+                    execfile(os.path.join(commands_dir, f), module_globals)
+
+                    if 'Command' in module_globals:
+                        name = os.path.splitext(f)[0]
+                        _commands[name] = module_globals['Command']()
+
             execute_manager(reviewboard.settings, [__file__, cmd] + params)
         except ImportError, e:
             ui.error("Unable to execute the manager command %s: %s" %
@@ -379,7 +404,7 @@ class Site(object):
             else:
                 shutil.rmtree(dest_dir)
 
-        if options.copy_media:
+        if self.options.copy_media:
             shutil.copytree(src_dir, dest_dir)
         else:
             os.symlink(src_dir, dest_dir)
@@ -406,6 +431,7 @@ class Site(object):
             'sitedomain': self.domain_name,
             'sitedomain_escaped': domain_name_escaped,
             'siteid': self.site_id,
+            'siteroot': self.site_root,
         }
 
         template = re.sub("@([a-z_]+)@", lambda m: data.get(m.group(1)),
@@ -677,14 +703,21 @@ class GtkUI(UIToolkit):
         self.page_stack = []
 
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_title("Review Board Site Tool")
-        self.window.set_default_size(300, 500)
-        self.window.set_border_width(12)
+        self.window.set_title("Review Board Site Installer")
+        self.window.set_default_size(300, 550)
+        self.window.set_border_width(0)
         self.window.set_resizable(False)
         self.window.set_type_hint(gtk.gdk.WINDOW_TYPE_HINT_DIALOG)
         self.window.set_position(gtk.WIN_POS_CENTER_ALWAYS)
 
-        vbox = gtk.VBox(False, 12)
+        self.window.set_icon_list(*[
+            gtk.gdk.pixbuf_new_from_file(
+                pkg_resources.resource_filename(
+                    "reviewboard", "htdocs/media/rb/images/" + filename))
+            for filename in ["favicon.png", "logo.png"]
+        ])
+
+        vbox = gtk.VBox(False, 0)
         vbox.show()
         self.window.add(vbox)
 
@@ -694,9 +727,14 @@ class GtkUI(UIToolkit):
         self.notebook.set_show_border(False)
         self.notebook.set_show_tabs(False)
 
+        sep = gtk.HSeparator()
+        sep.show()
+        vbox.pack_start(sep, False, True, 0)
+
         self.bbox = gtk.HButtonBox()
         self.bbox.show()
         vbox.pack_start(self.bbox, False, False, 0)
+        self.bbox.set_border_width(12)
         self.bbox.set_layout(gtk.BUTTONBOX_END)
         self.bbox.set_spacing(6)
 
@@ -710,10 +748,13 @@ class GtkUI(UIToolkit):
         self.bbox.pack_start(self.prev_button, False, False, 0)
         self.prev_button.connect('clicked', self.previous_page)
 
-        self.next_button = gtk.Button(stock=gtk.STOCK_GO_FORWARD)
+        self.next_button = gtk.Button("_Next")
         self.next_button.show()
         self.bbox.pack_start(self.next_button, False, False, 0)
         self.next_button.connect('clicked', self.next_page)
+        self.next_button.set_image(
+            gtk.image_new_from_stock(gtk.STOCK_GO_FORWARD,
+                                     gtk.ICON_SIZE_BUTTON))
         self.next_button.set_flags(gtk.CAN_DEFAULT)
         self.next_button.grab_default()
         self.next_button.grab_focus()
@@ -780,19 +821,50 @@ class GtkUI(UIToolkit):
 
     def page(self, text, allow_back=True, is_visible_func=None,
              on_show_func=None):
-        vbox = gtk.VBox(False, 12)
+        vbox = gtk.VBox(False, 0)
         vbox.show()
         self.notebook.append_page(vbox)
 
+        hbox = gtk.HBox(False, 12)
+        hbox.show()
+        vbox.pack_start(hbox, False, True, 0)
+        hbox.set_border_width(12)
+
+        # Paint the title box as the base color (usually white)
+        hbox.connect(
+            'expose-event',
+            lambda w, e: w.get_window().draw_rectangle(
+                             w.get_style().base_gc[w.state], True,
+                             *w.get_allocation()))
+
+        # Add the logo
+        logo_file = pkg_resources.resource_filename(
+            "reviewboard",
+            "htdocs/media/rb/images/logo.png")
+        image = gtk.image_new_from_file(logo_file)
+        image.show()
+        hbox.pack_start(image, False, False, 0)
+
+        # Add the page title
         label = gtk.Label("<big><b>%s</b></big>" % text)
         label.show()
-        vbox.pack_start(label, False, True, 0)
-        label.set_alignment(0, 0)
+        hbox.pack_start(label, True, True, 0)
+        label.set_alignment(0, 0.5)
         label.set_use_markup(True)
+
+        # Add the separator
+        sep = gtk.HSeparator()
+        sep.show()
+        vbox.pack_start(sep, False, True, 0)
+
+        content_vbox = gtk.VBox(False, 12)
+        content_vbox.show()
+        vbox.pack_start(content_vbox, True, True, 0)
+        content_vbox.set_border_width(12)
 
         page = {
             'is_visible_func': is_visible_func,
-            'widget': vbox,
+            'widget': content_vbox,
             'index': len(self.pages),
             'allow_back': allow_back,
             'label_sizegroup': gtk.SizeGroup(gtk.SIZE_GROUP_HORIZONTAL),
@@ -917,7 +989,7 @@ class GtkUI(UIToolkit):
         """
         Displays a URL to the user.
         """
-        link_button = gtk.LinkButton(url)
+        link_button = gtk.LinkButton(url, url)
         link_button.show()
         page['widget'].pack_start(link_button, False, False, 0)
         link_button.set_alignment(0, 0)
@@ -1020,8 +1092,8 @@ class InstallCommand(Command):
                          help="run non-interactively using configuration "
                               "provided in command-line options")
         group.add_option("--domain-name",
-                         help="full domain name of the site, excluding the "
-                              "http://, port or path")
+                         help="fully-qualified host name of the site, "
+                         "excluding the http://, port or path")
         group.add_option("--site-root", default="/",
                          help="path to the site relative to the domain name")
         group.add_option("--media-url", default="media/",
@@ -1120,7 +1192,7 @@ class InstallCommand(Command):
             return False
 
     def print_introduction(self):
-        page = ui.page("Welcome to the Review Board site installation wizard.")
+        page = ui.page("Welcome to the Review Board site installation wizard")
 
         ui.text(page, "This will prepare a Review Board site installation in:")
         ui.text(page, site.abs_install_dir)
@@ -1133,13 +1205,13 @@ class InstallCommand(Command):
 
         if missing_dep_groups:
             if fatal:
-                page = ui.page("Required modules are missing.")
+                page = ui.page("Required modules are missing")
                 ui.text(page, "You are missing Python modules that are "
                               "needed before the installation process. "
                               "You will need to install the necessary "
                               "modules and restart the install.")
             else:
-                page = ui.page("Make sure you have the modules you need.")
+                page = ui.page("Make sure you have the modules you need")
                 ui.text(page, "Depending on your installation, you may need "
                               "certain Python modules and servers that are "
                               "missing.")
@@ -1154,10 +1226,10 @@ class InstallCommand(Command):
 
 
     def ask_domain(self):
-        page = ui.page("What's the domain name for this site?")
+        page = ui.page("What's the host name for this site?")
 
-        ui.text(page, "This should be the full domain without the http://, "
-                      "port or path.")
+        ui.text(page, "This should be the fully-qualified host name without "
+                      "the http://, port or path.")
 
         ui.prompt_input(page, "Domain Name", site.domain_name,
                         save_obj=site, save_var="domain_name")
@@ -1203,11 +1275,11 @@ class InstallCommand(Command):
         def determine_sqlite_path():
             site.db_name = sqlite_db_name
 
-        sqlite_db_name = os.path.join(site.abs_install_dir, "db",
+        sqlite_db_name = os.path.join(site.abs_install_dir, "data",
                                       "reviewboard.db")
 
         # Appears only if using sqlite.
-        page = ui.page("Determining database file path.",
+        page = ui.page("Determining database file path",
                        is_visible_func=lambda: site.db_type == "sqlite3",
                        on_show_func=determine_sqlite_path)
 
@@ -1343,14 +1415,19 @@ class InstallCommand(Command):
 
     def show_finished(self):
         page = ui.page("The site has been installed", allow_back=False)
-        ui.text(page, "The site has been installed in %s" % site.install_dir)
+        ui.text(page, "The site has been installed in %s" %
+                      site.abs_install_dir)
         ui.text(page, "Sample configuration files for web servers and "
                       "cron are available in the conf/ directory.")
         ui.text(page, "You need to modify the ownership of the "
-                      "\"htdocs/media/uploaded\" directory and all of its "
-                      "contents to be owned by the web server.")
-        ui.text(page, "If using SQLite, you will also need to modify the "
-                      "ownership of the \"db\" directory and its contents.")
+                      "following directories and their contents to be owned "
+                      "by the web server:")
+
+        ui.itemized_list(page, None, [
+            os.path.join(site.abs_install_dir, 'htdocs', 'media', 'uploaded'),
+            os.path.join(site.abs_install_dir, 'data'),
+        ])
+
         ui.text(page, "For more information, visit:")
         ui.urllink(page, "%sadmin/sites/creating-sites/" % DOCS_BASE)
 
@@ -1396,6 +1473,8 @@ class UpgradeCommand(Command):
     def run(self):
         site.setup_settings()
 
+        data_dir_exists = os.path.exists(os.path.join(site.install_dir, "data"))
+
         print "Rebuilding directory structure"
         site.rebuild_site_directory()
 
@@ -1403,6 +1482,25 @@ class UpgradeCommand(Command):
             print "Updating database. This may take a while."
             site.sync_database()
             site.migrate_database()
+
+        print "Upgrade complete."
+
+        if not data_dir_exists:
+            # This is an upgrade of a site that pre-dates the new $HOME
+            # directory ($sitedir/data). Tell the user how to upgrade things.
+            print
+            print "A new 'data' directory has been created inside of your site"
+            print "directory. This will act as the home directory for programs"
+            print "invoked by Review Board."
+            print
+            print "You need to change the ownership of this directory so that"
+            print "the web server can write to it."
+            print
+            print "If using mod_python, you will also need to add the following"
+            print "to your Review Board Apache configuration:"
+            print
+            print "    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
+                                                      "data")
 
 
 class ManageCommand(Command):
@@ -1474,7 +1572,7 @@ def main():
 
     command_name, install_dir = parse_options(sys.argv[1:])
     command = COMMANDS[command_name]
-    site = Site(install_dir)
+    site = Site(install_dir, options)
 
     if command.needs_ui and can_use_gtk and not options.force_console:
         ui = GtkUI()

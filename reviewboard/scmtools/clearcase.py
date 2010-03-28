@@ -7,6 +7,8 @@ from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 
 
 class ClearCaseTool(SCMTool):
+    name = 'Clear Case'
+
     def __init__(self, repository):
         self.repopath = repository.path
 

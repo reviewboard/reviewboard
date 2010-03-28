@@ -9,6 +9,12 @@ class SMDiffer(SequenceMatcher):
     def __init__(self, a, b):
         SequenceMatcher.__init__(self, None, a, b)
 
+    def add_interesting_line_regex(self, name, regex):
+        pass
+
+    def get_interesting_lines(self, name, is_modified_file):
+        return []
+
     def get_opcodes(self):
         for tag, i1, i2, j1, j2 in SequenceMatcher.get_opcodes(self):
             if tag == 'replace':

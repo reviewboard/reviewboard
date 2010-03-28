@@ -1,0 +1,35 @@
+======
+Review
+======
+
+Fields
+======
+
++----------------+-------------+-------------------------------------------+
+| Field          | Type        | Description                               |
++================+=============+===========================================+
+| id             | Integer     | The ID number of the review.              |
++----------------+-------------+-------------------------------------------+
+| timestamp      | String      | The date/time the review was created or   |
+|                |             | updated.                                  |
++----------------+-------------+-------------------------------------------+
+| user           | User_       | The user who made the review.             |
++----------------+-------------+-------------------------------------------+
+| public         | Boolean     | Whether or not the review is public.      |
++----------------+-------------+-------------------------------------------+
+| ship_it        | Boolean     | Whether or not the review is marked       |
+|                |             | "Ship It!"                                |
++----------------+-------------+-------------------------------------------+
+| body_top       | String      | The body text preceeding the comments.    |
++----------------+-------------+-------------------------------------------+
+| body_bottom    | String      | The body text following the comments.     |
++----------------+-------------+-------------------------------------------+
+| comments       | Array of    | A list of diff comments on the review.    |
+|                | Comment_    |                                           |
++----------------+-------------+-------------------------------------------+
+
+.. _Comment: ../comment
+.. _User: ../user
+
+
+.. comment: vim: ft=rst et ts=3

@@ -1,5 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% load djblets_deco %}
 {% load djblets_extensions %}
 {% load djblets_utils %}
 {% load i18n %}
@@ -39,6 +40,7 @@
   <!--[if lt IE 8.]>
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css?{{MEDIA_SERIAL}}"></script>
   <![endif]-->
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.3.2.min.js"></script>
 {% block scripts %}{% endblock %}
 {% template_hook_point "base-scripts" %}
  </head>
@@ -66,52 +68,66 @@
 {%   endif %}
 {%  endifequal %}
 {% endif %}{# !is_staff #}
-     <li>- <a href="http://www.review-board.org/docs/manual/dev/">{% trans "Documentation" %}</a></li>
-     <li>- <a href="http://www.review-board.org/bugs/">{% trans "Bugs" %}</a></li>
-     <li>- <a href="http://www.review-board.org/bugs/new/">{% trans "Report bug" %}</a></li>
+     <li>- <a href="http://www.reviewboard.org/docs/manual/dev/">{% trans "Documentation" %}</a></li>
+     <li>- <a href="http://www.reviewboard.org/bugs/">{% trans "Bugs" %}</a></li>
+     <li>- <a href="http://www.reviewboard.org/bugs/new/">{% trans "Report bug" %}</a></li>
     </ul>
-    <div>
-     <img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" />
-     <h1 id="title"><a href="{% url root %}">Review Board</a></h1>
-     <h2 id="beta">{{version}}</h2>
+    <br />
+    <div id="rbinfo">
+     <a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" /></a>
+     <h1 id="title">
+	  <a href="{% url root %}">Review Board</a>
+	  <span class="version">{{version}}</span>
+	 </h1>
     </div>
-
    </div>
+   <div id="page-container">
    {% template_hook_point "base-before-navbar" %}
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
-   <form method="get" action="{% url search %}">
-    <div id="navbar-outer">
-     <ul id="navbar">
+    <form method="get" action="{% url search %}">
+     <div id="navbar-outer">
+      <ul id="navbar">
 {% if user.is_authenticated %}
-      <li><a href="{% url dashboard %}">{% trans "My Dashboard" %}</a></li>
-      <li><a href="{% url new-review-request %}">{% trans "New Review Request" %}</a></li>
-      <li>-</li>
+       <li><a href="{% url dashboard %}">{% trans "My Dashboard" %}</a></li>
+       <li><a href="{% url new-review-request %}">{% trans "New Review Request" %}</a></li>
+       <li>-</li>
 {% endif %}
-      <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
-      <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
-      <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
-      {% navigation_bar_hooks %}
-      {% if siteconfig.settings.search_enable %}
-      <li id="searchbar">
-      <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
-       <input type="submit" value="{% trans "Search" %}" />
-      </li>
-      {% endif %}
-     </ul>
-    </div>
-   </form>
-   {% endif %}
+       <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
+       <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
+       <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
+	   {% navigation_bar_hooks %}
+       {% if siteconfig.settings.search_enable %}
+       <li id="searchbar">
+       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
+        <input type="submit" value="{% trans "Search" %}" />
+       </li>
+       {% endif %}
+      </ul>
+     </div>
+    </form>
+    {% endif %}
 {% endblock %}
-   <div id="error"></div>
-   {% template_hook_point "base-after-navbar" %}
-   <div id="content">
+    <noscript>
+{%  box "important" %}
+     <h1>{% trans "JavaScript is turned off" %}</h1>
+     <p>{% blocktrans %}Review Board requires JavaScript in order to function.
+     Please turn it on in your browser preferences.{% endblocktrans %}
+     <p>{% blocktrans %}Firefox users: if you prefer to turn on JavaScript only
+     for specific sites, we recommend the
+     <a href="https://addons.mozilla.org/en-US/firefox/addon/722">NoScript
+     extension</a>.{% endblocktrans %}</p>
+{%  endbox %}
+    </noscript>
+    <div id="error"></div>
+    {% template_hook_point "base-after-navbar" %}
+    <div id="content">
 {% template_hook_point "base-before-content" %}
 {% block content %}{% endblock %}
 {% template_hook_point "base-after-content" %}
+    </div>
    </div>
   </div>
-
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/gears_init.js?{{MEDIA_SERIAL}}"></script>
+  <script type="text/javascript" src="{{MEDIA_URL}}rb/js/datastore.js?{{MEDIA_SERIAL}}"></script>
 {% block scripts-post %}{% endblock %}
 {% template_hook_point "base-scripts-post" %}
  </body>

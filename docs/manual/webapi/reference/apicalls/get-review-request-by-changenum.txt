@@ -1,0 +1,135 @@
+===================================
+Get Review Request by Change Number
+===================================
+
+:Path: ``api/json/reviewrequests/repository/{repository_id}/changenum/{changenum}/``
+
+
+URL Parameters
+==============
+
++---------------+---------+-------------------------------------------------+
+| Parameter     | Type    | Description                                     |
++===============+=========+=================================================+
+| repository_id | Integer | The ID of the repository containing the change. |
++---------------+---------+-------------------------------------------------+
+| changenum     | Integer | The change number to look up.                   |
++---------------+---------+-------------------------------------------------+
+
+
+HTTP GET
+========
+
+Returns the details of the review request matching the provided change number
+on the provided repository.
+
+If the review request is not public, then the client's logged in user must
+either be the owner of the review request or must have the
+``reviews.can_edit_reviewrequest`` permission set. Otherwise a Permission
+Denied error will be returned.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/reviewrequests/repository/4/changenum/237891/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-----------------+----------------+-----------------------------------------+
+| Field           | Type           | Description                             |
++=================+================+=========================================+
+| review_request  | ReviewRequest_ | The review request information.         |
++-----------------+----------------+-----------------------------------------+
+
+.. _ReviewRequest: ../../datatypes/review-request
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      review_request: {
+        branch: "main",
+        bugs_closed: [],
+        changenum: 237891,
+        description: "This is the description of the review request.",
+        id: 12982,
+        last_updated: "2009-12-05 19:03:00",
+        public: 1,
+        status: "pending",
+        submitter: {
+          username: "joe",
+          first_name: "Joe",
+          last_name: "User",
+          url: "/users/joe/",
+          email: "joe@example.com",
+          fullname: "Joe User",
+          id: 1
+        },
+        testing_done: "Ran unit tests",
+        time_added: "2009-12-05 19:00:42",
+        summary: "This is the review request's summary",
+        repository: {
+          path: "perforce.example.com:1666"
+          tool: "Perforce",
+          id: 4,
+          name: "Main Perforce"
+        },
+        target_groups: [
+          {
+            url: "/groups/reviewboard/",
+            display_name: "Review Board",
+            id: 1,
+            mailing_list: "reviewboard@example.com",
+            name: "reviewboard"
+          }
+        ],
+        target_people: []
+      }
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 403: Forbidden
+~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to view this
+review request.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 203: Invalid Change Number
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The change number specified does not match any known change number in the
+repository.
+
+
+.. comment: vim: ft=rst et ts=3

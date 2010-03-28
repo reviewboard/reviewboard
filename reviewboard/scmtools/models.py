@@ -37,14 +37,15 @@ class Tool(models.Model):
 
 class Repository(models.Model):
     name = models.CharField(max_length=64, unique=True)
-    path = models.CharField(max_length=128, unique=True)
-    mirror_path = models.CharField(max_length=128, blank=True)
-    raw_file_url = models.CharField(max_length=128, blank=True)
+    path = models.CharField(max_length=255, unique=True)
+    mirror_path = models.CharField(max_length=255, blank=True)
+    raw_file_url = models.CharField(max_length=255, blank=True)
     username = models.CharField(max_length=32, blank=True)
     password = models.CharField(max_length=128, blank=True)
     tool = models.ForeignKey(Tool, related_name="repositories")
     bug_tracker = models.CharField(max_length=256, blank=True)
     encoding = models.CharField(max_length=32, blank=True)
+    visible = models.BooleanField(default=True)
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()

@@ -1,0 +1,87 @@
+=================
+Get Review Groups
+=================
+
+:Path: ``api/json/groups/``
+
+
+HTTP GET
+========
+
+Returns a list of review groups on the server.
+
+Note that this list can be quite large, as by default it contains every
+review group on the server. It's best to cache this information if needed, or
+filter it down using the ``q`` parameter.
+
+
+Request Parameters
+------------------
+
++-----------------+---------+-----------------------------------------------+
+| Parameter       | Type    | Description                                   |
++=================+=========+===============================================+
+| **q**           | String  | Display only review groups with a display     |
+| (optional)      |         | name beginning with this string.              |
++-----------------+---------+-----------------------------------------------+
+| **displayname** | Boolean | If set, then the text in ``q`` will also be   |
+| (optional)      |         | used to match against the beginning of the    |
+|                 |         | display name. All users with a matching group |
+|                 |         | name or display name will be returned.        |
++-----------------+---------+-----------------------------------------------+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/groups/?q=ma&displayname=1
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-----------------+-------------------------+--------------------------------+
+| Field           | Type                    | Description                    |
++=================+=========================+================================+
+| groups          | Array of ReviewGroup_   | The list of review groups.     |
++-----------------+-------------------------+--------------------------------+
+
+.. _ReviewGroup: ../../datatypes/review-group
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      groups: [
+        {
+          id: 1,
+          name: "main-engineering",
+          display_name: "Main Engineering",
+          mailing_list: "eng@example.com",
+          url: "/users/joe/"
+        }
+      ]
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+.. comment: vim: ft=rst et ts=3

@@ -108,7 +108,7 @@
 <br />
 {% endif %}
 
-<p>- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}</p>
+<p>- {% ifnotequal reply.user.first_name "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endifnotequal %}</p>
 {% endblock %}
 
 {% block footer %}

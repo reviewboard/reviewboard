@@ -60,6 +60,13 @@ def check_dependencies():
     except ImportError:
         dependency_error('The Python Imaging Library (PIL) is required.')
 
+
+    # ReCaptcha
+    try:
+        import recaptcha
+    except ImportError:
+        dependency_error('The recaptcha python module is required.')
+
     import subprocess
 
     # The following checks are non-fatal warnings, since these dependencies are

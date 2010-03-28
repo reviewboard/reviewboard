@@ -9,6 +9,7 @@
 {% endblock %}
 
 {% block branding %}
+<a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" /></a>
 <h1 id="site-name">{% trans "Review Board administration" %}</h1>
 {% endblock %}
 
@@ -19,10 +20,10 @@
 {% block nav-global %}
 {%  if user.is_authenticated %}
 <ul id="admin-nav">
- <li><a href="{% url reviewboard.admin.views.dashboard %}">Dashboard</a></li>
- <li><a href="{% url reviewboard.admin.views.dashboard %}db/">Database</a></li>
- <li><a href="{% url site-settings %}">Settings</a></li>
- <li><a href="{% url djblets.extensions.views.extension_list %}">Extensions</a></li>
+ <li><a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Dashboard" %}</a></li>
+ <li><a href="{% url reviewboard.admin.views.dashboard %}db/">{% trans "Database" %}</a></li>
+ <li><a href="{% url site-settings %}">{% trans "Settings" %}</a></li>
+ <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
 </ul>
 
 {%   block subnavbar %}{% endblock %}

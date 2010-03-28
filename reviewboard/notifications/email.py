@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -6,6 +7,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard.reviews.signals import review_request_published, \
                                         review_published, reply_published
 from reviewboard.reviews.views import build_diff_comment_fragments
@@ -46,9 +48,10 @@ def reply_published_cb(sender, user, reply, **kwargs):
 
 
 def connect_signals():
-    review_request_published.connect(review_request_published_cb)
-    review_published.connect(review_published_cb)
-    reply_published.connect(reply_published_cb)
+    review_request_published.connect(review_request_published_cb,
+                                     sender=ReviewRequest)
+    review_published.connect(review_published_cb, sender=Review)
+    reply_published.connect(reply_published_cb, sender=Review)
 
 
 def get_email_address_for_user(u):
@@ -171,7 +174,16 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     message = SpiffyEmailMessage(subject.strip(), text_body, html_body,
                                  from_email, list(to_field), list(cc_field),
                                  in_reply_to, headers)
-    message.send()
+    try:
+        message.send()
+    except Exception, e:
+        logging.error("Error sending e-mail notification with subject '%s' on "
+                      "behalf of '%s' to '%s': %s",
+                      subject.strip(),
+                      from_email,
+                      ','.join(list(to_field) + list(cc_field)),
+                      e,
+                      exc_info=1)
 
     return message.message_id
 

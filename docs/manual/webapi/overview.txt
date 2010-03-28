@@ -1,0 +1,81 @@
+========
+Overview
+========
+
+Review Board's API is based on standard HTTP requests (GET and POST).
+
+All requests are made to resources on the server. These resources are just
+URLs beginning with ``/api/json/``.
+
+Review Board makes use of HTTP status codes for responses. Some of these
+may contain additional data in JSON_ format.
+
+.. _JSON: http://www.json.org/
+
+
+Responses
+=========
+
+HTTP Status Codes
+-----------------
+
+Every response has an HTTP status code. The following are used:
+
++------------------+--------------+-----------------------------------------+
+| HTTP Status Code | Name         | Description                             |
++==================+==============+=========================================+
+| 200              | OK           | The operation completed successfully.   |
++------------------+--------------+-----------------------------------------+
+| 400              | Bad Request  | There was an error in the data sent in  |
+|                  |              | the request.                            |
++------------------+--------------+-----------------------------------------+
+| 401              | Unauthorized | The user wasn't authorized to perform   |
+|                  |              | this request.                           |
++------------------+--------------+-----------------------------------------+
+| 403              | Forbidden    | The request was to a resource that the  |
+|                  |              | user didn't have permission to access.  |
++------------------+--------------+-----------------------------------------+
+| 404              | Not Found    | The resource was not found.             |
++------------------+--------------+-----------------------------------------+
+| 409              | Conflict     | There was a conflict in the data when   |
+|                  |              | creating a new resource. A previous     |
+|                  |              | resource with that data already exists. |
++------------------+--------------+-----------------------------------------+
+| 500              | Internal     | There was a server-side error when      |
+|                  | Server Error | processing the request. This is usually |
+|                  |              | a bug in Review Board.                  |
++------------------+--------------+-----------------------------------------+
+| 501              | Not          | The call is not supported on that       |
+|                  | Implemented  | particular instance of the resource     |
+|                  |              | type.                                   |
++------------------+--------------+-----------------------------------------+
+
+
+JSON Payloads
+-------------
+
+Many responses will contain data in a JSON_ payload. This is a JSON_
+dictionary containing keys for the response data. These responses will
+use the mimetype ``application/json``.
+
+Every payload has, at the least, a ``stat`` key. The value will be either
+``ok`` (for success) or ``fail`` (for a failed request).
+
+Payloads for failed requests will also contain a ``err`` key mapping to a
+dictionary containing ``code`` and ``msg`` keys. ``code`` will contain
+a numeric error code that can be used for determining the particular type of
+error. ``msg`` will contain a human-readable error string from the server.
+
+An example of a failed response payload would be:
+
+.. code-block:: javascript
+
+    {
+      stat: "fail",
+      err: {
+        code: 205,
+        msg: "A repository path must be specified"
+      }
+    }
+
+.. comment: vim: ft=rst et ts=3

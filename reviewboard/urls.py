@@ -1,37 +1,20 @@
-import logging
 import os.path
 
 from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
-from djblets.util.misc import generate_cache_serials
 
-# We do this to guarantee we're getting the absolute "djblets.log" and not
-# the relative "djblets.log" (which turns into "reviewboard.djblets.log")
-# Yes, it's a hack. We can remove it when djblets is removed from the source
-# directory.
-log = __import__("djblets.log", {}, {}, ["log"])
-
-from reviewboard import get_version_string
-from reviewboard import signals
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       RssSubmitterReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
                                       RssGroupReviewsFeed, \
                                       AtomGroupReviewsFeed
+from reviewboard import initialize
 
 
-# Set up logging.
-log.init_logging()
-logging.info("Log file for Review Board v%s" % get_version_string())
-
+initialize()
 extension_manager = get_extension_manager()
-
-
-# Generate cache serials
-generate_cache_serials()
-
 
 # Load in all the models for the admin UI.
 if not admin.site._registry:
@@ -84,7 +67,7 @@ urlpatterns += patterns('reviewboard.reviews.views',
 
     # Users
     url(r'^users/$', 'submitter_list', name="all-users"),
-    url(r'^users/(?P<username>[A-Za-z0-9_\-\.]+)/$', 'submitter',
+    url(r'^users/(?P<username>[A-Za-z0-9@_\-\.]+)/$', 'submitter',
         name="user"),
 
     # Groups
@@ -116,9 +99,5 @@ urlpatterns += patterns('',
         name="root"),
 
     # This must be last.
-    (r'^iphone/', include('reviewboard.iphone.urls')),
+    url(r'^iphone/', include('reviewboard.iphone.urls', namespace='iphone')),
 )
-
-
-extension_manager.load()
-signals.initializing.send(sender=None)

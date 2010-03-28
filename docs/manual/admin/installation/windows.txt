@@ -111,6 +111,179 @@ setup. Along with memcached, we need the `python-memcached`_ Python bindings.
    http://www.tummy.com/Community/software/python-memcached/
 
 
+Installing Python Imaging Library
+=================================
+
+Review Board requires the Python Imaging Library (PIL). To install this,
+download the latest version that matches your Python version at the
+`PIL website`_.
+
+.. _`PIL website`: http://www.pythonware.com/products/pil/
+
+
+Installing PyCrypto
+===================
+
+Review Board requires PyCrypto_ for SSH repository support. To install this,
+download the latest version that matches your Python version at the
+`PyCrypto Win32 downloads page`_.
+
+.. _`PyCrypto Win32 downloads page`:
+   http://www.voidspace.org.uk/python/modules.shtml#pycrypto
+
+
+Installing Review Board
+=======================
+
+To install Review Board and its required dependencies (Djblets,
+`Django-Evolution`_, Django_, and paramiko_, flup_) in one go, type::
+
+    easy_install ReviewBoard
+
+
+This will automatically download and install the latest stable release of
+Review Board and the required versions of its core dependencies.
+
+If you want to install an in-development release, see
+:ref:`installing-development-releases`.
+
+
+.. _`Django-Evolution`: http://django-evolution.googlecode.com/
+.. _Django: http://www.djangoproject.com/
+.. _paramiko: http://www.lag.net/paramiko/
+.. _flup: http://www.saddi.com/software/flup
+
+
+Installing Database Bindings
+============================
+
+Depending on the database you plan to use, you will probably need additional
+bindings.
+
+
+MySQL
+-----
+
+To install, type::
+
+    $ easy_install mysql-python
+
+
+PostgreSQL
+----------
+
+To install, type::
+
+    $ easy_install psycopg2
+
+
+SQLite
+------
+
+.. note:: If you have Python 2.5 or higher, you already have SQLite and won't
+          need to install this.
+
+To install, type::
+
+    $ easy_install pysqlite
+
+
+Installing Source Control Components
+====================================
+
+Depending on which source control systems you plan to use, you will need
+some additional components.
+
+
+CVS
+---
+
+To use Review Board with CVS_, you'll need :command:`cvs.exe` in your
+path. You can either install this through Cygwin_ or by downloading the latest
+version from the `Windows CVS releases`_ page.
+
+.. _Cygwin: http://www.cygwin.com/
+.. _CVS: http://www.nongnu.org/cvs/
+.. _`Windows CVS releases`:
+   http://ftp.gnu.org/non-gnu/cvs/binary/stable/x86-woe/
+
+
+Git
+---
+
+Git_ can be installed on Windows through Cygwin_ or by using the
+msysGit_.
+
+.. _Git: http://www.git-scm.com/
+.. _msysGit: http://code.google.com/p/msysgit/
+
+
+Mercurial
+---------
+
+Mercurial_ can be installed on Windows through Cygwin_ or by using the
+`Windows Mercurial packages`_.
+
+.. _Mercurial: http://www.selenic.com/mercurial/
+.. _`Windows Mercurial packages`: http://mercurial.berkwood.com/
+
+
+Perforce
+--------
+
+Perforce_'s :command:`p4.exe` must be installed in the path. You can
+download this from the `Perforce downloads`_ page.
+
+You will also need to install the P4Python from the
+`Perforce FTP site`_. Find the server version number needed and proceed
+to the :file:`bin.cygwinx86` directory.
+
+Note: Your mileage may vary with installing P4Python. You may need to
+consult the Perforce website for further instructions.
+
+
+.. _Perforce: http://www.perforce.com/
+.. _`Perforce downloads`: http://perforce.com/perforce/downloads/
+.. _`Perforce FTP site`: ftp://ftp.perforce.com/perforce/
+
+
+Subversion
+----------
+
+Subversion_ can be installed from Cygwin_ or by downloading the latest
+installer from the `Subversion downloads`_ page. You will need one of the
+:file:`Setup-Subversion-*.msi` files.
+
+You will then need to install PySVN_ from the `PySVN downloads`_ page.
+
+
+.. _Subversion: http://subversion.tigris.org/
+.. _PySVN: http://pysvn.tigris.org/
+.. _`Subversion downloads`:
+   http://subversion.tigris.org/servlets/ProjectDocumentList?folderID=8100
+.. _`PySVN downloads`:
+   http://pysvn.tigris.org/servlets/ProjectDocumentList?folderID=1768
+
+
+Installing Development Tools
+============================
+
+If you plan to work on Review Board's source code, there are a few
+additional packages you'll need to install:
+
+* nose_
+* Sphinx_
+
+You can install these in one go by typing::
+
+    $ easy_install nose Sphinx
+
+
+.. _nose: http://somethingaboutorange.com/mrl/projects/nose/
+.. _Sphinx: http://sphinx.pocoo.org/
+
+
+
 After Installation
 ==================
 

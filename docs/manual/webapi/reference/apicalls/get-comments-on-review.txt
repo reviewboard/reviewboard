@@ -1,0 +1,170 @@
+======================
+Get Comments on Review
+======================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/reviews/{review_id}/comments/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+| review_id         | Integer | The ID of the review.               |
++-------------------+---------+-------------------------------------+
+
+
+HTTP GET
+========
+
+Returns the list of comments on a review.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/reviewrequests/12321/reviews/10/comments/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++---------------------+-----------------------------+------------------------+
+| Field               | Type                        | Description            |
++=====================+=============================+========================+
+| comments            | Array of Comment_           | The list of diff       |
+|                     |                             | comments.              |
++---------------------+-----------------------------+------------------------+
+| screenshot_comments | Array of ScreenshotComment_ | The list of screenshot |
+|                     |                             | comments.              |
++---------------------+-----------------------------+------------------------+
+
+.. _Comment: ../../datatypes/comment
+.. _ScreenshotComment: ../../datatypes/screenshot-comment
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      comments: [
+        {
+          id: 25,
+          filediff: {
+            id: 9456,
+            diffset: {
+              id: 54,
+              name: "bugfix-1.diff",
+              revision: 1,
+              timestamp: "2010-01-12 09:56:19",
+              repository: {
+                path: "git://github.com/reviewboard/reviewboard.git",
+                tool: "Git",
+                id: 1,
+                name: "Review Board"
+              }
+            },
+            source_file: "README",
+            dest_file: "README",
+            source_revision: "123",
+            dest_revision: "456",
+          },
+          interfilediff: null,
+          text: "This is a sample comment",
+          timestamp: "2010-01-14 12:05:43",
+          timesince: "6 days ago",
+          first_line: 42,
+          num_lines: 2,
+          public: 1,
+          user: {
+            username: "joe",
+            first_name: "Joe",
+            last_name: "User",
+            url: "/users/joe/",
+            email: "joe@example.com",
+            fullname: "Joe User",
+            id: 1
+          }
+        }
+      ],
+      screenshot_comments: [
+        {
+          id: 25,
+          screenshot: {
+            id: 10,
+            caption: "",
+            title: "Screenshot: test.png",
+            image_url: "http://example.com/media/uploaded/images/2010/03/10/test.png",
+            thumbnail_url: "http://example.com/media/uploaded/images/2010/03/10/test_400x100.png"
+          },
+          text: "This is a sample comment",
+          timestamp: "2010-01-14 12:05:43",
+          timesince: "6 days ago",
+          public: 1,
+          x: 5,
+          y: 5,
+          width: 20,
+          height: 20,
+          user: {
+            username: "joe",
+            first_name: "Joe",
+            last_name: "User",
+            url: "/users/joe/",
+            email: "joe@example.com",
+            fullname: "Joe User",
+            id: 1
+          }
+        }
+      ]
+    }
+
+
+HTTP 400: Bad Request
+~~~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The review is a draft and the user doesn't have permission to view it.
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+There are four possibilities for this error:
+
+* The review request with the given ``review_request_id`` does not exist on the
+  server.
+
+* The review with the given ``review_id`` does not exist on the server.
+
+* The review with the given ``review_id`` is not a review on the given
+  review request.
+
+* The review with the given ``review_id`` is a reply to a review.
+
+
+.. comment: vim: ft=rst et ts=3

@@ -1,0 +1,84 @@
+=========================
+Get Users In Review Group
+=========================
+
+:Path: ``api/json/groups/{group_name}/users/``
+
+
+URL Parameters
+==============
+
++----------------------------+---------+-------------------------------------+
+| Parameter                  | Type    | Description                         |
++============================+=========+=====================================+
+| group_name                 | String  | The name of the group.              |
++----------------------------+---------+-------------------------------------+
+
+
+HTTP GET
+========
+
+Returns a list of users that are in a particular review group.
+
+Note that this list can be quite large, as it contains every user in the
+group.
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++---------+-----------------+----------------------------------------------+
+| Field   | Type            | Description                                  |
++=========+=================+==============================================+
+| users   | Array of User_  | The list of users.                           |
++---------+-----------------+----------------------------------------------+
+
+.. _User: ../../datatypes/user
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      users: [
+        {
+          id: 1,
+          username: "joe",
+          first_name: "Joe",
+          last_name: "User",
+          fullname: "Joe User",
+          email: "joe@example.com",
+          url: "/users/joe/"
+        }
+      ]
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 100: Does Not Exist
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The group with the given ``group_name`` does not exist on the server.
+
+
+.. comment: vim: ft=rst et ts=3

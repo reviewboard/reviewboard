@@ -60,6 +60,35 @@ table.sidebyside pre {
   word-wrap: break-word;      /* IE 5.5+ */
 }
 
+table.sidebyside .moved-to,
+table.sidebyside .moved-from
+{
+  background-color: #66ccff;
+  background-image: url("../images/moved_bg.png");
+  background-position: top left;
+  background-repeat: repeat-x;
+  border: 1px #065a8a solid;
+  display: block;
+  float: left;
+  padding: 0px 1em;
+  -moz-border-radius: 0px 8px 8px 0px;
+  -webkit-border-top-right-radius: 8px;
+  -webkit-border-bottom-right-radius: 8px;
+  -webkit-border-bottom-left-radius: 0px;
+  -webkit-border-top-left-radius: 0px;
+  border-radius: 0px 8px 8px 0px;
+}
+
+table.sidebyside .moved-to {
+  float: right;
+  -moz-border-radius: 8px 0px 0px 8px;
+  -webkit-border-top-right-radius: 0px;
+  -webkit-border-bottom-right-radius: 0px;
+  -webkit-border-bottom-left-radius: 8px;
+  -webkit-border-top-left-radius: 8px;
+  border-radius: 8px 0px 0px 8px;
+}
+
 table.sidebyside tr.first td,
 table.sidebyside tr.first th {
   border-top: 1px #D0D0D0 solid;
@@ -80,22 +109,22 @@ table.sidebyside tbody.whitespace-file td {
   padding: 4px;
 }
 
-table.sidebyside tbody.collapsed a {
+table.sidebyside tbody.diff-header a {
   text-decoration: underline;
   color: black;
 }
 
-table.sidebyside tbody.collapsed td {
+table.sidebyside tbody.diff-header td {
   background: #e4d9cb;
   font-size: x-small;
   text-align: center;
 }
 
-table.sidebyside tbody.collapsed th {
+table.sidebyside tbody.diff-header th {
   background: #e4d9cb;
 }
 
-table.sidebyside tbody.delete {
+table.sidebyside tbody.delete td {
   background: #ffc5ce;
 }
 
@@ -107,7 +136,7 @@ table.sidebyside tbody.delete tr.selected * {
   background: #dfb1b1;
 }
 
-table.sidebyside tbody.insert {
+table.sidebyside tbody.insert td {
   background: #c5ffc4;
 }
 
@@ -119,7 +148,7 @@ table.sidebyside tbody.insert tr.selected * {
   background: #9ae298;
 }
 
-table.sidebyside tbody.replace {
+table.sidebyside tbody.replace td {
   background: #fdfebc;
 }
 

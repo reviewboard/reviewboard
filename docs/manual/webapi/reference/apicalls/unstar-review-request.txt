@@ -1,0 +1,75 @@
+=====================
+Unstar Review Request
+=====================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/unstar/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+
+
+HTTP POST
+=========
+
+Marks a review request as "unstarred." Starred review requests will appear in
+the user's dashboard.
+
+If a review request is already unstarred, this will have no effect.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    POST /api/json/reviewrequests/12321/unstar/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
+On success, no payload data beyond the ``stat`` field will be sent.
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok"
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in to the server.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 100: Does Not Exist
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The review request with the given ``review_request_id`` does not exist on the
+server.
+
+
+.. comment: vim: ft=rst et ts=3

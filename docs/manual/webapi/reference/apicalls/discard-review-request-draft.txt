@@ -1,0 +1,88 @@
+============================
+Discard Review Request Draft
+============================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/draft/discard/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+
+
+HTTP POST
+=========
+
+Discards the draft of the specified review request.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    POST /api/json/reviewrequests/12321/draft/discard/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
+On success, no payload data beyond the ``stat`` field will be sent.
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok"
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 403: Forbidden
+~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to publish the
+draft.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 100: Does Not Exist
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The review request doesn't have an associated draft.
+
+
+No Error Payload
+^^^^^^^^^^^^^^^^
+
+The review request with the given ``review_request_id`` does not exist on the
+server.
+
+
+.. comment: vim: ft=rst et ts=3

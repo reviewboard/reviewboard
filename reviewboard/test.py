@@ -76,8 +76,10 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     for cover in ['reviewboard', 'djblets']:
         nose_argv += ['--cover-package=' + cover]
 
-    if len(sys.argv) > 2:
-        nose_argv += sys.argv[2:]
+    # manage.py captures everything before "--"
+    if len(sys.argv) > 2 and sys.argv.__contains__("--"):
+        nose_argv += sys.argv[(sys.argv.index("--") + 1):]
+
     nose.main(argv=nose_argv)
 
     for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):

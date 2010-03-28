@@ -1,0 +1,116 @@
+================================
+Get Review Request's Last Update
+================================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/last-update/``
+
+
+.. versionadded:: 1.1
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+
+
+HTTP GET
+========
+
+Returns information on the last update made to a review request.
+
+This is useful for quickly determining whether a review request has new
+information that should be looked at, and what type.
+
+If the review request is not public, then the client's logged in user must
+either be the owner of the review request or must have the
+``reviews.can_edit_reviewrequest`` permission set. Otherwise a Permission
+Denied error will be returned.
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    GET /api/json/reviewrequests/12321/last-update/
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-------------+--------+-----------------------------------------------------+
+| Field       | Type   | Description                                         |
++=============+========+=====================================================+
+| summary     | String | A very brief summary of the type of change. This    |
+|             |        | will likely be one of: ``Review request update``,   |
+|             |        | ``Diff updated``, ``New reply``, or ``New review``. |
+|             |        | These strings may be localized into a different     |
+|             |        | language, depending on the client's headers.        |
++-------------+--------+-----------------------------------------------------+
+| timestamp   | String | The timestamp of the last update.                   |
++-------------+--------+-----------------------------------------------------+
+| type        | String | The type of update. This will be one of:            |
+|             |        | ``review-request``, ``diff``, ``reply`` or          |
+|             |        | ``review``.                                         |
++-------------+--------+-----------------------------------------------------+
+| user        | User_  | The user who made the update. This will be the      |
+|             |        | owner of the review request or the user who made    |
+|             |        | a review or reply.                                  |
++-------------+--------+-----------------------------------------------------+
+
+.. _User: ../../datatypes/user
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      summary: "New review",
+      timestamp: "2009-12-06 14:07:26",
+      type: "review",
+      user: {
+        username: "joe",
+        first_name: "Joe",
+        last_name: "User",
+        url: "/users/joe/",
+        email: "joe@example.com",
+        fullname: "Joe User",
+        id: 1
+      }
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 403: Forbidden
+~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to view this
+review request.
+
+
+.. comment: vim: ft=rst et ts=3

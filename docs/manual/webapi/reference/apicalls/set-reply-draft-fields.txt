@@ -1,0 +1,187 @@
+======================
+Set Reply Draft Fields
+======================
+
+:Path: ``api/json/reviewrequests/{review_request_id}/reviews/{review_id}/replies/draft/``
+
+
+URL Parameters
+==============
+
++-------------------+---------+-------------------------------------+
+| Parameter         | Type    | Description                         |
++===================+=========+=====================================+
+| review_request_id | Integer | The ID of the review request.       |
++-------------------+---------+-------------------------------------+
+| review_id         | Integer | The ID of the review.               |
++-------------------+---------+-------------------------------------+
+
+
+HTTP POST
+=========
+
+Sets fields on the draft for a reply to a published review. This will create
+the draft if needed.
+
+If all fields on the reply are unset (or set to an empty string), then this
+reply will be discarded.
+
+This call is a bit complicated in how it works, and will likely be changed
+in the future. The caller must pass a ``type`` and a ``value``, at the very
+least. The ``type`` indicates what type of thing we're setting, and can be
+one of the following:
+
+* ``comment``
+* ``screenshot_comment``
+* ``body_top``
+* ``body_bottom``
+
+If ``comment`` or ``screenshot_comment`` is set, then this will also take
+a required ``id``. A new comment will be created as a reply to the diff or
+screenshot comment with that ID. If ``value`` is empty, then the comment
+will instead be deleted.
+
+If ``body_top`` or ``body_bottom`` is set, then the reply's own body fields
+will be set to the new value.
+
+
+Request Parameters
+------------------
+
++--------------------------+---------+---------------------------------------+
+| Field                    | Type    | Description                           |
++==========================+=========+=======================================+
+| **type**                 | String  | The type of thing that will be set.   |
+| (required)               |         | This is one of: ``comment``,          |
+|                          |         | ``screenshot_comment``, ``body_top``, |
+|                          |         | or ``body_bottom``.                   |
++--------------------------+---------+---------------------------------------+
+| **value**                | String  | The text to set.                      |
+| (required)               |         |                                       |
++--------------------------+---------+---------------------------------------+
+| **id**                   | Integer | The ID of the diff or screenshot      |
+| (required for            |         | comment that this value will be a     |
+| ``comment`` and          |         | reply to.                             |
+| ``screenshot_comment``)  |         |                                       |
++--------------------------+---------+---------------------------------------+
+
+
+Example Request
+---------------
+
+.. code-block:: none
+
+    POST /api/json/reviewrequests/12321/reviews/10/replies/draft/
+    type=body_top&value=Foobar
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++--------------------+--------------------+----------------------------------+
+| Field              | Type               | Description                      |
++====================+====================+==================================+
+| reply              | Review_            | The reply to the review. This    |
+|                    |                    | will be ``null`` if the reply    |
+|                    |                    | was discarded.                   |
++--------------------+--------------------+----------------------------------+
+| discarded          | Boolean            | Whether or not the reply was     |
+|                    |                    | discarded.                       |
++--------------------+--------------------+----------------------------------+
+| comment            | Comment_           | The resulting comment, if        |
+|                    |                    | ``type`` is set to ``comment``.  |
++--------------------+--------------------+----------------------------------+
+| screenshot_comment | ScreenshotComment_ | The resulting comment, if        |
+|                    |                    | ``type`` is set to               |
+|                    |                    | ``screenshot_comment``.          |
++--------------------+--------------------+----------------------------------+
+
+.. _Comment: ../../datatypes/comment
+.. _Review: ../../datatypes/review
+.. _ScreenshotComment: ../../datatypes/screenshot-comment
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      reply: {
+        id: 10,
+        user: {
+          username: "joe",
+          first_name: "Joe",
+          last_name: "User",
+          url: "/users/joe/",
+          email: "joe@example.com",
+          fullname: "Joe User",
+          id: 1
+        },
+        timestamp: "2010-02-16 16:15:10",
+        public: 1,
+        ship_it: 0,
+        body_top: "Foobar"
+        body_bottom: "",
+        comments: []
+      }
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in.
+
+See :ref:`authenticating` for more information.
+
+
+HTTP 403: Forbidden
+~~~~~~~~~~~~~~~~~~~
+
+Error 101: Permission Denied
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The user the client is logged in as doesn't have permission to publish the
+draft.
+
+
+No Error Payload
+^^^^^^^^^^^^^^^^
+
+The type of field specified in ``value`` is not able to be set.
+
+
+HTTP 404: Not Found
+~~~~~~~~~~~~~~~~~~~
+
+Error 100: Does Not Exist
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+No draft reply exists for this user on this review.
+
+
+No Error Payload
+^^^^^^^^^^^^^^^^
+
+There are four possibilities for this error:
+
+* The review request with the given ``review_request_id`` does not exist on the
+  server.
+
+* The review with the given ``review_id`` does not exist on the server.
+
+* The review with the given ``review_id`` is not a review on the given
+  review request.
+
+* The review with the given ``review_id`` is a reply to a review.
+
+
+.. comment: vim: ft=rst et ts=3

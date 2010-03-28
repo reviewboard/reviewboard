@@ -25,6 +25,9 @@ class ReviewRequestVisit(models.Model):
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
+    def __unicode__(self):
+        return u"Review request visit"
+
     class Meta:
         unique_together = ("user", "review_request")
 

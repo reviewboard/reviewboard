@@ -14,9 +14,12 @@ test against.
 
 For our tests, we currently have three sets of fixtures:
 
-1. ``accounts/fixtures/test_users.json`` - accounts/auth apps
-2. ``reviews/fixtures/test_reviewrequests.json`` - diffviewer/reviews apps
-3. ``scmtools/fixtures/test_scmtools.json`` - scmtools app
+1. :file:`reviewboard/accounts/fixtures/test_users.json`
+   - accounts/auth apps
+2. :file:`reviewboard/reviews/fixtures/test_reviewrequests.json`
+   - diffviewer/reviews apps
+3. :file:`reviewboard/scmtools/fixtures/test_scmtools.json`
+   - scmtools app
 
 
 .. _Django: http://www.djangoproject.com/
@@ -26,21 +29,27 @@ Updating Fixtures
 =================
 
 If you're going to add to the existing fixtures, you'll first want to modify
-settings_local.py and set your database to be sqlite. Then::
+:file:`settings_local.py`, set your database to be ``sqlite3`` (if it's
+not already) and change the database name to something like
+:file:`unittests.db`. Then::
 
-   $ ./manage.py syncdb
-   $ ./manage.py loaddata test_users test_scmtools test_reviewrequests
+   $ ./reviewboard/manage.py syncdb
+   $ ./reviewboard/manage.py loaddata test_users test_scmtools test_reviewrequests
 
 This should populate your database with the test data. After you've added to
 the data set, dump them back out::
 
-   $ ./manage.py dumpdata auth accounts > accounts/fixtures/test_users.json
-   $ ./manage.py dumpdata diffviewer reviews > reviews/fixtures/test_reviewrequests.json
-   $ ./manage.py dumpdata scmtools > scmtools/fixtures/test_scmtools.json
+   $ ./reviewboard/manage.py dumpdata auth accounts > accounts/fixtures/test_users.json
+   $ ./reviewboard/manage.py dumpdata diffviewer reviews > reviews/fixtures/test_reviewrequests.json
+   $ ./reviewboard/manage.py dumpdata scmtools > scmtools/fixtures/test_scmtools.json
 
 You can choose to only dump the data you've actually modified. If you've only
 created a review request, for example, feel free to just dump the diffviewer
-and reviews apps.  Using Fixtures in Tests
+and reviews apps.
+
+
+Using Fixtures in Tests
+=======================
 
 Using fixtures in tests is really easy. In your test class (which must be
 derived from :class:`django.test.TestCase`), add a ``fixtures = [...]`` line

@@ -10,7 +10,7 @@
         .formDlg({
           title: "{% trans "Upload Diff" %}",
           confirmLabel: "{% trans "Upload" %}",
-          path: "/reviewrequests/{{review_request.id}}/diff/new/",
+          dataStoreObject: gReviewRequest.createDiff(),
           width: "60em",
           upload: true,
           fields: {% form_dialog_fields upload_diff_form %}
@@ -23,13 +23,13 @@
       $("<div/>").formDlg({
         title: "{% trans "Upload Screenshot" %}",
         confirmLabel: "{% trans "Upload" %}",
-        path: "/reviewrequests/{{review_request.id}}/screenshot/new/",
+        dataStoreObject: gReviewRequest.createScreenshot(),
         width: "50em",
         upload: true,
         fields: {% form_dialog_fields upload_screenshot_form %},
         success: function(rsp) {
-          $.screenshotThumbnail(rsp.screenshot);
-          gDraftBanner.show();
+            $.screenshotThumbnail(rsp.screenshot);
+            gDraftBanner.show();
         }
       });
 

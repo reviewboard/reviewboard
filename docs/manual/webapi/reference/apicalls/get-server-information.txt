@@ -1,0 +1,81 @@
+======================
+Get Server Information
+======================
+
+:Path: ``api/json/info/``
+
+
+HTTP GET
+========
+
+Returns information on the Review Board server.
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
++-----------------------------+---------+-------------------------------------+
+| Field                       | Type    | Description                         |
++=============================+=========+=====================================+
+| product.is_release          | Boolean | Whether or not the server is using  |
+|                             |         | an official release of Review Board.|
++-----------------------------+---------+-------------------------------------+
+| product.name                | String  | The name of the product. This will  |
+|                             |         | always be "Review Board" for        |
+|                             |         | official installs.                  |
++-----------------------------+---------+-------------------------------------+
+| product.package_version     | String  | The version of Review Board.        |
++-----------------------------+---------+-------------------------------------+
+| product.version             | String  | The human-readable version of       |
+|                             |         | Review Board.                       |
++-----------------------------+---------+-------------------------------------+
+| site.administrators[].email | String  | The e-mail address of an            |
+|                             |         | administrator.                      |
++-----------------------------+---------+-------------------------------------+
+| site.administrators[].name  | String  | The name of an adminstrator.        |
++-----------------------------+---------+-------------------------------------+
+| site.url                    | String  | The URL of the Review Board server. |
++-----------------------------+---------+-------------------------------------+
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok",
+      product: {
+        is_release: true,
+        name: "Review Board",
+        package_version: "1.1",
+        version: "1.1"
+      },
+      site: {
+        administrators: [
+          {
+            email: "admin@example.com",
+            name: "admin"
+          }
+        ],
+        url: "http://reviews.example.com/"
+      }
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 103: Not Logged In
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+The client making the request is not logged in and the server disallows
+anonymous access.
+
+See :ref:`authenticating` for more information.
+
+
+.. comment: vim: ft=rst et ts=3

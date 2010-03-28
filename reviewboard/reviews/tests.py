@@ -1,13 +1,19 @@
 import logging
+import os
 
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
+from django.core import mail
 from django.template import Context, Template
 from django.test import TestCase
 
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft, \
+from reviewboard.reviews.models import DefaultReviewer, \
+                                       ReviewRequest, \
+                                       ReviewRequestDraft, \
                                        Review
+from reviewboard.scmtools.models import Repository, Tool
 
 
 class DbQueryTests(TestCase):
@@ -248,7 +254,40 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
-    # TODO - test the rest of that form
+    def testNewReviewRequest1(self):
+        """Testing new_review_request view (uploading diffs)"""
+        self.client.login(username='grumpy', password='grumpy')
+
+        response = self.client.get('/r/new/')
+        self.assertEqual(response.status_code, 200)
+
+        testdata_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'scmtools', 'testdata')
+        svn_repo_path = os.path.join(testdata_dir, 'svn_repo')
+
+        repository = Repository(name='Subversion SVN',
+                                path='file://' + svn_repo_path,
+                                tool=Tool.objects.get(name='Subversion'))
+        repository.save()
+
+        diff_filename = os.path.join(testdata_dir, 'svn_makefile.diff')
+
+        f = open(diff_filename, 'r')
+
+        response = self.client.post('/r/new/', {
+            'repository': repository.id,
+            'diff_path': f,
+            'basedir': '/trunk',
+        })
+
+        f.close()
+
+        self.assertEqual(response.status_code, 302)
+
+        r = ReviewRequest.objects.order_by('-time_added')[0]
+        self.assertEqual(response['Location'],
+                         'http://testserver%s' % r.get_absolute_url())
 
     def testReviewList(self):
         """Testing all_review_requests view"""
@@ -301,6 +340,11 @@ class ViewTests(TestCase):
         self.siteconfig.save()
         response = self.client.get('/users/')
         self.assertEqual(response.status_code, 302)
+
+    def testSubmitterListChars(self):
+        """Testing the submitter list with various characters in the username"""
+        # Test if this throws an exception. Bug #1250
+        reverse('user', args=['user@example.com'])
 
     def testGroupList(self):
         """Testing group_list view"""
@@ -393,6 +437,24 @@ class ViewTests(TestCase):
                          'Update for cleaned_data changes')
         self.assertEqual(datagrid.rows[1]['object'].summary,
                          'Comments Improvements')
+
+        self.client.logout()
+
+    def testDashboardSidebar(self):
+        """Testing dashboard view (to-group devgroup)"""
+        self.client.login(username='doc', password='doc')
+
+        response = self.client.get('/dashboard/')
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self.getContextVar(response, 'datagrid')
+        self.assertEqual(datagrid.counts['outgoing'], 1)
+        self.assertEqual(datagrid.counts['incoming'], 4)
+        self.assertEqual(datagrid.counts['to-me'], 2)
+        self.assertEqual(datagrid.counts['starred'], 0)
+        self.assertEqual(datagrid.counts['mine'], 2)
+        self.assertEqual(datagrid.counts['groups']['devgroup'], 2)
+        self.assertEqual(datagrid.counts['groups']['privgroup'], 1)
 
         self.client.logout()
 
@@ -512,11 +574,32 @@ class DraftTests(TestCase):
         self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
 
-
     def getDraft(self):
         """Convenience function for getting a new draft to work with."""
         return ReviewRequestDraft.create(ReviewRequest.objects.get(
             summary="Add permission checking for JSON API"))
+
+
+class FieldTests(TestCase):
+    # Bug #1352
+    def testLongBugNumbers(self):
+        """Testing review requests with very long bug numbers"""
+        review_request = ReviewRequest()
+        review_request.bugs_closed = \
+            '12006153200030304432010,4432009'
+        self.assertEqual(review_request.get_bug_list(),
+                         ['4432009', '12006153200030304432010'])
+
+    # Our _("(no summary)") string was failing in the admin UI, as
+    # django.template.defaultfilters.stringfilter would fail on a
+    # ugettext_lazy proxy object. We can use any stringfilter for this.
+    #
+    # Bug #1346
+    def testNoSummary(self):
+        """Testing review requests with no summary"""
+        from django.template.defaultfilters import lower
+        review_request = ReviewRequest()
+        lower(unicode(review_request))
 
 
 class ConcurrencyTests(TestCase):
@@ -582,6 +665,36 @@ class ConcurrencyTests(TestCase):
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
         self.assertEqual(comments[2].text, comment_text_3)
+
+
+class DefaultReviewerTests(TestCase):
+    fixtures = ['test_scmtools.json']
+
+    def testForRepository(self):
+        """Testing DefaultReviewer.objects.for_repository"""
+        tool = Tool.objects.get(name='CVS')
+
+        default_reviewer1 = DefaultReviewer(name="Test", file_regex=".*")
+        default_reviewer1.save()
+
+        default_reviewer2 = DefaultReviewer(name="Bar", file_regex=".*")
+        default_reviewer2.save()
+
+        repo1 = Repository(name='Test1', path='path1', tool=tool)
+        repo1.save()
+        default_reviewer1.repository.add(repo1)
+
+        repo2 = Repository(name='Test2', path='path2', tool=tool)
+        repo2.save()
+
+        default_reviewers = DefaultReviewer.objects.for_repository(repo1)
+        self.assert_(len(default_reviewers) == 2)
+        self.assert_(default_reviewer1 in default_reviewers)
+        self.assert_(default_reviewer2 in default_reviewers)
+
+        default_reviewers = DefaultReviewer.objects.for_repository(repo2)
+        self.assert_(len(default_reviewers) == 1)
+        self.assert_(default_reviewer2 in default_reviewers)
 
 
 class IfNeatNumberTagTests(TestCase):

@@ -10,6 +10,10 @@ var ANCHOR_FILE = 2;
 var ANCHOR_CHUNK = 4;
 
 
+// State
+var gDiff;
+
+
 /*
  * A list of key bindings for the page.
  */
@@ -104,15 +108,12 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.filediff = gFileAnchorToId[fileid];
     this.interfilediff = gInterdiffFileAnchorToId[fileid];
+    this.beginLineNum = beginLineNum;
+    this.endLineNum = endLineNum;
     this.beginRow = beginRow;
     this.endRow = endRow;
-    this.beginLineNum = beginLineNum
-    this.endLineNum = endLineNum;
-    this.hasDraft = false;
     this.comments = [];
-    this.text = "";
-    this.canDelete = false;
-    this.type = "comment";
+    this.draftComment = null;
 
     this.el = $("<span/>")
         .addClass("commentflag")
@@ -137,7 +138,8 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
     }
 
     this.anchor = $("<a/>")
-        .attr("name", "file" + this.filediff['id'] + "line" + this.beginLineNum)
+        .attr("name",
+              "file" + this.filediff['id'] + "line" + this.beginLineNum)
         .addClass("comment-anchor")
         .appendTo(this.el);
 
@@ -150,15 +152,13 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
             var comment = comments[i];
 
             if (comment.localdraft) {
-                this.setText(comment.text);
-                this.setHasDraft(true);
-                this.canDelete = true;
+                this._createDraftComment(comment.text);
             } else {
                 this.comments.push(comment);
             }
         }
     } else {
-        this.setHasDraft(true);
+        this._createDraftComment();
     }
 
     this.updateCount();
@@ -169,70 +169,6 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 }
 
 $.extend(DiffCommentBlock.prototype, {
-    /*
-     * Discards the comment block if it's empty.
-     */
-    discardIfEmpty: function() {
-        if (this.text == "" && this.comments.length == 0) {
-            var self = this;
-            this.el.fadeOut(350, function() { self.el.remove(); })
-        }
-
-        this.anchor.remove();
-    },
-
-    /*
-     * Saves the draft text in the comment block to the server.
-     */
-    save: function() {
-        var self = this;
-
-        rbApiCall({
-            url: this.getURL(),
-            data: {
-                action: "set",
-                num_lines: this.getNumLines(),
-                text: this.text
-            },
-            success: function(data) {
-                self.canDelete = true;
-                self.setHasDraft(true);
-                self.updateCount();
-                self.notify("Comment Saved");
-                showReviewBanner();
-            }
-        });
-    },
-
-    /*
-     * Deletes the draft comment on the server, discarding the comment block
-     * afterward if empty.
-     */
-    deleteComment: function() {
-        if (!this.canDelete) {
-            // TODO: Script error. Report it.
-            return;
-        }
-
-        var self = this;
-
-        rbApiCall({
-            url: this.getURL(),
-            data: {
-                action: "delete",
-                num_lines: this.getNumLines()
-            },
-            success: function(data) {
-                self.canDelete = false;
-                self.text = "";
-                self.setHasDraft(false);
-                self.updateCount();
-                self.discardIfEmpty();
-                self.notify("Comment Deleted");
-            }
-        });
-    },
-
     /*
      * Notifies the user of some update. This notification appears by the
      * comment flag.
@@ -267,35 +203,15 @@ $.extend(DiffCommentBlock.prototype, {
     },
 
     /*
-     * Sets the current text in the comment block.
-     *
-     * @param {string} text  The new text to set.
-     */
-    setText: function(text) {
-        this.text = text;
-
-        this.updateTooltip();
-    },
-
-    /*
-     * Returns the number of lines that this comment covers.
-     *
-     * @return {int} The number of lines this comment covers.
-     */
-    getNumLines: function() {
-        return this.endLineNum - this.beginLineNum + 1;
-    },
-
-    /*
      * Updates the tooltip contents.
      */
     updateTooltip: function() {
         this.tooltip.empty();
         var list = $("<ul/>");
 
-        if (this.text != "") {
+        if (this.draftComment) {
             $("<li/>")
-                .text(this.text.truncate())
+                .text(this.draftComment.text.truncate())
                 .addClass("draft")
                 .appendTo(list);
         }
@@ -318,30 +234,12 @@ $.extend(DiffCommentBlock.prototype, {
     updateCount: function() {
         var count = this.comments.length;
 
-        if (this.hasDraft) {
+        if (this.draftComment) {
             count++;
         }
 
         this.count = count;
         this.countEl.html(this.count);
-    },
-
-    /*
-     * Sets whether or not this comment block has a draft comment.
-     *
-     * @param {bool} hasDraft  true if this has a draft comment, or false
-     *                         otherwise.
-     */
-    setHasDraft: function(hasDraft) {
-        if (hasDraft != this.hasDraft) {
-            if (hasDraft) {
-                this.el.addClass("draft");
-            } else {
-                this.el.removeClass("draft");
-            }
-
-            this.hasDraft = hasDraft;
-        }
     },
 
     /*
@@ -359,8 +257,11 @@ $.extend(DiffCommentBlock.prototype, {
 
         gCommentDlg
             .one("close", function() {
+                self._createDraftComment();
+
                 gCommentDlg
-                    .setCommentBlock(self)
+                    .setDraftComment(self.draftComment)
+                    .setCommentsList(self.comments, "comment")
                     .css({
                         left: $(document).scrollLeft() +
                               ($(window).width() - gCommentDlg.width()) / 2,
@@ -372,24 +273,48 @@ $.extend(DiffCommentBlock.prototype, {
             .close();
     },
 
-    /*
-     * Returns the URL used for API calls.
-     *
-     * @return {string} The URL used for API calls for this comment block.
-     */
-    getURL: function() {
-        var interfilediff_revision = null;
-        var interfilediff_id = null;
-
-        if (this.interfilediff != null) {
-            interfilediff_revision = this.interfilediff['revision'];
-            interfilediff_id = this.interfilediff['id'];
+    _createDraftComment: function(textOnServer) {
+        if (this.draftComment != null) {
+            return;
         }
 
-        return getReviewRequestAPIPath(true) +
-               getDiffAPIPath(this.filediff['revision'], this.filediff['id'],
-                              interfilediff_revision, interfilediff_id,
-                              this.beginLineNum);
+        var self = this;
+        var el = this.el;
+        var comment = new RB.DiffComment(this.filediff, this.interfilediff,
+                                         this.beginLineNum, this.endLineNum,
+                                         textOnServer);
+
+        $.event.add(comment, "textChanged", function() {
+            self.updateTooltip();
+        });
+
+        $.event.add(comment, "deleted", function() {
+            self.notify("Comment Deleted");
+        });
+
+        $.event.add(comment, "destroyed", function() {
+            self.draftComment = null;
+
+            /* Discard the comment block if empty. */
+            if (self.comments.length == 0) {
+                el.fadeOut(350, function() { el.remove(); })
+                self.anchor.remove();
+            } else {
+                el.removeClass("draft");
+                self.updateCount();
+                self.updateTooltip();
+            }
+        });
+
+        $.event.add(comment, "saved", function() {
+            self.updateCount();
+            self.updateTooltip();
+            self.notify("Comment Saved");
+            showReviewBanner();
+        });
+
+        this.draftComment = comment;
+        el.addClass("draft");
     }
 });
 
@@ -849,7 +774,6 @@ function gotoAnchor(name, scroll) {
  */
 function findLineNumRow(table, linenum, startRow, endRow) {
     var row = null;
-    var found = false;
     var row_offset = 1; // Get past the headers.
 
     if (table.rows.length - row_offset > linenum) {
@@ -859,6 +783,11 @@ function findLineNumRow(table, linenum, startRow, endRow) {
         if (row != null && parseInt(row.getAttribute('line')) == linenum) {
             return row;
         }
+    }
+
+    if (startRow) {
+        // startRow already includes the offset, so we need to remove it
+        startRow -= row_offset;
     }
 
     var low = startRow || 1;
@@ -874,7 +803,7 @@ function findLineNumRow(table, linenum, startRow, endRow) {
          * We collapsed the rows (unless someone mucked with the DB),
          * so the desired row is less than the row number retrieved.
          */
-        high = parseInt(row.getAttribute('line'))
+        high = Math.min(high, row_offset + linenum);
     }
 
     /* Binary search for this cell. */
@@ -882,22 +811,57 @@ function findLineNumRow(table, linenum, startRow, endRow) {
         row = table.rows[row_offset + i];
 
         if (!row) {
+            /*
+             * should not happen, unless we miscomputed high
+             */
             high--;
+            /*
+             * will not do much if low + high is odd
+             * but we'll catch up on the next iteration
+             */
+            i = Math.round((low + high) / 2);
             continue;
         }
 
         var value = parseInt(row.getAttribute('line'))
 
         if (!value) {
-            i++;
-            continue;
+            /*
+             * bad luck, let's look around.
+             * We'd expect to find a value on the first try
+             * but the following makes sure we explore all
+             * rows
+             */
+            var found = false;
+
+            for (var k = 1; k <= (high-low) / 2; k++) {
+                row = table.rows[row_offset + i + k];
+                if (row && parseInt(row.getAttribute('line'))) {
+                    i = i + k;
+                    found = true;
+                    break;
+                } else {
+                    row = table.rows[row_offset + i - k];
+                    if (row && parseInt(row.getAttribute('line'))) {
+                        i = i - k;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (found) {
+                value = parseInt(row.getAttribute('line'));
+            } else {
+                return null;
+            }
         }
 
         /* See if we can use simple math to find the row quickly. */
-        var guessRowNum = linenum - value;
+        var guessRowNum = linenum - value + row_offset + i;
 
         if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
-            var guessRow = table.rows[row_offset + i + guessRowNum];
+            var guessRow = table.rows[guessRowNum];
 
             if (guessRow
                 && parseInt(guessRow.getAttribute('line')) == linenum) {
@@ -993,33 +957,25 @@ function addCommentFlags(table, lines) {
 /*
  * Expands a chunk of the diff.
  *
- * @param {string} fileid       The file ID.
- * @param {string} filediff_id  The FileDiff ID.
- * @param {int}    chunk_index  The chunk index number.
- * @param {string} tbody_id     The tbody ID to insert into.
+ * @param {string} fileid              The file ID.
+ * @param {string} filediff_id         The FileDiff ID.
+ * @param {string} revision            The revision of the file.
+ * @param {string} interdiff_revision  The interdiff revision of the file.
+ * @param {int}    chunk_index         The chunk index number.
+ * @param {string} tbody_id            The tbody ID to insert into.
  */
-function expandChunk(fileid, filediff_id, chunk_index, link) {
-    var revision = gRevision;
+function expandChunk(fileid, filediff_id, revision, interdiff_revision,
+                     chunk_index, link) {
+    gDiff.getDiffFragment(fileid, filediff_id, revision, interdiff_revision,
+                          chunk_index, function(html) {
+        var tbody = $(link).parents("tbody.diff-header");
+        var table = tbody.parent();
 
-    if (gInterdiffRevision != null) {
-      revision += "-" + gInterdiffRevision;
-    }
+        tbody.replaceWith(html);
+        addCommentFlags(table, gHiddenComments);
 
-    rbApiCall({
-        url: SITE_ROOT + 'r/' + gReviewRequestId + '/diff/' + revision +
-             '/fragment/' + filediff_id + '/chunk/' + chunk_index + '/',
-        data: {},
-        type: "GET",
-        dataType: "html",
-        complete: function(res, status) {
-            if (status == "success") {
-                var tbody = $(link).parents("tbody.collapsed");
-                var table = tbody.parent();
-
-                tbody.replaceWith(res.responseText);
-                addCommentFlags(table, gHiddenComments);
-            }
-        }
+        /* The selection rectangle may not update -- bug #1353. */
+        $(gAnchors[gSelectedAnchor]).highlightChunk();
     });
 }
 
@@ -1130,20 +1086,10 @@ function loadFileDiff(filediff_id, filediff_revision,
         /* We already have this one. This is probably a pre-loaded file. */
         setupFileDiff();
     } else {
-        var revision_str = filediff_revision;
-
-        if (interfilediff_id) {
-            revision_str += "-" + interfilediff_revision;
-        }
-
         $.funcQueue("diff_files").add(function() {
-            $.ajax({
-                type: "GET",
-                url: SITE_ROOT + "r/" + gReviewRequestId + "/diff/" +
-                     revision_str + "/fragment/" + filediff_id + "/?" +
-                     "index=" + file_index + "&" + AJAX_SERIAL,
-                complete: onFileLoaded
-            });
+            gDiff.getDiffFile(filediff_id, filediff_revision,
+                              interfilediff_id, interfilediff_revision,
+                              file_index, onFileLoaded);
         });
     }
 
@@ -1228,6 +1174,8 @@ function toggleWhitespaceChunks()
 
 
 $(document).ready(function() {
+    gDiff = gReviewRequest.createDiff(gRevision, gInterdiffRevision);
+
     $(document).keypress(function(evt) {
         if (evt.altKey || evt.ctrlKey || evt.metaKey) {
             return;
@@ -1264,6 +1212,16 @@ $(document).ready(function() {
     }
 
     $.funcQueue("diff_files").start();
+
+    $("table.sidebyside tr td a.moved-to," +
+      "table.sidebyside tr td a.moved-from").click(function() {
+        var destination = $(this).attr("line");
+
+        return !scrollToAnchor(
+            $("td a[target=" + destination + "]", $(this).parents("table"))
+                .parent().siblings().andSelf()
+                    .effect("highlight", {}, 2000), false);
+    });
 });
 
 // vim: set et:

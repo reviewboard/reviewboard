@@ -1,10 +1,14 @@
 {% extends "siteconfig/settings.html" %}
 
+{% load i18n %}
+{% load rbadmintags %}
 {% block subnavbar %}
 <ul id="admin-subnav">
- <li><a href="../general/">General</a></li>
- <li><a href="../email/">E-Mail</a></li>
- <li><a href="../diffs/">Diff Viewer</a></li>
- <li><a href="../logging/">Logging</a></li>
+ {% admin_subnav "settings-general" _("General") %}
+ {% admin_subnav "settings-authentication" _("Authentication") %}
+ {% admin_subnav "settings-email" _("E-Mail") %}
+ {% admin_subnav "settings-diffs" _("Diff Viewer") %}
+ {% admin_subnav "settings-logging" _("Logging") %}
+ {% admin_subnav "settings-storage" _("File Storage") %}
 </ul>
 {% endblock %}

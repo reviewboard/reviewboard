@@ -1,0 +1,64 @@
+.. _api-login:
+
+======
+Log In
+======
+
+:Path: ``api/json/accounts/login/``
+
+
+HTTP POST
+=========
+
+Logs a user in. This must be done to make use of most of the API.
+
+The response will contain a ``rbsessionid`` cookie that should be used in
+future requests to the server.
+
+
+Request Parameters
+------------------
+
++-------------+---------+--------------------------------------------------+
+| Parameter   | Type    | Description                                      |
++=============+=========+==================================================+
+| username    | String  | The username of the user to log in as.           |
++-------------+---------+--------------------------------------------------+
+| password    | Boolean | The password of the user.                        |
++-------------+---------+--------------------------------------------------+
+
+
+Responses
+---------
+
+HTTP 200: Success
+~~~~~~~~~~~~~~~~~
+
+On success, no payload data beyond the ``stat`` field will be sent.
+
+An ``rbsessionid`` cookie will be sent in the HTTP response headers. This
+cookie will need to be sent on all requests made to the server.
+
+
+Example Response
+^^^^^^^^^^^^^^^^
+
+.. code-block:: javascript
+
+    {
+      stat: "ok"
+    }
+
+
+HTTP 401: Unauthorized
+~~~~~~~~~~~~~~~~~~~~~~
+
+Error 104: Login Failed
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The username or password was not valid.
+
+See :ref:`authenticating` for more information.
+
+
+.. comment: vim: ft=rst et ts=3
