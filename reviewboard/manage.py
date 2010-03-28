@@ -21,6 +21,13 @@ from reviewboard.admin.migration import fix_django_evolution_issues
 
 warnings_found = 0
 def check_dependencies():
+    # Some of our checks require access to django.conf.settings, so
+    # tell Django about our settings.
+    #
+    # This must go before the imports.
+    setup_environ(settings)
+
+
     from django.template.defaultfilters import striptags
     from djblets.util.filesystem import is_exe_in_path
 
@@ -28,10 +35,6 @@ def check_dependencies():
 
     from settings import dependency_error
 
-
-    # Some of our checks require access to django.conf.settings, so
-    # tell Django about our settings.
-    setup_environ(settings)
 
     # Python 2.4
     if sys.version_info[0] < 2 or \
