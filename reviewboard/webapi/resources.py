@@ -1045,15 +1045,14 @@ class ReviewDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if review_id is None:
-            q = Q(base_reply_to__isnull=True)
+            extra_q = {'base_reply_to__isnull': True}
         else:
-            q = Q(base_reply_to=review_id)
+            extra_q = {'base_reply_to': review_id}
 
         review, review_is_new = Review.objects.get_or_create(
-            q,
             user=request.user,
             review_request=review_request,
-            public=False)
+            public=False, **extra_q)
 
         invalid_fields = {}
 
