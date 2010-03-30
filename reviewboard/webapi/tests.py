@@ -785,7 +785,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
                           (review.review_request.id, review.id))
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['diff-comments']), review.comments.count())
+        self.assertEqual(len(rsp['diff_comments']), review.comments.count())
 
     def testReviewCommentsCount(self):
         """Testing the GET reviewrequests/<id>/reviews/<id>/comments/?counts-only=1 API"""
