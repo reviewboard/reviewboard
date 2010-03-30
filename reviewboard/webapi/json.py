@@ -111,7 +111,7 @@ def string_to_status(status):
 
 
 @webapi
-def service_not_configured(request):
+def service_not_configured(request, *args, **kwargs):
     """
     Returns an error specifying that the service has not yet been configured.
     """
@@ -119,7 +119,7 @@ def service_not_configured(request):
 
 
 @webapi_check_login_required
-def review_request_last_update(request, review_request_id):
+def review_request_last_update(request, review_request_id, *args, **kwargs):
     """
     Returns the last update made to the specified review request.
 
@@ -167,7 +167,8 @@ def review_request_last_update(request, review_request_id):
 
 
 @webapi_check_login_required
-def review_request_by_changenum(request, repository_id, changenum):
+def review_request_by_changenum(request, repository_id, changenum,
+                                *args, **kwargs):
     """
     Returns a review request with the specified changenum.
     """
@@ -184,7 +185,8 @@ def review_request_by_changenum(request, repository_id, changenum):
 
 
 @webapi_login_required
-def review_request_update_changenum(request, review_request_id, changenum):
+def review_request_update_changenum(request, review_request_id, changenum,
+                                    *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         review_request.update_changenum(changenum, request.user)
@@ -197,7 +199,7 @@ def review_request_update_changenum(request, review_request_id, changenum):
 
 
 @webapi_login_required
-def review_request_updated(request, review_request_id):
+def review_request_updated(request, review_request_id, *args, **kwargs):
     """
     Determines if a review has been updated since the user last viewed
     it.
@@ -212,7 +214,7 @@ def review_request_updated(request, review_request_id):
         })
 
 @webapi_check_login_required
-def count_review_requests(request, func, **kwargs):
+def count_review_requests(request, func, api_format='json', *args, **kwargs):
     """
     Returns the number of review requests.
 
@@ -228,7 +230,7 @@ def count_review_requests(request, func, **kwargs):
 
 
 @webapi_check_login_required
-def count_review_list(request, review_request_id):
+def count_review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
         'reviews': _get_reviews(review_request).count()
@@ -236,7 +238,8 @@ def count_review_list(request, review_request_id):
 
 
 @webapi_check_login_required
-def review_comments_list(request, review_request_id, review_id):
+def review_comments_list(request, review_request_id, review_id,
+                         *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, WebAPIResponseError):
@@ -249,7 +252,8 @@ def review_comments_list(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def count_review_comments(request, review_request_id, review_id):
+def count_review_comments(request, review_request_id, review_id,
+                          *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
 
     if isinstance(review, WebAPIResponseError):
@@ -266,7 +270,8 @@ def _prepare_draft(request, review_request):
 
 @webapi_login_required
 @require_POST
-def review_request_draft_update_from_changenum(request, review_request_id):
+def review_request_draft_update_from_changenum(request, review_request_id,
+                                               *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
     try:
@@ -293,7 +298,7 @@ def review_request_draft_update_from_changenum(request, review_request_id):
 
 
 @webapi_login_required
-def review_draft_comments(request, review_request_id, **kwargs):
+def review_draft_comments(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     review = review_request.get_pending_review(request.user)
 
@@ -312,7 +317,7 @@ def review_draft_comments(request, review_request_id, **kwargs):
 
 @webapi_login_required
 @require_POST
-def review_reply_draft(request, review_request_id, review_id):
+def review_reply_draft(request, review_request_id, review_id, *args, **kwargs):
     source_review = _get_and_validate_review(request, review_request_id,
                                              review_id)
     if isinstance(source_review, WebAPIResponseError):
@@ -417,7 +422,8 @@ def review_reply_draft(request, review_request_id, review_id):
 
 @webapi_login_required
 @require_POST
-def review_reply_draft_save(request, review_request_id, review_id):
+def review_reply_draft_save(request, review_request_id, review_id,
+                            *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -434,7 +440,8 @@ def review_reply_draft_save(request, review_request_id, review_id):
 
 @webapi_login_required
 @require_POST
-def review_reply_draft_discard(request, review_request_id, review_id):
+def review_reply_draft_discard(request, review_request_id, review_id,
+                               *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -449,7 +456,8 @@ def review_reply_draft_discard(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def review_replies_list(request, review_request_id, review_id):
+def review_replies_list(request, review_request_id, review_id,
+                        *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -460,7 +468,8 @@ def review_replies_list(request, review_request_id, review_id):
 
 
 @webapi_check_login_required
-def count_review_replies(request, review_request_id, review_id):
+def count_review_replies(request, review_request_id, review_id,
+                        *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
     if isinstance(review, WebAPIResponseError):
         return review
@@ -473,7 +482,7 @@ def count_review_replies(request, review_request_id, review_id):
 @webapi_check_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
-                       interfilediff_id=None, **kwargs):
+                       interfilediff_id=None, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     filediff = get_object_or_404(FileDiff,
         pk=filediff_id, diffset__history=review_request.diffset_history,
@@ -568,7 +577,7 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
 
 @webapi_check_login_required
 def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h,
-                        **kwargs):
+                        *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
 
