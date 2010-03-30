@@ -44,15 +44,19 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         self.reviewrequests_url = \
             reverse('review_requests-resource', kwargs={'api_format': 'json'})
 
+        self.base_url = 'http://testserver'
+
     def tearDown(self):
         self.client.logout()
 
     def apiGet(self, path, query={}, follow_redirects=False,
                expected_status=200, expected_redirects=[]):
-        print "GETing /api/json/%s/" % path
+        path = self._normalize_path(path)
+
+        print 'GETing %s' % path
         print "Query data: %s" % query
 
-        response = self.client.get("/api/json/%s/" % path, query,
+        response = self.client.get(path, query,
                                    follow=follow_redirects)
         self.assertEqual(response.status_code, expected_status)
 
@@ -62,7 +66,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
             for redirect in expected_redirects:
                 self.assertEqual(response.redirect_chain[0],
-                                 ('http://testserver' + expected_redirects[0],
+                                 (self.base_url + expected_redirects[0],
                                   301))
 
         print "Raw response: %s" % response.content
@@ -72,33 +76,50 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def apiPost(self, path, query={}, expected_status=200):
-        print "POSTing to /api/json/%s/" % path
+    def api_post_with_response(self, path, query={}, expected_status=200):
+        path = self._normalize_path(path)
+
+        print 'POSTing to %s' % path
         print "Post data: %s" % query
-        response = self.client.post("/api/json/%s/" % path, query)
+        response = self.client.post(path, query)
         print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
-        return self._getResult(response, expected_status)
+        return self._get_result(response, expected_status), response
+
+    def apiPost(self, path, query={}, expected_status=200):
+        rsp, result = self.api_post_with_response(path, query, expected_status)
+
+        return rsp
 
     def apiPut(self, path, query={}, expected_status=200):
-        print "PUTing to /api/json/%s/" % path
+        path = self._normalize_path(path)
+
+        print 'PUTing to %s' % path
         print "Post data: %s" % query
-        response = self.client.put("/api/json/%s/" % path, query)
+        response = self.client.put(path, query)
         print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
-        return self._getResult(response, expected_status)
+        return self._get_result(response, expected_status)
 
     def apiDelete(self, path, expected_status=204):
-        print "DELETEing /api/json/%s/" % path
-        response = self.client.delete("/api/json/%s/" % path)
+        path = self._normalize_path(path)
+
+        print 'DELETEing %s' % path
+        response = self.client.delete(path)
         print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
-        return self._getResult(response, expected_status)
+        return self._get_result(response, expected_status)
 
-    def _getResult(self, response, expected_status):
+    def _normalize_path(self, path):
+        if path.startswith(self.base_url):
+            return path[len(self.base_url):]
+        else:
+            return '/api/json/%s/' % path
+
+    def _get_result(self, response, expected_status):
         if expected_status == 204:
             self.assertEqual(response.content, '')
             rsp = None
