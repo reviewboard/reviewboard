@@ -1044,7 +1044,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
 class ReviewReplyResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyResource APIs."""
-    def testRepliesList(self):
+    def test_get_replies(self):
         """Testing the GET reviewrequests/<id>/reviews/<id>/replies API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
@@ -1061,8 +1061,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
             self.assertEqual(rsp['replies'][0]['body_bottom'],
                              reply.body_bottom)
 
-    def testRepliesListCount(self):
-        """Testing the reviewrequests/reviews/replies/count API"""
+    def test_get_replies_with_counts_only(self):
+        """Testing the GET reviewrequests/<id>/reviews/<id>/replies/?counts-only=1 API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
         self.testReplyDraftSave()
@@ -1072,11 +1072,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], len(review.public_replies()))
 
-
-class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewDraftResource APIs."""
-    def testReplyDraftComment(self):
-        """Testing the reviewrequests/reviews/replies/draft API with comment"""
+    def test_put_reply_with_diff_comment(self):
+        """Testing PUT the reviewrequests/<id>/reviews/<id>/replies/draft API with comment"""
         comment_text = "My Comment Text"
 
         comment = Comment.objects.all()[0]
@@ -1094,8 +1091,8 @@ class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def testReplyDraftScreenshotComment(self):
-        """Testing the reviewrequests/reviews/replies/draft API with screenshot_comment"""
+    def test_post_reply_with_screenshot_comment(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft API with screenshot_comment"""
         comment_text = "My Comment Text"
 
         comment = self.testScreenshotCommentsSet()
@@ -1114,8 +1111,8 @@ class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def testReplyDraftBodyTop(self):
-        """Testing the reviewrequests/reviews/replies/draft API with body_top"""
+    def test_put_reply_with_body_top(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft API with body_top"""
         body_top = 'My Body Top'
 
         review = \
@@ -1132,8 +1129,8 @@ class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
         reply = Review.objects.get(pk=rsp['reply']['id'])
         self.assertEqual(reply.body_top, body_top)
 
-    def testReplyDraftBodyBottom(self):
-        """Testing the reviewrequests/reviews/replies/draft API with body_bottom"""
+    def test_put_reply_with_body_bottom(self):
+        """Testing the reviewrequests/<id>/reviews/<id>/replies/draft API with body_bottom"""
         body_bottom = 'My Body Bottom'
 
         review = \
@@ -1150,8 +1147,8 @@ class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
         reply = Review.objects.get(pk=rsp['reply']['id'])
         self.assertEqual(reply.body_bottom, body_bottom)
 
-    def testReplyDraftSave(self):
-        """Testing the reviewrequests/reviews/replies/draft/save API"""
+    def test_put_reply(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft/save API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
@@ -1173,8 +1170,8 @@ class ReviewReplyDraftResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(len(mail.outbox), 1)
 
-    def testReplyDraftDiscard(self):
-        """Testing the reviewrequests/reviews/replies/draft/discard API"""
+    def test_put_reply_discard(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft/discard API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
