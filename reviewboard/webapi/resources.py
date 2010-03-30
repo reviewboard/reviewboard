@@ -1320,10 +1320,9 @@ class DeprecatedReviewCommentsResource(WebAPIResource):
 
 class ReviewResource(WebAPIResource):
     model = Review
-    fields = (
-        'id', 'user', 'timestamp', 'public', 'ship_it', 'body_top',
-        'body_bottom', 'comments',
-    )
+    deprecated_fields = ('shipit',)
+    mutable_fields = ('ship_it', 'body_top', 'body_bottom')
+    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
 
     uri_object_key = 'review_id'
 
@@ -1334,7 +1333,7 @@ class ReviewResource(WebAPIResource):
         DeprecatedReviewCommentsResource()
     ]
 
-    allowed_methods = ('GET',)
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, is_list=False,
                      *args, **kwargs):
@@ -1349,6 +1348,96 @@ class ReviewResource(WebAPIResource):
 
     def has_access_permissions(self, request, review, *args, **kwargs):
         return review.public or review.user == request.user
+
+    def has_delete_permissions(self, request, review, *args, **kwargs):
+        return not review.public and review.user == request.user
+
+    @webapi_login_required
+    def create(self, request, review_request_id, *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        status_code = None
+
+        # Check if the review draft already exists.
+        review = review_request.get_pending_review(request.user)
+
+        if review:
+            # This already exists. Go ahead and update, but we're going to
+            # redirect the user to the right place.
+            status_code = 303
+        else:
+            status_code = 201
+
+            review, review_is_new = Review.objects.get_or_create(
+                user=request.user,
+                review_request=review_request,
+                public=False,
+                base_reply_to__isnull=True)
+
+        orig_code, data = self._update_review(request, review)
+
+        if orig_code != 200:
+            return orig_code, data
+        else:
+            return status_code, data, {
+                'Location': self.get_href(review, *args, **kwargs),
+            }
+
+    @webapi_login_required
+    def update(self, request, review_request_id, review_id, publish=False,
+               *args, **kwargs):
+        try:
+            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review = review_request.reviews.get(pk=review_id,
+                                                base_reply_to__isnull=True)
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
+
+        return self._update_review(request, review, publish)
+
+    @webapi_login_required
+    def action_publish(self, *args, **kwargs):
+        return self.update(publish=True, *args, **kwargs)
+
+    def _update_review(self, request, review, publish=False):
+        if review.public or review.user != request.user:
+            # Can't modify published reviews or those not belonging
+            # to the user.
+            return 403, {}
+
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if (field_name not in self.mutable_fields and
+                field_name not in self.deprecated_fields):
+                invalid_fields[field_name] = ['Field is not supported']
+            elif field_name in ('shipit', 'ship_it'):
+                # NOTE: "shipit" is deprecated.
+                review.ship_it = request.POST[field_name] in \
+                                 (1, "1", True, "True")
+            elif field_name in ('body_top', 'body_bottom'):
+                setattr(review, field_name, request.POST.get(field_name))
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        review.save()
+
+        if publish:
+            review.publish(user=request.user)
+
+        return 200, {
+            self.name: review,
+        }
 
     def get_href_parent_ids(self, review, *args, **kwargs):
         return {

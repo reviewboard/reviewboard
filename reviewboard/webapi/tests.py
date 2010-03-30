@@ -762,14 +762,14 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
 class ReviewResourceTests(BaseWebAPITestCase):
     """Testing the ReviewResource APIs."""
-    def testReviewsList(self):
+    def testReviewsGET(self):
         """Testing the GET reviewrequests/<id>/reviews/ API"""
-        review_request = Review.objects.all()[0].review_request
+        review_request = Review.objects.filter()[0].review_request
         rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
 
-    def testReviewsListCount(self):
+    def testReviewsGETWithCountsOnly(self):
         """Testing the GET reviewrequests/<id>/reviews/?counts-only=1 API"""
         review_request = Review.objects.all()[0].review_request
         rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id, {
@@ -798,11 +798,8 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review.comments.count())
 
-
-class ReviewDraftResourceTests(BaseWebAPITestCase):
-    """Testing the ReviewDraftResource APIs."""
-    def testReviewDraftPUT(self):
-        """Testing the PUT reviewrequests/<id>/reviews/draft/ API"""
+    def testReviewsPOST(self):
+        """Testing the POST reviewrequests/<id>/reviews/ API"""
         body_top = ""
         body_bottom = "My Body Bottom"
         ship_it = True
@@ -812,8 +809,59 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
         review_request.reviews = []
         review_request.save()
 
-        rsp = self.apiPut("reviewrequests/%s/reviews/draft" %
-                           review_request.id, {
+        rsp, response = self.api_post_with_response(
+            'reviewrequests/%s/reviews' % review_request.id,
+            {
+                'ship_it': ship_it,
+                'body_top': body_top,
+                'body_bottom': body_bottom,
+            },
+            expected_status=201)
+
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('Location' in response)
+
+        reviews = review_request.reviews.filter(user=self.user)
+        self.assertEqual(len(reviews), 1)
+        review = reviews[0]
+
+        self.assertEqual(response['Location'],
+                         self.base_url + reverse('review-resource', kwargs={
+                             'api_format': 'json',
+                             'review_request_id': review_request.id,
+                             'review_id': review.id,
+                         }))
+
+        self.assertEqual(review.ship_it, ship_it)
+        self.assertEqual(review.body_top, body_top)
+        self.assertEqual(review.body_bottom, body_bottom)
+        self.assertEqual(review.public, False)
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def testReviewPUT(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/ API"""
+        body_top = ""
+        body_bottom = "My Body Bottom"
+        ship_it = True
+
+        # Clear out any reviews on the first review request we find.
+        review_request = ReviewRequest.objects.public()[0]
+        review_request.reviews = []
+        review_request.save()
+
+        rsp, response = self.api_post_with_response(
+            'reviewrequests/%s/reviews' % review_request.id,
+            expected_status=201)
+
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('Location' in response)
+
+        review_url = response['Location']
+
+        rsp = self.apiPut(review_url, {
             'ship_it': ship_it,
             'body_top': body_top,
             'body_bottom': body_bottom,
@@ -830,8 +878,24 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(len(mail.outbox), 0)
 
-    def testReviewDraftPublish(self):
-        """Testing the PUT reviewrequests/<id>/reviews/draft/?action=publish API"""
+        # Make this easy to use in other tests.
+        return review
+
+    def testReviewPUTWithPublishedReview(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/ API with already published review"""
+        review = Review.objects.filter(user=self.user, public=True,
+                                       base_reply_to__isnull=True)[0]
+
+        rsp = self.apiPut(
+            'reviewrequests/%s/reviews/%s' % (review.review_request.id,
+                                              review.id),
+            {
+                'ship_it': True,
+            },
+            expected_status=403)
+
+    def testReviewPUTWithPublishAction(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/?action=publish API"""
         body_top = "My Body Top"
         body_bottom = ""
         ship_it = True
@@ -841,15 +905,22 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
         review_request.reviews = []
         review_request.save()
 
-        rsp = self.apiPut("reviewrequests/%s/reviews/draft" %
-                           review_request.id, {
+        rsp, response = self.api_post_with_response(
+            'reviewrequests/%s/reviews' % review_request.id,
+            expected_status=201)
+
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('Location' in response)
+
+        review_url = response['Location']
+
+        rsp = self.apiPut(review_url, {
             'action': 'publish',
             'ship_it': ship_it,
             'body_top': body_top,
             'body_bottom': body_bottom,
         })
-
-        self.assertEqual(rsp['stat'], 'ok')
 
         reviews = review_request.reviews.filter(user=self.user)
         self.assertEqual(len(reviews), 1)
@@ -865,15 +936,42 @@ class ReviewDraftResourceTests(BaseWebAPITestCase):
                          "Re: Review Request: Interdiff Revision Test")
         self.assertValidRecipients(["admin", "grumpy"], [])
 
-    def testReviewDraftDelete(self):
-        """Testing the DELETE reviewrequests/<id>/reviews/draft/ API"""
+    def testReviewDELETE(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/ API"""
         # Set up the draft to delete.
-        self.testReviewDraftPUT()
+        review = self.testReviewPUT()
+        review_request = review.review_request
 
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiDelete("reviewrequests/%s/reviews/draft" %
-                             review_request.id)
+        rsp = self.apiDelete("reviewrequests/%s/reviews/%s" %
+                             (review_request.id, review.id))
         self.assertEqual(review_request.reviews.count(), 0)
+
+    def testReviewDELETEWithBadUser(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/ API with a bad user"""
+        # Set up the draft to delete.
+        review = self.testReviewPUT()
+        review.user = User.objects.get(username='doc')
+        review.save()
+
+        review_request = review.review_request
+        old_count = review_request.reviews.count()
+
+        rsp = self.apiDelete("reviewrequests/%s/reviews/%s" %
+                             (review_request.id, review.id),
+                             expected_status=403)
+        self.assertEqual(review_request.reviews.count(), old_count)
+
+    def testReviewDELETEWithPublishedReview(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/ API with a bad user"""
+        review = Review.objects.filter(user=self.user, public=True,
+                                       base_reply_to__isnull=True)[0]
+        review_request = review.review_request
+        old_count = review_request.reviews.count()
+
+        rsp = self.apiDelete("reviewrequests/%s/reviews/%s" %
+                             (review_request.id, review.id),
+                             expected_status=403)
+        self.assertEqual(review_request.reviews.count(), old_count)
 
     def testReviewDraftDeleteDoesNotExist(self):
         """Testing the DELETE reviewrequests/reviews/draft/ API with Does Not Exist error"""
