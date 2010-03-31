@@ -4,7 +4,7 @@ import re
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.siteconfig.models import SiteConfiguration
@@ -72,6 +72,23 @@ class WebAPIResource(DjbletsWebAPIResource):
 
             return result
 
+    def verify_fields(self, request, mutable_fields):
+        invalid_fields = {}
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback'):
+                # These are special names and can be ignored.
+                continue
+
+            if field_name not in mutable_fields:
+                invalid_fields[field_name] = ['Field is not supported']
+
+        for field_name in mutable_fields:
+            if request.POST.get(field_name, None) is None:
+                invalid_fields[field_name] = ['This field is required']
+
+        return invalid_fields
+
 
 class BaseCommentResource(WebAPIResource):
     model = Comment
@@ -131,7 +148,7 @@ class FileDiffCommentResource(BaseCommentResource):
                 pk=filediff_id,
                 diffset__revision=diff_revision,
                 diffset__history__review_request=review_request)
-        except (ReviewRequest.DoesNotExist, FileDiff.DoesNotExist):
+        except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         self._scan_deprecated_fields(request, **kwargs)
