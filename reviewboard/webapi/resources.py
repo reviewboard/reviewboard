@@ -204,7 +204,7 @@ class FileDiffCommentResource(BaseCommentResource):
             review.comments.add(comment)
             review.save()
 
-        return 200, {
+        return 201, {
             self.name: comment,
         }
 
@@ -371,7 +371,7 @@ class DiffSetResource(WebAPIResource):
 
         # E-mail gets sent when the draft is saved.
 
-        return 200, {
+        return 201, {
             'diffset': diffset,
             'diffset_id': diffset.id, # Deprecated
         }
@@ -545,7 +545,13 @@ class ReviewRequestDraftResource(WebAPIResource):
     def create(self, *args, **kwargs):
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
-        return self.update(*args, **kwargs)
+        result = self.update(*args, **kwargs)
+
+        if isinstance(result, tuple):
+            if result[0] == 200:
+                return (201,) + result[1:]
+
+        return result
 
     @webapi_login_required
     def update(self, request, review_request_id, always_save=False,
@@ -923,7 +929,7 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
             review.screenshot_comments.add(comment)
             review.save()
 
-        return 200, {
+        return 201, {
             self.name: comment,
         }
 
@@ -1517,7 +1523,7 @@ class ScreenshotResource(WebAPIResource):
                 },
             }
 
-        return 200, {
+        return 201, {
             'screenshot_id': screenshot.id, # For backwards-compatibility
             'screenshot': screenshot,
         }
@@ -1658,7 +1664,7 @@ class ReviewRequestResource(WebAPIResource):
             review_request = ReviewRequest.objects.create(
                 user, repository, request.POST.get('changenum', None))
 
-            return 200, {
+            return 201, {
                 'review_request': review_request
             }
         except Repository.DoesNotExist, e:
