@@ -116,6 +116,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def _normalize_path(self, path):
         if path.startswith(self.base_url):
             return path[len(self.base_url):]
+        elif path.startswith('/api/json'):
+            return path
         else:
             return '/api/json/%s/' % path
 
@@ -1045,7 +1047,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         """Testing the GET reviewrequests/<id>/reviews/<id>/replies API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-        self.testReplyDraftSave()
+        self.test_put_reply()
 
         rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies" %
                           (review.review_request.id, review.id))
@@ -1062,30 +1064,125 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         """Testing the GET reviewrequests/<id>/reviews/<id>/replies/?counts-only=1 API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-        self.testReplyDraftSave()
+        self.test_put_reply()
 
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies/count" %
-                          (review.review_request.id, review.id))
+        rsp = self.apiGet(
+            'reviewrequests/%s/reviews/%s/replies/?counts-only=1' %
+            (review.review_request.id, review.id))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], len(review.public_replies()))
 
+    def test_post_replies(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/replies/ API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies" %
+                           (review.review_request.id, review.id), {
+            'body_top': 'Test',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_post_replies_with_body_top(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/replies/ API with body_top"""
+        body_top = 'My Body Top'
+
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies" %
+                           (review.review_request.id, review.id), {
+            'body_top': body_top,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply = Review.objects.get(pk=rsp['reply']['id'])
+        self.assertEqual(reply.body_top, body_top)
+
+    def test_post_replies_with_body_bottom(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/replies/ API with body_bottom"""
+        body_bottom = 'My Body Bottom'
+
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies" %
+                           (review.review_request.id, review.id), {
+            'body_bottom': body_bottom,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply = Review.objects.get(pk=rsp['reply']['id'])
+        self.assertEqual(reply.body_bottom, body_bottom)
+
+    def test_put_reply(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/<id> API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp, response = self.api_post_with_response(
+            'reviewrequests/%s/reviews/%s/replies' %
+            (review.review_request.id, review.id))
+
+        self.assertTrue('Location' in response)
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        rsp = self.apiPut(response['Location'], {
+            'body_top': 'Test',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_put_reply_action_publish(self):
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/<id>/?action=publish API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp, response = self.api_post_with_response(
+            'reviewrequests/%s/reviews/%s/replies' %
+            (review.review_request.id, review.id))
+
+        self.assertTrue('Location' in response)
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        rsp = self.apiPut(response['Location'], {
+            'action': 'publish',
+            'body_top': 'Test',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply = Review.objects.get(pk=rsp['reply']['id'])
+        self.assertEqual(reply.public, True)
+
+        self.assertEqual(len(mail.outbox), 1)
+
     def test_put_reply_with_diff_comment(self):
-        """Testing PUT the reviewrequests/<id>/reviews/<id>/replies/draft API with comment"""
+        """Testing PUT the reviewrequests/<id>/reviews/<id>/replies/<id> API with comment"""
         comment_text = "My Comment Text"
 
         comment = Comment.objects.all()[0]
         review = comment.review.get()
 
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'comment',
-            'id': comment.id,
-            'value': comment_text
-        })
-
+        # Create the reply
+        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies" %
+                           (review.review_request.id, review.id))
         self.assertEqual(rsp['stat'], 'ok')
 
-        reply_comment = Comment.objects.get(pk=rsp['comment']['id'])
+        rsp = self.apiPost(rsp['reply']['related_hrefs']['diff-comments'], {
+            'reply_to_id': comment.id,
+            'text': comment_text,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
     def test_post_reply_with_screenshot_comment(self):
@@ -1107,65 +1204,6 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply_comment = ScreenshotComment.objects.get(
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
-
-    def test_put_reply_with_body_top(self):
-        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft API with body_top"""
-        body_top = 'My Body Top'
-
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_top',
-            'value': body_top,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply = Review.objects.get(pk=rsp['reply']['id'])
-        self.assertEqual(reply.body_top, body_top)
-
-    def test_put_reply_with_body_bottom(self):
-        """Testing the reviewrequests/<id>/reviews/<id>/replies/draft API with body_bottom"""
-        body_bottom = 'My Body Bottom'
-
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_bottom',
-            'value': body_bottom,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply = Review.objects.get(pk=rsp['reply']['id'])
-        self.assertEqual(reply.body_bottom, body_bottom)
-
-    def test_put_reply(self):
-        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft/save API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_top',
-            'value': 'Test',
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-        reply_id = rsp['reply']['id']
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft/save" %
-                           (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply = Review.objects.get(pk=reply_id)
-        self.assertEqual(reply.public, True)
-
-        self.assertEqual(len(mail.outbox), 1)
 
     def test_put_reply_discard(self):
         """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/draft/discard API"""
