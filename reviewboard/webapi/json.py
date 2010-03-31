@@ -50,6 +50,7 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \
                                          reviewResource, \
+                                         reviewReplyResource, \
                                          screenshotResource, \
                                          screenshotCommentResource
 
@@ -65,7 +66,10 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
         elif isinstance(o, ReviewRequestDraft):
             resource = reviewRequestDraftResource
         elif isinstance(o, Review):
-            resource = reviewResource
+            if o.is_reply():
+                resource = reviewReplyResource
+            else:
+                resource = reviewResource
         elif isinstance(o, Comment):
             resource = reviewCommentResource
         elif isinstance(o, ScreenshotComment):
