@@ -225,10 +225,10 @@ fileDiffCommentResource = FileDiffCommentResource()
 class ReviewCommentResource(BaseCommentResource):
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
-        query = super(ReviewCommentResource, self).get_queryset(
+        q = super(ReviewCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-
-        return query.filter(review=review_id)
+        q = q.filter(review=review_id)
+        return q
 
     def get_href_parent_ids(self, comment, *args, **kwargs):
         review = comment.review.get()
@@ -240,6 +240,75 @@ class ReviewCommentResource(BaseCommentResource):
         }
 
 reviewCommentResource = ReviewCommentResource()
+
+
+class ReviewReplyCommentResource(BaseCommentResource):
+    mutable_fields = ('reply_to_id', 'text')
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_queryset(self, request, review_request_id, review_id, reply_id,
+                     *args, **kwargs):
+        q = super(BaseCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+        q = q.filter(review=reply_id, review__base_reply_to=review_id)
+        return q
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        reply = comment.review.get()
+        review_request = review.review_request
+
+        return {
+            'review_request_id': review_request.id,
+            'review_id': reply.base_reply_to.id,
+            'reply_id': reply.id
+        }
+
+    @webapi_login_required
+    def create(self, request, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+            reply = reviewReplyResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not reviewReplyResource.has_modify_permissions(request, reply):
+            return PERMISSION_DENIED
+
+        invalid_fields = self.verify_fields(request, self.mutable_fields)
+
+        if 'reply_to_id' not in invalid_fields:
+            try:
+                comment = reviewCommentResource.get_object(
+                    request,
+                    review_request_id=review_request_id,
+                    comment_id=request.POST['reply_to_id'],
+                    *args, **kwargs)
+            except ObjectDoesNotExist:
+                invalid_fields['reply_to_id'] = \
+                    ['This is not a valid comment ID']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        new_comment = self.model(filediff=comment.filediff,
+                                 interfilediff=comment.interfilediff,
+                                 reply_to=comment,
+                                 text=request.POST['text'],
+                                 first_line=comment.first_line,
+                                 num_lines=comment.num_lines)
+        new_comment.save()
+
+        reply.comments.add(new_comment)
+        reply.save()
+
+        return 201, {
+            'diff_comment': new_comment,
+        }
+
+reviewReplyCommentResource = ReviewReplyCommentResource()
 
 
 class FileDiffResource(WebAPIResource):
@@ -1477,6 +1546,8 @@ class ScreenshotResource(WebAPIResource):
     item_child_resources = [
         screenshotCommentResource,
     ]
+
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(review_request=review_request_id)
