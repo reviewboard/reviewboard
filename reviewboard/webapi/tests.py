@@ -76,7 +76,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def api_post_with_response(self, path, query={}, expected_status=200):
+    def api_post_with_response(self, path, query={}, expected_status=201):
         path = self._normalize_path(path)
 
         print 'POSTing to %s' % path
@@ -87,8 +87,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return self._get_result(response, expected_status), response
 
-    def apiPost(self, path, query={}, expected_status=200):
-        rsp, result = self.api_post_with_response(path, query, expected_status)
+    def apiPost(self, *args, **kwargs):
+        rsp, result = self.api_post_with_response(*args, **kwargs)
 
         return rsp
 
@@ -815,8 +815,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
                 'ship_it': ship_it,
                 'body_top': body_top,
                 'body_bottom': body_bottom,
-            },
-            expected_status=201)
+            })
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
@@ -852,8 +851,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review_request.save()
 
         rsp, response = self.api_post_with_response(
-            'reviewrequests/%s/reviews' % review_request.id,
-            expected_status=201)
+            'reviewrequests/%s/reviews' % review_request.id)
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
@@ -906,8 +904,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review_request.save()
 
         rsp, response = self.api_post_with_response(
-            'reviewrequests/%s/reviews' % review_request.id,
-            expected_status=201)
+            'reviewrequests/%s/reviews' % review_request.id)
 
         self.assertTrue('stat' in rsp)
         self.assertEqual(rsp['stat'], 'ok')
