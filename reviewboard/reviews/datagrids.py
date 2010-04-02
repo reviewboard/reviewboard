@@ -297,7 +297,19 @@ class ReviewCountColumn(Column):
         self.link_func = self.link_to_object
 
     def render_data(self, review_request):
-        return str(review_request.get_public_reviews().count())
+        return str(review_request.publicreviewcount_count)
+
+    def augment_queryset(self, queryset):
+        return queryset.extra(select={
+            'publicreviewcount_count': """
+                SELECT COUNT(*)
+                  FROM reviews_review
+                  WHERE reviews_review.public
+                    AND reviews_review.base_reply_to_id is NULL
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """
+        })
 
     def link_to_object(self, review_request, value):
         return "%s#last-review" % review_request.get_absolute_url()
