@@ -82,10 +82,16 @@ class ReviewRequestManager(ConcurrencyManager):
         return self._query(extra_query=Q(target_groups__name=group_name),
                            *args, **kwargs)
 
-    def to_user_groups(self, username, *args, **kwargs):
-        return self._query(
-            extra_query=Q(target_groups__users__username=username),
-            *args, **kwargs)
+    def to_user_groups(self, user_or_username, *args, **kwargs):
+        if isinstance(user_or_username, User):
+            query_user = user_or_username
+        else:
+            query_user = User.objects.get(username=user_or_username)
+
+        groups = list(query_user.review_groups.values_list('pk', flat=True))
+
+        return self._query(extra_query=Q(target_groups__in=groups),
+                           *args, **kwargs)
 
     def to_user_directly(self, user_or_username, *args, **kwargs):
         if isinstance(user_or_username, User):
@@ -93,7 +99,14 @@ class ReviewRequestManager(ConcurrencyManager):
         else:
             query_user = User.objects.get(username=user_or_username)
 
-        query = Q(starred_by__user=query_user) | Q(target_people=query_user)
+        query = Q(target_people=query_user)
+
+        try:
+            profile = query_user.get_profile()
+            query = query | Q(starred_by=profile)
+        except ObjectDoesNotExist:
+            pass
+
         return self._query(extra_query=query, *args, **kwargs)
 
     def to_user(self, user_or_username, *args, **kwargs):
@@ -102,9 +115,17 @@ class ReviewRequestManager(ConcurrencyManager):
         else:
             query_user = User.objects.get(username=user_or_username)
 
-        query = Q(starred_by__user=query_user) | \
-                Q(target_people=query_user) | \
-                Q(target_groups__users=query_user)
+        groups = list(query_user.review_groups.values_list('pk', flat=True))
+
+        query = Q(target_people=query_user) | \
+                Q(target_groups__in=groups)
+
+        try:
+            profile = query_user.get_profile()
+            query = query | Q(starred_by=profile)
+        except ObjectDoesNotExist:
+            pass
+
         return self._query(extra_query=query, *args, **kwargs)
 
     def from_user(self, user_or_username, *args, **kwargs):
