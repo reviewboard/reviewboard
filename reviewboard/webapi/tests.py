@@ -780,26 +780,6 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review_request.reviews.count())
 
-    def test_get_review_comments(self):
-        """Testing the GET reviewrequests/<id>/reviews/<id>/comments API"""
-        review = Review.objects.filter(comments__pk__gt=0)[0]
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['diff_comments']), review.comments.count())
-
-    def test_get_review_comments_with_counts_only(self):
-        """Testing the GET reviewrequests/<id>/reviews/<id>/comments/?counts-only=1 API"""
-        review = Review.objects.filter(comments__pk__gt=0)[0]
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
-                          (review.review_request.id, review.id), {
-            'counts-only': 1,
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], review.comments.count())
-
     def test_post_reviews(self):
         """Testing the POST reviewrequests/<id>/reviews/ API"""
         body_top = ""
@@ -975,10 +955,33 @@ class ReviewResourceTests(BaseWebAPITestCase):
     def test_delete_review_with_does_not_exist(self):
         """Testing the DELETE reviewrequests/<id>/reviews/<id>/ API with Does Not Exist error"""
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiDelete("reviewrequests/%s/reviews/draft" %
+        rsp = self.apiDelete("reviewrequests/%s/reviews/919239" %
                              review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+
+class ReviewCommentResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewCommentResource APIs."""
+    def test_get_review_comments(self):
+        """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments API"""
+        review = Review.objects.filter(comments__pk__gt=0)[0]
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review.review_request.id, review.id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['diff_comments']), review.comments.count())
+
+    def test_get_review_comments_with_counts_only(self):
+        """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments/?counts-only=1 API"""
+        review = Review.objects.filter(comments__pk__gt=0)[0]
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review.review_request.id, review.id), {
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'], review.comments.count())
 
     def test_get_review_diff_comments(self):
         """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments API"""
@@ -996,18 +999,23 @@ class ReviewResourceTests(BaseWebAPITestCase):
         # Make these public.
         review_request.publish(self.user)
 
-        rsp = self.apiPost("reviewrequests/%s/draft" % review_request.id)
+        rsp = self.apiPost("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
 
         self._postNewDiffComment(review_request, diff_comment_text)
 
-        rsp = self.apiGet("reviewrequests/%s/reviews/draft/diff-comments" %
-                          review_request.id)
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review_request.id, review_id))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
 
+
+class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewScreenshotCommentResource APIs."""
     def test_get_review_screenshot_comments(self):
         """Testing the GET reviewrequests/<id>/reviews/draft/screenshot-comments API"""
         screenshot_comment_text = "Test screenshot comment"
@@ -1025,20 +1033,23 @@ class ReviewResourceTests(BaseWebAPITestCase):
         # Make these public.
         review_request.publish(self.user)
 
-        rsp = self.apiPost("reviewrequests/%s/draft" % review_request.id)
+        rsp = self.apiPost("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
 
         self._postNewScreenshotComment(review_request, screenshot,
                                        screenshot_comment_text, x, y, w, h)
 
         rsp = self.apiGet(
-            "reviewrequests/%s/reviews/draft/screenshot-comments" %
-            review_request.id)
+            "reviewrequests/%s/reviews/%s/screenshot-comments" %
+            (review_request.id, review_id))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('screenshot_comments' in rsp)
         self.assertEqual(len(rsp['screenshot_comments']), 1)
         self.assertEqual(rsp['screenshot_comments'][0]['text'],
                          screenshot_comment_text)
+
 
 
 class ReviewReplyResourceTests(BaseWebAPITestCase):
