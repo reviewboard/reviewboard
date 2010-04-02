@@ -1017,14 +1017,11 @@ screenshotCommentResource = ScreenshotCommentResource()
 
 
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
-    allowed_methods = ('GET',)
-
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
-        query = super(ReviewScreenshotCommentResource, self).get_queryset(
+        q = super(ReviewScreenshotCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-
-        return query.filter(review=review_id)
+        return q.filter(review=review_id)
 
     def get_href_parent_ids(self, comment, *args, **kwargs):
         review = comment.review.get()
@@ -1520,6 +1517,7 @@ class ReviewResource(BaseReviewResource):
     item_child_resources = [
         reviewCommentResource,
         reviewReplyResource,
+        reviewScreenshotCommentResource,
         DeprecatedReviewCommentsResource()
     ]
 
