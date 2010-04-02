@@ -223,8 +223,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
 
-    def testRepositoryList(self):
-        """Testing the repositories API"""
+    def test_get_repositories(self):
+        """Testing the GET repositories/ API"""
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), Repository.objects.count())
@@ -232,20 +232,20 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
 class ReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource APIs."""
-    def testGroupList(self):
-        """Testing the groups API"""
+    def test_get_groups(self):
+        """Testing the GET groups/ API"""
         rsp = self.apiGet("groups")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), Group.objects.count())
 
-    def testGroupListQuery(self):
-        """Testing the groups API with custom query"""
+    def test_get_groups_with_q(self):
+        """Testing the GET groups/?q= API"""
         rsp = self.apiGet("groups", {'q': 'dev'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1) #devgroup
 
-    def testGroupStar(self):
-        """Testing the groups?action=star API"""
+    def test_put_group_action_star(self):
+        """Testing the PUT groups/?action=star API"""
         rsp = self.apiPut("groups/devgroup", {
             'action': 'star',
         })
@@ -253,16 +253,16 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assert_(Group.objects.get(name="devgroup") in
                      self.user.get_profile().starred_groups.all())
 
-    def testGroupStarDoesNotExist(self):
-        """Testing the groups?action=star API with Does Not Exist error"""
-        rsp = self.apiGet("groups/invalidgroup/star", expected_status=404)
+    def test_put_group_action_star_with_does_not_exist_error(self):
+        """Testing the PUT groups/?action=star API with Does Not Exist error"""
+        rsp = self.apiPut("groups/invalidgroup/star", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    def testGroupUnstar(self):
-        """Testing the groups?action=unstar API"""
+    def test_put_group_action_unstar(self):
+        """Testing the PUT groups/?action=unstar API"""
         # First, star it.
-        self.testGroupStar()
+        self.test_put_group_action_star()
 
         rsp = self.apiPut('groups/devgroup', {
             'action': 'unstar',
@@ -271,8 +271,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertTrue(Group.objects.get(name="devgroup") not in
                         self.user.get_profile().starred_groups.all())
 
-    def testGroupUnstarDoesNotExist(self):
-        """Testing the groups?action=unstar API with Does Not Exist error"""
+    def test_put_group_action_unstar_with_does_not_exist_error(self):
+        """Testing the PUT groups/?action=unstar API with Does Not Exist error"""
         rsp = self.apiPut("groups/invalidgroup",
                           {'action': 'unstar'},
                           expected_status=404)
@@ -282,14 +282,14 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
 class UserResourceTests(BaseWebAPITestCase):
     """Testing the UserResource API tests."""
-    def testUserList(self):
-        """Testing the users API"""
+    def tesT_get_users(self):
+        """Testing the GET users/ API"""
         rsp = self.apiGet("users")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), User.objects.count())
 
-    def testUserListQuery(self):
-        """Testing the users API with custom query"""
+    def test_get_users_with_q(self):
+        """Testing the GET users/?q= API"""
         rsp = self.apiGet("users", {'q': 'gru'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), 1) # grumpy
@@ -297,15 +297,15 @@ class UserResourceTests(BaseWebAPITestCase):
 
 class ReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource API tests."""
-    def testReviewRequestList(self):
-        """Testing the reviewrequests/ API"""
+    def test_get_reviewrequests(self):
+        """Testing the GET reviewrequests/ API"""
         rsp = self.apiGet("reviewrequests")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public().count())
 
-    def testReviewRequestListWithStatus(self):
-        """Testing the reviewrequests/?status= API"""
+    def test_get_reviewrequests_with_status(self):
+        """Testing the GET reviewrequests/?status= API"""
         rsp = self.apiGet("reviewrequests", {'status': 'submitted'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
@@ -321,16 +321,16 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public(status=None).count())
 
-    def testReviewRequestListCount(self):
-        """Testing the reviewrequests?counts-only=1 API"""
+    def test_get_reviewrequests_with_counts_only(self):
+        """Testing the GET reviewrequests/?counts-only=1 API"""
         rsp = self.apiGet('reviewrequests', {
             'counts-only': 1,
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], ReviewRequest.objects.public().count())
 
-    def testReviewRequestsToGroup(self):
-        """Testing the reviewrequests/?to-groups= API"""
+    def test_get_reviewrequests_with_to_groups(self):
+        """Testing the GET reviewrequests/?to-groups= API"""
         rsp = self.apiGet("reviewrequests", {
             'to-groups': 'devgroup',
         })
@@ -338,8 +338,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_group("devgroup").count())
 
-    def testReviewRequestsToGroupWithStatus(self):
-        """Testing the reviewrequests?to-groups=&status= API"""
+    def test_get_reviewrequests_with_to_groups_and_status(self):
+        """Testing the GET reviewrequests/?to-groups=&status= API"""
         rsp = self.apiGet('reviewrequests', {
             'status': 'submitted',
             'to-groups': 'devgroup',
@@ -356,8 +356,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_group("devgroup", status='D').count())
 
-    def testReviewRequestsToGroupCount(self):
-        """Testing the reviewrequests?to-groups=&counts-only=1 API"""
+    def test_get_reviewrequests_with_to_groups_and_counts_only(self):
+        """Testing the GET reviewrequests/?to-groups=&counts-only=1 API"""
         rsp = self.apiGet('reviewrequests', {
             'to-groups': 'devgroup',
             'counts-only': 1,
@@ -366,8 +366,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_group("devgroup").count())
 
-    def testReviewRequestsToUser(self):
-        """Testing the reviewrequests/?to-users API"""
+    def test_get_reviewrequests_with_to_users(self):
+        """Testing the GET reviewrequests/?to-users= API"""
         rsp = self.apiGet('reviewrequests', {
             'to-users': 'grumpy',
         })
@@ -375,8 +375,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user("grumpy").count())
 
-    def testReviewRequestsToUserWithStatus(self):
-        """Testing the reviewrequests/?to-users API with custom status"""
+    def test_get_reviewrequests_with_to_users_and_status(self):
+        """Testing the GET reviewrequests/?to-users=&status= API"""
         rsp = self.apiGet("reviewrequests", {
             'status': 'submitted',
             'to-users': 'grumpy',
@@ -394,8 +394,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_user("grumpy", status='D').count())
 
-    def testReviewRequestsToUserCount(self):
-        """Testing the reviewrequests?to-users=&counts-only=1 API"""
+    def test_get_reviewrequests_with_to_users_and_counts_only(self):
+        """Testing the GET reviewrequests/?to-users=&counts-only=1 API"""
         rsp = self.apiGet('reviewrequests', {
             'to-users': 'grumpy',
             'counts-only': 1,
@@ -404,8 +404,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_user("grumpy").count())
 
-    def testReviewRequestsToUserDirectly(self):
-        """Testing the reviewrequests?to-users-directly= API"""
+    def test_get_reviewrequests_with_to_users_directly(self):
+        """Testing the GET reviewrequests/?to-users-directly= API"""
         rsp = self.apiGet('reviewrequests', {
             'to-users-directly': 'doc',
         })
@@ -413,8 +413,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.to_user_directly("doc").count())
 
-    def testReviewRequestsToUserDirectlyWithStatus(self):
-        """Testing the reviewrequests?to=users-directly&status= API"""
+    def test_get_reviewrequests_with_to_users_directly_and_status(self):
+        """Testing the GET reviewrequests/?to-users-directly=&status= API"""
         rsp = self.apiGet('reviewrequests', {
             'status': 'submitted',
             'to-users-directly': 'doc'
@@ -431,8 +431,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.to_user_directly("doc", status='D').count())
 
-    def testReviewRequestsToUserDirectlyCount(self):
-        """Testing the reviewrequests?to-users-directly=&counts-only=1 API"""
+    def test_get_reviewrequests_with_to_users_directly_and_counts_only(self):
+        """Testing the GET reviewrequests/?to-users-directly=&counts-only=1 API"""
         rsp = self.apiGet('reviewrequests', {
             'to-users-directly': 'doc',
             'counts-only': 1,
@@ -441,8 +441,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.to_user_directly("doc").count())
 
-    def testReviewRequestsFromUser(self):
-        """Testing the reviewrequests?from-user API"""
+    def test_get_reviewrequests_with_from_user(self):
+        """Testing the GET reviewrequests/?from-user= API"""
         rsp = self.apiGet('reviewrequests', {
             'from-user': 'grumpy',
         })
@@ -450,8 +450,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.from_user("grumpy").count())
 
-    def testReviewRequestsFromUserWithStatus(self):
-        """Testing the reviewrequests?from-user=&status= API"""
+    def test_get_reviewrequests_with_from_user_and_status(self):
+        """Testing the GET reviewrequests/?from-user=&status= API"""
         rsp = self.apiGet('reviewrequests', {
             'status': 'submitted',
             'from-user': 'grumpy',
@@ -468,8 +468,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['review_requests']),
             ReviewRequest.objects.from_user("grumpy", status='D').count())
 
-    def testReviewRequestsFromUserCount(self):
-        """Testing the reviewrequests?from-user=&counts-only=1 API"""
+    def test_get_reviewrequests_with_from_user_and_counts_only(self):
+        """Testing the GET reviewrequests/?from-user=&counts-only=1 API"""
         rsp = self.apiGet('reviewrequests', {
             'from-user': 'grumpy',
             'counts-only': 1,
@@ -478,7 +478,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
 
-    def testNewReviewRequest(self):
+    def test_post_reviewrequests(self):
         """Testing the POST reviewrequests/ API"""
         rsp = self.apiPost("reviewrequests", {
             'repository_path': self.repository.path,
@@ -491,7 +491,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-    def testNewReviewRequestWithInvalidRepository(self):
+    def test_post_reviewrequests_with_invalid_repository_error(self):
         """Testing the POST reviewrequests/ API with Invalid Repository error"""
         rsp = self.apiPost("reviewrequests", {
             'repository_path': 'gobbledygook',
@@ -499,8 +499,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
-    def testNewReviewRequestAsUser(self):
-        """Testing the POST reviewrequests/ API with submit_as"""
+    def test_post_reviewrequests_with_submit_as(self):
+        """Testing the POST reviewrequests/?submit_as= API"""
         self.user.is_superuser = True
         self.user.save()
 
@@ -515,8 +515,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-    def testNewReviewRequestAsUserPermissionDenied(self):
-        """Testing the POST reviewrequests/ API with submit_as and Permission Denied error"""
+    def test_post_reviewrequests_with_submit_as_and_permission_denied_error(self):
+        """Testing the POST reviewrequests/?submit_as= API with Permission Denied error"""
         rsp = self.apiPost("reviewrequests", {
             'repository_path': self.repository.path,
             'submit_as': 'doc',
@@ -524,8 +524,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def testReviewRequest(self):
-        """Testing the reviewrequests/<id> API"""
+    def test_get_reviewrequest(self):
+        """Testing the GET reviewrequests/<id>/ API"""
         review_request = ReviewRequest.objects.public()[0]
         rsp = self.apiGet("reviewrequests/%s" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
@@ -533,8 +533,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
 
-    def testReviewRequestPermissionDenied(self):
-        """Testing the reviewrequests/<id> API with Permission Denied error"""
+    def test_get_reviewrequest_with_permission_denied_error(self):
+        """Testing the GET reviewrequests/<id>/ API with Permission Denied error"""
         review_request = ReviewRequest.objects.filter(public=False).\
             exclude(submitter=self.user)[0]
         rsp = self.apiGet("reviewrequests/%s" % review_request.id,
@@ -542,8 +542,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def testReviewRequestByChangenum(self):
-        """Testing the reviewrequests/?repository=&changenum= API"""
+    def test_get_reviewrequest_with_repository_and_changenum(self):
+        """Testing the GET reviewrequests/?repository=&changenum= API"""
         review_request = \
             ReviewRequest.objects.filter(changenum__isnull=False)[0]
         rsp = self.apiGet('reviewrequests', {
@@ -559,8 +559,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_requests'][0]['changenum'],
                          review_request.changenum)
 
-    def testReviewRequestStar(self):
-        """Testing the reviewrequests/<id>/?action=star API"""
+    def test_put_reviewrequest_action_star(self):
+        """Testing the PUT reviewrequests/<id>/?action=star API"""
         review_request = ReviewRequest.objects.public()[0]
         rsp = self.apiPut("reviewrequests/%s" % review_request.id, {
             'action': 'star',
@@ -569,18 +569,18 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assert_(review_request in
                      self.user.get_profile().starred_review_requests.all())
 
-    def testReviewRequestStarDoesNotExist(self):
-        """Testing the reviewrequests/<id>/?action=star API with Does Not Exist error"""
+    def test_put_reviewrequest_action_star_with_does_not_exist_error(self):
+        """Testing the PUT reviewrequests/<id>/?action=star API with Does Not Exist error"""
         rsp = self.apiPut("reviewrequests/999",
                           {'action': 'star'},
                           expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    def testReviewRequestUnstar(self):
-        """Testing the reviewrequests/<id>/?action=unstar API"""
+    def test_put_reviewrequest_action_unstar(self):
+        """Testing the PUT reviewrequests/<id>/?action=unstar API"""
         # First, star it.
-        self.testReviewRequestStar()
+        self.test_put_reviewrequest_action_star()
 
         review_request = ReviewRequest.objects.public()[0]
         rsp = self.apiPut("reviewrequests/%s" % review_request.id, {
@@ -590,16 +590,16 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assert_(review_request not in
                      self.user.get_profile().starred_review_requests.all())
 
-    def testReviewRequestUnstarWithDoesNotExist(self):
-        """Testing the reviewrequests/<id>/?action=unstar API with Does Not Exist error"""
+    def test_put_reviewrequest_action_unstar_with_does_not_exist_error(self):
+        """Testing the PUT reviewrequests/<id>/?action=unstar API with Does Not Exist error"""
         rsp = self.apiPut("reviewrequests/999",
                           {'action': 'unstar'},
                           expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    def testReviewRequestDelete(self):
-        """Testing the DELETE reviewrequests/<id> API"""
+    def test_delete_reviewrequest(self):
+        """Testing the DELETE reviewrequests/<id>/ API"""
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()
@@ -612,8 +612,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertRaises(ReviewRequest.DoesNotExist,
                           ReviewRequest.objects.get, pk=review_request_id)
 
-    def testReviewRequestDeletePermissionDenied(self):
-        """Testing the DELETE reviewrequests/<id> API with Permission Denied error"""
+    def test_delete_reviewrequest_with_permission_denied_error(self):
+        """Testing the DELETE reviewrequests/<id>/ API with Permission Denied error"""
         review_request_id = \
             ReviewRequest.objects.exclude(submitter=self.user)[0].id
         rsp = self.apiDelete("reviewrequests/%s" % review_request_id,
@@ -621,8 +621,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def testReviewRequestDeleteDoesNotExist(self):
-        """Testing the DELETE reviewrequests/<id> API with Does Not Exist error"""
+    def test_delete_reviewrequest_with_does_not_exist_error(self):
+        """Testing the DELETE reviewrequests/<id>/ API with Does Not Exist error"""
         self.user.user_permissions.add(
             Permission.objects.get(codename='delete_reviewrequest'))
         self.user.save()
@@ -632,8 +632,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    def testReviewRequestPublishSendsEmail(self):
-        """Testing the reviewrequests/publish API"""
+    def test_put_reviewrequest_action_publish(self):
+        """Testing the PUT reviewrequests/<id>/?action=publish API"""
         # Set some data first.
         review_request = \
             ReviewRequest.objects.from_user(self.user.username)[0]
@@ -651,7 +651,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
-    def _testReviewRequestDraftSetCommon(self, apiFunc):
+    def _create_update_review_request(self, apiFunc):
         summary = "My Summary"
         description = "My Description"
         testing_done = "My Testing Done"
@@ -682,16 +682,16 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(draft.branch, branch)
         self.assertEqual(draft.get_bug_list(), ['123', '456'])
 
-    def testReviewRequestDraftPUT(self):
+    def test_put_reviewrequestdraft(self):
         """Testing the PUT reviewrequests/draft/ API"""
-        self._testReviewRequestDraftSetCommon(self.apiPut)
+        self._create_update_review_request(self.apiPut)
 
-    def testReviewRequestDraftPOST(self):
+    def test_post_reviewrequestdraft(self):
         """Testing the POST reviewrequests/draft/ API"""
-        self._testReviewRequestDraftSetCommon(self.apiPost)
+        self._create_update_review_request(self.apiPost)
 
-    def testReviewRequestDraftPUTInvalidName(self):
-        """Testing the PUT reviewrequests/draft/ API with invalid field name"""
+    def test_put_reviewrequestdraft_with_invalid_field_name(self):
+        """Testing the PUT reviewrequests/draft/ API with Invalid Form Data error"""
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPut("reviewrequests/%s/draft" % review_request_id, {
@@ -702,8 +702,8 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('foobar' in rsp['fields'])
 
-    def testReviewRequestDraftSetFieldNoPermission(self):
-        """Testing the PUT reviewrequests/draft/ API without valid permissions"""
+    def test_put_reviewrequestdraft_with_permission_denied_error(self):
+        """Testing the PUT reviewrequests/draft/ API with Permission Denied error"""
         bugs_closed = '123,456'
         review_request_id = ReviewRequest.objects.from_user('admin')[0].id
         rsp = self.apiPut("reviewrequests/%s/draft" % review_request_id, {
@@ -713,10 +713,10 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def testReviewRequestDraftPublish(self):
+    def test_put_reviewrequestdraft_action_publish(self):
         """Testing the PUT reviewrequests/draft/?action=publish API"""
         # Set some data first.
-        self.testReviewRequestDraftPUT()
+        self.test_put_reviewrequestdraft()
 
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
@@ -736,7 +736,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
         self.assertValidRecipients(["doc", "grumpy"], [])
 
-    def testReviewRequestDraftPublishDoesNotExist(self):
+    def test_put_reviewrequestdraft_action_publish_with_does_not_exist_error(self):
         """Testing the PUT reviewrequests/draft/?action=publish API with Does Not Exist error"""
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
         rsp = self.apiPut("reviewrequests/%s/draft" % review_request.id, {
@@ -746,14 +746,14 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    def testReviewRequestDraftDelete(self):
+    def test_delete_reviewrequestdraft(self):
         """Testing the DELETE reviewrequests/draft/ API"""
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
         summary = review_request.summary
         description = review_request.description
 
         # Set some data.
-        self.testReviewRequestDraftPUT()
+        self.test_put_reviewrequestdraft()
 
         rsp = self.apiDelete("reviewrequests/%s/draft" % review_request.id)
 
@@ -973,7 +973,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(review_request.reviews.count(), old_count)
 
     def test_delete_review_with_does_not_exist(self):
-        """Testing the DELETE reviewrequests/reviews/draft/ API with Does Not Exist error"""
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/ API with Does Not Exist error"""
         review_request = ReviewRequest.objects.public()[0]
         rsp = self.apiDelete("reviewrequests/%s/reviews/draft" %
                              review_request.id, expected_status=404)
@@ -981,7 +981,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def test_get_review_diff_comments(self):
-        """Testing the GET reviewrequests/<id>/reviews/draft/diff-comments API"""
+        """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments API"""
         diff_comment_text = "Test diff comment"
 
         # Post the review request
