@@ -1660,6 +1660,9 @@ class ReviewRequestResource(WebAPIResource):
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
 
+    def has_delete_permissions(self, request, review_request, *args, **kwargs):
+        return request.user.has_perm('reviews.delete_reviewrequest')
+
     def serialize_bugs_closed_field(self, obj):
         if obj.bugs_closed:
             return [b.strip() for b in obj.bugs_closed.split(',')]
@@ -1747,10 +1750,6 @@ class ReviewRequestResource(WebAPIResource):
             return INVALID_CHANGE_NUMBER
         except EmptyChangeSetError:
             return EMPTY_CHANGESET
-
-    @webapi_permission_required('reviews.delete_reviewrequest')
-    def delete(self, *args, **kwargs):
-        return super(ReviewRequestResource, self).delete(*args, **kwargs)
 
     @webapi_login_required
     def action_star(self, request, review_request_id, *args, **kwargs):
