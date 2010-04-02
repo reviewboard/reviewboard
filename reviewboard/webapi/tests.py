@@ -1051,7 +1051,6 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                          screenshot_comment_text)
 
 
-
 class ReviewReplyResourceTests(BaseWebAPITestCase):
     """Testing the ReviewReplyResource APIs."""
     def test_get_replies(self):

@@ -373,9 +373,10 @@ class DiffSetResource(WebAPIResource):
         return review_request.is_accessible_by(request.user)
 
     @webapi_login_required
-    def create(self, request, review_request_id, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -501,12 +502,12 @@ class ReviewGroupResource(WebAPIResource):
         return group.get_absolute_url()
 
     @webapi_login_required
-    def action_star(self, request, group_name, *args, **kwargs):
+    def action_star(self, request, *args, **kwargs):
         """
         Adds a group to the user's watched groups list.
         """
         try:
-            group = Group.objects.get(name=group_name)
+            group = self.get_object(request, *args, **kwargs)
         except Group.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -518,12 +519,12 @@ class ReviewGroupResource(WebAPIResource):
         return 200, {}
 
     @webapi_login_required
-    def action_unstar(self, request, group_name, *args, **kwargs):
+    def action_unstar(self, request, *args, **kwargs):
         """
     Removes a group from the user's watched groups list.
         """
         try:
-            group = Group.objects.get(name=group_name)
+            group = self.get_object(request, *args, **kwargs)
         except Group.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -543,9 +544,9 @@ class RepositoryInfoResource(WebAPIResource):
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
-    def get(self, request, repository_id, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         try:
-            repository = Repository.objects.get(pk=repository_id)
+            repository = self.get_object(*args, **kwargs)
         except Repository.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -623,10 +624,10 @@ class ReviewRequestDraftResource(WebAPIResource):
         return result
 
     @webapi_login_required
-    def update(self, request, review_request_id, always_save=False,
-               *args, **kwargs):
+    def update(self, request, always_save=False, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1565,9 +1566,10 @@ class ScreenshotResource(WebAPIResource):
         }
 
     @webapi_login_required
-    def create(self, request, review_request_id, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1750,9 +1752,10 @@ class ReviewRequestResource(WebAPIResource):
             return EMPTY_CHANGESET
 
     @webapi_login_required
-    def action_star(self, request, review_request_id, *args, **kwargs):
+    def action_star(self, request, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1764,9 +1767,10 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
     @webapi_login_required
-    def action_unstar(self, request, review_request_id, *args, **kwargs):
+    def action_unstar(self, request, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1780,7 +1784,7 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
     @webapi_login_required
-    def action_close(self, request, review_request_id, *args, **kwargs):
+    def action_close(self, request, *args, **kwargs):
         type_map = {
             'submitted': ReviewRequest.SUBMITTED,
             'discarded': ReviewRequest.DISCARDED,
@@ -1794,7 +1798,8 @@ class ReviewRequestResource(WebAPIResource):
             }
 
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
             review_request.close(type_map[close_type], request.user)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
@@ -1804,9 +1809,10 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
     @webapi_login_required
-    def action_reopen(self, request, review_request_id, *args, **kwargs):
+    def action_reopen(self, request, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
             review_request.reopen(request.user)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
@@ -1816,9 +1822,10 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {}
 
     @webapi_login_required
-    def action_publish(self, request, review_request_id, *args, **kwargs):
+    def action_publish(self, request, *args, **kwargs):
         try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
 
             if not review_request.can_publish():
                 return NOTHING_TO_PUBLISH
