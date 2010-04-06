@@ -146,15 +146,16 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def _postNewDiffComment(self, review_request, comment_text):
+    def _postNewDiffComment(self, review_request, review_id, comment_text):
         """Utility function for posting a new diff comment."""
         diffset = review_request.diffset_history.diffsets.latest()
         filediff = diffset.files.all()[0]
 
         rsp = self.apiPost(
-            "reviewrequests/%s/diffs/%s/files/%s/diff-comments" %
-            (review_request.id, diffset.revision, filediff.id),
+            "reviewrequests/%s/reviews/%s/diff-comments" %
+            (review_request.id, review_id),
             {
+                'filediff_id': filediff.id,
                 'text': comment_text,
                 'first_line': 10,
                 'num_lines': 5,
@@ -165,13 +166,14 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def _postNewScreenshotComment(self, review_request, screenshot,
+    def _postNewScreenshotComment(self, review_request, review_id, screenshot,
                                   comment_text, x, y, w, h):
         """Utility function for posting a new screenshot comment."""
         rsp = self.apiPost(
-            "reviewrequests/%s/screenshots/%s/screenshot-comments" %
-            (review_request.id, screenshot.id),
+            "reviewrequests/%s/reviews/%s/screenshot-comments" %
+            (review_request.id, review_id),
             {
+                'screenshot_id': screenshot.id,
                 'text': comment_text,
                 'x': x,
                 'y': y,
@@ -1004,7 +1006,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
 
-        self._postNewDiffComment(review_request, diff_comment_text)
+        self._postNewDiffComment(review_request, review_id, diff_comment_text)
 
         rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
                           (review_request.id, review_id))
@@ -1038,7 +1040,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
 
-        self._postNewScreenshotComment(review_request, screenshot,
+        self._postNewScreenshotComment(review_request, review_id, screenshot,
                                        screenshot_comment_text, x, y, w, h)
 
         rsp = self.apiGet(
@@ -1319,7 +1321,7 @@ class WebAPITests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.public()[0]
         review_request.reviews = []
 
-        rsp = self.postNewDiffComment(review_request, comment_text)
+        rsp = self.postNewDiffComment(review_request, review_id, comment_text)
 
         self.assertEqual(len(rsp['comments']), 1)
         self.assertEqual(rsp['comments'][0]['text'], comment_text)
