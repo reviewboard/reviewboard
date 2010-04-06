@@ -72,7 +72,7 @@ class WebAPIResource(DjbletsWebAPIResource):
 
             return result
 
-    def verify_fields(self, request, mutable_fields):
+    def verify_fields(self, request, mutable_fields, required_fields=[]):
         invalid_fields = {}
 
         for field_name in request.POST:
@@ -83,7 +83,7 @@ class WebAPIResource(DjbletsWebAPIResource):
             if field_name not in mutable_fields:
                 invalid_fields[field_name] = ['Field is not supported']
 
-        for field_name in mutable_fields:
+        for field_name in required_fields:
             if request.POST.get(field_name, None) is None:
                 invalid_fields[field_name] = ['This field is required']
 
@@ -275,13 +275,14 @@ class ReviewReplyCommentResource(BaseCommentResource):
         if not reviewReplyResource.has_modify_permissions(request, reply):
             return PERMISSION_DENIED
 
-        invalid_fields = self.verify_fields(request, self.mutable_fields)
+        invalid_fields = self.verify_fields(request, self.mutable_fields,
+                                            self.mutable_fields)
 
         if 'reply_to_id' not in invalid_fields:
             try:
                 comment = reviewCommentResource.get_object(
                     request,
-                    review_request_id=review_request_id,
+                    review_request_id=review_request.id,
                     comment_id=request.POST['reply_to_id'],
                     *args, **kwargs)
             except ObjectDoesNotExist:
