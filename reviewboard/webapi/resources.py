@@ -223,6 +223,12 @@ fileDiffCommentResource = FileDiffCommentResource()
 
 
 class ReviewCommentResource(BaseCommentResource):
+    required_mutable_fields = (
+        'filediff_id', 'first_line', 'num_lines', 'text'
+    )
+    mutable_fields = required_mutable_fields + ('interfilediff_id',)
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
         q = super(ReviewCommentResource, self).get_queryset(
@@ -237,6 +243,63 @@ class ReviewCommentResource(BaseCommentResource):
         return {
             'review_request_id': review_request.id,
             'review_id': review.id,
+        }
+
+    @webapi_login_required
+    def create(self, request, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+            review = reviewResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not reviewResource.has_modify_permissions(request, review):
+            return PERMISSION_DENIED
+
+        invalid_fields = self.verify_fields(request, self.mutable_fields,
+                                            self.required_mutable_fields)
+
+        filediff = None
+        interfilediff = None
+
+        if 'filediff_id' not in invalid_fields:
+            try:
+                filediff = FileDiff.objects.get(
+                    pk=request.POST['filediff_id'],
+                    diffset__history__review_request=review_request)
+            except ObjectDoesNotExist:
+                invalid_fields['filediff_id'] = \
+                    ['This is not a valid filediff ID']
+
+        if (filediff is not None and
+            'interfilediff_id' in request.POST and
+            request.POST['interfilediff_id']):
+            try:
+                interfilediff = FileDiff.objects.get(
+                    pk=request.POST['interfilediff_id'],
+                    diffset__history=filediff.diffset_history)
+            except ObjectDoesNotExist:
+                invalid_fields['interfilediff_id'] = \
+                    ['This is not a valid interfilediff ID']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        new_comment = self.model(filediff=filediff,
+                                 interfilediff=interfilediff,
+                                 text=request.POST['text'],
+                                 first_line=request.POST['first_line'],
+                                 num_lines=request.POST['num_lines'])
+        new_comment.save()
+
+        review.comments.add(new_comment)
+        review.save()
+
+        return 201, {
+            'diff_comment': new_comment,
         }
 
 reviewCommentResource = ReviewCommentResource()
