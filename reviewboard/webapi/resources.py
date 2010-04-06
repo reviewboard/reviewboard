@@ -467,10 +467,14 @@ class UserResource(DjbletsUserResource):
 
         return query
 
+userResource = UserResource()
+
 
 class ReviewGroupUserResource(UserResource):
     def get_queryset(self, request, group_name, *args, **kwargs):
         return self.model.objects.filter(review_groups__name=group_name)
+
+reviewGroupUserResource = ReviewGroupUserResource()
 
 
 class ReviewGroupResource(WebAPIResource):
@@ -538,6 +542,8 @@ class ReviewGroupResource(WebAPIResource):
 
         return 200, {}
 
+reviewGroupResource = ReviewGroupResource()
+
 
 class RepositoryInfoResource(WebAPIResource):
     name = 'info'
@@ -560,13 +566,15 @@ class RepositoryInfoResource(WebAPIResource):
         except:
             return REPO_INFO_ERROR
 
+repositoryInfoResource = RepositoryInfoResource()
+
 
 class RepositoryResource(WebAPIResource):
     model = Repository
     name_plural = 'repositories'
     fields = ('id', 'name', 'path', 'tool')
     uri_object_key = 'repository_id'
-    item_child_resources = [RepositoryInfoResource()]
+    item_child_resources = [repositoryInfoResource]
 
     allowed_methods = ('GET',)
 
@@ -576,6 +584,8 @@ class RepositoryResource(WebAPIResource):
 
     def serialize_tool_field(self, obj):
         return obj.tool.name
+
+repositoryResource = RepositoryResource()
 
 
 class ReviewRequestDraftResource(WebAPIResource):
@@ -1839,6 +1849,8 @@ class ReviewRequestResource(WebAPIResource):
 
         return 200, {}
 
+reviewRequestResource = ReviewRequestResource()
+
 
 class ServerInfoResource(WebAPIResource):
     name = 'info'
@@ -1866,6 +1878,8 @@ class ServerInfoResource(WebAPIResource):
             },
         }
 
+serverInfoResource = ServerInfoResource()
+
 
 def status_to_string(status):
     if status == "P":
@@ -1891,11 +1905,3 @@ def string_to_status(status):
         return None
     else:
         raise "Invalid status '%s'" % status
-
-
-diffSetResource = DiffSetResource()
-reviewGroupResource = ReviewGroupResource()
-repositoryResource = RepositoryResource()
-reviewRequestResource = ReviewRequestResource()
-serverInfoResource = ServerInfoResource()
-userResource = UserResource()
