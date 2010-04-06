@@ -973,10 +973,9 @@ reviewDraftCommentResource = ReviewDraftCommentResource()
 class BaseScreenshotCommentResource(WebAPIResource):
     model = ScreenshotComment
     name = 'screenshot-comment'
-    mutable_fields = ('text', 'x', 'y', 'w', 'h')
-    fields = mutable_fields + (
+    fields = (
         'id', 'screenshot', 'timestamp', 'timesince',
-        'public', 'user'
+        'public', 'user', 'text', 'x', 'y', 'w', 'h',
     )
 
     uri_object_key = 'comment_id'
@@ -999,14 +998,11 @@ class BaseScreenshotCommentResource(WebAPIResource):
 
 
 class ScreenshotCommentResource(BaseScreenshotCommentResource):
-    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
-
     def get_queryset(self, request, review_request_id, screenshot_id,
                      *args, **kwargs):
-        query = super(ScreenshotCommentResource, self).get_queryset(
+        q = super(ScreenshotCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-
-        return query.filter(screenshot=screenshot_id)
+        return q.filter(screenshot=screenshot_id)
 
     def get_href_parent_ids(self, comment, *args, **kwargs):
         screenshot = comment.screenshot
@@ -1017,81 +1013,13 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
             'screenshot_id': screenshot.id,
         }
 
-    @webapi_login_required
-    def create(self, request, review_request_id, screenshot_id,
-               *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-            screenshot = Screenshot.objects.get(
-                pk=screenshot_id,
-                review_request=review_request)
-        except (ReviewRequest.DoesNotExist, Screenshot.DoesNotExist):
-            return DOES_NOT_EXIST
-
-        self._scan_deprecated_fields(request, **kwargs)
-
-        invalid_fields = {}
-
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
-
-            if field_name not in self.mutable_fields:
-                invalid_fields[field_name] = ['Field is not supported']
-
-        for field_name in self.mutable_fields:
-            if request.POST.get(field_name, None) is None:
-                invalid_fields[field_name] = ['This field is required']
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
-
-        text = request.POST['text']
-        x = request.POST['x']
-        y = request.POST['y']
-        width = request.POST['w']
-        height = request.POST['h']
-
-        review, review_is_new = Review.objects.get_or_create(
-            review_request=review_request,
-            user=request.user,
-            public=False,
-            base_reply_to__isnull=True)
-
-        comment, comment_is_new = review.screenshot_comments.get_or_create(
-           screenshot=screenshot,
-           x=x, y=y, w=width, h=height)
-
-        comment.text = text
-        comment.timestamp = datetime.now()
-        comment.save()
-
-        if comment_is_new:
-            review.screenshot_comments.add(comment)
-            review.save()
-
-        return 201, {
-            self.name: comment,
-        }
-
-    def _scan_deprecated_fields(self, request, **kwargs):
-        """Scans the keyword URL argument list for deprecated fields.
-
-        This is used for the old Review Board 1.0.x version of the
-        screenshot comment API, which passed these fields into the
-        URL. This will stick them back in request.POST.
-        """
-        for field_name in self.mutable_fields:
-            if field_name in kwargs:
-                request.POST[field_name] = kwargs[field_name]
-
 screenshotCommentResource = ScreenshotCommentResource()
 
 
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
+    mutable_fields = ('screenshot_id', 'text', 'x', 'y', 'w', 'h')
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
         q = super(ReviewScreenshotCommentResource, self).get_queryset(
@@ -1105,6 +1033,50 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         return {
             'review_request_id': review_request.id,
             'review_id': review.id,
+        }
+
+    @webapi_login_required
+    def create(self, request, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+            review = reviewResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not reviewResource.has_modify_permissions(request, review):
+            return PERMISSION_DENIED
+
+        invalid_fields = self.verify_fields(request, self.mutable_fields,
+                                            self.mutable_fields)
+
+        if 'screenshot_id' not in invalid_fields:
+            try:
+                screenshot = Screenshot.objects.get(
+                    pk=request.POST['screenshot_id'],
+                    review_request=review_request)
+            except ObjectDoesNotExist:
+                invalid_fields['screenshot_id'] = \
+                    ['This is not a valid screenshot ID']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        new_comment = self.model(screenshot=screenshot,
+                                 x=request.POST['x'],
+                                 y=request.POST['y'],
+                                 w=request.POST['w'],
+                                 h=request.POST['h'],
+                                 text=request.POST['text'])
+        new_comment.save()
+
+        review.screenshot_comments.add(new_comment)
+        review.save()
+
+        return 201, {
+            'screenshot_comment': new_comment,
         }
 
 reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
