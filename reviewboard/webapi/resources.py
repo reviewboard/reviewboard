@@ -124,10 +124,15 @@ class FileDiffCommentResource(BaseCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, diff_revision,
-                     *args, **kwargs):
-        return super(FileDiffCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs).filter(
-                filediff__diffset__revision=diff_revision)
+                     is_list=False, *args, **kwargs):
+        q = super(FileDiffCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+        q = q.filter(filediff__diffset__revision=diff_revision)
+
+        if is_list and 'line' in request.GET:
+            q = q.filter(first_line=int(request.GET['line']))
+
+        return q
 
     def get_href_parent_ids(self, comment, *args, **kwargs):
         filediff = comment.filediff
