@@ -1308,9 +1308,6 @@ class FileDiffResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
 
-        # Return this so it can be used in other tests.
-        return DiffSet.objects.get(pk=rsp['diffset']['id'])
-
     def test_post_diffs_with_missing_data(self):
         """Testing the POST reviewrequests/<id>/diffs/ API with Invalid Form Data"""
         rsp = self._postNewReviewRequest()
@@ -1340,42 +1337,46 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff']['name'], 'cleaned_data.diff')
 
 
-class WebAPITests(BaseWebAPITestCase):
-    """Testing the webapi support."""
-    def testNewScreenshot(self):
-        """Testing the reviewrequests/screenshot/new API"""
-        review_request = self.testNewReviewRequest()
+class ScreenshotResourceTests(BaseWebAPITestCase):
+    """Testing the ScreenshotResource APIs."""
+    def test_post_screenshots(self):
+        """Testing the POST reviewrequests/<id>/screenshots/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        f = open(self.__getTrophyFilename(), "r")
-        self.assert_(f)
-        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
-                           review_request.id, {
+        screenshots_url = rsp['review_request']['related_hrefs']['screenshots']
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(screenshots_url, {
             'path': f,
         })
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
 
-        # Return the screenshot so we can use it in other tests.
-        return Screenshot.objects.get(pk=rsp['screenshot_id'])
-
-    def testNewScreenshotPermissionDenied(self):
-        """Testing the reviewrequests/screenshot/new API with Permission Denied error"""
+    def test_post_screenshots_with_permission_denied_error(self):
+        """Testing the POST reviewrequests/<id>/screenshots/ API with Permission Denied error"""
         review_request = ReviewRequest.objects.filter(public=True).\
             exclude(submitter=self.user)[0]
 
-        f = open(self.__getTrophyFilename(), "r")
+        f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
-        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
+        rsp = self.apiPost('reviewrequests/%s/screenshots' %
                            review_request.id, {
             'caption': 'Trophy',
             'path': f,
-        }, 403)
+        }, expected_status=403)
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+
+class WebAPITests(BaseWebAPITestCase):
+    """Testing the webapi support."""
     def testDiffCommentsSet(self):
         """Testing the reviewrequests/diff/file/line/comments set API"""
         comment_text = "This is a test comment."
