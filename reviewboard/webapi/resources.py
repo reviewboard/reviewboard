@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.webapi.core import WebAPIResponseFormError
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \

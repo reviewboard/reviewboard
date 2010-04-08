@@ -1287,20 +1287,20 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
 
 
-
-class WebAPITests(BaseWebAPITestCase):
-    """Testing the webapi support."""
-    def testNewDiff(self, review_request=None):
-        """Testing the reviewrequests/diff/new API"""
-
-        if review_request is None:
-            review_request = self.testNewReviewRequest()
+class FileDiffResourceTests(BaseWebAPITestCase):
+    """Testing the FileDiffResource APIs."""
+    def test_post_diffs(self):
+        """Testing the POST reviewrequests/<id>/diffs/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
         diff_filename = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
-        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
+        rsp = self.apiPost(rsp['review_request']['related_hrefs']['diffs'], {
             'path': f,
             'basedir': "/trunk",
         })
@@ -1309,19 +1309,39 @@ class WebAPITests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         # Return this so it can be used in other tests.
-        return DiffSet.objects.get(pk=rsp['diffset_id'])
+        return DiffSet.objects.get(pk=rsp['diffset']['id'])
 
-    def testNewDiffInvalidFormData(self):
-        """Testing the reviewrequests/diff/new API with Invalid Form Data"""
-        review_request = self.testNewReviewRequest()
+    def test_post_diffs_with_missing_data(self):
+        """Testing the POST reviewrequests/<id>/diffs/ API with Invalid Form Data"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id,
+        rsp = self.apiPost(rsp['review_request']['related_hrefs']['diffs'],
                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('path' in rsp['fields'])
         self.assert_('basedir' in rsp['fields'])
 
+    def test_get_diffs(self):
+        """Testing the GET reviewrequests/<id>/diffs/ API"""
+        rsp = self.apiGet("reviewrequests/2/diffs")
+
+        self.assertEqual(rsp['diffs'][0]['id'], 2)
+        self.assertEqual(rsp['diffs'][0]['name'], 'cleaned_data.diff')
+
+    def test_get_diff(self):
+        """Testing the GET reviewrequests/<id>/diffs/<revision>/ API"""
+        rsp = self.apiGet("reviewrequests/2/diffs/1")
+
+        self.assertEqual(rsp['diff']['id'], 2)
+        self.assertEqual(rsp['diff']['name'], 'cleaned_data.diff')
+
+
+class WebAPITests(BaseWebAPITestCase):
+    """Testing the webapi support."""
     def testNewScreenshot(self):
         """Testing the reviewrequests/screenshot/new API"""
         review_request = self.testNewReviewRequest()
@@ -1355,13 +1375,6 @@ class WebAPITests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def testReviewRequestDiffsets(self):
-        """Testing the reviewrequests/diffsets API"""
-        rsp = self.apiGet("reviewrequests/2/diff")
-
-        self.assertEqual(rsp['diffsets'][0]["id"], 2)
-        self.assertEqual(rsp['diffsets'][0]["name"], 'cleaned_data.diff')
 
     def testDiffCommentsSet(self):
         """Testing the reviewrequests/diff/file/line/comments set API"""
