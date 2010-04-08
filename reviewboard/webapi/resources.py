@@ -311,7 +311,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
-        q = super(BaseCommentResource, self).get_queryset(
+        q = super(ReviewReplyCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
@@ -345,8 +345,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
             try:
                 comment = reviewCommentResource.get_object(
                     request,
-                    review_request_id=review_request.id,
-                    comment_id=request.POST['reply_to_id'],
+                    comment_id=int(request.POST['reply_to_id']),
                     *args, **kwargs)
             except ObjectDoesNotExist:
                 invalid_fields['reply_to_id'] = \
@@ -1065,10 +1064,10 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.model(screenshot=screenshot,
-                                 x=request.POST['x'],
-                                 y=request.POST['y'],
-                                 w=request.POST['w'],
-                                 h=request.POST['h'],
+                                 x=int(request.POST['x']),
+                                 y=int(request.POST['y']),
+                                 w=int(request.POST['w']),
+                                 h=int(request.POST['h']),
                                  text=request.POST['text'])
         new_comment.save()
 
@@ -1080,6 +1079,75 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         }
 
 reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
+
+
+class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
+    mutable_fields = ('reply_to_id', 'text')
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_queryset(self, request, review_request_id, review_id, reply_id,
+                     *args, **kwargs):
+        q = super(ReviewReplyScreenshotCommentResource, self).get_queryset(
+            request, review_request_id, *args, **kwargs)
+        q = q.filter(review=reply_id, review__base_reply_to=review_id)
+        return q
+
+    def get_href_parent_ids(self, comment, *args, **kwargs):
+        reply = comment.review.get()
+        review_request = review.review_request
+
+        return {
+            'review_request_id': review_request.id,
+            'review_id': reply.base_reply_to.id,
+            'reply_id': reply.id,
+        }
+
+    @webapi_login_required
+    def create(self, request, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+            reply = reviewReplyResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not reviewReplyResource.has_modify_permissions(request, reply):
+            return PERMISSION_DENIED
+
+        invalid_fields = self.verify_fields(request, self.mutable_fields,
+                                            self.mutable_fields)
+
+        if 'reply_to_id' not in invalid_fields:
+            try:
+                comment = reviewScreenshotCommentResource.get_object(
+                    request,
+                    comment_id=int(request.POST['reply_to_id']),
+                    *args, **kwargs)
+            except ObjectDoesNotExist:
+                invalid_fields['reply_to_id'] = \
+                    ['This is not a valid screenshot comment ID']
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        new_comment = self.model(screenshot=comment.screenshot,
+                                 x=comment.x,
+                                 y=comment.y,
+                                 w=comment.w,
+                                 h=comment.h,
+                                 text=request.POST['text'])
+        new_comment.save()
+
+        reply.screenshot_comments.add(new_comment)
+        reply.save()
+
+        return 201, {
+            'screenshot_comment': new_comment,
+        }
+
+reviewReplyScreenshotCommentResource = ReviewReplyScreenshotCommentResource()
 
 
 class ReviewDraftScreenshotCommentResource(BaseScreenshotCommentResource):
@@ -1438,12 +1506,12 @@ class BaseReviewResource(WebAPIResource):
             # redirect the user to the right place.
             status_code = 303 # See Other
 
-        orig_code, data = self._update_review(request, review)
+        result = self._update_review(request, review)
 
-        if orig_code != 200:
-            return orig_code, data
+        if not isinstance(result, tuple) or result[0] != 200:
+            return result
         else:
-            return status_code, data, {
+            return status_code, result[1], {
                 'Location': self.get_href(review, *args, **kwargs),
             }
 
@@ -1509,6 +1577,7 @@ class ReviewReplyResource(BaseReviewResource):
 
     item_child_resources = [
         reviewReplyCommentResource,
+        reviewReplyScreenshotCommentResource,
     ]
 
     uri_object_key = 'reply_id'
@@ -1523,6 +1592,115 @@ class ReviewReplyResource(BaseReviewResource):
             'review_request_id': reply.review_request.id,
             'review_id': reply.base_reply_to.id,
         }
+
+    @webapi_login_required
+    def create(self, request, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+            review = reviewResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        reply, is_new = Review.objects.get_or_create(
+            review_request=review_request,
+            user=request.user,
+            public=False,
+            base_reply_to=review)
+
+        if is_new:
+            status_code = 201 # Created
+        else:
+            # This already exists. Go ahead and update, but we're going to
+            # redirect the user to the right place.
+            status_code = 303 # See Other
+
+        result = self._update_reply(request, reply)
+
+        if not isinstance(result, tuple) or result[0] != 200:
+            return result
+        else:
+            return status_code, result[1], {
+                'Location': self.get_href(reply, *args, **kwargs),
+            }
+
+    @webapi_login_required
+    def update(self, request, publish=False, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+            review = reviewResource.get_object(request, *args, **kwargs)
+            reply = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        return self._update_reply(request, reply, publish)
+
+    def _update_reply(self, request, reply, publish=False):
+        if not self.has_modify_permissions(request, reply):
+            # Can't modify published replies or those not belonging
+            # to the user.
+            return PERMISSION_DENIED
+
+        invalid_fields = {}
+
+        # XXX This is deprecated
+        if 'type' in request.POST:
+            context_type = request.POST['type']
+
+            if context_type in ('body_top', 'body_bottom'):
+                request.POST[context_type] = request.POST['value']
+            elif context_type == 'comment':
+                pass
+            elif context_type == 'screenshot_comment':
+                pass
+
+        for field_name in request.POST:
+            if field_name in ('action', 'method', 'callback', 'type', 'value'):
+                # These are special names and can be ignored.
+                continue
+
+            if (field_name not in self.mutable_fields):
+                invalid_fields[field_name] = ['Field is not supported']
+            elif field_name in ('body_top', 'body_bottom'):
+                value = request.POST[field_name]
+                setattr(reply, field_name, value)
+
+                if value == "":
+                    reply_to = None
+                else:
+                    reply_to = reply.base_reply_to
+
+                setattr(reply, '%s_reply_to' % field_name, reply_to)
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+
+        result = {}
+
+#        if (reply.body_top == "" and
+#            reply.body_bottom == "" and
+#            reply.comments.count() == 0 and
+#            reply.screenshot_comments.count() == 0):
+#            # This is empty, so let's go ahead and delete it.
+#            # XXX
+#            #reply.delete()
+#            reply = None
+#            result = {
+#                'discarded': True,
+#            }
+#        elif publish:
+
+        if publish:
+            reply.publish(user=request.user)
+        else:
+            reply.save()
+
+        result[self.name] = reply
+
+        return 200, result
 
 reviewReplyResource = ReviewReplyResource()
 
