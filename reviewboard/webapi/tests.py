@@ -1216,6 +1216,26 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
+    def test_delete_reply(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/replies/<id>/ API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp = self.apiPost('reviewrequests/%s/reviews/%s/replies' %
+                           (review.review_request.id, review.id), {
+            'body_top': 'Test',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_id = rsp['reply']['id']
+        rsp = self.apiDelete(rsp['reply']['href'])
+
+        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
+
+
+class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyScreenshotCommentResource APIs."""
     def test_post_reply_with_screenshot_comment(self):
         """Testing the POST reviewrequests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
         comment_text = "My Comment Text"
@@ -1266,22 +1286,6 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def test_delete_reply(self):
-        """Testing the DELETE reviewrequests/<id>/reviews/<id>/replies/<id>/ API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost('reviewrequests/%s/reviews/%s/replies' %
-                           (review.review_request.id, review.id), {
-            'body_top': 'Test',
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_id = rsp['reply']['id']
-        rsp = self.apiDelete(rsp['reply']['href'])
-
-        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
 
 
 class WebAPITests(BaseWebAPITestCase):
