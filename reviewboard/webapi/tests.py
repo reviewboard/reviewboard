@@ -160,22 +160,28 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def _postNewDiffComment(self, review_request, review_id, comment_text):
+    def _postNewDiffComment(self, review_request, review_id, comment_text,
+                            filediff_id=None, interfilediff_id=None,
+                            first_line=10, num_lines=5):
         """Creates a diff comment and returns the payload response."""
-        diffset = review_request.diffset_history.diffsets.latest()
-        filediff = diffset.files.all()[0]
+        if filediff_id is None:
+            diffset = review_request.diffset_history.diffsets.latest()
+            filediff = diffset.files.all()[0]
+            filediff_id = filediff.id
 
-        rsp = self.apiPost(
-            "reviewrequests/%s/reviews/%s/diff-comments" %
-            (review_request.id, review_id),
-            {
-                'filediff_id': filediff.id,
-                'text': comment_text,
-                'first_line': 10,
-                'num_lines': 5,
-            }
-        )
+        data = {
+            'filediff_id': filediff_id,
+            'text': comment_text,
+            'first_line': first_line,
+            'num_lines': num_lines,
+        }
 
+        if interfilediff_id is not None:
+            data['interfilediff_id'] = interfilediff_id
+
+        rsp = self.apiPost("reviewrequests/%s/reviews/%s/diff-comments" %
+                           (review_request.id, review_id),
+                           data)
         self.assertEqual(rsp['stat'], 'ok')
 
         return rsp
@@ -1029,6 +1035,58 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
 
+    def test_post_comments_with_interdiff(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
+        diff_comment_text = "Test diff comment"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        diffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost("reviewrequests/%s/reviews" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+
+        self._postNewDiffComment(review_request, review_id, diff_comment_text,
+                                 interfilediff_id=
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review_request.id, review_id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+
+    def testInterDiffCommentsDelete(self):
+        """Testing the reviewrequests/diff/file/line/comments interdiff delete API"""
+        comment_text = "This is a test comment."
+
+        review_request, diffset, interdiffset, filediff, interfilediff = \
+            self.testInterDiffCommentsSet()
+
+        rsp = self.apiPost(
+            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
+            (review_request.id, diffset.revision, interdiffset.revision,
+             filediff.id, interfilediff.id, 10),
+            {
+                'action': 'delete',
+                'num_lines': 5,
+            }
+        )
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['comments']), 0)
+
+
 
 class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewScreenshotCommentResource APIs."""
@@ -1375,125 +1433,69 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
-class WebAPITests(BaseWebAPITestCase):
-    """Testing the webapi support."""
-    def testDiffCommentsSet(self):
-        """Testing the reviewrequests/diff/file/line/comments set API"""
-        comment_text = "This is a test comment."
-
-        review_request = ReviewRequest.objects.public()[0]
-        review_request.reviews = []
-
-        rsp = self.postNewDiffComment(review_request, review_id, comment_text)
-
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], comment_text)
-
-    def testDiffCommentsDelete(self):
-        """Testing the reviewrequests/diff/file/line/comments delete API"""
-        comment_text = "This is a test comment."
-
-        self.testDiffCommentsSet()
+class FileDiffCommentResourceTests(BaseWebAPITestCase):
+    """Testing the FileDiffCommentResource APIs."""
+    def test_get_comments(self):
+        """Testing the GET reviewrequests/<id>/diffs/<revision>/files/<id>/diff-comments/ API"""
+        diff_comment_text = 'Sample comment.'
 
         review_request = ReviewRequest.objects.public()[0]
         diffset = review_request.diffset_history.diffsets.latest()
         filediff = diffset.files.all()[0]
 
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10),
-            {
-                'action': 'delete',
-                'num_lines': 5,
-            }
-        )
-
+        rsp = self.apiPost("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
 
-    def testDiffCommentsList(self):
-        """Testing the reviewrequests/diff/file/line/comments list API"""
-        self.testDiffCommentsSet()
-
-        review_request = ReviewRequest.objects.public()[0]
-        diffset = review_request.diffset_history.diffsets.latest()
-        filediff = diffset.files.all()[0]
+        self._postNewDiffComment(review_request, review_id, diff_comment_text)
 
         rsp = self.apiGet(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10))
-
+            'reviewrequests/%s/diffs/%s/files/%s/diff-comments' %
+            (review_request.id, diffset.revision, filediff.id))
         self.assertEqual(rsp['stat'], 'ok')
 
         comments = Comment.objects.filter(filediff=filediff)
-        self.assertEqual(len(rsp['comments']), comments.count())
+        self.assertEqual(len(rsp['diff_comments']), comments.count())
 
-        for i in range(0, len(rsp['comments'])):
-            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
+        for i in range(0, len(rsp['diff_comments'])):
+            self.assertEqual(rsp['diff_comments'][i]['text'], comments[i].text)
 
+    def test_get_comments_with_line(self):
+        """Testing the GET reviewrequests/<id>/diffs/<revision>/files/<id>/diff-comments/?line= API"""
+        diff_comment_text = 'Sample comment.'
+        diff_comment_line = 10
 
-    def testInterDiffCommentsSet(self):
-        """Testing the reviewrequests/diff/file/line/comments interdiff set API"""
-        comment_text = "This is a test comment."
-
-        # Create a review request for this test.
-        review_request = self.testNewReviewRequest()
-
-        # Upload the first diff and publish the draft.
-        diffset_id = self.testNewDiff(review_request).id
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        # Upload the second diff and publish the draft.
-        interdiffset_id = self.testNewDiff(review_request).id
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        # Reload the diffsets, now that they've been modified.
-        diffset = DiffSet.objects.get(pk=diffset_id)
-        interdiffset = DiffSet.objects.get(pk=interdiffset_id)
-
-        # Get the interdiffs
+        review_request = ReviewRequest.objects.public()[0]
+        diffset = review_request.diffset_history.diffsets.latest()
         filediff = diffset.files.all()[0]
-        interfilediff = interdiffset.files.all()[0]
 
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10),
-            {
-                'action': 'set',
-                'text': comment_text,
-                'num_lines': 5,
-            }
-        )
-
+        rsp = self.apiPost("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], comment_text)
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
 
-        # Return some information for use in other tests.
-        return (review_request, diffset, interdiffset, filediff, interfilediff)
+        self._postNewDiffComment(review_request, review_id, diff_comment_text,
+                                 first_line=diff_comment_line)
 
-    def testInterDiffCommentsDelete(self):
-        """Testing the reviewrequests/diff/file/line/comments interdiff delete API"""
-        comment_text = "This is a test comment."
+        self._postNewDiffComment(review_request, review_id, diff_comment_text,
+                                 first_line=diff_comment_line + 1)
 
-        review_request, diffset, interdiffset, filediff, interfilediff = \
-            self.testInterDiffCommentsSet()
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10),
-            {
-                'action': 'delete',
-                'num_lines': 5,
-            }
-        )
-
+        url = 'reviewrequests/%s/diffs/%s/files/%s/diff-comments' % \
+              (review_request.id, diffset.revision, filediff.id)
+        rsp = self.apiGet(url, {
+            'line': diff_comment_line,
+        })
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
+
+        comments = Comment.objects.filter(filediff=filediff,
+                                          first_line=diff_comment_line)
+        self.assertEqual(len(rsp['diff_comments']), comments.count())
+
+        for i in range(0, len(rsp['diff_comments'])):
+            self.assertEqual(rsp['diff_comments'][i]['text'], comments[i].text)
+            self.assertEqual(rsp['diff_comments'][i]['first_line'],
+                             comments[i].first_line)
 
     def testInterDiffCommentsList(self):
         """Testing the reviewrequests/diff/file/line/comments interdiff list API"""
@@ -1514,6 +1516,10 @@ class WebAPITests(BaseWebAPITestCase):
         for i in range(0, len(rsp['comments'])):
             self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
 
+
+
+class WebAPITests(BaseWebAPITestCase):
+    """Testing the webapi support."""
     def testScreenshotCommentsSet(self):
         """Testing the reviewrequests/s/comments set API"""
         comment_text = "This is a test comment."
