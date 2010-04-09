@@ -985,7 +985,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
 class ReviewCommentResourceTests(BaseWebAPITestCase):
     """Testing the ReviewCommentResource APIs."""
-    def test_get_review_comments(self):
+    def test_get_diff_comments(self):
         """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments API"""
         review = Review.objects.filter(comments__pk__gt=0)[0]
 
@@ -994,7 +994,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['diff_comments']), review.comments.count())
 
-    def test_get_review_comments_with_counts_only(self):
+    def test_get_diff_comments_with_counts_only(self):
         """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments/?counts-only=1 API"""
         review = Review.objects.filter(comments__pk__gt=0)[0]
 
@@ -1005,8 +1005,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review.comments.count())
 
-    def test_get_review_diff_comments(self):
-        """Testing the GET reviewrequests/<id>/reviews/<id>/diff-comments API"""
+    def test_post_diff_comments(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments API"""
         diff_comment_text = "Test diff comment"
 
         # Post the review request
@@ -1035,7 +1035,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
 
-    def test_post_comments_with_interdiff(self):
+    def test_post_diff_comments_with_interdiff(self):
         """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
         diff_comment_text = "Test diff comment"
 
@@ -1046,10 +1046,15 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         # Post the diff.
         rsp = self._postNewDiff(review_request)
-        diffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
-
-        # Make these public.
         review_request.publish(self.user)
+        diffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+        filediff = diffset.files.all()[0]
+
+        # Post the second diff.
+        rsp = self._postNewDiff(review_request)
+        review_request.publish(self.user)
+        interdiffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+        interfilediff = interdiffset.files.all()[0]
 
         rsp = self.apiPost("reviewrequests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1057,7 +1062,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_id = rsp['review']['id']
 
         self._postNewDiffComment(review_request, review_id, diff_comment_text,
-                                 interfilediff_id=
+                                 filediff_id=filediff.id,
+                                 interfilediff_id=interfilediff.id)
 
         rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
                           (review_request.id, review_id))

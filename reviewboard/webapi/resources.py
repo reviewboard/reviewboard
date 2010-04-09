@@ -107,8 +107,7 @@ class BaseCommentResource(WebAPIResource):
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(
             Q(review__public=True) | Q(review__user=request.user),
-            filediff__diffset__history__review_request=review_request_id,
-            interfilediff__isnull=True)
+            filediff__diffset__history__review_request=review_request_id)
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
@@ -129,8 +128,14 @@ class FileDiffCommentResource(BaseCommentResource):
             request, review_request_id, *args, **kwargs)
         q = q.filter(filediff__diffset__revision=diff_revision)
 
-        if is_list and 'line' in request.GET:
-            q = q.filter(first_line=int(request.GET['line']))
+        if is_list:
+            if 'interdiff_revision' in request.GET:
+                interdiff_revision = int(request.GET['interdiff_revision'])
+                q = q.filter(
+                    interfilediff__diffset__revision=interdiff_revision)
+
+            if 'line' in request.GET:
+                q = q.filter(first_line=int(request.GET['line']))
 
         return q
 
@@ -272,7 +277,7 @@ class ReviewCommentResource(BaseCommentResource):
         if 'filediff_id' not in invalid_fields:
             try:
                 filediff = FileDiff.objects.get(
-                    pk=request.POST['filediff_id'],
+                    pk=int(request.POST['filediff_id']),
                     diffset__history__review_request=review_request)
             except ObjectDoesNotExist:
                 invalid_fields['filediff_id'] = \
@@ -281,13 +286,20 @@ class ReviewCommentResource(BaseCommentResource):
         if (filediff is not None and
             'interfilediff_id' in request.POST and
             request.POST['interfilediff_id']):
-            try:
-                interfilediff = FileDiff.objects.get(
-                    pk=request.POST['interfilediff_id'],
-                    diffset__history=filediff.diffset_history)
-            except ObjectDoesNotExist:
+
+            interfilediff_id = int(request.POST['interfilediff_id'])
+
+            if interfilediff_id == filediff.id:
                 invalid_fields['interfilediff_id'] = \
-                    ['This is not a valid interfilediff ID']
+                    ['This cannot be the same as filediff_id']
+            else:
+                try:
+                    interfilediff = FileDiff.objects.get(
+                        pk=interfilediff_id,
+                        diffset__history=filediff.diffset.history)
+                except ObjectDoesNotExist:
+                    invalid_fields['interfilediff_id'] = \
+                        ['This is not a valid interfilediff ID']
 
         if invalid_fields:
             return INVALID_FORM_DATA, {
