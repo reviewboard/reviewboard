@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
-from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
+from djblets.webapi.core import WebAPIResponse, \
                                 WebAPIResponseError, \
                                 WebAPIResponseFormError
 from djblets.webapi.decorators import webapi, \
@@ -40,53 +40,21 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.resources import diffSetResource, \
-                                         fileDiffResource, \
-                                         repositoryResource, \
-                                         reviewCommentResource, \
-                                         reviewDraftResource, \
-                                         reviewGroupResource, \
-                                         reviewRequestResource, \
-                                         reviewRequestDraftResource, \
-                                         reviewResource, \
-                                         reviewReplyResource, \
-                                         screenshotResource, \
-                                         screenshotCommentResource
-
-
-class ReviewBoardAPIEncoder(WebAPIEncoder):
-    def encode(self, o, api_format, *args, **kwargs):
-        resource = None
-
-        if isinstance(o, Group):
-            resource = reviewGroupResource
-        elif isinstance(o, ReviewRequest):
-            resource = reviewRequestResource
-        elif isinstance(o, ReviewRequestDraft):
-            resource = reviewRequestDraftResource
-        elif isinstance(o, Review):
-            if o.is_reply():
-                resource = reviewReplyResource
-            else:
-                resource = reviewResource
-        elif isinstance(o, Comment):
-            resource = reviewCommentResource
-        elif isinstance(o, ScreenshotComment):
-            resource = screenshotCommentResource
-        elif isinstance(o, Screenshot):
-            resource = screenshotResource
-        elif isinstance(o, FileDiff):
-            resource = fileDiffResource
-        elif isinstance(o, DiffSet):
-            resource = diffSetResource
-        elif isinstance(o, Repository):
-            resource = repositoryResource
-        else:
-            return super(ReviewBoardAPIEncoder, self).encode(o, *args, **kwargs)
-
-        return resource.serialize_object(o, api_format=api_format)
-
+from reviewboard.webapi.decorators import webapi_check_login_required, \
+                                          webapi_deprecated_in_1_5
+from reviewboard.webapi.errors import UNSPECIFIED_DIFF_REVISION, \
+                                      INVALID_DIFF_REVISION, \
+                                      INVALID_ACTION, \
+                                      INVALID_CHANGE_NUMBER, \
+                                      CHANGE_NUMBER_IN_USE, \
+                                      MISSING_REPOSITORY, \
+                                      INVALID_REPOSITORY, \
+                                      REPO_FILE_NOT_FOUND, \
+                                      INVALID_USER, \
+                                      REPO_NOT_IMPLEMENTED, \
+                                      REPO_INFO_ERROR, \
+                                      NOTHING_TO_PUBLISH, \
+                                      EMPTY_CHANGESET
 
 def status_to_string(status):
     if status == "P":
@@ -122,6 +90,262 @@ def service_not_configured(request, *args, **kwargs):
     return WebAPIResponseError(request, SERVICE_NOT_CONFIGURED)
 
 
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def server_info(request, *args, **kwargs):
+    site = Site.objects.get_current()
+    siteconfig = site.config.get()
+
+    url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
+                         settings.SITE_ROOT)
+
+    return WebAPIResponse(request, {
+        'product': {
+            'name': 'Review Board',
+            'version': get_version_string(),
+            'package_version': get_package_version(),
+            'is_release': is_release(),
+        },
+        'site': {
+            'url': url,
+            'administrators': [{'name': name, 'email': email}
+                               for name, email in settings.ADMINS],
+        },
+    })
+
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def repository_list(request, *args, **kwargs):
+    """
+    Returns a list of all known, visible repositories.
+    """
+    return WebAPIResponse(request, {
+        'repositories': Repository.objects.filter(visible=True),
+    })
+
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def repository_info(request, repository_id, *args, **kwargs):
+    try:
+        repository = Repository.objects.get(id=repository_id)
+    except Repository.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    try:
+        return WebAPIResponse(request, {
+            'info': repository.get_scmtool().get_repository_info()
+        })
+    except NotImplementedError:
+        return WebAPIResponseError(request, REPO_NOT_IMPLEMENTED)
+    except:
+        return WebAPIResponseError(request, REPO_INFO_ERROR)
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def user_list(request, *args, **kwargs):
+    """
+    Returns a list of all users.
+
+    If the q parameter is passed, users with a username beginning with
+    the query value will be returned.
+
+    If the fullname parameter is passed along with the q parameter, then full
+    names will be searched as well.
+    """
+    # XXX Support "query" for backwards-compatibility until after 1.0.
+    query = request.GET.get('q', request.GET.get('query', None))
+
+    u = User.objects.filter(is_active=True)
+
+    if query:
+        q = Q(username__istartswith=query)
+
+        if request.GET.get('fullname', None):
+            q = q | (Q(first_name__istartswith=query) |
+                     Q(last_name__istartswith=query))
+
+        u = u.filter(q)
+
+    return WebAPIResponse(request, {
+        'users': u,
+    })
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def group_list(request, *args, **kwargs):
+    """
+    Returns a list of all review groups.
+
+    If the q parameter is passed, groups with a name beginning with
+    the query value will be returned.
+
+    If the displayname parameter is passed along with the q parameter, then
+    full names will be searched as well.
+    """
+    # XXX Support "query" for backwards-compatibility until after 1.0.
+    query = request.GET.get('q', request.GET.get('query', None))
+
+    u = Group.objects.all()
+
+    if query:
+        q = Q(name__istartswith=query)
+
+        if request.GET.get('displayname', None):
+            q = q | Q(display_name__istartswith=query)
+
+        u = u.filter(q)
+
+    return WebAPIResponse(request, {
+        'groups': u,
+    })
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def users_in_group(request, group_name, *args, **kwargs):
+    """
+    Returns a list of users in a group.
+    """
+    try:
+        g = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    return WebAPIResponse(request, {
+        'users': g.users.all(),
+    })
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def group_star(request, group_name, *args, **kwargs):
+    """
+    Adds a group to the user's watched groups list.
+    """
+    try:
+        group = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+    profile.starred_groups.add(group)
+    profile.save()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def group_unstar(request, group_name, *args, **kwargs):
+    """
+    Removes a group from the user's watched groups list.
+    """
+    try:
+        group = Group.objects.get(name=group_name)
+    except Group.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+
+    if not profile_is_new:
+        profile.starred_groups.remove(group)
+        profile.save()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def new_review_request(request, *args, **kwargs):
+    """
+    Creates a new review request.
+
+    Required parameters:
+
+      * repository_path: The repository to create the review request against.
+                         If both this and repository_id are set,
+                         repository_path's value takes precedence.
+      * repository_id:   The ID of the repository to create the review
+                         request against.
+
+
+    Optional parameters:
+
+      * submit_as:       The optional user to submit the review request as.
+                         This requires that the actual logged in user is
+                         either a superuser or has the
+                         "reviews.can_submit_as_another_user" property.
+      * changenum:       The optional changenumber to look up for the review
+                         request details. This only works with repositories
+                         that support changesets.
+
+    Returned keys:
+
+      * 'review_request': The resulting review request
+
+    Errors:
+
+      * INVALID_REPOSITORY
+      * CHANGE_NUMBER_IN_USE
+      * INVALID_CHANGE_NUMBER
+    """
+    try:
+        repository_path = request.POST.get('repository_path', None)
+        repository_id = request.POST.get('repository_id', None)
+        submit_as = request.POST.get('submit_as')
+
+        if submit_as and request.user.username != submit_as:
+            if not request.user.has_perm('reviews.can_submit_as_another_user'):
+                return WebAPIResponseError(request, PERMISSION_DENIED)
+            try:
+                user = User.objects.get(username=submit_as)
+            except User.DoesNotExist:
+                return WebAPIResponseError(request, INVALID_USER)
+        else:
+            user = request.user
+
+        if repository_path == None and repository_id == None:
+            return WebAPIResponseError(request, MISSING_REPOSITORY)
+
+        if repository_path:
+            repository = Repository.objects.get(
+                Q(path=repository_path) |
+                Q(mirror_path=repository_path))
+        else:
+            repository = Repository.objects.get(id=repository_id)
+
+        review_request = ReviewRequest.objects.create(
+            user, repository, request.POST.get('changenum', None))
+
+        return WebAPIResponse(request, {'review_request': review_request})
+    except Repository.DoesNotExist, e:
+        return WebAPIResponseError(request, INVALID_REPOSITORY,
+                                 {'repository_path': repository_path})
+    except ChangeNumberInUseError, e:
+        return WebAPIResponseError(request, CHANGE_NUMBER_IN_USE,
+                                 {'review_request': e.review_request})
+    except InvalidChangeNumberError:
+        return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
+    except EmptyChangeSetError:
+        return WebAPIResponseError(request, EMPTY_CHANGESET)
+
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def review_request(request, review_request_id, *args, **kwargs):
+    """
+    Returns the review request with the specified ID.
+    """
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    return WebAPIResponse(request, {'review_request': review_request})
+
+
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_request_last_update(request, review_request_id, *args, **kwargs):
     """
@@ -170,6 +394,7 @@ def review_request_last_update(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_request_by_changenum(request, repository_id, changenum,
                                 *args, **kwargs):
@@ -188,9 +413,79 @@ def review_request_by_changenum(request, repository_id, changenum,
         return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
-def review_request_update_changenum(request, review_request_id, changenum,
-                                    *args, **kwargs):
+def review_request_star(request, review_request_id, *args, **kwargs):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+    profile.starred_review_requests.add(review_request)
+    profile.save()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_request_unstar(request, review_request_id, *args, **kwargs):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+
+    if not profile_is_new:
+        profile.starred_review_requests.remove(review_request)
+        profile.save()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_request_publish(request, review_request_id, *args, **kwargs):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        if not review_request.can_publish():
+            return WebAPIResponseError(request, NOTHING_TO_PUBLISH)
+        review_request.publish(request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        return HttpResponseForbidden()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_request_close(request, review_request_id, type, *args, **kwargs):
+    type_map = {
+        'submitted': ReviewRequest.SUBMITTED,
+        'discarded': ReviewRequest.DISCARDED,
+    }
+
+    if type not in type_map:
+        return WebAPIResponseError(request, INVALID_ATTRIBUTE,
+                                   {'attribute': type})
+
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.close(type_map[type], request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        return HttpResponseForbidden()
+
+    return WebAPIResponse(request)
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_request_update_changenum(request, review_request_id, changenum):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         review_request.update_changenum(changenum, request.user)
@@ -201,7 +496,32 @@ def review_request_update_changenum(request, review_request_id, changenum,
 
     return WebAPIResponse(request)
 
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_request_reopen(request, review_request_id, *args, **kwargs):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.reopen(request.user)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+    except PermissionError:
+        return HttpResponseForbidden()
 
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_permission_required('reviews.delete_reviewrequest')
+def review_request_delete(request, review_request_id, *args, **kwargs):
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+        review_request.delete()
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    return WebAPIResponse(request)
+
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_updated(request, review_request_id, *args, **kwargs):
     """
@@ -217,6 +537,24 @@ def review_request_updated(request, review_request_id, *args, **kwargs):
         'updated' : review_request.get_new_reviews(request.user).count() > 0
         })
 
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def review_request_list(request, func, api_format='json', *args, **kwargs):
+    """
+    Returns a list of review requests.
+
+    Optional parameters:
+
+      * status: The status of the returned review requests. This defaults
+                to "pending".
+    """
+    status = string_to_status(request.GET.get('status', 'pending'))
+    return WebAPIResponse(request, {
+        'review_requests': func(user=request.user, status=status, **kwargs)
+    })
+
+
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_requests(request, func, api_format='json', *args, **kwargs):
     """
@@ -233,6 +571,64 @@ def count_review_requests(request, func, api_format='json', *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def review_request_diffsets(request, review_request_id, *args, **kwargs):
+    """
+    Returns a list of review request diffsets.
+    """
+    try:
+        review_request = ReviewRequest.objects.get(pk=review_request_id)
+    except ReviewRequest.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not review_request.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    return WebAPIResponse(request, {
+        'diffsets': review_request.diffset_history.diffsets.all(),
+    })
+
+
+def _get_and_validate_review(request, review_request_id, review_id):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = get_object_or_404(Review, pk=review_id)
+
+    if review.review_request != review_request or review.base_reply_to != None:
+        raise Http404()
+
+    if not review.public and review.user != request.user:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    return review
+
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def review(request, review_request_id, review_id, *args, **kwargs):
+    review = _get_and_validate_review(request, review_request_id, review_id)
+
+    if isinstance(review, WebAPIResponseError):
+        return review
+
+    return WebAPIResponse(request, {'review': review})
+
+
+def _get_reviews(review_request):
+    return review_request.reviews.filter(public=True,
+                                         base_reply_to__isnull=True)
+
+
+@webapi_deprecated_in_1_5
+@webapi_check_login_required
+def review_list(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    return WebAPIResponse(request, {
+        'reviews': _get_reviews(review_request)
+    })
+
+
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -241,6 +637,7 @@ def count_review_list(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_comments_list(request, review_request_id, review_id,
                          *args, **kwargs):
@@ -255,6 +652,7 @@ def review_comments_list(request, review_request_id, review_id,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_comments(request, review_request_id, review_id,
                           *args, **kwargs):
@@ -266,12 +664,221 @@ def count_review_comments(request, review_request_id, review_id,
     return WebAPIResponse(request, {'count': review.comments.count()})
 
 
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_request_draft(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+    except ReviewRequestDraft.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    return WebAPIResponse(request, {'review_request_draft': draft})
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def review_request_draft_discard(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
+    except ReviewRequestDraft.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not review_request.is_mutable_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    draft.delete()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def review_request_draft_publish(request, review_request_id, *args, **kwargs):
+    try:
+        draft = ReviewRequestDraft.objects.get(review_request=review_request_id)
+        review_request = draft.review_request
+    except ReviewRequestDraft.DoesNotExist:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not review_request.is_mutable_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    changes = draft.publish(user=request.user)
+    draft.delete()
+
+    return WebAPIResponse(request)
+
+
+def find_user(username):
+    username = username.strip()
+
+    try:
+        return User.objects.get(username=username)
+    except User.DoesNotExist:
+        for backend in auth.get_backends():
+            try:
+                user = backend.get_or_create_user(username)
+            except:
+                pass
+            if user:
+                return user
+    return None
+
+
 def _prepare_draft(request, review_request):
     if not review_request.is_mutable_by(request.user):
         raise PermissionDenied
     return ReviewRequestDraft.create(review_request)
 
 
+def _set_draft_field_data(draft, field_name, data):
+    if field_name == "target_groups" or field_name == "target_people":
+        values = re.split(r",\s*", data)
+        target = getattr(draft, field_name)
+        target.clear()
+
+        invalid_entries = []
+
+        for value in values:
+            # Prevent problems if the user leaves a trailing comma,
+            # generating an empty value.
+            if not value:
+                continue
+
+            try:
+                if field_name == "target_groups":
+                    obj = Group.objects.get(Q(name__iexact=value) |
+                                            Q(display_name__iexact=value))
+                elif field_name == "target_people":
+                    obj = find_user(username=value)
+
+                target.add(obj)
+            except:
+                invalid_entries.append(value)
+
+        return target.all(), invalid_entries
+    else:
+        setattr(draft, field_name, data)
+
+        if field_name == 'bugs_closed':
+            def _sanitize_bug_ids(entries):
+                for bug in (x.strip() for x in entries.split(',')):
+                    if not bug:
+                        continue
+                    # RB stores bug numbers as numbers, but many people have the
+                    # habit of prepending #, so filter it out:
+                    if bug[0] == '#':
+                        bug = bug[1:]
+                    yield bug
+            data = list(_sanitize_bug_ids(data))
+
+        return data, None
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def review_request_draft_set_field(request, review_request_id, field_name,
+                                   *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if field_name == 'summary' and '\n' in request.POST['value']:
+        return WebAPIResponseError(request, INVALID_FORM_DATA,
+            {'attribute': field_name,
+             'detail': 'Summary cannot contain newlines'})
+
+    #if not request.POST['value']:
+    #    return WebAPIResponseError(request, MISSING_ATTRIBUTE,
+    #                               {'attribute': field_name})
+
+    m = re.match(r'screenshot_(?P<id>[0-9]+)_caption', field_name)
+    if m:
+        try:
+            screenshot = Screenshot.objects.get(id=int(m.group('id')))
+        except:
+            return WebAPIResponseError(request, INVALID_ATTRIBUTE,
+                                       {'attribute': field_name})
+
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
+        screenshot.draft_caption = data = request.POST['value']
+        screenshot.save()
+        draft.save()
+
+        return WebAPIResponse(request, {field_name: data})
+
+    if field_name == "changedescription":
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
+        draft.changedesc.text = data = request.POST['value']
+        draft.changedesc.save()
+        draft.save()
+
+        return WebAPIResponse(request, {field_name: data})
+
+    if not hasattr(review_request, field_name):
+        return WebAPIResponseError(request, INVALID_ATTRIBUTE,
+                                   {'attribute': field_name})
+
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    result = {}
+
+    result[field_name], result['invalid_' + field_name] = \
+        _set_draft_field_data(draft, field_name, request.POST['value'])
+
+    draft.save()
+
+    return WebAPIResponse(request, result)
+
+
+mutable_review_request_fields = [
+    'status', 'public', 'summary', 'description', 'testing_done',
+    'bugs_closed', 'branch', 'target_groups', 'target_people'
+]
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def review_request_draft_set(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    try:
+        draft = _prepare_draft(request, review_request)
+    except PermissionDenied:
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    result = {}
+
+    for field_name in mutable_review_request_fields:
+        if request.POST.has_key(field_name):
+            value, result['invalid_' + field_name] = \
+                _set_draft_field_data(draft, field_name,
+                                      request.POST[field_name])
+
+    draft.save()
+
+    result['draft'] = draft
+
+    return WebAPIResponse(request, result)
+
+
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id,
@@ -301,6 +908,51 @@ def review_request_draft_update_from_changenum(request, review_request_id,
     })
 
 
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def review_draft_save(request, review_request_id, publish=False,
+                      *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    review, review_is_new = Review.objects.get_or_create(
+        user=request.user,
+        review_request=review_request,
+        public=False,
+        base_reply_to__isnull=True)
+
+    if 'shipit' in request.POST:
+        review.ship_it = request.POST['shipit'] in (1, "1", True, "True")
+
+    if 'body_top' in request.POST:
+        review.body_top = request.POST['body_top']
+
+    if 'body_bottom' in request.POST:
+        review.body_bottom = request.POST['body_bottom']
+
+    if publish:
+        review.publish(user=request.user)
+    else:
+        review.save()
+
+    return WebAPIResponse(request)
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def review_draft_delete(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = review_request.get_pending_review(request.user)
+
+    if review:
+        review.delete()
+        return WebAPIResponse(request)
+    else:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_draft_comments(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -319,6 +971,7 @@ def review_draft_comments(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_reply_draft(request, review_request_id, review_id, *args, **kwargs):
@@ -424,6 +1077,22 @@ def review_reply_draft(request, review_request_id, review_id, *args, **kwargs):
 
     return WebAPIResponse(request, result)
 
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+def review_draft(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review = review_request.get_pending_review(request.user)
+
+    if review:
+        return WebAPIResponse(request, {
+            'review': review,
+        })
+    else:
+        return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_reply_draft_save(request, review_request_id, review_id,
@@ -442,6 +1111,7 @@ def review_reply_draft_save(request, review_request_id, review_id,
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_reply_draft_discard(request, review_request_id, review_id,
@@ -459,6 +1129,7 @@ def review_reply_draft_discard(request, review_request_id, review_id,
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_replies_list(request, review_request_id, review_id,
                         *args, **kwargs):
@@ -471,6 +1142,7 @@ def review_replies_list(request, review_request_id, review_id,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_replies(request, review_request_id, review_id,
                         *args, **kwargs):
@@ -483,6 +1155,106 @@ def count_review_replies(request, review_request_id, review_id,
     })
 
 
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def new_diff(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_mutable_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    form_data = request.POST.copy()
+    form = UploadDiffForm(review_request, form_data, request.FILES)
+
+    if not form.is_valid():
+        return WebAPIResponseFormError(request, form)
+
+    try:
+        diffset = form.create(request.FILES['path'],
+                              request.FILES.get('parent_diff_path'))
+    except FileNotFoundError, e:
+        return WebAPIResponseError(request, REPO_FILE_NOT_FOUND, {
+            'file': e.path,
+            'revision': e.revision
+        })
+    except EmptyDiffError, e:
+        return WebAPIResponseError(request, INVALID_FORM_DATA, {
+            'fields': {
+                'path': [str(e)]
+            }
+        })
+    except Exception, e:
+        # This could be very wrong, but at least they'll see the error.
+        # We probably want a new error type for this.
+        logging.error("Error uploading new diff: %s", e, exc_info=1)
+
+        return WebAPIResponseError(request, INVALID_FORM_DATA, {
+            'fields': {
+                'path': [str(e)]
+            }
+        })
+
+    discarded_diffset = None
+
+    try:
+        draft = review_request.draft.get()
+
+        if draft.diffset and draft.diffset != diffset:
+            discarded_diffset = draft.diffset
+    except ReviewRequestDraft.DoesNotExist:
+        try:
+            draft = _prepare_draft(request, review_request)
+        except PermissionDenied:
+            return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    draft.diffset = diffset
+
+    # We only want to add default reviewers the first time.  Was bug 318.
+    if review_request.diffset_history.diffsets.count() == 0:
+        draft.add_default_reviewers();
+
+    draft.save()
+
+    if discarded_diffset:
+        discarded_diffset.delete()
+
+    # E-mail gets sent when the draft is saved.
+
+    return WebAPIResponse(request, {'diffset_id': diffset.id})
+
+
+@webapi_deprecated_in_1_5
+@webapi_login_required
+@require_POST
+def new_screenshot(request, review_request_id, *args, **kwargs):
+    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_mutable_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
+    form_data = request.POST.copy()
+    form = UploadScreenshotForm(form_data, request.FILES)
+
+    if not form.is_valid():
+        return WebAPIResponseFormError(request, form)
+
+    try:
+        screenshot = form.create(request.FILES['path'], review_request)
+    except ValueError, e:
+        return WebAPIResponseError(request, INVALID_FORM_DATA, {
+            'fields': {
+                'path': [str(e)],
+            },
+        })
+
+    return WebAPIResponse(request, {
+        'screenshot_id': screenshot.id, # For backwards-compatibility
+        'screenshot': screenshot,
+    })
+
+
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
@@ -579,6 +1351,7 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h,
                         *args, **kwargs):
