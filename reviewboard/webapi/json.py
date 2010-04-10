@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
-from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
+from djblets.webapi.core import WebAPIResponse, \
                                 WebAPIResponseError, \
                                 WebAPIResponseFormError
 from djblets.webapi.decorators import webapi, \
@@ -43,177 +43,19 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required
-
-
-#
-# Standard error messages
-#
-UNSPECIFIED_DIFF_REVISION = WebAPIError(200, "Diff revision not specified",
-                                        http_status=400) # 400 Bad Request)
-INVALID_DIFF_REVISION     = WebAPIError(201, "Invalid diff revision",
-                                        http_status=404) # 404 Not Found
-INVALID_ACTION            = WebAPIError(202, "Invalid action specified",
-                                        http_status=400) # 400 Bad Request
-INVALID_CHANGE_NUMBER     = WebAPIError(203, "The change number specified "
-                                             "could not be found",
-                                        http_status=404) # 404 Not Found
-CHANGE_NUMBER_IN_USE      = WebAPIError(204, "The change number specified "
-                                             "has already been used",
-                                        http_status=409) # 409 Conflict
-MISSING_REPOSITORY        = WebAPIError(205, "A repository path must be "
-                                             "specified",
-                                        http_status=400) # 400 Bad Request
-INVALID_REPOSITORY        = WebAPIError(206, "The repository path specified "
-                                             "is not in the list of known "
-                                             "repositories",
-                                        http_status=400) # 400 Bad Request
-REPO_FILE_NOT_FOUND       = WebAPIError(207, "The file was not found in the "
-                                             "repository",
-                                        http_status=400) # 400 Bad Request
-INVALID_USER              = WebAPIError(208, "User does not exist",
-                                        http_status=400) # 400 Bad Request
-REPO_NOT_IMPLEMENTED      = WebAPIError(209, "The specified repository is "
-                                             "not able to perform this action",
-                                        http_status=501) # 501 Not Implemented
-REPO_INFO_ERROR           = WebAPIError(210, "There was an error fetching "
-                                             "extended information for this "
-                                             "repository.",
-                                        http_status=500) # 500 Internal Server
-                                                         #     Error
-NOTHING_TO_PUBLISH        = WebAPIError(211, "You attempted to publish a "
-                                             "review request that doesn't "
-                                             "have an associated draft.",
-                                        http_status=400) # 400 Bad Request
-EMPTY_CHANGESET           = WebAPIError(212, "The change number specified "
-                                             "represents an empty changeset",
-                                        http_status=400) # 400 Bad Request
-
-
-class ReviewBoardAPIEncoder(WebAPIEncoder):
-    def encode(self, o, *args, **kwargs):
-        if isinstance(o, Group):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'display_name': o.display_name,
-                'mailing_list': o.mailing_list,
-                'url': o.get_absolute_url(),
-            }
-        elif isinstance(o, ReviewRequest):
-            if o.bugs_closed:
-                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
-            else:
-                bugs_closed = ''
-
-            return {
-                'id': o.id,
-                'submitter': o.submitter,
-                'time_added': o.time_added,
-                'last_updated': o.last_updated,
-                'status': status_to_string(o.status),
-                'public': o.public,
-                'changenum': o.changenum,
-                'repository': o.repository,
-                'summary': o.summary,
-                'description': o.description,
-                'testing_done': o.testing_done,
-                'bugs_closed': bugs_closed,
-                'branch': o.branch,
-                'target_groups': o.target_groups.all(),
-                'target_people': o.target_people.all(),
-            }
-        elif isinstance(o, ReviewRequestDraft):
-            if o.bugs_closed != "":
-                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
-            else:
-                bugs_closed = []
-
-            return {
-                'id': o.id,
-                'review_request': o.review_request,
-                'last_updated': o.last_updated,
-                'summary': o.summary,
-                'description': o.description,
-                'testing_done': o.testing_done,
-                'bugs_closed': bugs_closed,
-                'branch': o.branch,
-                'target_groups': o.target_groups.all(),
-                'target_people': o.target_people.all(),
-            }
-        elif isinstance(o, Review):
-            return {
-                'id': o.id,
-                'user': o.user,
-                'timestamp': o.timestamp,
-                'public': o.public,
-                'ship_it': o.ship_it,
-                'body_top': o.body_top,
-                'body_bottom': o.body_bottom,
-                'comments': o.comments.all(),
-            }
-        elif isinstance(o, Comment):
-            review = o.review.get()
-            return {
-                'id': o.id,
-                'filediff': o.filediff,
-                'interfilediff': o.interfilediff,
-                'text': o.text,
-                'timestamp': o.timestamp,
-                'timesince': timesince(o.timestamp),
-                'first_line': o.first_line,
-                'num_lines': o.num_lines,
-                'public': review.public,
-                'user': review.user,
-            }
-        elif isinstance(o, ScreenshotComment):
-            review = o.review.get()
-            return {
-                'id': o.id,
-                'screenshot': o.screenshot,
-                'text': o.text,
-                'timestamp': o.timestamp,
-                'timesince': timesince(o.timestamp),
-                'public': review.public,
-                'user': review.user,
-                'x': o.x,
-                'y': o.y,
-                'w': o.w,
-                'h': o.h,
-            }
-        elif isinstance(o, Screenshot):
-            return {
-                'id': o.id,
-                'caption': o.caption,
-                'title': u'Screenshot: %s' % (o.caption or o.image.name),
-                'image_url': o.get_absolute_url(),
-                'thumbnail_url': o.get_thumbnail_url(),
-            }
-        elif isinstance(o, FileDiff):
-            return {
-                'id': o.id,
-                'diffset': o.diffset,
-                'source_file': o.source_file,
-                'dest_file': o.dest_file,
-                'source_revision': o.source_revision,
-                'dest_detail': o.dest_detail,
-            }
-        elif isinstance(o, DiffSet):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'revision': o.revision,
-                'timestamp': o.timestamp,
-                'repository': o.repository,
-            }
-        elif isinstance(o, Repository):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'path': o.path,
-                'tool': o.tool.name
-            }
-        else:
-            return super(ReviewBoardAPIEncoder, self).encode(o, *args, **kwargs)
+from reviewboard.webapi.errors import UNSPECIFIED_DIFF_REVISION, \
+                                      INVALID_DIFF_REVISION, \
+                                      INVALID_ACTION, \
+                                      INVALID_CHANGE_NUMBER, \
+                                      CHANGE_NUMBER_IN_USE, \
+                                      MISSING_REPOSITORY, \
+                                      INVALID_REPOSITORY, \
+                                      REPO_FILE_NOT_FOUND, \
+                                      INVALID_USER, \
+                                      REPO_NOT_IMPLEMENTED, \
+                                      REPO_INFO_ERROR, \
+                                      NOTHING_TO_PUBLISH, \
+                                      EMPTY_CHANGESET
 
 
 def status_to_string(status):
@@ -710,7 +552,7 @@ def count_review_requests(request, func, api_format='json', *args, **kwargs):
 
 
 @webapi_check_login_required
-def review_request_diffsets(request, review_request_id):
+def review_request_diffsets(request, review_request_id, *args, **kwargs):
     """
     Returns a list of review request diffsets.
     """
