@@ -1037,8 +1037,65 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
     def test_post_diff_comments_with_interdiff(self):
         """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
-        diff_comment_text = "Test diff comment"
+        comment_text = "Test diff comment"
 
+        rsp, review_request_id, review_id, interfilediff_id = \
+            self._common_post_interdiff_comments(comment_text)
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review_request_id, review_id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
+
+    def test_delete_diff_comment_with_interdiff(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/diff-comments/<id>/ API"""
+        comment_text = "This is a test comment."
+
+        rsp, review_request_id, review_id = \
+            self._common_post_interdiff_comments(comment_text)
+
+        rsp = self.apiDelete(rsp['diff_comment']['href'])
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review_request_id, review_id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 0)
+
+    def test_get_diff_comments_with_interdiff(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
+        comment_text = "Test diff comment"
+
+        rsp, review_request_id, review_id, interfilediff_id = \
+            self._common_post_interdiff_comments(comment_text)
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review_request_id, review_id), {
+            'interdiff_fileid': interfilediff_id,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
+
+    def test_delete_diff_comment_with_interdiff(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/diff-comments/<id>/ API"""
+        comment_text = "This is a test comment."
+
+        rsp, review_request_id, review_id, interfilediff_id = \
+            self._common_post_interdiff_comments(comment_text)
+
+        rsp = self.apiDelete(rsp['diff_comment']['href'])
+
+        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
+                          (review_request_id, review_id))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 0)
+
+    def _common_post_interdiff_comments(self, comment_text):
         # Post the review request
         rsp = self._postNewReviewRequest()
         review_request = ReviewRequest.objects.get(
@@ -1061,37 +1118,12 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('review' in rsp)
         review_id = rsp['review']['id']
 
-        self._postNewDiffComment(review_request, review_id, diff_comment_text,
-                                 filediff_id=filediff.id,
-                                 interfilediff_id=interfilediff.id)
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       comment_text,
+                                       filediff_id=filediff.id,
+                                       interfilediff_id=interfilediff.id)
 
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/diff-comments" %
-                          (review_request.id, review_id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 1)
-        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
-
-    def testInterDiffCommentsDelete(self):
-        """Testing the reviewrequests/diff/file/line/comments interdiff delete API"""
-        comment_text = "This is a test comment."
-
-        review_request, diffset, interdiffset, filediff, interfilediff = \
-            self.testInterDiffCommentsSet()
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10),
-            {
-                'action': 'delete',
-                'num_lines': 5,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
+        return rsp, review_request.id, review_id, interfilediff.id
 
 
 class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
@@ -1502,25 +1534,6 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
             self.assertEqual(rsp['diff_comments'][i]['text'], comments[i].text)
             self.assertEqual(rsp['diff_comments'][i]['first_line'],
                              comments[i].first_line)
-
-    def testInterDiffCommentsList(self):
-        """Testing the reviewrequests/diff/file/line/comments interdiff list API"""
-        review_request, diffset, interdiffset, filediff, interfilediff = \
-            self.testInterDiffCommentsSet()
-
-        rsp = self.apiGet(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10))
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comments = Comment.objects.filter(filediff=filediff,
-                                          interfilediff=interfilediff)
-        self.assertEqual(len(rsp['comments']), comments.count())
-
-        for i in range(0, len(rsp['comments'])):
-            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
 
 
 class WebAPITests():#BaseWebAPITestCase):

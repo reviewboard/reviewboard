@@ -256,6 +256,10 @@ class ReviewCommentResource(BaseCommentResource):
             'review_id': review.id,
         }
 
+    def has_delete_permissions(self, request, comment, *args, **kwargs):
+        review = comment.review.get()
+        return not review.public and review.user == request.user
+
     @webapi_login_required
     def create(self, request, *args, **kwargs):
         try:
