@@ -103,7 +103,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         """Testing the groups/star API with Does Not Exist error"""
         rsp = self.apiGet("groups/invalidgroup/star", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testGroupUnstar(self):
         """Testing the groups/unstar API"""
@@ -119,7 +119,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         """Testing the groups/unstar API with Does Not Exist error"""
         rsp = self.apiGet("groups/invalidgroup/unstar", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestList(self):
         """Testing the reviewrequests/all API"""
@@ -282,7 +282,7 @@ class WebAPITests(TestCase, EmailTestHelper):
             'repository_path': 'gobbledygook',
         }, 400)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     def testNewReviewRequestAsUser(self):
         """Testing the reviewrequests/new API with submit_as"""
@@ -307,7 +307,7 @@ class WebAPITests(TestCase, EmailTestHelper):
             'submit_as': 'doc',
         }, 403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequest(self):
         """Testing the reviewrequests/<id> API"""
@@ -325,7 +325,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiGet("reviewrequests/%s" % review_request.id,
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestByChangenum(self):
         """Testing the reviewrequests/repository/changenum API"""
@@ -353,7 +353,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         """Testing the reviewrequests/star API with Does Not Exist error"""
         rsp = self.apiGet("reviewrequests/999/star", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestUnstar(self):
         """Testing the reviewrequests/unstar API"""
@@ -370,7 +370,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         """Testing the reviewrequests/unstar API with Does Not Exist error"""
         rsp = self.apiGet("reviewrequests/999/unstar", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDelete(self):
         """Testing the reviewrequests/delete API"""
@@ -393,7 +393,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id,
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestDeleteDoesNotExist(self):
         """Testing the reviewrequests/delete API with Does Not Exist error"""
@@ -404,7 +404,7 @@ class WebAPITests(TestCase, EmailTestHelper):
 
         rsp = self.apiGet("reviewrequests/999/delete", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftSet(self):
         """Testing the reviewrequests/draft/set API"""
@@ -461,7 +461,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         }, 400)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_ATTRIBUTE.code)
+        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
         self.assertEqual(rsp['attribute'], 'foobar')
 
     def testReviewRequestPublishSendsEmail(self):
@@ -486,7 +486,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         }, 403)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     # draft/save is deprecated. Tests were copied to *DraftPublish*().
     # This is still here only to make sure we don't break backwards
@@ -516,7 +516,7 @@ class WebAPITests(TestCase, EmailTestHelper):
                            expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftPublish(self):
         """Testing the reviewrequests/draft/publish API"""
@@ -548,7 +548,7 @@ class WebAPITests(TestCase, EmailTestHelper):
                            expected_status=404)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftDiscard(self):
         """Testing the reviewrequests/draft/discard API"""
@@ -651,7 +651,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
                            review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewDraftComments(self):
         """Testing the reviewrequests/reviews/draft/comments API"""
@@ -886,7 +886,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id,
                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('path' in rsp['fields'])
         self.assert_('basedir' in rsp['fields'])
 
@@ -922,7 +922,7 @@ class WebAPITests(TestCase, EmailTestHelper):
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def postNewDiffComment(self, review_request, comment_text):
         """Utility function for posting a new diff comment."""
