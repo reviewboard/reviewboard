@@ -41,8 +41,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         self.client.login(username="grumpy", password="grumpy")
         self.user = User.objects.get(username="grumpy")
 
-        self.reviewrequests_url = \
-            reverse('review_requests-resource', kwargs={'api_format': 'json'})
+        self.reviewrequests_url = reverse('review_requests-resource')
 
         self.base_url = 'http://testserver'
 
@@ -116,10 +115,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def _normalize_path(self, path):
         if path.startswith(self.base_url):
             return path[len(self.base_url):]
-        elif path.startswith('/api/json'):
+        elif path.startswith('/api'):
             return path
         else:
-            return '/api/json/%s/' % path
+            return '/api/%s/' % path
 
     def _get_result(self, response, expected_status):
         if expected_status == 204:
@@ -277,7 +276,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_put_group_action_star_with_does_not_exist_error(self):
         """Testing the PUT groups/?action=star API with Does Not Exist error"""
-        rsp = self.apiPut("groups/invalidgroup/star", expected_status=404)
+        rsp = self.apiPut("groups/invalidgroup", {
+            'action': 'star',
+        }, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -517,7 +518,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         """Testing the POST reviewrequests/ API with Invalid Repository error"""
         rsp = self.apiPost("reviewrequests", {
             'repository_path': 'gobbledygook',
-        })
+        }, expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
@@ -542,7 +543,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         rsp = self.apiPost("reviewrequests", {
             'repository_path': self.repository.path,
             'submit_as': 'doc',
-        })
+        }, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -559,7 +560,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         """Testing the GET reviewrequests/<id>/ API with Permission Denied error"""
         review_request = ReviewRequest.objects.filter(public=False).\
             exclude(submitter=self.user)[0]
-        rsp = self.apiGet("reviewrequests/%s" % review_request.id)
+        rsp = self.apiGet("reviewrequests/%s" % review_request.id,
+                          expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -830,7 +832,6 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(response['Location'],
                          self.base_url + reverse('review-resource', kwargs={
-                             'api_format': 'json',
                              'review_request_id': review_request.id,
                              'review_id': review.id,
                          }))
@@ -1522,8 +1523,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
             self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
 
 
-
-class WebAPITests(BaseWebAPITestCase):
+class WebAPITests():#BaseWebAPITestCase):
     """Testing the webapi support."""
     def testScreenshotCommentsSet(self):
         """Testing the reviewrequests/s/comments set API"""
@@ -1609,7 +1609,7 @@ class WebAPITests(BaseWebAPITestCase):
                             "media", "rb", "images", "trophy.png")
 
 
-class DeprecatedWebAPITests(TestCase, EmailTestHelper):
+class DeprecatedWebAPITests():#TestCase, EmailTestHelper):
     """Testing the deprecated webapi support."""
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
