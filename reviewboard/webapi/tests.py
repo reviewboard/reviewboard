@@ -103,7 +103,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated groups/star API with Does Not Exist error"""
         rsp = self.apiGet("groups/invalidgroup/star")
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testGroupUnstar(self):
         """Testing the deprecated groups/unstar API"""
@@ -119,7 +119,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated groups/unstar API with Does Not Exist error"""
         rsp = self.apiGet("groups/invalidgroup/unstar")
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestList(self):
         """Testing the deprecated reviewrequests/all API"""
@@ -282,7 +282,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
             'repository_path': 'gobbledygook',
         })
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     def testNewReviewRequestAsUser(self):
         """Testing the deprecated reviewrequests/new API with submit_as"""
@@ -307,7 +307,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
             'submit_as': 'doc',
         })
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequest(self):
         """Testing the deprecated reviewrequests/<id> API"""
@@ -324,7 +324,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
             exclude(submitter=self.user)[0]
         rsp = self.apiGet("reviewrequests/%s" % review_request.id)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestByChangenum(self):
         """Testing the deprecated reviewrequests/repository/changenum API"""
@@ -352,7 +352,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated reviewrequests/star API with Does Not Exist error"""
         rsp = self.apiGet("reviewrequests/999/star")
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestUnstar(self):
         """Testing the deprecated reviewrequests/unstar API"""
@@ -369,7 +369,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated reviewrequests/unstar API with Does Not Exist error"""
         rsp = self.apiGet("reviewrequests/999/unstar")
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDelete(self):
         """Testing the deprecated reviewrequests/delete API"""
@@ -391,7 +391,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
             ReviewRequest.objects.exclude(submitter=self.user)[0].id
         rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def testReviewRequestDeleteDoesNotExist(self):
         """Testing the deprecated reviewrequests/delete API with Does Not Exist error"""
@@ -402,7 +402,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
         rsp = self.apiGet("reviewrequests/999/delete")
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftSet(self):
         """Testing the deprecated reviewrequests/draft/set API"""
@@ -459,7 +459,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         })
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_ATTRIBUTE.code)
+        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
         self.assertEqual(rsp['attribute'], 'foobar')
 
     def testReviewRequestPublishSendsEmail(self):
@@ -484,7 +484,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         })
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     # draft/save is deprecated. Tests were copied to *DraftPublish*().
     # This is still here only to make sure we don't break backwards
@@ -513,7 +513,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftPublish(self):
         """Testing the deprecated reviewrequests/draft/publish API"""
@@ -544,7 +544,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
                            review_request.id)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewRequestDraftDiscard(self):
         """Testing the deprecated reviewrequests/draft/discard API"""
@@ -647,7 +647,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
                            review_request.id)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.DOES_NOT_EXIST.code)
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def testReviewDraftComments(self):
         """Testing the deprecated reviewrequests/reviews/draft/comments API"""
@@ -881,7 +881,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
         rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id)
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('path' in rsp['fields'])
         self.assert_('basedir' in rsp['fields'])
 
@@ -917,7 +917,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         f.close()
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], webapi.PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def postNewDiffComment(self, review_request, comment_text):
         """Utility function for posting a new diff comment."""
