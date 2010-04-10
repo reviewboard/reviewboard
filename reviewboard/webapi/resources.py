@@ -48,30 +48,10 @@ class WebAPIResource(DjbletsWebAPIResource):
                                            *args, **kwargs).count()
             }
 
-            # Several old API functions had a field name other than 'count'.
-            # This is deprecated, but must be kept for backwards-compatibility.
-            field_alias = \
-                request.GET.get('_count-field-alias',
-                                kwargs.get('_count-field-alias', None))
-
-            if field_alias:
-                result[field_alias] = result['count']
-
             return 200, result
         else:
-            result = super(WebAPIResource, self).get_list(request,
-                                                          *args, **kwargs)
-
-            if request.GET.get('_first-result-only', False):
-                # This is intended ONLY for deprecated functions. It is not
-                # supported as a valid parameter for APIs and should be ignored.
-                # It may return broken results if used outside of its built-in
-                # intended uses.
-                result = (result[0], {
-                    self.name: result[1][self.name_plural][0],
-                })
-
-            return result
+            return super(WebAPIResource, self).get_list(request,
+                                                        *args, **kwargs)
 
     def verify_fields(self, request, mutable_fields, required_fields=[]):
         invalid_fields = {}
@@ -162,8 +142,6 @@ class FileDiffCommentResource(BaseCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        self._scan_deprecated_fields(request, **kwargs)
-
         invalid_fields = {}
 
         for field_name in request.POST:
@@ -218,17 +196,6 @@ class FileDiffCommentResource(BaseCommentResource):
         return 201, {
             self.name: comment,
         }
-
-    def _scan_deprecated_fields(self, request, **kwargs):
-        """Scans the keyword URL argument list for deprecated fields.
-
-        This is used for the old Review Board 1.0.x version of the
-        screenshot comment API, which passed these fields into the
-        URL. This will stick them back in request.POST.
-        """
-        for field_name in self.mutable_fields:
-            if field_name in kwargs:
-                request.POST[field_name] = kwargs[field_name]
 
 fileDiffCommentResource = FileDiffCommentResource()
 
@@ -528,7 +495,6 @@ class DiffSetResource(WebAPIResource):
 
         return 201, {
             'diffset': diffset,
-            'diffset_id': diffset.id, # Deprecated
         }
 
 diffSetResource = DiffSetResource()
@@ -802,89 +768,6 @@ class ReviewRequestDraftResource(WebAPIResource):
         draft.delete()
 
         return 200, {}
-
-    @webapi_login_required
-    def action_deprecated_set(self, request, review_request_id, *args, **kwargs):
-        code, result = self.update(request, review_request_id,
-                                   always_save=True, *args, **kwargs)
-
-        if code == INVALID_FORM_DATA:
-            code = 200
-
-            for field in result['fields']:
-                result['invalid_' + field] = result['fields'][field][0]
-
-            del result['fields']
-
-            # These really should succeed, given that they did in update().
-            # Better safe than sorry, though.
-            try:
-                review_request = ReviewRequest.objects.get(pk=review_request_id)
-            except ReviewRequest.DoesNotExist:
-                return DOES_NOT_EXIST
-
-            try:
-                draft = self.prepare_draft(request, review_request)
-            except PermissionDenied:
-                return PERMISSION_DENIED
-
-            result[self.name] = draft
-
-        return code, result
-
-    @webapi_login_required
-    def action_deprecated_set_field(self, request, review_request_id,
-                                    field_name, *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        try:
-            draft = self.prepare_draft(request, review_request)
-        except PermissionDenied:
-            return PERMISSION_DENIED
-
-        if field_name not in self.mutable_fields:
-            return INVALID_ATTRIBUTE, {
-                'attribute': field_name,
-            }
-
-        field_result, modified_objects, invalid = \
-            self._set_draft_field_data(draft, field_name,
-                                       request.POST['value'])
-
-        result = {}
-
-        if invalid:
-            if field_name == 'summary':
-                # The summary field returned an INVALID_FORM_DATA, rather
-                # than setting the invalid_summary field.
-                return INVALID_FORM_DATA, {
-                    'attribute': field_name,
-                    'detail': invalid[0]
-                }
-
-            result['invalid_' + field_name] = invalid[0]
-        else:
-            result[field_name] = field_result
-
-            for obj in modified_objects:
-                obj.save()
-
-            draft.save()
-
-        return 200, result
-
-    @webapi_login_required
-    def action_deprecated_discard(self, *args, **kwargs):
-        code, result = self.delete(*args, **kwargs)
-
-        if code == 204:
-            # Discard returned a 200 on success.
-            code = 200
-
-        return code, result
 
     def _set_draft_field_data(self, draft, field_name, data):
         result = None
@@ -1194,48 +1077,16 @@ class ReviewDraftScreenshotCommentResource(BaseScreenshotCommentResource):
 reviewDraftScreenshotCommentResource = ReviewDraftScreenshotCommentResource()
 
 
-class DeprecatedReviewDraftCommentsResource(WebAPIResource):
-    name = 'comment'
-    allowed_methods = ('GET',)
-
-    @webapi_check_login_required
-    def get(self, *args, **kwargs):
-        """Returns a list of combined diff and screenshot comments.
-
-        This is deprecated and is provided only for backwards-compatibility.
-        """
-        diff_result = reviewDraftCommentResource.get_list(*args, **kwargs)
-
-        if not isinstance(diff_result, tuple) or diff_result[0] != 200:
-            # This is an error
-            return diff_result
-
-        screenshot_result = \
-            reviewDraftScreenshotCommentResource.get_list(*args, **kwargs)
-
-        if (not isinstance(screenshot_result, tuple) or
-            screenshot_result[0] != 200):
-            # This is an error
-            return diff_result
-
-        return 200, {
-            'comments': diff_result[1]['diff_comments'],
-            'screenshot_comments': screenshot_result[1]['screenshot_comments'],
-        }
-
-
 class ReviewDraftResource(WebAPIResource):
     model = Review
     name = 'draft'
     name_plural = 'draft'
-    deprecated_fields = ('shipit',)
     mutable_fields = ('ship_it', 'body_top', 'body_bottom')
     fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
 
     list_child_resources = [
         reviewDraftCommentResource,
         reviewDraftScreenshotCommentResource,
-        DeprecatedReviewDraftCommentsResource()
     ]
 
     allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
@@ -1287,11 +1138,9 @@ class ReviewDraftResource(WebAPIResource):
                 # These are special names and can be ignored.
                 continue
 
-            if (field_name not in self.mutable_fields and
-                field_name not in self.deprecated_fields):
+            if field_name not in self.mutable_fields:
                 invalid_fields[field_name] = ['Field is not supported']
-            elif field_name in ('shipit', 'ship_it'):
-                # NOTE: "shipit" is deprecated.
+            elif field_name == 'ship_it':
                 review.ship_it = request.POST[field_name] in \
                                  (1, "1", True, "True")
             elif field_name in ('body_top', 'body_bottom'):
@@ -1330,16 +1179,6 @@ class ReviewDraftResource(WebAPIResource):
     @webapi_login_required
     def action_publish(self, *args, **kwargs):
         return self.update(publish=True, *args, **kwargs)
-
-    @webapi_login_required
-    def action_deprecated_delete(self, *args, **kwargs):
-        result = self.delete(*args, **kwargs)
-
-        if isinstance(result, tuple) and result[0] == 204:
-            # Delete returned a 200 on success.
-            return 200, result[1]
-
-        return result
 
 reviewDraftResource = ReviewDraftResource()
 
@@ -1387,19 +1226,8 @@ class ReviewReplyDraftResource(WebAPIResource):
 
         invalid_fields = {}
 
-        # XXX This is deprecated
-        if 'type' in request.POST:
-            context_type = request.POST['type']
-
-            if context_type in ('body_top', 'body_bottom'):
-                request.POST[context_type] = request.POST['value']
-            elif context_type == 'comment':
-                pass
-            elif context_type == 'screenshot_comment':
-                pass
-
         for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback', 'type', 'value'):
+            if field_name in ('action', 'method', 'callback'):
                 # These are special names and can be ignored.
                 continue
 
@@ -1463,22 +1291,11 @@ class ReviewReplyDraftResource(WebAPIResource):
     def action_publish(self, *args, **kwargs):
         return self.update(publish=True, *args, **kwargs)
 
-    @webapi_login_required
-    def action_deprecated_delete(self, *args, **kwargs):
-        result = self.delete(*args, **kwargs)
-
-        if isinstance(result, tuple) and result[0] == 204:
-            # Delete returned a 200 on success.
-            return 200, result[1]
-
-        return result
-
 reviewReplyDraftResource = ReviewReplyDraftResource()
 
 
 class BaseReviewResource(WebAPIResource):
     model = Review
-    deprecated_fields = ('shipit',)
     mutable_fields = ('ship_it', 'body_top', 'body_bottom')
     fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
 
@@ -1565,11 +1382,9 @@ class BaseReviewResource(WebAPIResource):
                 # These are special names and can be ignored.
                 continue
 
-            if (field_name not in self.mutable_fields and
-                field_name not in self.deprecated_fields):
+            if field_name not in self.mutable_fields:
                 invalid_fields[field_name] = ['Field is not supported']
-            elif field_name in ('shipit', 'ship_it'):
-                # NOTE: "shipit" is deprecated.
+            elif field_name == 'ship_it':
                 review.ship_it = request.POST[field_name] in \
                                  (1, "1", True, "True")
             elif field_name in ('body_top', 'body_bottom'):
@@ -1666,19 +1481,8 @@ class ReviewReplyResource(BaseReviewResource):
 
         invalid_fields = {}
 
-        # XXX This is deprecated
-        if 'type' in request.POST:
-            context_type = request.POST['type']
-
-            if context_type in ('body_top', 'body_bottom'):
-                request.POST[context_type] = request.POST['value']
-            elif context_type == 'comment':
-                pass
-            elif context_type == 'screenshot_comment':
-                pass
-
         for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback', 'type', 'value'):
+            if field_name in ('action', 'method', 'callback'):
                 # These are special names and can be ignored.
                 continue
 
@@ -1727,36 +1531,6 @@ class ReviewReplyResource(BaseReviewResource):
 reviewReplyResource = ReviewReplyResource()
 
 
-class DeprecatedReviewCommentsResource(WebAPIResource):
-    name = 'comment'
-    allowed_methods = ('GET',)
-
-    @webapi_check_login_required
-    def get(self, *args, **kwargs):
-        """Returns a list of combined diff and screenshot comments.
-
-        This is deprecated and is provided only for backwards-compatibility.
-        """
-        diff_result = reviewCommentResource.get_list(*args, **kwargs)
-
-        if not isinstance(diff_result, tuple) or diff_result[0] != 200:
-            # This is an error
-            return diff_result
-
-        screenshot_result = \
-            reviewScreenshotCommentResource.get_list(*args, **kwargs)
-
-        if (not isinstance(screenshot_result, tuple) or
-            screenshot_result[0] != 200):
-            # This is an error
-            return diff_result
-
-        return 200, {
-            'comments': diff_result[1]['diff_comments'],
-            'screenshot_comments': screenshot_result[1]['screenshot_comments'],
-        }
-
-
 class ReviewResource(BaseReviewResource):
     uri_object_key = 'review_id'
 
@@ -1765,7 +1539,6 @@ class ReviewResource(BaseReviewResource):
         reviewCommentResource,
         reviewReplyResource,
         reviewScreenshotCommentResource,
-        DeprecatedReviewCommentsResource()
     ]
 
     def get_base_reply_to_field(self, *args, **kwargs):
