@@ -1006,7 +1006,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'], review.comments.count())
 
     def test_post_diff_comments(self):
-        """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments API"""
+        """Testing the POST reviewrequests/<id>/reviews/<id>/diff-comments/ API"""
         diff_comment_text = "Test diff comment"
 
         # Post the review request
@@ -1536,93 +1536,145 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
                              comments[i].first_line)
 
 
-class WebAPITests():#BaseWebAPITestCase):
-    """Testing the webapi support."""
-    def testScreenshotCommentsSet(self):
-        """Testing the reviewrequests/s/comments set API"""
+class ScreenshotCommentResource(BaseWebAPITestCase):
+    """Testing the ScreenshotCommentResource APIs."""
+    def test_get_screenshot_comments(self):
+        """Testing the GET reviewrequests/<id>/screenshos/<id>/comments/ API"""
         comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
-        screenshot = self.testNewScreenshot()
-        review_request = screenshot.review_request.get()
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
 
-        rsp = self.postNewScreenshotComment(review_request, screenshot,
-                                            comment_text, x, y, w, h)
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        self.assertTrue('related_hrefs' in rsp['screenshot'])
+        self.assertTrue('screenshot-comments' in rsp['screenshot']['related_hrefs'])
+        comments_url = rsp['screenshot']['related_hrefs']['screenshot-comments']
 
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], comment_text)
-        self.assertEqual(rsp['comments'][0]['x'], x)
-        self.assertEqual(rsp['comments'][0]['y'], y)
-        self.assertEqual(rsp['comments'][0]['w'], w)
-        self.assertEqual(rsp['comments'][0]['h'], h)
+        # Make these public.
+        review_request.publish(self.user)
 
-        # Return this so it can be used in other tests.
-        return ScreenshotComment.objects.get(pk=rsp['comments'][0]['id'])
+        # Post the review.
+        rsp = self._postNewReview(review_request.id)
+        review = Review.objects.get(pk=rsp['review']['id'])
 
-    def testScreenshotCommentsDelete(self):
-        """Testing the reviewrequests/s/comments delete API"""
-        comment = self.testScreenshotCommentsSet()
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
+        self._postNewScreenshotComment(review_request, review.id, screenshot,
+                                      comment_text, x, y, w, h)
 
-        rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, comment.w, comment.h,
-             comment.x, comment.y),
-            {
-                'action': 'delete',
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
-    def testScreenshotCommentsDeleteNonExistant(self):
-        """Testing the reviewrequests/s/comments delete API with non-existant comment"""
-        comment = self.testScreenshotCommentsSet()
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, 1, 2, 3, 4),
-            {
-                'action': 'delete',
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
-    def testScreenshotCommentsList(self):
-        """Testing the reviewrequests/s/comments list API"""
-        comment = self.testScreenshotCommentsSet()
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        rsp = self.apiGet(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, comment.w, comment.h,
-             comment.x, comment.y))
-
+        rsp = self.apiGet(comments_url)
         self.assertEqual(rsp['stat'], 'ok')
 
         comments = ScreenshotComment.objects.filter(screenshot=screenshot)
-        self.assertEqual(len(rsp['comments']), comments.count())
+        self.assertEqual(len(rsp['screenshot_comments']), comments.count())
 
-        for i in range(0, len(rsp['comments'])):
-            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
-            self.assertEqual(rsp['comments'][i]['x'], comments[i].x)
-            self.assertEqual(rsp['comments'][i]['y'], comments[i].y)
-            self.assertEqual(rsp['comments'][i]['w'], comments[i].w)
-            self.assertEqual(rsp['comments'][i]['h'], comments[i].h)
+        rsp_comments = rsp['screenshot_comments']
 
-    def __getTrophyFilename(self):
-        return os.path.join(settings.HTDOCS_ROOT,
-                            "media", "rb", "images", "trophy.png")
+        for i in range(0, len(comments)):
+            self.assertEqual(rsp_comments[i]['text'], comments[i].text)
+            self.assertEqual(rsp_comments[i]['x'], comments[i].x)
+            self.assertEqual(rsp_comments[i]['y'], comments[i].y)
+            self.assertEqual(rsp_comments[i]['w'], comments[i].w)
+            self.assertEqual(rsp_comments[i]['h'], comments[i].h)
 
 
-class DeprecatedWebAPITests():#TestCase, EmailTestHelper):
+class ReviewScreenshotCommentResource(BaseWebAPITestCase):
+    """Testing the ScreenshotCommentResource APIs."""
+    def test_post_screenshot_comments(self):
+        """Testing the POST reviewrequests/<id>/reviews/<id>/screenshot-comments/ API"""
+        comment_text = "This is a test comment."
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        # Post the review.
+        rsp = self._postNewReview(review_request.id)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        rsp = self._postNewScreenshotComment(review_request, review.id,
+                                             screenshot, comment_text,
+                                             x, y, w, h)
+
+        self.assertEqual(rsp['screenshot_comment']['text'], comment_text)
+        self.assertEqual(rsp['screenshot_comment']['x'], x)
+        self.assertEqual(rsp['screenshot_comment']['y'], y)
+        self.assertEqual(rsp['screenshot_comment']['w'], w)
+        self.assertEqual(rsp['screenshot_comment']['h'], h)
+
+    def test_delete_screenshot_comment(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/screenshot-comments/<id>/ API"""
+        comment_text = "This is a test comment."
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        # Post the review.
+        rsp = self._postNewReview(review_request.id)
+        review = Review.objects.get(pk=rsp['review']['id'])
+        screenshot_comments_url = \
+            rsp['review']['related_hrefs']['screenshot-comments']
+
+        rsp = self._postNewScreenshotComment(review_request, review.id,
+                                             screenshot, comment_text,
+                                             x, y, w, h)
+
+        rsp = self.apiDelete(rsp['screenshot_comment']['href'])
+
+        rsp = self.apiGet(screenshot_comments_url)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('screenshot_comments' in rsp)
+        self.assertEqual(len(rsp['screenshot_comments']), 0)
+
+    def test_delete_screenshot_comment_with_does_not_exist_error(self):
+        """Testing the DELETE reviewrequests/<id>/reviews/<id>/screenshot-comments/<id>/ API with Does Not Exist error"""
+        comment_text = "This is a test comment."
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        # Post the review.
+        rsp = self._postNewReview(review_request.id)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        self.apiDelete('reviewrequests/%s/reviews/%s/screenshot-comments/123' %
+                       (review_request.id, review.id),
+                       expected_status=404)
+
+
+class DeprecatedWebAPITests(TestCase, EmailTestHelper):
     """Testing the deprecated webapi support."""
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 

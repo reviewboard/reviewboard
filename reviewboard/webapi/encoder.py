@@ -19,8 +19,8 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          reviewRequestDraftResource, \
                                          reviewResource, \
                                          reviewReplyResource, \
-                                         screenshotResource, \
-                                         screenshotCommentResource
+                                         reviewScreenshotCommentResource, \
+                                         screenshotResource
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -43,7 +43,7 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
         elif isinstance(o, Comment):
             resource = reviewCommentResource
         elif isinstance(o, ScreenshotComment):
-            resource = screenshotCommentResource
+            resource = reviewScreenshotCommentResource
         elif isinstance(o, Screenshot):
             resource = screenshotResource
         elif isinstance(o, FileDiff):
