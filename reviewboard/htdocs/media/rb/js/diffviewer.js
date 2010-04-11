@@ -325,12 +325,14 @@ $.extend(DiffCommentBlock.prototype, {
  * This handles all mouse actions on the diff, comment range selection, and
  * populatation of comment flags.
  *
- * @param {array} lines  The lines containing comments. See the
- *                       addCommentFlags documentation for the format.
+ * @param {array}  lines  The lines containing comments. See the
+ *                        addCommentFlags documentation for the format.
+ * @param {string} key    A unique ID identifying the file the comments
+ *                        belong too (typically based on the filediff_id).
  *
  * @return {jQuery} The diff file element.
  */
-$.fn.diffFile = function(lines) {
+$.fn.diffFile = function(lines, key) {
     return this.each(function() {
         var self = $(this);
 
@@ -560,7 +562,7 @@ $.fn.diffFile = function(lines) {
                 }
             });
 
-        addCommentFlags(self, lines);
+        addCommentFlags(self, lines, key);
 
         /*
          * Returns whether a particular cell is a line number cell.
@@ -913,8 +915,10 @@ function findLineNumRow(table, linenum, startRow, endRow) {
  *
  * @param {HTMLElement} table  The table to add flags to.
  * @param {object}      lines  The comment lines to add.
+ * @param {string}      key    A unique ID identifying the file the comments
+ *                             belong too (typically based on the filediff_id).
  */
-function addCommentFlags(table, lines) {
+function addCommentFlags(table, lines, key) {
     var remaining = {};
 
     var prevBeginRowIndex = undefined;
@@ -950,7 +954,7 @@ function addCommentFlags(table, lines) {
         }
     }
 
-    gHiddenComments = remaining;
+    gHiddenComments[key] = remaining;
 }
 
 
@@ -970,9 +974,10 @@ function expandChunk(fileid, filediff_id, revision, interdiff_revision,
                           chunk_index, function(html) {
         var tbody = $(link).parents("tbody.diff-header");
         var table = tbody.parent();
+        var key = "file" + filediff_id;
 
         tbody.replaceWith(html);
-        addCommentFlags(table, gHiddenComments);
+        addCommentFlags(table, gHiddenComments[key], key);
 
         /* The selection rectangle may not update -- bug #1353. */
         $(gAnchors[gSelectedAnchor]).highlightChunk();
@@ -1115,7 +1120,7 @@ function loadFileDiff(filediff_id, filediff_revision,
         }
 
         var diffTable = $("#file" + filediff_id);
-        diffTable.diffFile(comment_counts);
+        diffTable.diffFile(comment_counts, key);
 
         /* We must rebuild this every time. */
         updateAnchors(diffTable);
