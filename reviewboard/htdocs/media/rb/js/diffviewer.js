@@ -412,15 +412,29 @@ $.fn.diffFile = function(lines, key) {
                 }
 
                 if (isLineNumCell(node)) {
-                    /*
-                     * Selection was finalized. Create the comment block
-                     * and show the comment dialog.
-                     */
-                    var commentBlock = new DiffCommentBlock(selection.begin,
-                                                            selection.end,
-                                                            selection.beginNum,
-                                                            selection.endNum);
-                    commentBlock.showCommentDlg();
+                    if (selection.beginNum == selection.endNum) {
+                        /* See if we have a comment flag on the selected row. */
+                        var node = getActualRowNode($(e.target));
+                        var row = node.parent();
+                        var lineNumCell = row[0].cells[0];
+
+                        var commentFlag = $(".commentflag", lineNumCell);
+
+                        if (commentFlag.length == 1) {
+                            commentFlag.click()
+                        }
+                    } else {
+                        /*
+                         * Selection was finalized. Create the comment block
+                         * and show the comment dialog.
+                         */
+                        var commentBlock = new DiffCommentBlock(
+                            selection.begin,
+                            selection.end,
+                            selection.beginNum,
+                            selection.endNum);
+                        commentBlock.showCommentDlg();
+                    }
 
                     e.preventDefault();
                     e.stopPropagation();
