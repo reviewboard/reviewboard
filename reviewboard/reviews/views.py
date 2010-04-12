@@ -104,6 +104,8 @@ def review_detail(request, review_request_id,
 
     reviews = review_request.get_public_reviews()
     review = review_request.get_pending_review(request.user)
+    review_timestamp = 0
+    starred = False
 
     if request.user.is_authenticated():
         # If the review request is public and pending review and if the user
@@ -114,11 +116,10 @@ def review_detail(request, review_request_id,
             visited.timestamp = datetime.now()
             visited.save()
 
+        starred = review_request in \
+                  request.user.get_profile().starred_review_requests.all()
 
-    # Unlike review above, this covers replies as well.
-    review_timestamp = 0
-
-    if request.user.is_authenticated():
+        # Unlike review above, this covers replies as well.
         try:
             last_draft_review = Review.objects.filter(
                 review_request=review_request,
@@ -127,6 +128,7 @@ def review_detail(request, review_request_id,
             review_timestamp = last_draft_review.timestamp
         except Review.DoesNotExist:
             pass
+
 
     draft = review_request.get_draft(request.user)
 
@@ -138,9 +140,10 @@ def review_detail(request, review_request_id,
     else:
         draft_timestamp = ""
 
-    etag = "%s:%s:%s:%s:%s" % (request.user, last_activity_time,
-                               draft_timestamp, review_timestamp,
-                               settings.AJAX_SERIAL)
+    etag = "%s:%s:%s:%s:%s:%s" % (request.user, last_activity_time,
+                                  draft_timestamp, review_timestamp,
+                                  int(starred),
+                                  settings.AJAX_SERIAL)
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
