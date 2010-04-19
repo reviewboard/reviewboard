@@ -4,7 +4,7 @@
 #
 #   (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #
-VERSION = (1, 0, 6, 0, 'final', 0, True)
+VERSION = (1, 0, 7, 0, 'final', 0, True)
 
 
 def get_version_string():
@@ -45,3 +45,7 @@ def get_package_version():
 
 def is_release():
     return VERSION[6]
+
+
+__version_info__ = VERSION[:-1]
+__version__ = get_package_version()
