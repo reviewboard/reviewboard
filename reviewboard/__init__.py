@@ -73,3 +73,7 @@ def initialize():
     generate_cache_serials()
 
     signals.initializing.send(sender=None)
+
+
+__version_info__ = VERSION[:-1]
+__version__ = get_package_version()

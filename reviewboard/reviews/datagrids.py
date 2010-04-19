@@ -299,7 +299,19 @@ class ReviewCountColumn(Column):
         self.link_func = self.link_to_object
 
     def render_data(self, review_request):
-        return str(review_request.get_public_reviews().count())
+        return str(review_request.publicreviewcount_count)
+
+    def augment_queryset(self, queryset):
+        return queryset.extra(select={
+            'publicreviewcount_count': """
+                SELECT COUNT(*)
+                  FROM reviews_review
+                  WHERE reviews_review.public
+                    AND reviews_review.base_reply_to_id is NULL
+                    AND reviews_review.review_request_id =
+                        reviews_reviewrequest.id
+            """
+        })
 
     def link_to_object(self, review_request, value):
         return "%s#last-review" % review_request.get_absolute_url()
@@ -442,38 +454,30 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         user = self.request.user
 
         if view == 'outgoing':
-            self.queryset = ReviewRequest.objects.from_user(user.username,
-                                                            user,
-                                                            with_counts=True)
+            self.queryset = ReviewRequest.objects.from_user(user, user)
             self.title = _(u"All Outgoing Review Requests")
         elif view == 'mine':
-            self.queryset = ReviewRequest.objects.from_user(user.username, user,
-                                                            None,
-                                                            with_counts=True)
+            self.queryset = ReviewRequest.objects.from_user(user, user, None)
             self.title = _(u"All My Review Requests")
         elif view == 'to-me':
             self.queryset = \
-                ReviewRequest.objects.to_user_directly(user.username, user,
-                                                       with_counts=True)
+                ReviewRequest.objects.to_user_directly(user, user)
             self.title = _(u"Incoming Review Requests to Me")
         elif view == 'to-group':
             if group != "":
-                self.queryset = ReviewRequest.objects.to_group(group, user,
-                                                               with_counts=True)
+                self.queryset = ReviewRequest.objects.to_group(group, user)
                 self.title = _(u"Incoming Review Requests to %s") % group
             else:
                 self.queryset = \
-                    ReviewRequest.objects.to_user_groups(user.username, user,
-                                                         with_counts=True)
+                    ReviewRequest.objects.to_user_groups(user, user)
                 self.title = _(u"All Incoming Review Requests to My Groups")
         elif view == 'starred':
             profile = user.get_profile()
             self.queryset = \
-                profile.starred_review_requests.public(user, with_counts=True)
+                profile.starred_review_requests.public(user)
             self.title = _(u"Starred Review Requests")
         else: # "incoming" or invalid
-            self.queryset = ReviewRequest.objects.to_user(user.username, user,
-                                                          with_counts=True)
+            self.queryset = ReviewRequest.objects.to_user(user, user)
             self.title = _(u"All Incoming Review Requests")
 
         # Pre-load all querysets for the sidebar.
@@ -487,7 +491,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
         }
 
         q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
-        group_names = q.values_list('name', flat=True)
+        group_names = list(q.values_list('name', flat=True))
 
         q = Group.objects.filter(name__in=group_names)
         q = q.filter((Q(review_requests__public=True) |
