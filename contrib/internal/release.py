@@ -96,7 +96,7 @@ def main():
 
     tag_release()
 
-    if __version_info__[3] == 'final':
+    if __version_info__[4] == 'final':
         register_release()
 
 
