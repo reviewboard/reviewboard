@@ -1,5 +1,16 @@
 {% extends "datagrid/datagrid.html" %}
 
+{% block extrahead %}
+{# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}djblets/css/datagrid.css?{{MEDIA_SERIAL}}" />
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc5.min.js"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/datagrid.js?{{MEDIA_SERIAL}}"></script>
+{% endblock %}
+
 {% block scripts-post %}
 {{block.super}}
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>

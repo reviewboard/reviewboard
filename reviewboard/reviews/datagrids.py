@@ -33,6 +33,36 @@ class StarColumn(Column):
         return render_star(self.datagrid.request.user, obj)
 
 
+class ReviewGroupStarColumn(StarColumn):
+    """
+    A specialization of StarColumn that augments the SQL query to include
+    the starred calculation for review groups.
+    """
+    def augment_queryset(self, queryset):
+        user = self.datagrid.request.user
+
+        if user.is_anonymous():
+            return queryset
+
+        try:
+            profile = user.get_profile()
+        except Profile.DoesNotExist:
+            return queryset
+
+        print profile.starred_groups.all()
+        pks = profile.starred_groups.filter(
+            pk__in=self.datagrid.id_list).values_list('pk', flat=True)
+
+        self.all_starred = {}
+
+        for pk in pks:
+            self.all_starred[pk] = True
+
+        print self.all_starred
+
+        return queryset
+
+
 class ReviewRequestStarColumn(StarColumn):
     """
     A specialization of StarColumn that augments the SQL query to include
@@ -51,6 +81,8 @@ class ReviewRequestStarColumn(StarColumn):
 
         pks = profile.starred_review_requests.filter(
             pk__in=self.datagrid.id_list).values_list('pk', flat=True)
+
+        self.all_starred = {}
 
         for pk in pks:
             self.all_starred[pk] = True
@@ -538,7 +570,7 @@ class GroupDataGrid(DataGrid):
     """
     A datagrid showing a list of review groups.
     """
-    star          = StarColumn()
+    star          = ReviewGroupStarColumn()
     name          = Column(_("Group ID"), link=True, sortable=True)
     displayname   = Column(_("Group Name"), field_name="display_name",
                            link=True, expand=True)
