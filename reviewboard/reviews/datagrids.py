@@ -366,7 +366,8 @@ class ReviewRequestDataGrid(DataGrid):
     bugs_closed  = Column(_("Bugs"), db_field="bugs_closed",
                           shrink=True, sortable=False, link=False)
     repository   = Column(_("Repository"), db_field="repository__name",
-                          shrink=True, sortable=True, link=False)
+                          shrink=True, sortable=True, link=False,
+                          css_class='repository-column')
     time_added   = DateTimeColumn(_("Posted"),
         detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
