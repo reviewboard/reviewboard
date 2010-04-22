@@ -23,9 +23,12 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
-import os.path
+import os
+import platform
+import shutil
 import sys
 
+import pkg_resources
 import nose
 
 try:
@@ -42,22 +45,72 @@ from django.db import connection
 from django.test.utils import setup_test_environment, teardown_test_environment
 
 
-def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
-    setup_test_environment()
-    settings.DEBUG = False
-
-    # Default to testing in a non-subdir install.
-    settings.SITE_ROOT = "/"
+def setup_media_dirs():
+    old_media_root = settings.MEDIA_ROOT
     settings.MEDIA_ROOT = "/tmp/reviewboard-tests"
+
+    if os.path.exists(settings.MEDIA_ROOT):
+        destroy_media_dirs()
 
     images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
 
     if not os.path.exists(images_dir):
         os.makedirs(images_dir)
 
+    # Set up symlinks to the other directories for the web-based tests
+    bundled_media_dir = os.path.join(os.path.dirname(__file__),
+                                     'htdocs', 'media')
+
+    for path in os.listdir(bundled_media_dir):
+        if path == 'uploaded':
+            continue
+
+        os.symlink(os.path.join(bundled_media_dir, path),
+                   os.path.join(settings.MEDIA_ROOT, path))
+
+    if not os.path.exists(os.path.join(settings.MEDIA_ROOT, 'djblets')):
+        if not pkg_resources.resource_exists("djblets", "media"):
+            sys.stderr.write("Unable to find a valid Djblets installation.\n")
+            sys.stderr.write("Make sure you've installed Djblets.")
+            sys.exit(1)
+
+        src_dir = pkg_resources.resource_filename('djblets', 'media')
+        dest_dir = os.path.join(settings.MEDIA_ROOT, 'djblets')
+
+        if platform.system() == 'windows':
+            shutil.copytree(src_dir, dest_dir)
+        else:
+            os.symlink(src_dir, dest_dir)
+
+
+def destroy_media_dirs():
+    for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):
+        for name in files:
+            os.remove(os.path.join(root, name))
+
+        for name in dirs:
+            path = os.path.join(root, name)
+
+            if os.path.islink(path):
+                os.remove(path)
+            else:
+                os.rmdir(path)
+
+    os.rmdir(settings.MEDIA_ROOT)
+
+
+def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
+    setup_test_environment()
+    settings.DEBUG = False
+
+    # Default to testing in a non-subdir install.
+    settings.SITE_ROOT = "/"
+
     settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
     settings.ADMIN_MEDIA_PREFIX = settings.MEDIA_URL + 'admin/'
     settings.RUNNING_TEST = True
+
+    setup_media_dirs()
 
     old_name = settings.DATABASE_NAME
     connection.creation.create_test_db(verbosity, autoclobber=not interactive)
@@ -76,18 +129,17 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     for cover in ['reviewboard', 'djblets']:
         nose_argv += ['--cover-package=' + cover]
 
+    if '--with-webtests' in sys.argv:
+        nose_argv += ['--cover-package=webtests']
+        sys.argv.remove('--with-webtests')
+
     # manage.py captures everything before "--"
     if len(sys.argv) > 2 and sys.argv.__contains__("--"):
         nose_argv += sys.argv[(sys.argv.index("--") + 1):]
 
-    nose.main(argv=nose_argv)
+    nose.main(argv=nose_argv, exit=False)
 
-    for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):
-        for name in files:
-            os.remove(os.path.join(root, name))
+    destroy_media_dirs()
 
-        for name in dirs:
-            os.rmdir(os.path.join(root, name))
-
-    connection.creation.destroy_test_db(old_name, verbosity)
+    connection.creation.destroy_test_db(old_name, verbosity=0)
     teardown_test_environment()

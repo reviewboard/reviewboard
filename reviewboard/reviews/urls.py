@@ -20,7 +20,8 @@ urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/$', 'diff',
         name="view_diff_revision"),
 
-    (r'^(?P<review_request_id>[0-9]+)/diff/raw/$', 'raw_diff'),
+    url(r'^(?P<review_request_id>[0-9]+)/diff/raw/$', 'raw_diff',
+        name='raw_diff'),
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)/raw/$',
      'raw_diff'),
 

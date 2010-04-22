@@ -302,7 +302,14 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
      * Creates a new comment form in response to the "Add Comment" link.
      */
     function createNewCommentForm() {
-        var yourcomment_id = "yourcomment_" + sectionId + "-draft";
+        var yourcomment_id = "yourcomment_" + review_id + "_" +
+                             context_type;
+        if (sectionId) {
+            yourcomment_id += "_" + sectionId;
+        }
+
+        yourcomment_id += "-draft";
+
         $("<li/>")
             .addClass("reply-comment draft editor")
             .attr("id", yourcomment_id + "-item")
@@ -822,15 +829,21 @@ $.reviewForm = function(review) {
 
         buttons = $("input", dlg);
 
-        $(".body-top, .body-bottom", dlg)
-            .inlineEditor({
-                extraHeight: 50,
-                forceOpen: true,
-                multiline: true,
-                notifyUnchangedCompletion: true,
-                showButtons: false,
-                showEditIcon: false
-            });
+        var body_classes = ["body-top", "body-bottom"];
+
+        for (var i in body_classes) {
+            var cls = body_classes[i];
+            $("." + cls, dlg)
+                .inlineEditor({
+                    cls: cls + "-editor",
+                    extraHeight: 50,
+                    forceOpen: true,
+                    multiline: true,
+                    notifyUnchangedCompletion: true,
+                    showButtons: false,
+                    showEditIcon: false
+                });
+        }
 
         $("textarea:first", dlg).focus();
         dlg.attr("scrollTop", 0);

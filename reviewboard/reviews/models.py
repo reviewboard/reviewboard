@@ -424,8 +424,9 @@ class ReviewRequest(models.Model):
         if self.changenum:
             try:
                 changeset = self.repository.get_scmtool().get_changeset(self.changenum)
-            except EmptyChangeSetError:
+            except (EmptyChangeSetError, NotImplementedError):
                 pass
+
         return changeset and changeset.pending
 
     @permalink
