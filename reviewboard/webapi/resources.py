@@ -1364,29 +1364,14 @@ class ReviewReplyResource(BaseReviewResource):
 
                 setattr(reply, '%s_reply_to' % field, reply_to)
 
-        result = {}
-
-#        if (reply.body_top == "" and
-#            reply.body_bottom == "" and
-#            reply.comments.count() == 0 and
-#            reply.screenshot_comments.count() == 0):
-#            # This is empty, so let's go ahead and delete it.
-#            # XXX
-#            #reply.delete()
-#            reply = None
-#            result = {
-#                'discarded': True,
-#            }
-#        elif publish:
-
         if publish:
             reply.publish(user=request.user)
         else:
             reply.save()
 
-        result[self.name] = reply
-
-        return 200, result
+        return 200, {
+            self.name: reply,
+        }
 
 reviewReplyResource = ReviewReplyResource()
 
