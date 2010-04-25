@@ -84,6 +84,7 @@ class BaseCommentResource(WebAPIResource):
 
 class FileDiffCommentResource(BaseCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    model_parent_key = 'filediff'
 
     def get_queryset(self, request, review_request_id, diff_revision,
                      is_list=False, *args, **kwargs):
@@ -101,17 +102,6 @@ class FileDiffCommentResource(BaseCommentResource):
                 q = q.filter(first_line=int(request.GET['line']))
 
         return q
-
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        filediff = comment.filediff
-        diffset = filediff.diffset
-        review_request = diffset.history.review_request.get()
-
-        return {
-            'review_request_id': review_request.id,
-            'diff_revision': diffset.revision,
-            'filediff_id': filediff.id,
-        }
 
     @webapi_login_required
     @webapi_request_fields(
@@ -178,6 +168,7 @@ fileDiffCommentResource = FileDiffCommentResource()
 
 class ReviewCommentResource(BaseCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
@@ -185,15 +176,6 @@ class ReviewCommentResource(BaseCommentResource):
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=review_id)
         return q
-
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        review = comment.review.get()
-        review_request = review.review_request
-
-        return {
-            'review_request_id': review_request.id,
-            'review_id': review.id,
-        }
 
     def has_delete_permissions(self, request, comment, *args, **kwargs):
         review = comment.review.get()
@@ -288,6 +270,7 @@ reviewCommentResource = ReviewCommentResource()
 
 class ReviewReplyCommentResource(BaseCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
@@ -295,16 +278,6 @@ class ReviewReplyCommentResource(BaseCommentResource):
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
-
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        reply = comment.review.get()
-        review_request = review.review_request
-
-        return {
-            'review_request_id': review_request.id,
-            'review_id': reply.base_reply_to.id,
-            'reply_id': reply.id
-        }
 
     @webapi_login_required
     @webapi_request_fields(
@@ -369,21 +342,13 @@ class FileDiffResource(WebAPIResource):
     item_child_resources = [fileDiffCommentResource]
 
     uri_object_key = 'filediff_id'
+    model_parent_key = 'diffset'
 
     def get_queryset(self, request, review_request_id, diff_revision,
                      *args, **kwargs):
         return self.model.objects.filter(
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
-
-    def get_href_parent_ids(self, filediff, *args, **kwargs):
-        diffset = filediff.diffset
-        review_request = diffset.history.review_request.get()
-
-        return {
-            'diff_revision': diffset.revision,
-            'review_request_id': review_request.id,
-        }
 
 fileDiffResource = FileDiffResource()
 
@@ -403,18 +368,14 @@ class DiffSetResource(WebAPIResource):
         return self.model.objects.filter(
             history__review_request=review_request_id)
 
-    def get_href_parent_ids(self, diffset, *args, **kwargs):
+    def get_parent_object(self, diffset):
         history = diffset.history
 
         if history:
-            review_request = history.review_request.get()
+            return history.review_request.get()
         else:
             # This isn't in a history yet. It's part of a draft.
-            review_request = diffset.review_request_draft.get().review_request
-
-        return {
-            'review_request_id': review_request.id,
-        }
+            return diffset.review_request_draft.get().review_request
 
     def has_access_permissions(self, request, diffset, *args, **kwargs):
         review_request = diffset.history.review_request.get()
@@ -896,41 +857,26 @@ class BaseScreenshotCommentResource(WebAPIResource):
 
 
 class ScreenshotCommentResource(BaseScreenshotCommentResource):
+    model_parent_key = 'screenshot'
+
     def get_queryset(self, request, review_request_id, screenshot_id,
                      *args, **kwargs):
         q = super(ScreenshotCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(screenshot=screenshot_id)
 
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        return {
-            'review_request_id': review_request.id,
-            'screenshot_id': screenshot.id,
-        }
-
 screenshotCommentResource = ScreenshotCommentResource()
 
 
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
         q = super(ReviewScreenshotCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(review=review_id)
-
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        review = comment.review.get()
-        review_request = review.review_request
-
-        return {
-            'review_request_id': review_request.id,
-            'review_id': review.id,
-        }
 
     def has_delete_permissions(self, request, comment, *args, **kwargs):
         review = comment.review.get()
@@ -1003,6 +949,7 @@ reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
 
 class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
@@ -1010,16 +957,6 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
-
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        reply = comment.review.get()
-        review_request = review.review_request
-
-        return {
-            'review_request_id': review_request.id,
-            'review_id': reply.base_reply_to.id,
-            'reply_id': reply.id,
-        }
 
     @webapi_login_required
     @webapi_request_fields(
@@ -1087,13 +1024,8 @@ class ReviewDraftScreenshotCommentResource(BaseScreenshotCommentResource):
                             review__public=False,
                             review__base_reply_to__isnull=True)
 
-    def get_href_parent_ids(self, comment, *args, **kwargs):
-        review = comment.review.get()
-        review_request = review.review_request
-
-        return {
-            'review_request_id': review_request.id,
-        }
+    def get_parent_object(self, comment):
+        return comment.review.get().review_request
 
 reviewDraftScreenshotCommentResource = ReviewDraftScreenshotCommentResource()
 
@@ -1362,16 +1294,11 @@ class ReviewReplyResource(BaseReviewResource):
     ]
 
     uri_object_key = 'reply_id'
+    model_parent_key = 'base_reply_to'
 
     def get_base_reply_to_field(self, review_id, *args, **kwargs):
         return {
             'base_reply_to': Review.objects.get(pk=review_id),
-        }
-
-    def get_href_parent_ids(self, reply, *args, **kwargs):
-        return {
-            'review_request_id': reply.review_request.id,
-            'review_id': reply.base_reply_to.id,
         }
 
     @webapi_login_required
@@ -1495,6 +1422,7 @@ reviewReplyResource = ReviewReplyResource()
 
 class ReviewResource(BaseReviewResource):
     uri_object_key = 'review_id'
+    model_parent_key = 'review_request'
 
     list_child_resources = [reviewDraftResource]
     item_child_resources = [
@@ -1508,11 +1436,6 @@ class ReviewResource(BaseReviewResource):
             'base_reply_to__isnull': True,
         }
 
-    def get_href_parent_ids(self, review, *args, **kwargs):
-        return {
-            'review_request_id': review.review_request.id,
-        }
-
 reviewResource = ReviewResource()
 
 
@@ -1522,6 +1445,7 @@ class ScreenshotResource(WebAPIResource):
     fields = ('id', 'caption', 'title', 'image_url', 'thumbnail_url')
 
     uri_object_key = 'screenshot_id'
+    model_parent_key = 'review_request'
 
     item_child_resources = [
         screenshotCommentResource,
@@ -1540,11 +1464,6 @@ class ScreenshotResource(WebAPIResource):
 
     def serialize_thumbnail_url_field(self, obj):
         return obj.get_thumbnail_url()
-
-    def get_href_parent_ids(self, screenshot, *args, **kwargs):
-        return {
-            'review_request_id': screenshot.review_request.get().id,
-        }
 
     @webapi_login_required
     def create(self, request, *args, **kwargs):
