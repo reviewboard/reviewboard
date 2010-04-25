@@ -1215,22 +1215,18 @@ class BaseReviewResource(WebAPIResource):
         """
         return self.update(publish=True, *args, **kwargs)
 
-    def _update_review(self, request, review, publish=False, ship_it=None,
-                       body_top=None, body_bottom=None, *args, **kwargs):
+    def _update_review(self, request, review, publish=False, *args, **kwargs):
         """Common function to update fields on a draft review."""
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
             return PERMISSION_DENIED
 
-        if ship_it is not None:
-            review.ship_it = ship_it
+        for field in ('ship_it', 'body_top', 'body_bottom'):
+            value = kwargs.get(field, None)
 
-        if body_top is not None:
-            review.body_top = body_top
-
-        if body_bottom is not None:
-            review.body_bottom = body_bottom
+            if value is not None:
+                setattr(review, field, value)
 
         review.save()
 
@@ -1270,11 +1266,13 @@ class ReviewReplyResource(BaseReviewResource):
         optional = {
             'body_top': {
                 'type': str,
-                'description': 'The review content above the comments.',
+                'description': 'The response to the review content above '
+                               'the comments.',
             },
             'body_bottom': {
                 'type': str,
-                'description': 'The review content below the comments.',
+                'description': 'The response to the review content below '
+                               'the comments.',
             },
         },
     )
@@ -1318,11 +1316,13 @@ class ReviewReplyResource(BaseReviewResource):
         optional = {
             'body_top': {
                 'type': str,
-                'description': 'The review content above the comments.',
+                'description': 'The response to the review content above '
+                               'the comments.',
             },
             'body_bottom': {
                 'type': str,
-                'description': 'The review content below the comments.',
+                'description': 'The response to the review content below '
+                               'the comments.',
             },
         },
     )
@@ -1342,8 +1342,7 @@ class ReviewReplyResource(BaseReviewResource):
 
         return self._update_reply(request, reply, publish, *args, **kwargs)
 
-    def _update_reply(self, request, reply, publish=False, body_top=None,
-                      body_bottom=None, *args, **kwargs):
+    def _update_reply(self, request, reply, publish=False, *args, **kwargs):
         """Common function to update fields on a draft reply."""
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
@@ -1352,21 +1351,18 @@ class ReviewReplyResource(BaseReviewResource):
 
         invalid_fields = {}
 
-        if body_top is not None:
-            reply.body_top = body_top
+        for field in ('body_top', 'body_bottom'):
+            value = kwargs.get(field, None)
 
-            if body_top == '':
-                reply.body_top_reply_to = None
-            else:
-                reply.body_top_reply_to = reply.base_reply_to
+            if value is not None:
+                setattr(reply, field, value)
 
-        if body_bottom is not None:
-            reply.body_bottom = body_bottom
+                if value == '':
+                    reply_to = None
+                else:
+                    reply_to = reply.base_reply_to
 
-            if body_bottom == '':
-                reply.body_bottom_reply_to = None
-            else:
-                reply.body_bottom_reply_to = reply.base_reply_to
+                setattr(reply, '%s_reply_to' % field, reply_to)
 
         result = {}
 
