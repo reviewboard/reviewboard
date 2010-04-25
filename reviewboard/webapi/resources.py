@@ -10,7 +10,8 @@ from django.template.defaultfilters import timesince
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.core import WebAPIResponseFormError
 from djblets.webapi.decorators import webapi_login_required, \
-                                      webapi_permission_required
+                                      webapi_permission_required, \
+                                      webapi_request_fields
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
                                   INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
@@ -53,31 +54,13 @@ class WebAPIResource(DjbletsWebAPIResource):
             return super(WebAPIResource, self).get_list(request,
                                                         *args, **kwargs)
 
-    def verify_fields(self, request, mutable_fields, required_fields=[]):
-        invalid_fields = {}
-
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
-
-            if field_name not in mutable_fields:
-                invalid_fields[field_name] = ['Field is not supported']
-
-        for field_name in required_fields:
-            if request.POST.get(field_name, None) is None:
-                invalid_fields[field_name] = ['This field is required']
-
-        return invalid_fields
-
 
 class BaseCommentResource(WebAPIResource):
     model = Comment
     name = 'diff-comment'
-    mutable_fields = ('first_line', 'num_lines', 'text')
-    fields = mutable_fields + (
-        'id', 'filediff', 'interfilediff', 'timestamp',
-        'timesince', 'public', 'user',
+    fields = (
+        'id', 'first_line', 'num_lines', 'text', 'filediff',
+        'interfilediff', 'timestamp', 'timesince', 'public', 'user',
     )
 
     uri_object_key = 'comment_id'
@@ -131,8 +114,24 @@ class FileDiffCommentResource(BaseCommentResource):
         }
 
     @webapi_login_required
+    @webapi_request_fields(
+        required={
+            'first_line': {
+                'type': int,
+                'description': 'The line number the comment starts at.',
+            },
+            'num_lines': {
+                'type': int,
+                'description': 'The number of lines the comment spans.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text',
+            },
+        },
+    )
     def create(self, request, review_request_id, diff_revision, filediff_id,
-               *args, **kwargs):
+               first_line, num_lines, text, *args, **kwargs):
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
             filediff = FileDiff.objects.get(
@@ -141,29 +140,6 @@ class FileDiffCommentResource(BaseCommentResource):
                 diffset__history__review_request=review_request)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
-
-        invalid_fields = {}
-
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
-
-            if field_name not in self.mutable_fields:
-                invalid_fields[field_name] = ['Field is not supported']
-
-        for field_name in self.mutable_fields:
-            if request.POST.get(field_name, None) is None:
-                invalid_fields[field_name] = ['This field is required']
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
-
-        line = request.POST['first_line']
-        num_lines = request.POST['num_lines']
-        text = request.POST['text']
 
         interfilediff = None # XXX
 
@@ -177,12 +153,12 @@ class FileDiffCommentResource(BaseCommentResource):
             comment, comment_is_new = review.comments.get_or_create(
                 filediff=filediff,
                 interfilediff=interfilediff,
-                first_line=line)
+                first_line=first_line)
         else:
             comment, comment_is_new = review.comments.get_or_create(
                 filediff=filediff,
                 interfilediff__isnull=True,
-                first_line=line)
+                first_line=first_line)
 
         comment.text = text
         comment.num_lines = num_lines
@@ -201,10 +177,6 @@ fileDiffCommentResource = FileDiffCommentResource()
 
 
 class ReviewCommentResource(BaseCommentResource):
-    required_mutable_fields = (
-        'filediff_id', 'first_line', 'num_lines', 'text'
-    )
-    mutable_fields = required_mutable_fields + ('interfilediff_id',)
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, review_id,
@@ -228,7 +200,35 @@ class ReviewCommentResource(BaseCommentResource):
         return not review.public and review.user == request.user
 
     @webapi_login_required
-    def create(self, request, *args, **kwargs):
+    @webapi_request_fields(
+        required = {
+            'filediff_id': {
+                'type': int,
+                'description': 'The ID of the file diff the comment is on.',
+            },
+            'first_line': {
+                'type': int,
+                'description': 'The line number the comment starts at.',
+            },
+            'num_lines': {
+                'type': int,
+                'description': 'The number of lines the comment spans.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text.',
+            },
+        },
+        optional = {
+            'interfilediff_id': {
+                'type': int,
+                'description': 'The ID of the second file diff in the '
+                               'interdiff the comment is on.',
+            },
+        },
+    )
+    def create(self, request, first_line, num_lines, text,
+               filediff_id, interfilediff_id=None, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -239,27 +239,19 @@ class ReviewCommentResource(BaseCommentResource):
         if not reviewResource.has_modify_permissions(request, review):
             return PERMISSION_DENIED
 
-        invalid_fields = self.verify_fields(request, self.mutable_fields,
-                                            self.required_mutable_fields)
-
         filediff = None
         interfilediff = None
+        invalid_fields = {}
 
-        if 'filediff_id' not in invalid_fields:
-            try:
-                filediff = FileDiff.objects.get(
-                    pk=int(request.POST['filediff_id']),
-                    diffset__history__review_request=review_request)
-            except ObjectDoesNotExist:
-                invalid_fields['filediff_id'] = \
-                    ['This is not a valid filediff ID']
+        try:
+            filediff = FileDiff.objects.get(
+                pk=filediff_id,
+                diffset__history__review_request=review_request)
+        except ObjectDoesNotExist:
+            invalid_fields['filediff_id'] = \
+                ['This is not a valid filediff ID']
 
-        if (filediff is not None and
-            'interfilediff_id' in request.POST and
-            request.POST['interfilediff_id']):
-
-            interfilediff_id = int(request.POST['interfilediff_id'])
-
+        if filediff and interfilediff_id:
             if interfilediff_id == filediff.id:
                 invalid_fields['interfilediff_id'] = \
                     ['This cannot be the same as filediff_id']
@@ -279,9 +271,9 @@ class ReviewCommentResource(BaseCommentResource):
 
         new_comment = self.model(filediff=filediff,
                                  interfilediff=interfilediff,
-                                 text=request.POST['text'],
-                                 first_line=request.POST['first_line'],
-                                 num_lines=request.POST['num_lines'])
+                                 text=text,
+                                 first_line=first_line,
+                                 num_lines=num_lines)
         new_comment.save()
 
         review.comments.add(new_comment)
@@ -295,7 +287,6 @@ reviewCommentResource = ReviewCommentResource()
 
 
 class ReviewReplyCommentResource(BaseCommentResource):
-    mutable_fields = ('reply_to_id', 'text')
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
@@ -316,7 +307,19 @@ class ReviewReplyCommentResource(BaseCommentResource):
         }
 
     @webapi_login_required
-    def create(self, request, *args, **kwargs):
+    @webapi_request_fields(
+        required = {
+            'reply_to_id': {
+                'type': int,
+                'description': 'The ID of the comment being replied to.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text.',
+            },
+        },
+    )
+    def create(self, request, reply_to_id, text, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -327,28 +330,21 @@ class ReviewReplyCommentResource(BaseCommentResource):
         if not reviewReplyResource.has_modify_permissions(request, reply):
             return PERMISSION_DENIED
 
-        invalid_fields = self.verify_fields(request, self.mutable_fields,
-                                            self.mutable_fields)
-
-        if 'reply_to_id' not in invalid_fields:
-            try:
-                comment = reviewCommentResource.get_object(
-                    request,
-                    comment_id=int(request.POST['reply_to_id']),
-                    *args, **kwargs)
-            except ObjectDoesNotExist:
-                invalid_fields['reply_to_id'] = \
-                    ['This is not a valid comment ID']
-
-        if invalid_fields:
+        try:
+            comment = reviewCommentResource.get_object(request,
+                                                       comment_id=reply_to_id,
+                                                       *args, **kwargs)
+        except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
+                'fields': {
+                    'reply_to_id': ['This is not a valid comment ID'],
+                }
             }
 
         new_comment = self.model(filediff=comment.filediff,
                                  interfilediff=comment.interfilediff,
                                  reply_to=comment,
-                                 text=request.POST['text'],
+                                 text=text,
                                  first_line=comment.first_line,
                                  num_lines=comment.num_lines)
         new_comment.save()
@@ -867,8 +863,6 @@ reviewRequestDraftResource = ReviewRequestDraftResource()
 
 
 class ReviewDraftCommentResource(BaseCommentResource):
-    mutable_fields = ('text', 'first_line', 'num_lines')
-
     allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
 
 reviewDraftCommentResource = ReviewDraftCommentResource()
@@ -921,7 +915,6 @@ screenshotCommentResource = ScreenshotCommentResource()
 
 
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
-    mutable_fields = ('screenshot_id', 'text', 'x', 'y', 'w', 'h')
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, review_id,
@@ -944,7 +937,36 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         return not review.public and review.user == request.user
 
     @webapi_login_required
-    def create(self, request, *args, **kwargs):
+    @webapi_request_fields(
+        required = {
+            'screenshot_id': {
+                'type': int,
+                'description': 'The ID of the screenshot being commented on.',
+            },
+            'x': {
+                'type': int,
+                'description': 'The X location for the comment.',
+            },
+            'y': {
+                'type': int,
+                'description': 'The Y location for the comment.',
+            },
+            'w': {
+                'type': int,
+                'description': 'The width of the comment region.',
+            },
+            'h': {
+                'type': int,
+                'description': 'The height of the comment region.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text.',
+            },
+        },
+    )
+    def create(self, request, screenshot_id, x, y, w, h, text,
+               *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -955,29 +977,18 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         if not reviewResource.has_modify_permissions(request, review):
             return PERMISSION_DENIED
 
-        invalid_fields = self.verify_fields(request, self.mutable_fields,
-                                            self.mutable_fields)
-
-        if 'screenshot_id' not in invalid_fields:
-            try:
-                screenshot = Screenshot.objects.get(
-                    pk=request.POST['screenshot_id'],
-                    review_request=review_request)
-            except ObjectDoesNotExist:
-                invalid_fields['screenshot_id'] = \
-                    ['This is not a valid screenshot ID']
-
-        if invalid_fields:
+        try:
+            screenshot = Screenshot.objects.get(pk=screenshot_id,
+                                                review_request=review_request)
+        except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
+                'fields': {
+                    'screenshot_id': ['This is not a valid screenshot ID'],
+                }
             }
 
-        new_comment = self.model(screenshot=screenshot,
-                                 x=int(request.POST['x']),
-                                 y=int(request.POST['y']),
-                                 w=int(request.POST['w']),
-                                 h=int(request.POST['h']),
-                                 text=request.POST['text'])
+        new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
+                                 text=text)
         new_comment.save()
 
         review.screenshot_comments.add(new_comment)
@@ -991,7 +1002,6 @@ reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
 
 
 class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
-    mutable_fields = ('reply_to_id', 'text')
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
@@ -1012,7 +1022,19 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         }
 
     @webapi_login_required
-    def create(self, request, *args, **kwargs):
+    @webapi_request_fields(
+        required = {
+            'reply_to_id': {
+                'type': int,
+                'description': 'The ID of the comment being replied to.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text.',
+            },
+        },
+    )
+    def create(self, request, reply_to_id, text, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1023,22 +1045,17 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         if not reviewReplyResource.has_modify_permissions(request, reply):
             return PERMISSION_DENIED
 
-        invalid_fields = self.verify_fields(request, self.mutable_fields,
-                                            self.mutable_fields)
-
-        if 'reply_to_id' not in invalid_fields:
-            try:
-                comment = reviewScreenshotCommentResource.get_object(
-                    request,
-                    comment_id=int(request.POST['reply_to_id']),
-                    *args, **kwargs)
-            except ObjectDoesNotExist:
-                invalid_fields['reply_to_id'] = \
-                    ['This is not a valid screenshot comment ID']
-
-        if invalid_fields:
+        try:
+            comment = reviewScreenshotCommentResource.get_object(
+                request,
+                comment_id=reply_to_id,
+                *args, **kwargs)
+        except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
+                'fields': {
+                    'reply_to_id': ['This is not a valid screenshot '
+                                    'comment ID'],
+                }
             }
 
         new_comment = self.model(screenshot=comment.screenshot,
@@ -1046,7 +1063,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
                                  y=comment.y,
                                  w=comment.w,
                                  h=comment.h,
-                                 text=request.POST['text'])
+                                 text=text)
         new_comment.save()
 
         reply.screenshot_comments.add(new_comment)
@@ -1085,8 +1102,10 @@ class ReviewDraftResource(WebAPIResource):
     model = Review
     name = 'draft'
     name_plural = 'draft'
-    mutable_fields = ('ship_it', 'body_top', 'body_bottom')
-    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
+    fields = (
+        'id', 'user', 'timestamp', 'public', 'comments', 'ship_it',
+        'body_top', 'body_bottom',
+    )
 
     list_child_resources = [
         reviewDraftCommentResource,
@@ -1118,7 +1137,24 @@ class ReviewDraftResource(WebAPIResource):
         return self.update(*args, **kwargs)
 
     @webapi_login_required
-    def update(self, request, review_request_id, review_id=None, publish=False,
+    @webapi_request_fields(
+        optional = {
+            'ship_it': {
+                'type': bool,
+                'description': 'Whether or not to mark the review "Ship It!"',
+            },
+            'body_top': {
+                'type': str,
+                'description': 'The review content above the comments.',
+            },
+            'body_bottom': {
+                'type': str,
+                'description': 'The review content below the comments.',
+            },
+        },
+    )
+    def update(self, request, review_request_id, ship_it=None, body_top=None,
+               body_bottom=None, review_id=None, publish=False,
                *args, **kwargs):
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
@@ -1135,25 +1171,14 @@ class ReviewDraftResource(WebAPIResource):
             review_request=review_request,
             public=False, **extra_q)
 
-        invalid_fields = {}
+        if ship_it is not None:
+            review.ship_it = ship_it
 
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
+        if body_top is not None:
+            review.body_top = body_top
 
-            if field_name not in self.mutable_fields:
-                invalid_fields[field_name] = ['Field is not supported']
-            elif field_name == 'ship_it':
-                review.ship_it = request.POST[field_name] in \
-                                 (1, "1", True, "True")
-            elif field_name in ('body_top', 'body_bottom'):
-                setattr(review, field_name, request.POST.get(field_name))
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
+        if body_bottom is not None:
+            review.body_bottom = body_bottom
 
         review.save()
 
@@ -1187,121 +1212,12 @@ class ReviewDraftResource(WebAPIResource):
 reviewDraftResource = ReviewDraftResource()
 
 
-class ReviewReplyDraftResource(WebAPIResource):
-    name = 'reply'
-    name_plural = 'replies'
-    allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
-    mutable_fields = ('body_top', 'body_bottom')
-    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
-
-    @webapi_login_required
-    def get(self, request, api_format, review_request_id, review_id,
-            *args, **kwargs):
-        try:
-            return 200, {
-                self.name: Review.objects.get(review_request=review_request_id,
-                                              user=request.user,
-                                              public=False,
-                                              base_reply_to=review_id)
-            }
-        except (ReviewRequest.DoesNotExist, Review.DoesNotExist):
-            return DOES_NOT_EXIST
-
-    @webapi_login_required
-    def create(self, *args, **kwargs):
-        # A draft is a singleton. Creating and updating it are the same
-        # operations in practice.
-        return self.update(*args, **kwargs)
-
-    @webapi_login_required
-    def update(self, request, review_request_id, review_id, publish=False,
-               *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-            review = ReviewRequest.objects.get(pk=review_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        reply, reply_is_new = Review.objects.get_or_create(
-            user=request.user,
-            review_request=review_request,
-            public=False,
-            base_reply_to=review)
-
-        invalid_fields = {}
-
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
-
-            if (field_name not in self.mutable_fields):
-                invalid_fields[field_name] = ['Field is not supported']
-            elif field_name in ('body_top', 'body_bottom'):
-                value = request.POST[field_name]
-                setattr(reply, field_name, value)
-
-                if value == "":
-                    reply_to = None
-                else:
-                    reply_to = review
-
-                setattr(reply, '%s_reply_to' % field_name, reply_to)
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
-
-        result = {}
-
-        if (not reply_is_new and
-            reply.body_top == "" and
-            reply.body_bottom == "" and
-            reply.comments.count() == 0 and
-            reply.screenshot_comments.count() == 0):
-            # This is empty, so let's go ahead and delete it.
-            reply.delete()
-            reply = None
-            result = {
-                'discarded': True,
-            }
-        elif publish:
-            reply.publish(user=request.user)
-        else:
-            reply.save()
-
-        result[self.name] = reply
-
-        return 200, result
-
-    @webapi_login_required
-    def delete(self, request, api_format, review_request_id, *args, **kwargs):
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        review = review_request.get_pending_review(request.user)
-
-        if not review:
-            return DOES_NOT_EXIST
-
-        review.delete()
-
-        return 204, {}
-
-    @webapi_login_required
-    def action_publish(self, *args, **kwargs):
-        return self.update(publish=True, *args, **kwargs)
-
-reviewReplyDraftResource = ReviewReplyDraftResource()
-
-
 class BaseReviewResource(WebAPIResource):
     model = Review
-    mutable_fields = ('ship_it', 'body_top', 'body_bottom')
-    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
+    fields = (
+        'id', 'user', 'timestamp', 'public', 'comments',
+        'ship_it', 'body_top', 'body_bottom'
+    )
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -1329,6 +1245,22 @@ class BaseReviewResource(WebAPIResource):
         return not review.public and review.user == request.user
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional = {
+            'ship_it': {
+                'type': bool,
+                'description': 'Whether or not to mark the review "Ship It!"',
+            },
+            'body_top': {
+                'type': str,
+                'description': 'The review content above the comments.',
+            },
+            'body_bottom': {
+                'type': str,
+                'description': 'The review content below the comments.',
+            },
+        },
+    )
     def create(self, request, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
@@ -1349,7 +1281,7 @@ class BaseReviewResource(WebAPIResource):
             # redirect the user to the right place.
             status_code = 303 # See Other
 
-        result = self._update_review(request, review)
+        result = self._update_review(request, review, *args, **kwargs)
 
         if not isinstance(result, tuple) or result[0] != 200:
             return result
@@ -1359,6 +1291,22 @@ class BaseReviewResource(WebAPIResource):
             }
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional = {
+            'ship_it': {
+                'type': bool,
+                'description': 'Whether or not to mark the review "Ship It!"',
+            },
+            'body_top': {
+                'type': str,
+                'description': 'The review content above the comments.',
+            },
+            'body_bottom': {
+                'type': str,
+                'description': 'The review content below the comments.',
+            },
+        },
+    )
     def update(self, request, publish=False, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
@@ -1367,37 +1315,27 @@ class BaseReviewResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        return self._update_review(request, review, publish)
+        return self._update_review(request, review, publish, *args, **kwargs)
 
     @webapi_login_required
     def action_publish(self, *args, **kwargs):
         return self.update(publish=True, *args, **kwargs)
 
-    def _update_review(self, request, review, publish=False):
+    def _update_review(self, request, review, publish=False, ship_it=None,
+                       body_top=None, body_bottom=None, *args, **kwargs):
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
             return PERMISSION_DENIED
 
-        invalid_fields = {}
+        if ship_it is not None:
+            review.ship_it = ship_it
 
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
+        if body_top is not None:
+            review.body_top = body_top
 
-            if field_name not in self.mutable_fields:
-                invalid_fields[field_name] = ['Field is not supported']
-            elif field_name == 'ship_it':
-                review.ship_it = request.POST[field_name] in \
-                                 (1, "1", True, "True")
-            elif field_name in ('body_top', 'body_bottom'):
-                setattr(review, field_name, request.POST.get(field_name))
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
+        if body_bottom is not None:
+            review.body_bottom = body_bottom
 
         review.save()
 
@@ -1413,8 +1351,10 @@ class ReviewReplyResource(BaseReviewResource):
     model = Review
     name = 'reply'
     name_plural = 'replies'
-    mutable_fields = ('body_top', 'body_bottom')
-    fields = ('id', 'user', 'timestamp', 'public', 'comments') + mutable_fields
+    fields = (
+        'id', 'user', 'timestamp', 'public', 'comments', 'body_top',
+        'body_bottom'
+    )
 
     item_child_resources = [
         reviewReplyCommentResource,
@@ -1435,6 +1375,18 @@ class ReviewReplyResource(BaseReviewResource):
         }
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional = {
+            'body_top': {
+                'type': str,
+                'description': 'The review content above the comments.',
+            },
+            'body_bottom': {
+                'type': str,
+                'description': 'The review content below the comments.',
+            },
+        },
+    )
     def create(self, request, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
@@ -1456,7 +1408,7 @@ class ReviewReplyResource(BaseReviewResource):
             # redirect the user to the right place.
             status_code = 303 # See Other
 
-        result = self._update_reply(request, reply)
+        result = self._update_reply(request, reply, *args, **kwargs)
 
         if not isinstance(result, tuple) or result[0] != 200:
             return result
@@ -1466,6 +1418,18 @@ class ReviewReplyResource(BaseReviewResource):
             }
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional = {
+            'body_top': {
+                'type': str,
+                'description': 'The review content above the comments.',
+            },
+            'body_bottom': {
+                'type': str,
+                'description': 'The review content below the comments.',
+            },
+        },
+    )
     def update(self, request, publish=False, *args, **kwargs):
         try:
             review_request = reviewRequestResource.get_object(request,
@@ -1475,9 +1439,10 @@ class ReviewReplyResource(BaseReviewResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        return self._update_reply(request, reply, publish)
+        return self._update_reply(request, reply, publish, *args, **kwargs)
 
-    def _update_reply(self, request, reply, publish=False):
+    def _update_reply(self, request, reply, publish=False, body_top=None,
+                      body_bottom=None, *args, **kwargs):
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
             # to the user.
@@ -1485,28 +1450,21 @@ class ReviewReplyResource(BaseReviewResource):
 
         invalid_fields = {}
 
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
+        if body_top is not None:
+            reply.body_top = body_top
 
-            if (field_name not in self.mutable_fields):
-                invalid_fields[field_name] = ['Field is not supported']
-            elif field_name in ('body_top', 'body_bottom'):
-                value = request.POST[field_name]
-                setattr(reply, field_name, value)
+            if body_top == '':
+                reply.body_top_reply_to = None
+            else:
+                reply.body_top_reply_to = reply.base_reply_to
 
-                if value == "":
-                    reply_to = None
-                else:
-                    reply_to = reply.base_reply_to
+        if body_bottom is not None:
+            reply.body_bottom = body_bottom
 
-                setattr(reply, '%s_reply_to' % field_name, reply_to)
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
+            if body_bottom == '':
+                reply.body_bottom_reply_to = None
+            else:
+                reply.body_bottom_reply_to = reply.base_reply_to
 
         result = {}
 
