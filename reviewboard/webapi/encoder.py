@@ -13,7 +13,6 @@ from reviewboard.webapi.resources import diffSetResource, \
                                          fileDiffResource, \
                                          repositoryResource, \
                                          reviewCommentResource, \
-                                         reviewDraftResource, \
                                          reviewGroupResource, \
                                          reviewRequestResource, \
                                          reviewRequestDraftResource, \

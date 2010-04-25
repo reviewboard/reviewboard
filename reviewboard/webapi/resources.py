@@ -886,13 +886,6 @@ class ReviewRequestDraftResource(WebAPIResource):
 reviewRequestDraftResource = ReviewRequestDraftResource()
 
 
-class ReviewDraftCommentResource(BaseCommentResource):
-    """A resource representing diff comments on a draft review."""
-    allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
-
-reviewDraftCommentResource = ReviewDraftCommentResource()
-
-
 class BaseScreenshotCommentResource(WebAPIResource):
     """A base resource for screenshot comments."""
     model = ScreenshotComment
@@ -1092,147 +1085,6 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         }
 
 reviewReplyScreenshotCommentResource = ReviewReplyScreenshotCommentResource()
-
-
-class ReviewDraftScreenshotCommentResource(BaseScreenshotCommentResource):
-    """A resource representing a screenshot comment on a draft review."""
-    allowed_methods = ('GET',)
-
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
-        query = super(ReviewDraftScreenshotCommentResource, self).get_queryset(
-            request, review_request_id, *args, **kwargs)
-
-        return query.filter(review__user=request.user,
-                            review__public=False,
-                            review__base_reply_to__isnull=True)
-
-    def get_parent_object(self, comment):
-        return comment.review.get().review_request
-
-reviewDraftScreenshotCommentResource = ReviewDraftScreenshotCommentResource()
-
-
-class ReviewDraftResource(WebAPIResource):
-    """A resource representing a draft review."""
-    model = Review
-    name = 'draft'
-    name_plural = 'draft'
-    fields = (
-        'id', 'user', 'timestamp', 'public', 'comments', 'ship_it',
-        'body_top', 'body_bottom',
-    )
-
-    list_child_resources = [
-        reviewDraftCommentResource,
-        reviewDraftScreenshotCommentResource,
-    ]
-
-    allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
-
-    @webapi_login_required
-    def get(self, request, api_format, review_request_id, *args, **kwargs):
-        """Returns the draft of a review."""
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        review = review_request.get_pending_review(request.user)
-
-        if not review:
-            return DOES_NOT_EXIST
-
-        return 200, {
-            self.name: review,
-        }
-
-    @webapi_login_required
-    def create(self, *args, **kwargs):
-        """Creates a new draft review.
-
-        There is only ever one draft review per user per review request, so
-        if a draft already exists, it will just be updated.
-        """
-        # A draft is a singleton. Creating and updating it are the same
-        # operations in practice.
-        return self.update(*args, **kwargs)
-
-    @webapi_login_required
-    @webapi_request_fields(
-        optional = {
-            'ship_it': {
-                'type': bool,
-                'description': 'Whether or not to mark the review "Ship It!"',
-            },
-            'body_top': {
-                'type': str,
-                'description': 'The review content above the comments.',
-            },
-            'body_bottom': {
-                'type': str,
-                'description': 'The review content below the comments.',
-            },
-        },
-    )
-    def update(self, request, review_request_id, ship_it=None, body_top=None,
-               body_bottom=None, review_id=None, publish=False,
-               *args, **kwargs):
-        """Updates an existing draft review."""
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        if review_id is None:
-            extra_q = {'base_reply_to__isnull': True}
-        else:
-            extra_q = {'base_reply_to': review_id}
-
-        review, review_is_new = Review.objects.get_or_create(
-            user=request.user,
-            review_request=review_request,
-            public=False, **extra_q)
-
-        if ship_it is not None:
-            review.ship_it = ship_it
-
-        if body_top is not None:
-            review.body_top = body_top
-
-        if body_bottom is not None:
-            review.body_bottom = body_bottom
-
-        review.save()
-
-        if publish:
-            review.publish(user=request.user)
-        else:
-            review.save()
-
-        return 200, {}
-
-    @webapi_login_required
-    def delete(self, request, api_format, review_request_id, *args, **kwargs):
-        """Deletes a draft review."""
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        review = review_request.get_pending_review(request.user)
-
-        if not review:
-            return DOES_NOT_EXIST
-
-        review.delete()
-
-        return 204, {}
-
-    @webapi_login_required
-    def action_publish(self, *args, **kwargs):
-        return self.update(publish=True, *args, **kwargs)
-
-reviewDraftResource = ReviewDraftResource()
 
 
 class BaseReviewResource(WebAPIResource):
@@ -1548,7 +1400,6 @@ class ReviewResource(BaseReviewResource):
     uri_object_key = 'review_id'
     model_parent_key = 'review_request'
 
-    list_child_resources = [reviewDraftResource]
     item_child_resources = [
         reviewCommentResource,
         reviewReplyResource,

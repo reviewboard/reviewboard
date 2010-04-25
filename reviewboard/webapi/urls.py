@@ -3,16 +3,9 @@ from django.views.generic.simple import redirect_to
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.webapi.resources import diffSetResource, \
-                                         fileDiffCommentResource, \
-                                         repositoryResource, \
-                                         reviewDraftResource, \
+from reviewboard.webapi.resources import repositoryResource, \
                                          reviewGroupResource, \
                                          reviewRequestResource, \
-                                         reviewRequestDraftResource, \
-                                         reviewResource, \
-                                         screenshotCommentResource, \
-                                         screenshotResource, \
                                          serverInfoResource, \
                                          userResource
 
