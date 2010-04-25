@@ -34,12 +34,28 @@ from reviewboard.webapi.errors import INVALID_REPOSITORY, MISSING_REPOSITORY, \
 
 
 class WebAPIResource(DjbletsWebAPIResource):
+    """A specialization of the Djblets WebAPIResource for Review Board."""
+
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
+        """Returns the serialized object for the resource.
+
+        This will require login if anonymous access isn't enabled on the
+        site.
+        """
         return super(WebAPIResource, self).get(request, *args, **kwargs)
 
     @webapi_check_login_required
     def get_list(self, request, *args, **kwargs):
+        """Returns a list of objects.
+
+        This will require login if anonymous access isn't enabled on the
+        site.
+
+        If ``?counts-only=1`` is passed on the URL, then this will return
+        only a ``count`` field with the number of entries, instead of the
+        serialized objects.
+        """
         if not self.model:
             return HttpResponseNotAllowed(self.allowed_methods)
 
@@ -56,6 +72,10 @@ class WebAPIResource(DjbletsWebAPIResource):
 
 
 class BaseCommentResource(WebAPIResource):
+    """Base class for diff comment resources.
+
+    Provides common fields and functionality for all diff comment resources.
+    """
     model = Comment
     name = 'diff-comment'
     fields = (
@@ -68,6 +88,11 @@ class BaseCommentResource(WebAPIResource):
     allowed_methods = ('GET',)
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
+        """Returns a queryset for Comment models.
+
+        This filters the query for comments on the specified review request
+        which are either public or owned by the requesting user.
+        """
         return self.model.objects.filter(
             Q(review__public=True) | Q(review__user=request.user),
             filediff__diffset__history__review_request=review_request_id)
@@ -83,11 +108,23 @@ class BaseCommentResource(WebAPIResource):
 
 
 class FileDiffCommentResource(BaseCommentResource):
+    """A resource representing diff comments inside a filediff resource."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'filediff'
 
     def get_queryset(self, request, review_request_id, diff_revision,
                      is_list=False, *args, **kwargs):
+        """Returns a queryset for Comment models.
+
+        This filters the query for comments on the specified review request
+        and made on the specified diff revision, which are either public or
+        owned by the requesting user.
+
+        If the queryset is being used for a list of comment resources,
+        then this can be further filtered by passing ``?interdiff_revision=``
+        on the URL to match the given interdiff revision, and
+        ``?line=`` to match comments on the given line number.
+        """
         q = super(FileDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         q = q.filter(filediff__diffset__revision=diff_revision)
@@ -122,6 +159,12 @@ class FileDiffCommentResource(BaseCommentResource):
     )
     def create(self, request, review_request_id, diff_revision, filediff_id,
                first_line, num_lines, text, *args, **kwargs):
+        """Creates a new diff comment.
+
+        This will create a new draft diff comment on this file. If the user
+        doesn't already have a draft review for this review request, then one
+        will be created.
+        """
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
             filediff = FileDiff.objects.get(
@@ -167,6 +210,7 @@ fileDiffCommentResource = FileDiffCommentResource()
 
 
 class ReviewCommentResource(BaseCommentResource):
+    """A resource representing diff comments on a review."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
@@ -211,6 +255,11 @@ class ReviewCommentResource(BaseCommentResource):
     )
     def create(self, request, first_line, num_lines, text,
                filediff_id, interfilediff_id=None, *args, **kwargs):
+        """Creates a new diff comment.
+
+        This will create a new diff comment on this review. The review
+        must be a draft review.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -269,6 +318,7 @@ reviewCommentResource = ReviewCommentResource()
 
 
 class ReviewReplyCommentResource(BaseCommentResource):
+    """A resource representing diff comments on a reply to a review."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
@@ -293,6 +343,11 @@ class ReviewReplyCommentResource(BaseCommentResource):
         },
     )
     def create(self, request, reply_to_id, text, *args, **kwargs):
+        """Creates a new diff comment on a reply.
+
+        This will create a new diff comment on this reply. The reply
+        must be a draft reply.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -333,6 +388,7 @@ reviewReplyCommentResource = ReviewReplyCommentResource()
 
 
 class FileDiffResource(WebAPIResource):
+    """A resource representing a file diff."""
     model = FileDiff
     name = 'file'
     fields = (
@@ -354,6 +410,7 @@ fileDiffResource = FileDiffResource()
 
 
 class DiffSetResource(WebAPIResource):
+    """A resource representing a set of file diffs."""
     model = DiffSet
     name = 'diff'
     fields = ('id', 'name', 'revision', 'timestamp', 'repository')
@@ -383,6 +440,11 @@ class DiffSetResource(WebAPIResource):
 
     @webapi_login_required
     def create(self, request, *args, **kwargs):
+        """Creates a new diffset by parsing an uploaded diff file.
+
+        This accepts a unified diff file, validates it, and stores it along
+        with a draft of a review request.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -458,6 +520,7 @@ diffSetResource = DiffSetResource()
 
 
 class UserResource(DjbletsUserResource):
+    """A resource representing user accounts."""
     def get_queryset(self, request, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
@@ -478,6 +541,7 @@ userResource = UserResource()
 
 
 class ReviewGroupUserResource(UserResource):
+    """A resource representing users in a review group."""
     def get_queryset(self, request, group_name, *args, **kwargs):
         return self.model.objects.filter(review_groups__name=group_name)
 
@@ -485,6 +549,7 @@ reviewGroupUserResource = ReviewGroupUserResource()
 
 
 class ReviewGroupResource(WebAPIResource):
+    """A resource representing review groups."""
     model = Group
     fields = ('id', 'name', 'display_name', 'mailing_list', 'url')
     item_child_resources = [ReviewGroupUserResource()]
@@ -515,12 +580,10 @@ class ReviewGroupResource(WebAPIResource):
 
     @webapi_login_required
     def action_star(self, request, *args, **kwargs):
-        """
-        Adds a group to the user's watched groups list.
-        """
+        """Adds a group to the user's watched groups list."""
         try:
             group = self.get_object(request, *args, **kwargs)
-        except Group.DoesNotExist:
+        except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         profile, profile_is_new = \
@@ -532,12 +595,10 @@ class ReviewGroupResource(WebAPIResource):
 
     @webapi_login_required
     def action_unstar(self, request, *args, **kwargs):
-        """
-    Removes a group from the user's watched groups list.
-        """
+        """Removes a group from the user's watched groups list."""
         try:
             group = self.get_object(request, *args, **kwargs)
-        except Group.DoesNotExist:
+        except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         profile, profile_is_new = \
@@ -553,15 +614,17 @@ reviewGroupResource = ReviewGroupResource()
 
 
 class RepositoryInfoResource(WebAPIResource):
+    """A resource representing server-side information on a repository."""
     name = 'info'
     name_plural = 'info'
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
+        """Returns repository-specific information from a server."""
         try:
             repository = self.get_object(*args, **kwargs)
-        except Repository.DoesNotExist:
+        except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         try:
@@ -577,6 +640,7 @@ repositoryInfoResource = RepositoryInfoResource()
 
 
 class RepositoryResource(WebAPIResource):
+    """A resource representing a repository."""
     model = Repository
     name_plural = 'repositories'
     fields = ('id', 'name', 'path', 'tool')
@@ -596,6 +660,7 @@ repositoryResource = RepositoryResource()
 
 
 class ReviewRequestDraftResource(WebAPIResource):
+    """A resource representing drafts of review requests."""
     model = ReviewRequestDraft
     name = 'draft'
     name_plural = 'draft'
@@ -612,6 +677,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @classmethod
     def prepare_draft(self, request, review_request):
+        """Creates a draft, if the user has permission to."""
         if not review_request.is_mutable_by(request.user):
             raise PermissionDenied
 
@@ -631,6 +697,10 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_login_required
     def create(self, *args, **kwargs):
+        """Creates a draft of a review request.
+
+        If a draft already exists, this will just reuse the existing draft.
+        """
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
         result = self.update(*args, **kwargs)
@@ -643,6 +713,9 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_login_required
     def update(self, request, always_save=False, *args, **kwargs):
+        """Updates a draft of a review request.
+
+        This will update the draft with the newly provided data."""
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -692,6 +765,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_login_required
     def delete(self, request, review_request_id, *args, **kwargs):
+        """Deletes a draft of a review request."""
         # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
@@ -709,6 +783,11 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_login_required
     def action_publish(self, request, review_request_id, *args, **kwargs):
+        """Publishes a draft of a review request.
+
+        When the draft is published, its review request is updated with
+        the new information and the draft is deleted.
+        """
         # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
@@ -727,6 +806,24 @@ class ReviewRequestDraftResource(WebAPIResource):
         return 200, {}
 
     def _set_draft_field_data(self, draft, field_name, data):
+        """Sets a field on a draft.
+
+        This will update a draft's field based on the provided data.
+        It handles transforming the data as necessary to put it into
+        the field.
+
+        if there is a problem with the data, then a validation error
+        is returned.
+
+        This returns a tuple of (data, modified_objects, invalid_entries).
+
+        ``data`` is the transformed data.
+
+        ``modified_objects`` is a list of objects (screenshots or change
+        description) that were affected.
+
+        ``invalid_entries`` is a list of validation errors.
+        """
         result = None
         modified_objects = []
         invalid_entries = []
@@ -784,14 +881,19 @@ class ReviewRequestDraftResource(WebAPIResource):
             result = data
         else:
             if field_name == 'summary' and '\n' in data:
-                return ['Summary cannot contain newlines'], []
-
-            setattr(draft, field_name, data)
-            result = data
+                invalid_entries.append('Summary cannot contain newlines')
+            else:
+                setattr(draft, field_name, data)
+                result = data
 
         return data, modified_objects, invalid_entries
 
     def _sanitize_bug_ids(self, entries):
+        """Sanitizes bug IDs.
+
+        This will remove any excess whitespace before or after the bug
+        IDs, and remove any leading ``#`` characters.
+        """
         for bug in entries.split(','):
             bug = bug.strip()
 
@@ -804,6 +906,11 @@ class ReviewRequestDraftResource(WebAPIResource):
                 yield bug
 
     def _find_user(self, username):
+        """Finds a User object matching ``username``.
+
+        This will search all authentication backends, and may create the
+        User object if the authentication backend knows that the user exists.
+        """
         username = username.strip()
 
         try:
@@ -824,12 +931,14 @@ reviewRequestDraftResource = ReviewRequestDraftResource()
 
 
 class ReviewDraftCommentResource(BaseCommentResource):
+    """A resource representing diff comments on a draft review."""
     allowed_methods = ('GET', 'PUT', 'POST', 'DELETE')
 
 reviewDraftCommentResource = ReviewDraftCommentResource()
 
 
 class BaseScreenshotCommentResource(WebAPIResource):
+    """A base resource for screenshot comments."""
     model = ScreenshotComment
     name = 'screenshot-comment'
     fields = (
@@ -857,6 +966,7 @@ class BaseScreenshotCommentResource(WebAPIResource):
 
 
 class ScreenshotCommentResource(BaseScreenshotCommentResource):
+    """A resource representing a comment on a screenshot."""
     model_parent_key = 'screenshot'
 
     def get_queryset(self, request, review_request_id, screenshot_id,
@@ -869,6 +979,7 @@ screenshotCommentResource = ScreenshotCommentResource()
 
 
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
+    """A resource representing a screenshot comment on a review."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
@@ -913,6 +1024,12 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     )
     def create(self, request, screenshot_id, x, y, w, h, text,
                *args, **kwargs):
+        """Creates a screenshot comment on a review.
+
+        This will create a new comment on a screenshot as part of a review.
+        The comment contains text and dimensions for the area being commented
+        on.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -948,6 +1065,7 @@ reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
 
 
 class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
+    """A resource representing screenshot comments on a reply to a review."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
@@ -972,6 +1090,12 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         },
     )
     def create(self, request, reply_to_id, text, *args, **kwargs):
+        """Creates a reply to a screenshot comment on a review.
+
+        This will create a reply to a screenshot comment on a review.
+        The new comment will contain the same dimensions of the comment
+        being replied to, but may contain new text.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1014,6 +1138,7 @@ reviewReplyScreenshotCommentResource = ReviewReplyScreenshotCommentResource()
 
 
 class ReviewDraftScreenshotCommentResource(BaseScreenshotCommentResource):
+    """A resource representing a screenshot comment on a draft review."""
     allowed_methods = ('GET',)
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
@@ -1031,6 +1156,7 @@ reviewDraftScreenshotCommentResource = ReviewDraftScreenshotCommentResource()
 
 
 class ReviewDraftResource(WebAPIResource):
+    """A resource representing a draft review."""
     model = Review
     name = 'draft'
     name_plural = 'draft'
@@ -1048,6 +1174,7 @@ class ReviewDraftResource(WebAPIResource):
 
     @webapi_login_required
     def get(self, request, api_format, review_request_id, *args, **kwargs):
+        """Returns the draft of a review."""
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
         except ReviewRequest.DoesNotExist:
@@ -1064,6 +1191,11 @@ class ReviewDraftResource(WebAPIResource):
 
     @webapi_login_required
     def create(self, *args, **kwargs):
+        """Creates a new draft review.
+
+        There is only ever one draft review per user per review request, so
+        if a draft already exists, it will just be updated.
+        """
         # A draft is a singleton. Creating and updating it are the same
         # operations in practice.
         return self.update(*args, **kwargs)
@@ -1088,6 +1220,7 @@ class ReviewDraftResource(WebAPIResource):
     def update(self, request, review_request_id, ship_it=None, body_top=None,
                body_bottom=None, review_id=None, publish=False,
                *args, **kwargs):
+        """Updates an existing draft review."""
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
         except ReviewRequest.DoesNotExist:
@@ -1123,6 +1256,7 @@ class ReviewDraftResource(WebAPIResource):
 
     @webapi_login_required
     def delete(self, request, api_format, review_request_id, *args, **kwargs):
+        """Deletes a draft review."""
         try:
             review_request = ReviewRequest.objects.get(pk=review_request_id)
         except ReviewRequest.DoesNotExist:
@@ -1145,6 +1279,10 @@ reviewDraftResource = ReviewDraftResource()
 
 
 class BaseReviewResource(WebAPIResource):
+    """Base class for review resources.
+
+    Provides common fields and functionality for all review resources.
+    """
     model = Review
     fields = (
         'id', 'user', 'timestamp', 'public', 'comments',
@@ -1194,6 +1332,12 @@ class BaseReviewResource(WebAPIResource):
         },
     )
     def create(self, request, *args, **kwargs):
+        """Creates a review.
+
+        This creates a new review on a review request. The review is a
+        draft and only the author will be able to see it until it is
+        published.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1240,6 +1384,11 @@ class BaseReviewResource(WebAPIResource):
         },
     )
     def update(self, request, publish=False, *args, **kwargs):
+        """Updates a review.
+
+        This updates the fields of a draft review. Published reviews cannot
+        be updated.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1251,10 +1400,15 @@ class BaseReviewResource(WebAPIResource):
 
     @webapi_login_required
     def action_publish(self, *args, **kwargs):
+        """Publishes a review.
+
+        This marks the review as public.
+        """
         return self.update(publish=True, *args, **kwargs)
 
     def _update_review(self, request, review, publish=False, ship_it=None,
                        body_top=None, body_bottom=None, *args, **kwargs):
+        """Common function to update fields on a draft review."""
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
@@ -1280,6 +1434,7 @@ class BaseReviewResource(WebAPIResource):
 
 
 class ReviewReplyResource(BaseReviewResource):
+    """A resource representing a reply to a review."""
     model = Review
     name = 'reply'
     name_plural = 'replies'
@@ -1315,6 +1470,11 @@ class ReviewReplyResource(BaseReviewResource):
         },
     )
     def create(self, request, *args, **kwargs):
+        """Creates a reply to a review.
+
+        This creates a new reply to a review. The reply is a draft and
+        only the author will be able to see it until it is published.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1358,6 +1518,11 @@ class ReviewReplyResource(BaseReviewResource):
         },
     )
     def update(self, request, publish=False, *args, **kwargs):
+        """Updates a reply.
+
+        This updates the fields of a draft reply. Published replies cannot
+        be updated.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1370,6 +1535,7 @@ class ReviewReplyResource(BaseReviewResource):
 
     def _update_reply(self, request, reply, publish=False, body_top=None,
                       body_bottom=None, *args, **kwargs):
+        """Common function to update fields on a draft reply."""
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
             # to the user.
@@ -1421,6 +1587,7 @@ reviewReplyResource = ReviewReplyResource()
 
 
 class ReviewResource(BaseReviewResource):
+    """A resource representing a review on a review request."""
     uri_object_key = 'review_id'
     model_parent_key = 'review_request'
 
@@ -1440,6 +1607,7 @@ reviewResource = ReviewResource()
 
 
 class ScreenshotResource(WebAPIResource):
+    """A resource representing a screenshot on a review request."""
     model = Screenshot
     name = 'screenshot'
     fields = ('id', 'caption', 'title', 'image_url', 'thumbnail_url')
@@ -1467,6 +1635,11 @@ class ScreenshotResource(WebAPIResource):
 
     @webapi_login_required
     def create(self, request, *args, **kwargs):
+        """Creates a new screenshot from an uploaded file.
+
+        This accepts any standard image format (PNG, GIF, JPEG) and associates
+        it with a draft of a review request.
+        """
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1500,6 +1673,7 @@ screenshotResource = ScreenshotResource()
 
 
 class ReviewRequestResource(WebAPIResource):
+    """A resource representing a review request."""
     model = ReviewRequest
     name = 'review_request'
     fields = (
@@ -1519,6 +1693,38 @@ class ReviewRequestResource(WebAPIResource):
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
+        """Returns a queryset for ReviewRequest models.
+
+        By default, this returns all published or formerly published
+        review requests.
+
+        If the queryset is being used for a list of review request
+        resources, then it can be further filtered by one or more of the
+        following arguments in the URL:
+
+          * ``changenum`` - The change number the review requests must be
+                            against. This will only return one review request
+                            per repository, and only works for repository
+                            types that support server-side changesets.
+          * ``from-user`` - The username that the review requests must be
+                            owned by.
+          * ``repository`` - The ID of the repository that the review requests
+                             must be on.
+          * ``status`` - The status of the review requests. This can be
+                         ``pending``, ``submitted`` or ``discarded``.
+          * ``to-groups`` - A comma-separated list of review group names that
+                            the review requests must have in the reviewer
+                            list.
+          * ``to-user-groups`` - A comma-separated list of usernames who
+                                 are in groups that the review requests
+                                 must have in the reviewer list.
+          * ``to-users`` - A comma-separated list of usernames that the
+                           review requests must either have in the reviewer
+                           list specifically or by way of a group.
+          * ``to-users-directly`` - A comma-separated list of usernames that
+                                    the review requests must have in the
+                                    reviewer list specifically.
+        """
         q = Q()
 
         if is_list:
@@ -1573,40 +1779,33 @@ class ReviewRequestResource(WebAPIResource):
         return status_to_string(obj.status)
 
     @webapi_login_required
+    @webapi_request_fields(
+        required={
+            'repository': {
+                'type': str,
+                'description': 'The path or ID of the repository that the '
+                               'review request is for.',
+            },
+        },
+        optional={
+            'changenum': {
+                'type': int,
+                'description': 'The optional changenumber to look up for the '
+                               'review request details. This only works with '
+                               'repositories that support server-side '
+                               'changesets.',
+            },
+            'submit_as': {
+                'type': str,
+                'description': 'The optional user to submit the review '
+                               'request as. This requires that the actual '
+                               'logged in user is either a superuser or has '
+                               'the "reviews.can_submit_as_another_user" '
+                               'permission.',
+            },
+        })
     def create(self, request, *args, **kwargs):
-        """
-        Creates a new review request.
-
-        Required parameters:
-
-          * repository_path: The repository to create the review request
-                             against. If both this and repository_id are set,
-                             repository_path's value takes precedence.
-          * repository_id:   The ID of the repository to create the review
-                             request against.
-
-
-        Optional parameters:
-
-          * submit_as:       The optional user to submit the review request as.
-                             This requires that the actual logged in user is
-                             either a superuser or has the
-                             "reviews.can_submit_as_another_user" property.
-          * changenum:       The optional changenumber to look up for the review
-                             request details. This only works with repositories
-                             that support changesets.
-
-        Returned keys:
-
-          * 'review_request': The resulting review request
-
-        Errors:
-
-          * INVALID_REPOSITORY
-          * CHANGE_NUMBER_IN_USE
-          * INVALID_CHANGE_NUMBER
-        """
-
+        """Creates a new review request."""
         try:
             repository_path = request.POST.get('repository_path', None)
             repository_id = request.POST.get('repository_id', None)
@@ -1653,6 +1852,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_login_required
     def action_star(self, request, *args, **kwargs):
+        """Marks a review request as being starred."""
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1668,6 +1868,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_login_required
     def action_unstar(self, request, *args, **kwargs):
+        """Removes the review request from the starred list."""
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1685,6 +1886,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_login_required
     def action_close(self, request, *args, **kwargs):
+        """Closes the review request."""
         type_map = {
             'submitted': ReviewRequest.SUBMITTED,
             'discarded': ReviewRequest.DISCARDED,
@@ -1710,6 +1912,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_login_required
     def action_reopen(self, request, *args, **kwargs):
+        """Reopens the review request."""
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1723,6 +1926,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_login_required
     def action_publish(self, request, *args, **kwargs):
+        """Publishes the current draft of the review request, if any."""
         try:
             review_request = reviewRequestResource.get_object(request,
                                                               *args, **kwargs)
@@ -1747,6 +1951,12 @@ class ServerInfoResource(WebAPIResource):
 
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
+        """Returns information on the Review Board server.
+
+        This contains product information, such as the version, and
+        site-specific information, such as the main URL and list of
+        administrators.
+        """
         site = Site.objects.get_current()
         siteconfig = SiteConfiguration.objects.get_current()
 
