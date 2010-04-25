@@ -108,8 +108,12 @@ class BaseCommentResource(WebAPIResource):
 
 
 class FileDiffCommentResource(BaseCommentResource):
-    """A resource representing diff comments inside a filediff resource."""
-    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+    """A resource representing diff comments inside a filediff resource.
+
+    This resource is read-only, and only handles returning the list of
+    comments. All comment creation is handled by ReviewCommentResource.
+    """
+    allowed_methods = ('GET',)
     model_parent_key = 'filediff'
 
     def get_queryset(self, request, review_request_id, diff_revision,
@@ -140,72 +144,6 @@ class FileDiffCommentResource(BaseCommentResource):
 
         return q
 
-    @webapi_login_required
-    @webapi_request_fields(
-        required={
-            'first_line': {
-                'type': int,
-                'description': 'The line number the comment starts at.',
-            },
-            'num_lines': {
-                'type': int,
-                'description': 'The number of lines the comment spans.',
-            },
-            'text': {
-                'type': str,
-                'description': 'The comment text',
-            },
-        },
-    )
-    def create(self, request, review_request_id, diff_revision, filediff_id,
-               first_line, num_lines, text, *args, **kwargs):
-        """Creates a new diff comment.
-
-        This will create a new draft diff comment on this file. If the user
-        doesn't already have a draft review for this review request, then one
-        will be created.
-        """
-        try:
-            review_request = ReviewRequest.objects.get(pk=review_request_id)
-            filediff = FileDiff.objects.get(
-                pk=filediff_id,
-                diffset__revision=diff_revision,
-                diffset__history__review_request=review_request)
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
-
-        interfilediff = None # XXX
-
-        review, review_is_new = Review.objects.get_or_create(
-            review_request=review_request,
-            user=request.user,
-            public=False,
-            base_reply_to__isnull=True)
-
-        if interfilediff:
-            comment, comment_is_new = review.comments.get_or_create(
-                filediff=filediff,
-                interfilediff=interfilediff,
-                first_line=first_line)
-        else:
-            comment, comment_is_new = review.comments.get_or_create(
-                filediff=filediff,
-                interfilediff__isnull=True,
-                first_line=first_line)
-
-        comment.text = text
-        comment.num_lines = num_lines
-        comment.timestamp = datetime.now()
-        comment.save()
-
-        if comment_is_new:
-            review.comments.add(comment)
-            review.save()
-
-        return 201, {
-            self.name: comment,
-        }
-
 fileDiffCommentResource = FileDiffCommentResource()
 
 
@@ -215,10 +153,29 @@ class ReviewCommentResource(BaseCommentResource):
     model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id,
-                     *args, **kwargs):
+                     is_list=False, *args, **kwargs):
+        """Returns a queryset for Comment models.
+
+        This filters the query for comments on the particular review.
+
+        If the queryset is being used for a list of comment resources,
+        then this can be further filtered by passing ``?interdiff_revision=``
+        on the URL to match the given interdiff revision, and
+        ``?line=`` to match comments on the given line number.
+        """
         q = super(ReviewCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=review_id)
+
+        if is_list:
+            if 'interdiff_revision' in request.GET:
+                interdiff_revision = int(request.GET['interdiff_revision'])
+                q = q.filter(
+                    interfilediff__diffset__revision=interdiff_revision)
+
+            if 'line' in request.GET:
+                q = q.filter(first_line=int(request.GET['line']))
+
         return q
 
     def has_delete_permissions(self, request, comment, *args, **kwargs):
