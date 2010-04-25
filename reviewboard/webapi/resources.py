@@ -866,14 +866,13 @@ class ReviewRequestDraftResource(WebAPIResource):
 
             try:
                 screenshot = Screenshot.objects.get(pk=screenshot_id)
+                screenshot.draft_caption = data
+
+                result = data
+                modified_objects.append(screenshot)
             except Screenshot.DoesNotExist:
-                return ['Screenshot with ID %s does not exist' %
-                        screenshot_id], []
-
-            screenshot.draft_caption = data
-
-            result = data
-            modified_objects.append(screenshot)
+                invalid_entries.append('Screenshot with ID %s does not exist' %
+                                       screenshot_id)
         elif field_name == 'changedescription':
             draft.changedesc.text = data
 
@@ -973,7 +972,8 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
                      *args, **kwargs):
         q = super(ScreenshotCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        return q.filter(screenshot=screenshot_id)
+        q = q.filter(screenshot=screenshot_id)
+        return q
 
 screenshotCommentResource = ScreenshotCommentResource()
 
@@ -1990,7 +1990,7 @@ def status_to_string(status):
     elif status == None:
         return "all"
     else:
-        raise "Invalid status '%s'" % status
+        raise Exception("Invalid status '%s'" % status)
 
 
 def string_to_status(status):
@@ -2003,4 +2003,4 @@ def string_to_status(status):
     elif status == "all":
         return None
     else:
-        raise "Invalid status '%s'" % status
+        raise Exception("Invalid status '%s'" % status)
