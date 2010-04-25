@@ -1804,42 +1804,39 @@ class ReviewRequestResource(WebAPIResource):
                                'permission.',
             },
         })
-    def create(self, request, *args, **kwargs):
+    def create(self, request, repository, submit_as=None, changenum=None,
+               *args, **kwargs):
         """Creates a new review request."""
+        user = request.user
+
+        if submit_as and user.username != submit_as:
+            if not user.has_perm('reviews.can_submit_as_another_user'):
+                return PERMISSION_DENIED
+
+            try:
+                user = User.objects.get(username=submit_as)
+            except User.DoesNotExist:
+                return INVALID_USER
+
         try:
-            repository_path = request.POST.get('repository_path', None)
-            repository_id = request.POST.get('repository_id', None)
-            submit_as = request.POST.get('submit_as')
-            user = request.user
-
-            if submit_as and user.username != submit_as:
-                if not user.has_perm('reviews.can_submit_as_another_user'):
-                    return PERMISSION_DENIED
-
-                try:
-                    user = User.objects.get(username=submit_as)
-                except User.DoesNotExist:
-                    return INVALID_USER
-
-            if repository_path is None and repository_id is None:
-                return MISSING_REPOSITORY
-
-            if repository_path:
+            try:
+                repository = Repository.objects.get(pk=int(repository))
+            except ValueError:
+                # The repository is not an ID.
                 repository = Repository.objects.get(
-                    Q(path=repository_path) |
-                    Q(mirror_path=repository_path))
-            else:
-                repository = Repository.objects.get(id=repository_id)
+                    Q(path=repository) |
+                    Q(mirror_path=repository))
+        except Repository.DoesNotExist, e:
+            return INVALID_REPOSITORY, {
+                'repository': repository
+            }
 
-            review_request = ReviewRequest.objects.create(
-                user, repository, request.POST.get('changenum', None))
+        try:
+            review_request = ReviewRequest.objects.create(user, repository,
+                                                          changenum)
 
             return 201, {
                 'review_request': review_request
-            }
-        except Repository.DoesNotExist, e:
-            return INVALID_REPOSITORY, {
-                'repository_path': repository_path
             }
         except ChangeNumberInUseError, e:
             return CHANGE_NUMBER_IN_USE, {

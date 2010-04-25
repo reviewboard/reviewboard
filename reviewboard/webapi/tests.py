@@ -136,7 +136,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def _postNewReviewRequest(self):
         """Creates a review request and returns the payload response."""
         rsp = self.apiPost("reviewrequests", {
-            'repository_path': self.repository.path,
+            'repository': self.repository.path,
         })
 
         self.assertEqual(rsp['stat'], 'ok')
@@ -504,7 +504,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     def test_post_reviewrequests(self):
         """Testing the POST reviewrequests/ API"""
         rsp = self.apiPost("reviewrequests", {
-            'repository_path': self.repository.path,
+            'repository': self.repository.path,
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review_request']['repository']['id'],
@@ -517,7 +517,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     def test_post_reviewrequests_with_invalid_repository_error(self):
         """Testing the POST reviewrequests/ API with Invalid Repository error"""
         rsp = self.apiPost("reviewrequests", {
-            'repository_path': 'gobbledygook',
+            'repository': 'gobbledygook',
         }, expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
@@ -528,7 +528,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.user.save()
 
         rsp = self.apiPost("reviewrequests", {
-            'repository_path': self.repository.path,
+            'repository': self.repository.path,
             'submit_as': 'doc',
         })
         self.assertEqual(rsp['stat'], 'ok')
@@ -541,7 +541,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
     def test_post_reviewrequests_with_submit_as_and_permission_denied_error(self):
         """Testing the POST reviewrequests/?submit_as= API with Permission Denied error"""
         rsp = self.apiPost("reviewrequests", {
-            'repository_path': self.repository.path,
+            'repository': self.repository.path,
             'submit_as': 'doc',
         }, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
