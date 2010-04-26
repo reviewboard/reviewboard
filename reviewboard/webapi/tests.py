@@ -881,7 +881,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
             expected_status=403)
 
     def test_put_review_action_publish(self):
-        """Testing the PUT reviewrequests/<id>/reviews/<id>/?action=publish API"""
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/?public=1 API"""
         body_top = "My Body Top"
         body_bottom = ""
         ship_it = True
@@ -901,7 +901,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review_url = response['Location']
 
         rsp = self.apiPut(review_url, {
-            'action': 'publish',
+            'public': True,
             'ship_it': ship_it,
             'body_top': body_top,
             'body_bottom': body_bottom,
@@ -1246,7 +1246,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
     def test_put_reply_action_publish(self):
-        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/<id>/?action=publish API"""
+        """Testing the PUT reviewrequests/<id>/reviews/<id>/replies/<id>/?public=1 API"""
         review = \
             Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
 
@@ -1259,8 +1259,8 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         rsp = self.apiPut(response['Location'], {
-            'action': 'publish',
             'body_top': 'Test',
+            'public': True,
         })
 
         self.assertEqual(rsp['stat'], 'ok')

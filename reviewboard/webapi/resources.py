@@ -1138,6 +1138,12 @@ class BaseReviewResource(WebAPIResource):
                 'type': str,
                 'description': 'The review content below the comments.',
             },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not to make the review public. '
+                               'If a review is public, it cannot be made '
+                               'private again.',
+            },
         },
     )
     def create(self, request, *args, **kwargs):
@@ -1190,9 +1196,15 @@ class BaseReviewResource(WebAPIResource):
                 'type': str,
                 'description': 'The review content below the comments.',
             },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not to make the review public. '
+                               'If a review is public, it cannot be made '
+                               'private again.',
+            },
         },
     )
-    def update(self, request, publish=False, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         """Updates a review.
 
         This updates the fields of a draft review. Published reviews cannot
@@ -1205,17 +1217,9 @@ class BaseReviewResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        return self._update_review(request, review, publish, *args, **kwargs)
+        return self._update_review(request, review, *args, **kwargs)
 
-    @webapi_login_required
-    def action_publish(self, *args, **kwargs):
-        """Publishes a review.
-
-        This marks the review as public.
-        """
-        return self.update(publish=True, *args, **kwargs)
-
-    def _update_review(self, request, review, publish=False, *args, **kwargs):
+    def _update_review(self, request, review, public=None, *args, **kwargs):
         """Common function to update fields on a draft review."""
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
@@ -1230,7 +1234,7 @@ class BaseReviewResource(WebAPIResource):
 
         review.save()
 
-        if publish:
+        if public:
             review.publish(user=request.user)
 
         return 200, {
@@ -1273,6 +1277,12 @@ class ReviewReplyResource(BaseReviewResource):
                 'type': str,
                 'description': 'The response to the review content below '
                                'the comments.',
+            },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not to make the reply public. '
+                               'If a reply is public, it cannot be made '
+                               'private again.',
             },
         },
     )
@@ -1324,9 +1334,15 @@ class ReviewReplyResource(BaseReviewResource):
                 'description': 'The response to the review content below '
                                'the comments.',
             },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not to make the reply public. '
+                               'If a reply is public, it cannot be made '
+                               'private again.',
+            },
         },
     )
-    def update(self, request, publish=False, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         """Updates a reply.
 
         This updates the fields of a draft reply. Published replies cannot
@@ -1340,9 +1356,9 @@ class ReviewReplyResource(BaseReviewResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        return self._update_reply(request, reply, publish, *args, **kwargs)
+        return self._update_reply(request, reply, *args, **kwargs)
 
-    def _update_reply(self, request, reply, publish=False, *args, **kwargs):
+    def _update_reply(self, request, reply, public=None, *args, **kwargs):
         """Common function to update fields on a draft reply."""
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
@@ -1364,7 +1380,7 @@ class ReviewReplyResource(BaseReviewResource):
 
                 setattr(reply, '%s_reply_to' % field, reply_to)
 
-        if publish:
+        if public:
             reply.publish(user=request.user)
         else:
             reply.save()
