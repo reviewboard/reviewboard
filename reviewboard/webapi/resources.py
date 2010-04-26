@@ -15,7 +15,8 @@ from djblets.webapi.decorators import webapi_login_required, \
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
                                   INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
-                                     UserResource as DjbletsUserResource
+                                     UserResource as DjbletsUserResource, \
+                                     RootResource
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
@@ -1763,6 +1764,15 @@ class ServerInfoResource(WebAPIResource):
         }
 
 serverInfoResource = ServerInfoResource()
+
+
+rootResource = RootResource([
+    repositoryResource,
+    reviewGroupResource,
+    reviewRequestResource,
+    serverInfoResource,
+    userResource,
+])
 
 
 def status_to_string(status):
