@@ -1481,6 +1481,11 @@ class ReviewRequestResource(WebAPIResource):
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
+    _close_type_map = {
+        'submitted': ReviewRequest.SUBMITTED,
+        'discarded': ReviewRequest.DISCARDED,
+    }
+
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         """Returns a queryset for ReviewRequest models.
 
@@ -1637,6 +1642,42 @@ class ReviewRequestResource(WebAPIResource):
             return EMPTY_CHANGESET
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional={
+            'status': {
+                'type': ('discarded', 'pending', 'submitted'),
+                'description': 'The status of the review request. This can '
+                               'be changed to close or reopen the review '
+                               'request',
+            },
+        },
+    )
+    def update(self, status=None, *args, **kwargs):
+        try:
+            review_request = reviewRequestResource.get_object(request,
+                                                              *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if (status is not None and
+            review_request.status != string_to_status(status)):
+            try:
+                if status in self._close_type_map:
+                    review_request.close(self._close_type_map[status],
+                                         request.user)
+                elif status == 'pending':
+                    review_request.reopen(request.user)
+                else:
+                    raise AssertionError("Code path for invalid status '%s' "
+                                         "should never be reached." % status)
+            except PermissionError:
+                return PERMISSION_DENIED
+
+        return 200, {
+            self.name: review_request,
+        }
+
+    @webapi_login_required
     def action_star(self, request, *args, **kwargs):
         """Marks a review request as being starred."""
         try:
@@ -1667,64 +1708,6 @@ class ReviewRequestResource(WebAPIResource):
         if not profile_is_new:
             profile.starred_review_requests.remove(review_request)
             profile.save()
-
-        return 200, {}
-
-    @webapi_login_required
-    def action_close(self, request, *args, **kwargs):
-        """Closes the review request."""
-        type_map = {
-            'submitted': ReviewRequest.SUBMITTED,
-            'discarded': ReviewRequest.DISCARDED,
-        }
-
-        close_type = request.POST.get('type', kwargs.get('type', None))
-
-        if close_type not in type_map:
-            return INVALID_ATTRIBUTE, {
-                'attribute': close_type,
-            }
-
-        try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review_request.close(type_map[close_type], request.user)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-        except PermissionError:
-            return HttpResponseForbidden()
-
-        return 200, {}
-
-    @webapi_login_required
-    def action_reopen(self, request, *args, **kwargs):
-        """Reopens the review request."""
-        try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review_request.reopen(request.user)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-        except PermissionError:
-            return HttpResponseForbidden()
-
-        return 200, {}
-
-    @webapi_login_required
-    def action_publish(self, request, *args, **kwargs):
-        """Publishes the current draft of the review request, if any."""
-        try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-
-            if not review_request.can_publish():
-                return NOTHING_TO_PUBLISH
-
-            review_request.publish(request.user)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-        except PermissionError:
-            return HttpResponseForbidden()
 
         return 200, {}
 

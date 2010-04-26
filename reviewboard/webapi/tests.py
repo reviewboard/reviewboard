@@ -655,22 +655,6 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
-    def test_put_reviewrequest_action_publish(self):
-        """Testing the PUT reviewrequests/<id>/?action=publish API"""
-        # Set some data first.
-        review_request = \
-            ReviewRequest.objects.from_user(self.user.username)[0]
-        rsp = self.apiPost("reviewrequests/%s/draft" % review_request.id, {
-            'summary': 'This is a test',
-        })
-
-        rsp = self.apiPut("reviewrequests/%s" % review_request.id, {
-            'action': 'publish',
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(mail.outbox), 1)
-
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
