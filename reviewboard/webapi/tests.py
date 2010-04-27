@@ -48,15 +48,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def tearDown(self):
         self.client.logout()
 
-    def apiGet(self, path, query={}, follow_redirects=False,
-               expected_status=200, expected_redirects=[]):
-        path = self._normalize_path(path)
-
-        print 'GETing %s' % path
-        print "Query data: %s" % query
-
-        response = self.client.get(path, query,
-                                   follow=follow_redirects)
+    def api_func_wrapper(self, api_func, path, query, expected_status,
+                         follow_redirects, expected_redirects):
+        response = api_func(path, query, follow=follow_redirects)
         self.assertEqual(response.status_code, expected_status)
 
         if expected_redirects:
@@ -64,9 +58,21 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                              len(expected_redirects))
 
             for redirect in expected_redirects:
-                self.assertEqual(response.redirect_chain[0],
-                                 (self.base_url + expected_redirects[0],
-                                  301))
+                self.assertEqual(response.redirect_chain[0][0],
+                                 self.base_url + expected_redirects[0])
+
+        return response
+
+    def apiGet(self, path, query={}, follow_redirects=False,
+               expected_status=200, expected_redirects=[]):
+        path = self._normalize_path(path)
+
+        print 'GETing %s' % path
+        print "Query data: %s" % query
+
+        response = self.api_func_wrapper(self.client.get, path, query,
+                                         expected_status, follow_redirects,
+                                         expected_redirects)
 
         print "Raw response: %s" % response.content
 
@@ -91,12 +97,15 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def apiPut(self, path, query={}, expected_status=200):
+    def apiPut(self, path, query={}, expected_status=200,
+               follow_redirects=False, expected_redirects=[]):
         path = self._normalize_path(path)
 
         print 'PUTing to %s' % path
         print "Post data: %s" % query
-        response = self.client.put(path, query)
+        response = self.api_func_wrapper(self.client.put, path, query,
+                                         expected_status, follow_redirects,
+                                         expected_redirects)
         print "Raw response: %s" % response.content
         self.assertEqual(response.status_code, expected_status)
 
@@ -735,16 +744,20 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
-    def test_put_reviewrequestdraft_action_publish(self):
-        """Testing the PUT review-requests/draft/?action=publish API"""
+    def test_put_reviewrequestdraft_publish(self):
+        """Testing the PUT review-requests/draft/?public=1 API"""
         # Set some data first.
         self.test_put_reviewrequestdraft()
 
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPut("review-requests/%s/draft" % review_request_id, {
-            'action': 'publish',
-        })
+            'public': True,
+        }, follow_redirects=True, expected_redirects=[
+            reverse('review-request-resource', kwargs={
+                'review_request_id': review_request_id,
+            })
+        ])
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -757,16 +770,6 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
         self.assertValidRecipients(["doc", "grumpy"], [])
-
-    def test_put_reviewrequestdraft_action_publish_with_does_not_exist_error(self):
-        """Testing the PUT review-requests/draft/?action=publish API with Does Not Exist error"""
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
-        rsp = self.apiPut("review-requests/%s/draft" % review_request.id, {
-            'action': 'publish',
-        }, expected_status=404)
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def test_delete_reviewrequestdraft(self):
         """Testing the DELETE review-requests/draft/ API"""

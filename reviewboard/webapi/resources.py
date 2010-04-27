@@ -746,7 +746,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     name_plural = 'draft'
     mutable_fields = (
         'summary', 'description', 'testing_done', 'bugs_closed',
-        'branch', 'target_groups', 'target_people'
+        'branch', 'target_groups', 'target_people', 'public'
     )
     fields = ('id', 'review_request', 'last_updated') + mutable_fields
 
@@ -771,6 +771,9 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     def serialize_status_field(self, obj):
         return status_to_string(obj.status)
+
+    def serialize_public_field(self, obj):
+        return False
 
     def has_delete_permissions(self, request, draft, *args, **kwargs):
         return draft.review_request.is_mutable_by(request.user)
@@ -839,9 +842,18 @@ class ReviewRequestDraftResource(WebAPIResource):
                 'fields': invalid_fields,
             }
 
-        return 200, {
-            self.name: draft,
-        }
+        if request.POST.get('public', False):
+            draft.publish(user=request.user)
+            draft.delete()
+
+            return 303, {}, {
+                'Location': reviewRequestResource.get_href(review_request,
+                                                           *args, **kwargs)
+            }
+        else:
+            return 200, {
+                self.name: draft,
+            }
 
     @webapi_login_required
     def delete(self, request, review_request_id, *args, **kwargs):
@@ -860,30 +872,6 @@ class ReviewRequestDraftResource(WebAPIResource):
         draft.delete()
 
         return 204, {}
-
-    @webapi_login_required
-    def action_publish(self, request, review_request_id, *args, **kwargs):
-        """Publishes a draft of a review request.
-
-        When the draft is published, its review request is updated with
-        the new information and the draft is deleted.
-        """
-        # Make sure this exists. We don't want to use prepare_draft, or
-        # we'll end up creating a new one.
-        try:
-            draft = ReviewRequestDraft.objects.get(
-                review_request=review_request_id)
-            review_request = draft.review_request
-        except ReviewRequestDraft.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        if not review_request.is_mutable_by(request.user):
-            return PERMISSION_DENIED
-
-        draft.publish(user=request.user)
-        draft.delete()
-
-        return 200, {}
 
     def _set_draft_field_data(self, draft, field_name, data):
         """Sets a field on a draft.
