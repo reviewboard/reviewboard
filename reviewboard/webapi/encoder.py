@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.template.defaultfilters import timesince
 from djblets.webapi.core import WebAPIEncoder
-from djblets.webapi.resources import userResource
+from djblets.webapi.resources import user_resource
 
 from reviewboard.diffviewer.models import FileDiff, DiffSet
 from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
@@ -9,17 +9,17 @@ from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ScreenshotComment
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.json import status_to_string
-from reviewboard.webapi.resources import diffSetResource, \
-                                         fileDiffResource, \
-                                         repositoryResource, \
-                                         reviewCommentResource, \
-                                         reviewGroupResource, \
-                                         reviewRequestResource, \
-                                         reviewRequestDraftResource, \
-                                         reviewResource, \
-                                         reviewReplyResource, \
-                                         reviewScreenshotCommentResource, \
-                                         screenshotResource
+from reviewboard.webapi.resources import diffset_resource, \
+                                         filediff_resource, \
+                                         repository_resource, \
+                                         review_comment_resource, \
+                                         review_group_resource, \
+                                         review_request_resource, \
+                                         review_request_draft_resource, \
+                                         review_resource, \
+                                         review_reply_resource, \
+                                         review_screenshot_comment_resource, \
+                                         screenshot_resource
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
@@ -27,30 +27,30 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
         resource = None
 
         if isinstance(o, Group):
-            resource = reviewGroupResource
+            resource = review_group_resource
         elif isinstance(o, User):
-            resource = userResource
+            resource = user_resource
         elif isinstance(o, ReviewRequest):
-            resource = reviewRequestResource
+            resource = review_request_resource
         elif isinstance(o, ReviewRequestDraft):
-            resource = reviewRequestDraftResource
+            resource = review_request_draft_resource
         elif isinstance(o, Review):
             if o.is_reply():
-                resource = reviewReplyResource
+                resource = review_reply_resource
             else:
-                resource = reviewResource
+                resource = review_resource
         elif isinstance(o, Comment):
-            resource = reviewCommentResource
+            resource = review_comment_resource
         elif isinstance(o, ScreenshotComment):
-            resource = reviewScreenshotCommentResource
+            resource = review_screenshot_comment_resource
         elif isinstance(o, Screenshot):
-            resource = screenshotResource
+            resource = screenshot_resource
         elif isinstance(o, FileDiff):
-            resource = fileDiffResource
+            resource = filediff_resource
         elif isinstance(o, DiffSet):
-            resource = diffSetResource
+            resource = diffset_resource
         elif isinstance(o, Repository):
-            resource = repositoryResource
+            resource = repository_resource
         else:
             return super(ReviewBoardAPIEncoder, self).encode(
                 o, api_format=api_format, *args, **kwargs)

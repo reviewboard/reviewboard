@@ -141,7 +141,7 @@ class FileDiffCommentResource(BaseCommentResource):
 
         return q
 
-fileDiffCommentResource = FileDiffCommentResource()
+filediff_comment_resource = FileDiffCommentResource()
 
 
 class ReviewCommentResource(BaseCommentResource):
@@ -215,13 +215,13 @@ class ReviewCommentResource(BaseCommentResource):
         must be a draft review.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review = reviewResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not reviewResource.has_modify_permissions(request, review):
+        if not review_resource.has_modify_permissions(request, review):
             return PERMISSION_DENIED
 
         filediff = None
@@ -268,7 +268,7 @@ class ReviewCommentResource(BaseCommentResource):
             'diff_comment': new_comment,
         }
 
-reviewCommentResource = ReviewCommentResource()
+review_comment_resource = ReviewCommentResource()
 
 
 class ReviewReplyCommentResource(BaseCommentResource):
@@ -303,19 +303,20 @@ class ReviewReplyCommentResource(BaseCommentResource):
         must be a draft reply.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            reply = reviewReplyResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            reply = review_reply_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not reviewReplyResource.has_modify_permissions(request, reply):
+        if not review_reply_resource.has_modify_permissions(request, reply):
             return PERMISSION_DENIED
 
         try:
-            comment = reviewCommentResource.get_object(request,
-                                                       comment_id=reply_to_id,
-                                                       *args, **kwargs)
+            comment = \
+                review_comment_resource.get_object(request,
+                                                   comment_id=reply_to_id,
+                                                   *args, **kwargs)
         except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
                 'fields': {
@@ -338,7 +339,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
             'diff_comment': new_comment,
         }
 
-reviewReplyCommentResource = ReviewReplyCommentResource()
+review_reply_comment_resource = ReviewReplyCommentResource()
 
 
 class FileDiffResource(WebAPIResource):
@@ -349,7 +350,7 @@ class FileDiffResource(WebAPIResource):
         'id', 'diffset', 'source_file', 'dest_file',
         'source_revision', 'dest_detail',
     )
-    item_child_resources = [fileDiffCommentResource]
+    item_child_resources = [filediff_comment_resource]
 
     uri_object_key = 'filediff_id'
     model_parent_key = 'diffset'
@@ -360,7 +361,7 @@ class FileDiffResource(WebAPIResource):
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
 
-fileDiffResource = FileDiffResource()
+filediff_resource = FileDiffResource()
 
 
 class DiffSetResource(WebAPIResource):
@@ -368,7 +369,7 @@ class DiffSetResource(WebAPIResource):
     model = DiffSet
     name = 'diff'
     fields = ('id', 'name', 'revision', 'timestamp', 'repository')
-    item_child_resources = [fileDiffResource]
+    item_child_resources = [filediff_resource]
 
     allowed_methods = ('GET', 'POST')
 
@@ -400,8 +401,8 @@ class DiffSetResource(WebAPIResource):
         with a draft of a review request.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -470,7 +471,7 @@ class DiffSetResource(WebAPIResource):
             'diffset': diffset,
         }
 
-diffSetResource = DiffSetResource()
+diffset_resource = DiffSetResource()
 
 
 class BaseWatchedObjectResource(WebAPIResource):
@@ -529,11 +530,11 @@ class BaseWatchedObjectResource(WebAPIResource):
             obj = self.watched_resource.get_object(request, **dict({
                 self.watched_resource.uri_object_key: object_id,
             }))
-            user = userResource.get_object(request, *args, **kwargs)
+            user = user_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not userResource.has_modify_permissions(request, user,
+        if not user_resource.has_modify_permissions(request, user,
                                                    *args, **kwargs):
             return PERMISSION_DENIED
 
@@ -552,11 +553,11 @@ class BaseWatchedObjectResource(WebAPIResource):
             obj = self.watched_resource.get_object(request, **dict({
                 self.watched_resource.uri_object_key: watched_obj_id,
             }))
-            user = userResource.get_object(request, *args, **kwargs)
+            user = user_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not userResource.has_modify_permissions(request, user,
+        if not user_resource.has_modify_permissions(request, user,
                                                    *args, **kwargs):
             return PERMISSION_DENIED
 
@@ -589,9 +590,9 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         This is implemented as a property in order to work around
         a circular reference issue.
         """
-        return reviewGroupResource
+        return review_group_resource
 
-watchedReviewGroupResource = WatchedReviewGroupResource()
+watched_review_group_resource = WatchedReviewGroupResource()
 
 
 class WatchedReviewRequestResource(BaseWatchedObjectResource):
@@ -607,9 +608,9 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         This is implemented as a property in order to work around
         a circular reference issue.
         """
-        return reviewRequestResource
+        return review_request_resource
 
-watchedReviewRequestResource = WatchedReviewRequestResource()
+watched_review_request_resource = WatchedReviewRequestResource()
 
 
 class WatchedResource(WebAPIResource):
@@ -618,17 +619,17 @@ class WatchedResource(WebAPIResource):
     name_plural = 'watched'
 
     list_child_resources = [
-        watchedReviewGroupResource,
-        watchedReviewRequestResource,
+        watched_review_group_resource,
+        watched_review_request_resource,
     ]
 
-watchedResource = WatchedResource()
+watched_resource = WatchedResource()
 
 
 class UserResource(DjbletsUserResource):
     """A resource representing user accounts."""
     item_child_resources = [
-        watchedResource,
+        watched_resource,
     ]
 
     def get_queryset(self, request, *args, **kwargs):
@@ -647,7 +648,7 @@ class UserResource(DjbletsUserResource):
 
         return query
 
-userResource = UserResource()
+user_resource = UserResource()
 
 
 class ReviewGroupUserResource(UserResource):
@@ -655,7 +656,7 @@ class ReviewGroupUserResource(UserResource):
     def get_queryset(self, request, group_name, *args, **kwargs):
         return self.model.objects.filter(review_groups__name=group_name)
 
-reviewGroupUserResource = ReviewGroupUserResource()
+review_group_user_resource = ReviewGroupUserResource()
 
 
 class ReviewGroupResource(WebAPIResource):
@@ -663,7 +664,7 @@ class ReviewGroupResource(WebAPIResource):
     model = Group
     fields = ('id', 'name', 'display_name', 'mailing_list', 'url')
     item_child_resources = [
-        reviewGroupUserResource
+        review_group_user_resource
     ]
 
     uri_object_key = 'group_name'
@@ -690,7 +691,7 @@ class ReviewGroupResource(WebAPIResource):
     def serialize_url_field(self, group):
         return group.get_absolute_url()
 
-reviewGroupResource = ReviewGroupResource()
+review_group_resource = ReviewGroupResource()
 
 
 class RepositoryInfoResource(WebAPIResource):
@@ -716,7 +717,7 @@ class RepositoryInfoResource(WebAPIResource):
         except:
             return REPO_INFO_ERROR
 
-repositoryInfoResource = RepositoryInfoResource()
+repository_info_resource = RepositoryInfoResource()
 
 
 class RepositoryResource(WebAPIResource):
@@ -725,7 +726,7 @@ class RepositoryResource(WebAPIResource):
     name_plural = 'repositories'
     fields = ('id', 'name', 'path', 'tool')
     uri_object_key = 'repository_id'
-    item_child_resources = [repositoryInfoResource]
+    item_child_resources = [repository_info_resource]
 
     allowed_methods = ('GET',)
 
@@ -736,7 +737,7 @@ class RepositoryResource(WebAPIResource):
     def serialize_tool_field(self, obj):
         return obj.tool.name
 
-repositoryResource = RepositoryResource()
+repository_resource = RepositoryResource()
 
 
 class ReviewRequestDraftResource(WebAPIResource):
@@ -800,8 +801,8 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         This will update the draft with the newly provided data."""
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -847,7 +848,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             draft.delete()
 
             return 303, {}, {
-                'Location': reviewRequestResource.get_href(review_request,
+                'Location': review_request_resource.get_href(review_request,
                                                            *args, **kwargs)
             }
         else:
@@ -994,7 +995,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return None
 
-reviewRequestDraftResource = ReviewRequestDraftResource()
+review_request_draft_resource = ReviewRequestDraftResource()
 
 
 class BaseScreenshotCommentResource(WebAPIResource):
@@ -1036,7 +1037,7 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
         q = q.filter(screenshot=screenshot_id)
         return q
 
-screenshotCommentResource = ScreenshotCommentResource()
+screenshot_comment_resource = ScreenshotCommentResource()
 
 
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
@@ -1092,13 +1093,13 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         on.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review = reviewResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not reviewResource.has_modify_permissions(request, review):
+        if not review_resource.has_modify_permissions(request, review):
             return PERMISSION_DENIED
 
         try:
@@ -1122,7 +1123,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             'screenshot_comment': new_comment,
         }
 
-reviewScreenshotCommentResource = ReviewScreenshotCommentResource()
+review_screenshot_comment_resource = ReviewScreenshotCommentResource()
 
 
 class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
@@ -1158,17 +1159,17 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         being replied to, but may contain new text.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            reply = reviewReplyResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            reply = review_reply_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not reviewReplyResource.has_modify_permissions(request, reply):
+        if not review_reply_resource.has_modify_permissions(request, reply):
             return PERMISSION_DENIED
 
         try:
-            comment = reviewScreenshotCommentResource.get_object(
+            comment = review_screenshot_comment_resource.get_object(
                 request,
                 comment_id=reply_to_id,
                 *args, **kwargs)
@@ -1195,7 +1196,8 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             'screenshot_comment': new_comment,
         }
 
-reviewReplyScreenshotCommentResource = ReviewReplyScreenshotCommentResource()
+review_reply_screenshot_comment_resource = \
+    ReviewReplyScreenshotCommentResource()
 
 
 class BaseReviewResource(WebAPIResource):
@@ -1265,8 +1267,8 @@ class BaseReviewResource(WebAPIResource):
         published.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1322,9 +1324,9 @@ class BaseReviewResource(WebAPIResource):
         be updated.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review = reviewResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1364,8 +1366,8 @@ class ReviewReplyResource(BaseReviewResource):
     )
 
     item_child_resources = [
-        reviewReplyCommentResource,
-        reviewReplyScreenshotCommentResource,
+        review_reply_comment_resource,
+        review_reply_screenshot_comment_resource,
     ]
 
     uri_object_key = 'reply_id'
@@ -1404,9 +1406,9 @@ class ReviewReplyResource(BaseReviewResource):
         only the author will be able to see it until it is published.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review = reviewResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1460,9 +1462,9 @@ class ReviewReplyResource(BaseReviewResource):
         be updated.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-            review = reviewResource.get_object(request, *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
             reply = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1500,7 +1502,7 @@ class ReviewReplyResource(BaseReviewResource):
             self.name: reply,
         }
 
-reviewReplyResource = ReviewReplyResource()
+review_reply_resource = ReviewReplyResource()
 
 
 class ReviewResource(BaseReviewResource):
@@ -1509,9 +1511,9 @@ class ReviewResource(BaseReviewResource):
     model_parent_key = 'review_request'
 
     item_child_resources = [
-        reviewCommentResource,
-        reviewReplyResource,
-        reviewScreenshotCommentResource,
+        review_comment_resource,
+        review_reply_resource,
+        review_screenshot_comment_resource,
     ]
 
     def get_base_reply_to_field(self, *args, **kwargs):
@@ -1519,7 +1521,7 @@ class ReviewResource(BaseReviewResource):
             'base_reply_to__isnull': True,
         }
 
-reviewResource = ReviewResource()
+review_resource = ReviewResource()
 
 
 class ScreenshotResource(WebAPIResource):
@@ -1532,7 +1534,7 @@ class ScreenshotResource(WebAPIResource):
     model_parent_key = 'review_request'
 
     item_child_resources = [
-        screenshotCommentResource,
+        screenshot_comment_resource,
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -1557,8 +1559,8 @@ class ScreenshotResource(WebAPIResource):
         it with a draft of a review request.
         """
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1585,7 +1587,7 @@ class ScreenshotResource(WebAPIResource):
             'screenshot': screenshot,
         }
 
-screenshotResource = ScreenshotResource()
+screenshot_resource = ScreenshotResource()
 
 
 class ReviewRequestResource(WebAPIResource):
@@ -1600,10 +1602,10 @@ class ReviewRequestResource(WebAPIResource):
     )
     uri_object_key = 'review_request_id'
     item_child_resources = [
-        diffSetResource,
-        reviewRequestDraftResource,
-        reviewResource,
-        screenshotResource,
+        diffset_resource,
+        review_request_draft_resource,
+        review_resource,
+        screenshot_resource,
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -1781,8 +1783,8 @@ class ReviewRequestResource(WebAPIResource):
     )
     def update(self, status=None, *args, **kwargs):
         try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -1804,7 +1806,7 @@ class ReviewRequestResource(WebAPIResource):
             self.name: review_request,
         }
 
-reviewRequestResource = ReviewRequestResource()
+review_request_resource = ReviewRequestResource()
 
 
 class ServerInfoResource(WebAPIResource):
@@ -1839,15 +1841,15 @@ class ServerInfoResource(WebAPIResource):
             },
         }
 
-serverInfoResource = ServerInfoResource()
+server_info_resource = ServerInfoResource()
 
 
-rootResource = RootResource([
-    repositoryResource,
-    reviewGroupResource,
-    reviewRequestResource,
-    serverInfoResource,
-    userResource,
+root_resource = RootResource([
+    repository_resource,
+    review_group_resource,
+    review_request_resource,
+    server_info_resource,
+    user_resource,
 ])
 
 

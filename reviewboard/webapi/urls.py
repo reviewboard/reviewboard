@@ -3,11 +3,11 @@ from django.views.generic.simple import redirect_to
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
-from reviewboard.webapi.resources import rootResource
+from reviewboard.webapi.resources import root_resource
 
 
 # Top-level resources
-urlpatterns = rootResource.get_url_patterns()
+urlpatterns = root_resource.get_url_patterns()
 
 
 # Deprecated URLs
