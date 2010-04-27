@@ -481,6 +481,10 @@ class BaseWatchedObjectResource(WebAPIResource):
 
     allowed_methods = ('GET', 'POST', 'DELETE')
 
+    @property
+    def uri_object_key_regex(self):
+        return self.watched_resource.uri_object_key_regex
+
     def get_queryset(self, request, username, *args, **kwargs):
         try:
             profile = Profile.objects.get(user__username=username)
@@ -516,7 +520,7 @@ class BaseWatchedObjectResource(WebAPIResource):
     @webapi_login_required
     @webapi_request_fields(required={
         'object_id': {
-            'type': int,
+            'type': str,
             'description': 'The ID of the object to watch.',
         },
     })

@@ -265,43 +265,6 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1) #devgroup
 
-    def test_put_group_action_star(self):
-        """Testing the PUT groups/?action=star API"""
-        rsp = self.apiPut("groups/devgroup", {
-            'action': 'star',
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup") in
-                     self.user.get_profile().starred_groups.all())
-
-    def test_put_group_action_star_with_does_not_exist_error(self):
-        """Testing the PUT groups/?action=star API with Does Not Exist error"""
-        rsp = self.apiPut("groups/invalidgroup", {
-            'action': 'star',
-        }, expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def test_put_group_action_unstar(self):
-        """Testing the PUT groups/?action=unstar API"""
-        # First, star it.
-        self.test_put_group_action_star()
-
-        rsp = self.apiPut('groups/devgroup', {
-            'action': 'unstar',
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(Group.objects.get(name="devgroup") not in
-                        self.user.get_profile().starred_groups.all())
-
-    def test_put_group_action_unstar_with_does_not_exist_error(self):
-        """Testing the PUT groups/?action=unstar API with Does Not Exist error"""
-        rsp = self.apiPut("groups/invalidgroup",
-                          {'action': 'unstar'},
-                          expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
 
 class UserResourceTests(BaseWebAPITestCase):
     """Testing the UserResource API tests."""
@@ -328,7 +291,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                                    })
 
     def test_post_watched_review_request(self):
-        """Testing the POST user/<username>/watched/review_request/ API"""
+        """Testing the POST users/<username>/watched/review_request/ API"""
         review_request = ReviewRequest.objects.public()[0]
         rsp = self.apiPost(self.watched_url, {
             'object_id': review_request.id,
@@ -338,7 +301,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                      self.user.get_profile().starred_review_requests.all())
 
     def test_post_watched_review_request_with_does_not_exist_error(self):
-        """Testing the POST user/<username>/watched/review_request/ with Does Not Exist error"""
+        """Testing the POST users/<username>/watched/review_request/ with Does Not Exist error"""
         rsp = self.apiPost(self.watched_url, {
             'object_id': 999,
         }, expected_status=404)
@@ -346,7 +309,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def test_delete_watched_review_request(self):
-        """Testing the DELETE user/<username>/watched/review_request/ API"""
+        """Testing the DELETE users/<username>/watched/review_request/ API"""
         # First, star it.
         self.test_post_watched_review_request()
 
@@ -356,8 +319,54 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
                      self.user.get_profile().starred_review_requests.all())
 
     def test_delete_watched_review_request_with_does_not_exist_error(self):
-        """Testing the DELETE user/<username>/watched/review_request/ API with Does Not Exist error"""
+        """Testing the DELETE users/<username>/watched/review_request/ API with Does Not Exist error"""
         rsp = self.apiDelete("%s%s/" % (self.watched_url, 999),
+                             expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+
+class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
+    """Testing the WatchedReviewGroupResource API tests."""
+    def setUp(self):
+        super(WatchedReviewGroupResourceTests, self).setUp()
+        self.watched_url = reverse('watched-review-groups-resource',
+                                   kwargs={
+                                       'username': self.user.username,
+                                   })
+
+    def test_post_watched_review_group(self):
+        """Testing the POST users/<username>/watched/review-groups/ API"""
+        group = Group.objects.get(name='devgroup')
+
+        rsp = self.apiPost(self.watched_url, {
+            'object_id': group.name,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assert_(group in self.user.get_profile().starred_groups.all())
+
+    def test_post_watched_review_group_with_does_not_exist_error(self):
+        """Testing the POST users/<username>/watched/review-groups/ API with Does Not Exist error"""
+        rsp = self.apiPost(self.watched_url, {
+            'object_id': 'invalidgroup',
+        }, expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_delete_watched_review_group(self):
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API"""
+        # First, star it.
+        self.test_post_watched_review_group()
+
+        group = Group.objects.get(name='devgroup')
+
+        rsp = self.apiDelete('%s%s/' % (self.watched_url, group.name))
+        self.assertTrue(group not in
+                        self.user.get_profile().starred_groups.all())
+
+    def test_delete_watched_review_group_with_does_not_exist_error(self):
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with Does Not Exist error"""
+        rsp = self.apiDelete('%s%s/' % (self.watched_url, 'invalidgroup'),
                              expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
