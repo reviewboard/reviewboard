@@ -318,6 +318,51 @@ class UserResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['users']), 1) # grumpy
 
 
+class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
+    """Testing the WatchedReviewRequestResource API tests."""
+    def setUp(self):
+        super(WatchedReviewRequestResourceTests, self).setUp()
+        self.watched_url = reverse('watched-review-requests-resource',
+                                   kwargs={
+                                       'username': self.user.username,
+                                   })
+
+    def test_post_watched_review_request(self):
+        """Testing the POST user/<username>/watched/review_request/ API"""
+        review_request = ReviewRequest.objects.public()[0]
+        rsp = self.apiPost(self.watched_url, {
+            'object_id': review_request.id,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assert_(review_request in
+                     self.user.get_profile().starred_review_requests.all())
+
+    def test_post_watched_review_request_with_does_not_exist_error(self):
+        """Testing the POST user/<username>/watched/review_request/ with Does Not Exist error"""
+        rsp = self.apiPost(self.watched_url, {
+            'object_id': 999,
+        }, expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_delete_watched_review_request(self):
+        """Testing the DELETE user/<username>/watched/review_request/ API"""
+        # First, star it.
+        self.test_post_watched_review_request()
+
+        review_request = ReviewRequest.objects.public()[0]
+        rsp = self.apiDelete("%s%s/" % (self.watched_url, review_request.id))
+        self.assert_(review_request not in
+                     self.user.get_profile().starred_review_requests.all())
+
+    def test_delete_watched_review_request_with_does_not_exist_error(self):
+        """Testing the DELETE user/<username>/watched/review_request/ API with Does Not Exist error"""
+        rsp = self.apiDelete("%s%s/" % (self.watched_url, 999),
+                             expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+
 class ReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource API tests."""
     def test_get_reviewrequests(self):
@@ -581,45 +626,6 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          review_request.summary)
         self.assertEqual(rsp['review_requests'][0]['changenum'],
                          review_request.changenum)
-
-    def test_put_reviewrequest_action_star(self):
-        """Testing the PUT review_requests/<id>/?action=star API"""
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiPut("review_requests/%s" % review_request.id, {
-            'action': 'star',
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(review_request in
-                     self.user.get_profile().starred_review_requests.all())
-
-    def test_put_reviewrequest_action_star_with_does_not_exist_error(self):
-        """Testing the PUT review_requests/<id>/?action=star API with Does Not Exist error"""
-        rsp = self.apiPut("review_requests/999",
-                          {'action': 'star'},
-                          expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def test_put_reviewrequest_action_unstar(self):
-        """Testing the PUT review_requests/<id>/?action=unstar API"""
-        # First, star it.
-        self.test_put_reviewrequest_action_star()
-
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiPut("review_requests/%s" % review_request.id, {
-            'action': 'unstar',
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(review_request not in
-                     self.user.get_profile().starred_review_requests.all())
-
-    def test_put_reviewrequest_action_unstar_with_does_not_exist_error(self):
-        """Testing the PUT review_requests/<id>/?action=unstar API with Does Not Exist error"""
-        rsp = self.apiPut("review_requests/999",
-                          {'action': 'unstar'},
-                          expected_status=404)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
     def test_delete_reviewrequest(self):
         """Testing the DELETE review_requests/<id>/ API"""

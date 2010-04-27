@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
+from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.template.defaultfilters import timesince
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.core import WebAPIResponseFormError
@@ -57,16 +58,11 @@ class WebAPIResource(DjbletsWebAPIResource):
         only a ``count`` field with the number of entries, instead of the
         serialized objects.
         """
-        if not self.model:
-            return HttpResponseNotAllowed(self.allowed_methods)
-
-        if request.GET.get('counts-only', False):
-            result = {
+        if self.model and request.GET.get('counts-only', False):
+            return 200, {
                 'count': self.get_queryset(request, is_list=True,
                                            *args, **kwargs).count()
             }
-
-            return 200, result
         else:
             return super(WebAPIResource, self).get_list(request,
                                                         *args, **kwargs)
@@ -477,8 +473,160 @@ class DiffSetResource(WebAPIResource):
 diffSetResource = DiffSetResource()
 
 
+class BaseWatchedObjectResource(WebAPIResource):
+    """A base resource for objects watched by a user."""
+    watched_resource = None
+    uri_object_key = 'watched_obj_id'
+    profile_field = None
+
+    allowed_methods = ('GET', 'POST', 'DELETE')
+
+    def get_queryset(self, request, username, *args, **kwargs):
+        try:
+            profile = Profile.objects.get(user__username=username)
+            q = self.watched_resource.get_queryset(request, *args, **kwargs)
+            q = q.filter(starred_by=profile)
+            return q
+        except Profile.DoesNotExist:
+            return self.watched_resource.model.objects.none()
+
+    @webapi_check_login_required
+    def get(self, request, watched_obj_id, *args, **kwargs):
+        try:
+            q = self.get_queryset(request, *args, **kwargs)
+            obj = q.get(pk=watched_obj_id)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        return HttpResponseRedirect(self.watched_resource.get_href(obj))
+
+    @webapi_check_login_required
+    def get_list(self, request, *args, **kwargs):
+        # TODO: Handle pagination and ?counts-only=1
+        objects = [
+            self.serialize_object(obj)
+            for obj in self.get_queryset(request, is_list=True,
+                                         *args, **kwargs)
+        ]
+
+        return 200, {
+            self.name_plural: objects,
+        }
+
+    @webapi_login_required
+    @webapi_request_fields(required={
+        'object_id': {
+            'type': int,
+            'description': 'The ID of the object to watch.',
+        },
+    })
+    def create(self, request, object_id, *args, **kwargs):
+        try:
+            obj = self.watched_resource.get_object(request, **dict({
+                self.watched_resource.uri_object_key: object_id,
+            }))
+            user = userResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not userResource.has_modify_permissions(request, user,
+                                                   *args, **kwargs):
+            return PERMISSION_DENIED
+
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+        getattr(profile, self.profile_field).add(obj)
+        profile.save()
+
+        return 201, {
+            self.name: obj,
+        }
+
+    @webapi_login_required
+    def delete(self, request, watched_obj_id, *args, **kwargs):
+        try:
+            obj = self.watched_resource.get_object(request, **dict({
+                self.watched_resource.uri_object_key: watched_obj_id,
+            }))
+            user = userResource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not userResource.has_modify_permissions(request, user,
+                                                   *args, **kwargs):
+            return PERMISSION_DENIED
+
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=request.user)
+
+        if not profile_is_new:
+            getattr(profile, self.profile_field).remove(obj)
+            profile.save()
+
+        return 204, {}
+
+    def serialize_object(self, obj, *args, **kwargs):
+        return {
+            'id': obj.pk,
+            self.name: obj,
+        }
+
+
+class WatchedReviewGroupResource(BaseWatchedObjectResource):
+    """A resource for review groups watched by a user."""
+    name = 'watched-review-group'
+    uri_name = 'review-group'
+    profile_field = 'starred_groups'
+
+    @property
+    def watched_resource(self):
+        """Return the watched resource.
+
+        This is implemented as a property in order to work around
+        a circular reference issue.
+        """
+        return reviewGroupResource
+
+watchedReviewGroupResource = WatchedReviewGroupResource()
+
+
+class WatchedReviewRequestResource(BaseWatchedObjectResource):
+    """A resource for review requests watched by a user."""
+    name = 'watched-review-request'
+    uri_name = 'review-request'
+    profile_field = 'starred_review_requests'
+
+    @property
+    def watched_resource(self):
+        """Return the watched resource.
+
+        This is implemented as a property in order to work around
+        a circular reference issue.
+        """
+        return reviewRequestResource
+
+watchedReviewRequestResource = WatchedReviewRequestResource()
+
+
+class WatchedResource(WebAPIResource):
+    """A resource for types of things watched by a user."""
+    name = 'watched'
+    name_plural = 'watched'
+
+    list_child_resources = [
+        watchedReviewGroupResource,
+        watchedReviewRequestResource,
+    ]
+
+watchedResource = WatchedResource()
+
+
 class UserResource(DjbletsUserResource):
     """A resource representing user accounts."""
+    item_child_resources = [
+        watchedResource,
+    ]
+
     def get_queryset(self, request, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
@@ -510,7 +658,9 @@ class ReviewGroupResource(WebAPIResource):
     """A resource representing review groups."""
     model = Group
     fields = ('id', 'name', 'display_name', 'mailing_list', 'url')
-    item_child_resources = [ReviewGroupUserResource()]
+    item_child_resources = [
+        reviewGroupUserResource
+    ]
 
     uri_object_key = 'group_name'
     uri_object_key_regex = '[A-Za-z0-9_-]+'
@@ -535,38 +685,6 @@ class ReviewGroupResource(WebAPIResource):
 
     def serialize_url_field(self, group):
         return group.get_absolute_url()
-
-    @webapi_login_required
-    def action_star(self, request, *args, **kwargs):
-        """Adds a group to the user's watched groups list."""
-        try:
-            group = self.get_object(request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
-
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-        profile.starred_groups.add(group)
-        profile.save()
-
-        return 200, {}
-
-    @webapi_login_required
-    def action_unstar(self, request, *args, **kwargs):
-        """Removes a group from the user's watched groups list."""
-        try:
-            group = self.get_object(request, *args, **kwargs)
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
-
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-
-        if not profile_is_new:
-            profile.starred_groups.remove(group)
-            profile.save()
-
-        return 200, {}
 
 reviewGroupResource = ReviewGroupResource()
 
@@ -1693,40 +1811,6 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {
             self.name: review_request,
         }
-
-    @webapi_login_required
-    def action_star(self, request, *args, **kwargs):
-        """Marks a review request as being starred."""
-        try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-        profile.starred_review_requests.add(review_request)
-        profile.save()
-
-        return 200, {}
-
-    @webapi_login_required
-    def action_unstar(self, request, *args, **kwargs):
-        """Removes the review request from the starred list."""
-        try:
-            review_request = reviewRequestResource.get_object(request,
-                                                              *args, **kwargs)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-
-        if not profile_is_new:
-            profile.starred_review_requests.remove(review_request)
-            profile.save()
-
-        return 200, {}
 
 reviewRequestResource = ReviewRequestResource()
 
