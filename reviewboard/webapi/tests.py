@@ -682,15 +682,17 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
-    def _create_update_review_request(self, apiFunc):
+    def _create_update_review_request(self, apiFunc, review_request_id=None):
         summary = "My Summary"
         description = "My Description"
         testing_done = "My Testing Done"
         branch = "My Branch"
         bugs = "#123,456"
 
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
+        if review_request_id is None:
+            review_request_id = \
+                ReviewRequest.objects.from_user(self.user.username)[0].id
+
         rsp = apiFunc("review-requests/%s/draft" % review_request_id, {
             'summary': summary,
             'description': description,
@@ -766,6 +768,40 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(review_request.description, "My Description")
         self.assertEqual(review_request.testing_done, "My Testing Done")
         self.assertEqual(review_request.branch, "My Branch")
+        self.assertTrue(review_request.public)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
+        self.assertValidRecipients(["doc", "grumpy"], [])
+
+    def test_put_reviewrequestdraft_publish_with_new_review_request(self):
+        """Testing the PUT review-requests/draft/?public=1 API with a new review request"""
+        # Set some data first.
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.target_people = [
+            User.objects.get(username='doc')
+        ]
+        review_request.save()
+
+        self._create_update_review_request(self.apiPut, review_request.id)
+
+        rsp = self.apiPut("review-requests/%s/draft" % review_request.id, {
+            'public': True,
+        }, follow_redirects=True, expected_redirects=[
+            reverse('review-request-resource', kwargs={
+                'review_request_id': review_request.id,
+            })
+        ])
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, "My Summary")
+        self.assertEqual(review_request.description, "My Description")
+        self.assertEqual(review_request.testing_done, "My Testing Done")
+        self.assertEqual(review_request.branch, "My Branch")
+        self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")

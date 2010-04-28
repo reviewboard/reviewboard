@@ -845,12 +845,11 @@ class ReviewRequestDraftResource(WebAPIResource):
             }
 
         if request.POST.get('public', False):
-            draft.publish(user=request.user)
-            draft.delete()
+            review_request.publish(user=request.user)
 
             return 303, {}, {
                 'Location': review_request_resource.get_href(review_request,
-                                                           *args, **kwargs)
+                                                             *args, **kwargs)
             }
         else:
             return 200, {
