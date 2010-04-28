@@ -115,12 +115,12 @@ class DiffTests(SeleniumUnitTest):
         f = open(diff_filename, "r")
         self.client.login(username="grumpy", password="grumpy")
         response = self.client.post(
-            '/api/json/reviewrequests/%s/diff/new/' % r.id, {
+            '/api/review-requests/%s/diffs/' % r.id, {
                 'path': f,
                 'basedir': '/trunk',
             }
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         self.assertTrue('"ok"' in response.content)
         f.close()
 

@@ -205,7 +205,7 @@ $.extend(RB.Diff.prototype, {
         }
 
         rbApiCall({
-            path: '/reviewrequests/' + this.review_request.id + '/diff/new/',
+            path: '/review-requests/' + this.review_request.id + '/diffs/',
             form: this.form,
             buttons: options.buttons,
             success: function(rsp) {
