@@ -250,9 +250,19 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                             "media", "rb", "images", "trophy.png")
 
 
+class ServerInfoResourceTests(BaseWebAPITestCase):
+    """Testing the ServerInfoResource APIs."""
+    def test_get_server_info(self):
+        """Testing the GET info/ API"""
+        rsp = self.apiGet('info')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('info' in rsp)
+        self.assertTrue('product' in rsp['info'])
+        self.assertTrue('site' in rsp['info'])
+
+
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
-
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet("repositories")

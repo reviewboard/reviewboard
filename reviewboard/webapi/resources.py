@@ -1888,16 +1888,18 @@ class ServerInfoResource(WebAPIResource):
                              settings.SITE_ROOT)
 
         return 200, {
-            'product': {
-                'name': 'Review Board',
-                'version': get_version_string(),
-                'package_version': get_package_version(),
-                'is_release': is_release(),
-            },
-            'site': {
-                'url': url,
-                'administrators': [{'name': name, 'email': email}
-                                   for name, email in settings.ADMINS],
+            self.item_result_key: {
+                'product': {
+                    'name': 'Review Board',
+                    'version': get_version_string(),
+                    'package_version': get_package_version(),
+                    'is_release': is_release(),
+                },
+                'site': {
+                    'url': url,
+                    'administrators': [{'name': name, 'email': email}
+                                       for name, email in settings.ADMINS],
+                },
             },
         }
 
