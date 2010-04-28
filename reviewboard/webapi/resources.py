@@ -8,6 +8,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.template.defaultfilters import timesince
+from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.core import WebAPIResponseFormError
 from djblets.webapi.decorators import webapi_login_required, \
@@ -1589,6 +1590,69 @@ class ScreenshotResource(WebAPIResource):
 screenshot_resource = ScreenshotResource()
 
 
+class ReviewRequestLastUpdateResource(WebAPIResource):
+    """A resource representing the last update to a review request."""
+    name = 'last-update'
+    name_plural = 'last-update'
+
+    allowed_methods = ('GET',)
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        """Returns the last update made to the review request.
+
+        This does not take into account changes to a draft review request, as
+        that's generally not update information that the owner of the draft is
+        interested in.
+        """
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request_resource.has_access_permissions(request,
+                                                              review_request):
+            return PERMISSION_DENIED
+
+        timestamp, updated_object = review_request.get_last_activity()
+        user = None
+        summary = None
+        update_type = None
+
+        if isinstance(updated_object, ReviewRequest):
+            user = updated_object.submitter
+            summary = _("Review request updated")
+            update_type = "review-request"
+        elif isinstance(updated_object, DiffSet):
+            summary = _("Diff updated")
+            update_type = "diff"
+        elif isinstance(updated_object, Review):
+            user = updated_object.user
+
+            if updated_object.is_reply():
+                summary = _("New reply")
+                update_type = "reply"
+            else:
+                summary = _("New review")
+                update_type = "review"
+        else:
+            # Should never be able to happen. The object will always at least
+            # be a ReviewRequest.
+            assert False
+
+        return 200, {
+            self.item_result_key: {
+                'timestamp': timestamp,
+                'user': user,
+                'summary': summary,
+                'type': update_type,
+            }
+        }
+
+review_request_last_update_resource = ReviewRequestLastUpdateResource()
+
+
 class ReviewRequestResource(WebAPIResource):
     """A resource representing a review request."""
     model = ReviewRequest
@@ -1603,6 +1667,7 @@ class ReviewRequestResource(WebAPIResource):
     item_child_resources = [
         diffset_resource,
         review_request_draft_resource,
+        review_request_last_update_resource,
         review_resource,
         screenshot_resource,
     ]
