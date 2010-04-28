@@ -1756,10 +1756,7 @@ class ReviewRequestResource(WebAPIResource):
         return request.user.has_perm('reviews.delete_reviewrequest')
 
     def serialize_bugs_closed_field(self, obj):
-        if obj.bugs_closed:
-            return [b.strip() for b in obj.bugs_closed.split(',')]
-        else:
-            return ''
+        return obj.get_bug_list()
 
     def serialize_status_field(self, obj):
         return status_to_string(obj.status)
