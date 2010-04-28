@@ -17,9 +17,3 @@
 {% else %}{# error #}
   var gReviewPending = false;
 {% endif %}{# !error #}
-
-  var gUserURL = "{% url user user %}";
-  var gUserAuthenticated = {{user.is_authenticated|lower}};
-{% if not user.is_anonymous %}
-  var gUserFullName = "{{user|user_displayname}}";
-{% endif %}

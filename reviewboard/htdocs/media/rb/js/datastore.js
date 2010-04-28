@@ -261,17 +261,35 @@ $.extend(RB.ReviewRequest.prototype, {
     },
 
     setDraftField: function(options) {
+        data = {}
+        data[options.field] = options.value;
+
         this._apiCall({
-            path: "/draft/set/" + options.field + "/",
+            type: "PUT",
+            path: "/draft/",
             buttons: options.buttons,
-            data: { value: options.value },
+            data: data,
             success: options.success // XXX
         });
     },
 
     setStarred: function(starred) {
-        this._apiCall({
-            path: (starred ? "/star/" : "/unstar/"),
+        var apiType;
+        var path = "/users/" + gUserName + "/watched/review-requests/";
+        var data = {};
+
+        if (starred) {
+            apiType = "POST";
+            data['object_id'] = this.id;
+        } else {
+            apiType = "DELETE";
+            path += this.id + "/";
+        }
+
+        rbApiCall({
+            type: apiType,
+            path: path,
+            data: data,
             success: function() {}
         });
     },
@@ -280,7 +298,11 @@ $.extend(RB.ReviewRequest.prototype, {
         options = $.extend(true, {}, options);
 
         this._apiCall({
-            path: "/publish/",
+            type: "PUT",
+            path: "/draft/",
+            data: {
+                public: 1
+            },
             buttons: options.buttons
         });
     },
@@ -289,7 +311,8 @@ $.extend(RB.ReviewRequest.prototype, {
         options = $.extend(true, {}, options);
 
         this._apiCall({
-            path: "/draft/discard/",
+            type: "DELETE",
+            path: "/draft/",
             buttons: options.buttons
         });
     },
@@ -297,12 +320,20 @@ $.extend(RB.ReviewRequest.prototype, {
     close: function(options) {
         if (options.type == RB.ReviewRequest.CLOSE_DISCARDED) {
             this._apiCall({
-                path: "/close/discarded/",
+                type: "PUT",
+                path: "/",
+                data: {
+                    status: "discarded"
+                },
                 buttons: options.buttons
             });
         } else if (options.type == RB.ReviewRequest.CLOSE_SUBMITTED) {
             this._apiCall({
-                path: "/close/submitted/",
+                type: "PUT",
+                path: "/",
+                data: {
+                    status: "submitted"
+                },
                 buttons: options.buttons
             });
         }
@@ -312,7 +343,11 @@ $.extend(RB.ReviewRequest.prototype, {
         options = $.extend(true, {}, options);
 
         this._apiCall({
-            path: "/reopen/",
+            type: "PUT",
+            path: "/",
+            data: {
+                status: "pending"
+            },
             buttons: options.buttons
         });
     },
@@ -321,7 +356,8 @@ $.extend(RB.ReviewRequest.prototype, {
         options = $.extend(true, {}, options);
 
         this._apiCall({
-            path: "/delete/",
+            type: "DELETE",
+            path: "/",
             buttons: options.buttons,
             success: options.success
         });
@@ -345,13 +381,15 @@ $.extend(RB.ReviewRequest.prototype, {
             noActivityIndicator: true,
             path: "/last-update/",
             success: function(rsp) {
+                var last_update = rsp.last_update;
+
                 if ((self.checkUpdatesType == undefined ||
-                     self.checkUpdatesType == rsp.type) &&
-                    self.lastUpdateTimestamp != rsp.timestamp) {
-                    $.event.trigger("updated", [rsp], self);
+                     self.checkUpdatesType == last_update.type) &&
+                    self.lastUpdateTimestamp != last_update.timestamp) {
+                    $.event.trigger("updated", [last_update], self);
                 }
 
-                self.lastUpdateTimestamp = rsp.timestamp;
+                self.lastUpdateTimestamp = last_update.timestamp;
 
                 setTimeout(function() { self._checkForUpdates(); },
                            RB.ReviewRequest.CHECK_UPDATES_MSECS);
@@ -362,7 +400,7 @@ $.extend(RB.ReviewRequest.prototype, {
     _apiCall: function(options) {
         var self = this;
 
-        options.path = "/reviewrequests/" + this.id + options.path;
+        options.path = "/review-requests/" + this.id + options.path;
 
         if (!options.success) {
             options.success = function() { window.location = self.path; };
@@ -722,7 +760,7 @@ $.extend(RB.ScreenshotComment.prototype, {
  * @param {object} options  The options, listed above.
  */
 function rbApiCall(options) {
-    var url = options.url || (SITE_ROOT + "api/json" + options.path);
+    var url = options.url || (SITE_ROOT + "api" + options.path);
 
     function doCall() {
         if (options.buttons) {
@@ -751,7 +789,7 @@ function rbApiCall(options) {
                 } catch (e) {
                 }
 
-                if (rsp && rsp.stat) {
+                if ((rsp && rsp.stat) || xhr.status == 204) {
                     if ($.isFunction(options.success)) {
                         options.success(rsp, textStatus);
                     }
@@ -860,7 +898,7 @@ function rbApiCall(options) {
 
     options.type = options.type || "POST";
 
-    if (options.type == "POST" || options.type == "PUT") {
+    if (options.type != "GET") {
         $.funcQueue("rbapicall").add(doCall);
         $.funcQueue("rbapicall").start();
     } else {

@@ -402,7 +402,7 @@ class ReviewRequestTests(SeleniumUnitTest):
 
         summary = 'My new summary'
         branch = 'mybranch'
-        bugs_closed = '123, 789'
+        bugs_closed = '123,789'
         target_groups = 'devgroup'
         target_people = 'grumpy'
         description = 'My new description'

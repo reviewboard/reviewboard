@@ -146,7 +146,7 @@ function setDraftField(field, value) {
             var func = gEditorCompleteHandlers[field];
 
             if ($.isFunction(func)) {
-                $("#" + field).html(func(rsp[field]));
+                $("#" + field).html(func(rsp['draft'][field]));
             }
 
             gDraftBanner.show();
@@ -556,7 +556,7 @@ $.fn.commentDlg = function() {
             });
         }
 
-    if (!LOGGED_IN) {
+    if (!gUserAuthenticated) {
         textField.attr("disabled", true);
         saveButton.attr("disabled", true);
     }
