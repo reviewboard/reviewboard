@@ -1844,7 +1844,7 @@ class ReviewRequestResource(WebAPIResource):
             },
         },
     )
-    def update(self, status=None, *args, **kwargs):
+    def update(self, request, status=None, *args, **kwargs):
         try:
             review_request = \
                 review_request_resource.get_object(request, *args, **kwargs)

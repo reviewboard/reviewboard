@@ -610,6 +610,50 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def test_put_reviewrequest_status_discarded(self):
+        """Testing the PUT review-requests/<id>/?status=discarded API"""
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+
+        rsp = self.apiPut('review-requests/%s' % r.id, {
+            'status': 'discarded',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.status, 'D')
+
+    def test_put_reviewrequest_status_pending(self):
+        """Testing the PUT review-requests/<id>/?status=pending API"""
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+        r.close(ReviewRequest.SUBMITTED)
+        r.save()
+
+        rsp = self.apiPut('review-requests/%s' % r.id, {
+            'status': 'pending',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.status, 'P')
+
+    def test_put_reviewrequest_status_submitted(self):
+        """Testing the PUT review-requests/<id>/?status=submitted API"""
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+
+        rsp = self.apiPut('review-requests/%s' % r.id, {
+            'status': 'submitted',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.status, 'S')
+
     def test_get_reviewrequest(self):
         """Testing the GET review-requests/<id>/ API"""
         review_request = ReviewRequest.objects.public()[0]
