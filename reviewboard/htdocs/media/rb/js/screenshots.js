@@ -156,8 +156,6 @@ jQuery.extend(CommentBlock.prototype, {
         });
 
         $.event.add(comment, "destroyed", function() {
-            console.log("destroying");
-
             /* Discard the comment block if empty. */
             if (self.comments.length == 0) {
                 el.fadeOut(350, function() { el.remove(); })
@@ -225,8 +223,10 @@ jQuery.fn.screenshotCommentBox = function(regions) {
 
             if (!activeCommentBlock && evt.which == 1) {
                 var offset = selectionArea.offset();
-                activeSelection.beginX = evt.pageX - offset.left;
-                activeSelection.beginY = evt.pageY - offset.top;
+                activeSelection.beginX =
+                    evt.pageX - Math.floor(offset.left) - 1;
+                activeSelection.beginY =
+                    evt.pageY - Math.floor(offset.top) - 1;
 
                 activeSelection
                     .move(activeSelection.beginX, activeSelection.beginY)
@@ -270,8 +270,8 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                 evt.stopPropagation();
                 evt.preventDefault();
                 var offset = selectionArea.offset();
-                var x = evt.pageX - offset.left;
-                var y = evt.pageY - offset.top;
+                var x = evt.pageX - Math.floor(offset.left) - 1;
+                var y = evt.pageY - Math.floor(offset.top) - 1;
 
                 activeSelection
                     .css(activeSelection.beginX <= x

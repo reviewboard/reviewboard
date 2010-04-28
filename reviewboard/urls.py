@@ -25,11 +25,11 @@ urlpatterns = patterns('',
 )
 
 # Add static media if running in DEBUG mode
-if settings.DEBUG:
+if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
     urlpatterns += patterns('django.views.static',
         (r'^media/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
-            'document_root': os.path.join(settings.HTDOCS_ROOT, "media"),
+            'document_root': settings.MEDIA_ROOT,
             }),
     )
 

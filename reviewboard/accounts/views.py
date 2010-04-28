@@ -1,5 +1,9 @@
 import time
-from sha import sha
+
+try:
+    from hashlib import sha1
+except ImportError:
+    from sha import sha as sha1
 
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
@@ -53,8 +57,8 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             password = form.cleaned_data['password1']
 
             if can_change_password and password:
-                salt = sha(str(time.time())).hexdigest()[:5]
-                hash = sha(salt + password)
+                salt = sha1(str(time.time())).hexdigest()[:5]
+                hash = sha1(salt + password)
                 newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
                 request.user.password = newpassword
 

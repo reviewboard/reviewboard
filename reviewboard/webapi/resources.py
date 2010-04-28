@@ -367,7 +367,7 @@ filediff_resource = FileDiffResource()
 class DiffSetResource(WebAPIResource):
     """A resource representing a set of file diffs."""
     model = DiffSet
-    name = 'diffset'
+    name = 'diff'
     fields = ('id', 'name', 'revision', 'timestamp', 'repository')
     item_child_resources = [filediff_resource]
 

@@ -1398,7 +1398,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
             os.path.dirname(os.path.dirname(__file__)),
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
-        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffsets'], {
+        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffs'], {
             'path': f,
             'basedir': "/trunk",
         })
@@ -1413,7 +1413,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffsets'],
+        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffs'],
                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -1424,8 +1424,8 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs/ API"""
         rsp = self.apiGet("review-requests/2/diffs")
 
-        self.assertEqual(rsp['diffsets'][0]['id'], 2)
-        self.assertEqual(rsp['diffsets'][0]['name'], 'cleaned_data.diff')
+        self.assertEqual(rsp['diffs'][0]['id'], 2)
+        self.assertEqual(rsp['diffs'][0]['name'], 'cleaned_data.diff')
 
     def test_get_diff(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""

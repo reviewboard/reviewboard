@@ -2,6 +2,7 @@ recursive-include contrib *
 recursive-include docs *.txt *.png *.py Makefile
 recursive-include locale *
 recursive-include reviewboard *
+recursive-include webtests *
 prune docs/*/_build
 prune reviewboard/htdocs/media/uploaded/images
 include ez_setup.py

@@ -107,7 +107,9 @@ class ReviewRequestManager(ConcurrencyManager):
         ReviewRequest.objects.public().
         """
         query_user = self._get_query_user(user_or_username)
-        return Q(target_groups__users=query_user)
+        groups = list(query_user.review_groups.values_list('pk', flat=True))
+
+        return Q(target_groups__in=groups)
 
     def get_to_user_directly_query(self, user_or_username):
         """Returns the query targetting a user directly.
@@ -119,7 +121,16 @@ class ReviewRequestManager(ConcurrencyManager):
         ReviewRequest.objects.public().
         """
         query_user = self._get_query_user(user_or_username)
-        return Q(starred_by__user=query_user) | Q(target_people=query_user)
+
+        query = Q(target_people=query_user)
+
+        try:
+            profile = query_user.get_profile()
+            query = query | Q(starred_by=profile)
+        except ObjectDoesNotExist:
+            pass
+
+        return query
 
     def get_to_user_query(self, user_or_username):
         """Returns the query targetting a user indirectly.
@@ -132,8 +143,18 @@ class ReviewRequestManager(ConcurrencyManager):
         ReviewRequest.objects.public().
         """
         query_user = self._get_query_user(user_or_username)
-        return self.get_to_user_directly_query(query_user) | \
-               self.get_to_user_groups_query(query_user)
+        groups = list(query_user.review_groups.values_list('pk', flat=True))
+
+        query = Q(target_people=query_user) | \
+                Q(target_groups__in=groups)
+
+        try:
+            profile = query_user.get_profile()
+            query = query | Q(starred_by=profile)
+        except ObjectDoesNotExist:
+            pass
+
+        return query
 
     def get_from_user_query(self, user_or_username):
         """Returns the query for review requests created by a user.
