@@ -265,7 +265,7 @@ class ReviewCommentResource(BaseCommentResource):
         review.save()
 
         return 201, {
-            'diff_comment': new_comment,
+            self.item_result_key: new_comment,
         }
 
 review_comment_resource = ReviewCommentResource()
@@ -336,7 +336,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
         reply.save()
 
         return 201, {
-            'diff_comment': new_comment,
+            self.item_result_key: new_comment,
         }
 
 review_reply_comment_resource = ReviewReplyCommentResource()
@@ -367,7 +367,7 @@ filediff_resource = FileDiffResource()
 class DiffSetResource(WebAPIResource):
     """A resource representing a set of file diffs."""
     model = DiffSet
-    name = 'diff'
+    name = 'diffset'
     fields = ('id', 'name', 'revision', 'timestamp', 'repository')
     item_child_resources = [filediff_resource]
 
@@ -468,7 +468,7 @@ class DiffSetResource(WebAPIResource):
         # E-mail gets sent when the draft is saved.
 
         return 201, {
-            'diffset': diffset,
+            self.item_result_key: diffset,
         }
 
 diffset_resource = DiffSetResource()
@@ -515,7 +515,7 @@ class BaseWatchedObjectResource(WebAPIResource):
         ]
 
         return 200, {
-            self.name_plural: objects,
+            self.list_result_key: objects,
         }
 
     @webapi_login_required
@@ -544,7 +544,7 @@ class BaseWatchedObjectResource(WebAPIResource):
         profile.save()
 
         return 201, {
-            self.name: obj,
+            self.item_result_key: obj,
         }
 
     @webapi_login_required
@@ -573,7 +573,7 @@ class BaseWatchedObjectResource(WebAPIResource):
     def serialize_object(self, obj, *args, **kwargs):
         return {
             'id': obj.pk,
-            self.name: obj,
+            self.item_result_key: obj,
         }
 
 
@@ -710,7 +710,7 @@ class RepositoryInfoResource(WebAPIResource):
 
         try:
             return 200, {
-                self.name: repository.get_scmtool().get_repository_info()
+                self.item_result_key: repository.get_scmtool().get_repository_info()
             }
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
@@ -853,7 +853,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             }
         else:
             return 200, {
-                self.name: draft,
+                self.item_result_key: draft,
             }
 
     @webapi_login_required
@@ -1120,7 +1120,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         review.save()
 
         return 201, {
-            'screenshot_comment': new_comment,
+            self.item_result_key: new_comment,
         }
 
 review_screenshot_comment_resource = ReviewScreenshotCommentResource()
@@ -1193,7 +1193,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         reply.save()
 
         return 201, {
-            'screenshot_comment': new_comment,
+            self.item_result_key: new_comment,
         }
 
 review_reply_screenshot_comment_resource = \
@@ -1351,7 +1351,7 @@ class BaseReviewResource(WebAPIResource):
             review.publish(user=request.user)
 
         return 200, {
-            self.name: review,
+            self.item_result_key: review,
         }
 
 
@@ -1499,7 +1499,7 @@ class ReviewReplyResource(BaseReviewResource):
             reply.save()
 
         return 200, {
-            self.name: reply,
+            self.item_result_key: reply,
         }
 
 review_reply_resource = ReviewReplyResource()
@@ -1583,8 +1583,7 @@ class ScreenshotResource(WebAPIResource):
             }
 
         return 201, {
-            'screenshot_id': screenshot.id, # For backwards-compatibility
-            'screenshot': screenshot,
+            self.item_result_key: screenshot,
         }
 
 screenshot_resource = ScreenshotResource()
@@ -1759,7 +1758,7 @@ class ReviewRequestResource(WebAPIResource):
                                                           changenum)
 
             return 201, {
-                'review_request': review_request
+                self.item_result_key: review_request
             }
         except ChangeNumberInUseError, e:
             return CHANGE_NUMBER_IN_USE, {
@@ -1803,7 +1802,7 @@ class ReviewRequestResource(WebAPIResource):
                 return PERMISSION_DENIED
 
         return 200, {
-            self.name: review_request,
+            self.item_result_key: review_request,
         }
 
 review_request_resource = ReviewRequestResource()

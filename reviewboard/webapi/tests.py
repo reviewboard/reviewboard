@@ -1018,7 +1018,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         # Post the diff.
         rsp = self._postNewDiff(review_request)
-        diffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
 
         # Make these public.
         review_request.publish(self.user)
@@ -1106,13 +1106,13 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         # Post the diff.
         rsp = self._postNewDiff(review_request)
         review_request.publish(self.user)
-        diffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
         filediff = diffset.files.all()[0]
 
         # Post the second diff.
         rsp = self._postNewDiff(review_request)
         review_request.publish(self.user)
-        interdiffset = DiffSet.objects.get(pk=rsp['diffset']['id'])
+        interdiffset = DiffSet.objects.get(pk=rsp['diff']['id'])
         interfilediff = interdiffset.files.all()[0]
 
         rsp = self.apiPost("review-requests/%s/reviews" % review_request.id)
@@ -1398,7 +1398,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
             os.path.dirname(os.path.dirname(__file__)),
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
-        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffs'], {
+        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffsets'], {
             'path': f,
             'basedir': "/trunk",
         })
@@ -1413,7 +1413,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffs'],
+        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffsets'],
                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -1424,8 +1424,8 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs/ API"""
         rsp = self.apiGet("review-requests/2/diffs")
 
-        self.assertEqual(rsp['diffs'][0]['id'], 2)
-        self.assertEqual(rsp['diffs'][0]['name'], 'cleaned_data.diff')
+        self.assertEqual(rsp['diffsets'][0]['id'], 2)
+        self.assertEqual(rsp['diffsets'][0]['name'], 'cleaned_data.diff')
 
     def test_get_diff(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""
