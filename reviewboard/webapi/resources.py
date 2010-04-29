@@ -269,6 +269,51 @@ class ReviewCommentResource(BaseCommentResource):
             self.item_result_key: new_comment,
         }
 
+    @webapi_login_required
+    @webapi_request_fields(
+        optional = {
+            'first_line': {
+                'type': int,
+                'description': 'The line number the comment starts at.',
+            },
+            'num_lines': {
+                'type': int,
+                'description': 'The number of lines the comment spans.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text.',
+            },
+        },
+    )
+    def update(self, request, *args, **kwargs):
+        """Updates a diff comment.
+
+        This can update the text or line range of an existing comment.
+        """
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
+            diff_comment = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_resource.has_modify_permissions(request, review):
+            return PERMISSION_DENIED
+
+        for field in ('text', 'first_line', 'num_lines'):
+            value = kwargs.get(field, None)
+
+            if value is not None:
+                setattr(diff_comment, field, value)
+
+        diff_comment.save()
+
+        return 200, {
+            self.item_result_key: diff_comment,
+        }
+
 review_comment_resource = ReviewCommentResource()
 
 
@@ -1355,6 +1400,32 @@ class BaseReviewResource(WebAPIResource):
         }
 
 
+class ReviewReplyDraftResource(WebAPIResource):
+    """A redirecting resource that points to the current draft reply."""
+    name = 'reply-draft'
+    name_plural = 'reply-draft'
+    uri_name = 'draft'
+
+    @webapi_login_required
+    def get(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
+            reply = review.get_pending_reply(request.user)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not reply:
+            return DOES_NOT_EXIST
+
+        return 301, {}, {
+            'Location': review_reply_resource.get_href(reply),
+        }
+
+review_reply_draft_resource = ReviewReplyDraftResource()
+
+
 class ReviewReplyResource(BaseReviewResource):
     """A resource representing a reply to a review."""
     model = Review
@@ -1368,6 +1439,10 @@ class ReviewReplyResource(BaseReviewResource):
     item_child_resources = [
         review_reply_comment_resource,
         review_reply_screenshot_comment_resource,
+    ]
+
+    list_child_resources = [
+        review_reply_draft_resource,
     ]
 
     uri_object_key = 'reply_id'
@@ -1505,6 +1580,31 @@ class ReviewReplyResource(BaseReviewResource):
 review_reply_resource = ReviewReplyResource()
 
 
+class ReviewDraftResource(WebAPIResource):
+    """A redirecting resource that points to the current draft review."""
+    name = 'review-draft'
+    name_plural = 'review-draft'
+    uri_name = 'draft'
+
+    @webapi_login_required
+    def get(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            review = review_request.get_pending_review(request.user)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review:
+            return DOES_NOT_EXIST
+
+        return 301, {}, {
+            'Location': review_resource.get_href(review),
+        }
+
+review_draft_resource = ReviewDraftResource()
+
+
 class ReviewResource(BaseReviewResource):
     """A resource representing a review on a review request."""
     uri_object_key = 'review_id'
@@ -1514,6 +1614,10 @@ class ReviewResource(BaseReviewResource):
         review_comment_resource,
         review_reply_resource,
         review_screenshot_comment_resource,
+    ]
+
+    list_child_resources = [
+        review_draft_resource,
     ]
 
     def get_base_reply_to_field(self, *args, **kwargs):
