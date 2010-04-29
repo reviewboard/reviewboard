@@ -730,7 +730,8 @@ class ReviewTests(SeleniumUnitTest):
         self.assertTrue(self.selenium.is_visible('review-banner'))
 
     def _click_discard(self):
-        self._click_dlg_button('Discard Review', reloads_page=True)
+        self._click_dlg_button('Discard Review')
+        self.assertFalse(self.selenium.is_visible('review-banner'))
 
 
 class ReviewGroupTests(SeleniumUnitTest):

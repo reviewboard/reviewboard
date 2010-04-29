@@ -864,7 +864,7 @@ $.reviewForm = function(review) {
     /*
      * Saves the review.
      *
-     * This sets the shipit and body values, and saves all comments.
+     * This sets the ship_it and body values, and saves all comments.
      */
     function saveReview(publish) {
         $.funcQueue("reviewForm").clear();
@@ -884,7 +884,7 @@ $.reviewForm = function(review) {
         });
 
         $.funcQueue("reviewForm").add(function() {
-            review.shipit = $("#id_shipit", dlg)[0].checked ? 1 : 0;
+            review.ship_it = $("#id_shipit", dlg)[0].checked ? 1 : 0;
             review.body_top = $(".body-top", dlg).text();;
             review.body_bottom = $(".body-bottom", dlg).text();;
 

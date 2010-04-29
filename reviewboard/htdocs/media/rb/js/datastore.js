@@ -455,9 +455,11 @@ RB.Review = function(review_request, id) {
     this.id = id;
     this.review_request = review_request;
     this.draft_reply = null;
-    this.shipit = false;
-    this.body_top = "";
-    this.body_bottom = "";
+    this.ship_it = null;
+    this.body_top = null;
+    this.body_bottom = null;
+    this.url = null;
+    this.loaded = false;
 
     return this;
 }
@@ -471,53 +473,149 @@ $.extend(RB.Review.prototype, {
         return this.draft_reply;
     },
 
+    ready: function(on_done) {
+        if (this.loaded) {
+            on_done();
+        } else {
+            this._load(on_done);
+        }
+    },
+
+    ensureCreated: function(on_done) {
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                on_done();
+            } else {
+                /* The review doesn't exist. Create it. */
+                self.save({
+                    success: function(rsp) {
+                        self.id = rsp.review.id;
+                        self.loaded = true;
+                        on_done();
+                    }
+                });
+            }
+        });
+    },
+
     save: function(options) {
-        this._apiCall({
-            path: "save/",
-            data: {
-                shipit: this.shipit,
-                body_top: this.body_top,
-                body_bottom: this.body_bottom
-            },
-            buttons: options.buttons,
-            success: options.success
+        var data = {};
+
+        if (this.ship_it != null) {
+            data.ship_it = (this.ship_it ? 1 : 0);
+        }
+
+        if (this.body_top != null) {
+            data.body_top = this.body_top;
+        }
+
+        if (this.body_bottom != null) {
+            data.body_bottom = this.body_bottom;
+        }
+
+        if (options.public) {
+            data.public = 1;
+        }
+
+        var self = this;
+
+        this.ready(function() {
+            var type;
+            var url;
+
+            if (self.loaded) {
+                type = "PUT";
+                url = self.url;
+            } else {
+                type = "POST";
+                url = self.review_request.child_hrefs.reviews;
+            }
+
+            self._apiCall({
+                type: type,
+                url: url,
+                data: data,
+                buttons: options.buttons,
+                success: function(rsp) {
+                    self._loadDataFromResponse(rsp);
+
+                    if ($.isFunction(options.success)) {
+                        options.success(rsp);
+                    }
+                }
+            });
         });
     },
 
     publish: function(options) {
-        this._apiCall({
-            path: "publish/",
-            data: {
-                shipit: this.shipit,
-                body_top: this.body_top,
-                body_bottom: this.body_bottom
-            },
-            buttons: options.buttons,
-            success: options.success
-        });
+        this.save($.extend(true, {
+            public: true,
+        }, options));
     },
 
     deleteReview: function(options) {
-        this._apiCall({
-            path: "delete/",
-            buttons: options.buttons,
-            success: options.success
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                self._apiCall({
+                    type: "DELETE",
+                    buttons: options.buttons,
+                    success: options.success
+                });
+            } else if ($.isFunction(options.success)) {
+                options.success();
+            }
         });
+    },
+
+    _load: function(on_done) {
+        var self = this;
+
+        self.review_request.ready(function() {
+            rbApiCall({
+                type: "GET",
+                url: self.review_request.child_hrefs.reviews + "draft/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done();
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.review.id;
+        this.ship_it = rsp.review.ship_it;
+        this.body_top = rsp.review.body_top;
+        this.body_bottom = rsp.review.body_bottom;
+        this.child_hrefs = rsp.review.child_hrefs;
+        this.url = rsp.review.href;
+        this.loaded = true;
     },
 
     _apiCall: function(options) {
         var self = this;
 
-        options.path = "/reviewrequests/" + this.review_request.id +
-                       "/reviews/draft/" + options.path;
+        self.review_request.ready(function() {
+            if (!options.url) {
+                options.url = self.review_request.child_hrefs.reviews +
+                              self.id + "/" + (options.path || "");
+            }
 
-        if (!options.success) {
-            options.success = function() {
-                window.location = self.review_request.path;
-            };
-        }
+            if (!options.success) {
+                options.success = function() {
+                    window.location = self.review_request.path;
+                };
+            }
 
-        rbApiCall(options);
+            rbApiCall(options);
+        });
     }
 });
 
