@@ -187,34 +187,38 @@ $.extend(RB.Diff.prototype, {
     },
 
     save: function(options) {
+        var self = this;
+
         options = $.extend(true, {
             success: function() {},
             error: function() {}
         }, options);
 
-        if (this.id != undefined) {
-            options.error("The diff " + this.id + " was already created. " +
+        if (self.id != undefined) {
+            options.error("The diff " + self.id + " was already created. " +
                           "This is a script error. Please report it.");
             return;
         }
 
-        if (!this.form) {
+        if (!self.form) {
             options.error("No data has been set for this diff. This " +
                           "is a script error. Please report it.");
             return;
         }
 
-        rbApiCall({
-            path: '/review-requests/' + this.review_request.id + '/diffs/',
-            form: this.form,
-            buttons: options.buttons,
-            success: function(rsp) {
-                if (rsp.stat == "ok") {
-                    options.success(rsp);
-                } else {
-                    options.error(rsp, rsp.err.msg);
+        self.review_request.ready(function() {
+            rbApiCall({
+                url: self.review_request.child_hrefs['diffs'],
+                form: self.form,
+                buttons: options.buttons,
+                success: function(rsp) {
+                    if (rsp.stat == "ok") {
+                        options.success(rsp);
+                    } else {
+                        options.error(rsp, rsp.err.msg);
+                    }
                 }
-            }
+            });
         });
     }
 });
