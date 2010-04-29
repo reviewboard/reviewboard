@@ -225,6 +225,8 @@ RB.ReviewRequest = function(id, path) {
     this.path = path;
     this.reviews = {};
     this.draft_review = null;
+    this.child_hrefs = {};
+    this.loaded = false;
 
     return this;
 }
@@ -258,6 +260,30 @@ $.extend(RB.ReviewRequest.prototype, {
 
     createScreenshot: function() {
         return new RB.Screenshot(this);
+    },
+
+    /*
+     * Ensures that the review request's state is loaded.
+     *
+     * If it's not loaded, then a request will be made to load the state
+     * before the callback is called.
+     */
+    ready: function(on_ready) {
+        if (this.loaded) {
+            on_ready();
+        } else {
+            var self = this;
+
+            this._apiCall({
+                type: "GET",
+                path: "/",
+                success: function(rsp) {
+                    self.loaded = true;
+                    self.child_hrefs = rsp.review_request.child_hrefs;
+                    on_ready();
+                }
+            });
+        }
     },
 
     setDraftField: function(options) {
@@ -295,48 +321,56 @@ $.extend(RB.ReviewRequest.prototype, {
     },
 
     publish: function(options) {
+        var self = this;
+
         options = $.extend(true, {}, options);
 
-        this._apiCall({
-            type: "PUT",
-            path: "/draft/",
-            data: {
-                public: 1
-            },
-            buttons: options.buttons
+        self.ready(function() {
+            self._apiCall({
+                type: "PUT",
+                url: self.child_hrefs['draft'],
+                data: {
+                    public: 1
+                },
+                buttons: options.buttons
+            });
         });
     },
 
     discardDraft: function(options) {
-        options = $.extend(true, {}, options);
+        var self = this;
 
-        this._apiCall({
-            type: "DELETE",
-            path: "/draft/",
-            buttons: options.buttons
+        self.ready(function() {
+            self._apiCall({
+                type: "DELETE",
+                url: self.child_hrefs['draft'],
+                buttons: options.buttons
+            });
         });
     },
 
     close: function(options) {
+        var self = this;
+        var statusType;
+
         if (options.type == RB.ReviewRequest.CLOSE_DISCARDED) {
-            this._apiCall({
-                type: "PUT",
-                path: "/",
-                data: {
-                    status: "discarded"
-                },
-                buttons: options.buttons
-            });
+            statusType = "discarded";
         } else if (options.type == RB.ReviewRequest.CLOSE_SUBMITTED) {
-            this._apiCall({
+            statusType = "submitted";
+        } else {
+            return;
+        }
+
+        self.ready(function() {
+            self._apiCall({
                 type: "PUT",
                 path: "/",
                 data: {
-                    status: "submitted"
+                    status: statusType
                 },
                 buttons: options.buttons
             });
-        }
+        });
     },
 
     reopen: function(options) {
@@ -376,24 +410,26 @@ $.extend(RB.ReviewRequest.prototype, {
     _checkForUpdates: function() {
         var self = this;
 
-        this._apiCall({
-            type: "GET",
-            noActivityIndicator: true,
-            path: "/last-update/",
-            success: function(rsp) {
-                var last_update = rsp.last_update;
+        self.ready(function() {
+            self._apiCall({
+                type: "GET",
+                noActivityIndicator: true,
+                url: self.child_hrefs['last-update'],
+                success: function(rsp) {
+                    var last_update = rsp.last_update;
 
-                if ((self.checkUpdatesType == undefined ||
-                     self.checkUpdatesType == last_update.type) &&
-                    self.lastUpdateTimestamp != last_update.timestamp) {
-                    $.event.trigger("updated", [last_update], self);
+                    if ((self.checkUpdatesType == undefined ||
+                         self.checkUpdatesType == last_update.type) &&
+                        self.lastUpdateTimestamp != last_update.timestamp) {
+                        $.event.trigger("updated", [last_update], self);
+                    }
+
+                    self.lastUpdateTimestamp = last_update.timestamp;
+
+                    setTimeout(function() { self._checkForUpdates(); },
+                               RB.ReviewRequest.CHECK_UPDATES_MSECS);
                 }
-
-                self.lastUpdateTimestamp = last_update.timestamp;
-
-                setTimeout(function() { self._checkForUpdates(); },
-                           RB.ReviewRequest.CHECK_UPDATES_MSECS);
-            }
+            });
         });
     },
 
@@ -791,7 +827,7 @@ function rbApiCall(options) {
 
                 if ((rsp && rsp.stat) || xhr.status == 204) {
                     if ($.isFunction(options.success)) {
-                        options.success(rsp, textStatus);
+                        options.success(rsp, xhr.status);
                     }
 
                     return;
