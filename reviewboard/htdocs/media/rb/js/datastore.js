@@ -392,7 +392,7 @@ $.extend(RB.Diff.prototype, {
 
         self.review_request.ready(function() {
             rbApiCall({
-                url: self.review_request.child_hrefs['diffs'],
+                url: self.review_request.child_hrefs.diffs,
                 form: self.form,
                 buttons: options.buttons,
                 success: function(rsp) {
@@ -1051,7 +1051,6 @@ $.extend(RB.Screenshot.prototype, {
 
     _saveForm: function(options) {
         this._saveApiCall(options.success, options.error, {
-            path: 'new/',
             buttons: options.buttons,
             form: this.form
         });
@@ -1071,7 +1070,6 @@ $.extend(RB.Screenshot.prototype, {
         blob += '\r\n';
 
         this._saveApiCall(options.success, options.error, {
-            path: 'new/',
             buttons: options.buttons,
             data: blob,
             processData: false,
@@ -1088,19 +1086,22 @@ $.extend(RB.Screenshot.prototype, {
     },
 
     _saveApiCall: function(onSuccess, onError, options) {
-        rbApiCall($.extend(options, {
-            path: '/reviewrequests/' + this.review_request.id +
-                  '/screenshot/' + options.path,
-            success: function(rsp) {
-                if (rsp.stat == "ok") {
-                    if ($.isFunction(onSuccess)) {
-                        onSuccess(rsp, rsp.screenshot);
+        var self = this;
+
+        self.review_request.ready(function() {
+            rbApiCall($.extend(options, {
+                url: self.review_request.child_hrefs.screenshots,
+                success: function(rsp) {
+                    if (rsp.stat == "ok") {
+                        if ($.isFunction(onSuccess)) {
+                            onSuccess(rsp, rsp.screenshot);
+                        }
+                    } else if ($.isFunction(onError)) {
+                        onError(rsp, rsp.err.msg);
                     }
-                } else if ($.isFunction(onError)) {
-                    onError(rsp, rsp.err.msg);
                 }
-            }
-        }));
+            }));
+        });
     }
 });
 
