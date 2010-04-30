@@ -837,7 +837,7 @@ class ReviewReplyTests(SeleniumUnitTest):
         self.assertEqual(reply.body_top, body_top)
         self.assertEqual(reply.body_bottom, body_bottom)
 
-    def test_reply_publish(self):
+    def test_reply_discard(self):
         """Testing discarding a reply to a review"""
         body_top = 'Reply to body top'
         body_bottom = 'Reply to body bottom'

@@ -357,10 +357,24 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                 .bind("complete", function(e, value) {
                     self.html(linkifyText(self.text()));
 
-                    review_reply.addComment({
-                        context_id: context_id,
-                        context_type: context_type,
-                        text: value,
+                    if (context_type == "body_top" ||
+                        context_type == "body_bottom") {
+                        review_reply[context_type] = value;
+                        obj = review_reply;
+                    } else if (context_type == "comment") {
+                        obj = new RB.DiffCommentReply(review_reply, null,
+                                                      context_id);
+                        obj.setText(value);
+                    } else if (context_type == "screenshot_comment") {
+                        obj = new RB.ScreenshotCommentReply(review_reply, null,
+                                                            context_id);
+                        obj.setText(value);
+                    } else {
+                        /* Shouldn't be reached. */
+                        return;
+                    }
+
+                    obj.save({
                         buttons: bannerButtonsEl,
                         success: function() {
                             removeCommentFormIfEmpty(self);
@@ -394,6 +408,11 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
             }
 
             addCommentLink.fadeIn();
+
+            /* Find out if we need to discard this. */
+            review_reply.discardIfEmpty({
+                buttons: bannerButtonsEl
+            });
         });
     }
 

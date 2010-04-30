@@ -164,6 +164,149 @@ $.extend(RB.DiffComment.prototype, {
 });
 
 
+RB.DiffCommentReply = function(reply, id, reply_to_id) {
+    this.id = id;
+    this.reply = reply;
+    this.text = "";
+    this.reply_to_id = reply_to_id;
+    this.loaded = false;
+    this.url = null;
+
+    return this;
+}
+
+$.extend(RB.DiffCommentReply.prototype, {
+    ready: function(on_ready) {
+        if (this.loaded) {
+            on_ready();
+        } else {
+            this._load(on_ready);
+        }
+    },
+
+    /*
+     * Sets the current text in the comment block.
+     *
+     * @param {string} text  The new text to set.
+     */
+    setText: function(text) {
+        this.text = text;
+        $.event.trigger("textChanged", null, this);
+    },
+
+    /*
+     * Saves the comment on the server.
+     */
+    save: function(options) {
+        var self = this;
+        options = options || {};
+
+        self.ready(function() {
+            self.reply.ensureCreated(function() {
+                var type;
+                var url;
+                var data = {
+                    text: self.text
+                };
+
+                if (self.loaded) {
+                    type = "PUT";
+                    url = self.url;
+                } else {
+                    data.reply_to_id = self.reply_to_id;
+                    url = self.reply.child_hrefs["diff-comments"];
+                }
+
+                rbApiCall({
+                    type: type,
+                    url: url,
+                    data: data,
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+
+                        $.event.trigger("saved", null, self);
+
+                        if ($.isFunction(options.success)) {
+                            options.success();
+                        }
+                    }
+                });
+            });
+        });
+    },
+
+    /*
+     * Deletes the comment from the server.
+     */
+    deleteComment: function() {
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall({
+                    type: "DELETE",
+                    url: self.url,
+                    success: function() {
+                        $.event.trigger("deleted", null, self);
+                        self._deleteAndDestruct();
+                    }
+                });
+            } else {
+                self._deleteAndDestruct();
+            }
+        });
+    },
+
+    deleteIfEmpty: function() {
+        if (this.text != "") {
+            return;
+        }
+
+        this.deleteComment();
+    },
+
+    _deleteAndDestruct: function() {
+        $.event.trigger("destroyed", null, this);
+    },
+
+    _load: function(on_done) {
+        var self = this;
+
+        if (!self.id) {
+            on_done();
+            return;
+        }
+
+        self.reply.ready(function() {
+            if (!self.reply.loaded) {
+                on_done();
+                return;
+            }
+
+            rbApiCall({
+                type: "GET",
+                url: self.reply.child_hrefs["diff-comments"] + self.id + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done();
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.diff_comment.id;
+        this.text = rsp.diff_comment.text;
+        this.child_hrefs = rsp.diff_comment.child_hrefs;
+        this.url = rsp.diff_comment.href;
+        this.loaded = true;
+    }
+});
+
+
 RB.Diff = function(review_request, revision, interdiff_revision) {
     this.review_request = review_request;
     this.revision = revision;
@@ -624,7 +767,8 @@ $.extend(RB.Review.prototype, {
         self.review_request.ready(function() {
             rbApiCall({
                 type: "GET",
-                url: self.review_request.child_hrefs.reviews + "draft/",
+                url: self.review_request.child_hrefs.reviews +
+                     (self.id ? self.id : "draft") + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
@@ -697,48 +841,169 @@ $.extend(RB.ReviewGroup.prototype, {
 });
 
 
-RB.ReviewReply = function(review) {
+RB.ReviewReply = function(review, id) {
     this.review = review;
+    this.id = id;
+    this.body_top = null;
+    this.body_bottom = null;
+    this.url = null;
+    this.loaded = false;
 
     return this;
 }
 
 $.extend(RB.ReviewReply.prototype, {
-    addComment: function(options) {
-        rbApiCall({
-            path: "/reviewrequests/" + this.review.review_request.id +
-                  "/reviews/" + this.review.id + "/replies/draft/",
-            data: {
-                value:     options.text,
-                id:        options.context_id,
-                type:      options.context_type,
-                review_id: this.review.id
-            },
-            buttons: options.buttons,
-            success: options.success
+    ready: function(on_done) {
+        if (this.loaded) {
+            on_done();
+        } else {
+            this._load(on_done);
+        }
+    },
+
+    ensureCreated: function(on_done) {
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                on_done();
+            } else {
+                /* The review doesn't exist. Create it. */
+                self.save({
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+                        on_done();
+                    }
+                });
+            }
+        });
+    },
+
+    save: function(options) {
+        var data = {};
+
+        if (this.body_top != null) {
+            data.body_top = this.body_top;
+        }
+
+        if (this.body_bottom != null) {
+            data.body_bottom = this.body_bottom;
+        }
+
+        if (options.public) {
+            data.public = 1;
+        }
+
+        var self = this;
+
+        this.ready(function() {
+            var type;
+            var url;
+
+            if (self.loaded) {
+                type = "PUT";
+                url = self.url;
+            } else {
+                type = "POST";
+                url = self.review.child_hrefs.replies;
+            }
+
+            rbApiCall({
+                type: type,
+                url: url,
+                data: data,
+                buttons: options.buttons,
+                success: function(rsp) {
+                    self._loadDataFromResponse(rsp);
+
+                    if ($.isFunction(options.success)) {
+                        options.success(rsp);
+                    }
+                }
+            });
         });
     },
 
     publish: function(options) {
-        rbApiCall({
-            path: '/reviewrequests/' + this.review.review_request.id +
-                  '/reviews/' + this.review.id + '/replies/draft/save/',
-            buttons: options.buttons,
+        this.save($.extend(true, {
+            public: true,
             errorText: "Saving the reply draft has " +
                        "failed due to a server error:",
-            success: options.success
-        });
+        }, options));
     },
 
     discard: function(options) {
-        rbApiCall({
-            path: '/reviewrequests/' + this.review.review_request.id +
-                  '/reviews/' + this.review.id + '/replies/draft/discard/',
-            buttons: options.buttons,
-            errorText: "Discarding the reply draft " +
-                       "has failed due to a server error:",
-            success: options.success
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall($.extend(true, options, {
+                    url: self.url,
+                    type: "DELETE",
+                    errorText: "Discarding the reply draft " +
+                               "has failed due to a server error:",
+                }));
+            } else if ($.isFunction(options.success)) {
+                options.success();
+            }
         });
+    },
+
+    discardIfEmpty: function(options) {
+        var self = this;
+
+        self.ready(function() {
+            if (self.body_top || self.body_bottom) {
+                return;
+            }
+
+            /* We can only discard if there are on comments of any kind. */
+            rbApiCall({
+                type: "GET",
+                url: self.child_hrefs['diff-comments'],
+                success: function(rsp, status) {
+                    if (rsp.diff_comments.length == 0) {
+                        rbApiCall({
+                            type: "GET",
+                            url: self.child_hrefs['screenshot-comments'],
+                            success: function(rsp, status) {
+                                if (rsp.screenshot_comments.length == 0) {
+                                    self.discard(options);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        });
+    },
+
+    _load: function(on_done) {
+        var self = this;
+
+        self.review.ready(function() {
+            rbApiCall({
+                type: "GET",
+                url: self.review.child_hrefs.replies +
+                     (self.id ? self.id : "draft") + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done();
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.reply.id;
+        this.body_top = rsp.reply.body_top;
+        this.body_bottom = rsp.reply.body_bottom;
+        this.child_hrefs = rsp.reply.child_hrefs;
+        this.url = rsp.reply.href;
+        this.loaded = true;
     }
 });
 
