@@ -709,11 +709,15 @@ $.fn.commentDlg = function() {
         }
 
         comment = newComment;
-        textField.val(comment.text);
-        dirty = false;
 
-        /* Set the initial button states */
-        deleteButton.setVisible(comment.saved);
+        comment.ready(function() {
+            textField.val(comment.text);
+            dirty = false;
+
+            /* Set the initial button states */
+            deleteButton.setVisible(comment.loaded);
+        });
+
         saveButton.attr("disabled", true);
 
         /* Clear the status field. */

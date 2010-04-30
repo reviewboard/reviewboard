@@ -176,6 +176,7 @@ class DiffCommentTests(SeleniumUnitTest):
         self.open_comment_box(file.id, first_line, last_line)
         self.selenium.type_keys('comment_text', comment_text)
         self.selenium.click('comment_save')
+        self.wait_for_visible('review-banner')
         self.selenium.click('review-banner-publish')
         self.selenium.wait_for_page_to_load("6000")
 

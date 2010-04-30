@@ -1,18 +1,29 @@
 RB = {};
 
-RB.DiffComment = function(filediff, interfilediff, beginLineNum, endLineNum,
-                          textOnServer) {
+RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
+                          endLineNum, textOnServer) {
+    this.id = id;
+    this.review = review;
     this.filediff = filediff;
     this.interfilediff = interfilediff;
     this.beginLineNum = beginLineNum;
     this.endLineNum = endLineNum;
-    this.text = textOnServer || "";
-    this.saved = (textOnServer != undefined);
+    this.text = "";
+    this.loaded = false;
+    this.url = null;
 
     return this;
 }
 
 $.extend(RB.DiffComment.prototype, {
+    ready: function(on_ready) {
+        if (this.loaded) {
+            on_ready();
+        } else {
+            this._load(on_ready);
+        }
+    },
+
     /*
      * Sets the current text in the comment block.
      *
@@ -39,21 +50,43 @@ $.extend(RB.DiffComment.prototype, {
         var self = this;
         options = options || {};
 
-        rbApiCall({
-            path: this._getURL(),
-            data: {
-                action: "set",
-                num_lines: this.getNumLines(),
-                text: this.text
-            },
-            success: function() {
-                self.saved = true;
-                $.event.trigger("saved", null, self);
+        self.ready(function() {
+            self.review.ensureCreated(function() {
+                var type;
+                var url;
+                var data = {
+                    text: self.text,
+                    first_line: self.beginLineNum,
+                    num_lines: self.getNumLines()
+                };
 
-                if ($.isFunction(options.success)) {
-                    options.success();
+                if (self.loaded) {
+                    type = "PUT";
+                    url = self.url;
+                } else {
+                    data.filediff_id = self.filediff.id;
+                    url = self.review.child_hrefs["diff-comments"];
+
+                    if (self.interfilediff) {
+                        data.interfilediff_id = self.interfilediff_id;
+                    }
                 }
-            }
+
+                rbApiCall({
+                    type: type,
+                    url: url,
+                    data: data,
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+
+                        $.event.trigger("saved", null, self);
+
+                        if ($.isFunction(options.success)) {
+                            options.success();
+                        }
+                    }
+                });
+            });
         });
     },
 
@@ -63,22 +96,20 @@ $.extend(RB.DiffComment.prototype, {
     deleteComment: function() {
         var self = this;
 
-        if (this.saved) {
-            rbApiCall({
-                path: this._getURL(),
-                data: {
-                    action: "delete",
-                    num_lines: this.getNumLines()
-                },
-                success: function() {
-                    self.saved = false;
-                    $.event.trigger("deleted", null, self);
-                    self._deleteAndDestruct();
-                }
-            });
-        } else {
-            this._deleteAndDestruct();
-        }
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall({
+                    type: "DELETE",
+                    url: self.url,
+                    success: function() {
+                        $.event.trigger("deleted", null, self);
+                        self._deleteAndDestruct();
+                    }
+                });
+            } else {
+                self._deleteAndDestruct();
+            }
+        });
     },
 
     deleteIfEmpty: function() {
@@ -93,32 +124,42 @@ $.extend(RB.DiffComment.prototype, {
         $.event.trigger("destroyed", null, this);
     },
 
-    /*
-     * Returns the URL used for API calls.
-     *
-     * @return {string} The URL used for API calls for this comment block.
-     */
-    _getURL: function() {
-        var interfilediff_revision = null;
-        var interfilediff_id = null;
+    _load: function(on_done) {
+        var self = this;
 
-        if (this.interfilediff != null) {
-            interfilediff_revision = this.interfilediff['revision'];
-            interfilediff_id = this.interfilediff['id'];
+        if (!self.id) {
+            on_done();
+            return;
         }
 
-        var filediff_revision = this.filediff['revision'];
-        var filediff_id = this.filediff['id'];
+        self.review.ready(function() {
+            if (!self.review.loaded) {
+                on_done();
+                return;
+            }
 
-        return "/reviewrequests/" + gReviewRequestId + "/diff/" +
-               (interfilediff_revision == null
-                    ? filediff_revision
-                    : filediff_revision + "-" + interfilediff_revision) +
-               "/file/" +
-               (interfilediff_id == null
-                    ? filediff_id
-                    : filediff_id + "-" + interfilediff_id) +
-               "/line/" + this.beginLineNum + "/comments/";
+            rbApiCall({
+                type: "GET",
+                url: self.review.child_hrefs["diff-comments"] + self.id + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done();
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.diff_comment.id;
+        this.text = rsp.diff_comment.text;
+        this.beginLineNum = rsp.diff_comment.first_line;
+        this.endLineNum = rsp.diff_comment.num_lines + this.beginLineNum;
+        this.child_hrefs = rsp.diff_comment.child_hrefs;
+        this.url = rsp.diff_comment.href;
+        this.loaded = true;
     }
 });
 
@@ -465,6 +506,12 @@ RB.Review = function(review_request, id) {
 }
 
 $.extend(RB.Review.prototype, {
+    createDiffComment: function(id, filediff, interfilediff, beginLineNum,
+                                endLineNum, text) {
+        return new RB.DiffComment(this, id, filediff, interfilediff,
+                                  beginLineNum, endLineNum, text);
+    },
+
     createReply: function() {
         if (this.draft_reply == null) {
             this.draft_reply = new RB.ReviewReply(this);

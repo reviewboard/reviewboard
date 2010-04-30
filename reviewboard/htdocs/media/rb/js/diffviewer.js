@@ -161,7 +161,8 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
             var comment = comments[i];
 
             if (comment.localdraft) {
-                this._createDraftComment(comment.text);
+                console.log(comment);
+                this._createDraftComment(comment.comment_id, comment.text);
             } else {
                 this.comments.push(comment);
             }
@@ -297,16 +298,20 @@ $.extend(DiffCommentBlock.prototype, {
             .close();
     },
 
-    _createDraftComment: function(textOnServer) {
+    _createDraftComment: function(id, text) {
         if (this.draftComment != null) {
             return;
         }
 
         var self = this;
         var el = this.el;
-        var comment = new RB.DiffComment(this.filediff, this.interfilediff,
-                                         this.beginLineNum, this.endLineNum,
-                                         textOnServer);
+        var comment = gReviewRequest.createReview().createDiffComment(
+            id, this.filediff, this.interfilediff, this.beginLineNum,
+            this.endLineNum);
+
+        if (text) {
+            comment.text = text;
+        }
 
         $.event.add(comment, "textChanged", function() {
             self.updateTooltip();
