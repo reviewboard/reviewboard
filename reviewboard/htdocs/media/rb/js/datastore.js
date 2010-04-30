@@ -675,8 +675,22 @@ RB.ReviewGroup = function(id) {
 
 $.extend(RB.ReviewGroup.prototype, {
     setStarred: function(starred) {
+        var apiType;
+        var path = "/users/" + gUserName + "/watched/review-groups/";
+        var data = {};
+
+        if (starred) {
+            apiType = "POST";
+            data['object_id'] = this.id;
+        } else {
+            apiType = "DELETE";
+            path += this.id + "/";
+        }
+
         rbApiCall({
-            path: "/groups/" + this.id + (starred ? "/star/" : "/unstar/"),
+            type: apiType,
+            path: path,
+            data: data,
             success: function() {}
         });
     }
