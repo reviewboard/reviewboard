@@ -1148,7 +1148,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp, review_request_id, review_id = \
             self._common_post_interdiff_comments(comment_text)
 
-        rsp = self.apiDelete(rsp['diff_comment']['href'])
+        rsp = self.apiDelete(rsp['diff_comment']['links']['self']['href'])
 
         rsp = self.apiGet("review-requests/%s/reviews/%s/diff-comments" %
                           (review_request_id, review_id))
@@ -1179,7 +1179,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp, review_request_id, review_id, interfilediff_id = \
             self._common_post_interdiff_comments(comment_text)
 
-        rsp = self.apiDelete(rsp['diff_comment']['href'])
+        rsp = self.apiDelete(rsp['diff_comment']['links']['self']['href'])
 
         rsp = self.apiGet("review-requests/%s/reviews/%s/diff-comments" %
                           (review_request_id, review_id))
@@ -1392,10 +1392,10 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
-        self.assertTrue('child_hrefs' in rsp['reply'])
-        self.assertTrue('diff-comments' in rsp['reply']['child_hrefs'])
+        self.assertTrue('links' in rsp['reply'])
+        self.assertTrue('diff-comments' in rsp['reply']['links'])
 
-        rsp = self.apiPost(rsp['reply']['child_hrefs']['diff-comments'], {
+        rsp = self.apiPost(rsp['reply']['links']['diff-comments']['href'], {
             'reply_to_id': comment.id,
             'text': comment_text,
         })
@@ -1417,7 +1417,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_id = rsp['reply']['id']
-        rsp = self.apiDelete(rsp['reply']['href'])
+        rsp = self.apiDelete(rsp['reply']['links']['self']['href'])
 
         self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
 
@@ -1438,7 +1438,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self._postNewReview(review_request.id)
         review = Review.objects.get(pk=rsp['review']['id'])
-        replies_url = rsp['review']['child_hrefs']['replies']
+        replies_url = rsp['review']['links']['replies']['href']
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
@@ -1458,11 +1458,11 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
-        self.assertTrue('child_hrefs' in rsp['reply'])
-        self.assertTrue('screenshot-comments' in rsp['reply']['child_hrefs'])
+        self.assertTrue('links' in rsp['reply'])
+        self.assertTrue('screenshot-comments' in rsp['reply']['links'])
 
         screenshot_comments_url = \
-            rsp['reply']['child_hrefs']['screenshot-comments']
+            rsp['reply']['links']['screenshot-comments']['href']
 
         rsp = self.apiPost(screenshot_comments_url, {
             'reply_to_id': comment.id,
@@ -1488,7 +1488,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
             os.path.dirname(os.path.dirname(__file__)),
             "scmtools", "testdata", "svn_makefile.diff")
         f = open(diff_filename, "r")
-        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffs'], {
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
             'path': f,
             'basedir': "/trunk",
         })
@@ -1503,7 +1503,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        rsp = self.apiPost(rsp['review_request']['child_hrefs']['diffs'],
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'],
                            expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -1534,7 +1534,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        screenshots_url = rsp['review_request']['child_hrefs']['screenshots']
+        screenshots_url = rsp['review_request']['links']['screenshots']['href']
 
         f = open(self._getTrophyFilename(), "r")
         self.assertNotEqual(f, None)
@@ -1643,9 +1643,9 @@ class ScreenshotCommentResource(BaseWebAPITestCase):
         # Post the screenshot.
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
-        self.assertTrue('child_hrefs' in rsp['screenshot'])
-        self.assertTrue('screenshot-comments' in rsp['screenshot']['child_hrefs'])
-        comments_url = rsp['screenshot']['child_hrefs']['screenshot-comments']
+        self.assertTrue('links' in rsp['screenshot'])
+        self.assertTrue('screenshot-comments' in rsp['screenshot']['links'])
+        comments_url = rsp['screenshot']['links']['screenshot-comments']['href']
 
         # Make these public.
         review_request.publish(self.user)
@@ -1727,13 +1727,14 @@ class ReviewScreenshotCommentResource(BaseWebAPITestCase):
         rsp = self._postNewReview(review_request.id)
         review = Review.objects.get(pk=rsp['review']['id'])
         screenshot_comments_url = \
-            rsp['review']['child_hrefs']['screenshot-comments']
+            rsp['review']['links']['screenshot-comments']['href']
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
                                              x, y, w, h)
 
-        rsp = self.apiDelete(rsp['screenshot_comment']['href'])
+        rsp = self.apiDelete(
+            rsp['screenshot_comment']['links']['self']['href'])
 
         rsp = self.apiGet(screenshot_comments_url)
         self.assertEqual(rsp['stat'], 'ok')
