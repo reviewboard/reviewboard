@@ -1,7 +1,7 @@
 RB = {};
 
 RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
-                          endLineNum, textOnServer) {
+                          endLineNum) {
     this.id = id;
     this.review = review;
     this.filediff = filediff;
@@ -650,9 +650,14 @@ RB.Review = function(review_request, id) {
 
 $.extend(RB.Review.prototype, {
     createDiffComment: function(id, filediff, interfilediff, beginLineNum,
-                                endLineNum, text) {
+                                endLineNum) {
         return new RB.DiffComment(this, id, filediff, interfilediff,
-                                  beginLineNum, endLineNum, text);
+                                  beginLineNum, endLineNum);
+    },
+
+    createScreenshotComment: function(id, screenshot_id, x, y, width, height) {
+        return new RB.ScreenshotComment(this, id, screenshot_id, x, y,
+                                        width, height);
     },
 
     createReply: function() {
@@ -1106,20 +1111,31 @@ $.extend(RB.Screenshot.prototype, {
 });
 
 
-RB.ScreenshotComment = function(screenshot_id, x, y, width, height,
-                                textOnServer) {
+RB.ScreenshotComment = function(review, id, screenshot_id, x, y, width,
+                                height) {
+    this.id = id;
+    this.review = review;
     this.screenshot_id = screenshot_id;
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
-    this.text = textOnServer || "";
-    this.saved = (textOnServer != undefined);
+    this.text = "";
+    this.loaded = false;
+    this.url = null;
 
     return this;
 }
 
 $.extend(RB.ScreenshotComment.prototype, {
+    ready: function(on_ready) {
+        if (this.loaded) {
+            on_ready();
+        } else {
+            this._load(on_ready);
+        }
+    },
+
     /*
      * Sets the current text in the comment block.
      *
@@ -1134,23 +1150,43 @@ $.extend(RB.ScreenshotComment.prototype, {
      * Saves the comment on the server.
      */
     save: function(options) {
+        var self = this;
+
         options = $.extend({
             success: function() {}
         }, options);
 
-        var self = this;
+        self.ready(function() {
+            self.review.ensureCreated(function() {
+                var type;
+                var url;
+                var data = {
+                    text: self.text,
+                    x: self.x,
+                    y: self.y,
+                    w: self.width,
+                    h: self.height
+                };
 
-        rbApiCall({
-            path: this._getURL(),
-            data: {
-                action: "set",
-                text: this.text
-            },
-            success: function() {
-                self.saved = true;
-                $.event.trigger("saved", null, self);
-                options.success();
-            }
+                if (self.loaded) {
+                    type = "PUT";
+                    url = self.url;
+                } else {
+                    data.screenshot_id = self.screenshot_id;
+                    url = self.review.child_hrefs["screenshot-comments"];
+                }
+
+                rbApiCall({
+                    type: type,
+                    url: url,
+                    data: data,
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+                        $.event.trigger("saved", null, self);
+                        options.success();
+                    }
+                });
+            });
         });
     },
 
@@ -1160,21 +1196,20 @@ $.extend(RB.ScreenshotComment.prototype, {
     deleteComment: function() {
         var self = this;
 
-        if (this.saved) {
-            rbApiCall({
-                path: this._getURL(),
-                data: {
-                    action: "delete"
-                },
-                success: function() {
-                    self.saved = false;
-                    $.event.trigger("deleted", null, self);
-                    self._deleteAndDestruct();
-                }
-            });
-        } else {
-            this._deleteAndDestruct();
-        }
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall({
+                    type: "DELETE",
+                    url: self.url,
+                    success: function() {
+                        $.event.trigger("deleted", null, self);
+                        self._deleteAndDestruct();
+                    }
+                });
+            } else {
+                this._deleteAndDestruct();
+            }
+        });
     },
 
     deleteIfEmpty: function() {
@@ -1189,16 +1224,189 @@ $.extend(RB.ScreenshotComment.prototype, {
         $.event.trigger("destroyed", null, this);
     },
 
+    _load: function(on_done) {
+        var self = this;
+
+        if (!self.id) {
+            on_done();
+            return;
+        }
+
+        self.review.ready(function() {
+            if (!self.review.loaded) {
+                on_done();
+                return;
+            }
+
+            rbApiCall({
+                type: "GET",
+                url: self.review.child_hrefs["screenshot-comments"] +
+                     self.id + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done();
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.screenshot_comment.id;
+        this.text = rsp.screenshot_comment.text;
+        this.x = rsp.screenshot_comment.x;
+        this.y = rsp.screenshot_comment.y;
+        this.width = rsp.screenshot_comment.w;
+        this.height = rsp.screenshot_comment.h;
+        this.child_hrefs = rsp.screenshot_comment.child_hrefs;
+        this.url = rsp.screenshot_comment.href;
+        this.loaded = true;
+    }
+});
+
+
+RB.ScreenshotCommentReply = function(reply, id, reply_to_id) {
+    this.id = id;
+    this.reply = reply;
+    this.text = "";
+    this.reply_to_id = reply_to_id;
+    this.loaded = false;
+    this.url = null;
+
+    return this;
+}
+
+$.extend(RB.ScreenshotCommentReply.prototype, {
+    ready: function(on_ready) {
+        if (this.loaded) {
+            on_ready();
+        } else {
+            this._load(on_ready);
+        }
+    },
+
     /*
-     * Returns the URL used for API calls.
+     * Sets the current text in the comment block.
      *
-     * @return {string} The URL used for API calls for this comment block.
+     * @param {string} text  The new text to set.
      */
-    _getURL: function() {
-        return "/reviewrequests/" + gReviewRequestId + "/s/" +
-               this.screenshot_id + "/comments/" +
-               Math.round(this.width) + "x" + Math.round(this.height) +
-               "+" + Math.round(this.x) + "+" + Math.round(this.y) + "/";
+    setText: function(text) {
+        this.text = text;
+        $.event.trigger("textChanged", null, this);
+    },
+
+    /*
+     * Saves the comment on the server.
+     */
+    save: function(options) {
+        var self = this;
+        options = options || {};
+
+        self.ready(function() {
+            self.reply.ensureCreated(function() {
+                var type;
+                var url;
+                var data = {
+                    text: self.text
+                };
+
+                if (self.loaded) {
+                    type = "PUT";
+                    url = self.url;
+                } else {
+                    data.reply_to_id = self.reply_to_id;
+                    url = self.reply.child_hrefs["screenshot-comments"];
+                }
+
+                rbApiCall({
+                    type: type,
+                    url: url,
+                    data: data,
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+
+                        $.event.trigger("saved", null, self);
+
+                        if ($.isFunction(options.success)) {
+                            options.success();
+                        }
+                    }
+                });
+            });
+        });
+    },
+
+    /*
+     * Deletes the comment from the server.
+     */
+    deleteComment: function() {
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall({
+                    type: "DELETE",
+                    url: self.url,
+                    success: function() {
+                        $.event.trigger("deleted", null, self);
+                        self._deleteAndDestruct();
+                    }
+                });
+            } else {
+                self._deleteAndDestruct();
+            }
+        });
+    },
+
+    deleteIfEmpty: function() {
+        if (this.text != "") {
+            return;
+        }
+
+        this.deleteComment();
+    },
+
+    _deleteAndDestruct: function() {
+        $.event.trigger("destroyed", null, this);
+    },
+
+    _load: function(on_done) {
+        var self = this;
+
+        if (!self.id) {
+            on_done();
+            return;
+        }
+
+        self.reply.ready(function() {
+            if (!self.reply.loaded) {
+                on_done();
+                return;
+            }
+
+            rbApiCall({
+                type: "GET",
+                url: self.reply.child_hrefs["screenshot-comments"] +
+                     self.id + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done();
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.screenshot_comment.id;
+        this.text = rsp.screenshot_comment.text;
+        this.child_hrefs = rsp.screenshot_comment.child_hrefs;
+        this.url = rsp.screenshot_comment.href;
+        this.loaded = true;
     }
 });
 

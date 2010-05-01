@@ -1331,8 +1331,10 @@ function initScreenshotDnD() {
             thumbnailsContainerVisible = true;
             handleDragExit(null);
         } else {
-            dropIndicator.html("None of the dropped files were valid " +
-                               "images");
+            if (dropIndicator) {
+                dropIndicator.html("None of the dropped files were valid " +
+                                   "images");
+            }
 
             setTimeout(function() {
                 handleDragExit(null);

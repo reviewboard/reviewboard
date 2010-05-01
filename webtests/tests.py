@@ -1013,7 +1013,7 @@ class ScreenshotCommentTests(SeleniumUnitTest):
         self.selenium.click('comment_delete')
         self.wait_for_ajax_finish()
 
-        self.assertEqual(r.reviews.count(), 0)
+        self.assertEqual(r.reviews.count(), 1)
 
     def _get_review_request(self):
         r = ReviewRequest.objects.filter(public=True, status='P',

@@ -37,7 +37,7 @@ function CommentBlock(x, y, width, height, container, comments) {
             var comment = comments[i];
 
             if (comment.localdraft) {
-                this._createDraftComment(comment.text);
+                this._createDraftComment(comment.comment_id, comment.text);
             } else {
                 this.comments.push(comment);
             }
@@ -132,16 +132,19 @@ jQuery.extend(CommentBlock.prototype, {
             });
     },
 
-    _createDraftComment: function(textOnServer) {
+    _createDraftComment: function(id, text) {
         if (this.draftComment != null) {
             return;
         }
 
         var self = this;
         var el = this.el;
-        var comment = new RB.ScreenshotComment(gScreenshotId,
-                                               this.x, this.y, this.width,
-                                               this.height, textOnServer);
+        var comment = gReviewRequest.createReview().createScreenshotComment(
+            id, gScreenshotId, this.x, this.y, this.width, this.height);
+
+        if (text) {
+            comment.text = text;
+        }
 
         $.event.add(comment, "textChanged", function() {
             self.updateTooltip();
