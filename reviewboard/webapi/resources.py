@@ -549,7 +549,8 @@ class BaseWatchedObjectResource(WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        return HttpResponseRedirect(self.watched_resource.get_href(obj))
+        return HttpResponseRedirect(
+            self.watched_resource.get_href(obj, request, *args, **kwargs))
 
     @webapi_check_login_required
     def get_list(self, request, *args, **kwargs):
@@ -893,8 +894,8 @@ class ReviewRequestDraftResource(WebAPIResource):
             review_request.publish(user=request.user)
 
             return 303, {}, {
-                'Location': review_request_resource.get_href(review_request,
-                                                             *args, **kwargs)
+                'Location': review_request_resource.get_href(
+                    review_request, request, *args, **kwargs)
             }
         else:
             return 200, {
@@ -1336,7 +1337,7 @@ class BaseReviewResource(WebAPIResource):
             return result
         else:
             return status_code, result[1], {
-                'Location': self.get_href(review, *args, **kwargs),
+                'Location': self.get_href(review, request, *args, **kwargs),
             }
 
     @webapi_login_required
@@ -1420,7 +1421,8 @@ class ReviewReplyDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         return 301, {}, {
-            'Location': review_reply_resource.get_href(reply),
+            'Location': review_reply_resource.get_href(reply, request,
+                                                       *args, **kwargs),
         }
 
 review_reply_draft_resource = ReviewReplyDraftResource()
@@ -1506,7 +1508,7 @@ class ReviewReplyResource(BaseReviewResource):
             return result
         else:
             return status_code, result[1], {
-                'Location': self.get_href(reply, *args, **kwargs),
+                'Location': self.get_href(reply, request, *args, **kwargs),
             }
 
     @webapi_login_required
@@ -1599,7 +1601,8 @@ class ReviewDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         return 301, {}, {
-            'Location': review_resource.get_href(review),
+            'Location': review_resource.get_href(review, request,
+                                                 *args, **kwargs),
         }
 
 review_draft_resource = ReviewDraftResource()
