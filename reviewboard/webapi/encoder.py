@@ -23,7 +23,7 @@ from reviewboard.webapi.resources import diffset_resource, \
 
 
 class ReviewBoardAPIEncoder(WebAPIEncoder):
-    def encode(self, o, api_format, *args, **kwargs):
+    def encode(self, o, *args, **kwargs):
         resource = None
 
         if isinstance(o, Group):
@@ -53,6 +53,6 @@ class ReviewBoardAPIEncoder(WebAPIEncoder):
             resource = repository_resource
         else:
             return super(ReviewBoardAPIEncoder, self).encode(
-                o, api_format=api_format, *args, **kwargs)
+                o, *args, **kwargs)
 
-        return resource.serialize_object(o, api_format=api_format)
+        return resource.serialize_object(o, *args, **kwargs)
