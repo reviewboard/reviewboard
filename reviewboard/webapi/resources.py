@@ -18,7 +18,7 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
                                   INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource, \
-                                     RootResource
+                                     RootResource, register_resource_for_model
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
@@ -75,7 +75,7 @@ class BaseCommentResource(WebAPIResource):
     Provides common fields and functionality for all diff comment resources.
     """
     model = Comment
-    name = 'diff-comment'
+    name = 'diff_comment'
     fields = (
         'id', 'first_line', 'num_lines', 'text', 'filediff',
         'interfilediff', 'timestamp', 'timesince', 'public', 'user',
@@ -393,8 +393,7 @@ class FileDiffResource(WebAPIResource):
     model = FileDiff
     name = 'file'
     fields = (
-        'id', 'diffset', 'source_file', 'dest_file',
-        'source_revision', 'dest_detail',
+        'id', 'source_file', 'dest_file', 'source_revision', 'dest_detail',
     )
     item_child_resources = [filediff_comment_resource]
 
@@ -421,6 +420,7 @@ class DiffSetResource(WebAPIResource):
 
     uri_object_key = 'diff_revision'
     model_object_key = 'revision'
+    model_parent_key = 'history'
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(
@@ -626,8 +626,8 @@ class BaseWatchedObjectResource(WebAPIResource):
 
 class WatchedReviewGroupResource(BaseWatchedObjectResource):
     """A resource for review groups watched by a user."""
-    name = 'watched-review-group'
-    uri_name = 'review-groups'
+    name = 'watched_review_group'
+    uri_name = 'review_groups'
     profile_field = 'starred_groups'
 
     @property
@@ -644,8 +644,8 @@ watched_review_group_resource = WatchedReviewGroupResource()
 
 class WatchedReviewRequestResource(BaseWatchedObjectResource):
     """A resource for review requests watched by a user."""
-    name = 'watched-review-request'
-    uri_name = 'review-requests'
+    name = 'watched_review_request'
+    uri_name = 'review_requests'
     profile_field = 'starred_review_requests'
 
     @property
@@ -1047,7 +1047,7 @@ review_request_draft_resource = ReviewRequestDraftResource()
 class BaseScreenshotCommentResource(WebAPIResource):
     """A base resource for screenshot comments."""
     model = ScreenshotComment
-    name = 'screenshot-comment'
+    name = 'screenshot_comment'
     fields = (
         'id', 'screenshot', 'timestamp', 'timesince',
         'public', 'user', 'text', 'x', 'y', 'w', 'h',
@@ -1403,8 +1403,8 @@ class BaseReviewResource(WebAPIResource):
 
 class ReviewReplyDraftResource(WebAPIResource):
     """A redirecting resource that points to the current draft reply."""
-    name = 'reply-draft'
-    name_plural = 'reply-draft'
+    name = 'reply_draft'
+    name_plural = 'reply_draft'
     uri_name = 'draft'
 
     @webapi_login_required
@@ -1584,8 +1584,8 @@ review_reply_resource = ReviewReplyResource()
 
 class ReviewDraftResource(WebAPIResource):
     """A redirecting resource that points to the current draft review."""
-    name = 'review-draft'
-    name_plural = 'review-draft'
+    name = 'review_draft'
+    name_plural = 'review_draft'
     uri_name = 'draft'
 
     @webapi_login_required
@@ -1698,8 +1698,8 @@ screenshot_resource = ScreenshotResource()
 
 class ReviewRequestLastUpdateResource(WebAPIResource):
     """A resource representing the last update to a review request."""
-    name = 'last-update'
-    name_plural = 'last-update'
+    name = 'last_update'
+    name_plural = 'last_update'
 
     allowed_methods = ('GET',)
 
@@ -1762,7 +1762,7 @@ review_request_last_update_resource = ReviewRequestLastUpdateResource()
 class ReviewRequestResource(WebAPIResource):
     """A resource representing a review request."""
     model = ReviewRequest
-    name = 'review-request'
+    name = 'review_request'
     fields = (
         'id', 'submitter', 'time_added', 'last_updated', 'status',
         'public', 'changenum', 'repository', 'summary', 'description',
@@ -2046,3 +2046,19 @@ def string_to_status(status):
         return None
     else:
         raise Exception("Invalid status '%s'" % status)
+
+
+register_resource_for_model(Comment, review_comment_resource)
+register_resource_for_model(DiffSet, diffset_resource)
+register_resource_for_model(FileDiff, filediff_resource)
+register_resource_for_model(Group, review_group_resource)
+register_resource_for_model(Repository, repository_resource)
+register_resource_for_model(
+    Review,
+    lambda obj: obj.is_reply() and review_reply_resource or review_resource)
+register_resource_for_model(ReviewRequest, review_request_resource)
+register_resource_for_model(ReviewRequestDraft, review_request_draft_resource)
+register_resource_for_model(Screenshot, screenshot_resource)
+register_resource_for_model(ScreenshotComment,
+                            review_screenshot_comment_resource)
+register_resource_for_model(User, user_resource)

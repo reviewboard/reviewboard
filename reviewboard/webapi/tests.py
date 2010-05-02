@@ -149,8 +149,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         })
 
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['repository']['id'],
-                         self.repository.id)
+        self.assertEqual(rsp['review_request']['links']['repository']['href'],
+                         self.base_url + reverse('repository-resource', kwargs={
+                             'repository_id': self.repository.id,
+                         }))
 
         return rsp
 
@@ -580,8 +582,10 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'repository': self.repository.path,
         })
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['repository']['id'],
-                         self.repository.id)
+        self.assertEqual(rsp['review_request']['links']['repository']['href'],
+                         self.base_url + reverse('repository-resource', kwargs={
+                             'repository_id': self.repository.id,
+                         }))
 
         # See if we can fetch this. Also return it for use in other
         # unit tests.
@@ -605,9 +609,14 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             'submit_as': 'doc',
         })
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['repository']['id'],
-                         self.repository.id)
-        self.assertEqual(rsp['review_request']['submitter']['username'], 'doc')
+        self.assertEqual(rsp['review_request']['links']['repository']['href'],
+                         self.base_url + reverse('repository-resource', kwargs={
+                             'repository_id': self.repository.id,
+                         }))
+        self.assertEqual(rsp['review_request']['links']['submitter']['href'],
+                         self.base_url + reverse('user-resource', kwargs={
+                             'username': 'doc',
+                         }))
 
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
@@ -1393,9 +1402,9 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
         self.assertTrue('links' in rsp['reply'])
-        self.assertTrue('diff-comments' in rsp['reply']['links'])
+        self.assertTrue('diff_comments' in rsp['reply']['links'])
 
-        rsp = self.apiPost(rsp['reply']['links']['diff-comments']['href'], {
+        rsp = self.apiPost(rsp['reply']['links']['diff_comments']['href'], {
             'reply_to_id': comment.id,
             'text': comment_text,
         })
@@ -1459,10 +1468,10 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('reply' in rsp)
         self.assertNotEqual(rsp['reply'], None)
         self.assertTrue('links' in rsp['reply'])
-        self.assertTrue('screenshot-comments' in rsp['reply']['links'])
+        self.assertTrue('screenshot_comments' in rsp['reply']['links'])
 
         screenshot_comments_url = \
-            rsp['reply']['links']['screenshot-comments']['href']
+            rsp['reply']['links']['screenshot_comments']['href']
 
         rsp = self.apiPost(screenshot_comments_url, {
             'reply_to_id': comment.id,
@@ -1644,8 +1653,8 @@ class ScreenshotCommentResource(BaseWebAPITestCase):
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
         self.assertTrue('links' in rsp['screenshot'])
-        self.assertTrue('screenshot-comments' in rsp['screenshot']['links'])
-        comments_url = rsp['screenshot']['links']['screenshot-comments']['href']
+        self.assertTrue('screenshot_comments' in rsp['screenshot']['links'])
+        comments_url = rsp['screenshot']['links']['screenshot_comments']['href']
 
         # Make these public.
         review_request.publish(self.user)
@@ -1727,7 +1736,7 @@ class ReviewScreenshotCommentResource(BaseWebAPITestCase):
         rsp = self._postNewReview(review_request.id)
         review = Review.objects.get(pk=rsp['review']['id'])
         screenshot_comments_url = \
-            rsp['review']['links']['screenshot-comments']['href']
+            rsp['review']['links']['screenshot_comments']['href']
 
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
