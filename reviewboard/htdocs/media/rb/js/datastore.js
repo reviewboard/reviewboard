@@ -65,7 +65,7 @@ $.extend(RB.DiffComment.prototype, {
                     url = self.url;
                 } else {
                     data.filediff_id = self.filediff.id;
-                    url = self.review.links["diff-comments"].href;
+                    url = self.review.links.diff_comments.href;
 
                     if (self.interfilediff) {
                         data.interfilediff_id = self.interfilediff_id;
@@ -140,8 +140,7 @@ $.extend(RB.DiffComment.prototype, {
 
             rbApiCall({
                 type: "GET",
-                url: self.review.links["diff-comments"].href +
-                     self.id + "/",
+                url: self.review.links.diff_comments.href + self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
@@ -215,7 +214,7 @@ $.extend(RB.DiffCommentReply.prototype, {
                     url = self.url;
                 } else {
                     data.reply_to_id = self.reply_to_id;
-                    url = self.reply.links["diff-comments"].href;
+                    url = self.reply.links.diff_comments.href;
                 }
 
                 rbApiCall({
@@ -286,8 +285,7 @@ $.extend(RB.DiffCommentReply.prototype, {
 
             rbApiCall({
                 type: "GET",
-                url: self.reply.links["diff-comments"].href +
-                     self.id + "/",
+                url: self.reply.links.diff_comments.href + self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
@@ -604,7 +602,7 @@ $.extend(RB.ReviewRequest.prototype, {
             self._apiCall({
                 type: "GET",
                 noActivityIndicator: true,
-                url: self.links['last-update'].href,
+                url: self.links.last_update.href,
                 success: function(rsp) {
                     var last_update = rsp.last_update;
 
@@ -967,12 +965,12 @@ $.extend(RB.ReviewReply.prototype, {
             /* We can only discard if there are on comments of any kind. */
             rbApiCall({
                 type: "GET",
-                url: self.links['diff-comments'].href,
+                url: self.links.diff_comments.href,
                 success: function(rsp, status) {
                     if (rsp.diff_comments.length == 0) {
                         rbApiCall({
                             type: "GET",
-                            url: self.links['screenshot-comments'].href,
+                            url: self.links.screenshot_comments.href,
                             success: function(rsp, status) {
                                 if (rsp.screenshot_comments.length == 0) {
                                     self.discard(options);
@@ -1175,7 +1173,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                     url = self.url;
                 } else {
                     data.screenshot_id = self.screenshot_id;
-                    url = self.review.links["screenshot-comments"].href;
+                    url = self.review.links.screenshot_comments.href;
                 }
 
                 rbApiCall({
@@ -1242,7 +1240,7 @@ $.extend(RB.ScreenshotComment.prototype, {
 
             rbApiCall({
                 type: "GET",
-                url: self.review.links["screenshot-comments"].href +
+                url: self.review.links.screenshot_comments.href +
                      self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
@@ -1319,7 +1317,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
                     url = self.url;
                 } else {
                     data.reply_to_id = self.reply_to_id;
-                    url = self.reply.links["screenshot-comments"].href;
+                    url = self.reply.links.screenshot_comments.href;
                 }
 
                 rbApiCall({
@@ -1390,8 +1388,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
 
             rbApiCall({
                 type: "GET",
-                url: self.reply.links["screenshot-comments"].href +
-                     self.id + "/",
+                url: self.reply.links.screenshot_comments.href + self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
