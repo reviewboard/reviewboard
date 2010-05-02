@@ -627,7 +627,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 class WatchedReviewGroupResource(BaseWatchedObjectResource):
     """A resource for review groups watched by a user."""
     name = 'watched_review_group'
-    uri_name = 'review_groups'
+    uri_name = 'review-groups'
     profile_field = 'starred_groups'
 
     @property
@@ -645,7 +645,7 @@ watched_review_group_resource = WatchedReviewGroupResource()
 class WatchedReviewRequestResource(BaseWatchedObjectResource):
     """A resource for review requests watched by a user."""
     name = 'watched_review_request'
-    uri_name = 'review_requests'
+    uri_name = 'review-requests'
     profile_field = 'starred_review_requests'
 
     @property
