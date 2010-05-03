@@ -7,8 +7,8 @@ from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED, \
-                                  INVALID_ATTRIBUTE, INVALID_FORM_DATA
+from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
+                                  INVALID_FORM_DATA, PERMISSION_DENIED
 
 from reviewboard import initialize
 from reviewboard.diffviewer.models import DiffSet

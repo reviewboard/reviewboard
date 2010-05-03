@@ -15,6 +15,18 @@ from reviewboard.reviews.models import Group, Review, ReviewRequest, \
 from reviewboard.scmtools.models import Repository, Tool
 
 
+def create_screenshot(r, caption=""):
+    """Utility function to create a Screenshot."""
+    screenshot = Screenshot.objects.create(caption=caption)
+    screenshot.image.name = os.path.join('rb', 'images', 'logo.png')
+    screenshot.save()
+
+    r.screenshots.add(screenshot)
+    r.save()
+
+    return screenshot
+
+
 class SeleniumUnitTest(testcases.SeleniumUnitTest):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
 
@@ -205,7 +217,7 @@ class DiffCommentTests(SeleniumUnitTest):
         self.wait_for_ajax_finish()
         time.sleep(0.25) # It will be animating, so wait.
 
-        self.assertEqual(r.reviews.count(), 0)
+        self.assertEqual(r.reviews.count(), 1)
 
     def open_comment_box(self, file_id, first_line, last_line):
         first_line_locator = self.build_line_locator(file_id, first_line)
@@ -853,6 +865,49 @@ class ScreenshotTests(SeleniumUnitTest):
             'css=img[alt="%s"][src="%s"]' % (caption,
                                              screenshot.get_thumbnail_url())))
 
+    def test_modify_screenshot_caption(self):
+        """Testing modifying a screenshot's caption on a review request"""
+        caption = 'Test screenshot caption'
+        draft_caption = 'New screenshot caption'
+
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+        create_screenshot(r, caption)
+        r.publish(self.user)
+
+        self.selenium.open(r.get_absolute_url())
+        self.selenium.click('css=.screenshot-caption .editicon')
+        self.selenium.type('css=.screenshot-caption input[type="text"]',
+                           draft_caption)
+        self.selenium.key_press('css=.screenshot-caption input[type="text"]',
+                                '\\13')
+        self.wait_for_ajax_finish()
+
+        draft = r.get_draft(self.user)
+        self.assertNotEqual(draft, None)
+        self.assertEqual(draft.screenshots.count(), 1)
+
+        screenshot = draft.screenshots.get()
+        self.assertEqual(screenshot.caption, caption)
+        self.assertEqual(screenshot.draft_caption, draft_caption)
+
+    def test_delete_screenshot(self):
+        """Testing deleting a screenshot from a review request"""
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+        create_screenshot(r)
+        r.publish(self.user)
+
+        self.selenium.open(r.get_absolute_url())
+        self.selenium.click('css=.screenshot-caption '
+                            'img[alt="Delete Screenshot"]')
+        self.selenium.wait_for_page_to_load("6000")
+
+        draft = r.get_draft(self.user)
+        self.assertNotEqual(draft, None)
+        self.assertEqual(draft.screenshots.count(), 0)
+        self.assertEqual(r.screenshots.count(), 1)
+
 
 class ScreenshotCommentTests(SeleniumUnitTest):
     """Testing screenshot comment functionality."""
@@ -867,7 +922,7 @@ class ScreenshotCommentTests(SeleniumUnitTest):
         comment_h = 6
 
         r = self._get_review_request()
-        screenshot = self._create_screenshot(r)
+        screenshot = create_screenshot(r)
 
         self.selenium.open(screenshot.get_absolute_url())
         self._create_comment_at(comment_x, comment_y, comment_w, comment_h,
@@ -893,7 +948,7 @@ class ScreenshotCommentTests(SeleniumUnitTest):
         comment_h = 6
 
         r = self._get_review_request()
-        screenshot = self._create_screenshot(r)
+        screenshot = create_screenshot(r)
 
         self.selenium.open(screenshot.get_absolute_url())
         self._create_comment_at(comment_x, comment_y, comment_w, comment_h,
@@ -915,29 +970,6 @@ class ScreenshotCommentTests(SeleniumUnitTest):
         r.save()
 
         return r
-
-    def _create_screenshot(self, r):
-        self.selenium.open(r.get_absolute_url())
-        self.selenium.click('upload-screenshot-link')
-        self.selenium.focus('id_path')
-        self.selenium.attach_file('id_path',
-                                  self.test_url + 'media/rb/images/logo.png')
-        self.selenium.click('css=.modalbox input[value="Upload"]')
-        self.wait_for_ajax_finish()
-
-        draft = r.get_draft(self.user)
-        self.assertNotEqual(draft, None)
-        self.assertEqual(draft.screenshots.count(), 1)
-        screenshot = draft.screenshots.get()
-        r.publish(self.user)
-
-        self.assertEqual(r.screenshots.count(), 1)
-
-        url = self.test_url + screenshot.image.url.strip('/')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        return screenshot
 
     def _create_comment_at(self, x, y, w, h, text):
         # NOTE: There appears to be an off-by-two in Selenium's interaction
