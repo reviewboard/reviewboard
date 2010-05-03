@@ -779,15 +779,33 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(draft.get_bug_list(), ['123', '456'])
 
     def test_put_reviewrequestdraft(self):
-        """Testing the PUT review-requests/draft/ API"""
+        """Testing the PUT review-requests/<id>/draft/ API"""
         self._create_update_review_request(self.apiPut)
 
     def test_post_reviewrequestdraft(self):
-        """Testing the POST review-requests/draft/ API"""
+        """Testing the POST review-requests/<id>/draft/ API"""
         self._create_update_review_request(self.apiPost)
 
+    def test_put_reviewrequestdraft_with_changedesc(self):
+        """Testing the PUT review-requests/<id>/draft/ API with a change description"""
+        changedesc = 'This is a test change description.'
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.publish(self.user)
+
+        rsp = self.apiPost("review-requests/%s/draft" % review_request.id, {
+            'changedescription': changedesc,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft']['changedescription'], changedesc)
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertNotEqual(draft.changedesc, None)
+        self.assertEqual(draft.changedesc.text, changedesc)
+
     def test_put_reviewrequestdraft_with_invalid_field_name(self):
-        """Testing the PUT review-requests/draft/ API with Invalid Form Data error"""
+        """Testing the PUT review-requests/<id>/draft/ API with Invalid Form Data error"""
         review_request_id = \
             ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPut("review-requests/%s/draft" % review_request_id, {
@@ -799,7 +817,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertTrue('foobar' in rsp['fields'])
 
     def test_put_reviewrequestdraft_with_permission_denied_error(self):
-        """Testing the PUT review-requests/draft/ API with Permission Denied error"""
+        """Testing the PUT review-requests/<id>/draft/ API with Permission Denied error"""
         bugs_closed = '123,456'
         review_request_id = ReviewRequest.objects.from_user('admin')[0].id
         rsp = self.apiPut("review-requests/%s/draft" % review_request_id, {
@@ -810,7 +828,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_put_reviewrequestdraft_publish(self):
-        """Testing the PUT review-requests/draft/?public=1 API"""
+        """Testing the PUT review-requests/<id>/draft/?public=1 API"""
         # Set some data first.
         self.test_put_reviewrequestdraft()
 
@@ -838,7 +856,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertValidRecipients(["doc", "grumpy"], [])
 
     def test_put_reviewrequestdraft_publish_with_new_review_request(self):
-        """Testing the PUT review-requests/draft/?public=1 API with a new review request"""
+        """Testing the PUT review-requests/<id>/draft/?public=1 API with a new review request"""
         # Set some data first.
         review_request = ReviewRequest.objects.create(self.user,
                                                       self.repository)
@@ -871,7 +889,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertValidRecipients(["doc", "grumpy"], [])
 
     def test_delete_reviewrequestdraft(self):
-        """Testing the DELETE review-requests/draft/ API"""
+        """Testing the DELETE review-requests/<id>/draft/ API"""
         review_request = ReviewRequest.objects.from_user(self.user.username)[0]
         summary = review_request.summary
         description = review_request.description

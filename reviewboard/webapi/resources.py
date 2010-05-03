@@ -793,15 +793,12 @@ class ReviewRequestDraftResource(WebAPIResource):
     name = 'draft'
     name_plural = 'draft'
     mutable_fields = (
-        'summary', 'description', 'testing_done', 'bugs_closed',
-        'branch', 'target_groups', 'target_people', 'public'
+        'branch', 'bugs_closed', 'changedescription', 'description',
+        'public', 'summary', 'target_groups', 'target_people', 'testing_done'
     )
     fields = ('id', 'review_request', 'last_updated') + mutable_fields
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
-
-    SCREENSHOT_CAPTION_FIELD_RE = \
-        re.compile(r'screenshot_(?P<id>[0-9]+)_caption')
 
     @classmethod
     def prepare_draft(self, request, review_request):
@@ -817,6 +814,12 @@ class ReviewRequestDraftResource(WebAPIResource):
     def serialize_bugs_closed_field(self, obj):
         return obj.get_bug_list()
 
+    def serialize_changedescription_field(self, obj):
+        if obj.changedesc:
+            return obj.changedesc.text
+        else:
+            return ''
+
     def serialize_status_field(self, obj):
         return status_to_string(obj.status)
 
@@ -827,6 +830,50 @@ class ReviewRequestDraftResource(WebAPIResource):
         return draft.review_request.is_mutable_by(request.user)
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional={
+            'branch': {
+                'type': str,
+                'description': 'The new branch name.',
+            },
+            'bugs_closed': {
+                'type': str,
+                'description': 'A comma-separated list of bug IDs.',
+            },
+            'changedescription': {
+                'type': str,
+                'description': 'The change description for this update.',
+            },
+            'description': {
+                'type': str,
+                'description': 'The new review request description.',
+            },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not to make the review public. '
+                               'If a review is public, it cannot be made '
+                               'private again.',
+            },
+            'summary': {
+                'type': str,
+                'description': 'The new review request summary.',
+            },
+            'target_groups': {
+                'type': str,
+                'description': 'A comma-separated list of review groups '
+                               'that will be on the reviewer list.',
+            },
+            'target_people': {
+                'type': str,
+                'description': 'A comma-separated list of users that will '
+                               'be on a reviewer list.',
+            },
+            'testing_done': {
+                'type': str,
+                'description': 'The new testing done text.',
+            },
+        },
+    )
     def create(self, *args, **kwargs):
         """Creates a draft of a review request.
 
@@ -843,10 +890,55 @@ class ReviewRequestDraftResource(WebAPIResource):
         return result
 
     @webapi_login_required
+    @webapi_request_fields(
+        optional={
+            'branch': {
+                'type': str,
+                'description': 'The new branch name.',
+            },
+            'bugs_closed': {
+                'type': str,
+                'description': 'A comma-separated list of bug IDs.',
+            },
+            'changedescription': {
+                'type': str,
+                'description': 'The change description for this update.',
+            },
+            'description': {
+                'type': str,
+                'description': 'The new review request description.',
+            },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not to make the review public. '
+                               'If a review is public, it cannot be made '
+                               'private again.',
+            },
+            'summary': {
+                'type': str,
+                'description': 'The new review request summary.',
+            },
+            'target_groups': {
+                'type': str,
+                'description': 'A comma-separated list of review groups '
+                               'that will be on the reviewer list.',
+            },
+            'target_people': {
+                'type': str,
+                'description': 'A comma-separated list of users that will '
+                               'be on a reviewer list.',
+            },
+            'testing_done': {
+                'type': str,
+                'description': 'The new testing done text.',
+            },
+        },
+    )
     def update(self, request, always_save=False, *args, **kwargs):
         """Updates a draft of a review request.
 
-        This will update the draft with the newly provided data."""
+        This will update the draft with the newly provided data.
+        """
         try:
             review_request = \
                 review_request_resource.get_object(request, *args, **kwargs)
@@ -861,23 +953,16 @@ class ReviewRequestDraftResource(WebAPIResource):
         modified_objects = []
         invalid_fields = {}
 
-        for field_name in request.POST:
-            if field_name in ('action', 'method', 'callback'):
-                # These are special names and can be ignored.
-                continue
-
-            if (field_name in self.mutable_fields or
-                self.SCREENSHOT_CAPTION_FIELD_RE.match(field_name)):
+        for field_name in self.mutable_fields:
+            if kwargs.get(field_name, None) is not None:
                 field_result, field_modified_objects, invalid = \
                     self._set_draft_field_data(draft, field_name,
-                                               request.POST[field_name])
+                                               kwargs[field_name])
 
                 if invalid:
                     invalid_fields[field_name] = invalid
                 elif field_modified_objects:
                     modified_objects += field_modified_objects
-            else:
-                invalid_fields[field_name] = ['Field is not supported']
 
         if always_save or not invalid_fields:
             for obj in modified_objects:
@@ -970,29 +1055,15 @@ class ReviewRequestDraftResource(WebAPIResource):
             data = list(self._sanitize_bug_ids(data))
             setattr(draft, field_name, ','.join(data))
             result = data
-        elif field_name.startswith('screenshot_'):
-            m = self.SCREENSHOT_CAPTION_FIELD_RE.match(field_name)
-
-            if not m:
-                # We've already checked this. It should never happen.
-                raise AssertionError('Should not be reached')
-
-            screenshot_id = int(m.group('id'))
-
-            try:
-                screenshot = Screenshot.objects.get(pk=screenshot_id)
-                screenshot.draft_caption = data
-
-                result = data
-                modified_objects.append(screenshot)
-            except Screenshot.DoesNotExist:
-                invalid_entries.append('Screenshot with ID %s does not exist' %
-                                       screenshot_id)
         elif field_name == 'changedescription':
-            draft.changedesc.text = data
+            if not draft.changedesc:
+                invalid_entries.append('Change descriptions cannot be used '
+                                       'for drafts of new review requests')
+            else:
+                draft.changedesc.text = data
 
-            modified_objects.append(draft.changedesc)
-            result = data
+                modified_objects.append(draft.changedesc)
+                result = data
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')
