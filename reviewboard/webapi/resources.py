@@ -10,7 +10,8 @@ from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.core import WebAPIResponseFormError
+from djblets.webapi.core import WebAPIResponseFormError, \
+                                WebAPIResponsePaginated
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_permission_required, \
                                       webapi_request_fields
@@ -787,18 +788,166 @@ class RepositoryResource(WebAPIResource):
 repository_resource = RepositoryResource()
 
 
+class BaseScreenshotResource(WebAPIResource):
+    """A base resource representing screenshots."""
+    model = Screenshot
+    name = 'screenshot'
+    fields = ('id', 'caption', 'path', 'thumbnail_url')
+
+    uri_object_key = 'screenshot_id'
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(review_request=review_request_id)
+
+    def serialize_path_field(self, obj):
+        return obj.image.name
+
+    def serialize_thumbnail_url_field(self, obj):
+        return obj.get_thumbnail_url()
+
+    @webapi_login_required
+    def create(self, request, *args, **kwargs):
+        """Creates a new screenshot from an uploaded file.
+
+        This accepts any standard image format (PNG, GIF, JPEG) and associates
+        it with a draft of a review request.
+        """
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return PERMISSION_DENIED
+
+        form_data = request.POST.copy()
+        form = UploadScreenshotForm(form_data, request.FILES)
+
+        if not form.is_valid():
+            return WebAPIResponseFormError(request, form)
+
+        try:
+            screenshot = form.create(request.FILES['path'], review_request)
+        except ValueError, e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'path': [str(e)],
+                },
+            }
+
+        return 201, {
+            self.item_result_key: screenshot,
+        }
+
+    @webapi_login_required
+    @webapi_request_fields(
+        optional={
+            'caption': {
+                'type': str,
+                'description': 'The new caption for the screenshot.',
+            },
+        }
+    )
+    def update(self, request, caption=None, *args, **kwargs):
+        """Updates the screenshot's data.
+
+        This allows updating the screenshot in a draft. The caption, currently,
+        is the only thing that can be updated.
+        """
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            screenshot = screenshot_resource.get_object(request, *args,
+                                                        **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_request.is_mutable_by(request.user):
+            return PERMISSION_DENIED
+
+        try:
+            draft = review_request_draft_resource.prepare_draft(request,
+                                                                review_request)
+        except PermissionDenied:
+            return PERMISSION_DENIED
+
+        screenshot.draft_caption = caption
+        screenshot.save()
+
+        return 200, {
+            self.item_result_key: screenshot,
+        }
+
+
+class ScreenshotDraftResource(BaseScreenshotResource):
+    """A resource representing drafts of screenshots."""
+    name = 'draft-screenshot'
+    uri_name = 'screenshots'
+    model_parent_key = 'drafts'
+    allowed_methods = ('GET', 'POST', 'PUT',)
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        try:
+            draft = review_request_draft_resource.get_object(
+                request, review_request_id, *args, **kwargs)
+
+            inactive_ids = \
+                draft.inactive_screenshots.values_list('pk', flat=True)
+
+            q = Q(review_request=review_request_id) | Q(drafts=draft)
+            query = self.model.objects.filter(q)
+            query = query.exclude(pk__in=inactive_ids)
+            return query
+        except ObjectDoesNotExist:
+            return self.model.objects.none()
+
+    def serialize_caption_field(self, obj):
+        return obj.draft_caption
+
+    def get_list(self, request, *args, **kwargs):
+        """Returns a list of draft screenshots.
+
+        This is a specialized version of the standard ``get_list`` function
+        that uses this resource to serialize the children, in order to
+        guarantee that we'll be able to identify them as screenshots part
+        of the draft.
+        """
+        # TODO: Handle ?counts-only=1
+        return WebAPIResponsePaginated(
+            request,
+            queryset=self.get_queryset(request, is_list=True,
+                                       *args, **kwargs),
+            results_key=self.list_result_key,
+            serialize_object_func=
+                lambda obj: self.serialize_object(obj, request=request,
+                                                  *args, **kwargs),
+            extra_data={
+                'links': self.get_links(self.list_child_resources,
+                                        request=request, *args, **kwargs),
+            })
+
+screenshot_draft_resource = ScreenshotDraftResource()
+
+
 class ReviewRequestDraftResource(WebAPIResource):
     """A resource representing drafts of review requests."""
     model = ReviewRequestDraft
     name = 'draft'
     name_plural = 'draft'
+    model_parent_key = 'review_request'
     mutable_fields = (
         'branch', 'bugs_closed', 'changedescription', 'description',
         'public', 'summary', 'target_groups', 'target_people', 'testing_done'
     )
     fields = ('id', 'review_request', 'last_updated') + mutable_fields
+    singleton = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    item_child_resources = [
+        screenshot_draft_resource,
+    ]
 
     @classmethod
     def prepare_draft(self, request, review_request):
@@ -1702,13 +1851,8 @@ class ReviewResource(BaseReviewResource):
 review_resource = ReviewResource()
 
 
-class ScreenshotResource(WebAPIResource):
+class ScreenshotResource(BaseScreenshotResource):
     """A resource representing a screenshot on a review request."""
-    model = Screenshot
-    name = 'screenshot'
-    fields = ('id', 'caption', 'title', 'image_url', 'thumbnail_url')
-
-    uri_object_key = 'screenshot_id'
     model_parent_key = 'review_request'
 
     item_child_resources = [
@@ -1716,53 +1860,6 @@ class ScreenshotResource(WebAPIResource):
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
-
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id)
-
-    def serialize_title_field(self, obj):
-        return u'Screenshot: %s' % (obj.caption or obj.image.name),
-
-    def serialize_image_url_field(self, obj):
-        return obj.get_absolute_url()
-
-    def serialize_thumbnail_url_field(self, obj):
-        return obj.get_thumbnail_url()
-
-    @webapi_login_required
-    def create(self, request, *args, **kwargs):
-        """Creates a new screenshot from an uploaded file.
-
-        This accepts any standard image format (PNG, GIF, JPEG) and associates
-        it with a draft of a review request.
-        """
-        try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
-        except ReviewRequest.DoesNotExist:
-            return DOES_NOT_EXIST
-
-        if not review_request.is_mutable_by(request.user):
-            return PERMISSION_DENIED
-
-        form_data = request.POST.copy()
-        form = UploadScreenshotForm(form_data, request.FILES)
-
-        if not form.is_valid():
-            return WebAPIResponseFormError(request, form)
-
-        try:
-            screenshot = form.create(request.FILES['path'], review_request)
-        except ValueError, e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'path': [str(e)],
-                },
-            }
-
-        return 201, {
-            self.item_result_key: screenshot,
-        }
 
 screenshot_resource = ScreenshotResource()
 

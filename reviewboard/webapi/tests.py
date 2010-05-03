@@ -1552,6 +1552,79 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['diff']['name'], 'cleaned_data.diff')
 
 
+class ScreenshotDraftResourceTests(BaseWebAPITestCase):
+    """Testing the ScreenshotDraftResource APIs."""
+    def test_post_screenshots(self):
+        """Testing the POST review-requests/<id>/draft/screenshots/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        screenshots_url = rsp['review_request']['links']['screenshots']['href']
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(screenshots_url, {
+            'path': f,
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_post_screenshots_with_permission_denied_error(self):
+        """Testing the POST review-requests/<id>/draft/screenshots/ API with Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(public=True).\
+            exclude(submitter=self.user)[0]
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost('review-requests/%s/draft/screenshots' %
+                           review_request.id, {
+            'caption': 'Trophy',
+            'path': f,
+        }, expected_status=403)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_put_screenshot(self):
+        """Testing the PUT review-requests/<id>/draft/screenshots/<id>/ API"""
+        draft_caption = 'The new caption'
+
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost('review-requests/%s/draft/screenshots' %
+                            review_request.id, {
+            'caption': 'Trophy',
+            'path': f,
+        })
+        f.close()
+        review_request.publish(self.user)
+
+        screenshot = Screenshot.objects.get(pk=rsp['draft-screenshot']['id'])
+
+        # Now modify the caption.
+        rsp = self.apiPut('review-requests/%s/draft/screenshots/%s' %
+                          (review_request.id, screenshot.id), {
+            'caption': draft_caption,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = review_request.get_draft(self.user)
+        self.assertNotEqual(draft, None)
+
+        screenshot = Screenshot.objects.get(pk=screenshot.id)
+        self.assertEqual(screenshot.draft_caption, draft_caption)
+
+
 class ScreenshotResourceTests(BaseWebAPITestCase):
     """Testing the ScreenshotResource APIs."""
     def test_post_screenshots(self):
