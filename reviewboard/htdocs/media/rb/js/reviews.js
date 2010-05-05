@@ -994,6 +994,24 @@ $.fn.reviewRequestFieldEditor = function() {
 
 
 /*
+ * Adds inline editing capabilities to a field for a screenshot.
+ */
+$.fn.screenshotFieldEditor = function() {
+    return this.each(function() {
+        $(this)
+            .inlineEditor({
+                cls: this.id + "-editor",
+                editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                showButtons: false
+            })
+            .bind("complete", function(e, value) {
+                setDraftField(this.id, value);
+            });
+    });
+}
+
+
+/*
  * Adds a thumbnail to the thumbnail list.
  *
  * If a screenshot object is given, then this will display actual
@@ -1017,7 +1035,7 @@ $.screenshotThumbnail = function(screenshot) {
 
     if (screenshot) {
         body.append($("<a/>")
-            .attr("href", screenshot.image_url)
+            .attr("href", "s/" + screenshot.id + "/")
             .append($("<img/>")
                 .attr({
                     src: screenshot.thumbnail_url,
@@ -1046,7 +1064,7 @@ $.screenshotThumbnail = function(screenshot) {
                 )
             );
 
-        container.find(".editable").reviewRequestFieldEditor()
+        container.find(".editable").screenshotFieldEditor()
     } else {
         body.addClass("loading");
 
