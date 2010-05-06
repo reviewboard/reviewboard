@@ -44,7 +44,7 @@
     <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
    </tr>
   </table>
-  <p>{{comment.reply_to.text}}</p>
+  <pre>{{comment.reply_to.text}}</pre>
  </blockquote>
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
@@ -57,7 +57,7 @@
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<p style="margin-left: 1em">{{comment.text}}</p>
+<pre style="margin-left: 1em">{{comment.text}}</pre>
 <br />
 {% endfor %}
 
@@ -66,7 +66,7 @@
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   {{entry.html|safe}}
-  <p>{{entry.comment.reply_to.text}}</p>
+  <pre>{{entry.comment.reply_to.text}}</pre>
  </blockquote>
 {%  for reply_comment in entry.comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
@@ -79,7 +79,7 @@
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<p style="margin-left: 1em">{{entry.comment.text}}</p>
+<pre style="margin-left: 1em">{{entry.comment.text}}</pre>
 <br />
 {% endfor %}
 
