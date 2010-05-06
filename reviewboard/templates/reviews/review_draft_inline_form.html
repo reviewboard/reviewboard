@@ -36,7 +36,7 @@
                 new RB.ScreenshotComment({{comment.screenshot.id}},
                                          {{comment.x}}, {{comment.y}},
                                          {{comment.w}}, {{comment.h}},
-                                         "{{comment.text}}"));
+                                         "{{comment.text|escapejs}}"));
         $("#edit-screenshot-comment-{{comment.id").click(function() {
             editor.inlineEditor("startEdit");
         });
@@ -98,7 +98,7 @@
                 null,
 {% endif %}
                 {{comment.first_line}}, {{comment.last_line}},
-                "{{comment.text}}"));
+                "{{comment.text|escapejs}}"));
         $("#edit-diff-comment-{{comment.id}}").click(function() {
             editor.inlineEditor("startEdit");
         });
