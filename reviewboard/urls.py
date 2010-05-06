@@ -13,7 +13,6 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
 from reviewboard import initialize
 
 
-initialize()
 extension_manager = get_extension_manager()
 
 # Load in all the models for the admin UI.
@@ -101,3 +100,5 @@ urlpatterns += patterns('',
     # This must be last.
     url(r'^iphone/', include('reviewboard.iphone.urls', namespace='iphone')),
 )
+
+initialize()
