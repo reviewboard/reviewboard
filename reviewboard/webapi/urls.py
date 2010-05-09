@@ -1,16 +1,24 @@
+from django.conf.urls.defaults import url, include, patterns
+from django.views.generic.simple import redirect_to
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.webapi.resources import root_resource
 
 
-urlpatterns = never_cache_patterns('djblets.webapi.auth',
+# Top-level resources
+urlpatterns = root_resource.get_url_patterns()
+
+
+# Deprecated URLs
+deprecated_urlpatterns = never_cache_patterns('djblets.webapi.auth',
     # Accounts
     (r'^accounts/login/$', 'account_login'),
     (r'^accounts/logout/$', 'account_logout'),
 )
 
 
-urlpatterns += never_cache_patterns('reviewboard.webapi.json',
+deprecated_urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Server information
     (r'^info/$', 'server_info'),
 
@@ -175,4 +183,8 @@ urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # Screenshot comments
     (r'^reviewrequests/(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/comments/(?P<w>[0-9]+)x(?P<h>[0-9]+)\+(?P<x>[0-9]+)\+(?P<y>[0-9]+)/$',
      'screenshot_comments'),
+)
+
+urlpatterns += patterns('',
+    (r'^(?P<api_format>json|xml)/', include(deprecated_urlpatterns)),
 )

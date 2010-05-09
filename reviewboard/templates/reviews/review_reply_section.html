@@ -6,15 +6,17 @@
    </ol>
 {% if user.is_authenticated %}
    <ul class="controls">
-    <li><a href="#" id="add_{{context_type}}_{{comment.id}}" class="add_comment_link">{% trans "Add comment" %}</a></li>
+    <li><a href="#" id="add_{{review.id}}_{{context_type}}{% if comment %}_{{comment.id}}{% endif %}" class="add_comment_link">{% trans "Add comment" %}</a></li>
    </ul>
 {% endif %}
   </div>
 {% if user.is_authenticated %}
   <script language="javascript">
   $(document).ready(function() {
-      $("#{{context_id}}-{{review.id}}").commentSection("{{review.id}}",
-          "{% ifequal comment "" %}{{review.id}}{% else %}{{comment.id}}{% endifequal %}", "{{context_type}}");
+      $("#{{context_id}}-{{review.id}}").commentSection(
+          "{{review.id}}",
+          {% if comment %}"{{comment.id}}"{% else %}null{% endif %},
+          "{{context_type}}");
   });
   </script>
 {% endif %}

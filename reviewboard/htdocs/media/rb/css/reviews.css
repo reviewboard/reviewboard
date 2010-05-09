@@ -769,6 +769,16 @@
   font-size: 10pt;
 }
 
+#comment-detail img.ui-resizable-grip {
+  /* Use -1 for bottom and right so it overlaps the resize borders. */
+  bottom: -1px;
+  cursor: se-resize;
+  padding: 0.5em;
+  position: absolute;
+  right: -1px;
+  z-index: 2;
+}
+
 #comment-detail .status {
   margin: 4px 0;
   font-style: italic;

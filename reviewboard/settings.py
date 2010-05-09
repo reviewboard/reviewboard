@@ -116,8 +116,7 @@ INSTALLED_APPS = (
 )
 
 WEB_API_ENCODERS = (
-    'reviewboard.webapi.json.ReviewBoardAPIEncoder',
-    'djblets.webapi.core.BasicAPIEncoder',
+    'djblets.webapi.encoders.ResourceAPIEncoder',
 )
 
 LOGGING_NAME = "reviewboard"

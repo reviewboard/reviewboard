@@ -28,11 +28,11 @@ urlpatterns = patterns('',
 )
 
 # Add static media if running in DEBUG mode
-if settings.DEBUG:
+if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
     urlpatterns += patterns('django.views.static',
         (r'^media/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
-            'document_root': os.path.join(settings.HTDOCS_ROOT, "media"),
+            'document_root': settings.MEDIA_ROOT,
             }),
     )
 
@@ -53,7 +53,7 @@ atom_feeds = {
 # Main includes
 urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
-    (r'^api/(?P<api_format>json|xml)/', include('reviewboard.webapi.urls')),
+    (r'^api/', include('reviewboard.webapi.urls')),
     (r'^r/', include('reviewboard.reviews.urls')),
     #(r'^reports/', include('reviewboard.reports.urls')),
 )

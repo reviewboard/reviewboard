@@ -11,13 +11,12 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404
-from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
-from djblets.webapi.core import WebAPIEncoder, WebAPIResponse, \
+from djblets.webapi.core import WebAPIResponse, \
                                 WebAPIResponseError, \
                                 WebAPIResponseFormError
 from djblets.webapi.decorators import webapi, \
@@ -28,7 +27,6 @@ from djblets.webapi.errors import WebAPIError, \
                                   INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
                                   NOT_LOGGED_IN, SERVICE_NOT_CONFIGURED
 
-from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -42,178 +40,21 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.decorators import webapi_check_login_required
-
-
-#
-# Standard error messages
-#
-UNSPECIFIED_DIFF_REVISION = WebAPIError(200, "Diff revision not specified",
-                                        http_status=400) # 400 Bad Request)
-INVALID_DIFF_REVISION     = WebAPIError(201, "Invalid diff revision",
-                                        http_status=404) # 404 Not Found
-INVALID_ACTION            = WebAPIError(202, "Invalid action specified",
-                                        http_status=400) # 400 Bad Request
-INVALID_CHANGE_NUMBER     = WebAPIError(203, "The change number specified "
-                                             "could not be found",
-                                        http_status=404) # 404 Not Found
-CHANGE_NUMBER_IN_USE      = WebAPIError(204, "The change number specified "
-                                             "has already been used",
-                                        http_status=409) # 409 Conflict
-MISSING_REPOSITORY        = WebAPIError(205, "A repository path must be "
-                                             "specified",
-                                        http_status=400) # 400 Bad Request
-INVALID_REPOSITORY        = WebAPIError(206, "The repository path specified "
-                                             "is not in the list of known "
-                                             "repositories",
-                                        http_status=400) # 400 Bad Request
-REPO_FILE_NOT_FOUND       = WebAPIError(207, "The file was not found in the "
-                                             "repository",
-                                        http_status=400) # 400 Bad Request
-INVALID_USER              = WebAPIError(208, "User does not exist",
-                                        http_status=400) # 400 Bad Request
-REPO_NOT_IMPLEMENTED      = WebAPIError(209, "The specified repository is "
-                                             "not able to perform this action",
-                                        http_status=501) # 501 Not Implemented
-REPO_INFO_ERROR           = WebAPIError(210, "There was an error fetching "
-                                             "extended information for this "
-                                             "repository.",
-                                        http_status=500) # 500 Internal Server
-                                                         #     Error
-NOTHING_TO_PUBLISH        = WebAPIError(211, "You attempted to publish a "
-                                             "review request that doesn't "
-                                             "have an associated draft.",
-                                        http_status=400) # 400 Bad Request
-EMPTY_CHANGESET           = WebAPIError(212, "The change number specified "
-                                             "represents an empty changeset",
-                                        http_status=400) # 400 Bad Request
-
-
-class ReviewBoardAPIEncoder(WebAPIEncoder):
-    def encode(self, o, *args, **kwargs):
-        if isinstance(o, Group):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'display_name': o.display_name,
-                'mailing_list': o.mailing_list,
-                'url': o.get_absolute_url(),
-            }
-        elif isinstance(o, ReviewRequest):
-            if o.bugs_closed:
-                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
-            else:
-                bugs_closed = ''
-
-            return {
-                'id': o.id,
-                'submitter': o.submitter,
-                'time_added': o.time_added,
-                'last_updated': o.last_updated,
-                'status': status_to_string(o.status),
-                'public': o.public,
-                'changenum': o.changenum,
-                'repository': o.repository,
-                'summary': o.summary,
-                'description': o.description,
-                'testing_done': o.testing_done,
-                'bugs_closed': bugs_closed,
-                'branch': o.branch,
-                'target_groups': o.target_groups.all(),
-                'target_people': o.target_people.all(),
-            }
-        elif isinstance(o, ReviewRequestDraft):
-            if o.bugs_closed != "":
-                bugs_closed = [b.strip() for b in o.bugs_closed.split(',')]
-            else:
-                bugs_closed = []
-
-            return {
-                'id': o.id,
-                'review_request': o.review_request,
-                'last_updated': o.last_updated,
-                'summary': o.summary,
-                'description': o.description,
-                'testing_done': o.testing_done,
-                'bugs_closed': bugs_closed,
-                'branch': o.branch,
-                'target_groups': o.target_groups.all(),
-                'target_people': o.target_people.all(),
-            }
-        elif isinstance(o, Review):
-            return {
-                'id': o.id,
-                'user': o.user,
-                'timestamp': o.timestamp,
-                'public': o.public,
-                'ship_it': o.ship_it,
-                'body_top': o.body_top,
-                'body_bottom': o.body_bottom,
-                'comments': o.comments.all(),
-            }
-        elif isinstance(o, Comment):
-            review = o.review.get()
-            return {
-                'id': o.id,
-                'filediff': o.filediff,
-                'interfilediff': o.interfilediff,
-                'text': o.text,
-                'timestamp': o.timestamp,
-                'timesince': timesince(o.timestamp),
-                'first_line': o.first_line,
-                'num_lines': o.num_lines,
-                'public': review.public,
-                'user': review.user,
-            }
-        elif isinstance(o, ScreenshotComment):
-            review = o.review.get()
-            return {
-                'id': o.id,
-                'screenshot': o.screenshot,
-                'text': o.text,
-                'timestamp': o.timestamp,
-                'timesince': timesince(o.timestamp),
-                'public': review.public,
-                'user': review.user,
-                'x': o.x,
-                'y': o.y,
-                'w': o.w,
-                'h': o.h,
-            }
-        elif isinstance(o, Screenshot):
-            return {
-                'id': o.id,
-                'caption': o.caption,
-                'title': u'Screenshot: %s' % (o.caption or o.image.name),
-                'image_url': o.get_absolute_url(),
-                'thumbnail_url': o.get_thumbnail_url(),
-            }
-        elif isinstance(o, FileDiff):
-            return {
-                'id': o.id,
-                'diffset': o.diffset,
-                'source_file': o.source_file,
-                'dest_file': o.dest_file,
-                'source_revision': o.source_revision,
-                'dest_detail': o.dest_detail,
-            }
-        elif isinstance(o, DiffSet):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'revision': o.revision,
-                'timestamp': o.timestamp,
-                'repository': o.repository,
-            }
-        elif isinstance(o, Repository):
-            return {
-                'id': o.id,
-                'name': o.name,
-                'path': o.path,
-                'tool': o.tool.name
-            }
-        else:
-            return super(ReviewBoardAPIEncoder, self).encode(o, *args, **kwargs)
+from reviewboard.webapi.decorators import webapi_check_login_required, \
+                                          webapi_deprecated_in_1_5
+from reviewboard.webapi.errors import UNSPECIFIED_DIFF_REVISION, \
+                                      INVALID_DIFF_REVISION, \
+                                      INVALID_ACTION, \
+                                      INVALID_CHANGE_NUMBER, \
+                                      CHANGE_NUMBER_IN_USE, \
+                                      MISSING_REPOSITORY, \
+                                      INVALID_REPOSITORY, \
+                                      REPO_FILE_NOT_FOUND, \
+                                      INVALID_USER, \
+                                      REPO_NOT_IMPLEMENTED, \
+                                      REPO_INFO_ERROR, \
+                                      NOTHING_TO_PUBLISH, \
+                                      EMPTY_CHANGESET
 
 
 def status_to_string(status):
@@ -250,6 +91,7 @@ def service_not_configured(request, *args, **kwargs):
     return WebAPIResponseError(request, SERVICE_NOT_CONFIGURED)
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def server_info(request, *args, **kwargs):
     site = Site.objects.get_current()
@@ -273,6 +115,7 @@ def server_info(request, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def repository_list(request, *args, **kwargs):
     """
@@ -283,6 +126,7 @@ def repository_list(request, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def repository_info(request, repository_id, *args, **kwargs):
     try:
@@ -299,6 +143,7 @@ def repository_info(request, repository_id, *args, **kwargs):
     except:
         return WebAPIResponseError(request, REPO_INFO_ERROR)
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def user_list(request, *args, **kwargs):
     """
@@ -328,6 +173,7 @@ def user_list(request, *args, **kwargs):
         'users': u,
     })
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def group_list(request, *args, **kwargs):
     """
@@ -356,6 +202,7 @@ def group_list(request, *args, **kwargs):
         'groups': u,
     })
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def users_in_group(request, group_name, *args, **kwargs):
     """
@@ -370,6 +217,7 @@ def users_in_group(request, group_name, *args, **kwargs):
         'users': g.users.all(),
     })
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def group_star(request, group_name, *args, **kwargs):
     """
@@ -387,6 +235,7 @@ def group_star(request, group_name, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def group_unstar(request, group_name, *args, **kwargs):
     """
@@ -406,6 +255,7 @@ def group_unstar(request, group_name, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def new_review_request(request, *args, **kwargs):
@@ -482,6 +332,7 @@ def new_review_request(request, *args, **kwargs):
         return WebAPIResponseError(request, EMPTY_CHANGESET)
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_request(request, review_request_id, *args, **kwargs):
     """
@@ -495,6 +346,7 @@ def review_request(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request, {'review_request': review_request})
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_request_last_update(request, review_request_id, *args, **kwargs):
     """
@@ -543,6 +395,7 @@ def review_request_last_update(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_request_by_changenum(request, repository_id, changenum,
                                 *args, **kwargs):
@@ -561,6 +414,7 @@ def review_request_by_changenum(request, repository_id, changenum,
         return WebAPIResponseError(request, INVALID_CHANGE_NUMBER)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_star(request, review_request_id, *args, **kwargs):
     try:
@@ -575,6 +429,7 @@ def review_request_star(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_unstar(request, review_request_id, *args, **kwargs):
     try:
@@ -591,6 +446,7 @@ def review_request_unstar(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_publish(request, review_request_id, *args, **kwargs):
     try:
@@ -606,6 +462,7 @@ def review_request_publish(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_close(request, review_request_id, type, *args, **kwargs):
     type_map = {
@@ -627,6 +484,7 @@ def review_request_close(request, review_request_id, type, *args, **kwargs):
 
     return WebAPIResponse(request)
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_update_changenum(request, review_request_id, changenum):
     try:
@@ -639,6 +497,7 @@ def review_request_update_changenum(request, review_request_id, changenum):
 
     return WebAPIResponse(request)
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_reopen(request, review_request_id, *args, **kwargs):
     try:
@@ -652,6 +511,7 @@ def review_request_reopen(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_permission_required('reviews.delete_reviewrequest')
 def review_request_delete(request, review_request_id, *args, **kwargs):
     try:
@@ -662,6 +522,7 @@ def review_request_delete(request, review_request_id, *args, **kwargs):
 
     return WebAPIResponse(request)
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_updated(request, review_request_id, *args, **kwargs):
     """
@@ -677,6 +538,7 @@ def review_request_updated(request, review_request_id, *args, **kwargs):
         'updated' : review_request.get_new_reviews(request.user).count() > 0
         })
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_request_list(request, func, api_format='json', *args, **kwargs):
     """
@@ -693,6 +555,7 @@ def review_request_list(request, func, api_format='json', *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_requests(request, func, api_format='json', *args, **kwargs):
     """
@@ -709,8 +572,9 @@ def count_review_requests(request, func, api_format='json', *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
-def review_request_diffsets(request, review_request_id):
+def review_request_diffsets(request, review_request_id, *args, **kwargs):
     """
     Returns a list of review request diffsets.
     """
@@ -740,6 +604,7 @@ def _get_and_validate_review(request, review_request_id, review_id):
     return review
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review(request, review_request_id, review_id, *args, **kwargs):
     review = _get_and_validate_review(request, review_request_id, review_id)
@@ -755,6 +620,7 @@ def _get_reviews(review_request):
                                          base_reply_to__isnull=True)
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -763,6 +629,7 @@ def review_list(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -771,6 +638,7 @@ def count_review_list(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_comments_list(request, review_request_id, review_id,
                          *args, **kwargs):
@@ -785,6 +653,7 @@ def review_comments_list(request, review_request_id, review_id,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_comments(request, review_request_id, review_id,
                           *args, **kwargs):
@@ -796,6 +665,7 @@ def count_review_comments(request, review_request_id, review_id,
     return WebAPIResponse(request, {'count': review.comments.count()})
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_request_draft(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -808,6 +678,7 @@ def review_request_draft(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request, {'review_request_draft': draft})
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_request_draft_discard(request, review_request_id, *args, **kwargs):
@@ -826,6 +697,7 @@ def review_request_draft_discard(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_request_draft_publish(request, review_request_id, *args, **kwargs):
@@ -910,6 +782,7 @@ def _set_draft_field_data(draft, field_name, data):
         return data, None
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_request_draft_set_field(request, review_request_id, field_name,
@@ -980,6 +853,7 @@ mutable_review_request_fields = [
     'bugs_closed', 'branch', 'target_groups', 'target_people'
 ]
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_request_draft_set(request, review_request_id, *args, **kwargs):
@@ -1005,6 +879,7 @@ def review_request_draft_set(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request, result)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_request_draft_update_from_changenum(request, review_request_id,
@@ -1034,6 +909,7 @@ def review_request_draft_update_from_changenum(request, review_request_id,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_draft_save(request, review_request_id, publish=False,
@@ -1063,6 +939,7 @@ def review_draft_save(request, review_request_id, publish=False,
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_draft_delete(request, review_request_id, *args, **kwargs):
@@ -1076,6 +953,7 @@ def review_draft_delete(request, review_request_id, *args, **kwargs):
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_draft_comments(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -1094,6 +972,7 @@ def review_draft_comments(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_reply_draft(request, review_request_id, review_id, *args, **kwargs):
@@ -1200,6 +1079,7 @@ def review_reply_draft(request, review_request_id, review_id, *args, **kwargs):
     return WebAPIResponse(request, result)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 def review_draft(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
@@ -1213,6 +1093,7 @@ def review_draft(request, review_request_id, *args, **kwargs):
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_reply_draft_save(request, review_request_id, review_id,
@@ -1231,6 +1112,7 @@ def review_reply_draft_save(request, review_request_id, review_id,
     return WebAPIResponse(request)
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def review_reply_draft_discard(request, review_request_id, review_id,
@@ -1248,6 +1130,7 @@ def review_reply_draft_discard(request, review_request_id, review_id,
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def review_replies_list(request, review_request_id, review_id,
                         *args, **kwargs):
@@ -1260,6 +1143,7 @@ def review_replies_list(request, review_request_id, review_id,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def count_review_replies(request, review_request_id, review_id,
                         *args, **kwargs):
@@ -1272,6 +1156,7 @@ def count_review_replies(request, review_request_id, review_id,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def new_diff(request, review_request_id, *args, **kwargs):
@@ -1340,6 +1225,7 @@ def new_diff(request, review_request_id, *args, **kwargs):
     return WebAPIResponse(request, {'diffset_id': diffset.id})
 
 
+@webapi_deprecated_in_1_5
 @webapi_login_required
 @require_POST
 def new_screenshot(request, review_request_id, *args, **kwargs):
@@ -1369,6 +1255,7 @@ def new_screenshot(request, review_request_id, *args, **kwargs):
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def diff_line_comments(request, review_request_id, line, diff_revision,
                        filediff_id, interdiff_revision=None,
@@ -1465,6 +1352,7 @@ def diff_line_comments(request, review_request_id, line, diff_revision,
     })
 
 
+@webapi_deprecated_in_1_5
 @webapi_check_login_required
 def screenshot_comments(request, review_request_id, screenshot_id, x, y, w, h,
                         *args, **kwargs):

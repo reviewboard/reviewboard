@@ -193,14 +193,13 @@ $.extend(RB.Diff.prototype, {
         }, options);
 
         if (this.id != undefined) {
-            /* TODO: Support updating screenshots eventually. */
             options.error("The diff " + this.id + " was already created. " +
                           "This is a script error. Please report it.");
             return;
         }
 
         if (!this.form) {
-            options.error("No data has been set for this screenshot. This " +
+            options.error("No data has been set for this diff. This " +
                           "is a script error. Please report it.");
             return;
         }
