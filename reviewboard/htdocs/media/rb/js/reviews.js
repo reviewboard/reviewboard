@@ -525,36 +525,70 @@ $.fn.commentDlg = function() {
              * swallow the default action for the mouse down.
              */
             evt.stopPropagation();
+        })
+        .proxyTouchEvents();
+
+    if (!$.browser.msie || $.browser.version >= 9) {
+        /*
+         * resizable is pretty broken in IE 6/7.
+         */
+        var grip = $("<img/>")
+            .addClass("ui-resizable-handle ui-resizable-grip")
+            .attr("src", MEDIA_URL + "rb/images/resize-grip.png?" +
+                         MEDIA_SERIAL)
+            .insertAfter(buttons)
+            .proxyTouchEvents();
+
+        this.resizable({
+            handles: $.browser.mobileSafari ? "grip,se"
+                                            : "grip,n,e,s,w,se,sw,ne,nw",
+            transparent: true,
+            resize: function() { self.handleResize(); }
         });
 
-        if (!$.browser.msie || $.browser.version >= 8) {
-            /*
-             * resizable is pretty broken in IE 6/7.
-             */
-            var grip = $("<img/>")
-                .addClass("ui-resizable-handle ui-resizable-grip")
-                .attr("src", MEDIA_URL + "rb/images/resize-grip.png?" +
-                             MEDIA_SERIAL)
-                .insertAfter(buttons);
+        var startOffset = null;
+        var baseWidth = null;
+        var baseHeight = null;
 
-            this.resizable({
-                handles: "grip,n,e,s,w,se,sw,ne,nw",
-                transparent: true,
-                resize: function() { self.handleResize(); }
+        /*
+         * Enable resizing through a grip motion on a touchpad.
+         */
+        $([this[0], textField[0]])
+            .bind("gesturestart", function(evt) {
+                startOffset = self.offset();
+                startWidth = self.width();
+                startHeight = self.height();
+            })
+            .bind("gesturechange", function(evt) {
+                if (event.scale == 0) {
+                    return false;
+                }
+
+                var newWidth = startWidth * event.scale;
+                var newHeight = startHeight * event.scale;
+
+                self
+                    .width(newWidth)
+                    .height(newHeight)
+                    .move(startOffset.left - (newWidth - startWidth) / 2,
+                          startOffset.top - (newHeight - startHeight) / 2);
+                self.handleResize();
+
+                return false;
             });
 
-            /* Reset the opacity, which resizable() changes. */
-            grip.css("opacity", 100);
-        }
+        /* Reset the opacity, which resizable() changes. */
+        grip.css("opacity", 100);
+    }
 
-        if (!$.browser.msie || $.browser.version >= 7) {
-            /*
-             * draggable works in IE7 and up, but not IE6.
-             */
-            this.draggable({
-                handle: $(".title", this).css("cursor", "move")
-            });
-        }
+    if (!$.browser.msie || $.browser.version >= 7) {
+        /*
+         * draggable works in IE7 and up, but not IE6.
+         */
+        this.draggable({
+            handle: $(".title", this).css("cursor", "move")
+        });
+    }
 
     if (!LOGGED_IN) {
         textField.attr("disabled", true);
