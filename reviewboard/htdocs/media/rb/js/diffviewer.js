@@ -117,13 +117,22 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.el = $("<span/>")
         .addClass("commentflag")
+        .append($("<span/>").addClass("commentflag-shadow"))
         .click(function() {
             self.showCommentDlg();
             return false;
-        })
+        });
+
+    $(window).bind("resize", function(evt) {
+        self.updateSize();
+    });
+
+    var innerFlag = $("<span/>")
+        .addClass("commentflag-inner")
+        .appendTo(this.el);
 
     this.countEl = $("<span/>")
-        .appendTo(this.el);
+        .appendTo(innerFlag);
 
     if ($.browser.msie && $.browser.version == 6) {
         /*
@@ -163,6 +172,7 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.updateCount();
     this.updateTooltip();
+    this.updateSize();
 
     /* Now that we've built everything, add this to the DOM. */
     this.beginRow[0].cells[0].appendChild(this.el[0]);
@@ -240,6 +250,20 @@ $.extend(DiffCommentBlock.prototype, {
 
         this.count = count;
         this.countEl.html(this.count);
+    },
+
+    /*
+     * Updates the size of the comment flag.
+     */
+    updateSize: function() {
+        /*
+         * On IE and Safari, the marginTop in getExtents will be wrong.
+         * Force a value.
+         */
+        var extents = this.el.getExtents("m", "t") || -4;
+        this.el.css("height",
+                    this.endRow.offset().top + this.endRow.outerHeight() -
+                    this.beginRow.offset().top - extents);
     },
 
     /*
@@ -345,15 +369,11 @@ $.fn.diffFile = function(lines, key) {
             lastSeenIndex: 0
         };
 
-        var ghostCommentFlag = $("<img/>")
+        var ghostCommentFlag = $("<span/>")
             .addClass("commentflag")
             .addClass("ghost-commentflag")
-            .attr("src", MEDIA_URL + "rb/images/comment-ghost.png?" +
-                         MEDIA_SERIAL)
-            .css({
-                'position': 'absolute',
-                'left': 2
-            })
+            .append($("<span class='commentflag-shadow'/>"))
+            .append($("<span class='commentflag-inner'/>"))
             .mousedown(function(e) { self.triggerHandler("mousedown", e); })
             .mouseup(function(e)   { self.triggerHandler("mouseup", e);   })
             .mouseover(function(e) { self.triggerHandler("mouseover", e); })
