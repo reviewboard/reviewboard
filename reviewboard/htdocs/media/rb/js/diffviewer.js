@@ -412,18 +412,23 @@ $.fn.diffFile = function(lines, key) {
                 }
 
                 if (isLineNumCell(node)) {
+                    var showCommentDlg = true;
+
                     if (selection.beginNum == selection.endNum) {
                         /* See if we have a comment flag on the selected row. */
-                        var node = getActualRowNode($(e.target));
+                        var node = getActualRowNode($(node));
                         var row = node.parent();
                         var lineNumCell = row[0].cells[0];
 
                         var commentFlag = $(".commentflag", lineNumCell);
 
                         if (commentFlag.length == 1) {
+                            showCommentDlg = false;
                             commentFlag.click()
                         }
-                    } else {
+                    }
+
+                    if (showCommentDlg) {
                         /*
                          * Selection was finalized. Create the comment block
                          * and show the comment dialog.

@@ -531,11 +531,20 @@ $.fn.commentDlg = function() {
             /*
              * resizable is pretty broken in IE 6/7.
              */
+            var grip = $("<img/>")
+                .addClass("ui-resizable-handle ui-resizable-grip")
+                .attr("src", MEDIA_URL + "rb/images/resize-grip.png?" +
+                             MEDIA_SERIAL)
+                .insertAfter(buttons);
+
             this.resizable({
-                handles: "all",
+                handles: "grip,n,e,s,w,se,sw,ne,nw",
                 transparent: true,
                 resize: function() { self.handleResize(); }
             });
+
+            /* Reset the opacity, which resizable() changes. */
+            grip.css("opacity", 100);
         }
 
         if (!$.browser.msie || $.browser.version >= 7) {

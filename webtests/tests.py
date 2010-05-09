@@ -188,6 +188,57 @@ class DiffCommentTests(SeleniumUnitTest):
         self.assertEqual(comment.first_line, first_line)
         self.assertEqual(comment.last_line, last_line)
 
+    def test_multiline_comment(self):
+        """Testing diff comment creation with a multi-line comment."""
+        comment_text = 'This is my\ntest\ncomment'
+        first_line = 10
+        last_line = 12
+
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user)[0]
+        diffset = r.diffset_history.diffsets.all()[0]
+        file = diffset.files.all()[0]
+
+        self.selenium.open(reverse('view_diff', kwargs={
+            'review_request_id': r.id
+        }))
+        self.selenium.wait_for_page_to_load("6000")
+        self.wait_for_element_present('file%s' % file.id)
+
+        self.open_comment_box(file.id, first_line, last_line)
+
+        first = True
+
+        for text in comment_text.split('\n'):
+            if not first:
+                self.selenium.key_press('comment_text', '\\13')
+
+            self.selenium.type_keys('comment_text', text)
+            first = False
+
+        self.selenium.focus('comment_save')
+
+        self.selenium.click('comment_save')
+        self.wait_for_ajax_finish()
+
+        self.assertEqual(r.reviews.count(), 1)
+        review = r.reviews.latest()
+        self.assertFalse(review.public)
+        self.assertEqual(review.comments.count(), 1)
+        comment = review.comments.all()[0]
+        self.assertEqual(comment.text, comment_text)
+
+        # Make sure that the Edit Review form properly handles this.
+        # Bug 1636.
+        self.selenium.click('review-link')
+        self.wait_for_element_present('review-form')
+        self.assertTrue(self.selenium.is_element_present('css=.diff-comments'))
+        self.assertTrue(self.selenium.is_element_present(
+            'css=.diff-comments #diff-comment-%s' % comment.id))
+        self.wait_for_element_present('css=.diff-comments textarea')
+        self.assertEqual(self.selenium.get_value('css=.diff-comments textarea'),
+                         comment_text)
+
     def test_delete_comment(self):
         """Testing deleting draft diff comments"""
         comment_text = 'This is my test comment'
@@ -217,7 +268,7 @@ class DiffCommentTests(SeleniumUnitTest):
         self.wait_for_ajax_finish()
         time.sleep(0.25) # It will be animating, so wait.
 
-        self.assertEqual(r.reviews.count(), 1)
+        self.assertEqual(r.reviews.count(), 0)
 
     def open_comment_box(self, file_id, first_line, last_line):
         first_line_locator = self.build_line_locator(file_id, first_line)

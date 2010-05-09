@@ -21,14 +21,14 @@
   <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
  </tr>
 </table>
-<p style="margin-left: 2em">{{comment.text}}</p>
+<pre style="margin-left: 2em">{{comment.text}}</pre>
 <br />
 {% endfor %}
 
 {% for entry in comment_entries %}
 <div>
 {{entry.html|safe}}
-<p style="margin-left: 2em">{{entry.comment.text}}</p>
+<pre style="margin-left: 2em">{{entry.comment.text}}</pre>
 </div>
 <br />
 {% endfor %}
