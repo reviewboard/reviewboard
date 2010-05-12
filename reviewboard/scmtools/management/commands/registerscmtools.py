@@ -18,7 +18,7 @@ class Command(NoArgsCommand):
             try:
                 scmtool_class = entry.load()
             except Exception, e:
-                sys.stderr.write("Unable to load SCMTool %s: %s" %
+                sys.stderr.write("Unable to load SCMTool %s: %s\n" %
                                  (entry, e))
                 continue
 
