@@ -218,10 +218,8 @@ jQuery.fn.screenshotCommentBox = function(regions) {
      */
     $([image[0], selectionArea[0]])
         .mousedown(function(evt) {
-            evt.stopPropagation();
-            evt.preventDefault();
-
-            if (!activeCommentBlock && evt.which == 1) {
+            if (evt.which == 1 && !activeCommentBlock &&
+                !$(evt.target).hasClass("selection-flag")) {
                 var offset = selectionArea.offset();
                 activeSelection.beginX =
                     evt.pageX - Math.floor(offset.left) - 1;
@@ -237,6 +235,8 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                 if (activeSelection.is(":hidden")) {
                     commentDetail.hide();
                 }
+
+                return false;
             }
         })
         .mouseup(function(evt) {
@@ -267,8 +267,6 @@ jQuery.fn.screenshotCommentBox = function(regions) {
         })
         .mousemove(function(evt) {
             if (!activeCommentBlock && activeSelection.is(":visible")) {
-                evt.stopPropagation();
-                evt.preventDefault();
                 var offset = selectionArea.offset();
                 var x = evt.pageX - Math.floor(offset.left) - 1;
                 var y = evt.pageY - Math.floor(offset.top) - 1;
@@ -292,8 +290,11 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                                top:    y,
                                height: activeSelection.beginY - y
                            });
+
+                return false;
             }
         })
+        .proxyTouchEvents();
 
     /*
      * Register a hover event to hide the comments when the mouse is not
