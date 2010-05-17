@@ -1376,21 +1376,27 @@ $(document).ready(function() {
     /* Provide support for expanding submenus in the action list. */
     var menuitem = null;
 
-    $("#actions > li").hover(function() {
+    function showMenu() {
         if (menuitem) {
             $("ul", menuitem).fadeOut("fast");
             menuitem = null;
         }
 
         $("ul", this).fadeIn("fast");
-    }, function() {
+    }
+
+    function hideMenu() {
         menuitem = $(this);
         setTimeout(function() {
             if (menuitem) {
                 $("ul", menuitem).fadeOut("fast");
             }
         }, 400);
-    });
+    }
+
+    $("#actions > li:has(ul.menu)")
+        .hover(showMenu, hideMenu)
+        .toggle(showMenu, hideMenu);
 
     $("#btn-draft-publish").click(function() {
         /* Save all the fields if we need to. */
