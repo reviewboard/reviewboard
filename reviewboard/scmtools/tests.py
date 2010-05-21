@@ -305,6 +305,28 @@ class SubversionTests(DjangoTestCase):
         file = self.tool.get_file(filename, rev)
         patch(diff, file, filename)
 
+    def testUnterminatedKeywordDiff(self):
+        """Testing parsing SVN diff with unterminated keywords"""
+        diff = "Index: Makefile\n" \
+               "===========================================================" \
+               "========\n" \
+               "--- Makefile    (revision 4)\n" \
+               "+++ Makefile    (working copy)\n" \
+               "@@ -1,6 +1,7 @@\n" \
+               " # $Id$\n" \
+               " # $Id:\n" \
+               " # $Rev$\n" \
+               " # $Revision::     $\n" \
+               "+# foo\n" \
+               " include ../tools/Makefile.base-vars\n" \
+               " NAME = misc-docs\n" \
+               " OUTNAME = svn-misc-docs\n"
+
+        filename = 'trunk/doc/misc-docs/Makefile'
+        rev = Revision('5')
+        file = self.tool.get_file(filename, rev)
+        patch(diff, file, filename)
+
 
 class PerforceTests(DjangoTestCase):
     """Unit tests for perforce.
