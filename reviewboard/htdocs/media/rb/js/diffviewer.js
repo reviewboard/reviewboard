@@ -44,7 +44,7 @@ var gActions = [
 
     { // Recenter
         keys: unescape("%0D"),
-        onPress: function() { scrollToAnchor(gAnchors[gSelectedAnchor]); }
+        onPress: function() { scrollToAnchor($(gAnchors[gSelectedAnchor])); }
     },
 
     { // Previous comment
