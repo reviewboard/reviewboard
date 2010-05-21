@@ -48,7 +48,7 @@ ui = None
 
 
 class Dependencies(object):
-    memcached_modules = ["cmemcache", "memcache"]
+    memcached_modules = ["memcache"]
     sqlite_modules = ["pysqlite2", "sqlite3"]
     mysql_modules = ["MySQLdb"]
     postgresql_modules = ["psycopg2"]
