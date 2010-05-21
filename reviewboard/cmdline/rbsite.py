@@ -1179,6 +1179,13 @@ class InstallCommand(Command):
         # Make sure we can create the directory first.
         try:
             # TODO: Do some chown tests too.
+
+            if os.path.exists(site.install_dir):
+                # Remove it first, to see if we own it and to handle the
+                # case where the directory is empty as a result of a
+                # previously canceled install.
+                os.rmdir(site.install_dir)
+
             os.mkdir(site.install_dir)
 
             # Don't leave a mess. We'll actually do this at the end.
@@ -1187,7 +1194,8 @@ class InstallCommand(Command):
         except OSError:
             # Likely a permission error.
             ui.error("Unable to create the %s directory. Make sure "
-                     "you're running as an administrator." % site.install_dir,
+                     "you're running as an administrator and that the "
+                     "directory does not contain any files." % site.install_dir,
                      done_func=lambda: sys.exit(1))
             return False
 
