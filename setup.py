@@ -98,7 +98,8 @@ setup(name=PACKAGE_NAME,
           'Djblets>=0.6.2',
           'Pygments>=0.10',
           'flup',
-          'pytz'
+          'pytz',
+          'python-memcached',
       ],
       dependency_links = [
           "http://downloads.reviewboard.org/mirror/",
