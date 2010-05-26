@@ -8,7 +8,7 @@
 {%  endif %}
 
 {% if review.body_top %}
- <pre>{{review.body_top}}</pre>
+ <pre style="{{precss}}">{{review.body_top}}</pre>
  <br />
 {% endif %}
 
@@ -21,20 +21,20 @@
   <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
  </tr>
 </table>
-<pre style="margin-left: 2em">{{comment.text}}</pre>
+<pre style="margin-left: 2em; {{precss}}">{{comment.text}}</pre>
 <br />
 {% endfor %}
 
 {% for entry in comment_entries %}
 <div>
 {{entry.html|safe}}
-<pre style="margin-left: 2em">{{entry.comment.text}}</pre>
+<pre style="margin-left: 2em; {{precss}}">{{entry.comment.text}}</pre>
 </div>
 <br />
 {% endfor %}
 
 {% if review.body_bottom %}
- <pre>{{review.body_bottom}}</pre>
+ <pre style="{{precss}}">{{review.body_bottom}}</pre>
 {% endif %}
 <p>- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}</p>
 {% endblock %}
