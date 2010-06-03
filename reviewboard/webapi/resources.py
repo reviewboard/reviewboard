@@ -19,7 +19,9 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
                                   INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource, \
-                                     RootResource, register_resource_for_model
+                                     RootResource, \
+                                     register_resource_for_model, \
+                                     get_resource_for_object
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
@@ -2181,11 +2183,55 @@ class ServerInfoResource(WebAPIResource):
 server_info_resource = ServerInfoResource()
 
 
+class SessionResource(WebAPIResource):
+    name = 'session'
+    name_plural = 'session'
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        """Returns information on the client's session.
+
+        This currently just contains information on the currently logged-in
+        user (if any).
+        """
+        expanded_resources = request.GET.get('expand', '').split(',')
+
+        authenticated = request.user.is_authenticated()
+
+        data = {
+            'authenticated': authenticated,
+        }
+
+        if authenticated:
+            if 'user' in expanded_resources:
+                data['user'] = request.user
+            else:
+                user_resource = get_resource_for_object(request.user)
+                href = user_resource.get_href(request.user,
+                                              request,
+                                              *args, **kwargs)
+
+                data['links'] = {
+                    'user': {
+                        'method': 'GET',
+                        'href': href,
+                        'title': unicode(request.user),
+                    },
+                }
+
+        return 200, {
+            self.name: data,
+        }
+
+session_resource = SessionResource()
+
+
 root_resource = RootResource([
     repository_resource,
     review_group_resource,
     review_request_resource,
     server_info_resource,
+    session_resource,
     user_resource,
 ])
 

@@ -263,6 +263,27 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
         self.assertTrue('site' in rsp['info'])
 
 
+class SessionResourceTests(BaseWebAPITestCase):
+    """Testing the SessionResource APIs."""
+    def test_get_session_with_logged_in_user(self):
+        """Testing the GET session/ API with logged in user"""
+        rsp = self.apiGet('session')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('session' in rsp)
+        self.assertTrue(rsp['session']['authenticated'])
+        self.assertEqual(rsp['session']['links']['user']['title'],
+                         self.user.username)
+
+    def test_get_session_with_anonymous_user(self):
+        """Testing the GET session/ API with anonymous user"""
+        self.client.logout()
+
+        rsp = self.apiGet('session')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('session' in rsp)
+        self.assertFalse(rsp['session']['authenticated'])
+
+
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
     def test_get_repositories(self):
