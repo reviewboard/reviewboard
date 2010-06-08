@@ -1,5 +1,6 @@
 import logging
 import re
+import urllib
 
 import dateutil.parser
 from django.conf import settings
@@ -8,12 +9,15 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.http import get_http_requested_mimetype, \
+                              set_last_modified
 from djblets.webapi.core import WebAPIResponseFormError, \
-                                WebAPIResponsePaginated
+                                WebAPIResponsePaginated, \
+                                WebAPIResponse
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_request_fields
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
@@ -26,6 +30,7 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
@@ -46,6 +51,9 @@ from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
                                       REPO_FILE_NOT_FOUND, \
                                       REPO_INFO_ERROR, \
                                       REPO_NOT_IMPLEMENTED
+
+
+CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -410,11 +418,85 @@ class FileDiffResource(WebAPIResource):
     uri_object_key = 'filediff_id'
     model_parent_key = 'diffset'
 
+    DIFF_DATA_MIMETYPE_BASE = CUSTOM_MIMETYPE_BASE + '.diff.data'
+
+    _supported_mimetypes = [
+        'application/json',
+        'application/xml',
+        'text/x-patch',
+        DIFF_DATA_MIMETYPE_BASE + '+json',
+        DIFF_DATA_MIMETYPE_BASE + '+xml',
+    ]
+
     def get_queryset(self, request, review_request_id, diff_revision,
                      *args, **kwargs):
         return self.model.objects.filter(
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        mimetype = get_http_requested_mimetype(request,
+                                               self._supported_mimetypes)
+
+        if mimetype == 'text/x-patch':
+            return self._get_patch(request, *args, **kwargs)
+        elif mimetype.startswith(self.DIFF_DATA_MIMETYPE_BASE + "+"):
+            return self._get_diff_data(request, mimetype, *args, **kwargs)
+        else:
+            return super(FileDiffResource, self).get(request, *args, **kwargs)
+
+    def _get_patch(self, request, *args, **kwargs):
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            filediff = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        resp = HttpResponse(filediff.diff, mimetype='text/x-patch')
+        filename = '%s.patch' % urllib.quote(filediff.source_file)
+        resp['Content-Disposition'] = 'inline; filename=%s' % filename
+        set_last_modified(resp, filediff.diffset.timestamp)
+
+        return resp
+
+    def _get_diff_data(self, request, mimetype, *args, **kwargs):
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            filediff = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        highlighting = request.GET.get('syntax-highlighting', False)
+
+        files = get_diff_files(filediff.diffset, filediff,
+                               enable_syntax_highlighting=highlighting)
+
+        if not files:
+            # This may not be the right error here.
+            return DOES_NOT_EXIST
+
+        assert len(files) == 1
+        f = files[0]
+
+        payload = {
+            'diff_data': {
+                'binary': f['binary'],
+                'chunks': f['chunks'],
+                'num_changes': f['num_changes'],
+                'whitespace_only': f['whitespace_only'],
+                'changed_chunk_indexes': f['changed_chunk_indexes'],
+                'new_file': f['newfile'],
+            }
+        }
+
+        # XXX: Kind of a hack.
+        api_format = mimetype.split('+')[-1]
+
+        resp = WebAPIResponse(request, payload, api_format=api_format)
+        set_last_modified(resp, filediff.diffset.timestamp)
+
+        return resp
 
 filediff_resource = FileDiffResource()
 
@@ -432,6 +514,12 @@ class DiffSetResource(WebAPIResource):
     model_object_key = 'revision'
     model_parent_key = 'history'
 
+    _supported_mimetypes = [
+        'application/json',
+        'application/xml',
+        'text/x-patch'
+    ]
+
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(
             history__review_request=review_request_id)
@@ -448,6 +536,40 @@ class DiffSetResource(WebAPIResource):
     def has_access_permissions(self, request, diffset, *args, **kwargs):
         review_request = diffset.history.review_request.get()
         return review_request.is_accessible_by(request.user)
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        mimetype = get_http_requested_mimetype(request,
+                                               self._supported_mimetypes)
+
+        if mimetype == 'text/x-patch':
+            return self._get_patch(request, *args, **kwargs)
+        else:
+            return super(DiffSetResource, self).get(request, *args, **kwargs)
+
+    def _get_patch(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            diffset = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        tool = review_request.repository.get_scmtool()
+        data = tool.get_parser('').raw_diff(diffset)
+
+        resp = HttpResponse(data, mimetype='text/x-patch')
+
+        if diffset.name == 'diff':
+            filename = 'bug%s.patch' % \
+                       review_request.bugs_closed.replace(',', '_')
+        else:
+            filename = diffset.name
+
+        resp['Content-Disposition'] = 'inline; filename=%s' % filename
+        set_last_modified(resp, diffset.timestamp)
+
+        return resp
 
     @webapi_login_required
     def create(self, request, *args, **kwargs):
