@@ -9,7 +9,7 @@
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre>{{review.body_top}}</pre>
+  <pre style="{{precss}}">{{review.body_top}}</pre>
  </blockquote>
 {%  endif %}
 {%  for reply_review in review.public_replies %}
@@ -17,7 +17,7 @@
 {%    ifnotequal reply_review reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre>{{reply_review.body_top}}</pre>
+  <pre style="{{precss}}">{{reply_review.body_top}}</pre>
  </blockquote>
 {%    endifnotequal %}
 {%   endif %}
@@ -25,7 +25,7 @@
 {%  if review.body_top %}
 </blockquote>
 {%  endif %}
-<pre>{{reply.body_top}}</pre>
+<pre style="{{precss}}">{{reply.body_top}}</pre>
 <br />
 {% endif %}
 
@@ -44,20 +44,20 @@
     <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
    </tr>
   </table>
-  <pre>{{comment.reply_to.text}}</pre>
+  <pre style="{{precss}}">{{comment.reply_to.text}}</pre>
  </blockquote>
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    ifnotequal reply_comment comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
-  <pre>{{reply_comment.text}}</pre>
+  <pre style="{{precss}}">{{reply_comment.text}}</pre>
  </blockquote>
 {%    endifnotequal %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<pre style="margin-left: 1em">{{comment.text}}</pre>
+<pre style="margin-left: 1em; {{precss}}">{{comment.text}}</pre>
 <br />
 {% endfor %}
 
@@ -66,20 +66,20 @@
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   {{entry.html|safe}}
-  <pre>{{entry.comment.reply_to.text}}</pre>
+  <pre style="{{precss}}">{{entry.comment.reply_to.text}}</pre>
  </blockquote>
 {%  for reply_comment in entry.comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    ifnotequal reply_comment entry.comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre>{{reply_comment.text}}</pre>
+  <pre style="{{precss}}">{{reply_comment.text}}</pre>
  </blockquote>
 {%    endifnotequal %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
-<pre style="margin-left: 1em">{{entry.comment.text}}</pre>
+<pre style="margin-left: 1em; {{precss}}">{{entry.comment.text}}</pre>
 <br />
 {% endfor %}
 
@@ -88,7 +88,7 @@
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre>{{review.body_bottom}}</pre>
+  <pre style="{{precss}}">{{review.body_bottom}}</pre>
  </blockquote>
 {%  endif %}
 {%  for reply_review in review.public_replies %}
@@ -96,7 +96,7 @@
 {%    ifnotequal reply_review reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
-  <pre>{{reply_review.body_bottom}}</pre>
+  <pre style="{{precss}}">{{reply_review.body_bottom}}</pre>
  </blockquote>
 {%    endifnotequal %}
 {%   endif %}
@@ -104,7 +104,7 @@
 {%  if review.body_bottom %}
 </blockquote>
 {%  endif %}
-<pre>{{reply.body_bottom}}</pre>
+<pre style="{{precss}}">{{reply.body_bottom}}</pre>
 <br />
 {% endif %}
 

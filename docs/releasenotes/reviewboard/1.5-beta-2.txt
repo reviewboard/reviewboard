@@ -1,0 +1,175 @@
+=====================================
+Review Board 1.5 Beta 2 Release Notes
+=====================================
+
+**Release date**: May 13, 2010
+
+
+This release contains all bug fixes and features found in
+Review Board versions :doc:`1.0.6 <1.0.6>`, :doc:`1.0.7 <1.0.7>` and
+:doc:`1.0.8 <1.0.8>`.
+
+
+New Features
+============
+
+* Added support for custom site-specific management commands.
+
+  Review Board today provides a few management commands, invoked by
+  running :samp:`rb-site manage {/path/to/site} {commandname}`. These
+  were limited to the commands we bundled, but now administrators can
+  write custom commands that they can invoke, which have access to the
+  Review Board database and other internals. This can be useful for
+  automation scripts.
+
+  To make use of this, see the `Django custom django-admin commands`_
+  documentation and place the scripts in the :file:`{sitedir}/commands`
+  directory. You will need to create this directory if
+  it does not exist.
+
+.. _`Django custom django-admin commands`:
+   http://docs.djangoproject.com/en/dev/howto/custom-management-commands/
+
+* Set the HOME directory for Review Board to be he site directory's
+  :file:`data` directory by default.
+
+  The :envvar:`HOME` environment variable now points to the newly created
+  :file:`{sitedir}/data` directory. If you're using Apache, then this only
+  happens with new web server configuration files, but can be added by hand
+  to existing configurations.
+
+  This is mainly useful for SSH and HTTPS host and certificate verification,
+  so that there's a known good place to write the host and certificate files
+  to. Previously, for this feature, users would have to manually set their
+  web server's user to have a writable home directory, which was sometimes
+  difficult to do.
+
+  This new :file:`{sitedir}/data` directory is also the default directory for
+  the SQLite database on new installations.
+
+* Multiple review requests can now be closed or reopened at once by
+  administrations in the administration UI's database browser.
+
+* Added a new REST API.
+
+  The new API is much like the old one, but is cleaner, more browseable
+  (as opposed to having to know and hard-code all the URLs in the client)
+  and makes extensive use of existing HTTP methods and error codes. The API
+  lives in ``/api/``.
+
+  The old REST API is deprecated, but won't go away in this release.
+
+  The new features included with this API are:
+
+  * A more consistent interface. Creation of objects are always done by a
+    HTTP POST to a list of resources. Updating is done by a HTTP PUT to an
+    object resource. Deleting is done by a HTTP DELETE to an object
+    resource.
+  * Authentication is now done exclusively by using HTTP Basic Auth.
+  * Lists of review requests or other objects are now paginated to reduce
+    load on the client and the server.
+  * Review requests can be filtered by multiple types of criteria, such as
+    lists of reviewers, the repository, and more.
+  * Every resource in the API now points to child resources and other related
+    resources by way of hyperlinks in the resulting payload. This makes the
+    entire API resource tree browseable by any client.
+
+  There isn't yet any documentation for this API, but that will be added
+  before the final 1.5 release.
+
+
+Usability Improvements
+======================
+
+* Added a resize grip to the comment dialog in the diff viewer and screenshot
+  page.
+
+* Comment flags in the diff viewer now cover te entire range of lines that the
+  comment was made on, making it more obvious at a glance. (:bug:`1131`)
+
+* Comment flags in the diff viewer no longer overwrap the line numbers.
+
+* The User Permissions list in the administration UI are now vertically
+  stacked, making it possible to see the full permission names instead of
+  only part of the permission names. (:bug:`1520`)
+
+* Added the Review Board logo to the administration UI, which links back to
+  the main Review Board site. (:bug:`1299`)
+
+* Improved the rb-site installer UI.
+
+  The installer now has a Review Board logo and window icon, some better
+  separation between parts of the UI, and renames the :guilabel:`Forward`
+  button to :guilabel:`Next`.
+
+* The organization of forms in the database browser in the administration
+  UI has greatly improved.
+
+  The fields that should generally not be modified (such as internal state)
+  have moved to sections that are collapsed by default. The other fields have
+  been better organized.
+
+  Some fields that used to load hundreds or thousands of entries for selecting
+  one object now just display the ID of the entry which, when clicked, allow
+  for browsing for the new entry. There's usually no reason to change these
+  fields, but this change reduces the complexity of the site and the time
+  spent loading the pages.
+
+  Many of the lists of entries are now searchable, filterable, and have better
+  default sorting.
+
+
+Bugs Fixed
+==========
+
+* The Upload Diff dialog wasn't showing File Not Found errors when the patch
+  referenced an invalid file. (:bug:`821`)
+
+* E-mail failures are now logged to the Review Board log file, instead of
+  displaying an HTTP Error 500 page. (:bug:`872`)
+
+* The Expand link in the diff viewer was showing a JavaScript error when
+  clicked. Patch by Laurent Nicolas. (:bug:`1500`)
+
+* Starring or unstarring groups was broken. (:bug:`1538`)
+
+* HTML e-mails didn't preserve formatting for comments. Patch by Laurent
+  Nicolas. (:bug:`1569`)
+
+* Comments made in sections of the diff viewer that are normally collapsed
+  were not visible when expanding that section. Patch by Laurent Nicolas.
+  (:bug:`1577`)
+
+* Multi-line comments in the review form would cause breakages and failure
+  to load parts of the form. Patch by Laurent Nicolas. (:bug:`1636`)
+
+* The group counts in the dashboard were wrong. Patch by Laurent Nicolas.
+
+* Screenshot comments were off by one pixel. A comment created at 0,0 would
+  be saved as being at 1,1.
+
+* The :guilabel:`Discard Review` button was causing the page to redirect to
+  an invalid URL when clicked.
+
+* The maximum length of repository paths were only 128 characters long,
+  which was too short for some repositories. Increased the maximum length to
+  255 characters. Patch by Christian Hammond and Chris Trimble.
+
+* The Repository column in the dashboard no longer wraps.
+
+* Starring a review request on the review request page and then reloading
+  no longer shows the review request as unstarred. This was due to a caching
+  issue.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Chris Trimble
+* David Trowbridge
+* Laurent Nicolas
+* Mike Conley
+
+
+.. comment: vim: ft=rst et

@@ -169,7 +169,7 @@ class SVNTool(SCMTool):
                     for name in keyword_str.split(" ")
                     for keyword in self.keywords.get(name, [])]
 
-        return re.sub(r"\$(%s):(:?)([^\$]+)\$" % '|'.join(keywords),
+        return re.sub(r"\$(%s):(:?)([^\$\n\r]+)\$" % '|'.join(keywords),
                       repl, data)
 
 

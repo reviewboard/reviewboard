@@ -1,6 +1,7 @@
 {% load djblets_utils %}
 {% load reviewtags %}
 {% load difftags %}
+{% definevar "difflinecss" %}font-size: 8pt; line-height: 140%; margin: 0; {{precss}}{% enddefinevar %}
 <table width="100%" border="0" bgcolor="white" style="border: 1px solid #C0C0C0; border-collapse: collapse; margin: 2px padding: 2px;">
  <thead>
   <tr>
@@ -20,10 +21,10 @@
  <tbody style="background-color: #e4d9cb; padding: 4px 8px; text-align: center;">
   <tr>
 {%  ifequal chunks.0.meta.headers.0 chunks.0.meta.headers.1 %}
-   <td colspan="4"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{chunks.0.meta.headers.0}}</pre></td>
+   <td colspan="4"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0}}</pre></td>
 {%  else %}
-   <td colspan="2"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{chunks.0.meta.headers.0}}</pre></td>
-   <td colspan="2"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{chunks.0.meta.headers.1}}</pre></td>
+   <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0}}</pre></td>
+   <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.1}}</pre></td>
 {%  endifequal %}
   </tr>
  </tbody>
@@ -49,9 +50,9 @@
 {% for line in chunk.lines %}
   <tr>
     <th bgcolor="{{thcolor}}" style="border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.1}}</font></th>
-    <td bgcolor="{{bgcolor}}" width="50%"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
+    <td bgcolor="{{bgcolor}}" width="50%"><pre style="{{difflinecss}}">{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
     <th bgcolor="{{thcolor}}" style="border-left: 1px solid #C0C0C0; border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.4}}</font></th>
-    <td bgcolor="{{bgcolor}}" width="50%"><pre style="font-size: 8pt; line-height: 140%; margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{line.5|highlightregion:line.6|showextrawhitespace}}</pre></td>
+    <td bgcolor="{{bgcolor}}" width="50%"><pre style="{{difflinecss}}">{{line.5|highlightregion:line.6|showextrawhitespace}}</pre></td>
   </tr>
 {% endfor %}
  </tbody>
