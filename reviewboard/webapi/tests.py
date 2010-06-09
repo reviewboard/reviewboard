@@ -271,6 +271,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), Repository.objects.count())
 
+    def test_get_repository_info(self):
+        """Testing the GET repositories/<id>/info API"""
+        rsp = self.apiGet("repositories/%d/info" % self.repository.pk)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['info'],
+                         self.repository.get_scmtool().get_repository_info())
+
 
 class ReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource APIs."""

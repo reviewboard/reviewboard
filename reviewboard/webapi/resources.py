@@ -752,7 +752,7 @@ class RepositoryInfoResource(WebAPIResource):
     def get(self, request, *args, **kwargs):
         """Returns repository-specific information from a server."""
         try:
-            repository = self.get_object(*args, **kwargs)
+            repository = repository_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
