@@ -127,6 +127,22 @@ def check_dependencies():
         sys.stderr.write('\n\n')
 
 
+def include_enabled_extensions(settings):
+    """
+    This adds enabled extensions to the INSTALLED_APPS cache
+    so that operations like syncdb and evolve will take extensions
+    into consideration.
+    """
+    from django.db.models.loading import load_app
+    from reviewboard.extensions.base import get_extension_manager
+
+    manager = get_extension_manager()
+    manager.load()
+
+    for extension in manager.get_enabled_extensions():
+        load_app(extension.info.app_name)
+
+
 if __name__ == "__main__":
     if settings.DEBUG:
         if len(sys.argv) > 1 and \
@@ -139,5 +155,7 @@ if __name__ == "__main__":
                 check_dependencies()
 
     fix_django_evolution_issues(settings)
+
+    include_enabled_extensions(settings)
 
     execute_manager(settings)
