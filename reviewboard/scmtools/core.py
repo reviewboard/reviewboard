@@ -1,3 +1,4 @@
+import logging
 import os
 import urlparse
 
@@ -111,8 +112,31 @@ class SCMTool(object):
         will be thrown.
         """
         if sshutils.is_ssh_uri(path):
-            sshutils.check_host(urlparse.urlparse(path)[1], # netloc
-                                username, password)
+            username, hostname = SCMTool.get_auth_from_uri(path, username)
+            logging.debug(
+                "%s: Attempting ssh connection with host: %s, username: %s" % \
+                (cls.__name__, hostname, username))
+            sshutils.check_host(hostname, username, password)
+
+    @classmethod
+    def get_auth_from_uri(cls, path, username):
+        """
+        Returns a 2-tuple of the username and hostname, given the path.
+
+        If a username is implicitly passed via the path (user@host), and no
+        explicit username was defined, we use the implied username.
+        """
+        url = urlparse.urlparse(path)
+
+        if '@' in url[1]:
+            netloc_username, hostname = url[1].split('@', 1)
+        else:
+            hostname = url[1]
+
+        if not username and not netloc_username:
+            return netloc_username, hostname
+        else:
+            return username, hostname
 
     @classmethod
     def accept_certificate(cls, path):
