@@ -28,7 +28,7 @@
  <table>
   <tr>
    <td class="label"><label for="id_username">{% trans "Username" %}</label></td>
-   <td class="field"><input type="text" name="username" id="id_username" /></td>
+   <td class="field"><input type="text" name="username" id="id_username" tabindex="1" /></td>
 {% ifequal siteconfig.settings.auth_backend "builtin" %}
    <td class="hint">
 {%   if siteconfig.settings.auth_enable_registration|default_if_none:1 %}
@@ -40,7 +40,7 @@
   </tr>
   <tr>
    <td class="label"><label for="id_password">{% trans "Password" %}</label></td>
-   <td class="field"><input type="password" name="password" id="id_password" /></td>
+   <td class="field"><input type="password" name="password" id="id_password" tabindex="2" /></td>
 {% ifequal siteconfig.settings.auth_backend "builtin" %}
    <td class="hint">
     {% trans "Forgot your password?" %}
@@ -50,7 +50,7 @@
   </tr>
   <tr>
    <td>&nbsp;</td>
-   <td class="field"><input type="submit" value="{% trans "Log in" %}" /></td>
+   <td class="field"><input type="submit" value="{% trans "Log in" %}" tabindex="3" /></td>
   </tr>
  </table>
  </div>
