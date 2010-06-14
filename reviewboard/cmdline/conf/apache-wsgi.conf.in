@@ -1,0 +1,17 @@
+<VirtualHost *:80>
+	ServerName @sitedomain@
+	DocumentRoot "@sitedir@/htdocs"
+
+	# Error handlers
+	ErrorDocument 500 /errordocs/500.html
+
+        WSGIScriptAlias "@siteroot@" "@sitedir@/htdocs/reviewboard.wsgi"
+
+	<Directory "/home/johny/reviewboard/rbsite/htdocs">
+		AllowOverride All
+	</Directory>
+
+	# Alias static media requests to filesystem
+	Alias @siteroot@media "@sitedir@/htdocs/media"
+	Alias @siteroot@errordocs "@sitedir@/htdocs/errordocs"
+</VirtualHost>
