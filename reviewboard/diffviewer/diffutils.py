@@ -477,7 +477,8 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         # XXX Guessing is preferable but really slow, especially on XML
         #     files.
         #if filename.endswith(".xml"):
-        lexer = get_lexer_for_filename(filename, stripnl=False)
+        lexer = get_lexer_for_filename(filename, stripnl=False,
+                                       encoding='utf-8')
         #else:
         #    lexer = guess_lexer_for_filename(filename, data, stripnl=False)
 
