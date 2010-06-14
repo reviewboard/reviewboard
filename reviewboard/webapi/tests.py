@@ -28,6 +28,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
+        siteconfig.set("auth_require_sitewide_login", False)
         siteconfig.save()
         mail.outbox = []
 
