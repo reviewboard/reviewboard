@@ -234,6 +234,7 @@ class Site(object):
     def generate_config_files(self):
         web_conf_filename = ""
         enable_fastcgi = False
+        enable_wsgi = False
 
         if self.web_server_type == "apache":
             if self.python_loader == "modpython":
@@ -241,6 +242,9 @@ class Site(object):
             elif self.python_loader == "fastcgi":
                 web_conf_filename = "apache-fastcgi.conf"
                 enable_fastcgi = True
+            elif self.python_loader == "wsgi":
+                web_conf_filename = "apache-wsgi.conf"
+                enable_wsgi = True
             else:
                 # Should never be reached.
                 assert False
@@ -263,6 +267,11 @@ class Site(object):
             self.process_template("cmdline/conf/reviewboard.fcgi.in",
                                   fcgi_filename)
             os.chmod(fcgi_filename, 0755)
+        elif enable_wsgi:
+            wsgi_filename = os.path.join(htdocs_dir, "reviewboard.wsgi")
+            self.process_template("cmdline/conf/reviewboard.wsgi.in",
+                                  wsgi_filename)
+            os.chmod(wsgi_filename, 0755)
 
         # Generate a secret key based on Django's code.
         secret_key = ''.join([
@@ -1117,7 +1126,7 @@ class InstallCommand(Command):
         group.add_option("--web-server-type",
                          help="web server (apache or lighttpd)")
         group.add_option("--python-loader",
-                         help="python loader for apache (modpython or fastcgi)")
+                         help="python loader for apache (modpython, fastcgi or wsgi)")
         group.add_option("--admin-user", default="admin",
                          help="the site administrator's username")
         group.add_option("--admin-password",
@@ -1383,7 +1392,7 @@ class InstallCommand(Command):
         ui.text(page, "Based on our experiences, we recommend using "
                       "modpython with Review Board.")
 
-        ui.prompt_choice(page, "Python Loader", ["modpython", "fastcgi"],
+        ui.prompt_choice(page, "Python Loader", ["modpython", "fastcgi", "wsgi"],
                          save_obj=site, save_var="python_loader")
 
     def ask_admin_user(self):
