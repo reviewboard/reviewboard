@@ -2,7 +2,7 @@ import logging
 import re
 
 
-class File:
+class File(object):
     def __init__(self):
         self.origFile = None
         self.newFile = None

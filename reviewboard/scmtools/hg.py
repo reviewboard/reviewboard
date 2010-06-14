@@ -1,12 +1,17 @@
+import logging
+import re
 import urllib2
+
 try:
     from urllib2 import quote as urllib_quote
 except ImportError:
     from urllib import quote as urllib_quote
 
-from reviewboard.diffviewer.parser import DiffParser, DiffParserError
+from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
+from reviewboard.scmtools.git import GitDiffParser
 from reviewboard.scmtools.core import \
     FileNotFoundError, SCMTool, HEAD, PRE_CREATION
+
 
 class HgTool(SCMTool):
     name = "Mercurial"
@@ -43,7 +48,10 @@ class HgTool(SCMTool):
         return ['diff_path']
 
     def get_parser(self, data):
-        return HgDiffParser(data)
+        if data.lstrip().startswith('diff --git'):
+            return GitDiffParser(data)
+        else:
+            return HgDiffParser(data)
 
 
 class HgDiffParser(DiffParser):
@@ -60,6 +68,7 @@ class HgDiffParser(DiffParser):
             # diff between a revision and the working copy are like:
             #  "diff -r abcdef123456 filename"
             diffLine = self.lines[linenum].split()
+
             try:
                 # hg is file based, so new file always == old file
                 isCommitted = len(diffLine) > 4 and diffLine[3] == '-r'
@@ -74,8 +83,8 @@ class HgDiffParser(DiffParser):
                 info['origInfo'] = diffLine[2]
                 info['origChangesetId'] = diffLine[2]
             except ValueError:
-                raise DiffParserError("The diff file is missing revision information",
-                                      linenum)
+                raise DiffParserError("The diff file is missing revision "
+                                      "information", linenum)
             linenum += 1;
 
         return linenum
@@ -96,11 +105,15 @@ class HgDiffParser(DiffParser):
         return linenum
 
 
-class HgWebClient:
+class HgWebClient(object):
+    FULL_FILE_URL = '%(url)s/%(rawpath)s/%(revision)s/%(quoted_path)s'
+
     def __init__(self, repoPath, username, password):
         self.url = repoPath
         self.username = username
         self.password = password
+        logging.debug('Initialized HgWebClient with url=%r, username=%r',
+                      self.url, self.username)
 
     def cat_file(self, path, rev="tip"):
         if rev == HEAD:
@@ -111,17 +124,33 @@ class HgWebClient:
         found = False
 
         for rawpath in ["raw-file", "raw"]:
+            full_url = ''
+
             try:
                 passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
                 passman.add_password(None, self.url, self.username,
                                      self.password)
                 authhandler = urllib2.HTTPBasicAuthHandler(passman)
                 opener = urllib2.build_opener(authhandler)
-                f = opener.open('%s/%s/%s/%s' %
-                                (self.url, rawpath, rev, urllib_quote(path)))
+                full_url = self.FULL_FILE_URL % {
+                    'url': self.url.rstrip('/'),
+                    'rawpath': rawpath,
+                    'revision': rev,
+                    'quoted_path': urllib_quote(path.lstrip('/')),
+                }
+                f = opener.open(full_url)
                 return f.read()
-            except Exception, e:
-                pass
+
+            except urllib2.HTTPError, e:
+
+                if e.code != 404:
+                    logging.error("%s: HTTP error code %d when fetching "
+                                  "file from %s: %s", self.__class__.__name__,
+                                  e.code, full_url, e)
+
+            except Exception:
+                logging.exception('%s: Non-HTTP error when fetching %r: ',
+                                  self.__class__.__name__, full_url)
 
         if not found:
             raise FileNotFoundError(path, rev, str(e))
@@ -130,7 +159,8 @@ class HgWebClient:
         raise NotImplemented
 
 
-class HgClient:
+class HgClient(object):
+
     def __init__(self, repoPath):
         from mercurial import hg, ui
         from mercurial.__version__ import version
@@ -150,6 +180,7 @@ class HgClient:
             rev = "tip"
         elif rev == PRE_CREATION:
             rev = ""
+
         try:
             return self.repo.changectx(rev).filectx(path).data()
         except Exception, e:
