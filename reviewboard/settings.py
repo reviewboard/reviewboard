@@ -55,6 +55,7 @@ MIDDLEWARE_CLASSES = (
     'djblets.siteconfig.middleware.SettingsMiddleware',
     'reviewboard.admin.middleware.LoadSettingsMiddleware',
 
+    'djblets.extensions.middleware.ExtensionsMiddleware',
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
     'reviewboard.admin.middleware.X509AuthMiddleware',
