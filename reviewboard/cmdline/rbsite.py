@@ -35,6 +35,10 @@ except:
 # Reset the warnings so we don't ignore everything.
 warnings.resetwarnings()
 
+# But then ignore the PendingDeprecationWarnings that we'll get from Django.
+# See bug 1683.
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+
 
 VERSION = "0.1"
 DEBUG = False
