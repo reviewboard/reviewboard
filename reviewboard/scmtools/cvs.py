@@ -200,6 +200,10 @@ class CVSClient:
         # We strip the repo off of the fully qualified path as CVS does
         # not like to be given absolute paths.
         repos_path = self.path.split(":")[-1]
+
+        if '@' in repos_path:
+            repos_path = '/' + repos_path.split('@')[-1].split('/', 1)[-1]
+
         if filename.startswith(repos_path + "/"):
             filename = filename[len(repos_path) + 1:]
 
@@ -221,9 +225,11 @@ class CVSClient:
         elif '\\' in filename:
             pos = filename.rfind('\\')
             filenameAttic = filename[0:pos] + "\\Attic" + filename[pos:]
-        else:
+        elif '/' in filename:
             pos = filename.rfind('/')
             filenameAttic = filename[0:pos] + "/Attic" + filename[pos:]
+        else:
+            filenameAttic = "/Attic/" + filename
 
         try:
             return self._cat_specific_file(filename, revision)
