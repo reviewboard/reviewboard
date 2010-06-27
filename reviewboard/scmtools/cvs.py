@@ -173,6 +173,9 @@ class CVSDiffParser(DiffParser):
         elif 'filename' in info:
             info['origFile'] = info['filename']
 
+        if info.get('newFile') == '/dev/null':
+            info['deleted'] = True
+
         return linenum
 
 

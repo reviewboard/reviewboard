@@ -856,6 +856,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             'interfilediff': interfilediff,
             'force_interdiff': force_interdiff,
             'binary': filediff.binary,
+            'deleted': filediff.deleted,
             'newfile': newfile,
             'index': len(files),
         }
@@ -863,7 +864,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         if load_chunks:
             chunks = []
 
-            if not filediff.binary:
+            if not filediff.binary and not filediff.deleted:
                 key = key_prefix
 
                 if not force_interdiff:

@@ -14,6 +14,14 @@ class FileDiff(models.Model):
     This contains the patch and information needed to produce original and
     patched versions of a single file in a repository.
     """
+    MODIFIED = 'M'
+    DELETED = 'D'
+
+    STATUSES = (
+        (MODIFIED, _('Modified')),
+        (DELETED, _('Deleted')),
+    )
+
     diffset = models.ForeignKey('DiffSet',
                                 related_name='files',
                                 verbose_name=_("diff set"))
@@ -28,6 +36,11 @@ class FileDiff(models.Model):
     binary = models.BooleanField(_("binary file"), default=False)
     parent_diff = Base64Field(_("parent diff"), db_column="parent_diff_base64",
                               blank=True)
+    status = models.CharField(_("status"), max_length=1, choices=STATUSES)
+
+    @property
+    def deleted(self):
+        return self.status == 'D'
 
     def __unicode__(self):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,

@@ -6,7 +6,7 @@ from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
 class FileDiffAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
-            'fields': ('diffset', 'binary',
+            'fields': ('diffset', 'status', 'binary',
                        ('source_file', 'source_revision'),
                        ('dest_file', 'dest_detail'),
                        'diff', 'parent_diff')

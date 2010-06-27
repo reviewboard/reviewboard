@@ -104,6 +104,7 @@ table.sidebyside tbody.whitespace-file {
 }
 
 table.sidebyside tbody.binary td,
+table.sidebyside tbody.deleted td,
 table.sidebyside tbody.whitespace-file td {
   background: #dbebff;
   padding: 4px;
