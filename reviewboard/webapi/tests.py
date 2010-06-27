@@ -605,6 +605,86 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
 
+    def test_get_reviewrequests_with_time_added_from(self):
+        """Testing the GET review-requests/?time-added-from= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('time_added')
+        r = public_review_requests[start_index]
+        timestamp = r.time_added.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'time-added-from': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                            time_added__gte=r.time_added).count())
+
+    def test_get_reviewrequests_with_time_added_to(self):
+        """Testing the GET review-requests/?time-added-to= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('time_added')
+        r = public_review_requests[start_index]
+        timestamp = r.time_added.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'time-added-to': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index + 1)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                             time_added__lt=r.time_added).count())
+
+    def test_get_reviewrequests_with_last_updated_from(self):
+        """Testing the GET review-requests/?last-updated-from= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('last_updated')
+        r = public_review_requests[start_index]
+        timestamp = r.last_updated.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'last-updated-from': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                             last_updated__gte=r.last_updated).count())
+
+    def test_get_reviewrequests_with_last_updated_to(self):
+        """Testing the GET review-requests/?last-updated-to= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('last_updated')
+        r = public_review_requests[start_index]
+        timestamp = r.last_updated.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'last-updated-to': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index + 1)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                             last_updated__lt=r.last_updated).count())
+
     def test_post_reviewrequests(self):
         """Testing the POST review-requests/ API"""
         rsp = self.apiPost("review-requests", {

@@ -1,6 +1,7 @@
 from datetime import datetime
 import re
 
+import dateutil.parser
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
@@ -1965,28 +1966,74 @@ class ReviewRequestResource(WebAPIResource):
         resources, then it can be further filtered by one or more of the
         following arguments in the URL:
 
-          * ``changenum`` - The change number the review requests must be
-                            against. This will only return one review request
-                            per repository, and only works for repository
-                            types that support server-side changesets.
-          * ``from-user`` - The username that the review requests must be
-                            owned by.
-          * ``repository`` - The ID of the repository that the review requests
-                             must be on.
-          * ``status`` - The status of the review requests. This can be
-                         ``pending``, ``submitted`` or ``discarded``.
-          * ``to-groups`` - A comma-separated list of review group names that
-                            the review requests must have in the reviewer
-                            list.
-          * ``to-user-groups`` - A comma-separated list of usernames who
-                                 are in groups that the review requests
-                                 must have in the reviewer list.
-          * ``to-users`` - A comma-separated list of usernames that the
-                           review requests must either have in the reviewer
-                           list specifically or by way of a group.
-          * ``to-users-directly`` - A comma-separated list of usernames that
-                                    the review requests must have in the
-                                    reviewer list specifically.
+          * ``changenum``
+              - The change number the review requests must be
+                against. This will only return one review request
+                per repository, and only works for repository
+                types that support server-side changesets.
+
+          * ``time-added-to``
+              - The date/time that all review requests must be added before.
+                This is compared against the review request's ``time_added``
+                field. See below for information on date/time formats.
+
+          * ``time-added-from``
+              - The earliest date/time the review request could be added.
+                This is compared against the review request's ``time_added``
+                field. See below for information on date/time formats.
+
+          * ``last-updated-to``
+              - The date/time that all review requests must be last updated
+                before. This is compared against the review request's
+                ``last_updated`` field. See below for information on date/time
+                formats.
+
+          * ``last-updated-from``
+              - The earliest date/time the review request could be last
+                updated. This is compared against the review request's
+                ``last_updated`` field. See below for information on date/time
+                formats.
+
+          * ``from-user``
+              - The username that the review requests must be owned by.
+
+          * ``repository``
+              - The ID of the repository that the review requests must be on.
+
+          * ``status``
+              - The status of the review requests. This can be ``pending``,
+                ``submitted`` or ``discarded``.
+
+          * ``to-groups``
+              - A comma-separated list of review group names that the review
+                requests must have in the reviewer list.
+
+          * ``to-user-groups``
+              - A comma-separated list of usernames who are in groups that the
+                review requests must have in the reviewer list.
+
+          * ``to-users``
+              - A comma-separated list of usernames that the review requests
+                must either have in the reviewer list specifically or by way
+                of a group.
+
+          * ``to-users-directly``
+              - A comma-separated list of usernames that the review requests
+                must have in the reviewer list specifically.
+
+        Some arguments accept dates. The handling of dates is quite flexible,
+        accepting a variety of date/time formats, but we recommend sticking
+        with ISO8601 format.
+
+        ISO8601 format defines a date as being in ``{yyyy}-{mm}-{dd}`` format,
+        and a date/time as being in ``{yyyy}-{mm}-{dd}T{HH}:{MM}:{SS}``.
+        A timezone can also be appended to this, using ``-{HH:MM}``.
+
+        The following examples are valid dates and date/times:
+
+            * ``2010-06-27``
+            * ``2010-06-27T16:26:30``
+            * ``2010-06-27T16:26:30-08:00``
         """
         q = Q()
 
@@ -2018,6 +2065,30 @@ class ReviewRequestResource(WebAPIResource):
 
             if 'changenum' in request.GET:
                 q = q & Q(changenum=int(request.GET.get('changenum')))
+
+            if 'time-added-from' in request.GET:
+                date = self._parse_date(request.GET['time-added-from'])
+
+                if date:
+                    q = q & Q(time_added__gte=date)
+
+            if 'time-added-to' in request.GET:
+                date = self._parse_date(request.GET['time-added-to'])
+
+                if date:
+                    q = q & Q(time_added__lt=date)
+
+            if 'last-updated-from' in request.GET:
+                date = self._parse_date(request.GET['last-updated-from'])
+
+                if date:
+                    q = q & Q(last_updated__gte=date)
+
+            if 'last-updated-to' in request.GET:
+                date = self._parse_date(request.GET['last-updated-to'])
+
+                if date:
+                    q = q & Q(last_updated__lt=date)
 
             status = string_to_status(request.GET.get('status', 'pending'))
 
@@ -2142,6 +2213,13 @@ class ReviewRequestResource(WebAPIResource):
         return 200, {
             self.item_result_key: review_request,
         }
+
+    def _parse_date(self, timestamp_str):
+        try:
+            return dateutil.parser.parse(timestamp_str)
+        except ValueError:
+            return None
+
 
 review_request_resource = ReviewRequestResource()
 
