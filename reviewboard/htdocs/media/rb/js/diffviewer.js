@@ -477,9 +477,8 @@ $.fn.diffFile = function(lines, key) {
                 }
 
                 if (selection.begin != null) {
-                    /* We have an active selection. */
                     if (relTarget != null && isLineNumCell(relTarget)) {
-                        removeRowFromSelectionIfUnselected($(relTarget.parentNode));
+                        removeOldRowsFromSelection($(relTarget.parentNode));
                     }
                 } else if (node != null && isLineNumCell(node[0])) {
                     /*
