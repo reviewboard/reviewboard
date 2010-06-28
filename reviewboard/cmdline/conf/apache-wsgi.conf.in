@@ -7,7 +7,7 @@
 
         WSGIScriptAlias "@siteroot@" "@sitedir@/htdocs/reviewboard.wsgi"
 
-	<Directory "/home/johny/reviewboard/rbsite/htdocs">
+	<Directory "@sitedir@/htdocs">
 		AllowOverride All
 	</Directory>
 
