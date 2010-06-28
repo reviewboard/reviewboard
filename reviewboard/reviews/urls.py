@@ -43,8 +43,8 @@ urlpatterns = patterns('reviewboard.reviews.views',
      'diff_fragment'),
 
     # Screenshots
-    (r'^(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',
-     'view_screenshot'),
+    url(r'^(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',
+     'view_screenshot', name='view_screenshot'),
 
     (r'^(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/delete/$',
      'delete_screenshot'),
