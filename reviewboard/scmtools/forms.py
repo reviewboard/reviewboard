@@ -107,7 +107,7 @@ class RepositoryForm(forms.ModelForm):
                 },
                 'CVS': {
                     'path': ':pserver:anonymous@%(hosting_project_name)s'
-                            '.cvs.sourceforge.net/cvsroot/'
+                            '.cvs.sourceforge.net:/cvsroot/'
                             '%(hosting_project_name)s',
                     'mirror_path': '%(hosting_project_name)s'
                                    '.cvs.sourceforge.net/cvsroot/'
