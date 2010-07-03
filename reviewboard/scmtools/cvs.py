@@ -232,12 +232,17 @@ class CVSClient:
             pos = filename.rfind('/')
             filenameAttic = filename[0:pos] + "/Attic" + filename[pos:]
         else:
-            filenameAttic = "/Attic/" + filename
+            # There isn't any path information, so we can't provide an
+            # Attic path that makes any kind of sense.
+            filenameAttic = None
 
         try:
             return self._cat_specific_file(filename, revision)
         except FileNotFoundError:
-            return self._cat_specific_file(filenameAttic, revision)
+            if filenameAttic:
+                return self._cat_specific_file(filenameAttic, revision)
+            else:
+                raise
 
     def _cat_specific_file(self, filename, revision):
         # Somehow CVS sometimes seems to write .cvsignore files to current
