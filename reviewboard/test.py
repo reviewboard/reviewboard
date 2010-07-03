@@ -27,6 +27,7 @@ import os
 import platform
 import shutil
 import sys
+import tempfile
 
 import pkg_resources
 import nose
@@ -47,7 +48,7 @@ from django.test.utils import setup_test_environment, teardown_test_environment
 
 def setup_media_dirs():
     old_media_root = settings.MEDIA_ROOT
-    settings.MEDIA_ROOT = "/tmp/reviewboard-tests"
+    settings.MEDIA_ROOT = tempfile.mkdtemp(prefix='rb-tests-')
 
     if os.path.exists(settings.MEDIA_ROOT):
         destroy_media_dirs()
