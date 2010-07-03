@@ -121,16 +121,16 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     exclusion = '|'.join(['setup_test_environment',
                           'teardown_test_environment'])
 
-    nose_argv=['test.py', '-v',
-               '--with-coverage',
-               '--with-doctest', '--doctest-extension=.txt',
-               '-e', exclusion]
+    nose_argv = ['test.py', '-v',
+                 '--with-coverage',
+                 '--with-doctest', '--doctest-extension=.txt',
+                 '-e', exclusion]
 
-    for cover in ['reviewboard', 'djblets']:
-        nose_argv += ['--cover-package=' + cover]
+    nose_argv += ['--cover-package=reviewboard',
+                  '--where=reviewboard']
 
     if '--with-webtests' in sys.argv:
-        nose_argv += ['--cover-package=webtests']
+        nose_argv += ['--where=webtests']
         sys.argv.remove('--with-webtests')
 
     # manage.py captures everything before "--"
