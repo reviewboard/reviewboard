@@ -1,11 +1,10 @@
 import calendar
 from datetime import datetime, timedelta
-import os
 import time
 import urlparse
 
 try:
-    from bzrlib import bzrdir, config, revisionspec
+    from bzrlib import bzrdir, revisionspec
     from bzrlib.errors import NotBranchError
 except ImportError:
     pass

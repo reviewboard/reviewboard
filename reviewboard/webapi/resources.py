@@ -1,23 +1,23 @@
-from datetime import datetime
+import logging
 import re
 
 import dateutil.parser
 from django.conf import settings
+from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.core import WebAPIResponseFormError, \
                                 WebAPIResponsePaginated
 from djblets.webapi.decorators import webapi_login_required, \
-                                      webapi_permission_required, \
                                       webapi_request_fields
-from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
-                                  INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
+                                  PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource, \
                                      RootResource, \
@@ -26,6 +26,8 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.diffviewer.forms import EmptyDiffError
+from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
@@ -36,8 +38,14 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError
 from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.errors import INVALID_REPOSITORY, MISSING_REPOSITORY, \
-                                      REPO_FILE_NOT_FOUND
+from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
+                                      EMPTY_CHANGESET, \
+                                      INVALID_CHANGE_NUMBER, \
+                                      INVALID_REPOSITORY, \
+                                      INVALID_USER, \
+                                      REPO_FILE_NOT_FOUND, \
+                                      REPO_INFO_ERROR, \
+                                      REPO_NOT_IMPLEMENTED
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -296,8 +304,7 @@ class ReviewCommentResource(BaseCommentResource):
         This can update the text or line range of an existing comment.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
             diff_comment = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
@@ -353,8 +360,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
         must be a draft reply.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             reply = review_reply_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -755,13 +761,16 @@ class RepositoryInfoResource(WebAPIResource):
     def get(self, request, *args, **kwargs):
         """Returns repository-specific information from a server."""
         try:
-            repository = repository_resource.get_object(request, *args, **kwargs)
+            repository = repository_resource.get_object(request, *args,
+                                                        **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         try:
+            tool = repository.get_scmtool()
+
             return 200, {
-                self.item_result_key: repository.get_scmtool().get_repository_info()
+                self.item_result_key: tool.get_repository_info()
             }
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
@@ -870,8 +879,8 @@ class BaseScreenshotResource(WebAPIResource):
             return PERMISSION_DENIED
 
         try:
-            draft = review_request_draft_resource.prepare_draft(request,
-                                                                review_request)
+            review_request_draft_resource.prepare_draft(request,
+                                                        review_request)
         except PermissionDenied:
             return PERMISSION_DENIED
 
@@ -1176,7 +1185,6 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         ``invalid_entries`` is a list of validation errors.
         """
-        result = None
         modified_objects = []
         invalid_entries = []
 
@@ -1201,12 +1209,9 @@ class ReviewRequestDraftResource(WebAPIResource):
                     target.add(obj)
                 except:
                     invalid_entries.append(value)
-
-            result = target.all()
         elif field_name == 'bugs_closed':
             data = list(self._sanitize_bug_ids(data))
             setattr(draft, field_name, ','.join(data))
-            result = data
         elif field_name == 'changedescription':
             if not draft.changedesc:
                 invalid_entries.append('Change descriptions cannot be used '
@@ -1215,13 +1220,11 @@ class ReviewRequestDraftResource(WebAPIResource):
                 draft.changedesc.text = data
 
                 modified_objects.append(draft.changedesc)
-                result = data
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')
             else:
                 setattr(draft, field_name, data)
-                result = data
 
         return data, modified_objects, invalid_entries
 
@@ -1428,8 +1431,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         being replied to, but may contain new text.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             reply = review_reply_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1593,8 +1595,7 @@ class BaseReviewResource(WebAPIResource):
         be updated.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1633,8 +1634,7 @@ class ReviewReplyDraftResource(WebAPIResource):
     @webapi_login_required
     def get(self, request, *args, **kwargs):
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
             reply = review.get_pending_reply(request.user)
         except ObjectDoesNotExist:
@@ -1762,9 +1762,8 @@ class ReviewReplyResource(BaseReviewResource):
         be updated.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
-            review = review_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
+            review_resource.get_object(request, *args, **kwargs)
             reply = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1777,8 +1776,6 @@ class ReviewReplyResource(BaseReviewResource):
             # Can't modify published replies or those not belonging
             # to the user.
             return PERMISSION_DENIED
-
-        invalid_fields = {}
 
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)

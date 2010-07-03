@@ -1,5 +1,4 @@
 import fnmatch
-import logging
 import os
 import re
 import subprocess
@@ -529,7 +528,6 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     assert filediff
 
     file = filediff.source_file
-    revision = filediff.source_revision
 
     old = get_original_file(filediff)
     new = get_patched_file(old, filediff)
@@ -764,7 +762,7 @@ def opcodes_with_metadata(differ):
         while i_move_cur <= ij2:
             try:
                 iline = differ.b[i_move_cur].strip()
-            except IndexError, e:
+            except IndexError:
                 iline = None
 
             if iline is not None and iline in removes:
@@ -970,12 +968,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
 
     files = []
-    index = 0
 
     for parts in filediff_parts:
         filediff, interfilediff, force_interdiff = parts
 
-        filediff_revision_str = get_revision_str(filediff.source_revision)
         newfile = (filediff.source_revision == PRE_CREATION)
 
         if interdiffset:

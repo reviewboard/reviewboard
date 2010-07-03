@@ -4,14 +4,11 @@ import sys
 
 from django import forms
 from django.utils.datastructures import SortedDict
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import BadHostKeyError, \
-                                        FileNotFoundError, \
-                                        SCMError, \
                                         UnknownHostKeyError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Tool
@@ -622,7 +619,7 @@ class RepositoryForm(forms.ModelForm):
         for field in fields:
             try:
                 field_data[field] = m.group(field)
-            except IndexError, e:
+            except IndexError:
                 pass
 
         return True, field_data

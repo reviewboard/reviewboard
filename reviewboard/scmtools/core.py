@@ -1,5 +1,4 @@
 import logging
-import os
 import urlparse
 
 import reviewboard.diffviewer.parser as diffparser
@@ -68,7 +67,7 @@ class SCMTool(object):
         try:
             self.get_file(path, revision)
             return True
-        except FileNotFoundError, e:
+        except FileNotFoundError:
             return False
 
     def parse_diff_revision(self, file_str, revision_str):

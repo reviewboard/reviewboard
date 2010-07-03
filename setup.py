@@ -6,14 +6,12 @@
 # MacOS X and data files installation.
 
 import os
-import shutil
 import sys
 
 from ez_setup import use_setuptools
 use_setuptools()
 
 from setuptools import setup, find_packages
-from setuptools.command.build_py import build_py
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 

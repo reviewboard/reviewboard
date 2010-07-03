@@ -1,7 +1,6 @@
 from django import template
 from django.conf import settings
 from django.db.models import Q
-from django.db.models.query import QuerySet
 from django.template import NodeList, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils import simplejson

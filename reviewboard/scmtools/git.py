@@ -267,8 +267,6 @@ class GitClient(object):
                 stdout=subprocess.PIPE,
                 close_fds=(os.name != 'nt')
             )
-            contents = p.stdout.read()
-            errmsg = p.stderr.read()
             failure = p.wait()
 
             if failure:
@@ -283,7 +281,6 @@ class GitClient(object):
             stdout=subprocess.PIPE,
             close_fds=(os.name != 'nt')
         )
-        contents = p.stdout.read()
         errmsg = p.stderr.read()
         failure = p.wait()
 

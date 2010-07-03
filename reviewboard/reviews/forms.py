@@ -1,6 +1,5 @@
 import logging
 import re
-import sre_constants
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple

@@ -1,5 +1,4 @@
 import logging
-import re
 import urllib2
 
 try:
@@ -7,7 +6,7 @@ try:
 except ImportError:
     from urllib import quote as urllib_quote
 
-from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
+from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.git import GitDiffParser
 from reviewboard.scmtools.core import \
     FileNotFoundError, SCMTool, HEAD, PRE_CREATION

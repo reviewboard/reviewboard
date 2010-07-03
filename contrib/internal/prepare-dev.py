@@ -3,7 +3,6 @@
 import os
 import pkg_resources
 import platform
-import shutil
 import sys
 from random import choice
 

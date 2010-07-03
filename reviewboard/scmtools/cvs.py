@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import tempfile
+import urlparse
 
 from djblets.util.filesystem import is_exe_in_path
 

@@ -1,7 +1,6 @@
 import imp
 import os
 import nose
-import unittest
 
 from django.test import TestCase as DjangoTestCase
 try:
@@ -740,7 +739,7 @@ class GitTests(DjangoTestCase):
         """Testing parsing Git diff new file, no content"""
         diff = self._readFixture('git_newfile_nocontent.diff')
         files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(self.tool.get_parser(diff).parse()), 0)
+        self.assertEqual(len(files), 0)
 
     def testNewfileNoContentWithFollowingDiff(self):
         """Testing parsing Git diff new file, no content, with following"""
