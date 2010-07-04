@@ -141,6 +141,22 @@ class DiffCompatError(Exception):
     pass
 
 
+class NoWrapperHtmlFormatter(HtmlFormatter):
+    """An HTML Formatter for Pygments that don't wrap items in a div."""
+    def __init__(self, *args, **kwargs):
+        super(NoWrapperHtmlFormatter, self).__init__(*args, **kwargs)
+
+    def _wrap_div(self, inner):
+        """
+        Method called by the formatter to wrap the contents of inner.
+        Inner is a list of tuples containing formatted code. If the first item
+        in the tuple is zero, then it's a wrapper, so we should ignore it.
+        """
+        for tup in inner:
+            if tup[0]:
+                yield tup
+
+
 def Differ(a, b, ignore_space=False,
            compat_version=DEFAULT_DIFF_COMPAT_VERSION):
     """
@@ -490,7 +506,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         except AttributeError:
             pass
 
-        return pygments.highlight(data, lexer, HtmlFormatter()).splitlines()
+        return pygments.highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
 
     # There are three ways this function is called:
