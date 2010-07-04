@@ -475,28 +475,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
             self.title = _(u"All Incoming Review Requests")
 
         # Pre-load all querysets for the sidebar.
-        self.counts = {
-            'outgoing': ReviewRequest.objects.from_user(user, user).count(),
-            'incoming': ReviewRequest.objects.to_user(user, user).count(),
-            'to-me': ReviewRequest.objects.to_user_directly(user, user).count(),
-            'starred': profile.starred_review_requests.public(user).count(),
-            'mine': ReviewRequest.objects.from_user(user, user, None).count(),
-            'groups': {}
-        }
-
-        q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
-        group_names = list(q.values_list('name', flat=True))
-
-        q = Group.objects.filter(name__in=group_names)
-        q = q.filter((Q(review_requests__public=True) |
-                      Q(review_requests__submitter=user)) &
-                      Q(review_requests__submitter__is_active=True) &
-                      Q(review_requests__status='P'))
-        q = q.annotate(Count('review_requests'))
-
-        for group in q.values('name', 'review_requests__count'):
-            self.counts['groups'][group['name']] = \
-                group['review_requests__count']
+        self.counts = get_sidebar_counts(user)
 
         return False
 
@@ -567,7 +546,42 @@ class WatchedGroupDataGrid(GroupDataGrid):
     """
     def __init__(self, request, title=_("Watched groups"), *args, **kwargs):
         GroupDataGrid.__init__(self, request, title=title, *args, **kwargs)
-        self.queryset = request.user.get_profile().starred_groups.all()
+        user = request.user
+        profile = user.get_profile()
+        self.queryset = profile.starred_groups.all()
+
+        # Pre-load all querysets for the sidebar.
+        self.counts = get_sidebar_counts(user)
 
     def link_to_object(self, group, value):
         return ".?view=to-group&group=%s" % group.name
+
+
+def get_sidebar_counts(user):
+    """Returns counts used for the Dashboard sidebar."""
+    profile = user.get_profile()
+
+    counts = {
+        'outgoing': ReviewRequest.objects.from_user(user, user).count(),
+        'incoming': ReviewRequest.objects.to_user(user, user).count(),
+        'to-me': ReviewRequest.objects.to_user_directly(user, user).count(),
+        'starred': profile.starred_review_requests.public(user).count(),
+        'mine': ReviewRequest.objects.from_user(user, user, None).count(),
+        'groups': {}
+    }
+
+    q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
+    group_names = list(q.values_list('name', flat=True))
+
+    q = Group.objects.filter(name__in=group_names)
+    q = q.filter((Q(review_requests__public=True) |
+                  Q(review_requests__submitter=user)) &
+                  Q(review_requests__submitter__is_active=True) &
+                  Q(review_requests__status='P'))
+    q = q.annotate(Count('review_requests'))
+
+    for group in q.values('name', 'review_requests__count'):
+        counts['groups'][group['name']] = \
+            group['review_requests__count']
+
+    return counts
