@@ -1288,6 +1288,10 @@ $(document).ready(function() {
             });
     });
 
+    $("pre.reviewtext, #description, #testing_done").each(function() {
+        $(this).html(linkifyText($(this).text()));
+    });
+
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
             $(".editable").each(function() {
@@ -1309,14 +1313,6 @@ $(document).ready(function() {
                     });
             });
 
-            var description = $("#description");
-            var testing_done = $("#testing_done");
-
-            if (description.length > 0) {
-                description.html(linkifyText(description.text()));
-                testing_done.html(linkifyText(testing_done.text()));
-            }
-
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");
 
@@ -1332,10 +1328,6 @@ $(document).ready(function() {
                     .reviewsAutoComplete("users", "username");
             }
         }
-
-        $("pre.reviewtext").each(function() {
-            $(this).html(linkifyText($(this).text()));
-        });
     }
 
     loadDiffFragments("diff_fragments", "comment_container");
