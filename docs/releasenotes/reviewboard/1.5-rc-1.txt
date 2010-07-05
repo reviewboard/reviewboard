@@ -2,7 +2,7 @@
 Review Board 1.5 RC 1 Release Notes
 ===================================
 
-**Release date**: July 4, 2010
+**Release date**: July 5, 2010
 
 
 This release contains all bug fixes and features found in Review Board version
