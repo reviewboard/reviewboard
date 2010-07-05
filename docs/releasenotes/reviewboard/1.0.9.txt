@@ -2,7 +2,7 @@
 Review Board 1.0.9 Release Notes
 ================================
 
-**Release date**: June 4, 2010
+**Release date**: June 5, 2010
 
 
 Compatibility Changes
@@ -11,12 +11,12 @@ Compatibility Changes
 * Review Board 1.0.9 works better with Django 1.2 out of the box and fixes
   some compatibility problems with database migration.
 
-* Switched to using cmemcache instead of python-memcached. (:bug:`1446`)
+* Switched to using python-memcached instead of cmemcache. (:bug:`1446`)
 
-  python-memcached has been discontinued and is no longer supported. We've
-  switched to cmemcache, which is a pure Python interface to memcached.
-  cmemcache can run on any system that Review Board supports, and Review
-  Board will actually install it for you.
+  cmemcache has been discontinued and is no longer supported. We've switched
+  to python-memcached, which is a pure Python interface to memcached.
+  python-memcached can run on any system that Review Board supports, and
+  Review Board will actually install it for you.
 
 
 Bugs Fixed
