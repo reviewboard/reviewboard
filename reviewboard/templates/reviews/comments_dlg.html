@@ -15,6 +15,10 @@
   </p>
 {% endif %}
   <textarea id="comment_text" name="text" rows="6" cols="30"></textarea>
+  <div id="comment-issue-options">
+   <input type="checkbox" name="comment_issue" id="comment_issue" value="True" />
+   <label for="comment_issue">{% trans "Open an issue" %}</label>
+  </div>
   <div class="status"></div>
   <div class="buttons">
    <input type="button" id="comment_save" value="{% trans "Save" %}" />

@@ -1,6 +1,7 @@
 {% load i18n %}
 {% load reviewtags %}
   <div id="{{context_id}}-{{review.id}}">
+   <div class="issue-indicator"></div>
    <ol class="reply-comments">
     {% reply_list review comment context_type context_id %}
    </ol>
@@ -10,13 +11,32 @@
    </ul>
 {% endif %}
   </div>
-{% if user.is_authenticated %}
+
   <script language="javascript">
   $(document).ready(function() {
+{% if user.is_authenticated %}
       $("#{{context_id}}-{{review.id}}").commentSection(
           "{{review.id}}",
           {% if comment %}"{{comment.id}}"{% else %}null{% endif %},
           "{{context_type}}");
+{% endif %}
+
+{% if comment.issue_opened %}
+      var comment_issue = $('<div/>').reviewDetailIssue({
+          'review_request_id':{{review.review_request.id}},
+          'review_id': {{review.id}},
+          'comment_id': {{comment.id}},
+          'issue_status': '{{issue_status}}',
+          'api_key': '{{api_key}}'
+      }).issueUI();
+
+      if(window['gEditable']) {
+        comment_issue.issueButtons();
+      }
+
+      comment_issue.appendTo($("#{{context_id}}-{{review.id}} .issue-indicator"));
+{% endif %}
+
   });
   </script>
-{% endif %}
+

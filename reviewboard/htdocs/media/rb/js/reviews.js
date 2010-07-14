@@ -476,6 +476,198 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 };
 
 
+$.fn.reviewDetailIssue = function(params) {
+    var self = this;
+    self.params = params;
+
+    this.set_issue_status = function(status) {
+        self.params['issue_status'] = status;
+    }
+
+    this.get_issue_status = function() {
+        return self.params['issue_status'];
+    }
+
+    this.get_review_request_id = function() {
+        return self.params['review_request_id'];
+    }
+
+    this.get_review_id = function() {
+        return self.params['review_id'];
+    }
+
+    this.get_comment_id = function() {
+        return self.params['comment_id'];
+    }
+
+    this.get_api_key = function() {
+        return self.params['api_key'];
+    }
+
+    this.on_response = function(response) {
+        registerForUpdates(response['issue']['last_activity_time']);
+    }
+
+    return this;
+}
+
+
+$.fn.inlineIssue = function(comments, comment_index) {
+    var self = this;
+
+    this.set_issue_status = function(status) {
+        comments[comment_index].issue_status = status;
+    }
+
+    this.get_issue_status = function() {
+        return comments[comment_index].issue_status;
+    }
+
+    this.get_review_request_id = function() {
+        return comments[comment_index].review_request_id;
+    }
+
+    this.get_review_id = function() {
+        return comments[comment_index].review_id;
+    }
+
+    this.get_comment_id = function() {
+        return comments[comment_index].comment_id;
+    }
+
+    this.get_api_key = function() {
+        return comments[comment_index].api_key;
+    }
+
+    this.on_response = function(response) {
+        return;
+    }
+
+    return this;
+}
+
+$.fn.issueUI = function() {
+    var self = this;
+
+    self.addClass('issue');
+    var msg = $('<span/>').addClass('message').appendTo(self);
+
+    this.appear_as_state = function(state){
+        self.removeClass('open_issue');
+        self.removeClass('resolved_issue');
+        self.removeClass('dropped_issue');
+
+        switch(state) {
+            case 'open':
+                self.addClass('open_issue');
+                msg.text('An issue was opened.');
+                break;
+            case 'resolved':
+                self.addClass('resolved_issue');
+                msg.text('Issue resolved. Thanks!');
+                break;
+            case 'dropped':
+                self.addClass('dropped_issue');
+                msg.text('Issue dropped.');
+                break;
+        }
+    }
+
+    self.appear_as_state(self.get_issue_status());
+
+    return this;
+}
+
+
+$.fn.issueButtons = function() {
+
+    var self = this;
+
+    var buttons = $('<div/>').addClass('buttons').appendTo(self);
+
+    var fixed_button = $('<input type="button" value="Fixed"/>')
+        .click(function() {
+            self.save('resolved');
+        }).appendTo(buttons).hide();
+
+    var drop_button = $('<input type="button" value="Drop"/>')
+        .click(function() {
+            self.save('dropped');
+        }).appendTo(buttons).hide();
+
+    var reopen_button = $('<input type="button" value="Reopen"/>')
+        .click(function() {
+            self.save('open');
+        }).appendTo(buttons).hide();
+
+    this.set_state = function(state) {
+        drop_button.hide();
+        reopen_button.hide();
+        fixed_button.hide();
+
+        switch(state) {
+            case 'open':
+                self.state_open();
+                self.appear_as_state('open');
+                break;
+            case 'dropped':
+                self.state_dropped();
+                self.appear_as_state('dropped');
+                break;
+            case 'resolved':
+                self.state_resolved();
+                self.appear_as_state('resolved');
+                break;
+        }
+    }
+
+    this.state_open = function() {
+        self.set_issue_status('open');
+        drop_button.show();
+        fixed_button.show();
+    }
+
+    this.state_resolved = function() {
+        self.set_issue_status('resolved');
+        self.addClass('resolved_issue');
+        reopen_button.show();
+    }
+
+    this.state_dropped = function() {
+        self.set_issue_status('dropped');
+        self.addClass('dropped_issue');
+        reopen_button.show();
+    }
+
+    this.save = function(status) {
+        review_request_id = self.get_review_request_id();
+        review_id = self.get_review_id();
+        comment_id = self.get_comment_id();
+        api_key = self.get_api_key();
+
+        var path = "/api/review-requests/" + review_request_id +
+                   "/reviews/" + review_id +
+                   "/" + api_key + "/" + comment_id + "/issue/";
+
+        rbApiCall({
+            type: "PUT",
+            data: {'status': status},
+            url: path,
+            success: this.on_success
+        });
+    }
+
+    this.on_success = function(response) {
+        self.set_state(response['issue']['status']);
+        self.on_response(response);
+    }
+
+    this.set_state(self.get_issue_status());
+
+    return this;
+}
+
+
 /*
  * Creates a floating reply banner. The banner will stay in view while the
  * parent review is visible on screen.
@@ -584,6 +776,7 @@ $.fn.floatReplyDraftBanner = function() {
  * @return {jQuery} This jQuery.
  */
 $.fn.commentDlg = function() {
+    var DIALOG_TOTAL_HEIGHT = 250;
     var SLIDE_DISTANCE = 10;
     var COMMENTS_BOX_WIDTH = 280;
     var FORM_BOX_WIDTH = 380;
@@ -603,6 +796,13 @@ $.fn.commentDlg = function() {
     var actionField  = $("#comment_action", draftForm);
     var buttons      = $(".buttons", draftForm);
     var statusField  = $(".status", draftForm);
+    var issueOptions = $("#comment-issue-options", draftForm);
+
+    var issueField   = $("#comment_issue", draftForm)
+        .click(function() {
+            saveButton.attr("disabled", textField.val() == "");
+            self.make_dirty();
+        });
     var cancelButton = $("#comment_cancel", draftForm)
         .click(function() {
             comment.deleteIfEmpty();
@@ -616,6 +816,7 @@ $.fn.commentDlg = function() {
     var saveButton = $("#comment_save", this)
         .click(function() {
             comment.setText(textField.val());
+            comment.setIssueOpened(issueField.attr('checked'));
             comment.save();
             self.close();
         });
@@ -649,10 +850,7 @@ $.fn.commentDlg = function() {
             saveButton.attr("disabled", textField.val() == "");
 
             if (dirty && !oldDirty) {
-                statusField.html("This comment has unsaved changes.");
-                self.handleResize();
-
-                oldDirty = dirty;
+                self.make_dirty();
             }
 
             e.stopPropagation();
@@ -756,6 +954,19 @@ $.fn.commentDlg = function() {
     };
 
     /*
+     * Marks the comment dialog as "dirty".
+     *
+     * @return {jQuery} This jQuery.
+     */
+    this.make_dirty = function() {
+        statusField.html("This comment has unsaved changes.");
+        self.handleResize();
+
+        oldDirty = dirty;
+        return this;
+    }
+
+    /*
      * Opens the comment dialog and focuses the text field.
      *
      * @return {jQuery} This jQuery.
@@ -791,6 +1002,7 @@ $.fn.commentDlg = function() {
     this.close = function() {
         if (self.is(":visible")) {
             textField.val("");
+            issueField.attr("checked", false)
             self.animate({
                 top: "-=" + SLIDE_DISTANCE + "px",
                 opacity: 0
@@ -834,12 +1046,25 @@ $.fn.commentDlg = function() {
                 var header = $("<h2/>").appendTo(item).html(this.user.name);
                 var actions = $('<span class="actions"/>')
                     .appendTo(header);
+
                 $('<a href="' + this.url + '">View</a>').appendTo(actions);
                 $('<a href="' + gReviewRequestPath +
                   '?reply_id=' + this.comment_id +
                   '&reply_type=' + replyType + '">Reply</a>')
                     .appendTo(actions);
                 $("<pre/>").appendTo(item).text(this.text);
+
+                if(this.issue_opened) {
+                    var issue = $('<div/>')
+                        .inlineIssue(comments, i)
+                        .issueUI();
+
+                    if (window["gEditable"]) {
+                        issue.issueButtons();
+                    }
+
+                    issue.appendTo(item);
+                }
 
                 item.appendTo(commentsList);
 
@@ -865,7 +1090,7 @@ $.fn.commentDlg = function() {
 
         self
             .width(width)
-            .height(250);
+            .height(DIALOG_TOTAL_HEIGHT);
 
         return this;
     }
@@ -887,6 +1112,7 @@ $.fn.commentDlg = function() {
 
         comment.ready(function() {
             textField.val(comment.text);
+            issueField.attr('checked', comment.issue_opened)
             dirty = false;
 
             /* Set the initial button states */
@@ -938,6 +1164,7 @@ $.fn.commentDlg = function() {
             .height(draftForm.height() - textFieldPos.top -
                     buttons.outerHeight(true) -
                     statusField.height() -
+                    issueOptions.height() -
                     textField.getExtents("bmp", "b"));
 
         return this;

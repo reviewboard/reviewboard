@@ -9,6 +9,8 @@ RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
     this.beginLineNum = beginLineNum;
     this.endLineNum = endLineNum;
     this.text = "";
+    this.issue_opened = false;
+    this.issue_status = null;
     this.loaded = false;
     this.url = null;
 
@@ -35,6 +37,25 @@ $.extend(RB.DiffComment.prototype, {
     },
 
     /*
+     * Sets whether or not the current comment opens
+     * an issue.
+     *
+     * @param {boolean} issue_opened  Whether or not an isue was opened.
+     */
+    setIssueOpened: function(issue_opened) {
+        this.issue_opened = issue_opened;
+    },
+
+    /*
+     * Sets the current status of an issue on the current comment.
+     *
+     * @param {str} issue_status  The status of the issue.
+     */
+    setIssueStatus: function(issue_status) {
+        this.issue_status = issue_status;
+    },
+
+    /*
      * Returns the number of lines that this comment covers.
      *
      * @return {int} The number of lines this comment covers.
@@ -56,6 +77,7 @@ $.extend(RB.DiffComment.prototype, {
                 var url;
                 var data = {
                     text: self.text,
+                    issue_opened: self.issue_opened,
                     first_line: self.beginLineNum,
                     num_lines: self.getNumLines()
                 };
@@ -156,6 +178,7 @@ $.extend(RB.DiffComment.prototype, {
         this.beginLineNum = rsp.diff_comment.first_line;
         this.endLineNum = rsp.diff_comment.num_lines + this.beginLineNum;
         this.links = rsp.diff_comment.links;
+        this.issue_opened = rsp.diff_comment.issue_opened;
         this.url = rsp.diff_comment.links.self.href;
         this.loaded = true;
     }
@@ -1209,6 +1232,8 @@ RB.ScreenshotComment = function(review, id, screenshot_id, x, y, width,
     this.width = width;
     this.height = height;
     this.text = "";
+    this.issue_opened = false;
+    this.issue_status = null;
     this.loaded = false;
     this.url = null;
 
@@ -1235,6 +1260,25 @@ $.extend(RB.ScreenshotComment.prototype, {
     },
 
     /*
+     * Sets whether or not the current comment opens
+     * an issue.
+     *
+     * @param {boolean} issue_opened  Whether or not an isue was opened.
+     */
+    setIssueOpened: function(issue_opened) {
+        this.issue_opened = issue_opened;
+    },
+
+    /*
+     * Sets the current status of an issue on the current comment.
+     *
+     * @param {str} issue_status  The status of the issue.
+     */
+    setIssueStatus: function(issue_status) {
+        this.issue_status = issue_status;
+    },
+
+    /*
      * Saves the comment on the server.
      */
     save: function(options) {
@@ -1253,7 +1297,8 @@ $.extend(RB.ScreenshotComment.prototype, {
                     x: self.x,
                     y: self.y,
                     w: self.width,
-                    h: self.height
+                    h: self.height,
+                    issue_opened: self.issue_opened
                 };
 
                 if (self.loaded) {
@@ -1295,7 +1340,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                     }
                 });
             } else {
-                this._deleteAndDestruct();
+                self._deleteAndDestruct();
             }
         });
     },

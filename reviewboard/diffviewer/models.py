@@ -36,7 +36,8 @@ class FileDiff(models.Model):
     binary = models.BooleanField(_("binary file"), default=False)
     parent_diff = Base64Field(_("parent diff"), db_column="parent_diff_base64",
                               blank=True)
-    status = models.CharField(_("status"), max_length=1, choices=STATUSES)
+    status = models.CharField(_("status"), max_length=1, choices=STATUSES,
+                              default='M')
 
     @property
     def deleted(self):

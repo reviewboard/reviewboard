@@ -886,6 +886,35 @@
   background-color: #F6F6F6;
 }
 
+.issue {
+  padding-bottom: 5px;
+  padding-left: 25px;
+  padding-top: 5px;
+}
+
+.dropped_issue {
+  background: url('../images/flag_green.png') #989898 no-repeat 5px 50%;
+}
+
+.open_issue {
+  background: url('../images/bug.png') #FAFFAA no-repeat 5px 50%;
+}
+
+.resolved_issue {
+  background: url('../images/tick.png') #A6FFA6 no-repeat 5px 50%;
+}
+
+.issue .message {
+  font-size: 90%;
+  font-weight: bold;
+}
+
+.issue .buttons input {
+  border: 1px outset black;
+  font-size: 90%;
+  margin-left: 5px;
+}
+
 
 /****************************************************************************
  * Banners

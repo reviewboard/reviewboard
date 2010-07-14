@@ -1151,6 +1151,19 @@ class Comment(models.Model):
     A comment can belong to a single filediff or to an interdiff between
     two filediffs. It can also have multiple replies.
     """
+
+    UNDEFINED      = ""
+    OPEN           = "O"
+    RESOLVED       = "R"
+    DROPPED        = "D"
+
+    ISSUE_STATUSES = (
+        (UNDEFINED, _('Undefined')),
+        (OPEN,      _('Open')),
+        (RESOLVED,  _('Resolved')),
+        (DROPPED,   _('Dropped')),
+    )
+
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
                                  related_name="comments")
     interfilediff = models.ForeignKey(FileDiff,
@@ -1171,6 +1184,11 @@ class Comment(models.Model):
                                             null=True)
 
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
+
+    issue_opened = models.BooleanField(_("issue opened"), default=False)
+    issue_status = models.CharField(_("issue status"), max_length=1,
+                                    choices=ISSUE_STATUSES, default=UNDEFINED,
+                                    db_index=True)
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
@@ -1220,6 +1238,28 @@ class Comment(models.Model):
         else:
             return self.text
 
+    @staticmethod
+    def status_to_string(status):
+        if status == "O":
+            return "open"
+        elif status == "R":
+            return "resolved"
+        elif status == "D":
+            return "dropped"
+        else:
+            return "undefined"
+
+    @staticmethod
+    def string_to_status(status):
+        if status == "open":
+            return "O"
+        elif status == "resolved":
+            return "R"
+        elif status == "dropped":
+            return "D"
+        else:
+            return ""
+
     class Meta:
         ordering = ['timestamp']
 
@@ -1228,6 +1268,19 @@ class ScreenshotComment(models.Model):
     """
     A comment on a screenshot.
     """
+
+    UNDEFINED      = ""
+    OPEN           = "O"
+    RESOLVED       = "R"
+    DROPPED        = "D"
+
+    ISSUE_STATUSES = (
+        (UNDEFINED, _('Undefined')),
+        (OPEN,      _('Open')),
+        (RESOLVED,  _('Resolved')),
+        (DROPPED,   _('Dropped')),
+    )
+
     screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
                                    related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
@@ -1235,6 +1288,11 @@ class ScreenshotComment(models.Model):
                                  verbose_name=_("reply to"))
     timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
     text = models.TextField(_('comment text'))
+
+    issue_opened = models.BooleanField(_("issue opened"), default=False)
+    issue_status = models.CharField(_("issue status"), max_length=1,
+                                    choices=ISSUE_STATUSES, default=UNDEFINED,
+                                    db_index=True)
 
     # This is a sub-region of the screenshot.  Null X indicates the entire
     # image.
@@ -1288,6 +1346,28 @@ class ScreenshotComment(models.Model):
 
     def __unicode__(self):
         return self.text
+
+    @staticmethod
+    def status_to_string(status):
+        if status == "O":
+            return "open"
+        elif status == "R":
+            return "resolved"
+        elif status == "D":
+            return "dropped"
+        else:
+            return "undefined"
+
+    @staticmethod
+    def string_to_status(status):
+        if status == "open":
+            return "O"
+        elif status == "resolved":
+            return "R"
+        elif status == "dropped":
+            return "D"
+        else:
+            return ""
 
     class Meta:
         ordering = ['timestamp']

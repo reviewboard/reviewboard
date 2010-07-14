@@ -95,18 +95,24 @@ def commentcounts(context, filediff, interfilediff=None):
 
     Each entry in the array has a dictionary containing the following keys:
 
-      =========== ==================================================
-      Key         Description
-      =========== ==================================================
-      comment_id  The ID of the comment
-      text        The text of the comment
-      line        The first line number
-      num_lines   The number of lines this comment spans
-      user        A dictionary containing "username" and "name" keys
-                  for the user
-      url         The URL to the comment
-      localdraft  True if this is the current user's draft comment
-      =========== ==================================================
+      ================== ====================================================
+      Key                Description
+      ================== ====================================================
+      comment_id         The ID of the comment
+      text               The text of the comment
+      line               The first line number
+      num_lines          The number of lines this comment spans
+      user               A dictionary containing "username" and "name" keys
+                         for the user
+      url                The URL to the comment
+      localdraft         True if this is the current user's draft comment
+      issue_opened       True if this comment opens an issue
+      issue_status       The current status of an opened issue
+      review_id          The ID of the review this comment is associated with
+      review_request_id  The ID of the review request this comment is
+                         associated with
+      api_key            The key to the resource
+      ================== ====================================================
     """
     comment_dict = {}
     user = context.get('user', None)
@@ -137,6 +143,11 @@ def commentcounts(context, filediff, interfilediff=None):
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and \
                               not review.public,
+                'issue_opened': comment.issue_opened,
+                'issue_status': Comment.status_to_string(comment.issue_status),
+                'review_id': review.id,
+                'review_request_id': review.review_request.id,
+                'api_key': 'diff-comments',
             })
 
     comments_array = []
@@ -162,16 +173,22 @@ def screenshotcommentcounts(context, screenshot):
 
     Each entry in the array has a dictionary containing the following keys:
 
-      =========== ==================================================
-      Key         Description
-      =========== ==================================================
-      text        The text of the comment
-      localdraft  True if this is the current user's draft comment
-      x           The X location of the comment's region
-      y           The Y location of the comment's region
-      w           The width of the comment's region
-      h           The height of the comment's region
-      =========== ==================================================
+      ================== ====================================================
+      Key                Description
+      ================== ====================================================
+      text               The text of the comment
+      localdraft         True if this is the current user's draft comment
+      x                  The X location of the comment's region
+      y                  The Y location of the comment's region
+      w                  The width of the comment's region
+      h                  The height of the comment's region
+      issue_opened       True if this comment opens an issue
+      issue_status       The current status of an opened issue
+      review_id          The ID of the review this comment is associated with
+      review_request_id  The ID of the review request this comment is
+                         associated with
+      api_key            The key to the resource
+      ================== ====================================================
     """
     comments = {}
     user = context.get('user', None)
@@ -184,7 +201,7 @@ def screenshotcommentcounts(context, screenshot):
                                         comment.x, comment.y)
 
             comments.setdefault(position, []).append({
-                'id': comment.id,
+                'comment_id': comment.id,
                 'text': comment.text,
                 'user': {
                     'username': review.user.username,
@@ -197,6 +214,11 @@ def screenshotcommentcounts(context, screenshot):
                 'y' : comment.y,
                 'w' : comment.w,
                 'h' : comment.h,
+                'issue_opened': comment.issue_opened,
+                'issue_status': ScreenshotComment.status_to_string(comment.issue_status),
+                'review_id': review.id,
+                'review_request_id': review.review_request.id,
+                'api_key': 'screenshot-comments',
             })
 
     return simplejson.dumps(comments)
@@ -290,18 +312,25 @@ def reply_section(context, review, comment, context_type, context_id):
     is responsible for invoking :tag:`reply_list` and as such passes these
     variables through. It does not make use of them itself.
     """
+    issue_status = ""
+    api_key = 'diff-comments'
+
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
+            api_key = 'screenshot-comments'
         context_id += str(comment.id)
+        issue_status = Comment.status_to_string(comment.issue_status)
 
     return {
         'review': review,
         'comment': comment,
+        'issue_status': issue_status,
         'context_type': context_type,
         'context_id': context_id,
         'user': context.get('user', None),
         'local_site_name': context.get('local_site_name'),
+        'api_key': api_key,
     }
 
 
