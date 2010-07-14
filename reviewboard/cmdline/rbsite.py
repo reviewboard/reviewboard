@@ -35,6 +35,10 @@ except:
 # Reset the warnings so we don't ignore everything.
 warnings.resetwarnings()
 
+# But then ignore the PendingDeprecationWarnings that we'll get from Django.
+# See bug 1683.
+warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+
 
 VERSION = "0.1"
 DEBUG = False
@@ -48,7 +52,7 @@ ui = None
 
 
 class Dependencies(object):
-    memcached_modules = ["cmemcache", "memcache"]
+    memcached_modules = ["memcache"]
     sqlite_modules = ["pysqlite2", "sqlite3"]
     mysql_modules = ["MySQLdb"]
     postgresql_modules = ["psycopg2"]
@@ -234,6 +238,7 @@ class Site(object):
     def generate_config_files(self):
         web_conf_filename = ""
         enable_fastcgi = False
+        enable_wsgi = False
 
         if self.web_server_type == "apache":
             if self.python_loader == "modpython":
@@ -241,6 +246,9 @@ class Site(object):
             elif self.python_loader == "fastcgi":
                 web_conf_filename = "apache-fastcgi.conf"
                 enable_fastcgi = True
+            elif self.python_loader == "wsgi":
+                web_conf_filename = "apache-wsgi.conf"
+                enable_wsgi = True
             else:
                 # Should never be reached.
                 assert False
@@ -263,6 +271,11 @@ class Site(object):
             self.process_template("cmdline/conf/reviewboard.fcgi.in",
                                   fcgi_filename)
             os.chmod(fcgi_filename, 0755)
+        elif enable_wsgi:
+            wsgi_filename = os.path.join(htdocs_dir, "reviewboard.wsgi")
+            self.process_template("cmdline/conf/reviewboard.wsgi.in",
+                                  wsgi_filename)
+            os.chmod(wsgi_filename, 0755)
 
         # Generate a secret key based on Django's code.
         secret_key = ''.join([
@@ -1117,7 +1130,7 @@ class InstallCommand(Command):
         group.add_option("--web-server-type",
                          help="web server (apache or lighttpd)")
         group.add_option("--python-loader",
-                         help="python loader for apache (modpython or fastcgi)")
+                         help="python loader for apache (modpython, fastcgi or wsgi)")
         group.add_option("--admin-user", default="admin",
                          help="the site administrator's username")
         group.add_option("--admin-password",
@@ -1179,6 +1192,13 @@ class InstallCommand(Command):
         # Make sure we can create the directory first.
         try:
             # TODO: Do some chown tests too.
+
+            if os.path.exists(site.install_dir):
+                # Remove it first, to see if we own it and to handle the
+                # case where the directory is empty as a result of a
+                # previously canceled install.
+                os.rmdir(site.install_dir)
+
             os.mkdir(site.install_dir)
 
             # Don't leave a mess. We'll actually do this at the end.
@@ -1187,7 +1207,8 @@ class InstallCommand(Command):
         except OSError:
             # Likely a permission error.
             ui.error("Unable to create the %s directory. Make sure "
-                     "you're running as an administrator." % site.install_dir,
+                     "you're running as an administrator and that the "
+                     "directory does not contain any files." % site.install_dir,
                      done_func=lambda: sys.exit(1))
             return False
 
@@ -1375,7 +1396,7 @@ class InstallCommand(Command):
         ui.text(page, "Based on our experiences, we recommend using "
                       "modpython with Review Board.")
 
-        ui.prompt_choice(page, "Python Loader", ["modpython", "fastcgi"],
+        ui.prompt_choice(page, "Python Loader", ["modpython", "fastcgi", "wsgi"],
                          save_obj=site, save_var="python_loader")
 
     def ask_admin_user(self):

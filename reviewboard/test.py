@@ -27,6 +27,7 @@ import os
 import platform
 import shutil
 import sys
+import tempfile
 
 import pkg_resources
 import nose
@@ -46,8 +47,7 @@ from django.test.utils import setup_test_environment, teardown_test_environment
 
 
 def setup_media_dirs():
-    old_media_root = settings.MEDIA_ROOT
-    settings.MEDIA_ROOT = "/tmp/reviewboard-tests"
+    settings.MEDIA_ROOT = tempfile.mkdtemp(prefix='rb-tests-')
 
     if os.path.exists(settings.MEDIA_ROOT):
         destroy_media_dirs()
@@ -121,16 +121,16 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
     exclusion = '|'.join(['setup_test_environment',
                           'teardown_test_environment'])
 
-    nose_argv=['test.py', '-v',
-               '--with-coverage',
-               '--with-doctest', '--doctest-extension=.txt',
-               '-e', exclusion]
+    nose_argv = ['test.py', '-v',
+                 '--with-coverage',
+                 '--with-doctest', '--doctest-extension=.txt',
+                 '-e', exclusion]
 
-    for cover in ['reviewboard', 'djblets']:
-        nose_argv += ['--cover-package=' + cover]
+    nose_argv += ['--cover-package=reviewboard',
+                  '--where=reviewboard']
 
     if '--with-webtests' in sys.argv:
-        nose_argv += ['--cover-package=webtests']
+        nose_argv += ['--where=webtests']
         sys.argv.remove('--with-webtests')
 
     # manage.py captures everything before "--"

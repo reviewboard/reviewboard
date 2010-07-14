@@ -28,6 +28,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
+        siteconfig.set("auth_require_sitewide_login", False)
         siteconfig.save()
         mail.outbox = []
 
@@ -263,6 +264,27 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
         self.assertTrue('site' in rsp['info'])
 
 
+class SessionResourceTests(BaseWebAPITestCase):
+    """Testing the SessionResource APIs."""
+    def test_get_session_with_logged_in_user(self):
+        """Testing the GET session/ API with logged in user"""
+        rsp = self.apiGet('session')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('session' in rsp)
+        self.assertTrue(rsp['session']['authenticated'])
+        self.assertEqual(rsp['session']['links']['user']['title'],
+                         self.user.username)
+
+    def test_get_session_with_anonymous_user(self):
+        """Testing the GET session/ API with anonymous user"""
+        self.client.logout()
+
+        rsp = self.apiGet('session')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('session' in rsp)
+        self.assertFalse(rsp['session']['authenticated'])
+
+
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
     def test_get_repositories(self):
@@ -270,6 +292,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']), Repository.objects.count())
+
+    def test_get_repository_info(self):
+        """Testing the GET repositories/<id>/info API"""
+        rsp = self.apiGet("repositories/%d/info" % self.repository.pk)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['info'],
+                         self.repository.get_scmtool().get_repository_info())
 
 
 class ReviewGroupResourceTests(BaseWebAPITestCase):
@@ -335,7 +364,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
         self.test_post_watched_review_request()
 
         review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiDelete("%s%s/" % (self.watched_url, review_request.id))
+        self.apiDelete("%s%s/" % (self.watched_url, review_request.id))
         self.assert_(review_request not in
                      self.user.get_profile().starred_review_requests.all())
 
@@ -381,7 +410,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
         group = Group.objects.get(name='devgroup')
 
-        rsp = self.apiDelete('%s%s/' % (self.watched_url, group.name))
+        self.apiDelete('%s%s/' % (self.watched_url, group.name))
         self.assertTrue(group not in
                         self.user.get_profile().starred_groups.all())
 
@@ -575,6 +604,86 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
+
+    def test_get_reviewrequests_with_time_added_from(self):
+        """Testing the GET review-requests/?time-added-from= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('time_added')
+        r = public_review_requests[start_index]
+        timestamp = r.time_added.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'time-added-from': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                            time_added__gte=r.time_added).count())
+
+    def test_get_reviewrequests_with_time_added_to(self):
+        """Testing the GET review-requests/?time-added-to= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('time_added')
+        r = public_review_requests[start_index]
+        timestamp = r.time_added.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'time-added-to': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index + 1)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                             time_added__lt=r.time_added).count())
+
+    def test_get_reviewrequests_with_last_updated_from(self):
+        """Testing the GET review-requests/?last-updated-from= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('last_updated')
+        r = public_review_requests[start_index]
+        timestamp = r.last_updated.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'last-updated-from': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                             last_updated__gte=r.last_updated).count())
+
+    def test_get_reviewrequests_with_last_updated_to(self):
+        """Testing the GET review-requests/?last-updated-to= API"""
+        start_index = 3
+
+        public_review_requests = \
+            ReviewRequest.objects.public().order_by('last_updated')
+        r = public_review_requests[start_index]
+        timestamp = r.last_updated.isoformat()
+
+        rsp = self.apiGet('review-requests', {
+            'last-updated-to': timestamp,
+            'counts-only': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['count'],
+                         public_review_requests.count() - start_index + 1)
+        self.assertEqual(rsp['count'],
+                         public_review_requests.filter(
+                             last_updated__lt=r.last_updated).count())
 
     def test_post_reviewrequests(self):
         """Testing the POST review-requests/ API"""
@@ -897,7 +1006,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         # Set some data.
         self.test_put_reviewrequestdraft()
 
-        rsp = self.apiDelete("review-requests/%s/draft" % review_request.id)
+        self.apiDelete("review-requests/%s/draft" % review_request.id)
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.summary, summary)
@@ -1007,13 +1116,10 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review = Review.objects.filter(user=self.user, public=True,
                                        base_reply_to__isnull=True)[0]
 
-        rsp = self.apiPut(
-            'review-requests/%s/reviews/%s' % (review.review_request.id,
-                                              review.id),
-            {
-                'ship_it': True,
-            },
-            expected_status=403)
+        self.apiPut('review-requests/%s/reviews/%s' %
+                    (review.review_request.id, review.id), {
+            'ship_it': True,
+        }, expected_status=403)
 
     def test_put_review_publish(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/?public=1 API"""
@@ -1062,8 +1168,8 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review = self.test_put_review()
         review_request = review.review_request
 
-        rsp = self.apiDelete("review-requests/%s/reviews/%s" %
-                             (review_request.id, review.id))
+        self.apiDelete("review-requests/%s/reviews/%s" %
+                       (review_request.id, review.id))
         self.assertEqual(review_request.reviews.count(), 0)
 
     def test_delete_review_with_permission_denied(self):
@@ -1076,9 +1182,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review_request = review.review_request
         old_count = review_request.reviews.count()
 
-        rsp = self.apiDelete("review-requests/%s/reviews/%s" %
-                             (review_request.id, review.id),
-                             expected_status=403)
+        self.apiDelete("review-requests/%s/reviews/%s" %
+                       (review_request.id, review.id),
+                       expected_status=403)
         self.assertEqual(review_request.reviews.count(), old_count)
 
     def test_delete_review_with_published_review(self):
@@ -1088,9 +1194,9 @@ class ReviewResourceTests(BaseWebAPITestCase):
         review_request = review.review_request
         old_count = review_request.reviews.count()
 
-        rsp = self.apiDelete("review-requests/%s/reviews/%s" %
-                             (review_request.id, review.id),
-                             expected_status=403)
+        self.apiDelete("review-requests/%s/reviews/%s" %
+                       (review_request.id, review.id),
+                       expected_status=403)
         self.assertEqual(review_request.reviews.count(), old_count)
 
     def test_delete_review_with_does_not_exist(self):
@@ -1135,7 +1241,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         # Post the diff.
         rsp = self._postNewDiff(review_request)
-        diffset = DiffSet.objects.get(pk=rsp['diff']['id'])
+        DiffSet.objects.get(pk=rsp['diff']['id'])
 
         # Make these public.
         review_request.publish(self.user)
@@ -1167,21 +1273,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('diff_comments' in rsp)
         self.assertEqual(len(rsp['diff_comments']), 1)
         self.assertEqual(rsp['diff_comments'][0]['text'], comment_text)
-
-    def test_delete_diff_comment_with_interdiff(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API"""
-        comment_text = "This is a test comment."
-
-        rsp, review_request_id, review_id = \
-            self._common_post_interdiff_comments(comment_text)
-
-        rsp = self.apiDelete(rsp['diff_comment']['links']['self']['href'])
-
-        rsp = self.apiGet("review-requests/%s/reviews/%s/diff-comments" %
-                          (review_request_id, review_id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue('diff_comments' in rsp)
-        self.assertEqual(len(rsp['diff_comments']), 0)
 
     def test_get_diff_comments_with_interdiff(self):
         """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
@@ -1508,8 +1599,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/diffs/ API"""
         rsp = self._postNewReviewRequest()
         self.assertEqual(rsp['stat'], 'ok')
-        review_request = \
-            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
         diff_filename = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
@@ -1527,8 +1617,7 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/diffs/ API with Invalid Form Data"""
         rsp = self._postNewReviewRequest()
         self.assertEqual(rsp['stat'], 'ok')
-        review_request = \
-            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
         rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'],
                            expected_status=400)
@@ -1558,8 +1647,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/draft/screenshots/ API"""
         rsp = self._postNewReviewRequest()
         self.assertEqual(rsp['stat'], 'ok')
-        review_request = \
-            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
         screenshots_url = rsp['review_request']['links']['screenshots']['href']
 
@@ -1631,8 +1719,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/screenshots/ API"""
         rsp = self._postNewReviewRequest()
         self.assertEqual(rsp['stat'], 'ok')
-        review_request = \
-            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
         screenshots_url = rsp['review_request']['links']['screenshots']['href']
 
@@ -1843,7 +1930,6 @@ class ReviewScreenshotCommentResource(BaseWebAPITestCase):
 
     def test_delete_screenshot_comment_with_does_not_exist_error(self):
         """Testing the DELETE review-requests/<id>/reviews/<id>/screenshot-comments/<id>/ API with Does Not Exist error"""
-        comment_text = "This is a test comment."
         x, y, w, h = (2, 2, 10, 10)
 
         # Post the review request
@@ -1853,7 +1939,7 @@ class ReviewScreenshotCommentResource(BaseWebAPITestCase):
 
         # Post the screenshot.
         rsp = self._postNewScreenshot(review_request)
-        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        Screenshot.objects.get(pk=rsp['screenshot']['id'])
 
         # Make these public.
         review_request.publish(self.user)
@@ -2424,8 +2510,8 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         review_request.reviews = []
         review_request.save()
 
-        rsp = self.apiPost("reviewrequests/%s/reviews/draft/save" %
-                           review_request.id, {
+        self.apiPost("reviewrequests/%s/reviews/draft/save" %
+                     review_request.id, {
             'shipit': ship_it,
             'body_top': body_top,
             'body_bottom': body_bottom,
@@ -2507,7 +2593,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
         screenshot = self.testNewScreenshot()
         review_request = screenshot.review_request.get()
-        diffset = self.testNewDiff(review_request)
+        self.testNewDiff(review_request)
         rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -2809,8 +2895,6 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
     def testDiffCommentsDelete(self):
         """Testing the deprecated reviewrequests/diff/file/line/comments delete API"""
-        comment_text = "This is a test comment."
-
         self.testDiffCommentsSet()
 
         review_request = ReviewRequest.objects.public()[0]
@@ -2895,8 +2979,6 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
     def testInterDiffCommentsDelete(self):
         """Testing the deprecated reviewrequests/diff/file/line/comments interdiff delete API"""
-        comment_text = "This is a test comment."
-
         review_request, diffset, interdiffset, filediff, interfilediff = \
             self.testInterDiffCommentsSet()
 

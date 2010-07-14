@@ -47,7 +47,6 @@ from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import ChangeSetError
-from reviewboard.scmtools.models import Repository
 
 
 @login_required
@@ -574,16 +573,12 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     diff.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-    draft = review_request.get_draft(request.user)
+    review_request.get_draft(request.user)
 
     if interdiff_revision is not None:
         interdiffset = _query_for_diff(review_request, request.user,
                                        interdiff_revision)
         interdiffset_id = interdiffset.id
-        # Only the interdiff should have an extra query for the draft.
-        # It's going to be the most recent diff (generally). We should be
-        # smarter and check.
-        query_extra = None
     else:
         interdiffset_id = None
 

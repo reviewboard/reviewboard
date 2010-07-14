@@ -11,12 +11,14 @@
 # Note that this script is deprecated in favor of Django-Evolution support.
 # Database migrations can now be performed using:
 #
-#   $ ./manage.py evolve --execute
+#   $ ./reviewboard/manage.py evolve --execute
 
 import os
 import sys
 
-sys.path.append(os.getcwd())
+topdir = os.path.join(os.path.dirname(__file__), "..", "..")
+sys.path.insert(0, os.path.join(topdir, 'reviewboard'))
+sys.path.insert(0, topdir)
 
 try:
     import settings
@@ -35,6 +37,7 @@ setup_environ(settings)
 from django.core import serializers
 
 import reviewboard.accounts.models as accounts
+import reviewboard.changedescs.models as changedescs
 import reviewboard.diffviewer.models as diffviewer
 import reviewboard.reviews.models as reviews
 import reviewboard.scmtools.models as scmtools
@@ -43,11 +46,12 @@ import reviewboard.scmtools.models as scmtools
 models = (scmtools.Tool, scmtools.Repository,
           diffviewer.DiffSetHistory, diffviewer.DiffSet,
           diffviewer.FileDiff,
+          changedescs.ChangeDescription,
           reviews.DefaultReviewer, reviews.Group,
           reviews.Screenshot, reviews.ScreenshotComment,
           reviews.Comment, reviews.ReviewRequest,
           reviews.ReviewRequestDraft, reviews.Review,
-          accounts.Profile)
+          accounts.ReviewRequestVisit, accounts.Profile)
 
 OBJECT_LIMIT = 150
 
@@ -63,7 +67,7 @@ i = 0
 sys.stderr.write("""
 Review Board migrations are now handled by running:
 
-  $ ./manage.py evolve --execute
+  $ ./reviewboard/manage.py evolve --execute
 
 If you really want to do a backup using backup-db.py, you must run it with
 the --force parameter. However, it is recommended that you perform backups

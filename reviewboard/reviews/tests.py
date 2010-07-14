@@ -3,7 +3,6 @@ import os
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.core import mail
 from django.template import Context, Template
 from django.test import TestCase
 

@@ -1,7 +1,6 @@
 import imp
 import os
 import nose
-import unittest
 
 from django.test import TestCase as DjangoTestCase
 try:
@@ -302,6 +301,28 @@ class SubversionTests(DjangoTestCase):
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('4')
+        file = self.tool.get_file(filename, rev)
+        patch(diff, file, filename)
+
+    def testUnterminatedKeywordDiff(self):
+        """Testing parsing SVN diff with unterminated keywords"""
+        diff = "Index: Makefile\n" \
+               "===========================================================" \
+               "========\n" \
+               "--- Makefile    (revision 4)\n" \
+               "+++ Makefile    (working copy)\n" \
+               "@@ -1,6 +1,7 @@\n" \
+               " # $Id$\n" \
+               " # $Id:\n" \
+               " # $Rev$\n" \
+               " # $Revision::     $\n" \
+               "+# foo\n" \
+               " include ../tools/Makefile.base-vars\n" \
+               " NAME = misc-docs\n" \
+               " OUTNAME = svn-misc-docs\n"
+
+        filename = 'trunk/doc/misc-docs/Makefile'
+        rev = Revision('5')
         file = self.tool.get_file(filename, rev)
         patch(diff, file, filename)
 
@@ -718,7 +739,7 @@ class GitTests(DjangoTestCase):
         """Testing parsing Git diff new file, no content"""
         diff = self._readFixture('git_newfile_nocontent.diff')
         files = self.tool.get_parser(diff).parse()
-        self.assertEqual(len(self.tool.get_parser(diff).parse()), 0)
+        self.assertEqual(len(files), 0)
 
     def testNewfileNoContentWithFollowingDiff(self):
         """Testing parsing Git diff new file, no content, with following"""

@@ -686,11 +686,12 @@
 #screenshot-display .selection-flag {
   background-color: #a1c0e3;
   cursor: pointer;
-  height: 16px;
+  height: 2em;
   left: 0px;
+  line-height: 170%;
   text-align: center;
   top: 0px;
-  width: 16px;
+  width: 2em;
 }
 
 #screenshot-display .selection.draft {

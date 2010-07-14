@@ -2,12 +2,9 @@ from datetime import datetime
 import os
 import time
 
-from django.conf import settings
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Permission, User
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.http import HttpRequest
 from djblets.testing import testcases
 
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
@@ -538,6 +535,19 @@ class ReviewRequestTests(SeleniumUnitTest):
 
         self._click_star_on_review_requests_page(r)
         self.assertFalse(r in profile.starred_review_requests.all())
+
+    # This is a test for bug #1586
+    def test_linkified_text_for_non_editable_description(self):
+        """Testing linkified text in non-editable description"""
+        r = ReviewRequest.objects.filter(public=True, status='P')\
+            .exclude(submitter=self.user)[0]
+        r.description = "Testing linkified text\n\n/r/123"
+        r.save()
+        transaction.commit()
+
+        self.selenium.open(r.get_absolute_url())
+        self.assertTrue(self.selenium.is_element_present(
+            'css=#description a[href="/r/123"]'))
 
     def _edit_field(self, field, value, is_textarea=False,
                    field_suffix="-value-cell"):

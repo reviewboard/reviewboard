@@ -1,28 +1,38 @@
-from datetime import datetime
+import logging
 import re
+import urllib
 
+import dateutil.parser
 from django.conf import settings
+from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpResponseNotAllowed, HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.http import get_http_requested_mimetype, \
+                              set_last_modified
 from djblets.webapi.core import WebAPIResponseFormError, \
-                                WebAPIResponsePaginated
+                                WebAPIResponsePaginated, \
+                                WebAPIResponse
 from djblets.webapi.decorators import webapi_login_required, \
-                                      webapi_permission_required, \
                                       webapi_request_fields
-from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
-                                  INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
+                                  PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource, \
-                                     RootResource, register_resource_for_model
+                                     RootResource, \
+                                     register_resource_for_model, \
+                                     get_resource_for_object
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.diffviewer.diffutils import get_diff_files
+from reviewboard.diffviewer.forms import EmptyDiffError
+from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
@@ -33,8 +43,17 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError
 from reviewboard.webapi.decorators import webapi_check_login_required
-from reviewboard.webapi.errors import INVALID_REPOSITORY, MISSING_REPOSITORY, \
-                                      REPO_FILE_NOT_FOUND
+from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
+                                      EMPTY_CHANGESET, \
+                                      INVALID_CHANGE_NUMBER, \
+                                      INVALID_REPOSITORY, \
+                                      INVALID_USER, \
+                                      REPO_FILE_NOT_FOUND, \
+                                      REPO_INFO_ERROR, \
+                                      REPO_NOT_IMPLEMENTED
+
+
+CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -293,8 +312,7 @@ class ReviewCommentResource(BaseCommentResource):
         This can update the text or line range of an existing comment.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
             diff_comment = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
@@ -350,8 +368,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
         must be a draft reply.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             reply = review_reply_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -401,11 +418,85 @@ class FileDiffResource(WebAPIResource):
     uri_object_key = 'filediff_id'
     model_parent_key = 'diffset'
 
+    DIFF_DATA_MIMETYPE_BASE = CUSTOM_MIMETYPE_BASE + '.diff.data'
+
+    _supported_mimetypes = [
+        'application/json',
+        'application/xml',
+        'text/x-patch',
+        DIFF_DATA_MIMETYPE_BASE + '+json',
+        DIFF_DATA_MIMETYPE_BASE + '+xml',
+    ]
+
     def get_queryset(self, request, review_request_id, diff_revision,
                      *args, **kwargs):
         return self.model.objects.filter(
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        mimetype = get_http_requested_mimetype(request,
+                                               self._supported_mimetypes)
+
+        if mimetype == 'text/x-patch':
+            return self._get_patch(request, *args, **kwargs)
+        elif mimetype.startswith(self.DIFF_DATA_MIMETYPE_BASE + "+"):
+            return self._get_diff_data(request, mimetype, *args, **kwargs)
+        else:
+            return super(FileDiffResource, self).get(request, *args, **kwargs)
+
+    def _get_patch(self, request, *args, **kwargs):
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            filediff = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        resp = HttpResponse(filediff.diff, mimetype='text/x-patch')
+        filename = '%s.patch' % urllib.quote(filediff.source_file)
+        resp['Content-Disposition'] = 'inline; filename=%s' % filename
+        set_last_modified(resp, filediff.diffset.timestamp)
+
+        return resp
+
+    def _get_diff_data(self, request, mimetype, *args, **kwargs):
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            filediff = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        highlighting = request.GET.get('syntax-highlighting', False)
+
+        files = get_diff_files(filediff.diffset, filediff,
+                               enable_syntax_highlighting=highlighting)
+
+        if not files:
+            # This may not be the right error here.
+            return DOES_NOT_EXIST
+
+        assert len(files) == 1
+        f = files[0]
+
+        payload = {
+            'diff_data': {
+                'binary': f['binary'],
+                'chunks': f['chunks'],
+                'num_changes': f['num_changes'],
+                'whitespace_only': f['whitespace_only'],
+                'changed_chunk_indexes': f['changed_chunk_indexes'],
+                'new_file': f['newfile'],
+            }
+        }
+
+        # XXX: Kind of a hack.
+        api_format = mimetype.split('+')[-1]
+
+        resp = WebAPIResponse(request, payload, api_format=api_format)
+        set_last_modified(resp, filediff.diffset.timestamp)
+
+        return resp
 
 filediff_resource = FileDiffResource()
 
@@ -423,6 +514,12 @@ class DiffSetResource(WebAPIResource):
     model_object_key = 'revision'
     model_parent_key = 'history'
 
+    _supported_mimetypes = [
+        'application/json',
+        'application/xml',
+        'text/x-patch'
+    ]
+
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(
             history__review_request=review_request_id)
@@ -439,6 +536,40 @@ class DiffSetResource(WebAPIResource):
     def has_access_permissions(self, request, diffset, *args, **kwargs):
         review_request = diffset.history.review_request.get()
         return review_request.is_accessible_by(request.user)
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        mimetype = get_http_requested_mimetype(request,
+                                               self._supported_mimetypes)
+
+        if mimetype == 'text/x-patch':
+            return self._get_patch(request, *args, **kwargs)
+        else:
+            return super(DiffSetResource, self).get(request, *args, **kwargs)
+
+    def _get_patch(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            diffset = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        tool = review_request.repository.get_scmtool()
+        data = tool.get_parser('').raw_diff(diffset)
+
+        resp = HttpResponse(data, mimetype='text/x-patch')
+
+        if diffset.name == 'diff':
+            filename = 'bug%s.patch' % \
+                       review_request.bugs_closed.replace(',', '_')
+        else:
+            filename = diffset.name
+
+        resp['Content-Disposition'] = 'inline; filename=%s' % filename
+        set_last_modified(resp, diffset.timestamp)
+
+        return resp
 
     @webapi_login_required
     def create(self, request, *args, **kwargs):
@@ -752,13 +883,16 @@ class RepositoryInfoResource(WebAPIResource):
     def get(self, request, *args, **kwargs):
         """Returns repository-specific information from a server."""
         try:
-            repository = self.get_object(*args, **kwargs)
+            repository = repository_resource.get_object(request, *args,
+                                                        **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         try:
+            tool = repository.get_scmtool()
+
             return 200, {
-                self.item_result_key: repository.get_scmtool().get_repository_info()
+                self.item_result_key: tool.get_repository_info()
             }
         except NotImplementedError:
             return REPO_NOT_IMPLEMENTED
@@ -867,8 +1001,8 @@ class BaseScreenshotResource(WebAPIResource):
             return PERMISSION_DENIED
 
         try:
-            draft = review_request_draft_resource.prepare_draft(request,
-                                                                review_request)
+            review_request_draft_resource.prepare_draft(request,
+                                                        review_request)
         except PermissionDenied:
             return PERMISSION_DENIED
 
@@ -1173,7 +1307,6 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         ``invalid_entries`` is a list of validation errors.
         """
-        result = None
         modified_objects = []
         invalid_entries = []
 
@@ -1198,12 +1331,9 @@ class ReviewRequestDraftResource(WebAPIResource):
                     target.add(obj)
                 except:
                     invalid_entries.append(value)
-
-            result = target.all()
         elif field_name == 'bugs_closed':
             data = list(self._sanitize_bug_ids(data))
             setattr(draft, field_name, ','.join(data))
-            result = data
         elif field_name == 'changedescription':
             if not draft.changedesc:
                 invalid_entries.append('Change descriptions cannot be used '
@@ -1212,13 +1342,11 @@ class ReviewRequestDraftResource(WebAPIResource):
                 draft.changedesc.text = data
 
                 modified_objects.append(draft.changedesc)
-                result = data
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')
             else:
                 setattr(draft, field_name, data)
-                result = data
 
         return data, modified_objects, invalid_entries
 
@@ -1425,8 +1553,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         being replied to, but may contain new text.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             reply = review_reply_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1590,8 +1717,7 @@ class BaseReviewResource(WebAPIResource):
         be updated.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1630,8 +1756,7 @@ class ReviewReplyDraftResource(WebAPIResource):
     @webapi_login_required
     def get(self, request, *args, **kwargs):
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
             reply = review.get_pending_reply(request.user)
         except ObjectDoesNotExist:
@@ -1759,9 +1884,8 @@ class ReviewReplyResource(BaseReviewResource):
         be updated.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
-            review = review_resource.get_object(request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
+            review_resource.get_object(request, *args, **kwargs)
             reply = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1774,8 +1898,6 @@ class ReviewReplyResource(BaseReviewResource):
             # Can't modify published replies or those not belonging
             # to the user.
             return PERMISSION_DENIED
-
-        invalid_fields = {}
 
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)
@@ -1963,28 +2085,74 @@ class ReviewRequestResource(WebAPIResource):
         resources, then it can be further filtered by one or more of the
         following arguments in the URL:
 
-          * ``changenum`` - The change number the review requests must be
-                            against. This will only return one review request
-                            per repository, and only works for repository
-                            types that support server-side changesets.
-          * ``from-user`` - The username that the review requests must be
-                            owned by.
-          * ``repository`` - The ID of the repository that the review requests
-                             must be on.
-          * ``status`` - The status of the review requests. This can be
-                         ``pending``, ``submitted`` or ``discarded``.
-          * ``to-groups`` - A comma-separated list of review group names that
-                            the review requests must have in the reviewer
-                            list.
-          * ``to-user-groups`` - A comma-separated list of usernames who
-                                 are in groups that the review requests
-                                 must have in the reviewer list.
-          * ``to-users`` - A comma-separated list of usernames that the
-                           review requests must either have in the reviewer
-                           list specifically or by way of a group.
-          * ``to-users-directly`` - A comma-separated list of usernames that
-                                    the review requests must have in the
-                                    reviewer list specifically.
+          * ``changenum``
+              - The change number the review requests must be
+                against. This will only return one review request
+                per repository, and only works for repository
+                types that support server-side changesets.
+
+          * ``time-added-to``
+              - The date/time that all review requests must be added before.
+                This is compared against the review request's ``time_added``
+                field. See below for information on date/time formats.
+
+          * ``time-added-from``
+              - The earliest date/time the review request could be added.
+                This is compared against the review request's ``time_added``
+                field. See below for information on date/time formats.
+
+          * ``last-updated-to``
+              - The date/time that all review requests must be last updated
+                before. This is compared against the review request's
+                ``last_updated`` field. See below for information on date/time
+                formats.
+
+          * ``last-updated-from``
+              - The earliest date/time the review request could be last
+                updated. This is compared against the review request's
+                ``last_updated`` field. See below for information on date/time
+                formats.
+
+          * ``from-user``
+              - The username that the review requests must be owned by.
+
+          * ``repository``
+              - The ID of the repository that the review requests must be on.
+
+          * ``status``
+              - The status of the review requests. This can be ``pending``,
+                ``submitted`` or ``discarded``.
+
+          * ``to-groups``
+              - A comma-separated list of review group names that the review
+                requests must have in the reviewer list.
+
+          * ``to-user-groups``
+              - A comma-separated list of usernames who are in groups that the
+                review requests must have in the reviewer list.
+
+          * ``to-users``
+              - A comma-separated list of usernames that the review requests
+                must either have in the reviewer list specifically or by way
+                of a group.
+
+          * ``to-users-directly``
+              - A comma-separated list of usernames that the review requests
+                must have in the reviewer list specifically.
+
+        Some arguments accept dates. The handling of dates is quite flexible,
+        accepting a variety of date/time formats, but we recommend sticking
+        with ISO8601 format.
+
+        ISO8601 format defines a date as being in ``{yyyy}-{mm}-{dd}`` format,
+        and a date/time as being in ``{yyyy}-{mm}-{dd}T{HH}:{MM}:{SS}``.
+        A timezone can also be appended to this, using ``-{HH:MM}``.
+
+        The following examples are valid dates and date/times:
+
+            * ``2010-06-27``
+            * ``2010-06-27T16:26:30``
+            * ``2010-06-27T16:26:30-08:00``
         """
         q = Q()
 
@@ -2016,6 +2184,30 @@ class ReviewRequestResource(WebAPIResource):
 
             if 'changenum' in request.GET:
                 q = q & Q(changenum=int(request.GET.get('changenum')))
+
+            if 'time-added-from' in request.GET:
+                date = self._parse_date(request.GET['time-added-from'])
+
+                if date:
+                    q = q & Q(time_added__gte=date)
+
+            if 'time-added-to' in request.GET:
+                date = self._parse_date(request.GET['time-added-to'])
+
+                if date:
+                    q = q & Q(time_added__lt=date)
+
+            if 'last-updated-from' in request.GET:
+                date = self._parse_date(request.GET['last-updated-from'])
+
+                if date:
+                    q = q & Q(last_updated__gte=date)
+
+            if 'last-updated-to' in request.GET:
+                date = self._parse_date(request.GET['last-updated-to'])
+
+                if date:
+                    q = q & Q(last_updated__lt=date)
 
             status = string_to_status(request.GET.get('status', 'pending'))
 
@@ -2141,6 +2333,13 @@ class ReviewRequestResource(WebAPIResource):
             self.item_result_key: review_request,
         }
 
+    def _parse_date(self, timestamp_str):
+        try:
+            return dateutil.parser.parse(timestamp_str)
+        except ValueError:
+            return None
+
+
 review_request_resource = ReviewRequestResource()
 
 
@@ -2181,11 +2380,55 @@ class ServerInfoResource(WebAPIResource):
 server_info_resource = ServerInfoResource()
 
 
+class SessionResource(WebAPIResource):
+    name = 'session'
+    name_plural = 'session'
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        """Returns information on the client's session.
+
+        This currently just contains information on the currently logged-in
+        user (if any).
+        """
+        expanded_resources = request.GET.get('expand', '').split(',')
+
+        authenticated = request.user.is_authenticated()
+
+        data = {
+            'authenticated': authenticated,
+        }
+
+        if authenticated:
+            if 'user' in expanded_resources:
+                data['user'] = request.user
+            else:
+                user_resource = get_resource_for_object(request.user)
+                href = user_resource.get_href(request.user,
+                                              request,
+                                              *args, **kwargs)
+
+                data['links'] = {
+                    'user': {
+                        'method': 'GET',
+                        'href': href,
+                        'title': unicode(request.user),
+                    },
+                }
+
+        return 200, {
+            self.name: data,
+        }
+
+session_resource = SessionResource()
+
+
 root_resource = RootResource([
     repository_resource,
     review_group_resource,
     review_request_resource,
     server_info_resource,
+    session_resource,
     user_resource,
 ])
 

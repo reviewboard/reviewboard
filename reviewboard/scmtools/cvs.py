@@ -2,6 +2,7 @@ import os
 import re
 import subprocess
 import tempfile
+import urlparse
 
 from djblets.util.filesystem import is_exe_in_path
 
@@ -173,6 +174,9 @@ class CVSDiffParser(DiffParser):
         elif 'filename' in info:
             info['origFile'] = info['filename']
 
+        if info.get('newFile') == '/dev/null':
+            info['deleted'] = True
+
         return linenum
 
 
@@ -200,6 +204,10 @@ class CVSClient:
         # We strip the repo off of the fully qualified path as CVS does
         # not like to be given absolute paths.
         repos_path = self.path.split(":")[-1]
+
+        if '@' in repos_path:
+            repos_path = '/' + repos_path.split('@')[-1].split('/', 1)[-1]
+
         if filename.startswith(repos_path + "/"):
             filename = filename[len(repos_path) + 1:]
 
@@ -221,14 +229,21 @@ class CVSClient:
         elif '\\' in filename:
             pos = filename.rfind('\\')
             filenameAttic = filename[0:pos] + "\\Attic" + filename[pos:]
-        else:
+        elif '/' in filename:
             pos = filename.rfind('/')
             filenameAttic = filename[0:pos] + "/Attic" + filename[pos:]
+        else:
+            # There isn't any path information, so we can't provide an
+            # Attic path that makes any kind of sense.
+            filenameAttic = None
 
         try:
             return self._cat_specific_file(filename, revision)
         except FileNotFoundError:
-            return self._cat_specific_file(filenameAttic, revision)
+            if filenameAttic:
+                return self._cat_specific_file(filenameAttic, revision)
+            else:
+                raise
 
     def _cat_specific_file(self, filename, revision):
         # Somehow CVS sometimes seems to write .cvsignore files to current

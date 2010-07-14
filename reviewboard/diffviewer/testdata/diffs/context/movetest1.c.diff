@@ -1,0 +1,61 @@
+*** orig_src/movetest1.c	2010-06-26 23:33:46.000000000 -0700
+--- new_src/movetest1.c	2010-06-26 23:32:06.000000000 -0700
+***************
+*** 3,24 ****
+   */
+  
+  
+- /*
+-  *
+-  */
+  // ----
+  
+  
+- /*
+-  * Says hello
+-  */
+- void
+- say_hello()
+- {
+- 	printf("Hello world!\n");
+- }
+- 
+- 
+  int
+  dummy(int param1, int param2)
+  {
+--- 3,11 ----
+***************
+*** 28,33 ****
+--- 15,23 ----
+  }
+  
+  
++ /*
++  * Says goodbye
++  */
+  void
+  say_goodbye()
+  {
+***************
+*** 35,43 ****
+--- 25,43 ----
+  }
+  
+  
++ void
++ say_hello()
++ {
++ 	printf("Hello world!\n");
++ }
++ 
++ 
+  int
+  main(int argc, char **argv)
+  {
+  	say_hello();
+  	return 0;
+  }
++ /*
++  *
++  */

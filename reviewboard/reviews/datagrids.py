@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db.models import Manager, Q, Count
+from django.db.models import Q, Count
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.datagrid.grids import Column, DateTimeColumn, \
@@ -9,7 +9,7 @@ from djblets.datagrid.grids import Column, DateTimeColumn, \
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile
-from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 
 
@@ -179,7 +179,6 @@ class MyCommentsColumn(Column):
 
         image_url = None
         image_alt = None
-        found_ship_it = False
 
         # Priority is ranked in the following order:
         #
@@ -219,7 +218,6 @@ class NewUpdatesColumn(Column):
         self.shrink = True
 
     def render_data(self, review_request):
-        user = self.datagrid.request.user
         if review_request.new_review_count > 0:
             return '<img src="%s" width="%s" height="%s" alt="%s" ' \
                    'title="%s" />' % \
@@ -514,28 +512,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
             self.title = _(u"All Incoming Review Requests")
 
         # Pre-load all querysets for the sidebar.
-        self.counts = {
-            'outgoing': ReviewRequest.objects.from_user(user, user).count(),
-            'incoming': ReviewRequest.objects.to_user(user, user).count(),
-            'to-me': ReviewRequest.objects.to_user_directly(user, user).count(),
-            'starred': profile.starred_review_requests.public(user).count(),
-            'mine': ReviewRequest.objects.from_user(user, user, None).count(),
-            'groups': {}
-        }
-
-        q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
-        group_names = list(q.values_list('name', flat=True))
-
-        q = Group.objects.filter(name__in=group_names)
-        q = q.filter((Q(review_requests__public=True) |
-                      Q(review_requests__submitter=user)) &
-                      Q(review_requests__submitter__is_active=True) &
-                      Q(review_requests__status='P'))
-        q = q.annotate(Count('review_requests'))
-
-        for group in q.values('name', 'review_requests__count'):
-            self.counts['groups'][group['name']] = \
-                group['review_requests__count']
+        self.counts = get_sidebar_counts(user)
 
         return False
 
@@ -606,7 +583,42 @@ class WatchedGroupDataGrid(GroupDataGrid):
     """
     def __init__(self, request, title=_("Watched groups"), *args, **kwargs):
         GroupDataGrid.__init__(self, request, title=title, *args, **kwargs)
-        self.queryset = request.user.get_profile().starred_groups.all()
+        user = request.user
+        profile = user.get_profile()
+        self.queryset = profile.starred_groups.all()
+
+        # Pre-load all querysets for the sidebar.
+        self.counts = get_sidebar_counts(user)
 
     def link_to_object(self, group, value):
         return ".?view=to-group&group=%s" % group.name
+
+
+def get_sidebar_counts(user):
+    """Returns counts used for the Dashboard sidebar."""
+    profile = user.get_profile()
+
+    counts = {
+        'outgoing': ReviewRequest.objects.from_user(user, user).count(),
+        'incoming': ReviewRequest.objects.to_user(user, user).count(),
+        'to-me': ReviewRequest.objects.to_user_directly(user, user).count(),
+        'starred': profile.starred_review_requests.public(user).count(),
+        'mine': ReviewRequest.objects.from_user(user, user, None).count(),
+        'groups': {}
+    }
+
+    q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
+    group_names = list(q.values_list('name', flat=True))
+
+    q = Group.objects.filter(name__in=group_names)
+    q = q.filter((Q(review_requests__public=True) |
+                  Q(review_requests__submitter=user)) &
+                  Q(review_requests__submitter__is_active=True) &
+                  Q(review_requests__status='P'))
+    q = q.annotate(Count('review_requests'))
+
+    for group in q.values('name', 'review_requests__count'):
+        counts['groups'][group['name']] = \
+            group['review_requests__count']
+
+    return counts

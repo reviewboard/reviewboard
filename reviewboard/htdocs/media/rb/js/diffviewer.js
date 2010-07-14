@@ -48,7 +48,7 @@ var gActions = [
 
     { // Recenter
         keys: unescape("%0D"),
-        onPress: function() { scrollToAnchor(gAnchors[gSelectedAnchor]); }
+        onPress: function() { scrollToAnchor($(gAnchors[gSelectedAnchor])); }
     },
 
     { // Previous comment
@@ -405,20 +405,11 @@ $.fn.diffFile = function(lines, key) {
                 }
 
                 if (isLineNumCell(node)) {
-                    var row = $(node.parentNode);
-
-                    selection.begin    = selection.end    = row;
-                    selection.beginNum = selection.endNum =
-                        parseInt(row.attr('line'));
-
-                    selection.lastSeenIndex = row[0].rowIndex;
-                    row.addClass("selected");
-
-                    self.disableSelection();
-
-                    e.stopPropagation();
-                    e.preventDefault();
+                    beginSelection($(node.parentNode));
+                    return false;
                 }
+
+                return true;
             })
             .mouseup(function(e) {
                 /*
@@ -437,39 +428,7 @@ $.fn.diffFile = function(lines, key) {
                 }
 
                 if (isLineNumCell(node)) {
-                    var showCommentDlg = true;
-
-                    if (selection.beginNum == selection.endNum) {
-                        /* See if we have a comment flag on the selected row. */
-                        var node = getActualRowNode($(node));
-                        var row = node.parent();
-                        var lineNumCell = row[0].cells[0];
-
-                        var commentFlag = $(".commentflag", lineNumCell);
-
-                        if (commentFlag.length == 1) {
-                            showCommentDlg = false;
-                            commentFlag.click()
-                        }
-                    }
-
-                    if (showCommentDlg) {
-                        /*
-                         * Selection was finalized. Create the comment block
-                         * and show the comment dialog.
-                         */
-                        var commentBlock = new DiffCommentBlock(
-                            selection.begin,
-                            selection.end,
-                            selection.beginNum,
-                            selection.endNum);
-                        commentBlock.showCommentDlg();
-                    }
-
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    $(node).removeClass("selected");
+                    endSelection(getActualLineNumCell($(node)).parent());
                 } else {
                     /*
                      * The user clicked somewhere else. Move the anchor
@@ -484,25 +443,9 @@ $.fn.diffFile = function(lines, key) {
                     }
                 }
 
-                if (selection.begin != null) {
-                    /* Reset the selection. */
-                    var rows = self[0].rows;
+                resetSelection();
 
-                    for (var i = selection.begin[0].rowIndex;
-                         i <= selection.end[0].rowIndex;
-                         i++) {
-                        $(rows[i]).removeClass("selected");
-                    }
-
-                    selection.begin    = selection.end    = null;
-                    selection.beginNum = selection.endNum = 0;
-                    selection.rows = [];
-                }
-
-                ghostCommentFlagCell = null;
-
-                /* Re-enable text selection on IE */
-                self.enableSelection();
+                return false;
             })
             .mouseover(function(e) {
                 /*
@@ -512,50 +455,11 @@ $.fn.diffFile = function(lines, key) {
                  *
                  * @param {event} e  The mouseover event.
                  */
-                var node = getActualRowNode($(e.target));
+                var node = getActualLineNumCell($(e.target));
                 var row = node.parent();
 
                 if (isLineNumCell(node[0])) {
-                    node.css("cursor", "pointer");
-
-                    if (selection.begin != null) {
-                        /* We have an active selection. */
-                        var linenum = parseInt(row.attr("line"));
-
-                        if (linenum < selection.beginNum) {
-                            selection.beginNum = linenum;
-                            selection.begin = row;
-                        } else if (linenum > selection.beginNum) {
-                            selection.end = row;
-                            selection.endNum = linenum;
-                        }
-
-                        var min = Math.min(selection.lastSeenIndex,
-                                           row[0].rowIndex);
-                        var max = Math.max(selection.lastSeenIndex,
-                                           row[0].rowIndex);
-
-                        for (var i = min; i <= max; i++) {
-                            $(self[0].rows[i]).addClass("selected");
-                        }
-
-                        selection.lastSeenIndex = row[0].rowIndex;
-                    } else {
-                        var lineNumCell = row[0].cells[0];
-
-                        /* See if we have a comment flag in here. */
-                        if ($(".commentflag", lineNumCell).length == 0) {
-                            ghostCommentFlag
-                                .css("top", node.offset().top - 1)
-                                .show()
-                                .parent()
-                                    .removeClass("selected");
-                            ghostCommentFlagCell = node;
-
-                        }
-
-                        row.addClass("selected");
-                    }
+                    addRowToSelection(row);
                 } else if (ghostCommentFlagCell != null &&
                            node[0] != ghostCommentFlagCell[0]) {
                     row.removeClass("selected");
@@ -569,8 +473,8 @@ $.fn.diffFile = function(lines, key) {
                  * @param {event} e  The mouseout event.
                  */
                 var relTarget = e.relatedTarget;
-                var node = getActualRowNode($(e.fromElement ||
-                                              e.originalTarget));
+                var node = getActualLineNumCell($(e.fromElement ||
+                                                  e.originalTarget));
 
                 if (relTarget != ghostCommentFlag[0]) {
                     ghostCommentFlag.hide();
@@ -578,23 +482,8 @@ $.fn.diffFile = function(lines, key) {
                 }
 
                 if (selection.begin != null) {
-                    /* We have an active selection. */
                     if (relTarget != null && isLineNumCell(relTarget)) {
-                        /*
-                         * Remove the "selection" class from any rows no
-                         * longer in this selection.
-                         */
-                        var destRowIndex = relTarget.parentNode.rowIndex;
-
-                        if (destRowIndex >= selection.begin[0].rowIndex) {
-                            for (var i = selection.lastSeenIndex;
-                                 i > destRowIndex;
-                                 i--) {
-                                $(self[0].rows[i]).removeClass("selected");
-                            }
-
-                            selection.lastSeenIndex = destRowIndex;
-                        }
+                        removeOldRowsFromSelection($(relTarget.parentNode));
                     }
                 } else if (node != null && isLineNumCell(node[0])) {
                     /*
@@ -604,9 +493,172 @@ $.fn.diffFile = function(lines, key) {
                      */
                     node.parent().removeClass("selected");
                 }
-            });
+            })
+            .bind("touchmove", function(e) {
+                var firstTouch = e.originalEvent.targetTouches[0];
+                var target = document.elementFromPoint(firstTouch.pageX,
+                                                       firstTouch.pageY);
+                var node = getActualLineNumCell($(target));
+                var row = node.parent();
+
+                if (selection.lastSeenIndex == row[0].rowIndex) {
+                    return;
+                }
+
+                if (isLineNumCell(node[0])) {
+                    var row = node.parent();
+                    removeOldRowsFromSelection(row);
+                    addRowToSelection(row);
+                }
+            })
+            .bind("touchcancel", function(e) {
+                resetSelection();
+            })
+            .proxyTouchEvents("touchstart touchend");
 
         addCommentFlags(self, lines, key);
+
+        /*
+         * Begins the selection of line numbers.
+         *
+         * @param {jQuery} row  The row to begin the selection on.
+         */
+        function beginSelection(row) {
+            selection.begin    = selection.end    = row;
+            selection.beginNum = selection.endNum =
+                parseInt(row.attr('line'));
+
+            selection.lastSeenIndex = row[0].rowIndex;
+            row.addClass("selected");
+
+            self.disableSelection();
+        }
+
+        /*
+         * Finalizes the selection and pops up a comment dialog.
+         *
+         * @param {jquery} row  The row to end the selection on.
+         */
+        function endSelection(row) {
+            row.removeClass("selected");
+
+            if (selection.beginNum == selection.endNum) {
+                /* See if we have a comment flag on the selected row. */
+                var commentFlag = row.find(".commentflag");
+
+                if (commentFlag.length == 1) {
+                    commentFlag.click()
+                    return;
+                }
+            }
+
+            /*
+             * Selection was finalized. Create the comment block
+             * and show the comment dialog.
+             */
+            var commentBlock = new DiffCommentBlock(
+                selection.begin,
+                selection.end,
+                selection.beginNum,
+                selection.endNum);
+            commentBlock.showCommentDlg();
+        }
+
+        /*
+         * Adds a row to the selection. This will update the selection range
+         * and mark the rows as selected.
+         *
+         * This row is assumed to be the most recently selected row, and
+         * will mark the new beginning or end of the selection.
+         *
+         * @param {jQuery} row  The row to add to the selection.
+         */
+        function addRowToSelection(row) {
+            row.css("cursor", "pointer");
+
+            if (selection.begin != null) {
+                /* We have an active selection. */
+                var linenum = parseInt(row.attr("line"));
+
+                if (linenum < selection.beginNum) {
+                    selection.beginNum = linenum;
+                    selection.begin = row;
+                } else if (linenum > selection.beginNum) {
+                    selection.end = row;
+                    selection.endNum = linenum;
+                }
+
+                var min = Math.min(selection.lastSeenIndex,
+                                   row[0].rowIndex);
+                var max = Math.max(selection.lastSeenIndex,
+                                   row[0].rowIndex);
+
+                for (var i = min; i <= max; i++) {
+                    $(self[0].rows[i]).addClass("selected");
+                }
+
+                selection.lastSeenIndex = row[0].rowIndex;
+            } else {
+                var lineNumCell = row[0].cells[0];
+
+                /* See if we have a comment flag in here. */
+                if ($(".commentflag", lineNumCell).length == 0) {
+                    ghostCommentFlag
+                        .css("top", row.offset().top - 1)
+                        .show()
+                        .parent()
+                            .removeClass("selected");
+                    ghostCommentFlagCell = $(row[0].cells[0]);
+                }
+
+                row.addClass("selected");
+            }
+        }
+
+        /*
+         * Removes any old rows from the selection, based on the most recent
+         * row selected.
+         *
+         * @param {jQuery} row  The last row selected.
+         */
+        function removeOldRowsFromSelection(row) {
+            var destRowIndex = row[0].rowIndex;
+
+            if (destRowIndex >= selection.begin[0].rowIndex) {
+                for (var i = selection.lastSeenIndex;
+                     i > destRowIndex;
+                     i--) {
+                    $(self[0].rows[i]).removeClass("selected");
+                }
+
+                selection.lastSeenIndex = destRowIndex;
+            }
+        }
+
+        /*
+         * Resets the selection information.
+         */
+        function resetSelection() {
+            if (selection.begin != null) {
+                /* Reset the selection. */
+                var rows = self[0].rows;
+
+                for (var i = selection.begin[0].rowIndex;
+                     i <= selection.end[0].rowIndex;
+                     i++) {
+                    $(rows[i]).removeClass("selected");
+                }
+
+                selection.begin    = selection.end    = null;
+                selection.beginNum = selection.endNum = 0;
+                selection.rows = [];
+            }
+
+            ghostCommentFlagCell = null;
+
+            /* Re-enable text selection on IE */
+            self.enableSelection();
+        }
 
         /*
          * Returns whether a particular cell is a line number cell.
@@ -632,7 +684,7 @@ $.fn.diffFile = function(lines, key) {
          *
          * @return {jQuery} The row.
          */
-        function getActualRowNode(node) {
+        function getActualLineNumCell(node) {
             if (node.hasClass("commentflag")) {
                 if (node[0] == ghostCommentFlag[0]) {
                     node = ghostCommentFlagCell;

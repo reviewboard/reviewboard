@@ -6,18 +6,22 @@
 {%  if file.binary %}
 {%   trans "binary file" %}
 {%  else %}
-{%   blocktrans count file.num_changes as counter %}
- 1  change
-{%    plural %}
- {{counter}} changes
-{%   endblocktrans %} [
-{%   ifequal file.chunks|length 1 %}
-    <a href="#{{file.index}}.{{file.chunks.0.index}}" onClick="return !gotoAnchor('{{file.index}}.{{file.chunks.0.index}}');"> {% ifequal file.chunks.0.change "insert" %}new content{% endifequal %}{% ifequal file.chunks.0.change "delete" %}deleted content{% endifequal %}</a>
+{%   if file.deleted %}
+{%    trans "deleted" %}
 {%   else %}
+{%    blocktrans count file.num_changes as counter %}
+ 1  change
+{%     plural %}
+ {{counter}} changes
+{%    endblocktrans %} [
+{%    ifequal file.chunks|length 1 %}
+    <a href="#{{file.index}}.{{file.chunks.0.index}}" onClick="return !gotoAnchor('{{file.index}}.{{file.chunks.0.index}}');"> {% ifequal file.chunks.0.change "insert" %}new content{% endifequal %}{% ifequal file.chunks.0.change "delete" %}deleted content{% endifequal %}</a>
+{%    else %}
 {%    for chunk_index in file.changed_chunk_indexes %}
      <a href="#{{file.index}}.{{chunk_index}}" onClick="return !gotoAnchor('{{file.index}}.{{chunk_index}}');">{{forloop.counter}}</a>
-{%    endfor %}
-{%   endifequal %}
+{%     endfor %}
+{%    endifequal %}
  ]
+{%   endif %}{# !deleted #}
 {%  endif %}{# !binary #}
 {% endif %}{# !error #}
