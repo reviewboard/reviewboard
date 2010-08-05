@@ -787,6 +787,9 @@ def search(request, template_name='reviews/search.html'):
         return HttpResponseRedirect(reverse("root"))
 
     import lucene
+    lv = [int(x) for x in lucene.VERSION.split('.')]
+    lucene_is_2x = lv[0] == 2 and lv[1] < 9
+    lucene_is_3x = lv[0] == 3 or (lv[0] == 2 and lv[1] == 9)
 
     # We may have already initialized lucene
     try:
@@ -795,16 +798,29 @@ def search(request, template_name='reviews/search.html'):
         pass
 
     index_file = siteconfig.get("search_index_file")
-    store = lucene.FSDirectory.getDirectory(index_file, False)
+    if lucene_is_2x:
+        store = lucene.FSDirectory.getDirectory(index_file, False)
+    elif lucene_is_3x:
+        store = lucene.FSDirectory.open(lucene.File(index_file))
+    else:
+        assert False
+
     try:
         searcher = lucene.IndexSearcher(store)
     except lucene.JavaError, e:
         # FIXME: show a useful error
         raise e
 
-    parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
-    result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id')) \
-                  for hit in searcher.search(parser.parse(query))]
+    if lucene_is_2x:
+        parser = lucene.QueryParser('text', lucene.StandardAnalyzer())
+        result_ids = [int(lucene.Hit.cast_(hit).getDocument().get('id')) \
+                      for hit in searcher.search(parser.parse(query))]
+    elif lucene_is_3x:
+        parser = lucene.QueryParser(lucene.Version.LUCENE_CURRENT, 'text',
+            lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT))
+        result_ids = [searcher.doc(hit.doc).get('id') \
+                      for hit in searcher.search(parser.parse(query), 100).scoreDocs]
+
 
     searcher.close()
 

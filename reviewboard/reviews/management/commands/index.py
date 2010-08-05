@@ -15,6 +15,10 @@ try:
     import lucene
     lucene.initVM(lucene.CLASSPATH)
     have_lucene = True
+
+    lv = [int(x) for x in lucene.VERSION.split('.')]
+    lucene_is_2x = lv[0] == 2 and lv[1] < 9
+    lucene_is_3x = lv[0] == 3 or (lv[0] == 2 and lv[1] == 9)
 except ImportError:
     # This is here just in case someone is misconfigured but manages to
     # skip the dependency checks inside manage.py (perhaps they have
@@ -65,10 +69,19 @@ class Command(NoArgsCommand):
         f.write('%d' % time.time())
         f.close()
 
-        store = lucene.FSDirectory.getDirectory(store_dir, False)
-        writer = lucene.IndexWriter(store, False,
-                                    lucene.StandardAnalyzer(),
-                                    not incremental)
+        if lucene_is_2x:
+            store = lucene.FSDirectory.getDirectory(store_dir, False)
+            writer = lucene.IndexWriter(store, False,
+                                        lucene.StandardAnalyzer(),
+                                        not incremental)
+        elif lucene_is_3x:
+            store = lucene.FSDirectory.open(lucene.File(store_dir))
+            writer = lucene.IndexWriter(store,
+                lucene.StandardAnalyzer(lucene.Version.LUCENE_CURRENT),
+                not incremental,
+                lucene.IndexWriter.MaxFieldLength.LIMITED)
+        else:
+            assert False
 
         status = Q(status='P') | Q(status='S')
         objects = ReviewRequest.objects.filter(status)
@@ -116,6 +129,15 @@ class Command(NoArgsCommand):
         writer.close()
 
     def index_review_request(self, writer, request):
+        if lucene_is_2x:
+            lucene_tokenized = lucene.Field.Index.TOKENIZED
+            lucene_un_tokenized = lucene.Field.Index.UN_TOKENIZED
+        elif lucene_is_3x:
+            lucene_tokenized = lucene.Field.Index.ANALYZED
+            lucene_un_tokenized = lucene.Field.Index.NOT_ANALYZED
+        else:
+            assert False
+
         # There are several fields we want to make available to users.
         # We index them individually, but also create a big hunk of text
         # to use for the default field, so people can just type in a
@@ -126,21 +148,21 @@ class Command(NoArgsCommand):
                              lucene.Field.Index.NO))
         doc.add(lucene.Field('summary', request.summary,
                              lucene.Field.Store.NO,
-                             lucene.Field.Index.TOKENIZED))
+                             lucene_tokenized))
         # Remove commas, since lucene won't tokenize it right with them
         bugs = ' '.join(request.bugs_closed.split(','))
         doc.add(lucene.Field('bug', bugs,
                              lucene.Field.Store.NO,
-                             lucene.Field.Index.TOKENIZED))
+                             lucene_tokenized))
 
         name = ' '.join([request.submitter.username,
                          request.submitter.get_full_name()])
         doc.add(lucene.Field('author', name,
                              lucene.Field.Store.NO,
-                             lucene.Field.Index.TOKENIZED))
+                             lucene_tokenized))
         doc.add(lucene.Field('username', request.submitter.username,
                              lucene.Field.Store.NO,
-                             lucene.Field.Index.UN_TOKENIZED))
+                             lucene_un_tokenized))
 
         # FIXME: index reviews
         # FIXME: index dates
@@ -160,7 +182,7 @@ class Command(NoArgsCommand):
         # (main.cc, vmuiLinux/main.cc, and player/linux/main.cc)
         doc.add(lucene.Field('file', aggregate_files,
                              lucene.Field.Store.NO,
-                             lucene.Field.Index.TOKENIZED))
+                             lucene_tokenized))
 
         text = '\n'.join([request.summary,
                           request.description,
@@ -170,5 +192,5 @@ class Command(NoArgsCommand):
                           aggregate_files])
         doc.add(lucene.Field('text', text,
                              lucene.Field.Store.NO,
-                             lucene.Field.Index.TOKENIZED))
+                             lucene_tokenized))
         writer.addDocument(doc)
