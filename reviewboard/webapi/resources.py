@@ -1047,19 +1047,25 @@ class ScreenshotDraftResource(BaseScreenshotResource):
         guarantee that we'll be able to identify them as screenshots part
         of the draft.
         """
-        # TODO: Handle ?counts-only=1
-        return WebAPIResponsePaginated(
-            request,
-            queryset=self.get_queryset(request, is_list=True,
-                                       *args, **kwargs),
-            results_key=self.list_result_key,
-            serialize_object_func=
-                lambda obj: self.serialize_object(obj, request=request,
-                                                  *args, **kwargs),
-            extra_data={
-                'links': self.get_links(self.list_child_resources,
-                                        request=request, *args, **kwargs),
-            })
+        queryset = self.get_queryset(request, is_list=True, *args, **kwargs)
+
+        if request.GET.get('counts-only', False):
+            return 200, {
+                'count': queryset.count(),
+            }
+        else:
+            return WebAPIResponsePaginated(
+                request,
+                queryset=self.get_queryset(request, is_list=True,
+                                           *args, **kwargs),
+                results_key=self.list_result_key,
+                serialize_object_func=
+                    lambda obj: self.serialize_object(obj, request=request,
+                                                      *args, **kwargs),
+                extra_data={
+                    'links': self.get_links(self.list_child_resources,
+                                            request=request, *args, **kwargs),
+                })
 
 screenshot_draft_resource = ScreenshotDraftResource()
 
