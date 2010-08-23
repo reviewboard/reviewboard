@@ -13,12 +13,17 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+import os
+import sys
+sys.path.append(os.path.abspath('_ext'))
 
 # Set this up to parse Django-driven code.
-#sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-#from reviewboard import settings
-#from django.core.management import setup_environ
-#setup_environ(settings)
+sys.path.insert(0, os.path.join(__file__, "..", ".."))
+sys.path.insert(0, os.path.dirname(__file__))
+
+from reviewboard import settings
+from django.core.management import setup_environ
+setup_environ(settings)
 
 
 # If your extensions are in another directory, add it here. If the directory
@@ -32,7 +37,14 @@
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx', 'sphinx.ext.todo']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.todo',
+    'webapidocs',
+    'httprole',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
