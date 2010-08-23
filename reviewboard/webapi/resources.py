@@ -484,7 +484,6 @@ class FileDiffResource(WebAPIResource):
                 'binary': f['binary'],
                 'chunks': f['chunks'],
                 'num_changes': f['num_changes'],
-                'whitespace_only': f['whitespace_only'],
                 'changed_chunk_indexes': f['changed_chunk_indexes'],
                 'new_file': f['newfile'],
             }
@@ -850,7 +849,7 @@ class ReviewGroupResource(WebAPIResource):
     uri_object_key_regex = '[A-Za-z0-9_-]+'
     model_object_key = 'name'
 
-    allowed_methods = ('GET', 'PUT')
+    allowed_methods = ('GET',)
 
     def get_queryset(self, request, *args, **kwargs):
         search_q = request.GET.get('q', None)
@@ -926,7 +925,7 @@ class BaseScreenshotResource(WebAPIResource):
     """A base resource representing screenshots."""
     model = Screenshot
     name = 'screenshot'
-    fields = ('id', 'caption', 'path', 'thumbnail_url')
+    fields = ('id', 'caption', 'path', 'url', 'thumbnail_url')
 
     uri_object_key = 'screenshot_id'
 
@@ -935,6 +934,9 @@ class BaseScreenshotResource(WebAPIResource):
 
     def serialize_path_field(self, obj):
         return obj.image.name
+
+    def serialize_url_field(self, obj):
+        return obj.image.url
 
     def serialize_thumbnail_url_field(self, obj):
         return obj.get_thumbnail_url()
@@ -1016,10 +1018,10 @@ class BaseScreenshotResource(WebAPIResource):
 
 class ScreenshotDraftResource(BaseScreenshotResource):
     """A resource representing drafts of screenshots."""
-    name = 'draft-screenshot'
+    name = 'draft_screenshot'
     uri_name = 'screenshots'
     model_parent_key = 'drafts'
-    allowed_methods = ('GET', 'POST', 'PUT',)
+    allowed_methods = ('GET', 'DELETE', 'POST', 'PUT',)
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         try:

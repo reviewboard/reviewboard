@@ -1696,7 +1696,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         f.close()
         review_request.publish(self.user)
 
-        screenshot = Screenshot.objects.get(pk=rsp['draft-screenshot']['id'])
+        screenshot = Screenshot.objects.get(pk=rsp['draft_screenshot']['id'])
 
         # Now modify the caption.
         rsp = self.apiPut('review-requests/%s/draft/screenshots/%s' %
