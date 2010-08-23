@@ -1,10 +1,14 @@
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
-from djblets.webapi.decorators import webapi_login_required
+from djblets.webapi.decorators import webapi_login_required, \
+                                      webapi_response_errors, \
+                                      webapi
 from djblets.webapi.encoders import BasicAPIEncoder
+from djblets.webapi.errors import NOT_LOGGED_IN
 
 
+@webapi_response_errors(NOT_LOGGED_IN)
 @simple_decorator
 def webapi_check_login_required(view_func):
     """
@@ -19,6 +23,8 @@ def webapi_check_login_required(view_func):
             return webapi_login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)
+
+    view_func.checks_login_required = True
 
     return _check
 
