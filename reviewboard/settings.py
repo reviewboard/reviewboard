@@ -145,6 +145,8 @@ def dependency_error(string):
 if os.path.split(os.path.dirname(__file__))[1] != 'reviewboard':
     dependency_error('The directory containing manage.py must be named "reviewboard"')
 
+LOCAL_ROOT = None
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:
@@ -155,15 +157,16 @@ except ImportError:
 
 TEMPLATE_DEBUG = DEBUG
 
-local_dir = os.path.dirname(settings_local.__file__)
+if not LOCAL_ROOT:
+    local_dir = os.path.dirname(settings_local.__file__)
 
-if os.path.exists(os.path.join(local_dir, 'reviewboard')):
-    # reviewboard/ is in the same directory as settings_local.py.
-    # This is probably a Git checkout.
-    LOCAL_ROOT = os.path.join(local_dir, 'reviewboard')
-else:
-    # This is likely a site install. Get the parent directory.
-    LOCAL_ROOT = os.path.dirname(local_dir)
+    if os.path.exists(os.path.join(local_dir, 'reviewboard')):
+        # reviewboard/ is in the same directory as settings_local.py.
+        # This is probably a Git checkout.
+        LOCAL_ROOT = os.path.join(local_dir, 'reviewboard')
+    else:
+        # This is likely a site install. Get the parent directory.
+        LOCAL_ROOT = os.path.dirname(local_dir)
 
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
