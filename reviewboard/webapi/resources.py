@@ -794,7 +794,7 @@ watched_review_request_resource = WatchedReviewRequestResource()
 class WatchedResource(WebAPIResource):
     """A resource for types of things watched by a user."""
     name = 'watched'
-    name_plural = 'watched'
+    singleton = True
 
     list_child_resources = [
         watched_review_group_resource,
@@ -875,7 +875,7 @@ review_group_resource = ReviewGroupResource()
 class RepositoryInfoResource(WebAPIResource):
     """A resource representing server-side information on a repository."""
     name = 'info'
-    name_plural = 'info'
+    singleton = True
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
@@ -1076,14 +1076,13 @@ class ReviewRequestDraftResource(WebAPIResource):
     """A resource representing drafts of review requests."""
     model = ReviewRequestDraft
     name = 'draft'
-    name_plural = 'draft'
+    singleton = True
     model_parent_key = 'review_request'
     mutable_fields = (
         'branch', 'bugs_closed', 'changedescription', 'description',
         'public', 'summary', 'target_groups', 'target_people', 'testing_done'
     )
     fields = ('id', 'review_request', 'last_updated') + mutable_fields
-    singleton = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -1935,7 +1934,7 @@ review_reply_resource = ReviewReplyResource()
 class ReviewDraftResource(WebAPIResource):
     """A redirecting resource that points to the current draft review."""
     name = 'review_draft'
-    name_plural = 'review_draft'
+    singleton = True
     uri_name = 'draft'
 
     @webapi_login_required
@@ -1997,8 +1996,7 @@ screenshot_resource = ScreenshotResource()
 class ReviewRequestLastUpdateResource(WebAPIResource):
     """A resource representing the last update to a review request."""
     name = 'last_update'
-    name_plural = 'last_update'
-
+    singleton = True
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
@@ -2353,7 +2351,7 @@ review_request_resource = ReviewRequestResource()
 
 class ServerInfoResource(WebAPIResource):
     name = 'info'
-    name_plural = 'info'
+    singleton = True
 
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
@@ -2390,7 +2388,7 @@ server_info_resource = ServerInfoResource()
 
 class SessionResource(WebAPIResource):
     name = 'session'
-    name_plural = 'session'
+    singleton = True
 
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
