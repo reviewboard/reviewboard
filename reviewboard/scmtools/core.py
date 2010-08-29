@@ -131,6 +131,7 @@ class SCMTool(object):
             netloc_username, hostname = url[1].split('@', 1)
         else:
             hostname = url[1]
+            netloc_username = None
 
         if not username and not netloc_username:
             return netloc_username, hostname
