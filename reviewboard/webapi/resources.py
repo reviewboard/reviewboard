@@ -389,6 +389,44 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             self.item_result_key: new_comment,
         }
 
+    @webapi_login_required
+    @webapi_request_fields(
+        required = {
+            'text': {
+                'type': str,
+                'description': 'The new comment text.',
+            },
+        },
+    )
+    def update(self, request, *args, **kwargs):
+        """Updates a reply to a diff comment.
+
+        This can only update the text in the comment. The comment being
+        replied to cannot change.
+        """
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            reply = review_reply_resource.get_object(request, *args, **kwargs)
+            diff_comment = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_reply_resource.has_modify_permissions(request, reply):
+            return PERMISSION_DENIED
+
+        for field in ('text',):
+            value = kwargs.get(field, None)
+
+            if value is not None:
+                setattr(diff_comment, field, value)
+
+        diff_comment.save()
+
+        return 200, {
+            self.item_result_key: diff_comment,
+        }
+
+
 review_reply_diff_comment_resource = ReviewReplyDiffCommentResource()
 
 
@@ -1510,6 +1548,59 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             self.item_result_key: new_comment,
         }
 
+    @webapi_login_required
+    @webapi_request_fields(
+        optional = {
+            'x': {
+                'type': int,
+                'description': 'The X location for the comment.',
+            },
+            'y': {
+                'type': int,
+                'description': 'The Y location for the comment.',
+            },
+            'w': {
+                'type': int,
+                'description': 'The width of the comment region.',
+            },
+            'h': {
+                'type': int,
+                'description': 'The height of the comment region.',
+            },
+            'text': {
+                'type': str,
+                'description': 'The comment text.',
+            },
+        },
+    )
+    def update(self, request, *args, **kwargs):
+        """Updates a screenshot comment.
+
+        This can update the text or region of an existing comment. It
+        can only be done for comments that are part of a draft review.
+        """
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
+            screenshot_comment = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_resource.has_modify_permissions(request, review):
+            return PERMISSION_DENIED
+
+        for field in ('x', 'y', 'w', 'h', 'text'):
+            value = kwargs.get(field, None)
+
+            if value is not None:
+                setattr(screenshot_comment, field, value)
+
+        screenshot_comment.save()
+
+        return 200, {
+            self.item_result_key: screenshot_comment,
+        }
+
 review_screenshot_comment_resource = ReviewScreenshotCommentResource()
 
 
@@ -1580,6 +1671,43 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
 
         return 201, {
             self.item_result_key: new_comment,
+        }
+
+    @webapi_login_required
+    @webapi_request_fields(
+        required = {
+            'text': {
+                'type': str,
+                'description': 'The new comment text.',
+            },
+        },
+    )
+    def update(self, request, *args, **kwargs):
+        """Updates a reply to a screenshot comment.
+
+        This can only update the text in the comment. The comment being
+        replied to cannot change.
+        """
+        try:
+            review_request_resource.get_object(request, *args, **kwargs)
+            reply = review_reply_resource.get_object(request, *args, **kwargs)
+            screenshot_comment = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_reply_resource.has_modify_permissions(request, reply):
+            return PERMISSION_DENIED
+
+        for field in ('text',):
+            value = kwargs.get(field, None)
+
+            if value is not None:
+                setattr(screenshot_comment, field, value)
+
+        screenshot_comment.save()
+
+        return 200, {
+            self.item_result_key: screenshot_comment,
         }
 
 review_reply_screenshot_comment_resource = \
