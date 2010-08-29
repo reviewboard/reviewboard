@@ -89,7 +89,7 @@ class WebAPIResource(DjbletsWebAPIResource):
                                                         *args, **kwargs)
 
 
-class BaseCommentResource(WebAPIResource):
+class BaseDiffCommentResource(WebAPIResource):
     """Base class for diff comment resources.
 
     Provides common fields and functionality for all diff comment resources.
@@ -142,11 +142,11 @@ class BaseCommentResource(WebAPIResource):
         return obj.review.get().user
 
 
-class FileDiffCommentResource(BaseCommentResource):
+class FileDiffCommentResource(BaseDiffCommentResource):
     """A resource representing diff comments inside a filediff resource.
 
     This resource is read-only, and only handles returning the list of
-    comments. All comment creation is handled by ReviewCommentResource.
+    comments. All comment creation is handled by ReviewDiffCommentResource.
     """
     allowed_methods = ('GET',)
     model_parent_key = 'filediff'
@@ -171,14 +171,14 @@ class FileDiffCommentResource(BaseCommentResource):
 filediff_comment_resource = FileDiffCommentResource()
 
 
-class ReviewCommentResource(BaseCommentResource):
+class ReviewDiffCommentResource(BaseDiffCommentResource):
     """A resource representing diff comments on a review."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
-        q = super(ReviewCommentResource, self).get_queryset(
+        q = super(ReviewDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(review=review_id)
 
@@ -319,17 +319,17 @@ class ReviewCommentResource(BaseCommentResource):
             self.item_result_key: diff_comment,
         }
 
-review_comment_resource = ReviewCommentResource()
+review_diff_comment_resource = ReviewDiffCommentResource()
 
 
-class ReviewReplyCommentResource(BaseCommentResource):
+class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     """A resource representing diff comments on a reply to a review."""
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
-        q = super(ReviewReplyCommentResource, self).get_queryset(
+        q = super(ReviewReplyDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
@@ -364,7 +364,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
 
         try:
             comment = \
-                review_comment_resource.get_object(request,
+                review_diff_comment_resource.get_object(request,
                                                    comment_id=reply_to_id,
                                                    *args, **kwargs)
         except ObjectDoesNotExist:
@@ -389,7 +389,7 @@ class ReviewReplyCommentResource(BaseCommentResource):
             self.item_result_key: new_comment,
         }
 
-review_reply_comment_resource = ReviewReplyCommentResource()
+review_reply_diff_comment_resource = ReviewReplyDiffCommentResource()
 
 
 class FileDiffResource(WebAPIResource):
@@ -1777,7 +1777,7 @@ class ReviewReplyResource(BaseReviewResource):
     )
 
     item_child_resources = [
-        review_reply_comment_resource,
+        review_reply_diff_comment_resource,
         review_reply_screenshot_comment_resource,
     ]
 
@@ -1949,7 +1949,7 @@ class ReviewResource(BaseReviewResource):
     model_parent_key = 'review_request'
 
     item_child_resources = [
-        review_comment_resource,
+        review_diff_comment_resource,
         review_reply_resource,
         review_screenshot_comment_resource,
     ]
@@ -2451,7 +2451,11 @@ def string_to_status(status):
         raise Exception("Invalid status '%s'" % status)
 
 
-register_resource_for_model(Comment, review_comment_resource)
+register_resource_for_model(
+    Comment,
+    lambda obj: obj.review.get().is_reply() and
+                review_reply_diff_comment_resource or
+                review_diff_comment_resource)
 register_resource_for_model(DiffSet, diffset_resource)
 register_resource_for_model(FileDiff, filediff_resource)
 register_resource_for_model(Group, review_group_resource)
@@ -2462,6 +2466,9 @@ register_resource_for_model(
 register_resource_for_model(ReviewRequest, review_request_resource)
 register_resource_for_model(ReviewRequestDraft, review_request_draft_resource)
 register_resource_for_model(Screenshot, screenshot_resource)
-register_resource_for_model(ScreenshotComment,
-                            review_screenshot_comment_resource)
+register_resource_for_model(
+    ScreenshotComment,
+    lambda obj: obj.review.get().is_reply() and
+                review_reply_screenshot_comment_resource or
+                review_screenshot_comment_resource)
 register_resource_for_model(User, user_resource)
