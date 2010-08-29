@@ -105,15 +105,32 @@ class BaseCommentResource(WebAPIResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, review_request_id, is_list=False,
+                     *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request
         which are either public or owned by the requesting user.
+
+        If the queryset is being used for a list of comment resources,
+        then this can be further filtered by passing ``?interdiff-revision=``
+        on the URL to match the given interdiff revision, and
+        ``?line=`` to match comments on the given line number.
         """
-        return self.model.objects.filter(
+        q = self.model.objects.filter(
             Q(review__public=True) | Q(review__user=request.user),
             filediff__diffset__history__review_request=review_request_id)
+
+        if is_list:
+            if 'interdiff-revision' in request.GET:
+                interdiff_revision = int(request.GET['interdiff-revision'])
+                q = q.filter(
+                    interfilediff__diffset__revision=interdiff_revision)
+
+            if 'line' in request.GET:
+                q = q.filter(first_line=int(request.GET['line']))
+
+        return q
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
@@ -135,7 +152,7 @@ class FileDiffCommentResource(BaseCommentResource):
     model_parent_key = 'filediff'
 
     def get_queryset(self, request, review_request_id, diff_revision,
-                     is_list=False, *args, **kwargs):
+                     *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request
@@ -143,24 +160,13 @@ class FileDiffCommentResource(BaseCommentResource):
         owned by the requesting user.
 
         If the queryset is being used for a list of comment resources,
-        then this can be further filtered by passing ``?interdiff_revision=``
+        then this can be further filtered by passing ``?interdiff-revision=``
         on the URL to match the given interdiff revision, and
         ``?line=`` to match comments on the given line number.
         """
         q = super(FileDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        q = q.filter(filediff__diffset__revision=diff_revision)
-
-        if is_list:
-            if 'interdiff_revision' in request.GET:
-                interdiff_revision = int(request.GET['interdiff_revision'])
-                q = q.filter(
-                    interfilediff__diffset__revision=interdiff_revision)
-
-            if 'line' in request.GET:
-                q = q.filter(first_line=int(request.GET['line']))
-
-        return q
+        return q.filter(filediff__diffset__revision=diff_revision)
 
 filediff_comment_resource = FileDiffCommentResource()
 
@@ -171,30 +177,10 @@ class ReviewCommentResource(BaseCommentResource):
     model_parent_key = 'review'
 
     def get_queryset(self, request, review_request_id, review_id,
-                     is_list=False, *args, **kwargs):
-        """Returns a queryset for Comment models.
-
-        This filters the query for comments on the particular review.
-
-        If the queryset is being used for a list of comment resources,
-        then this can be further filtered by passing ``?interdiff_revision=``
-        on the URL to match the given interdiff revision, and
-        ``?line=`` to match comments on the given line number.
-        """
+                     *args, **kwargs):
         q = super(ReviewCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        q = q.filter(review=review_id)
-
-        if is_list:
-            if 'interdiff_revision' in request.GET:
-                interdiff_revision = int(request.GET['interdiff_revision'])
-                q = q.filter(
-                    interfilediff__diffset__revision=interdiff_revision)
-
-            if 'line' in request.GET:
-                q = q.filter(first_line=int(request.GET['line']))
-
-        return q
+        return q.filter(review=review_id)
 
     def has_delete_permissions(self, request, comment, *args, **kwargs):
         review = comment.review.get()
