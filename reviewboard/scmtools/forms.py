@@ -226,6 +226,7 @@ class RepositoryForm(forms.ModelForm):
         help_text=_('Use this to control whether or not a repository is '
                     'shown when creating new review requests. Existing '
                     'review requests are unaffected.'),
+        initial=True,
         required=False)
 
     hosting_type = forms.ChoiceField(
