@@ -5,16 +5,19 @@ Review Board Manual
 Guides
 ======
 
-* :ref:`Users Guide`
-* :ref:`Administration Guide`
-* :ref:`Web API Guide`
-* :ref:`Frequently Asked Questions`
+.. toctree::
+   :maxdepth: 1
+
+   users/index
+   admin/index
+   webapi/index
+   faq/index
 
 
 Indices, glossary and tables
 ============================
 
-* :ref:`Table of Contents`
+* :ref:`tableofcontents`
 * :ref:`genindex`
 * :ref:`glossary`
 
