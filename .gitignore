@@ -17,7 +17,7 @@
 
 # Files
 .coverage
-settings_local.py
+reviewboard/settings_local.py
 
 # Directories/symlinks
 reviewboard/htdocs/media/djblets
