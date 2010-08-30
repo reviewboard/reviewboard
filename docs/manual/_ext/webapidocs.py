@@ -2,9 +2,13 @@
 Sphinx plugins for web API docs.
 """
 import inspect
-import json
 import re
 import sys
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 from django.contrib.auth.models import User
 from django.http import HttpRequest
