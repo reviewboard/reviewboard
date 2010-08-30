@@ -1,0 +1,34 @@
+.. _webapi2.0-error-100:
+
+====================
+100 - Does Not Exist
+====================
+
++----------------------+----------------------------------------------------+
+| **API Error Code**   | 100                                                |
++----------------------+----------------------------------------------------+
+| **HTTP Status Code** | :http:`404`                                        |
++----------------------+----------------------------------------------------+
+| **Error Text**       | ``Object does not exist``                          |
++----------------------+----------------------------------------------------+
+| **Description**      | One or more of the IDs provided in the URL doesn't |
+|                      | exist or isn't valid in that level of the resource |
+|                      | tree.                                              |
++----------------------+----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 100,
+       msg: "Object does not exist"
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3

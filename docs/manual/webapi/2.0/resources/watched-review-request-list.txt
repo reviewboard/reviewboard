@@ -1,0 +1,5 @@
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.WatchedReviewRequestResource
+   :is-list:
+
+.. comment: vim: ft=rst et ts=3

@@ -1,0 +1,5 @@
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.ReviewRequestLastUpdateResource
+   :hide-links:
+
+.. comment: vim: ft=rst et ts=3

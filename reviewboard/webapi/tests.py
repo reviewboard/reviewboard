@@ -1646,6 +1646,26 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('path' in rsp['fields'])
+
+        # Now test with a valid path and an invalid basedir.
+        # This is necessary because basedir is "optional" as defined by
+        # the resource, but may be required by the form that processes the
+        # diff.
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+        f = open(diff_filename, "r")
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
+            'path': f,
+        }, expected_status=400)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('basedir' in rsp['fields'])
 
     def test_get_diffs(self):
