@@ -203,7 +203,9 @@ class ReviewRequest(models.Model):
                                             null=True, db_index=True)
     repository = models.ForeignKey(Repository,
                                    related_name="review_requests",
-                                   verbose_name=_("repository"))
+                                   verbose_name=_("repository"),
+                                   null=True,
+                                   blank=True)
     email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,

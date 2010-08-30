@@ -64,7 +64,7 @@ def new_review_request(request,
             try:
                 review_request = form.create(
                     user=request.user,
-                    diff_file=request.FILES['diff_path'],
+                    diff_file=request.FILES.get('diff_path'),
                     parent_diff_file=request.FILES.get('parent_diff_path'))
                 return HttpResponseRedirect(review_request.get_absolute_url())
             except (OwnershipError, ChangeSetError):
@@ -76,6 +76,30 @@ def new_review_request(request,
         'form': form,
         'fields': simplejson.dumps(form.field_mapping),
     }))
+
+
+def make_review_request_context(review_request, extra_context):
+    """Returns a dictionary for template contexts used for review requests.
+
+    The dictionary will contain the common data that is used for all
+    review request-related pages (the review request detail page, the diff
+    viewer, and the screenshot pages).
+
+    For convenience, extra data can be passed to this dictionary.
+    """
+    if review_request.repository:
+        upload_diff_form = UploadDiffForm(review_request)
+        scmtool = review_request.repository.get_scmtool()
+    else:
+        upload_diff_form = None
+        scmtool = None
+
+    return dict({
+        'review_request': review_request,
+        'upload_diff_form': upload_diff_form,
+        'upload_screenshot_form': UploadScreenshotForm(),
+        'scmtool': scmtool,
+    }, **extra_context)
 
 
 fields_changed_name_map = {
@@ -215,19 +239,17 @@ def review_detail(request, review_request_id,
 
     entries.sort(key=lambda item: item['timestamp'])
 
-    response = render_to_response(template_name, RequestContext(request, {
-        'draft': draft,
-        'review_request': review_request,
-        'review_request_details': draft or review_request,
-        'entries': entries,
-        'last_activity_time': last_activity_time,
-        'review': review,
-        'request': request,
-        'upload_diff_form': UploadDiffForm(review_request),
-        'upload_screenshot_form': UploadScreenshotForm(),
-        'scmtool': repository.get_scmtool(),
-        'PRE_CREATION': PRE_CREATION,
-    }))
+    response = render_to_response(
+        template_name,
+        RequestContext(request, make_review_request_context(review_request, {
+            'draft': draft,
+            'review_request_details': draft or review_request,
+            'entries': entries,
+            'last_activity_time': last_activity_time,
+            'review': review,
+            'request': request,
+            'PRE_CREATION': PRE_CREATION,
+        })))
     set_etag(response, etag)
 
     return response
@@ -432,21 +454,19 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
 
     last_activity_time, updated_object = review_request.get_last_activity()
 
-    return view_diff(request, diffset.id, interdiffset_id, {
-        'review': review,
-        'review_request': review_request,
-        'review_request_details': draft or review_request,
-        'draft': draft,
-        'is_draft_diff': is_draft_diff,
-        'is_draft_interdiff': is_draft_interdiff,
-        'num_diffs': num_diffs,
-        'upload_diff_form': UploadDiffForm(review_request),
-        'upload_screenshot_form': UploadScreenshotForm(),
-        'scmtool': repository.get_scmtool(),
-        'last_activity_time': last_activity_time,
-        'specific_diff_requested': revision is not None or
-                                   interdiff_revision is not None,
-    }, template_name)
+    return view_diff(
+         request, diffset.id, interdiffset_id, template_name=template_name,
+         extra_context=make_review_request_context(review_request, {
+            'review': review,
+            'review_request_details': draft or review_request,
+            'draft': draft,
+            'is_draft_diff': is_draft_diff,
+            'is_draft_interdiff': is_draft_interdiff,
+            'num_diffs': num_diffs,
+            'last_activity_time': last_activity_time,
+            'specific_diff_requested': revision is not None or
+                                       interdiff_revision is not None,
+        }))
 
 
 @check_login_required
@@ -757,18 +777,17 @@ def view_screenshot(request, review_request_id, screenshot_id,
     except ScreenshotComment.DoesNotExist:
         comments = []
 
-    return render_to_response(template_name, RequestContext(request, {
-        'draft': draft,
-        'review_request': review_request,
-        'review_request_details': draft or review_request,
-        'review': review,
-        'details': draft or review_request,
-        'screenshot': screenshot,
-        'request': request,
-        'comments': comments,
-        'upload_diff_form': UploadDiffForm(review_request),
-        'upload_screenshot_form': UploadScreenshotForm(),
-    }))
+    return render_to_response(
+        template_name,
+        RequestContext(request, make_review_request_context(review_request, {
+            'draft': draft,
+            'review_request_details': draft or review_request,
+            'review': review,
+            'details': draft or review_request,
+            'screenshot': screenshot,
+            'request': request,
+            'comments': comments,
+        })))
 
 
 def search(request, template_name='reviews/search.html'):
