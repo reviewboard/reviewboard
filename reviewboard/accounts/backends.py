@@ -272,7 +272,12 @@ class ActiveDirectoryBackend(object):
             try:
                 bind_username ='%s@%s' % (username, self.get_domain_name())
                 con.simple_bind_s(bind_username, password)
-                user_data = self.search_ad(con, '(&(objectClass=user)(sAMAccountName=%s))' % username)
+                user_data = self.search_ad(
+                    con,
+                    '(&(objectClass=user)(sAMAccountName=%s))' % username)
+
+                if not user_data:
+                    return None
 
                 if required_group:
                     try:
