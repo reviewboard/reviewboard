@@ -1,12 +1,9 @@
-.. _webapiguide:
-
-=============
-Web API Guide
-=============
-
+=========================
+REST API 1.0 (deprecated)
+=========================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    overview
    authenticating

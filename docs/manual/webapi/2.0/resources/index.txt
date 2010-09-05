@@ -2,95 +2,53 @@
 Resources
 =========
 
-* :ref:`webapi2.0-root-resource`
-
-  * :ref:`webapi2.0-repository-list-resource`
-
-    * :ref:`webapi2.0-repository-resource`
-
-      * :ref:`webapi2.0-repository-info-resource`
-
-  * :ref:`webapi2.0-review-group-list-resource`
-
-    * :ref:`webapi2.0-review-group-resource`
-
-      * :ref:`webapi2.0-review-group-user-list-resource`
-
-  * :ref:`webapi2.0-review-request-list-resource`
-
-    * :ref:`webapi2.0-review-request-resource`
-
-      * :ref:`webapi2.0-diff-list-resource`
-
-        * :ref:`webapi2.0-diff-resource`
-
-          * :ref:`webapi2.0-file-diff-list-resource`
-
-            * :ref:`webapi2.0-file-diff-resource`
-
-              * :ref:`webapi2.0-file-diff-comment-list-resource`
-
-      * :ref:`webapi2.0-review-request-draft-resource`
-
-        * :ref:`webapi2.0-draft-screenshot-list-resource`
-
-          * :ref:`webapi2.0-draft-screenshot-resource`
-
-      * :ref:`webapi2.0-review-request-last-update-resource`
-
-      * :ref:`webapi2.0-review-list-resource`
-
-        * :ref:`webapi2.0-review-resource`
-
-          * :ref:`webapi2.0-review-diff-comment-list-resource`
-
-            * :ref:`webapi2.0-review-diff-comment-resource`
-
-          * :ref:`webapi2.0-review-reply-list-resource`
-
-            * :ref:`webapi2.0-review-reply-resource`
-
-              * :ref:`webapi2.0-review-reply-diff-comment-list-resource`
-
-                * :ref:`webapi2.0-review-reply-diff-comment-resource`
-
-              * :ref:`webapi2.0-review-reply-screenshot-comment-list-resource`
-
-                * :ref:`webapi2.0-review-reply-screenshot-comment-resource`
-
-              * :ref:`webapi2.0-review-reply-draft-resource`
-
-          * :ref:`webapi2.0-review-screenshot-comment-list-resource`
-
-            * :ref:`webapi2.0-review-screenshot-comment-resource`
-
-      * :ref:`webapi2.0-screenshot-list-resource`
-
-        * :ref:`webapi2.0-screenshot-resource`
-
-          * :ref:`webapi2.0-screenshot-comment-list-resource`
-
-  * :ref:`webapi2.0-server-info-resource`
-  * :ref:`webapi2.0-session-resource`
-  * :ref:`webapi2.0-user-list-resource`
-
-    * :ref:`webapi2.0-user-resource`
-
-      * :ref:`webapi2.0-watched-resource`
-
-        * :ref:`webapi2.0-watched-review-group-list-resource`
-
-          * :ref:`webapi2.0-watched-review-group-resource`
-
-        * :ref:`webapi2.0-watched-review-request-list-resource`
-
-          * :ref:`webapi2.0-watched-review-request-resource`
-
-
 .. toctree::
-   :hidden:
+   :maxdepth: 1
 
+   diff-list
+   diff
+   draft-screenshot-list
+   draft-screenshot
+   file-diff-comment-list
+   file-diff-list
+   file-diff
+   repository-info
+   repository-list
+   repository
+   review-diff-comment-list
+   review-diff-comment
+   review-draft
+   review-group-list
+   review-group
+   review-group-user-list
+   review-list
+   review-reply-diff-comment-list
+   review-reply-diff-comment
+   review-reply-draft
+   review-reply-list
+   review-reply-screenshot-comment-list
+   review-reply-screenshot-comment
+   review-reply
+   review-request-draft
+   review-request-last-update
+   review-request-list
+   review-request
+   review-screenshot-comment-list
+   review-screenshot-comment
+   review
    root
+   screenshot-comment-list
+   screenshot-list
+   screenshot
+   server-info
+   session
+   user-list
+   user
+   watched-review-group-list
+   watched-review-group
+   watched-review-request-list
+   watched-review-request
+   watched
 
 
 .. comment: vim: ft=rst et ts=3
