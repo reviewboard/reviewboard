@@ -18,6 +18,7 @@ from djblets.util.filesystem import is_exe_in_path
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, \
+                                        InvalidRevisionFormatError, \
                                         RepositoryNotFoundError, \
                                         SCMError
 
@@ -28,6 +29,16 @@ GIT_DIFF_PREFIX = re.compile('^[ab]/')
 
 # Register these URI schemes so we can handle them properly.
 urlparse.uses_netloc.append('git')
+
+
+class ShortSHA1Error(InvalidRevisionFormatError):
+    def __init__(self, path, revision, *args, **kwargs):
+        super(ShortSHA1Error, self).__init__(
+            path=path,
+            revision=revision,
+            detail='The SHA1 is too short. Make sure the diff is generated '
+                   'with `git diff --full-index`.',
+            *args, **kwargs)
 
 
 class GitTool(SCMTool):
@@ -58,13 +69,17 @@ class GitTool(SCMTool):
 
         try:
             return self.client.get_file_exists(path, revision)
-        except FileNotFoundError:
+        except (FileNotFoundError, InvalidRevisionFormatError):
             return False
 
     def parse_diff_revision(self, file_str, revision_str):
         revision = revision_str
+
         if file_str == "/dev/null":
             revision = PRE_CREATION
+        else:
+            self.client.validate_sha1_format(file_str, revision)
+
         return file_str, revision
 
     def get_diffs_use_absolute_paths(self):
@@ -241,6 +256,8 @@ class GitDiffParser(DiffParser):
 
 
 class GitClient(object):
+    FULL_SHA1_LENGTH = 40
+
     schemeless_url_re = re.compile(
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
@@ -293,8 +310,9 @@ class GitClient(object):
 
     def get_file(self, path, revision):
         if self.raw_file_url:
-            # First, try to grab the file remotely.
+            self.validate_sha1_format(path, revision)
 
+            # First, try to grab the file remotely.
             try:
                 url = self._build_raw_url(path, revision)
                 return urllib2.urlopen(url).read()
@@ -306,8 +324,9 @@ class GitClient(object):
 
     def get_file_exists(self, path, revision):
         if self.raw_file_url:
-            # First, try to grab the file remotely.
+            self.validate_sha1_format(path, revision)
 
+            # First, try to grab the file remotely.
             try:
                 url = self._build_raw_url(path, revision)
                 return urllib2.urlopen(url).geturl()
@@ -322,6 +341,11 @@ class GitClient(object):
         else:
             contents = self._cat_file(path, revision, "-t")
             return contents and contents.strip() == "blob"
+
+    def validate_sha1_format(self, path, sha1):
+        """Validates that a SHA1 is of the right length for this repository."""
+        if self.raw_file_url and len(sha1) != self.FULL_SHA1_LENGTH:
+            raise ShortSHA1Error(path, sha1)
 
     def _build_raw_url(self, path, revision):
         url = self.raw_file_url
