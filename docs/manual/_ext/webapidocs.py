@@ -640,8 +640,8 @@ def get_resource_docname(resource, is_list):
 def get_ref_to_doc(refname):
     """Returns a node that links to a document with the given ref name."""
     ref = addnodes.pending_xref(reftype='ref', reftarget=refname,
-                                refcaption=False)
-    ref += nodes.literal(title=refname, classes=['xref'])
+                                refexplicit=False, refdomain='std')
+    ref += nodes.literal(refname, refname, classes=['xref'])
     return ref
 
 
