@@ -46,7 +46,7 @@ from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        ReviewRequestDraft, Review, Group, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
-from reviewboard.scmtools.errors import ChangeSetError
+from reviewboard.scmtools.errors import SCMError
 
 
 @login_required
@@ -67,7 +67,7 @@ def new_review_request(request,
                     diff_file=request.FILES.get('diff_path'),
                     parent_diff_file=request.FILES.get('parent_diff_path'))
                 return HttpResponseRedirect(review_request.get_absolute_url())
-            except (OwnershipError, ChangeSetError):
+            except (OwnershipError, SCMError, ValueError):
                 pass
     else:
         form = NewReviewRequestForm()
