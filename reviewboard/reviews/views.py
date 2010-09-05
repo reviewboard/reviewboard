@@ -117,6 +117,7 @@ fields_changed_name_map = {
 
 
 @check_login_required
+@valid_prefs_required
 def review_detail(request, review_request_id,
                   template_name="reviews/review_detail.html"):
     """
