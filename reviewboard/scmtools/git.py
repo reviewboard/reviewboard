@@ -33,7 +33,8 @@ urlparse.uses_netloc.append('git')
 
 class ShortSHA1Error(InvalidRevisionFormatError):
     def __init__(self, path, revision, *args, **kwargs):
-        super(ShortSHA1Error, self).__init__(
+        InvalidRevisionFormatError.__init__(
+            self,
             path=path,
             revision=revision,
             detail='The SHA1 is too short. Make sure the diff is generated '

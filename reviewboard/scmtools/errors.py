@@ -37,7 +37,7 @@ class InvalidRevisionFormatError(SCMError):
         if detail:
             msg += ': ' + detail
 
-        super(SCMError, self).__init__(msg)
+        SCMError.__init__(self, msg)
 
         self.path = path
         self.revision = revision
