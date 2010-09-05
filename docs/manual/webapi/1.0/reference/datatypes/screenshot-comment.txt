@@ -37,6 +37,7 @@ Fields
 +----------------+-------------+-------------------------------------------+
 
 .. _FileDiff: ../filediff
+.. _Screenshot: ../screenshot
 .. _User: ../user
 
 

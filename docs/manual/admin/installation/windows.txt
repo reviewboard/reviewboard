@@ -128,6 +128,7 @@ Review Board requires PyCrypto_ for SSH repository support. To install this,
 download the latest version that matches your Python version at the
 `PyCrypto Win32 downloads page`_.
 
+.. _PyCrypto: http://www.pycrypto.org/
 .. _`PyCrypto Win32 downloads page`:
    http://www.voidspace.org.uk/python/modules.shtml#pycrypto
 
