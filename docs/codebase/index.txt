@@ -19,13 +19,16 @@ The source code for Review Board is available from our `Git repository`_.
 Contributor Guides
 ==================
 
-* :ref:`Getting Started`
-* :ref:`Coding Standards`
-* :ref:`Contributing Patches`
-* :ref:`Maintaining Custom Forks of Review Board`
-* :ref:`Unit Test Fixtures`
+.. toctree::
+   :maxdepth: 1
 
-.. * :ref:`Creating SCMTools`
+   getting-started
+   coding-standards
+   contributing-patches
+   custom-forks
+   unit-tests/fixtures
+
+.. `Creating SCMTools`
 
 
 .. comment: vim: ft=rst et ts=3
