@@ -17,6 +17,8 @@ This is the modern API first made available in Review Board 1.5.
    2.0/authenticating
    2.0/resources/index
    2.0/errors/index
+   2.0/glossary
+
 
 
 REST API 1.0 (deprecated)
