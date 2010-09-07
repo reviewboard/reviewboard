@@ -35,11 +35,14 @@ def valid_prefs_required(view_func):
     A decorator that checks whether the user has completed the first-time
     setup by saving their preferences at least once. Redirects to the
     preferences URL if they have not.
+
+    If the user is not logged in, this will do nothing. That allows it to
+    be used with @check_login_required.
     """
     def _check_valid_prefs(request, *args, **kwargs):
         try:
-            profile = request.user.get_profile()
-            if profile.first_time_setup_done:
+            if (request.user.is_anonymous() or
+                request.user.get_profile().first_time_setup_done):
                 return view_func(request, *args, **kwargs)
         except Profile.DoesNotExist:
             pass
