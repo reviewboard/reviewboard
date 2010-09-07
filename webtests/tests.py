@@ -7,6 +7,7 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from djblets.testing import testcases
 
+from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.models import Repository, Tool
@@ -31,6 +32,7 @@ class SeleniumUnitTest(testcases.SeleniumUnitTest):
         super(SeleniumUnitTest, self).setUp()
 
         self.user = User.objects.get(username='grumpy')
+        self.user.get_profile()
         self.login()
 
     def login(self):
