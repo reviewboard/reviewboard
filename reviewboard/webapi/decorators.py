@@ -1,3 +1,4 @@
+from django.http import HttpRequest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
@@ -30,16 +31,30 @@ def webapi_check_login_required(view_func):
 
 
 def webapi_deprecated(deprecated_in, force_error_http_status=None,
-                      encoders=[]):
+                      default_api_format=None, encoders=[]):
     """Marks an API handler as deprecated.
 
     ``deprecated_in`` specifies the version that first deprecates this call.
 
     ``force_error_http_status`` forces errors to use the specified HTTP
     status code.
+
+    ``default_api_format`` specifies the default api format (json or xml)
+    if one isn't provided.
     """
     def _dec(view_func):
         def _view(*args, **kwargs):
+            if default_api_format:
+                request = args[0]
+                assert isinstance(request, HttpRequest)
+
+                method_args = getattr(request, request.method, None)
+
+                if method_args and 'api_format' not in method_args:
+                    method_args = method_args.copy()
+                    method_args['api_format'] = default_api_format
+                    setattr(request, request.method, method_args)
+
             response = view_func(*args, **kwargs)
 
             if isinstance(response, WebAPIResponse):
@@ -76,4 +91,5 @@ def webapi_deprecated_in_1_5(view_func):
     return webapi_deprecated(
         deprecated_in='1.5',
         force_error_http_status=200,
+        default_api_format='json',
         encoders=_deprecated_api_encoders)(view_func)
