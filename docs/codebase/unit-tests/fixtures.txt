@@ -34,14 +34,17 @@ not already) and change the database name to something like
 :file:`unittests.db`. Then::
 
    $ ./reviewboard/manage.py syncdb
+
+If it asks you if you want to create an administrator, say "no," then type::
+
    $ ./reviewboard/manage.py loaddata test_users test_scmtools test_reviewrequests
 
 This should populate your database with the test data. After you've added to
 the data set, dump them back out::
 
-   $ ./reviewboard/manage.py dumpdata auth accounts > accounts/fixtures/test_users.json
-   $ ./reviewboard/manage.py dumpdata diffviewer reviews > reviews/fixtures/test_reviewrequests.json
-   $ ./reviewboard/manage.py dumpdata scmtools > scmtools/fixtures/test_scmtools.json
+   $ ./reviewboard/manage.py dumpdata auth accounts > reviewboard/accounts/fixtures/test_users.json
+   $ ./reviewboard/manage.py dumpdata diffviewer reviews > reviewboard/reviews/fixtures/test_reviewrequests.json
+   $ ./reviewboard/manage.py dumpdata scmtools > reviewboard/scmtools/fixtures/test_scmtools.json
 
 You can choose to only dump the data you've actually modified. If you've only
 created a review request, for example, feel free to just dump the diffviewer
