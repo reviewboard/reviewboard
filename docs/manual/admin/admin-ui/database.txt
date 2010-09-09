@@ -4,9 +4,9 @@
 Database Management
 ===================
 
-The Database section of the :ref:`Administration UI` allows you to view and
-modify the actual contents of the Review Board database in a simple,
-human-readable fashion.
+The Database section of the :ref:`Administration UI <administration-ui>`
+allows you to view and modify the actual contents of the Review Board database
+in a simple, human-readable fashion.
 
 With the exception of the `management tables`_, most tables are used for
 `data storage`_ only and should not be modified unless you know what you're
@@ -55,7 +55,7 @@ left untouched, but there may be occasions when you'll need to fix something
 for another user by modifying one of these tables.
 
 The table below is grouped by the sections listed in the Database page in the
-:ref:`Administration UI`.
+:ref:`Administration UI <administration-ui>`.
 
 
 ====================== ====================================================

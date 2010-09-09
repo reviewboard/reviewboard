@@ -209,7 +209,7 @@ In order to update an existing review request, you can use the
 :option:`-r` parameter, as shown above.
 
 
-.. _automatingpost-review:
+.. _automating-post-review:
 
 Automating post-review
 ======================
