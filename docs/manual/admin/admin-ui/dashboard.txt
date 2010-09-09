@@ -63,6 +63,24 @@ The statistics shown include:
 * Server uptime
 
 
+.. _server-log:
+
+Server Log
+----------
+
+If logging is enabled, the Server Log will show events that have happened on
+the server since logging was enabled or logs were last rotated.
+
+The log can be filtered by date ("Any date", "Today", "Past 7 days", or
+"This month") and by log level ("Debug", "Info", "Warning", "Error",
+"Critical", or "All").
+
+The log can be particularly useful when encountering a problem with a
+repository, mail server, or when having trouble accessing a page. The
+information contained in the log file can be used by the Review Board
+developers to help diagnose your problem.
+
+
 News
 ====
 

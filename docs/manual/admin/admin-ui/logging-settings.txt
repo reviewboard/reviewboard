@@ -8,6 +8,9 @@ debugging purposes and for spotting some server problems.
 Review Board's built-in logging is different from the web server's logging,
 and will not log page visits.
 
+If logging is enabled, the log file can be viewed in the
+:ref:`server-log`, linked to on the :ref:`administrator-dashboard`.
+
 
 General
 =======
