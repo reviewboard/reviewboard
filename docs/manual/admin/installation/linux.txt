@@ -43,6 +43,8 @@ are using :command:`sudo`.
 .. _`Fedora Extras`: http://fedoraproject.org/wiki/Extras
 
 
+.. _linux-http-proxy:
+
 Using a HTTP Proxy
 ------------------
 

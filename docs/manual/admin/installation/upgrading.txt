@@ -10,9 +10,12 @@ Upgrading Review Board is pretty simple. It's essentially a three-step
 
    $ easy_install -U ReviewBoard
 
-2. Upgrade each installed site. See :ref:`Upgrading Sites`.
+2. Upgrade each installed site. See :ref:`upgrading-sites`.
 3. Restart your web server.
 4. Restart memcached, if installed.
+
+If you're on Linux and behind a proxy server, see the installation
+instructions for :ref:`linux-http-proxy`.
 
 
 .. comment: vim: ft=rst et
