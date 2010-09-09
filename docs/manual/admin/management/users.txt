@@ -19,7 +19,7 @@ Editing Users
 
 To edit a user's information, click on :guilabel:`Users` in the
 :ref:`Database <database-management>` section or
-:ref:`Administrator Dashboard` in the
+:ref:`administrator-dashboard` in the
 :ref:`Administration UI <administration-ui>`. Find the user to edit and click
 the username.
 
@@ -96,7 +96,7 @@ comments made by that user will be deleted. Usually, it is best to
 If you do want to delete the user (such as if the user is generating a lot of
 spam), you can find the user by clicking "Users" in the
 :ref:`Database section <database-management>` or
-:ref:`Administrator Dashboard` in the
+:ref:`administrator-dashboard` in the
 :ref:`Administration UI <administration-ui>`. At the bottom of the page, click
 "Delete."
 
@@ -193,7 +193,7 @@ Note that this is different from the :ref:`can-change-status-permission`.
 This permission (listed as ``reviews | review request | Can submit as user``)
 indicates that this user has the ability to post or modify a review request
 on another user's behalf through the API. This is useful from a
-:term:`post-commit hook`. See :ref:`Automating post-review` for more
+:term:`post-commit hook`. See :ref:`automating-post-review` for more
 information.
 
 

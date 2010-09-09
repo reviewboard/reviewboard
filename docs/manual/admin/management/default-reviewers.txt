@@ -21,7 +21,7 @@ Adding Default Reviewers
 To add a new default reviewer, click the "Add" link next to the
 "Default reviewers" entry in the
 :ref:`database section <database-management>` or the
-:ref:`Administrator Dashboard` in the
+:ref:`administrator-dashboard` in the
 :ref:`Administration UI <administration-ui>`.
 
 A form will appear with the following fields:
@@ -77,7 +77,7 @@ Editing Default Reviewers
 =========================
 
 To edit a default reviewer, click "Default reviewers" in the
-:ref:`Administrator Dashboard` or
+:ref:`administrator-dashboard` or
 :ref:`Database section <database-management>` of the
 :ref:`Administration UI <administration-ui>`.
 You can then browse to the default reviewer you want to modify and click it.

@@ -60,7 +60,7 @@ This takes a directory as the first parameter. For example::
 
     $ rb-site install /path/to/site
 
-See :ref:`Creating Sites` for more information.
+See :ref:`creating-sites` for more information.
 
 
 .. _`GTK+`: http://www.gtk.org/
@@ -176,7 +176,7 @@ This takes a directory as the first parameter. For example::
 
     $ rb-site upgrade /path/to/site
 
-See :ref:`Upgrading Sites` for more information.
+See :ref:`upgrading-sites` for more information.
 
 
 Options
@@ -211,7 +211,7 @@ You can see the list of manage subcommands by running::
 
 
 For more information, and some useful subcommands, see
-:ref:`Management Commands`.
+:ref:`management-commands`.
 
 
 .. _Django: http://www.djangoproject.com/
