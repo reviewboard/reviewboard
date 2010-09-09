@@ -20,9 +20,19 @@ Show syntax highlighting:
 
     This option can be overridden by users in their account settings.
 
+    Note that syntax highlighting may be needed for some more advanced
+    features, so disabling it can reduce the functionality of the diff
+    viewer.
+
     This defaults to being enabled.
 
-Show trailing whitespace:
+* **Syntax highlighting threshold:**
+    This can be used to limit syntax highlighting for very large files. If
+    this isn't blank or ``0``, then syntax highlighting will only be enabled
+    for files with at most this many lines.
+
+    This defaults to being blank.
+
     If enabled, excess whitespace on a line is shown as red blocks. This
     helps to visualize when a text editor has added unwanted whitespace to the
     end of a line.
