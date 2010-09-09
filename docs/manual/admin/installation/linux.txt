@@ -335,10 +335,29 @@ release and following the instructions in the provided :file:`INSTALL.html`.
 .. _PySVN: http://pysvn.tigris.org/
 
 
+.. _linux-installing-amazon-s3-support:
+
+Installing Amazon S3 Support (optional)
+=======================================
+
+This is an optional step.
+
+Review Board can use `Amazon S3`_ to store uploaded screenshots. To install
+this, you will need the :mod:`django-storages` module. Type::
+
+    $ easy_install django-storages
+
+After you've installed Review Board and created your site, you will need
+to configure this. See the :ref:`file-storage-settings` documentation for
+more information.
+
+.. _`Amazon S3`: http://s3.amazonaws.com/
+
+
 .. _installing-pylucene:
 
-Installing PyLucene
-===================
+Installing PyLucene (optional)
+==============================
 
 This is an optional step.
 
@@ -412,8 +431,8 @@ space. This won't make any difference to the PyLucene installation either way.
 You can also remove your PyLucene tarball and the source directory.
 
 
-Installing Development Tools
-============================
+Installing Development Tools (optional)
+=======================================
 
 If you plan to work on Review Board's source code, there are a few
 additional packages you'll need to install:

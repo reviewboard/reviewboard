@@ -29,7 +29,7 @@ File Storage Settings
       the files. You must have a working, paid account to use this.
 
       This requires that you install the :mod:`django-storages` Python
-      module.
+      module. See the installation documentation for more information.
 
 
 Amazon S3 Settings
