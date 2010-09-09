@@ -91,5 +91,11 @@ clicking the post summary.
 The upper-right of the news box contains links for viewing all the news items,
 reloading the news box, and subscribing to an RSS feed for the news.
 
+.. note:: If you're behind an HTTP Proxy, you may not see any news here.
+          We will be adding HTTP Proxy support for this in a future update.
+          In the meantime, you can visit the `Review Board News`_ page.
+
+.. _`Review Board News`: http://www.reviewboard.org/news/
+
 
 .. comment: vim: ft=rst et
