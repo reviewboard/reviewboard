@@ -43,6 +43,19 @@ are using :command:`sudo`.
 .. _`Fedora Extras`: http://fedoraproject.org/wiki/Extras
 
 
+Using a HTTP Proxy
+------------------
+
+If you're behind a proxy server, you'll need to set the :envvar:`http_proxy`
+environment variable to your proxy server before running
+:command:`easy_install`. This must be done as the user running
+:command:`easy_install`, in the same shell. For example::
+
+    $ sudo -s
+    $ export http_proxy=http://proxy.example.com/
+    $ easy_install ....
+
+
 Installing Python Setuptools
 ============================
 
