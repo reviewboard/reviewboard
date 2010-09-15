@@ -38,7 +38,7 @@ class NISBackend:
                 if not passwd:
                     passwd = nis.match(username, 'passwd').split(':')
 
-                names = passwd[4].split(' ', 1)
+                names = passwd[4].split(',')[0].split(' ', 1)
                 first_name = names[0]
                 last_name = None
                 if len(names) > 1:
