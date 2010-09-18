@@ -188,8 +188,10 @@ htmlhelp_basename = 'ReviewBoardManual'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, document class [howto/manual]).
 latex_documents = [
-  ('contents', 'ReviewBoardManual.tex', ur'Review Board Manual',
-   ur'Christian Hammond', 'manual'),
+  ('users/index', 'UserManual.tex', ur'Review Board User Manual',
+   ur'Christian Hammond', 'manual', False),
+  ('admin/index', 'AdminGuide.tex', ur'Review Board Administration Guide',
+   ur'Christian Hammond', 'manual', False),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -208,6 +210,9 @@ latex_documents = [
 
 # If false, no module index is generated.
 #latex_use_modindex = True
+
+latex_show_urls = True
+latex_show_pagerefs = True
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
