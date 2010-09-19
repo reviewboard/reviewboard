@@ -3,7 +3,7 @@ Review Board 1.5 RC 2 Release Notes
 ===================================
 
 
-**Release date**: September 5, 2010
+**Release date**: September 18, 2010
 
 
 New Features
@@ -29,13 +29,13 @@ New Features
 API Improvements
 ================
 
-* Support the ``?counts-only=1`` query parameter for
+* Added support for the ``?counts-only=1`` query parameter for
   :ref:`draft screenshot lists <webapi2.0-draft-screenshot-list-resource>`.
 
 * Renamed the :ref:`draft screenshot <webapi2.0-draft-screenshot-resource>`
   resource key from ``draft-screenshot`` to ``draft_screenshot``.
 
-* Support HTTP DELETE on
+* Added support for HTTP DELETE on
   :ref:`screenshot draft resources <webapi2.0-draft-screenshot-resource>`.
 
 * Added the screenshot image URL in the
@@ -61,9 +61,20 @@ API Improvements
 * Fixed links to diff and screenshot comment resources when linked to from
   other resources.
 
+* The :ref:`user resource <webapi2.0-user-resource>` resource no longer fails
+  with usernames containing a period.
+
+* Added support for HTTP Accept mimetypes on all resources.
+
+* Fixed problems using ``?api_format=`` on HTTP GET, PUT and POST resources.
+
 
 Bug Fixes
 =========
+
+* Several usability problems with screenshot drag-and-drop have been fixed.
+  In particular, we now guarantee that the drop area will be on-screen,
+  which was a problem before on new review requests.
 
 * Fixed an Internal Server Error when using an SSH-based URL for a repository
   without using a username or password.
@@ -89,6 +100,9 @@ Bug Fixes
 * Accessing a review request with a newly auto-created account (using LDAP,
   Active Directory, or NIS) would cause an Internal Server Error due to
   the user's profile not having been created yet. (:bug:`1718`)
+
+* Gecos fields on NIS backends no longer causes authentication failures.
+  (:bug:`1793`)
 
 
 .. comment: vim: ft=rst et
