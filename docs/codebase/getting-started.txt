@@ -298,7 +298,7 @@ logging output.
 
 To launch the web server, run::
 
-    $ ./contrib/internal/devserver.sh
+    $ ./contrib/internal/devserver.py
 
 This will start the server on port 8080. You should then be able to access
 your server by visiting ``http://localhost:8080``.
