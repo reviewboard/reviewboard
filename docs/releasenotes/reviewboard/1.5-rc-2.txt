@@ -3,7 +3,7 @@ Review Board 1.5 RC 2 Release Notes
 ===================================
 
 
-**Release date**: September 18, 2010
+**Release date**: September 19, 2010
 
 
 New Features
