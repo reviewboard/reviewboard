@@ -9,6 +9,8 @@ Review Board 1.5 RC 2 Release Notes
 New Features
 ============
 
+* Added Python 2.7 compatibility.
+
 * Added compatibility with PyLucene 3.x. Support for 2.x still remains.
   (:bug:`1449`)
 
