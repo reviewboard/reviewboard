@@ -19,11 +19,14 @@ Navigation Sidebar
 
 The dashboard provides a navigation sidebar with the following items:
 
-* Starred Reviews
-* Outgoing Reviews
-* Incoming Reviews
+* :guilabel:`Starred Reviews`
+* :guilabel:`Outgoing Reviews`
+* :guilabel:`Incoming Reviews`
 
-  * To Me
+  * :guilabel:`To Me`
+
+* :guilabel:`Watched Groups`
+* :guilabel:`All My Requests`
 
 It also lists each group you belong to, and each group you're watching.
 Each item also lists the number of review requests in that view.
@@ -77,7 +80,7 @@ Customizable Columns
 
 Different users have different things they want to see in the dashboard. You
 can change which columns are shown and which aren't by clicking the
-:guilabel:`...` button to the right of the columns. A pop-up menu will appear
+pencil icon to the right of the columns. A pop-up menu will appear
 showing which columns are shown and which aren't.
 
 The following are available columns you can choose from:
@@ -109,9 +112,21 @@ Shows a checkmark icon next to any review requests that someone has marked
 Starred
 -------
 
-Displays a star indicator that can be toggled. When toggled on, the review
+Shows a star indicator that can be toggled. When toggled on, the review
 request is starred, meaning you'll be CC'd on any discussion. Toggling it off
 will remove you from the CC list.
+
+
+Branch
+------
+
+Shows the branch information listed on the review request.
+
+
+Bugs
+----
+
+Shows the list of bug IDs listed on the review request.
 
 
 Diff Updated
