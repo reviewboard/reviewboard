@@ -33,6 +33,59 @@ Each item also lists the number of review requests in that view.
 You can click on an item to be taken to that view of the dashboard.
 
 
+Starred Reviews
+---------------
+
+This view shows every review request that you have starred. This is useful for
+keeping track of review request you are interested in that were not directly
+assigned to you.
+
+
+.. _outgoing-reviews:
+
+Outgoing Reviews
+----------------
+
+This view shows all review requests that you have filed that are open or still
+a draft.
+
+
+Incoming Reviews
+----------------
+
+This view shows all review requests that have been either directly assigned to
+you or indirectly through a group you belong to.
+
+This can be filtered down by selecting :guilabel:`To Me` or one of the
+group names under :guilabel:`Incoming Reviews`.
+
+
+To Me
+-----
+
+This view shows all review requests that have been directly assigned to you.
+
+
+Watched Groups
+--------------
+
+This view shows every group that you have starred. This is useful for
+keeping track of all review requests to groups that you may be interested in
+but have not joined.
+
+Clicking on this item in the navigation bar will show a list of all the
+watched groups with details about each group. The list of groups is also
+available on the navigation bar under :guilabel:`Watched Groups`.
+
+
+All My Requests
+---------------
+
+This view shows every review request you have created, including those that
+are discarded or submitted. It works like the :ref:`outgoing-reviews` but with
+your complete history.
+
+
 Review Requests List
 ====================
 
