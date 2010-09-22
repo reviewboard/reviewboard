@@ -278,9 +278,9 @@ you're using and display it. This will depend on what values were entered
 for the `Path field`_ and `Mirror Path field`_.
 
 .. _Bitbucket: http://bitbucket.org/
-.. _GitHub: http://www.github.com/
+.. _GitHub: http://github.com/
 .. _`Google Code`: http://code.google.com/hosting/
-.. _SourceForge: http://www.sourceforge.net/
+.. _SourceForge: http://sourceforge.net/
 
 
 .. _determining-repository-information:

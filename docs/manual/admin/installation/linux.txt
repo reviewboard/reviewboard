@@ -225,10 +225,6 @@ To install on Fedora_ type::
     $ yum install py-pysqlite2
 
 
-Additional instructions for other distributions `are available
-<http://oss.itsystementwicklung.de/trac/pysqlite/wiki/PysqlitePackages>`_
-
-
 Installing Source Control Components
 ====================================
 
@@ -281,10 +277,10 @@ To install support for Mercurial_, type::
 
 You can also check your distribution for a native package, or use one of the
 `binary packages
-<http://www.selenic.com/mercurial/wiki/index.cgi/BinaryPackages>`_ provided.
+<http://mercurial.selenic.com/wiki/Download>`_ provided.
 
 
-.. _Mercurial: http://www.selenic.com/mercurial/
+.. _Mercurial: http://mercurial.selenic.com/
 
 
 Perforce
@@ -351,7 +347,7 @@ After you've installed Review Board and created your site, you will need
 to configure this. See the :ref:`file-storage-settings` documentation for
 more information.
 
-.. _`Amazon S3`: http://s3.amazonaws.com/
+.. _`Amazon S3`: http://aws.amazon.com/s3/
 
 
 .. _installing-pylucene:
@@ -451,7 +447,7 @@ You can install these in one go by typing::
 
 .. _`Django-Evolution`: http://django-evolution.googlecode.com/
 .. _Django: http://www.djangoproject.com/
-.. _flup: http://www.saddi.com/software/flup
+.. _flup: http://trac.saddi.com/flup
 .. _paramiko: http://www.lag.net/paramiko/
 .. _`Python Imaging Library`: http://www.pythonware.com/products/pil/
 
@@ -459,7 +455,7 @@ You can install these in one go by typing::
 .. _Debian: http://www.debian.org/
 .. _Ubuntu: http://www.ubuntu.com/
 .. _`RedHat Enterprise`: http://www.redhat.com/
-.. _Fedora: http://www.fedoraproject.org/
+.. _Fedora: http://fedoraproject.org/
 .. _CentOS: http://www.centos.org/
 
 

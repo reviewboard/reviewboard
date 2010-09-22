@@ -13,7 +13,7 @@ scalable file storage service provided by Amazon.
           Review Board 1.5, it is used only for uploaded screenshots, but in
           future releases it may be used for additional types of files.
 
-.. _`Amazon S3`: http://s3.amazonaws.com/
+.. _`Amazon S3`: http://aws.amazon.com/s3/
 
 
 File Storage Settings

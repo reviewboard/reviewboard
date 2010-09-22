@@ -1,4 +1,4 @@
-.. _creatingsites:
+.. _creating-sites:
 
 ==============
 Creating Sites
