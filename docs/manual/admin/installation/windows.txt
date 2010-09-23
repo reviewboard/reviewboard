@@ -84,9 +84,9 @@ You can `download the installer
 Installing memcached
 ====================
 
-Memcached_ is a high-performant caching server used by Review Board. While
+Memcached_ is a high-performance caching server used by Review Board. While
 optional, it's **strongly** recommended in order to have a fast, responsive
-setup. Along with memcached, we need the `python-memcached`_ Python bindings.
+server. Along with memcached, we need the `python-memcached`_ Python bindings.
 
 1. Download `memcached for Windows`_.
 2. Unzip this to the directory you want to keep memcached in (for example,

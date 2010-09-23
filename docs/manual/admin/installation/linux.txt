@@ -83,8 +83,9 @@ another RedHat-based distribution, type::
 Users of other distributions should check with their distribution for native
 packages, or follow the `setuptools installation`_ instructions.
 
-If the version available for your distribution is older than 0.6c9, you'll
-need to then upgrade setuptools to the latest version by running::
+If the version of setuptools available for your distribution is older than
+0.6c9, you'll need to install it first, and then upgrade it to the latest
+version by running::
 
     $ easy_install -U setuptools
 
@@ -93,8 +94,8 @@ need to then upgrade setuptools to the latest version by running::
 .. _`setuptools installation`: http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
 
 
-Installing Python Development Header
-====================================
+Installing Python Development Headers
+=====================================
 
 You will need to install the Python development headers for your
 distribution.
@@ -119,9 +120,9 @@ Installing memcached
 Memcached
 ---------
 
-Memcached_ is a high-performant caching server used by Review Board. While
+Memcached_ is a high-performance caching server used by Review Board. While
 optional, it's **strongly** recommended in order to have a fast, responsive
-setup. Along with memcached, we need the python-memcached Python bindings.
+server. Along with memcached, we need the python-memcached Python bindings.
 
 To install on Debian_ or Ubuntu_, type::
 
@@ -361,11 +362,11 @@ We use PyLucene_ for our search functionality. It can be complicated to
 install, and requires a working Java installation.
 
 
-Ubuntu Jaunty and Debian Testing
+Ubuntu 9.04+ and Debian Testing
 --------------------------------
 
-If you're using Ubuntu_ Jaunty or Debian_ Testing, you can simply install this
-by typing::
+If you're using Ubuntu_ (9.04 or newer) or Debian_ Testing, you can simply
+install this by typing::
 
     $ sudo apt-get install pylucene
 

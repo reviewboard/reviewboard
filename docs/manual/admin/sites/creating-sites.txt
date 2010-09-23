@@ -51,7 +51,7 @@ Changing Permissions
 ====================
 
 Review Board expects to be able to write to the :file:`htdocs/media/uploaded`
-directory and all subdirectories. Since Review Board is ran by your web
+directory and all subdirectories. Since Review Board is run by your web
 server, this directory and all subdirectories and files must be writable by
 the user your web server runs as.
 
