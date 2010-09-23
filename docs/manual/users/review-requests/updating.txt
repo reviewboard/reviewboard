@@ -4,13 +4,15 @@ Updating Review Requests
 
 Updating review requests is very much like
 :ref:`creating review requests <creating-review-requests>`. Once you have
-a review request out there, you can upload a new diff, new screenshots,
+a review request out there, you can upload a new diff, add new screenshots,
 or modify the fields. Any changes you make will be seen by you only until you
 publish the changes.
 
 To modify a field, either click on the field (in the case of
 :guilabel:`Description` and :guilabel:`Testing Done`) or click on the pencil
-icon. A text box will appear allowing you to modify the value.
+icon. A text box will appear allowing you to modify the value. Make sure to
+click "OK" after making a change in order to save the field before navigating
+away from the page.
 
 As soon as you make any change, a draft banner will appear above the review
 request asking you to optionally describe your changes. This is handy when
