@@ -80,8 +80,8 @@ instead of changesets. Take the following cases, for example:
   that previously went unreviewed.
 
 To post with a path, :command:`post-review` should be run with a standard
-Perforce depot paths as a parameter, which may contain revision information. The
-following paths are supported:
+Perforce depot path as a parameter, which may contain revision information.
+The following paths are supported:
 
 
 **Uploading a file as a "new" file**::
