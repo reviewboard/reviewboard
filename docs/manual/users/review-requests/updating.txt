@@ -27,7 +27,7 @@ Summary
 
 The :guilabel:`Summary` field is a short, one-line description of the
 change. It's what people will see in their dashboard and in e-mail subject
-headers. It should be descriptive without being long.
+headers. You should aim to keep this short and as descriptive as possible.
 
 
 Branch
