@@ -270,7 +270,6 @@ def review_draft_inline_form(request, review_request_id, template_name):
     return render_to_response(template_name, RequestContext(request, {
         'review_request': review_request,
         'review': review,
-        'scmtool': review_request.repository.get_scmtool(),
         'PRE_CREATION': PRE_CREATION,
     }))
 
