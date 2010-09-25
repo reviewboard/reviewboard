@@ -3,7 +3,7 @@ Replying to Comments
 ====================
 
 All reviews (including comments on code and screenshots) are shown on the review
-request page in individual review boxes. Discussion aboout a particular review
+request page in individual review boxes. Discussion about a particular review
 will take place solely within that review box.
 
 To reply to a comment in a review, click the :guilabel:`Add comment` link
