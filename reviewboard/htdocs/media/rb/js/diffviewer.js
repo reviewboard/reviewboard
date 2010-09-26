@@ -1260,12 +1260,75 @@ function toggleWhitespaceChunks()
     tables.find("tbody tr.whitespace-line").toggleClass("dimmed");
 
     /* Toggle the display of the button itself */
-    $(".review-request ul.controls li:gt(0)").toggle();
+    $(".review-request ul.controls li.ws").toggle();
 
     /* Toggle adjacent chunks, and show the whitespace message */
     tables.children("tbody.whitespace-file").toggle()
                                             .siblings("tbody")
                                                 .toggle();
+}
+
+
+/*
+ * Read cookie to set user preferences for showing Extra Whitespace or not.
+ *
+ * Returns true by default, false only if a cookie is set.
+ */
+function showExtraWhitespace()
+{
+    if (document.cookie && document.cookie != '') {
+        var cookies = document.cookie.split(";");
+        for (var i in cookies) {
+            var cookie = jQuery.trim(cookies[i]);
+            if (cookie == "show_ew=false") {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
+/*
+ * Write cookie to set user preferences for showing Extra Whitespace or not.
+ *
+ * This a session cookie.
+ */
+function setExtraWhitespace(value)
+{
+    document.cookie="show_ew="+value+"; path=/;";
+}
+
+
+/*
+ * Toggles the highlighting state of Extra Whitespace.
+ *
+ * This function turns off or on the highlighting through the ewhl class.
+ */
+function toggleExtraWhitespace(init)
+{
+
+    /* Toggle the cookie value unless this is the first call */
+    if ( init == undefined) {
+        toggleExtraWhitespace.show_ew = !toggleExtraWhitespace.show_ew;
+        setExtraWhitespace(toggleExtraWhitespace.show_ew);
+    }
+    else {
+        /* Record initial value based on cookie setting */
+        toggleExtraWhitespace.show_ew = showExtraWhitespace();
+
+        /* Page is initially loaded with highlighting off */
+        if (!toggleExtraWhitespace.show_ew) {
+            return;
+        }
+    }
+
+    /* Toggle highlighting */
+    $("table.sidebyside .ew").toggleClass("ewhl");
+
+    /* Toggle the display of the button itself */
+    $(".review-request ul.controls li.ew").toggle();
 }
 
 
@@ -1291,6 +1354,13 @@ $(document).ready(function() {
         toggleWhitespaceChunks();
         return false;
     });
+
+    $("ul.controls li a.toggleExtraWhitespaceButton").click(function() {
+        toggleExtraWhitespace();
+        return false;
+    });
+
+    toggleExtraWhitespace('init');
 
     /*
      * Make sure any inputs on the page (such as the search box) don't
