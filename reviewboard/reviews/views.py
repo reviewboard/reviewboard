@@ -501,6 +501,7 @@ def build_diff_comment_fragments(
 
     comment_entries = []
     had_error = False
+    siteconfig = SiteConfiguration.objects.get_current()
 
     for comment in comments:
         try:
@@ -510,7 +511,9 @@ def build_diff_comment_fragments(
                                                         comment.filediff,
                                                         comment.interfilediff,
                                                         comment.first_line,
-                                                        comment.num_lines))
+                                                        comment.num_lines)),
+                'domain': Site.objects.get_current().domain,
+                'domain_method': siteconfig.get("site_domain_method"),
             })
         except Exception, e:
             content = exception_traceback_string(None, e,
@@ -521,6 +524,8 @@ def build_diff_comment_fragments(
                     'index': None,
                     'filediff': comment.filediff,
                 },
+                'domain': Site.objects.get_current().domain,
+                'domain_method': siteconfig.get("site_domain_method"),
             })
 
             # It's bad that we failed, and we'll return a 500, but we'll
