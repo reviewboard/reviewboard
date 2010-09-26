@@ -94,6 +94,14 @@ class LDAPBackend(object):
                                 uid)
                 return None
 
+            if len(password) == 0:
+                # Don't try to bind using an empty password; the server will
+                # return success, which doesn't mean we have authenticated.
+                # http://tools.ietf.org/html/rfc4513#section-5.1.2
+                # http://tools.ietf.org/html/rfc4513#section-6.3.1
+                logging.warning("Empty password for: %s" % uid)
+                return None
+
             ldapo.bind_s(search[0][0], password)
 
             return self.get_or_create_user(username)
