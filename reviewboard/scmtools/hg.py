@@ -9,7 +9,7 @@ except ImportError:
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.git import GitDiffParser
 from reviewboard.scmtools.core import \
-    FileNotFoundError, SCMTool, HEAD, PRE_CREATION
+    FileNotFoundError, SCMTool, HEAD, PRE_CREATION, UNKNOWN
 
 
 class HgTool(SCMTool):
@@ -38,6 +38,8 @@ class HgTool(SCMTool):
         revision = revision_str
         if file_str == "/dev/null":
             revision = PRE_CREATION
+        if not revision_str:
+            revision = UNKNOWN
         return file_str, revision
 
     def get_diffs_use_absolute_paths(self):
@@ -115,7 +117,7 @@ class HgWebClient(object):
                       self.url, self.username)
 
     def cat_file(self, path, rev="tip"):
-        if rev == HEAD:
+        if rev == HEAD or rev == UNKNOWN:
             rev = "tip"
         elif rev == PRE_CREATION:
             rev = ""
