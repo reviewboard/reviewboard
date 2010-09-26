@@ -24,6 +24,11 @@ class ClearCaseTool(SCMTool):
         #     @@/main/4/src/@@/main/1/sntp.c/@@/main/8
         # This function converts the extended path to regular path:
         #     /vobs/comm/network/sntp/sntp.c
+
+        # If there is no @@ in path just return filename
+        if path.find('@@') == -1:
+            return ('', path)
+
         fpath = ['vobs']
         path = os.path.normpath(path)
         splpath = path.split("@@")
@@ -37,6 +42,9 @@ class ClearCaseTool(SCMTool):
 
         file_str = '/'.join(fpath)
         return (source_rev, '/' + file_str.rstrip('/'))
+
+    def normalize_path_for_display(self, filename):
+        return self.unextend_path(filename)[1]
 
     def get_file(self, path, revision=HEAD):
         if not path:

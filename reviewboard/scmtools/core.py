@@ -97,6 +97,9 @@ class SCMTool(object):
     def get_parser(self, data):
         return diffparser.DiffParser(data)
 
+    def normalize_path_for_display(self, filename):
+        return filename
+
     @classmethod
     def check_repository(cls, path, username=None, password=None):
         """
