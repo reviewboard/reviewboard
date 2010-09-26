@@ -26,7 +26,7 @@ class ClearCaseTool(SCMTool):
         #     /vobs/comm/network/sntp/sntp.c
 
         # If there is no @@ in path just return filename
-        if path.find('@@') == -1:
+        if '@@' not in path:
             return ('', path)
 
         fpath = ['vobs']
@@ -50,7 +50,14 @@ class ClearCaseTool(SCMTool):
         if not path:
             raise FileNotFoundError(path, revision)
 
-        return self.client.cat_file(self.adjust_path(path), revision)
+        adjust_path = self.adjust_path(path)
+
+        if os.path.isdir(path):
+            output = self.client.list_dir(adjust_path, revision)
+        else:
+            output = self.client.cat_file(adjust_path, revision)
+
+        return output
 
     def parse_diff_revision(self, file_str, revision_str):
         self.orifile = file_str;
@@ -155,3 +162,6 @@ class ClearCaseClient:
         else:
             raise SCMError(errmsg)
 
+    def list_dir(self, path, revision):
+        content = sorted(os.listdir(path))
+        return '\n'.join(content) + '\n'
