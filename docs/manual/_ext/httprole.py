@@ -1,7 +1,7 @@
 """
 Sphinx plugin to add a ``http`` role.
 """
-from docutils import nodes, utils
+from docutils import nodes
 
 
 DEFAULT_HTTP_STATUS_CODES_URL = \

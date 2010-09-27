@@ -172,7 +172,6 @@ def review_detail(request, review_request_id,
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
-    repository = review_request.repository
     changedescs = review_request.changedescs.filter(public=True)
 
     entries = []
@@ -440,8 +439,6 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     # current user.
     review = review_request.get_pending_review(request.user)
     draft = review_request.get_draft(request.user)
-
-    repository = review_request.repository
 
     has_draft_diff = draft and draft.diffset
     is_draft_diff = has_draft_diff and draft.diffset == diffset

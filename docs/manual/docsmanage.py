@@ -9,8 +9,6 @@ from reviewboard import settings
 from django.core.management import execute_manager, setup_environ
 setup_environ(settings)
 
-from reviewboard.webapi.resources import root_resource
-
 
 def scan_resource(resource):
     for child in resource.item_child_resources:

@@ -13,15 +13,12 @@ except ImportError:
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
-from djblets.webapi.core import JSONEncoderAdapter, XMLEncoderAdapter
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
-from docutils import nodes, utils
+from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from reviewboard.webapi.resources import root_resource, FileDiffResource
 from sphinx import addnodes
-from sphinx.directives import CodeBlock
-from sphinx.roles import xfileref_role
 from sphinx.util import docname_join
 from sphinx.util.compat import Directive
 
@@ -105,14 +102,14 @@ class WebApiDocsDirective(Directive):
 
         docname = 'webapi2.0-%s-resource' % \
             get_resource_docname(resource, is_list)
-        title = get_resource_title(resource, is_list)
+        resource_title = get_resource_title(resource, is_list)
 
         targetnode = nodes.target('', '', ids=[docname], names=[docname])
         self.state.document.note_explicit_target(targetnode)
         main_section = nodes.section(ids=[docname])
 
         # Details section
-        main_section += nodes.title(text=title)
+        main_section += nodes.title(text=resource_title)
         main_section += self.build_details_table(resource)
 
         # Fields section
@@ -191,9 +188,7 @@ class WebApiDocsDirective(Directive):
         self.append_detail_row(tbody, "Name", nodes.literal(text=resource_name))
 
         # URI
-        request = DummyRequest()
         uri_template = get_resource_uri_template(resource, not is_list)
-
         self.append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
 
         # URI Parameters
@@ -353,8 +348,6 @@ class WebApiDocsDirective(Directive):
                         name_node += nodes.inline(text=" (required)")
                     else:
                         name_node += nodes.inline(text=" (optional)")
-
-                field_type = info['type']
 
                 type_node = nodes.inline()
                 type_node += get_type_name(info['type'])

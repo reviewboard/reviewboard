@@ -7,7 +7,6 @@ from django.core.urlresolvers import reverse
 from django.db import transaction
 from djblets.testing import testcases
 
-from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.models import Repository, Tool

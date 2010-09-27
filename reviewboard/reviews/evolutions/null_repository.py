@@ -1,5 +1,4 @@
 from django_evolution.mutations import ChangeField
-from django.db import models
 
 
 MUTATIONS = [
