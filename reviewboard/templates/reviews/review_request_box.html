@@ -71,7 +71,7 @@
   <div id="screenshot-thumbnails">
 {% for image in review_request_details.screenshots.all %}
    <div class="screenshot-container">
-    <div class="screenshot"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
+    <div class="screenshot" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" id="screenshot_{{image.id}}_caption" class="editable screenshot-editable">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
      {% ifuserorperm review_request.submitter "reviews.delete_screenshot" %}

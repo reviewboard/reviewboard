@@ -643,6 +643,7 @@
 .screenshot-container .screenshot {
   border: 1px #999999 solid;
   border-bottom: 0;
+  cursor: pointer;
   height: 100px;
   line-height: 100px;
   margin: 0 auto;
