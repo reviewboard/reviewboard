@@ -30,7 +30,10 @@
         upload: true,
         fields: {% form_dialog_fields upload_screenshot_form %},
         success: function(rsp) {
-            $.screenshotThumbnail(rsp.screenshot);
+            if (!$("#screenshot-thumbnails").empty()) {
+                $.screenshotThumbnail(rsp.screenshot);
+            }
+
             gDraftBanner.show();
         }
       });
