@@ -78,7 +78,7 @@ class GitTool(SCMTool):
 
         if file_str == "/dev/null":
             revision = PRE_CREATION
-        else:
+        elif revision != PRE_CREATION:
             self.client.validate_sha1_format(file_str, revision)
 
         return file_str, revision
