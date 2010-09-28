@@ -327,7 +327,7 @@ To run our unit test suite for Djblets, type::
 For Review Board, type::
 
     $ cd reviewboard
-    $ ./manage.py test
+    $ ./reviewboard/manage.py test
 
 If you're updating the unit tests, you may want to see the
 :ref:`Unit Test Fixtures` documentation.
