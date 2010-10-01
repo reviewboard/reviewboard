@@ -1,4 +1,4 @@
-.. _administrationguide:
+.. _administration-guide:
 
 ====================
 Administration Guide
