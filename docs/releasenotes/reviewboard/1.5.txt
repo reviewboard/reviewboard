@@ -2,7 +2,7 @@
 Review Board 1.5 Release Notes
 ==============================
 
-**Release date**:
+**Release date**: September 30, 2010
 
 
 New User Features
