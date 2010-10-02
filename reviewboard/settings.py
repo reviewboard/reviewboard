@@ -108,6 +108,7 @@ INSTALLED_APPS = (
     'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',
+    'reviewboard.site',
     'reviewboard.webapi',
     'django_evolution', # Must be last
 )

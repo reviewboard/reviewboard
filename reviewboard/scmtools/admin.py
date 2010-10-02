@@ -42,6 +42,12 @@ class RepositoryAdmin(admin.ModelAdmin):
             'fields': ('encoding',),
             'classes': ('wide',),
         }),
+        (_('State'), {
+            'description': _('<p>This is advanced state that should not be '
+                             'modified unless something is wrong.</p>'),
+            'fields': ('local_site',),
+            'classes': ['collapse'],
+        }),
     )
     form = RepositoryForm
 

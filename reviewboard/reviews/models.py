@@ -26,6 +26,7 @@ from reviewboard.reviews.managers import DefaultReviewerManager, \
 from reviewboard.scmtools.errors import EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 
 
 # The model for the review request summary only allows it to be 300 chars long
@@ -85,6 +86,7 @@ class Group(models.Model):
     users = models.ManyToManyField(User, blank=True,
                                    related_name="review_groups",
                                    verbose_name=_("users"))
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
 
     def __unicode__(self):
         return self.name
@@ -110,6 +112,8 @@ class DefaultReviewer(models.Model):
 
     A ``file_regex`` of ``".*"`` will add the specified reviewers by
     default for every review request.
+
+    Note that this is keyed off the same LocalSite as its "repository" member.
     """
     name = models.CharField(_("name"), max_length=64)
     file_regex = models.CharField(_("file regex"), max_length=256,
@@ -256,6 +260,8 @@ class ReviewRequest(models.Model):
     shipit_count = models.IntegerField(_("ship-it count"), default=0,
                                        null=True)
 
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
+    local_id = models.IntegerField('site-local ID', null=True)
 
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
