@@ -260,14 +260,14 @@ class ReviewRequest(models.Model):
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
 
-    def get_participants(review_request):
+    def get_participants(self):
         """
         Returns a list of all people who have been involved in discussing
         this review request.
         """
         # See the comment in Review.get_participants for this list
         # comprehension.
-        return [u for review in review_request.reviews.all()
+        return [u for review in self.reviews.all()
                   for u in review.participants]
 
     participants = property(get_participants)
