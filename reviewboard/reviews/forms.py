@@ -4,6 +4,7 @@ import re
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
+from djblets.util.misc import get_object_or_none
 
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
@@ -14,6 +15,7 @@ from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 
 
 class DefaultReviewerForm(forms.ModelForm):
@@ -91,6 +93,7 @@ class NewReviewRequestForm(forms.Form):
     field_mapping = {}
 
     def __init__(self, *args, **kwargs):
+        local_site_name = kwargs.pop('local_site_name', None)
         forms.Form.__init__(self, *args, **kwargs)
 
         # Repository ID : visible fields mapping.  This is so we can
@@ -107,7 +110,12 @@ class NewReviewRequestForm(forms.Form):
         for repo in Repository.objects.filter(pk__in=repo_ids).order_by("name"):
             try:
                 self.field_mapping[repo.id] = repo.get_scmtool().get_fields()
-                valid_repos.append((repo.id, repo.name))
+
+                if ((local_site_name and
+                     repo.local_site and
+                     repo.local_site.name == local_site_name) or
+                    repo.local_site is None):
+                    valid_repos.append((repo.id, repo.name))
             except Exception, e:
                 logging.error('Error loading SCMTool for repository '
                               '%s (ID %d): %s' % (repo.name, repo.id, e),
@@ -127,9 +135,10 @@ class NewReviewRequestForm(forms.Form):
         names = [x for x in map(str.strip, re.split(',\s*', data)) if x]
         return set([constructor(name) for name in names])
 
-    def create(self, user, diff_file, parent_diff_file):
+    def create(self, user, diff_file, parent_diff_file, local_site_name=None):
         repository = self.cleaned_data['repository']
         changenum = self.cleaned_data['changenum'] or None
+        local_site = get_object_or_none(LocalSite, name=local_site_name)
 
         # It's a little odd to validate this here, but we want to have access to
         # the user.
@@ -159,7 +168,7 @@ class NewReviewRequestForm(forms.Form):
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,
-                                                          changenum)
+                                                          changenum, local_site)
         except ChangeNumberInUseError:
             # The user is updating an existing review request, rather than
             # creating a new one.

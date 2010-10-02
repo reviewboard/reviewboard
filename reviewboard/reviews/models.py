@@ -11,6 +11,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
+from djblets.util.decorators import root_url
 from djblets.util.fields import CounterField, ModificationTimestampField
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
@@ -78,7 +79,7 @@ class Group(models.Model):
     all review requests and replies to that address. If that e-mail address is
     blank, e-mails are sent individually to each member of that group.
     """
-    name = models.SlugField(_("name"), max_length=64, blank=False, unique=True)
+    name = models.SlugField(_("name"), max_length=64, blank=False)
     display_name = models.CharField(_("display name"), max_length=64)
     mailing_list = models.EmailField(_("mailing list"), blank=True,
         help_text=_("The mailing list review requests and discussions "
@@ -105,11 +106,17 @@ class Group(models.Model):
     def __unicode__(self):
         return self.name
 
-    @permalink
+    @root_url
     def get_absolute_url(self):
-        return ('reviewboard.reviews.views.group', None, {'name': self.name})
+        if self.local_site:
+            baseurl = '/s/%s' % self.local_site.name
+        else:
+            baseurl = ''
+
+        return '%s/groups/%s/' % (baseurl, self.name)
 
     class Meta:
+        unique_together = (('name', 'local_site'),)
         verbose_name = _("review group")
         ordering = ['name']
 
@@ -178,17 +185,13 @@ class Screenshot(models.Model):
     def __unicode__(self):
         return u"%s (%s)" % (self.caption, self.image)
 
-    @permalink
     def get_absolute_url(self):
         try:
             review = self.review_request.all()[0]
         except IndexError:
             review = self.inactive_review_request.all()[0]
 
-        return ('reviewboard.reviews.views.view_screenshot', None, {
-            'review_request_id': review.id,
-            'screenshot_id': self.id
-        })
+        return '%ss/%d/' % (review.get_absolute_url(), self.id)
 
 
 class ReviewRequest(models.Model):
@@ -506,11 +509,20 @@ class ReviewRequest(models.Model):
 
         return changeset and changeset.pending
 
-    @permalink
+    @root_url
     def get_absolute_url(self):
-        return ('review-request-detail', None, {
-            'review_request_id': self.id,
-        })
+        # We can't parameterize URLs that include captured parameters. See
+        # Django bug 11559. Once this bug is fixed, we can make a namespaced
+        # and a non namespaced include urlconf, and go back to using
+        # @permalink
+        if self.local_site:
+            baseurl = '/s/%s' % self.local_site.name
+            urlid = self.local_id
+        else:
+            baseurl = ''
+            urlid = self.pk
+
+        return '%s/r/%d/' % (baseurl, urlid)
 
     def __unicode__(self):
         if self.summary:
@@ -719,7 +731,8 @@ class ReviewRequest(models.Model):
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
-        unique_together = (('changenum', 'repository'),)
+        unique_together = (('changenum', 'repository'),
+                           ('local_site', 'local_id'))
         permissions = (
             ("can_change_status", "Can change status"),
             ("can_submit_as_another_user", "Can submit as another user"),
@@ -1394,8 +1407,7 @@ class Review(models.Model):
         super(Review, self).delete()
 
     def get_absolute_url(self):
-        return "%s#review%s" % (self.review_request.get_absolute_url(),
-                                self.id)
+        return "%s#review%s" % (self.review_request.get_absolute_url(), self.id)
 
     class Meta:
         ordering = ['timestamp']

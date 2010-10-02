@@ -414,7 +414,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_group(self):
         """Testing the POST users/<username>/watched/review-groups/ API"""
-        group = Group.objects.get(name='devgroup')
+        group = Group.objects.get(name='devgroup', local_site=None)
 
         rsp = self.apiPost(self.watched_url, {
             'object_id': group.name,
@@ -435,7 +435,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         # First, star it.
         self.test_post_watched_review_group()
 
-        group = Group.objects.get(name='devgroup')
+        group = Group.objects.get(name='devgroup', local_site=None)
 
         self.apiDelete('%s%s/' % (self.watched_url, group.name))
         self.assertTrue(group not in
@@ -490,7 +490,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def test_get_reviewrequests_with_to_groups_and_status(self):
         """Testing the GET review-requests/?to-groups=&status= API"""
@@ -500,7 +501,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='S').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='S').count())
 
         rsp = self.apiGet('review-requests', {
             'status': 'discarded',
@@ -508,7 +510,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='D').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='D').count())
 
     def test_get_reviewrequests_with_to_groups_and_counts_only(self):
         """Testing the GET review-requests/?to-groups=&counts-only=1 API"""
@@ -518,7 +521,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def test_get_reviewrequests_with_to_users(self):
         """Testing the GET review-requests/?to-users= API"""
@@ -2139,7 +2143,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated groups/star API"""
         rsp = self.apiGet("groups/devgroup/star")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup") in
+        self.assert_(Group.objects.get(name="devgroup", local_site=None) in
                      self.user.get_profile().starred_groups.all())
 
     def testGroupStarDoesNotExist(self):
@@ -2155,7 +2159,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
         rsp = self.apiGet("groups/devgroup/unstar")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup") not in
+        self.assert_(Group.objects.get(name="devgroup", local_site=None) not in
                      self.user.get_profile().starred_groups.all())
 
     def testGroupUnstarDoesNotExist(self):
@@ -2199,7 +2203,8 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiGet("reviewrequests/to/group/devgroup")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def testReviewRequestsToGroupWithStatus(self):
         """Testing the deprecated reviewrequests/to/group API with custom status"""
@@ -2207,20 +2212,23 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
                           {'status': 'submitted'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='S').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='S').count())
 
         rsp = self.apiGet("reviewrequests/to/group/devgroup",
                           {'status': 'discarded'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='D').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='D').count())
 
     def testReviewRequestsToGroupCount(self):
         """Testing the deprecated reviewrequests/to/group/count API"""
         rsp = self.apiGet("reviewrequests/to/group/devgroup/count")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def testReviewRequestsToUser(self):
         """Testing the deprecated reviewrequests/to/user API"""

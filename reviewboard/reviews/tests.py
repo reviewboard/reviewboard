@@ -60,11 +60,11 @@ class DbQueryTests(TestCase):
     def testReviewRequestsToGroup(self):
         """Testing get_review_requests_to_group"""
         self.assertValidSummaries(
-            ReviewRequest.objects.to_group("privgroup"),
+            ReviewRequest.objects.to_group("privgroup", None),
             ["Add permission checking for JSON API"])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_group("privgroup", status=None),
+            ReviewRequest.objects.to_group("privgroup", None, status=None),
             ["Add permission checking for JSON API"])
 
     def testReviewRequestsToUserGroups(self):
@@ -438,7 +438,8 @@ class ViewTests(TestCase):
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
         profile = user.get_profile()
-        local_site = profile.site_profiles.get(local_site=None)
+        local_site = None
+        site_profile = profile.site_profiles.get(local_site=local_site)
 
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)

@@ -186,7 +186,7 @@ def group_list(request, *args, **kwargs):
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    u = Group.objects.all()
+    u = Group.objects.filter(local_site=None)
 
     if query:
         q = Q(name__istartswith=query)
@@ -207,7 +207,7 @@ def users_in_group(request, group_name, *args, **kwargs):
     Returns a list of users in a group.
     """
     try:
-        g = Group.objects.get(name=group_name)
+        g = Group.objects.get(name=group_name, local_site=None)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
@@ -225,7 +225,7 @@ def group_star(request, group_name, *args, **kwargs):
     Adds a group to the user's watched groups list.
     """
     try:
-        group = Group.objects.get(name=group_name)
+        group = Group.objects.get(name=group_name, local_site=None)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
@@ -246,7 +246,7 @@ def group_unstar(request, group_name, *args, **kwargs):
     Removes a group from the user's watched groups list.
     """
     try:
-        group = Group.objects.get(name=group_name)
+        group = Group.objects.get(name=group_name, local_site=None)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
@@ -760,8 +760,9 @@ def _set_draft_field_data(draft, field_name, data):
 
             try:
                 if field_name == "target_groups":
-                    obj = Group.objects.get(Q(name__iexact=value) |
-                                            Q(display_name__iexact=value))
+                    obj = Group.objects.get((Q(name__iexact=value) |
+                                             Q(display_name__iexact=value)) &
+                                            Q(local_site=None))
                 elif field_name == "target_people":
                     obj = find_user(username=value)
 

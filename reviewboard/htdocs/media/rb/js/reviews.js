@@ -857,8 +857,7 @@ $.reviewForm = function(review) {
         type: "GET",
         dataType: "html",
         data: {},
-        url: SITE_ROOT + "r/" + gReviewRequestId +
-             "/reviews/draft/inline-form/",
+        url: gReviewRequestPath + "reviews/draft/inline-form/",
         success: function(html) {
             createForm(html);
         }

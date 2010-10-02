@@ -47,4 +47,3 @@ class LocalSite(models.Model):
                                    related_name='localsite')
     admins = models.ManyToManyField(User, blank=True,
                                    related_name='localsite_admins')
-    next_id = models.IntegerField(_('next review request ID'), default=1)

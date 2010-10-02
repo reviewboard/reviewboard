@@ -74,7 +74,7 @@ class RssGroupReviewsFeed(BaseReviewFeed):
         if len(bits) != 1:
             raise ObjectDoesNotExist
 
-        return Group.objects.get(name=bits[0])
+        return Group.objects.get(name=bits[0], local_site=None)
 
     def title(self, group):
         return u"Review requests to group %s" % group
@@ -86,7 +86,8 @@ class RssGroupReviewsFeed(BaseReviewFeed):
         return u"Pending review requests to %s" % group
 
     def items(self, group):
-        return ReviewRequest.objects.to_group(group).\
+        # TODO: Add in local site
+        return ReviewRequest.objects.to_group(group, None).\
             order_by('-last_updated')[:20]
 
 

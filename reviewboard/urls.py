@@ -49,7 +49,8 @@ atom_feeds = {
 urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
     (r'^api/', include('reviewboard.webapi.urls')),
-    (r'^r/', include('reviewboard.reviews.urls')),
+    (r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?r/',
+     include('reviewboard.reviews.urls')),
     (r'^reports/', include('reviewboard.reports.urls')),
 )
 
@@ -57,17 +58,22 @@ urlpatterns += patterns('',
 # reviewboard.reviews.views
 urlpatterns += patterns('reviewboard.reviews.views',
     # Review request browsing
-    url(r'^dashboard/$', 'dashboard', name="dashboard"),
+    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?dashboard/$',
+        'dashboard', name="dashboard"),
 
     # Users
-    url(r'^users/$', 'submitter_list', name="all-users"),
-    url(r'^users/(?P<username>[A-Za-z0-9@_\-\.]+)/$', 'submitter',
-        name="user"),
+    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?users/$',
+        'submitter_list', name="all-users"),
+    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?users/(?P<username>[A-Za-z0-9@_\-\.]+)/$',
+        'submitter', name="user"),
 
     # Groups
-    url(r'^groups/$', 'group_list', name="all-groups"),
-    url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/$', 'group', name="group"),
-    url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/members/$', 'group_members', name="group_members"),
+    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?groups/$',
+        'group_list', name="all-groups"),
+    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?groups/(?P<name>[A-Za-z0-9_-]+)/$',
+        'group', name="group"),
+    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?groups/(?P<name>[A-Za-z0-9_-]+)/members/$',
+        'group_members', name="group_members"),
 )
 
 
@@ -75,22 +81,18 @@ urlpatterns += patterns('reviewboard.reviews.views',
 urlpatterns += patterns('django.contrib',
    # Feeds
     url(r'^feeds/rss/(?P<url>.*)/$', 'syndication.views.feed',
-        {'feed_dict': rss_feeds},
-        name="rss-feed"),
+        {'feed_dict': rss_feeds}, name="rss-feed"),
     url(r'^feeds/atom/(?P<url>.*)/$', 'syndication.views.feed',
-       {'feed_dict': atom_feeds},
-       name="atom-feed"),
+        {'feed_dict': atom_feeds}, name="atom-feed"),
     url(r'^account/logout/$', 'auth.views.logout',
-        {'next_page': settings.LOGIN_URL},
-        name="logout")
+        {'next_page': settings.LOGIN_URL}, name="logout")
 )
 
 
 # And the rest ...
 urlpatterns += patterns('',
     url(r'^$', 'django.views.generic.simple.redirect_to',
-        {'url': 'dashboard/'},
-        name="root"),
+        {'url': 'dashboard/'}, name="root"),
 
     # This must be last.
     url(r'^iphone/', include('reviewboard.iphone.urls', namespace='iphone')),
