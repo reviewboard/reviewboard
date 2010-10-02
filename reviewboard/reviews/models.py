@@ -56,6 +56,7 @@ def update_obj_with_changenum(obj, repository, changenum):
     if changeset.bugs_closed:
         obj.bugs_closed = ','.join(changeset.bugs_closed)
 
+
 def truncate(string, num):
    if len(string) > num:
       string = string[0:num]
@@ -65,6 +66,7 @@ def truncate(string, num):
          string = string[0:i + 1]
 
    return string
+
 
 class Group(models.Model):
     """
@@ -258,6 +260,17 @@ class ReviewRequest(models.Model):
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
 
+    def get_participants(review_request):
+        """
+        Returns a list of all people who have been involved in discussing
+        this review request.
+        """
+        # See the comment in Review.get_participants for this list
+        # comprehension.
+        return [u for review in review_request.reviews.all()
+                  for u in review.participants]
+
+    participants = property(get_participants)
 
     def get_bug_list(self):
         """
@@ -1096,6 +1109,23 @@ class Review(models.Model):
     # to fix duplicate reviews.
     objects = ReviewManager()
 
+    def get_participants(self):
+        """
+        Returns a list of all people who have been involved in discussing
+        this review.
+        """
+
+        # This list comprehension gives us every user in every reply,
+        # recursively.  It looks strange and perhaps backwards, but
+        # works. We do it this way because get_participants gives us a
+        # list back, which we can't stick in as the result for a
+        # standard list comprehension. We could opt for a simple for
+        # loop and concetenate the list, but this is more fun.
+        return [self.user] + \
+               [u for reply in self.replies.all()
+                  for u in reply.participants]
+
+    participants = property(get_participants)
 
     def __unicode__(self):
         return u"Review of '%s'" % self.review_request
