@@ -190,12 +190,19 @@ class Site(object):
         media_base = os.path.join("htdocs", "media")
         rb_djblets_src = "htdocs/media/djblets"
         rb_djblets_dest = os.path.join(media_base, "djblets")
+        rb_admins_dest = os.path.join(media_base, "admin")
 
-        for media_dir in ["admin", "rb"]:
+        for media_dir in ["rb"]:
             path = os.path.join(media_base, media_dir)
             self.link_pkg_dir("reviewboard",
                               "htdocs/media/%s" % media_dir,
                               os.path.join(media_base, media_dir))
+
+        # Link the admin media
+        path = os.path.join(media_base, media_dir)
+        self.link_pkg_dir("django",
+                          "contrib/admin/media",
+                          rb_admins_dest)
 
         # Link from Djblets if available.
         if pkg_resources.resource_exists("djblets", "media"):
