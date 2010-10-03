@@ -12,6 +12,7 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
+from djblets.extensions.base import RegisteredExtension
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
@@ -26,6 +27,7 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
                                   PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource, \
+                                     ExtensionResource as DjbletsExtensionResource,, \
                                      RootResource as DjbletsRootResource, \
                                      register_resource_for_model, \
                                      get_resource_for_object
@@ -34,6 +36,7 @@ from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
+from reviewboard.extensions.base import get_extension_manager
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
@@ -4204,6 +4207,7 @@ class RootResource(DjbletsRootResource):
     """
     def __init__(self, *args, **kwargs):
         super(RootResource, self).__init__([
+            extension_resource,
             repository_resource,
             review_group_resource,
             review_request_resource,
@@ -4213,6 +4217,8 @@ class RootResource(DjbletsRootResource):
         ], *args, **kwargs)
 
 root_resource = RootResource()
+
+extension_resource = DjbletsExtensionResource(get_extension_manager())
 
 
 def status_to_string(status):
@@ -4249,6 +4255,7 @@ register_resource_for_model(
 register_resource_for_model(DiffSet, diffset_resource)
 register_resource_for_model(FileDiff, filediff_resource)
 register_resource_for_model(Group, review_group_resource)
+register_resource_for_model(RegisteredExtension, extension_resource)
 register_resource_for_model(Repository, repository_resource)
 register_resource_for_model(
     Review,
