@@ -11,14 +11,15 @@ line tools to simplify the review request submission process.
 
 Review Board supports the following browsers:
 
-* Firefox 2.0+
+* Firefox 3.0+
 * Internet Explorer 7+
+* Google Chrome
 
 
 The following browsers are unsupported but known to work:
 
-* Google Chrome
-* Internet Explorer 6+
+* Firefox 2.0
+* Internet Explorer 6
 * Opera 9+
 
 Review Board is designed to fit in with existing :term:`pre-commit review`

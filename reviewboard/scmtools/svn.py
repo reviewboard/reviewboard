@@ -339,7 +339,7 @@ class SVNTool(SCMTool):
             # Make sure the .ssh directory exists.
             try:
                 os.mkdir(dirname, 0700)
-            except OSError, e:
+            except OSError:
                 raise IOError(_("Unable to create directory %(dirname)s, "
                                 "which is needed for the Subversion "
                                 "configuration. Create this directory and set "
@@ -351,8 +351,8 @@ class SVNTool(SCMTool):
         client.callback_ssl_server_trust_prompt = ssl_server_trust_prompt
 
         try:
-            info = client.info2(path, recurse=False)
-        except ClientError, e:
+            client.info2(path, recurse=False)
+        except ClientError:
             pass
 
 

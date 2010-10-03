@@ -1,0 +1,38 @@
+.. _webapi2.0-error-212:
+
+=====================
+212 - Empty Changeset
+=====================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 212                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`400`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``The change number specified represents an empty   |
+|                      | changeset``                                         |
++----------------------+-----------------------------------------------------+
+| **Description**      | The change number provided for the request          |
+|                      | represents a server-side changeset that doesn't     |
+|                      | contain any files. You will only ever see this for  |
+|                      | repositories that implement server-side changesets, |
+|                      | such as Perforce. Add some files to the changeset   |
+|                      | and try again.                                      |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 212,
+       msg: "The change number specified represents an empty changeset"
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3

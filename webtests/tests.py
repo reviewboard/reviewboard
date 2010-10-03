@@ -2,12 +2,9 @@ from datetime import datetime
 import os
 import time
 
-from django.conf import settings
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import Permission, User
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.http import HttpRequest
 from djblets.testing import testcases
 
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
@@ -34,6 +31,7 @@ class SeleniumUnitTest(testcases.SeleniumUnitTest):
         super(SeleniumUnitTest, self).setUp()
 
         self.user = User.objects.get(username='grumpy')
+        self.user.get_profile()
         self.login()
 
     def login(self):
@@ -848,7 +846,7 @@ class ReviewReplyTests(SeleniumUnitTest):
         self.assertEqual(reply.body_top, body_top)
         self.assertEqual(reply.body_bottom, body_bottom)
 
-    def test_reply_publish(self):
+    def test_reply_discard(self):
         """Testing discarding a reply to a review"""
         body_top = 'Reply to body top'
         body_bottom = 'Reply to body bottom'

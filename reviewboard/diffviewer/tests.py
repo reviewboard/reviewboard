@@ -176,7 +176,8 @@ class DiffParserTest(unittest.TestCase):
         return data
 
     def compareDiffs(self, files, testdir):
-        self.assertEqual(len(files), 13)
+        self.assertEqual(len(files), 14)
+
         for file in files:
             f = open("%s/diffs/%s/%s.diff" %
                      (self.PREFIX, testdir, os.path.basename(file.newFile)))
@@ -294,6 +295,48 @@ class DiffParserTest(unittest.TestCase):
         new = 'nopqrstuvwxyz'
         regions = diffutils.get_line_changed_regions(old, new)
         deepEqual(regions, (None, None))
+
+    def testMoveDetection(self):
+        """Testing move detection"""
+        # movetest1 has two blocks of code that would appear to be moves:
+        # a function, and an empty comment block. Only the function should
+        # be seen as a move, whereas the empty comment block is less useful
+        # (since it's content-less) and shouldn't be seen as once.
+        old = self._get_file('orig_src', 'movetest1.c')
+        new = self._get_file('new_src', 'movetest1.c')
+        differ = diffutils.Differ(old.splitlines(), new.splitlines())
+
+        r_moves = []
+        i_moves = []
+
+        for opcodes in diffutils.opcodes_with_metadata(differ):
+            tag = opcodes[0]
+            meta = opcodes[-1]
+
+            if tag == 'delete':
+                if 'moved' in meta:
+                    r_moves.append(meta['moved'])
+            elif tag == 'insert':
+                if 'moved' in meta:
+                    i_moves.append(meta['moved'])
+
+        self.assertEqual(len(r_moves), 1)
+        self.assertEqual(len(i_moves), 1)
+
+        moves = [
+            (15, 28),
+            (16, 29),
+            (17, 30),
+            (18, 31),
+            (19, 32)
+        ]
+
+        for i, j in moves:
+            self.assertTrue(j in i_moves[0])
+            self.assertTrue(i in r_moves[0])
+            self.assertEqual(i_moves[0][j], i)
+            self.assertEqual(r_moves[0][i], j)
+
 
     def _get_file(self, *relative):
         f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))

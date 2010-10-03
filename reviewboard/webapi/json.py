@@ -1,6 +1,5 @@
 from datetime import datetime
 import logging
-import os
 import re
 
 from django.conf import settings
@@ -14,7 +13,6 @@ from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext as _
 from django.views.decorators.http import require_POST
 
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIResponse, \
                                 WebAPIResponseError, \
@@ -22,11 +20,11 @@ from djblets.webapi.core import WebAPIResponse, \
 from djblets.webapi.decorators import webapi, \
                                       webapi_login_required, \
                                       webapi_permission_required
-from djblets.webapi.errors import WebAPIError, \
-                                  PERMISSION_DENIED, DOES_NOT_EXIST, \
+from djblets.webapi.errors import PERMISSION_DENIED, DOES_NOT_EXIST, \
                                   INVALID_ATTRIBUTE, INVALID_FORM_DATA, \
                                   NOT_LOGGED_IN, SERVICE_NOT_CONFIGURED
 
+from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.diffviewer.models import FileDiff, DiffSet
@@ -42,9 +40,7 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.decorators import webapi_check_login_required, \
                                           webapi_deprecated_in_1_5
-from reviewboard.webapi.errors import UNSPECIFIED_DIFF_REVISION, \
-                                      INVALID_DIFF_REVISION, \
-                                      INVALID_ACTION, \
+from reviewboard.webapi.errors import INVALID_ACTION, \
                                       INVALID_CHANGE_NUMBER, \
                                       CHANGE_NUMBER_IN_USE, \
                                       MISSING_REPOSITORY, \
@@ -710,7 +706,7 @@ def review_request_draft_publish(request, review_request_id, *args, **kwargs):
     if not review_request.is_mutable_by(request.user):
         return WebAPIResponseError(request, PERMISSION_DENIED)
 
-    changes = draft.publish(user=request.user)
+    draft.publish(user=request.user)
     draft.delete()
 
     return WebAPIResponse(request)
@@ -890,9 +886,6 @@ def review_request_draft_update_from_changenum(request, review_request_id,
         draft = _prepare_draft(request, review_request)
     except PermissionDenied:
         return WebAPIResponseError(request, PERMISSION_DENIED)
-
-    tool = review_request.repository.get_scmtool()
-    changeset = tool.get_changeset(review_request.changenum)
 
     try:
         draft.update_from_changenum(review_request.changenum)

@@ -1,6 +1,5 @@
 import logging
 import re
-import sre_constants
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -61,6 +60,8 @@ class NewReviewRequestForm(forms.Form):
     optionally a changelist number (for use in certain repository types
     such as Perforce).
     """
+    NO_REPOSITORY_ENTRY = _('(None - Graphics only)')
+
     basedir = forms.CharField(
         label=_("Base Directory"),
         required=False,
@@ -69,7 +70,7 @@ class NewReviewRequestForm(forms.Form):
         widget=forms.TextInput(attrs={'size': '35'}))
     diff_path = forms.FileField(
         label=_("Diff"),
-        required=True,
+        required=False,
         help_text=_("The new diff to upload."),
         widget=forms.FileInput(attrs={'size': '35'}))
     parent_diff_path = forms.FileField(
@@ -82,8 +83,8 @@ class NewReviewRequestForm(forms.Form):
     repository = forms.ModelChoiceField(
         label=_("Repository"),
         queryset=Repository.objects.filter(visible=True).order_by('name'),
-        empty_label=None,
-        required=True)
+        empty_label=NO_REPOSITORY_ENTRY,
+        required=False)
 
     changenum = forms.IntegerField(label=_("Change Number"), required=False)
 
@@ -94,8 +95,14 @@ class NewReviewRequestForm(forms.Form):
 
         # Repository ID : visible fields mapping.  This is so we can
         # dynamically show/hide the relevant fields with javascript.
-        valid_repos = []
-        repo_ids = [id for (id, name) in self.fields['repository'].choices]
+        valid_repos = [('', self.NO_REPOSITORY_ENTRY)]
+
+        repo_ids = [
+            id for (id, name) in self.fields['repository'].choices if id
+        ]
+
+        # Show the explanation for the "None" entry when it's selected.
+        self.field_mapping[''] = ['no_repository_explanation']
 
         for repo in Repository.objects.filter(pk__in=repo_ids).order_by("name"):
             try:
@@ -108,6 +115,10 @@ class NewReviewRequestForm(forms.Form):
 
         self.fields['repository'].choices = valid_repos
 
+        # If we have any repository entries we can show, then we should
+        # show the first one, rather than the "None" entry.
+        if len(valid_repos) > 1:
+            self.fields['repository'].initial = valid_repos[1][0]
 
     @staticmethod
     def create_from_list(data, constructor, error):
@@ -163,42 +174,45 @@ class NewReviewRequestForm(forms.Form):
 
             review_request.save()
 
-        diff_form = UploadDiffForm(
-            review_request,
-            data={
-                'basedir': self.cleaned_data['basedir'],
-            },
-            files={
-                'path': diff_file,
-                'parent_diff_path': parent_diff_file,
-            })
-        diff_form.full_clean()
+        if diff_file:
+            diff_form = UploadDiffForm(
+                review_request,
+                data={
+                    'basedir': self.cleaned_data['basedir'],
+                },
+                files={
+                    'path': diff_file,
+                    'parent_diff_path': parent_diff_file,
+                })
+            diff_form.full_clean()
 
-        class SavedError(Exception):
-            """Empty exception class for when we already saved the error info"""
-            pass
+            class SavedError(Exception):
+                """Empty exception class for when we already saved the
+                error info.
+                """
+                pass
 
-        try:
-            diff_form.create(diff_file, parent_diff_file,
-                             attach_to_history=True)
-            if 'path' in diff_form.errors:
-                self.errors['diff_path'] = diff_form.errors['path']
-                raise SavedError
-            elif 'base_diff_path' in diff_form.errors:
-                self.errors['base_diff_path'] = diff_form.errors['base_diff_path']
-                raise SavedError
-        except SavedError:
-            review_request.delete()
-            raise
-        except diffviewer_forms.EmptyDiffError:
-            review_request.delete()
-            self.errors['diff_path'] = forms.util.ErrorList([
-                'The selected file does not appear to be a diff.'])
-            raise
-        except Exception, e:
-            review_request.delete()
-            self.errors['diff_path'] = forms.util.ErrorList([e])
-            raise
+            try:
+                diff_form.create(diff_file, parent_diff_file,
+                                 attach_to_history=True)
+                if 'path' in diff_form.errors:
+                    self.errors['diff_path'] = diff_form.errors['path']
+                    raise SavedError
+                elif 'base_diff_path' in diff_form.errors:
+                    self.errors['base_diff_path'] = diff_form.errors['base_diff_path']
+                    raise SavedError
+            except SavedError:
+                review_request.delete()
+                raise
+            except diffviewer_forms.EmptyDiffError:
+                review_request.delete()
+                self.errors['diff_path'] = forms.util.ErrorList([
+                    'The selected file does not appear to be a diff.'])
+                raise
+            except Exception, e:
+                review_request.delete()
+                self.errors['diff_path'] = forms.util.ErrorList([e])
+                raise
 
         review_request.add_default_reviewers()
         review_request.save()

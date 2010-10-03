@@ -1,0 +1,20 @@
+=======================
+Closing Review Requests
+=======================
+
+When a review request has been thoroughly reviewed, or the task has been
+abandoned, the review request can be closed.
+
+There are two ways to close the review request: Closing as "submitted" or
+as "discarded." Both options are available under the :guilabel:`Close`
+menu on the review request's action bar.
+
+.. image:: close-menu.png
+
+A submitted review request is one where the change has been committed to the
+repository and no longer needs further reviews.
+
+A discarded review request is one that has been abandoned and will no longer
+be updated or reviewed.
+
+.. comment: vim: ft=rst et ts=3

@@ -420,7 +420,7 @@ class MyersDiffer:
 
                     if x + y < bxy_best:
                         bxy_best = x + y
-                        bx_bet = x
+                        bx_best = x
 
                 # Use the better of the two diagonals
                 if a_upper + b_upper - bxy_best < \

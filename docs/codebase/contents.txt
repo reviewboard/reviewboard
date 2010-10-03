@@ -10,7 +10,6 @@ Review Board Administration Guide Contents
    coding-standards
    contributing-patches
    unit-tests/fixtures
-   modules/index
 
 
 Indices, glossary and tables

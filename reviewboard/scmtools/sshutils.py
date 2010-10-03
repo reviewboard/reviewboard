@@ -64,8 +64,10 @@ def add_host_key(hostname, key):
                 'dirname': dirname,
             })
 
+    filename = get_host_keys_filename()
+
     try:
-        fp = open(get_host_keys_filename(), 'a')
+        fp = open(filename, 'a')
         fp.write('%s %s %s\n' % (hostname, key.get_name(), key.get_base64()))
         fp.close()
     except IOError, e:

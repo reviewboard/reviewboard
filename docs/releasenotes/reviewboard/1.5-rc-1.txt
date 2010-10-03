@@ -1,0 +1,150 @@
+===================================
+Review Board 1.5 RC 1 Release Notes
+===================================
+
+**Release date**: July 5, 2010
+
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`1.0.9 <1.0.9>`.
+
+
+New Features
+============
+
+* Improved move detection.
+
+  Move detection in the previous betas only worked when an entire
+  insert/remove block was moved. Now it's more fine-grained, and can
+  detect moved lines within those blocks.
+
+  It also ignores moves that consist entirely of whitespace changes or
+  simple non-alphanumeric lines (such as ``}``, ``/*``, etc.).
+
+* Added support for the iPhone and iPad.
+
+  We now support code review using the iPhone and iPad through the main
+  Review Board web UI. You can bookmark Review Board to your home screen
+  with a nice clean icon and use Review Board like you do on the computer.
+
+* Added support for WSGI installations.
+
+  rb-site can now generate a WSGI installation for Review Board. This is
+  a more modern replacement for mod_python, which won't be available in
+  future versions of Apache. Patch by Jan Koprowski. (:bug:`1136`)
+
+* Added Mercurial support for ``--git`` formatted patches. Patch by
+  Dan Buch.
+
+* The diff viewer now supports indicating deleted files. (:bug:`394`)
+
+  Previously, a deleted file was always represented as a series of
+  removed lines. Now, for diffs that can indicate when files are deleted,
+  we show that the file was deleted without showing any content.
+
+  Right now, this only supports CVS, but will support more types of
+  repositories in the future.
+
+
+API Improvements
+================
+
+* Added a resource for retrieving the logged in user's session
+  information. (:bug:`1133`)
+
+  This introduces a ``/api/session/`` resource, which returns some basic
+  information on the session. If the client is logged in, the
+  ``authenticated`` key will be set to ``True``, and a link to the logged in
+  user will be returned.
+
+  If the client is not logged in, the ``authenticated`` key will be set to
+  ``False``.
+
+* Support filtering review requests by using date ranges.
+
+  The ``/api/review-requests/`` resource can now be filterd using date ranges.
+  It supports passing ``?time-added-from=``, ``?time-added-to=``,
+  ``?last-updated-from=``, and ``?last-updated-to=``. These parameters take
+  a variety of date values, though we recommend ISO8601 format. For example:
+
+  * ``2010-06-27``
+  * ``2010-06-27T16:26:30``
+  * ``2010-06-27T16:26:30-08:00``
+
+* Added a resource for downloading diffs and parsed diff opcodes.
+
+  The ``/api/review-requests/<id>/diffs/`` resource now returns the uploaded
+  diff when accessed with a HTTP Accept header of ``text/x-patch``. The diff
+  covers all modified files.
+
+  The ``/api/review-requests/<id>/diffs/<revision>/files/<id>/`` resource can
+  also return the uploaded diff when using ``text/x-patch``, but only for
+  that particular file. It also supports returning the parsed opcodes (useful
+  for implementing a custom diff viewer) when using an Accept mimetype of
+  either ``application/vnd.reviewboard.org.diff.data+json`` or
+  ``application/vnd.reviewboard.org.diff.data+xml``. If
+  ``?syntax-highlighting=1`` is passed to the URL, the returned chunks will
+  contain HTML markup.
+
+
+Bug Fixes
+=========
+
+* Fixed wrapping of text in HTML e-mails. (:bug:`1569`)
+
+  The comment, description, etc. text wasn't wrapped, making it hard
+  to read in various e-mail clients (particularly on mobile devices).
+  The text is now properly wrapped on all clients.
+
+* Fixed the tab order for the Log In page. Patch by Mike Conley. (:bug:`1585`)
+
+* SSH Repository paths with usernames embedded in them now work correctly.
+  (:bug:`1592`)
+
+* Fixed trailing whitespace indication. (:bug:`1620`)
+
+  The new feature for controlling whether trailing whitespace is shown broke
+  on installs where the setting wasn't explicitly turned on or off. It was
+  defaulting in the settings UI to being on, but the diff viewer was
+  seeing it as off. We now correctly check for this.
+
+* PendingDeprecationWarning errors no longer appear during rb-site.
+  (:bug:`1683`)
+
+  Newer versions of Django triggered PendingDeprecationWarning errors when
+  creating a site using rb-site. We now filter these out.
+
+* Fixed a rendering bug in the diff viewer where the first line would
+  appear double-wide. Patch by Eduardo Felipe Castegnaro.
+
+* Fix an error when accessing ``/api/repositories/<id>/info/``
+
+  An invalid call was being made which resulted in a server-side error.
+  The path now returns the expected information. Patch by Jacob Farkas.
+
+* Fixed remote file access when using Mercurial. Patch by Dan Buch.
+
+* CVS repository paths without a ``:`` separating hostnames and paths no
+  longer fail.
+
+  If a CVS repository path was provided that didn't have a ``:`` separating
+  the hostnames and path, we would fail to fetch the right file form the
+  repository in some cases. We now handle this much better.
+
+* SourceForge CVS paths are now generated with a ``:`` after the hostname.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Dan Buch
+* David Trowbridge
+* Eduardo Felipe Castegnaro
+* Jacob Farkas
+* Jan Koprowski
+* Mike Conley
+* Phil Orwig
+
+
+.. comment: vim: ft=rst et

@@ -6,14 +6,12 @@
 # MacOS X and data files installation.
 
 import os
-import shutil
 import sys
 
 from ez_setup import use_setuptools
 use_setuptools()
 
 from setuptools import setup, find_packages
-from setuptools.command.build_py import build_py
 from distutils.command.install_data import install_data
 from distutils.command.install import INSTALL_SCHEMES
 
@@ -93,12 +91,13 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.1.1',
+          'Django>=1.2.3',
           'django_evolution>=0.5',
-          'Djblets>=0.6.3alpha0.dev-20100522',
-          'Pygments>=1.1.1',
+          'Djblets>=0.6.4',
+          'Pygments>=1.3.1',
           'flup',
           'paramiko',
+          'python-dateutil',
           'python-memcached',
           'pytz',
           'recaptcha_client',

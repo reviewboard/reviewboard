@@ -298,7 +298,7 @@ logging output.
 
 To launch the web server, run::
 
-    $ ./contrib/internal/devserver.sh
+    $ ./contrib/internal/devserver.py
 
 This will start the server on port 8080. You should then be able to access
 your server by visiting ``http://localhost:8080``.
@@ -327,7 +327,7 @@ To run our unit test suite for Djblets, type::
 For Review Board, type::
 
     $ cd reviewboard
-    $ ./manage.py test
+    $ ./reviewboard/manage.py test
 
 If you're updating the unit tests, you may want to see the
 :ref:`Unit Test Fixtures` documentation.

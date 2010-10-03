@@ -1,0 +1,55 @@
+========
+Overview
+========
+
+Review Board's API is based on standard HTTP requests (GET and POST).
+
+All requests are made to resources on the server. These resources are just
+URLs beginning with ``/api/json/``.
+
+Review Board makes use of HTTP status codes for responses. Some of these
+may contain additional data in JSON_ format.
+
+.. _JSON: http://www.json.org/
+
+
+Responses
+=========
+
+HTTP Status Codes
+-----------------
+
+All responses containing payloads have an HTTP status code of 200 OK. This
+is true even when the payload represents an error. However, other status
+codes, such as 404 NOT FOUND, may be used without payloads. Clients should
+make sure to handle any and all status codes received.
+
+
+JSON Payloads
+-------------
+
+Many responses will contain data in a JSON_ payload. This is a JSON_
+dictionary containing keys for the response data. These responses will
+use the mimetype ``application/json``.
+
+Every payload has, at the least, a ``stat`` key. The value will be either
+``ok`` (for success) or ``fail`` (for a failed request).
+
+Payloads for failed requests will also contain a ``err`` key mapping to a
+dictionary containing ``code`` and ``msg`` keys. ``code`` will contain
+a numeric error code that can be used for determining the particular type of
+error. ``msg`` will contain a human-readable error string from the server.
+
+An example of a failed response payload would be:
+
+.. code-block:: javascript
+
+    {
+      stat: "fail",
+      err: {
+        code: 205,
+        msg: "A repository path must be specified"
+      }
+    }
+
+.. comment: vim: ft=rst et ts=3

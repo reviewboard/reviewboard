@@ -1242,7 +1242,11 @@ function initScreenshotDnD() {
         })
         .bind("dragexit", function(event) {
             var dt = event.originalEvent.dataTransfer;
-            dt.dropEffect = "none";
+
+            if (dt) {
+                dt.dropEffect = "none";
+            }
+
             handleDragExit(event);
             return false;
         })
@@ -1261,14 +1265,13 @@ function initScreenshotDnD() {
                 .html("Drop screenshots here to upload")
                 .appendTo(thumbnails);
 
-            thumbnails
-                .addClass("dragover")
-                .scrollIntoView();
+            thumbnails.addClass("dragover");
 
             thumbnailsContainer
                 .addClass("sliding")
                 .slideDown("normal", function() {
                     thumbnailsContainer.removeClass("sliding");
+                    thumbnails.scrollIntoView();
                 });
         }
 

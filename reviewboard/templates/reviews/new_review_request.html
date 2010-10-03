@@ -58,6 +58,16 @@
 	<td>{{form.repository}}</td>
 	<td>{{form.repository.errors}}</td>
    </tr>
+   <tr class="row_no_repository_explanation">
+    <td></td>
+    <td class="help" colspan="2">
+     {% blocktrans %}
+     You won't be able to add any diffs to this review request. The review
+     request will only be usable for reviewing screenshots and other graphic
+     files.
+     {% endblocktrans %}
+    </td>
+   </tr>
    <tr class="row_changenum">
     <td><label for="id_changenum">{{form.changenum.label}}:</label></td>
     <td>{{form.changenum}}</td>

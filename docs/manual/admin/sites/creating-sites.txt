@@ -1,4 +1,4 @@
-.. _creatingsites:
+.. _creating-sites:
 
 ==============
 Creating Sites
@@ -32,6 +32,16 @@ their documentation on how to set them up and configure them.
    drastically improve performance of your Review Board installation. If
    possible, put this on a server with a lot of RAM.
 
+.. admonition:: SQLite should only be used for test installations.
+
+   While useful and portable, SQLite does not handle large loads with many
+   concurrent users very well. We strongly recommend using MySQL or
+   PostgreSQL for a real deployment.
+
+   We don't officially support converting a database from SQLite to other
+   databases, so it's important that you choose something that will work
+   for you long-term.
+
 Once you have answered all the questions and completed the installation,
 you'll need to change some directory permissions and install your web server
 configuration files.
@@ -41,7 +51,7 @@ Changing Permissions
 ====================
 
 Review Board expects to be able to write to the :file:`htdocs/media/uploaded`
-directory and all subdirectories. Since Review Board is ran by your web
+directory and all subdirectories. Since Review Board is run by your web
 server, this directory and all subdirectories and files must be writable by
 the user your web server runs as.
 

@@ -5,12 +5,44 @@ Web API Guide
 =============
 
 
+REST API 2.0
+============
+
+This is the modern API first made available in Review Board 1.5.
+
+.. toctree::
+   :maxdepth: 2
+
+   2.0/overview
+   2.0/authenticating
+   2.0/resources/resource-tree
+   2.0/resources/index
+   2.0/errors/index
+   2.0/glossary
+
+
+
+REST API 1.0 (deprecated)
+=========================
+
+This version of the API was first used in Review Board 1.0. It exists
+in 1.5 but is feature-frozen and is will be removed in a future release.
+
 .. toctree::
    :maxdepth: 1
 
-   overview
-   authenticating
-   reference/index
+   1.0/overview
+   1.0/authenticating
+   1.0/reference/index
+
+
+.. comment: Some hidden toctrees for building the structure properly.
+
+.. toctree::
+   :hidden:
+
+   2.0/index
+   1.0/index
 
 
 .. comment: vim: ft=rst et ts=3

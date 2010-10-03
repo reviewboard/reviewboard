@@ -1,7 +1,6 @@
 from datetime import datetime
 import logging
 
-from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -188,34 +187,6 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     return message.message_id
 
 
-def harvest_people_from_review(review):
-    """
-    Returns a list of all people who have been involved in the discussion on
-    a review.
-    """
-
-    # This list comprehension gives us every user in every reply, recursively.
-    # It looks strange and perhaps backwards, but works. We do it this way
-    # because harvest_people_from_review gives us a list back, which we can't
-    # stick in as the result for a standard list comprehension. We could
-    # opt for a simple for loop and concetenate the list, but this is more
-    # fun.
-    return [review.user] + \
-           [u for reply in review.replies.all()
-              for u in harvest_people_from_review(reply)]
-
-
-def harvest_people_from_review_request(review_request):
-    """
-    Returns a list of all people who have been involved in a discussion on
-    a review request.
-    """
-    # See the comment in harvest_people_from_review for this list
-    # comprehension.
-    return [u for review in review_request.reviews.all()
-              for u in harvest_people_from_review(review)]
-
-
 def mail_review_request(user, review_request, changedesc=None):
     """
     Send an e-mail representing the supplied review request.
@@ -239,7 +210,7 @@ def mail_review_request(user, review_request, changedesc=None):
         # Fancy quoted "replies"
         subject = "Re: " + subject
         reply_message_id = review_request.email_message_id
-        extra_recipients = harvest_people_from_review_request(review_request)
+        extra_recipients = review_request.participants
     else:
         extra_recipients = None
 
@@ -319,7 +290,7 @@ def mail_reply(user, reply):
                          review_request,
                          u"Re: Review Request: %s" % review_request.summary,
                          review.email_message_id,
-                         harvest_people_from_review(review),
+                         review.participants,
                          'notifications/reply_email.txt',
                          'notifications/reply_email.html',
                          extra_context)

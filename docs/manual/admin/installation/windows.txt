@@ -84,9 +84,9 @@ You can `download the installer
 Installing memcached
 ====================
 
-Memcached_ is a high-performant caching server used by Review Board. While
+Memcached_ is a high-performance caching server used by Review Board. While
 optional, it's **strongly** recommended in order to have a fast, responsive
-setup. Along with memcached, we need the `python-memcached`_ Python bindings.
+server. Along with memcached, we need the `python-memcached`_ Python bindings.
 
 1. Download `memcached for Windows`_.
 2. Unzip this to the directory you want to keep memcached in (for example,
@@ -105,7 +105,7 @@ setup. Along with memcached, we need the `python-memcached`_ Python bindings.
 
       easy_install python-memcached
 
-.. _`memcached for Windows`: http://code.jellycan.com/files
+.. _`memcached for Windows`: http://code.jellycan.com/memcached/
 .. _memcached: http://www.danga.com/memcached/
 .. _`python-memcached`:
    http://www.tummy.com/Community/software/python-memcached/
@@ -128,6 +128,7 @@ Review Board requires PyCrypto_ for SSH repository support. To install this,
 download the latest version that matches your Python version at the
 `PyCrypto Win32 downloads page`_.
 
+.. _PyCrypto: http://www.pycrypto.org/
 .. _`PyCrypto Win32 downloads page`:
    http://www.voidspace.org.uk/python/modules.shtml#pycrypto
 
@@ -151,7 +152,7 @@ If you want to install an in-development release, see
 .. _`Django-Evolution`: http://django-evolution.googlecode.com/
 .. _Django: http://www.djangoproject.com/
 .. _paramiko: http://www.lag.net/paramiko/
-.. _flup: http://www.saddi.com/software/flup
+.. _flup: http://trac.saddi.com/flup
 
 
 Installing Database Bindings
@@ -224,7 +225,7 @@ Mercurial
 Mercurial_ can be installed on Windows through Cygwin_ or by using the
 `Windows Mercurial packages`_.
 
-.. _Mercurial: http://www.selenic.com/mercurial/
+.. _Mercurial: http://mercurial.selenic.com/
 .. _`Windows Mercurial packages`: http://mercurial.berkwood.com/
 
 
@@ -251,22 +252,39 @@ Subversion
 ----------
 
 Subversion_ can be installed from Cygwin_ or by downloading the latest
-installer from the `Subversion downloads`_ page. You will need one of the
-:file:`Setup-Subversion-*.msi` files.
+installer from the `Subversion downloads`_ page. Make sure Windows is
+selected, and then choose the ``CollabNet Subversion Command-Line Client``.
 
 You will then need to install PySVN_ from the `PySVN downloads`_ page.
 
 
-.. _Subversion: http://subversion.tigris.org/
+.. _Subversion: http://subversion.apache.org/
 .. _PySVN: http://pysvn.tigris.org/
 .. _`Subversion downloads`:
-   http://subversion.tigris.org/servlets/ProjectDocumentList?folderID=8100
+   http://www.open.collab.net/downloads/subversion/
 .. _`PySVN downloads`:
    http://pysvn.tigris.org/servlets/ProjectDocumentList?folderID=1768
 
 
-Installing Development Tools
-============================
+Installing Amazon S3 Support (optional)
+=======================================
+
+This is an optional step.
+
+Review Board can use `Amazon S3`_ to store uploaded screenshots. To install
+this, you will need the :mod:`django-storages` module. Type::
+
+    $ easy_install django-storages
+
+After you've installed Review Board and created your site, you will need
+to configure this. See the :ref:`file-storage-settings` documentation for
+more information.
+
+.. _`Amazon S3`: http://aws.amazon.com/s3/
+
+
+Installing Development Tools (optional)
+=======================================
 
 If you plan to work on Review Board's source code, there are a few
 additional packages you'll need to install:
@@ -288,7 +306,7 @@ After Installation
 ==================
 
 Once you've finished getting Review Board itself installed, you'll want to
-create your site. See :ref:`Creating Sites` for details.
+create your site. See :ref:`creating-sites` for details.
 
 
 .. comment: vim: ft=rst et

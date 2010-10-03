@@ -2,7 +2,7 @@ import logging
 import re
 
 
-class File:
+class File(object):
     def __init__(self):
         self.origFile = None
         self.newFile = None
@@ -11,6 +11,7 @@ class File:
         self.origChangesetId = None
         self.data = None
         self.binary = False
+        self.deleted = False
 
 
 class DiffParserError(Exception):
@@ -79,6 +80,7 @@ class DiffParser(object):
            'origInfo' in info and 'newInfo' in info:
             file = File()
             file.binary   = info.get('binary', False)
+            file.deleted  = info.get('deleted', False)
             file.origFile = info.get('origFile')
             file.newFile  = info.get('newFile')
             file.origInfo = info.get('origInfo')

@@ -1,5 +1,4 @@
-from django.conf.urls.defaults import url, include, patterns
-from django.views.generic.simple import redirect_to
+from django.conf.urls.defaults import include, patterns
 from djblets.util.misc import never_cache_patterns
 
 from reviewboard.reviews.models import ReviewRequest

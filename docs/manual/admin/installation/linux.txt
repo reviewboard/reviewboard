@@ -43,6 +43,21 @@ are using :command:`sudo`.
 .. _`Fedora Extras`: http://fedoraproject.org/wiki/Extras
 
 
+.. _linux-http-proxy:
+
+Using a HTTP Proxy
+------------------
+
+If you're behind a proxy server, you'll need to set the :envvar:`http_proxy`
+environment variable to your proxy server before running
+:command:`easy_install`. This must be done as the user running
+:command:`easy_install`, in the same shell. For example::
+
+    $ sudo -s
+    $ export http_proxy=http://proxy.example.com/
+    $ easy_install ....
+
+
 Installing Python Setuptools
 ============================
 
@@ -68,8 +83,9 @@ another RedHat-based distribution, type::
 Users of other distributions should check with their distribution for native
 packages, or follow the `setuptools installation`_ instructions.
 
-If the version available for your distribution is older than 0.6c9, you'll
-need to then upgrade setuptools to the latest version by running::
+If the version of setuptools available for your distribution is older than
+0.6c9, you'll need to install it first, and then upgrade it to the latest
+version by running::
 
     $ easy_install -U setuptools
 
@@ -78,8 +94,8 @@ need to then upgrade setuptools to the latest version by running::
 .. _`setuptools installation`: http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
 
 
-Installing Python Development Header
-====================================
+Installing Python Development Headers
+=====================================
 
 You will need to install the Python development headers for your
 distribution.
@@ -104,9 +120,9 @@ Installing memcached
 Memcached
 ---------
 
-Memcached_ is a high-performant caching server used by Review Board. While
+Memcached_ is a high-performance caching server used by Review Board. While
 optional, it's **strongly** recommended in order to have a fast, responsive
-setup. Along with memcached, we need the python-memcached Python bindings.
+server. Along with memcached, we need the python-memcached Python bindings.
 
 To install on Debian_ or Ubuntu_, type::
 
@@ -210,10 +226,6 @@ To install on Fedora_ type::
     $ yum install py-pysqlite2
 
 
-Additional instructions for other distributions `are available
-<http://oss.itsystementwicklung.de/trac/pysqlite/wiki/PysqlitePackages>`_
-
-
 Installing Source Control Components
 ====================================
 
@@ -266,10 +278,10 @@ To install support for Mercurial_, type::
 
 You can also check your distribution for a native package, or use one of the
 `binary packages
-<http://www.selenic.com/mercurial/wiki/index.cgi/BinaryPackages>`_ provided.
+<http://mercurial.selenic.com/wiki/Download>`_ provided.
 
 
-.. _Mercurial: http://www.selenic.com/mercurial/
+.. _Mercurial: http://mercurial.selenic.com/
 
 
 Perforce
@@ -320,10 +332,29 @@ release and following the instructions in the provided :file:`INSTALL.html`.
 .. _PySVN: http://pysvn.tigris.org/
 
 
+.. _linux-installing-amazon-s3-support:
+
+Installing Amazon S3 Support (optional)
+=======================================
+
+This is an optional step.
+
+Review Board can use `Amazon S3`_ to store uploaded screenshots. To install
+this, you will need the :mod:`django-storages` module. Type::
+
+    $ easy_install django-storages
+
+After you've installed Review Board and created your site, you will need
+to configure this. See the :ref:`file-storage-settings` documentation for
+more information.
+
+.. _`Amazon S3`: http://aws.amazon.com/s3/
+
+
 .. _installing-pylucene:
 
-Installing PyLucene
-===================
+Installing PyLucene (optional)
+==============================
 
 This is an optional step.
 
@@ -331,11 +362,11 @@ We use PyLucene_ for our search functionality. It can be complicated to
 install, and requires a working Java installation.
 
 
-Ubuntu Jaunty and Debian Testing
+Ubuntu 9.04+ and Debian Testing
 --------------------------------
 
-If you're using Ubuntu_ Jaunty or Debian_ Testing, you can simply install this
-by typing::
+If you're using Ubuntu_ (9.04 or newer) or Debian_ Testing, you can simply
+install this by typing::
 
     $ sudo apt-get install pylucene
 
@@ -397,8 +428,8 @@ space. This won't make any difference to the PyLucene installation either way.
 You can also remove your PyLucene tarball and the source directory.
 
 
-Installing Development Tools
-============================
+Installing Development Tools (optional)
+=======================================
 
 If you plan to work on Review Board's source code, there are a few
 additional packages you'll need to install:
@@ -417,7 +448,7 @@ You can install these in one go by typing::
 
 .. _`Django-Evolution`: http://django-evolution.googlecode.com/
 .. _Django: http://www.djangoproject.com/
-.. _flup: http://www.saddi.com/software/flup
+.. _flup: http://trac.saddi.com/flup
 .. _paramiko: http://www.lag.net/paramiko/
 .. _`Python Imaging Library`: http://www.pythonware.com/products/pil/
 
@@ -425,7 +456,7 @@ You can install these in one go by typing::
 .. _Debian: http://www.debian.org/
 .. _Ubuntu: http://www.ubuntu.com/
 .. _`RedHat Enterprise`: http://www.redhat.com/
-.. _Fedora: http://www.fedoraproject.org/
+.. _Fedora: http://fedoraproject.org/
 .. _CentOS: http://www.centos.org/
 
 
@@ -433,7 +464,7 @@ After Installation
 ==================
 
 Once you've finished getting Review Board itself installed, you'll want to
-create your site. See :ref:`Creating Sites` for details.
+create your site. See :ref:`creating-sites` for details.
 
 
 .. comment: vim: ft=rst et

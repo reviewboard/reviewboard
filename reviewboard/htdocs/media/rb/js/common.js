@@ -140,7 +140,7 @@ $.fn.formDlg = function(options) {
         function send() {
             options.dataStoreObject.setForm(form);
             options.dataStoreObject.save({
-                buttons: $("input:button", self.modalBox("buttons")),
+                buttons: $("input:button", box.modalBox("buttons")),
                 success: function(rsp) {
                     options.success(rsp);
                     box.remove();

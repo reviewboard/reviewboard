@@ -8,7 +8,7 @@ def fix_django_evolution_issues(settings):
     #
     # TODO: Remove this when Django Evolution works again.
     from django.core.management import setup_environ
-    project_directory = setup_environ(settings)
+    setup_environ(settings)
 
     import django.db.models.fields as model_fields
     import django.db.models.fields.files as model_files

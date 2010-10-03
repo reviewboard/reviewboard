@@ -1,4 +1,10 @@
-scmtools/hg.py:*: redefinition of unused 'urllib_quote' from line *
-admin/checks.py:*: 'DNS' imported but unused
-admin/cache_stats.py:*: redefinition of unused 'memcache' from line *
-settings.py:*: 'from settings_local import *' used; unable to detect undefined names
+docs/manual/_ext/webapidocs.py:*: redefinition of unused 'json' from line *
+reviewboard/manage.py:*: 'recaptcha' imported but unused
+reviewboard/accounts/views.py:*: redefinition of unused 'sha1' from line *
+reviewboard/scmtools/git.py:*: redefinition of unused 'urllib_quote' from line *
+reviewboard/scmtools/hg.py:*: redefinition of unused 'urllib_quote' from line *
+reviewboard/admin/checks.py:*: 'DNS' imported but unused
+reviewboard/admin/checks.py:*: 'S3Storage' imported but unused
+reviewboard/admin/checks.py:*: 'CouchDBStorage' imported but unused
+reviewboard/admin/cache_stats.py:*: redefinition of unused 'memcache' from line *
+reviewboard/settings.py:*: 'from settings_local import *' used; unable to detect undefined names

@@ -1,0 +1,54 @@
+=========
+Resources
+=========
+
+.. toctree::
+   :maxdepth: 1
+
+   diff-list
+   diff
+   draft-screenshot-list
+   draft-screenshot
+   file-diff-comment-list
+   file-diff-list
+   file-diff
+   repository-info
+   repository-list
+   repository
+   review-diff-comment-list
+   review-diff-comment
+   review-draft
+   review-group-list
+   review-group
+   review-group-user-list
+   review-list
+   review-reply-diff-comment-list
+   review-reply-diff-comment
+   review-reply-draft
+   review-reply-list
+   review-reply-screenshot-comment-list
+   review-reply-screenshot-comment
+   review-reply
+   review-request-draft
+   review-request-last-update
+   review-request-list
+   review-request
+   review-screenshot-comment-list
+   review-screenshot-comment
+   review
+   root
+   screenshot-comment-list
+   screenshot-list
+   screenshot
+   server-info
+   session
+   user-list
+   user
+   watched-review-group-list
+   watched-review-group
+   watched-review-request-list
+   watched-review-request
+   watched
+
+
+.. comment: vim: ft=rst et ts=3

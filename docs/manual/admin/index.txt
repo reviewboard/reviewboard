@@ -1,65 +1,13 @@
-.. _administrationguide:
+.. _administration-guide:
 
 ====================
 Administration Guide
 ====================
 
-
-Installation
-============
-
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   installation/linux
-   installation/windows
-   installation/upgrading
-   installation/development-releases
-
-
-Site Maintenance
-================
-
-.. toctree::
-   :maxdepth: 1
-
-   sites/rb-site
-   sites/creating-sites
-   sites/upgrading-sites
-   sites/enabling-search
-   sites/management-commands
-
-
-Administration UI
-=================
-
-.. toctree::
-   :maxdepth: 1
-
-   admin-ui/overview
-   admin-ui/dashboard
-   admin-ui/database
-   admin-ui/settings
-
-
-Management
-==========
-
-.. toctree::
-   :maxdepth: 1
-
-   Default Reviewers <management/default-reviewers>
-   Permission Groups <management/permission-groups>
-   Repositories <management/repositories>
-   Review Groups <management/review-groups>
-   Users <management/users>
-
-
-.. comment: Some hidden toctrees for building the structure properly.
-
-.. toctree::
-   :hidden:
-
+   installation/index
    sites/index
    admin-ui/index
    management/index

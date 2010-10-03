@@ -1,0 +1,13 @@
+=========================
+REST API 1.0 (deprecated)
+=========================
+
+.. toctree::
+   :maxdepth: 2
+
+   overview
+   authenticating
+   reference/index
+
+
+.. comment: vim: ft=rst et ts=3

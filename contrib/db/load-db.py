@@ -14,7 +14,9 @@ import os
 import re
 import sys
 
-sys.path.append(os.getcwd())
+topdir = os.path.join(os.path.dirname(__file__), "..", "..")
+sys.path.insert(0, os.path.join(topdir, 'reviewboard'))
+sys.path.insert(0, topdir)
 
 try:
     import settings
@@ -51,7 +53,7 @@ things go wrong.
 
 NOTE: Review Board migrations are now handled by running:
 
-  $ ./manage.py evolve --execute
+  $ ./reviewboard/manage.py evolve --execute
 
 Are you sure you want to continue?"
 
@@ -60,7 +62,7 @@ Type 'yes' to continue, or 'no' to cancel: """)
 if confirm != 'yes':
     sys.exit(0)
 
-os.system("./manage.py reset --noinput accounts reviews diffviewer scmtools")
+os.system("./reviewboard/manage.py reset --noinput accounts reviews diffviewer scmtools")
 
 transaction_setup = False
 
@@ -117,7 +119,7 @@ try:
         # Legacy dumpdata output. Try loading it directly.
         print "Importing old style dump format. This may take a while."
         f.close()
-        os.system("./manage.py loaddata %s" % filename)
+        os.system("./reviewboard/manage.py loaddata %s" % filename)
 except Exception, e:
     f.close()
     sys.stderr.write("Problem installing '%s': %s\n" % (filename, str(e)))

@@ -6,7 +6,7 @@
 {{error}}
 {% endif %}
 
-{% if file.changed_chunk_indexes or file.binary %}
+{% if file.changed_chunk_indexes or file.binary or file.deleted %}
 {%  if not standalone %}
 <table class="sidebyside{% if not file.interfilediff and file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
@@ -32,28 +32,35 @@
   </tr>
  </tbody>
 {%  else %}
-{%   if file.whitespace_only %}
+{%   if file.deleted %}
+ <tbody class="deleted">
+  <tr>
+   <td colspan="4">{% trans "This file was deleted. The content cannot be displayed." %}</td>
+  </tr>
+ </tbody>
+{%   else %}
+{%    if file.whitespace_only %}
     <tbody class="whitespace-file">
      <tr>
       <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>
      </tr>
     </tbody>
-{%   endif %}
-{%   for chunk in file.chunks %}
-{%    if not chunk.collapsable or not collapseall %}
+{%    endif %}
+{%    for chunk in file.chunks %}
+{%     if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif%}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
-{%     for line in chunk.lines %}
+{%      for line in chunk.lines %}
   <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %} {% attr "class" %}{% if forloop.first %}first {% endif %}{% if forloop.last %}last {% endif %} {% if line.7 %}whitespace-line{% endif %}{% endattr %}{% endifnotequal %}>
-{%      if forloop.first %}
+{%       if forloop.first %}
    <th>{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}" class="chunk-anchor"></a>{% endifnotequal %}{{line.1}}</th>
-{%      else %}
+{%       else %}
    <th>{{line.1}}</th>
-{%      endif %}
-{%      ifequal chunk.change "replace" %}
+{%       endif %}
+{%       ifequal chunk.change "replace" %}
    <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
    <th>{{line.4}}</th>
    <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
-{%      else %}
+{%       else %}
    <td>{% ifequal chunk.change 'insert' %}{% if line.8 %}
     <a href="#" class="moved-from" line="{{line.8}}" target="{{line.4}}">{% trans "Moved from" %} {{line.8}}</a>
     {% endif %}{% endifequal %}
@@ -65,11 +72,11 @@
     {% endif %}{% endifequal %}
     <pre>{{line.5|showextrawhitespace}}</pre>
    </td>
-{%      endifequal %}
+{%       endifequal %}
   </tr>
-{%     endfor %}
+{%      endfor %}
  </tbody>
-{%    else %}
+{%     else %}
  <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
   <tr>
    <th>...</th>
@@ -87,9 +94,10 @@
   </tr>
 {% endif %}
  </tbody>
-{%    endif %}
-{%   endfor %}{# chunks #}
-{%  endif %}{# not file.binary #}
+{%      endif %}
+{%     endfor %}{# chunks #}
+{%    endif %}{# not file.deleted #}
+{%   endif %}{# not file.binary #}
 {%  if not standalone %}
 </table>
 <script type="text/javascript">
