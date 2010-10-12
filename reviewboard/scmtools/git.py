@@ -87,7 +87,7 @@ class GitTool(SCMTool):
         return True
 
     def get_fields(self):
-        return ['diff_path']
+        return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
         return GitDiffParser(data)
@@ -288,8 +288,13 @@ class GitClient(object):
             failure = p.wait()
 
             if failure:
-                raise SCMError(_('Unable to retrieve information from local '
-                                 'Git repository'))
+                # See if we have a permissions error
+                if not os.access(self.git_dir, os.R_OK):
+                    raise SCMError(_("Permission denied accessing the local "
+                                     "Git repository '%s'") % self.git_dir)
+                else:
+                    raise SCMError(_('Unable to retrieve information from '
+                                     'local Git repository'))
 
     def is_valid_repository(self):
         """Checks if this is a valid Git repository."""

@@ -73,7 +73,7 @@ class BZRTool(SCMTool):
         return file_str, revision_str
 
     def get_fields(self):
-        return ['basedir', 'diff_path']
+        return ['basedir', 'diff_path', 'parent_diff_path']
 
     def get_diffs_use_absolute_paths(self):
         return False
