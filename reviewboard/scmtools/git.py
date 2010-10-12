@@ -87,7 +87,7 @@ class GitTool(SCMTool):
         return True
 
     def get_fields(self):
-        return ['diff_path']
+        return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
         return GitDiffParser(data)
