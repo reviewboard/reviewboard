@@ -583,7 +583,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'description': 'The comment text.',
             },
             'issue_opened': {
-                'type': str,
+                'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
             },
         },
