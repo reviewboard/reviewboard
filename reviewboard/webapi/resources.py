@@ -603,14 +603,15 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        for field in ('text', 'first_line', 'num_lines'):
+        if not diff_comment.issue_opened:
+            if kwargs.get('issue_opened', False):
+                diff_comment.issue_status = self.model.OPEN
+
+        for field in ('text', 'first_line', 'num_lines', 'issue_opened'):
             value = kwargs.get(field, None)
 
             if value is not None:
                 setattr(diff_comment, field, value)
-
-        issue_opened = (kwargs.get('issue_opened', False) == u'true')
-        setattr(diff_comment, 'issue_opened', issue_opened)
 
         diff_comment.save()
 
