@@ -43,7 +43,7 @@ $.extend(RB.DiffComment.prototype, {
      * @param {boolean} issue_opened  Whether or not an isue was opened.
      */
     setIssueOpened: function(issue_opened) {
-        this.issue_opened = issue_opened;
+        this.issue_opened = (issue_opened ? 1 : 0);
     },
 
     /*
@@ -1266,7 +1266,7 @@ $.extend(RB.ScreenshotComment.prototype, {
      * @param {boolean} issue_opened  Whether or not an isue was opened.
      */
     setIssueOpened: function(issue_opened) {
-        this.issue_opened = issue_opened;
+        this.issue_opened = (issue_opened ? 1 : 0);
     },
 
     /*
