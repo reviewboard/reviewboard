@@ -25,12 +25,13 @@ from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_request_fields
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
                                   PERMISSION_DENIED
-from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
-                                     UserResource as DjbletsUserResource, \
-                                     ExtensionResource as DjbletsExtensionResource,, \
-                                     RootResource as DjbletsRootResource, \
-                                     register_resource_for_model, \
-                                     get_resource_for_object
+from djblets.webapi.resources import \
+    WebAPIResource as DjbletsWebAPIResource, \
+    UserResource as DjbletsUserResource, \
+    ExtensionResource as DjbletsExtensionResource, \
+    RootResource as DjbletsRootResource, \
+    register_resource_for_model, \
+    get_resource_for_object
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
@@ -4196,6 +4197,9 @@ class SessionResource(WebAPIResource):
 session_resource = SessionResource()
 
 
+extension_resource = DjbletsExtensionResource(get_extension_manager())
+
+
 class RootResource(DjbletsRootResource):
     """Links to all the main resources, including URI templates to resources
     anywhere in the tree.
@@ -4217,8 +4221,6 @@ class RootResource(DjbletsRootResource):
         ], *args, **kwargs)
 
 root_resource = RootResource()
-
-extension_resource = DjbletsExtensionResource(get_extension_manager())
 
 
 def status_to_string(status):
