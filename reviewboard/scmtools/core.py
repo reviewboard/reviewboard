@@ -97,6 +97,9 @@ class SCMTool(object):
     def get_parser(self, data):
         return diffparser.DiffParser(data)
 
+    def normalize_path_for_display(self, filename):
+        return filename
+
     @classmethod
     def check_repository(cls, path, username=None, password=None):
         """
@@ -131,6 +134,7 @@ class SCMTool(object):
             netloc_username, hostname = url[1].split('@', 1)
         else:
             hostname = url[1]
+            netloc_username = None
 
         if not username and not netloc_username:
             return netloc_username, hostname

@@ -26,8 +26,10 @@ from reviewboard.reviews.managers import DefaultReviewerManager, \
 from reviewboard.scmtools.errors import EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 
-#the model for the summery only allows it to be 300 chars in length
+
+# The model for the review request summary only allows it to be 300 chars long
 MAX_SUMMARY_LENGTH = 300
 
 
@@ -55,6 +57,7 @@ def update_obj_with_changenum(obj, repository, changenum):
     if changeset.bugs_closed:
         obj.bugs_closed = ','.join(changeset.bugs_closed)
 
+
 def truncate(string, num):
    if len(string) > num:
       string = string[0:num]
@@ -65,13 +68,15 @@ def truncate(string, num):
 
    return string
 
+
 class Group(models.Model):
     """
     A group of reviewers identified by a name. This is usually used to
     separate teams at a company or components of a project.
 
     Each group can have an e-mail address associated with it, sending
-    all review requests and replies to that address.
+    all review requests and replies to that address. If that e-mail address is
+    blank, e-mails are sent individually to each member of that group.
     """
     name = models.SlugField(_("name"), max_length=64, blank=False, unique=True)
     display_name = models.CharField(_("display name"), max_length=64)
@@ -81,6 +86,7 @@ class Group(models.Model):
     users = models.ManyToManyField(User, blank=True,
                                    related_name="review_groups",
                                    verbose_name=_("users"))
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
 
     def __unicode__(self):
         return self.name
@@ -106,6 +112,8 @@ class DefaultReviewer(models.Model):
 
     A ``file_regex`` of ``".*"`` will add the specified reviewers by
     default for every review request.
+
+    Note that this is keyed off the same LocalSite as its "repository" member.
     """
     name = models.CharField(_("name"), max_length=64)
     file_regex = models.CharField(_("file regex"), max_length=256,
@@ -201,7 +209,9 @@ class ReviewRequest(models.Model):
                                             null=True, db_index=True)
     repository = models.ForeignKey(Repository,
                                    related_name="review_requests",
-                                   verbose_name=_("repository"))
+                                   verbose_name=_("repository"),
+                                   null=True,
+                                   blank=True)
     email_message_id = models.CharField(_("e-mail message ID"), max_length=255,
                                         blank=True, null=True)
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
@@ -250,10 +260,23 @@ class ReviewRequest(models.Model):
     shipit_count = models.IntegerField(_("ship-it count"), default=0,
                                        null=True)
 
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
+    local_id = models.IntegerField('site-local ID', null=True)
 
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
 
+    def get_participants(self):
+        """
+        Returns a list of all people who have been involved in discussing
+        this review request.
+        """
+        # See the comment in Review.get_participants for this list
+        # comprehension.
+        return [u for review in self.reviews.all()
+                  for u in review.participants]
+
+    participants = property(get_participants)
 
     def get_bug_list(self):
         """
@@ -1092,6 +1115,23 @@ class Review(models.Model):
     # to fix duplicate reviews.
     objects = ReviewManager()
 
+    def get_participants(self):
+        """
+        Returns a list of all people who have been involved in discussing
+        this review.
+        """
+
+        # This list comprehension gives us every user in every reply,
+        # recursively.  It looks strange and perhaps backwards, but
+        # works. We do it this way because get_participants gives us a
+        # list back, which we can't stick in as the result for a
+        # standard list comprehension. We could opt for a simple for
+        # loop and concetenate the list, but this is more fun.
+        return [self.user] + \
+               [u for reply in self.replies.all()
+                  for u in reply.participants]
+
+    participants = property(get_participants)
 
     def __unicode__(self):
         return u"Review of '%s'" % self.review_request

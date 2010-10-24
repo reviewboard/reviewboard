@@ -21,7 +21,7 @@ Adding Default Reviewers
 To add a new default reviewer, click the "Add" link next to the
 "Default reviewers" entry in the
 :ref:`database section <database-management>` or the
-:ref:`Administrator Dashboard` in the
+:ref:`administrator-dashboard` in the
 :ref:`Administration UI <administration-ui>`.
 
 A form will appear with the following fields:
@@ -42,8 +42,8 @@ A form will appear with the following fields:
     request when the `File regex`_ matches a file in the diff.
 
     The list contains possible review groups to match. Selected entries
-    are the groups you want to add. Hold down "Control" (on the PC) or
-    "Command" (on the Mac) to select more than one.
+    are the groups you want to add. Hold down :kbd:`Control` (on the PC) or
+    :kbd:`Command` (on the Mac) to select more than one.
 
     At least one group or one user should be selected for this default
     reviewer entry to be useful.
@@ -53,11 +53,22 @@ A form will appear with the following fields:
     when the `File regex`_ matches a file in the diff.
 
     The list contains possible users to match. Selected entries are the users
-    you want to add. Hold down "Control" (on the PC) or "Command" (on the Mac)
-    to select more than one.
+    you want to add. Hold down :kbd:`Control` (on the PC) or :kbd:`Command`
+    (on the Mac) to select more than one.
 
     At least one group or one user should be selected for this default
     reviewer entry to be useful.
+
+* **Repositories** (optional)
+    A default reviewer can be limited to one or more repositories. This is
+    particularly useful when operating a Review Board server with many
+    repositories ran by separate groups.
+
+    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac)
+    to select more than one repository.
+
+    If no repositories are selected, then this default reviewer will apply to
+    every repository.
 
 
 .. _editing-default-reviewers:
@@ -66,7 +77,7 @@ Editing Default Reviewers
 =========================
 
 To edit a default reviewer, click "Default reviewers" in the
-:ref:`Administrator Dashboard` or
+:ref:`administrator-dashboard` or
 :ref:`Database section <database-management>` of the
 :ref:`Administration UI <administration-ui>`.
 You can then browse to the default reviewer you want to modify and click it.

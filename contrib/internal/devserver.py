@@ -68,7 +68,6 @@ def main():
 
     # And now just boot up the server
     os.system('./reviewboard/manage.py runserver 0.0.0.0:%s'
-              ' --adminmedia=reviewboard/htdocs/media/admin/'
               % server_port)
 
 if __name__ == "__main__":

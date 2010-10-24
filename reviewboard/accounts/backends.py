@@ -41,7 +41,7 @@ class NISBackend(object):
                 if not passwd:
                     passwd = nis.match(username, 'passwd').split(':')
 
-                names = passwd[4].split(' ', 1)
+                names = passwd[4].split(',')[0].split(' ', 1)
                 first_name = names[0]
                 last_name = None
                 if len(names) > 1:
@@ -92,6 +92,14 @@ class LDAPBackend(object):
                 logging.warning("LDAP error: The specified object does not "
                                 "exist in the Directory: %s" %
                                 uid)
+                return None
+
+            if len(password) == 0:
+                # Don't try to bind using an empty password; the server will
+                # return success, which doesn't mean we have authenticated.
+                # http://tools.ietf.org/html/rfc4513#section-5.1.2
+                # http://tools.ietf.org/html/rfc4513#section-6.3.1
+                logging.warning("Empty password for: %s" % uid)
                 return None
 
             ldapo.bind_s(search[0][0], password)
@@ -272,7 +280,12 @@ class ActiveDirectoryBackend(object):
             try:
                 bind_username ='%s@%s' % (username, self.get_domain_name())
                 con.simple_bind_s(bind_username, password)
-                user_data = self.search_ad(con, '(&(objectClass=user)(sAMAccountName=%s))' % username)
+                user_data = self.search_ad(
+                    con,
+                    '(&(objectClass=user)(sAMAccountName=%s))' % username)
+
+                if not user_data:
+                    return None
 
                 if required_group:
                     try:

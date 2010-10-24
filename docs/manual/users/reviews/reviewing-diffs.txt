@@ -95,7 +95,8 @@ Viewing Interdiffs
 The diff viewer supports showing and commenting on :term:`interdiffs`. An
 interdiff is the difference between two uploaded diff revisions. In other
 words, it lets you see what changes the developer has made since the previous
-version of the diff you looked at, which is really handy for large changes.
+version of the diff you looked at, which is very useful for large changes
+which require several iterations of review.
 
 To view an interdiff between the current revision you're looking at and
 another revision, click the box for the diff revision next to the
@@ -107,9 +108,9 @@ another revision, click the box for the diff revision next to the
           review itself.
 
           If you're a developer posting code and you want to sync your
-          source tree, it's best to post your previous diff immediately
-          after syncing and then post any new changes, in order to minimize
-          this problem.
+          source tree, it's best to try to keep as many revisions of your change
+          based on the same revision of the source tree as possible, in order to
+          minimize the impact of this on your reviewers.
 
 
 Keyboard Shortcuts

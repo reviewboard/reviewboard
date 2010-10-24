@@ -5,7 +5,7 @@ import urlparse
 
 try:
     from bzrlib import bzrdir, revisionspec
-    from bzrlib.errors import NotBranchError
+    from bzrlib.errors import BzrError, NotBranchError
 except ImportError:
     pass
 
@@ -50,12 +50,15 @@ class BZRTool(SCMTool):
         branch = None
         try:
             try:
-                tree, branch, relpath = bzrdir.BzrDir.open_containing_tree_or_branch(filepath)
+                branch, relpath = bzrdir.BzrDir.open_containing_tree_or_branch(filepath)[1:]
                 branch.lock_read()
-                fileid = tree.path2id(relpath)
                 revtree = revisionspec.RevisionSpec.from_string(revspec).as_tree(branch)
-                contents = revtree.get_file_text(fileid)
-            except Exception, e:
+                fileid = revtree.path2id(relpath)
+                if fileid:
+                    contents = revtree.get_file_text(fileid)
+                else:
+                    contents = ""
+            except BzrError, e:
                 raise SCMError(e)
         finally:
             if branch:
@@ -70,21 +73,26 @@ class BZRTool(SCMTool):
         return file_str, revision_str
 
     def get_fields(self):
-        return ['basedir', 'diff_path']
+        return ['basedir', 'diff_path', 'parent_diff_path']
 
     def get_diffs_use_absolute_paths(self):
         return False
 
     def _get_full_path(self, path, basedir=None):
         """Returns the full path to a file."""
-        parts = [self.repository.path.strip("/")]
+        parts = [self.repository.path.rstrip("/")]
 
         if basedir:
             parts.append(basedir.strip("/"))
 
         parts.append(path.strip("/"))
 
-        return "/".join(parts)
+        final_path = "/".join(parts)
+
+        if final_path.startswith("/"):
+            final_path = "file://%s" % final_path
+
+        return final_path
 
     def _revspec_from_revision(self, revision):
         """Returns a revspec based on the revision found in the diff.

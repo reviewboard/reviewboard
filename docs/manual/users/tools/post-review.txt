@@ -79,9 +79,9 @@ instead of changesets. Take the following cases, for example:
 * You want to post a really old, previously abandoned change for review
   that previously went unreviewed.
 
-To post with a path, :command:`post-review` should be run with one or
-morestandard Perforce depot path as a parameter, which may contain revision
-information. The following paths are supported:
+To post with a path, :command:`post-review` should be run with a standard
+Perforce depot path as a parameter, which may contain revision information.
+The following paths are supported:
 
 
 **Uploading a file as a "new" file**::
@@ -248,7 +248,7 @@ You can also use the special value of ``-`` to pipe a diff into STDIN::
     $ cat mycode.diff | post-review --diff-filename=-
 
 
-.. _automatingpost-review:
+.. _automating-post-review:
 
 Automating post-review
 ======================

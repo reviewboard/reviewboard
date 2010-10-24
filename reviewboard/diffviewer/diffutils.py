@@ -589,11 +589,15 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         enable_syntax_highlighting = False
 
     if enable_syntax_highlighting:
+        repository = filediff.diffset.repository
+        tool = repository.get_scmtool()
+        source_file = tool.normalize_path_for_display(filediff.source_file)
+        dest_file = tool.normalize_path_for_display(filediff.dest_file)
         try:
             # TODO: Try to figure out the right lexer for these files
             #       once instead of twice.
-            markup_a = apply_pygments(old or '', filediff.source_file)
-            markup_b = apply_pygments(new or '', filediff.dest_file)
+            markup_a = apply_pygments(old or '', source_file)
+            markup_b = apply_pygments(new or '', dest_file)
         except ValueError:
             pass
 

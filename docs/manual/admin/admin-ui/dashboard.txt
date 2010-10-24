@@ -1,13 +1,13 @@
-.. _administratordashboard:
 .. _administrator-dashboard:
 
 =======================
 Administrator Dashboard
 =======================
 
-The dashboard is the front page of the :ref:`Administration UI`. It provides
-convenient shortcuts for common management tasks, some server information, and
-Review Board project news updates.
+The dashboard is the front page of the
+:ref:`Administration UI <administration-ui>`. It provides convenient shortcuts
+for common management tasks, some server information, and Review Board project
+news updates.
 
 
 Manage
@@ -63,6 +63,24 @@ The statistics shown include:
 * Server uptime
 
 
+.. _server-log:
+
+Server Log
+----------
+
+If logging is enabled, the Server Log will show events that have happened on
+the server since logging was enabled or logs were last rotated.
+
+The log can be filtered by date ("Any date", "Today", "Past 7 days", or
+"This month") and by log level ("Debug", "Info", "Warning", "Error",
+"Critical", or "All").
+
+The log can be particularly useful when encountering a problem with a
+repository, mail server, or when having trouble accessing a page. The
+information contained in the log file can be used by the Review Board
+developers to help diagnose your problem.
+
+
 News
 ====
 
@@ -72,6 +90,12 @@ clicking the post summary.
 
 The upper-right of the news box contains links for viewing all the news items,
 reloading the news box, and subscribing to an RSS feed for the news.
+
+.. note:: If you're behind an HTTP Proxy, you may not see any news here.
+          We will be adding HTTP Proxy support for this in a future update.
+          In the meantime, you can visit the `Review Board News`_ page.
+
+.. _`Review Board News`: http://www.reviewboard.org/news/
 
 
 .. comment: vim: ft=rst et

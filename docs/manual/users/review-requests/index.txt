@@ -7,6 +7,7 @@ Managing Review Requests
 
    creating
    updating
+   closing
 
 
 .. comment: vim: ft=rst et ts=3

@@ -12,6 +12,7 @@ from reviewboard.scmtools.errors import BadHostKeyError, \
                                         UnknownHostKeyError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Tool
+from reviewboard.site.models import LocalSite
 
 
 class RepositoryForm(forms.ModelForm):
@@ -226,6 +227,7 @@ class RepositoryForm(forms.ModelForm):
         help_text=_('Use this to control whether or not a repository is '
                     'shown when creating new review requests. Existing '
                     'review requests are unaffected.'),
+        initial=True,
         required=False)
 
     hosting_type = forms.ChoiceField(
@@ -348,6 +350,11 @@ class RepositoryForm(forms.ModelForm):
         help_text=_("The encoding used for files in this repository. This is "
                     "an advanced setting and should only be used if you're "
                     "sure you need it."))
+
+    local_site = forms.ModelChoiceField(
+        label=_("Local site"),
+        required=False,
+        queryset=LocalSite.objects.all())
 
 
     def __init__(self, *args, **kwargs):

@@ -65,8 +65,12 @@ def setup_media_dirs():
         if path == 'uploaded':
             continue
 
-        os.symlink(os.path.join(bundled_media_dir, path),
-                   os.path.join(settings.MEDIA_ROOT, path))
+        if not hasattr(os, 'symlink'):
+            shutil.copytree(os.path.join(bundled_media_dir, path),
+                            os.path.join(settings.MEDIA_ROOT, path))
+        else:
+            os.symlink(os.path.join(bundled_media_dir, path),
+                       os.path.join(settings.MEDIA_ROOT, path))
 
     if not os.path.exists(os.path.join(settings.MEDIA_ROOT, 'djblets')):
         if not pkg_resources.resource_exists("djblets", "media"):

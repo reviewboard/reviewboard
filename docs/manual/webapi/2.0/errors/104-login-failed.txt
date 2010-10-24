@@ -1,0 +1,39 @@
+.. _webapi2.0-error-104:
+
+==================
+104 - Login Failed
+==================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 104                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`401`                                         |
++----------------------+-----------------------------------------------------+
+| **HTTP Headers**     | ``WWW-Authenticate``                                |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``The username or password was not correct``        |
++----------------------+-----------------------------------------------------+
+| **Description**      | Your client attempted to log in, but didn't provide |
+|                      | valid credentials. You'll be provided with          |
+|                      | ``WWW-Authenticate`` HTTP headers so your client    |
+|                      | can try again.                                      |
+|                      |                                                     |
+|                      | See :ref:`2.0-authenticating` for more information. |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 104,
+       msg: "The username or password was not correct"
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3

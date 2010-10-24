@@ -13,6 +13,8 @@ import warnings
 from optparse import OptionGroup, OptionParser
 from random import choice
 
+from reviewboard import get_version_string
+
 
 DOCS_BASE = "http://www.reviewboard.org/docs/manual/dev/"
 
@@ -40,7 +42,7 @@ warnings.resetwarnings()
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 
 
-VERSION = "0.1"
+VERSION = get_version_string()
 DEBUG = False
 
 
@@ -190,12 +192,19 @@ class Site(object):
         media_base = os.path.join("htdocs", "media")
         rb_djblets_src = "htdocs/media/djblets"
         rb_djblets_dest = os.path.join(media_base, "djblets")
+        rb_admins_dest = os.path.join(media_base, "admin")
 
-        for media_dir in ["admin", "rb"]:
+        for media_dir in ["rb"]:
             path = os.path.join(media_base, media_dir)
             self.link_pkg_dir("reviewboard",
                               "htdocs/media/%s" % media_dir,
                               os.path.join(media_base, media_dir))
+
+        # Link the admin media
+        path = os.path.join(media_base, media_dir)
+        self.link_pkg_dir("django",
+                          "contrib/admin/media",
+                          rb_admins_dest)
 
         # Link from Djblets if available.
         if pkg_resources.resource_exists("djblets", "media"):
@@ -295,14 +304,19 @@ class Site(object):
         if db_engine == "postgresql":
             db_engine = "postgresql_psycopg2"
 
-        fp.write("DATABASE_ENGINE = '%s'\n" % db_engine)
-        fp.write("DATABASE_NAME = '%s'\n" % self.db_name.replace("\\", "\\\\"))
+        fp.write("DATABASES = {\n")
+        fp.write("    'default': {\n")
+        fp.write("        'ENGINE': '%s',\n" % db_engine)
+        fp.write("        'NAME': '%s',\n" % self.db_name.replace("\\", "\\\\"))
 
         if self.db_type != "sqlite3":
-            fp.write("DATABASE_USER = '%s'\n" % (self.db_user or ""))
-            fp.write("DATABASE_PASSWORD = '%s'\n" % (self.db_pass or ""))
-            fp.write("DATABASE_HOST = '%s'\n" % (self.db_host or ""))
-            fp.write("DATABASE_PORT = '%s'\n" % (self.db_port or ""))
+            fp.write("        'USER': '%s',\n" % (self.db_user or ""))
+            fp.write("        'PASSWORD': '%s',\n" % (self.db_pass or ""))
+            fp.write("        'HOST': '%s',\n" % (self.db_host or ""))
+            fp.write("        'PORT': '%s',\n" % (self.db_port or ""))
+
+        fp.write("    },\n")
+        fp.write("}\n")
 
         fp.write("\n")
         fp.write("# Unique secret key. Don't share this with anybody.\n")
@@ -337,6 +351,74 @@ class Site(object):
         Performs a database migration.
         """
         self.run_manage_command("evolve", ["--noinput", "--execute"])
+
+    def get_settings_upgrade_needed(self):
+        """Determines whether or not a settings upgrade is needed."""
+        try:
+            import settings_local
+
+            return hasattr(settings_local, 'DATABASE_ENGINE')
+        except ImportError, e:
+            sys.stderr.write("Unable to import settings_local. "
+                             "Cannot determine if upgrade is needed.\n")
+            return False
+
+    def upgrade_settings(self):
+        """Performs a settings upgrade."""
+        settings_file = os.path.join(self.abs_install_dir, "conf",
+                                     "settings_local.py")
+        buf = []
+        database_info = {}
+        database_keys = ('ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT')
+
+        try:
+            import settings_local
+
+            if hasattr(settings_local, 'DATABASE_ENGINE'):
+                engine = settings_local.DATABASE_ENGINE
+
+                # Don't convert anything other than the ones we know about,
+                # or third parties with custom databases may have problems.
+                if engine in ('sqlite3', 'mysql', 'postgresql'):
+                    engine = 'django.db.backends.' + engine
+
+                database_info['ENGINE'] = engine
+
+                for key in database_keys:
+                    if key != 'ENGINE':
+                        database_info[key] = getattr(settings_local,
+                                                     'DATABASE_%s' % key, '')
+        except ImportError, e:
+            sys.stderr.write("Unable to import settings_local for upgrade.\n")
+            return
+
+        fp = open(settings_file, 'r')
+
+        found_database = False
+
+        for line in fp.readlines():
+            if line.startswith('DATABASE_'):
+                if not found_database:
+                    found_database = True
+
+                    buf.append("DATABASES = {\n")
+                    buf.append("    'default': {\n")
+
+                    for key in database_keys:
+                        if database_info[key]:
+                            buf.append("        '%s': '%s',\n" %
+                                       (key, database_info[key]))
+
+                    buf.append("    },\n")
+                    buf.append("}\n")
+            else:
+                buf.append(line)
+
+        fp.close()
+
+        fp = open(settings_file, 'w')
+        fp.writelines(buf)
+        fp.close()
 
     def create_admin_user(self):
         """
@@ -1498,6 +1580,10 @@ class UpgradeCommand(Command):
 
         print "Rebuilding directory structure"
         site.rebuild_site_directory()
+
+        if site.get_settings_upgrade_needed():
+            print "Upgrading site settings_local.py"
+            site.upgrade_settings()
 
         if options.upgrade_db:
             print "Updating database. This may take a while."

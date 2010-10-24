@@ -1,0 +1,35 @@
+.. _webapi2.0-error-208:
+
+==================
+208 - Invalid User
+==================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 208                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`400`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``User does not exist``                             |
++----------------------+-----------------------------------------------------+
+| **Description**      | The username specified in a request does not exist  |
+|                      | on the server. This isn't related to                |
+|                      | authentication, but rather for usernames that are   |
+|                      | passed as parameters in some request, such as when  |
+|                      | creating a review request as another user.          |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 208,
+       msg: "User does not exist"
+     }
+   }
+
+.. comment: vim: ft=rst et ts=3

@@ -1,0 +1,36 @@
+.. _webapi2.0-error-203:
+
+===========================
+203 - Invalid Change Number
+===========================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 203                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`404`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``The change number specified could not be found``  |
++----------------------+-----------------------------------------------------+
+| **Description**      | The change number specified when creating a review  |
+|                      | request could not be found in the repository. This  |
+|                      | is used for repositories that keep track of         |
+|                      | changeset information server-side, such as          |
+|                      | Perforce.                                           |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 203,
+       msg: "The change number specified could not be found"
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3

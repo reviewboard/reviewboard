@@ -1496,7 +1496,27 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(len(mail.outbox), 1)
 
-    def test_put_reply_with_diff_comment(self):
+    def test_delete_reply(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API"""
+        review = \
+            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+
+        rsp = self.apiPost('review-requests/%s/reviews/%s/replies' %
+                           (review.review_request.id, review.id), {
+            'body_top': 'Test',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_id = rsp['reply']['id']
+        rsp = self.apiDelete(rsp['reply']['links']['self']['href'])
+
+        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
+
+
+class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyDiffCommentResource APIs."""
+    def test_post_reply_with_diff_comment(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
         comment_text = "My Comment Text"
 
@@ -1522,22 +1542,24 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-    def test_delete_reply(self):
-        """Testing the DELETE review-requests/<id>/reviews/<id>/replies/<id>/ API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
+        return rsp
 
-        rsp = self.apiPost('review-requests/%s/reviews/%s/replies' %
-                           (review.review_request.id, review.id), {
-            'body_top': 'Test',
+    def test_put_reply_with_diff_comment(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
+        new_comment_text = 'My new comment text'
+
+        # First, create a comment that we can update.
+        rsp = self.test_post_reply_with_diff_comment()
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'text': new_comment_text,
         })
-
         self.assertEqual(rsp['stat'], 'ok')
 
-        reply_id = rsp['reply']['id']
-        rsp = self.apiDelete(rsp['reply']['links']['self']['href'])
-
-        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+        self.assertEqual(reply_comment.text, new_comment_text)
 
 
 class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
@@ -1624,6 +1646,26 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('path' in rsp['fields'])
+
+        # Now test with a valid path and an invalid basedir.
+        # This is necessary because basedir is "optional" as defined by
+        # the resource, but may be required by the form that processes the
+        # diff.
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+        f = open(diff_filename, "r")
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
+            'path': f,
+        }, expected_status=400)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('basedir' in rsp['fields'])
 
     def test_get_diffs(self):
@@ -1696,7 +1738,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         f.close()
         review_request.publish(self.user)
 
-        screenshot = Screenshot.objects.get(pk=rsp['draft-screenshot']['id'])
+        screenshot = Screenshot.objects.get(pk=rsp['draft_screenshot']['id'])
 
         # Now modify the caption.
         rsp = self.apiPut('review-requests/%s/draft/screenshots/%s' %

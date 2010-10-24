@@ -30,7 +30,8 @@ Adding Review Groups
 To add a new review group, click the :guilabel:`Add` link next to the
 :guilabel:`Review groups` entry in the
 :ref:`database section <database-management>` or the
-:ref:`administrator-dashboard` in the :ref:`Administration UI`. Make sure to
+:ref:`administrator-dashboard` in the
+:ref:`Administration UI <administration-ui>`. Make sure to
 choose :guilabel:`Review groups` and not :guilabel:`Groups`, as the latter
 is for :ref:`permission-groups`.
 
@@ -66,8 +67,8 @@ Editing Review Groups
 
 To edit a review group, click :guilabel:`Review groups` in the
 :ref:`administrator-dashboard` or :ref:`Database section <database-management>`
-of the :ref:`Administration UI`.  You can then browse to the group you want to
-modify and click it.
+of the :ref:`Administration UI <administration-ui>`.  You can then browse to
+the group you want to modify and click it.
 
 See `Adding Review Groups`_ for a description of each field.
 

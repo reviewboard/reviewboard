@@ -4,13 +4,14 @@
 Creating Review Requests
 ========================
 
-A review request consists of, at a minimum, a diff, a summary, a
-description, and some reviewers.
+A review request consists of, at a minimum, a summary, a description, and some
+reviewers. A review request usually has a diff, but it isn't required, as the
+review request may be used for screenshot review purposes only.
 
 There are two main ways of submitting a new review request: through the
-web UI and through :ref:`post-review`. We recommend the latter, as it does
-a lot of work for you, and is actually required for some version control
-systems, such as Perforce.
+web UI and through :ref:`post-review`. We recommend the latter when posting
+diffs for review, as it does a lot of work for you, and is actually required
+for some version control systems, such as Perforce.
 
 
 Web UI
@@ -18,8 +19,21 @@ Web UI
 
 To post a review request through the web UI, click
 :guilabel:`New Review Request` in the upper-left of a page. This will take
-you to a form where you can upload your diff. Before you can do this,
-though, you'll need to create a diff.
+you to a form where you can create your review request. What information you
+provide depends on whether you're posting a diff for review, or intending to
+post screenshots for review.
+
+Once you've filled out all fields, click :guilabel:`Submit` to post the
+review request.
+
+
+.. _review-requests-for-diffs:
+
+Review Requests for Diffs
+-------------------------
+
+If you're uploading a diff, you will need to select a repository and browse
+to the diff you wish to upload.
 
 The diff you provide needs to be in :term:`unified diff` format, and must
 have revision information embedded in the file. CVS, Subversion, Git,
@@ -39,27 +53,36 @@ some may have multiple ones to choose from.
 After selecting the repository, additional fields dependent on that repository
 may become available. Here are some fields you may encounter.
 
-Perforce repositories:
+**Perforce repositories:**
 
-* :guilabel:`Change number`:
+* :guilabel:`Change Number`:
 
   The changeset number representing the change the diff is generated from.
 
-Subversion repositories:
+**Subversion repositories:**
 
-* :guilabel:`Base diff path`:
+* :guilabel:`Base Directory`:
 
-  The relative path of the directory you were in
-  when you generated the diff, based on the repository. For example, if you
-  locally have a checkout of :file:`trunk/reviewboard` named
-  :file:`reviewboard`, and that was the directory you were in when you made
-  the diff, then the base diff path would be ``/trunk/reviewboard``.
+  The relative path of the directory you were in when you generated the diff,
+  based on the repository. For example, if you locally have a checkout of
+  :file:`trunk/reviewboard` named :file:`reviewboard`, and that was the
+  directory you were in when you made the diff, then the base diff path would
+  be ``/trunk/reviewboard``.
 
   This may also depend on how Review Board was configured. Consult your
   administrator if you have problems.
 
-Once you've filled out all fields, click :guilabel:`Submit` to post the
-review request.
+
+Review Requests for Screenshots Only
+------------------------------------
+
+If you're intending to post a review request only for screenshot review,
+you will want to change the :guilabel:`Repository` to
+:guilabel:`(None - Graphics only)`. You will not be able to add any diffs
+to this review request, but after creating it, you will be able to add
+screenshots.
+
+No other fields will need to be provided when using this option.
 
 
 Finishing the Review Request

@@ -77,10 +77,8 @@ This is available if `Authentication Method`_ is set to
 
     Review Board uses reCAPTCHA_ for its captcha system. reCAPTCHA is a
     widely used and maintained captcha system. In order to use it, you will
-    need to `register an account
-    <https://admin.recaptcha.net/recaptcha/createsite/>`_
-    and fill in the following two fields with the public and private keys
-    that the site provides.
+    need to register an account and fill in the following two fields with the
+    public and private keys that the site provides.
 
 * **reCAPTCHA Public Key:**
     The public key provided by the reCAPTCHA site registration for your site.
@@ -88,7 +86,7 @@ This is available if `Authentication Method`_ is set to
 * **reCAPTCHA Private Key:**
     The private key provided by the reCAPTCHA site registration for your site.
 
-.. _reCAPTCHA: http://www.recaptcha.net
+.. _reCAPTCHA: http://www.google.com/recaptcha
 
 
 .. _ldap-authentication-settings:

@@ -31,6 +31,7 @@ class SeleniumUnitTest(testcases.SeleniumUnitTest):
         super(SeleniumUnitTest, self).setUp()
 
         self.user = User.objects.get(username='grumpy')
+        self.user.get_profile()
         self.login()
 
     def login(self):

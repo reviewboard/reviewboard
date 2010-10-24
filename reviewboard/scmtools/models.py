@@ -1,6 +1,8 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
+from reviewboard.site.models import LocalSite
+
 
 class Tool(models.Model):
     name = models.CharField(max_length=32, unique=True)
@@ -46,6 +48,7 @@ class Repository(models.Model):
     bug_tracker = models.CharField(max_length=256, blank=True)
     encoding = models.CharField(max_length=32, blank=True)
     visible = models.BooleanField(default=True)
+    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()

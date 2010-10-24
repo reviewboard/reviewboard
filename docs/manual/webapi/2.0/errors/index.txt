@@ -1,0 +1,23 @@
+======
+Errors
+======
+
+.. toctree::
+   :maxdepth: 1
+
+   100-does-not-exist
+   101-permission-denied
+   103-not-logged-in
+   104-login-failed
+   105-invalid-form-data
+   203-invalid-change-number
+   204-change-number-in-use
+   206-invalid-repository
+   207-repository-file-not-found
+   208-invalid-user
+   209-repository-action-not-supported
+   210-repository-info-error
+   212-empty-changeset
+
+
+.. comment: vim: ft=rst et ts=3
