@@ -21,6 +21,9 @@
    <col width="50%" />
   </colgroup>
   <tr>
+    <td id="review-request-warning" colspan="4"></td>
+  </tr>
+  <tr>
    <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
    <td class="value"><a id="submitter" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
    <td class="caption" colspan="2">{% trans "Reviewers" %}</td>

@@ -646,7 +646,8 @@ class MercurialTests(DjangoTestCase):
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_pending_changesets(1))
 
-        self.assertEqual(self.tool.get_fields(), ['diff_path'])
+        self.assertEqual(self.tool.get_fields(),
+                         ['diff_path', 'parent_diff_path'])
 
 
 class GitTests(DjangoTestCase):

@@ -67,7 +67,7 @@ urlpatterns = patterns('reviewboard.admin.views',
 urlpatterns += patterns('',
     (r'^log/', include('djblets.log.urls')),
 
-    ('^db/(.*)', admin.site.root),
+    ('^db/', include(admin.site.urls)),
     ('^feed/news/$', 'djblets.feedview.views.view_feed',
      {'template_name': 'admin/feed.html',
       'url': NEWS_FEED}),

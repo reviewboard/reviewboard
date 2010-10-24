@@ -4,4 +4,5 @@ SEQUENCE = [
     'shipit_count',
     'default_reviewer_repositories',
     'null_repository',
+    'localsite',
 ]

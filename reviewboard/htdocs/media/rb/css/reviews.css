@@ -163,6 +163,15 @@
   text-decoration: line-through;
 }
 
+.review-request #details #review-request-warning {
+  background-color: #F5A9A9;
+  border: 1px solid #FF0000;
+  display: none;
+  font-weight: bold;
+  padding: 5px;
+  text-align: center;
+}
+
 .review-request #diff_revision {
   font-weight: bold;
   text-align: right;

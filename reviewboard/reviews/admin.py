@@ -96,14 +96,14 @@ class ReviewRequestAdmin(admin.ModelAdmin):
         }),
         (_('Related Objects'), {
             'fields': ('screenshots', 'inactive_screenshots', 'changedescs',
-                       'diffset_history'),
+                       'diffset_history', 'local_site'),
             'classes': ['collapse'],
         }),
         (_('State'), {
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
             'fields': ('email_message_id', 'time_emailed',
-                       'last_review_timestamp', 'shipit_count'),
+                       'last_review_timestamp', 'shipit_count', 'local_id'),
             'classes': ['collapse'],
         }),
     )

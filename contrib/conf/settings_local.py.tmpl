@@ -1,10 +1,23 @@
 # Database backend.  Any supported django database engine should work.
-DATABASE_ENGINE = 'sqlite3'       # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
-DATABASE_NAME = 'reviewboard.db'  # Or path to database file if using sqlite3.
-DATABASE_USER = ''                # Not used with sqlite3.
-DATABASE_PASSWORD = ''            # Not used with sqlite3.
-DATABASE_HOST = ''                # Set to empty string for localhost.
-DATABASE_PORT = ''                # Set to empty string for default.
+DATABASES = {
+    'default': {
+        # 'django.db.backends.' followed by one of
+        # 'postgresql', 'mysql', 'sqlite3' or 'ado_mssql'.
+        'ENGINE': 'django.db.backends.sqlite3',
+
+        # Not used with sqlite3
+        'USER': '',
+
+        # Not used with sqlite3
+        'PASSWORD': '',
+
+        # Set to an empty string for localhost.
+        'HOST': '',
+
+        # Set to an empty string for default
+        'PORT': '',
+    },
+}
 
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '***********************************************'

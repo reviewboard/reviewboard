@@ -37,6 +37,7 @@ not already) and change the database name to something like
 
 If it asks you if you want to create an administrator, say "no," then type::
 
+   $ ./reviewboard/manage.py reset scmtools
    $ ./reviewboard/manage.py loaddata test_users test_scmtools test_reviewrequests
 
 This should populate your database with the test data. After you've added to

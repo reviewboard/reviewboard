@@ -143,6 +143,45 @@ function setDraftField(field, value) {
         value: value,
         buttons: gDraftBannerButtons,
         success: function(rsp) {
+            /* Checking if invalid user or group was entered. */
+            if (rsp["invalid_" + field] && rsp["invalid_" + field].length) {
+
+                $('#review-request-warning')
+                    .delay(6000)
+                    .fadeOut(400, function() {
+                        $(this).hide();
+                });
+
+                /* Wrap each term in quotes or a leading 'and'. */
+                $.each(rsp["invalid_" + field], function(key, value) {
+                    var size = rsp["invalid_" + field].length;
+
+                    if (key == size - 1 && size > 1) {
+                      rsp["invalid_" + field][key] = "and '" + value + "'";
+                    } else {
+                      rsp["invalid_" + field][key] = "'" + value + "'";
+                    }
+                });
+
+                var message = rsp["invalid_" + field].join(", ");
+
+                if (rsp["invalid_" + field].length == 1) {
+                    if (field == "target_groups") {
+                        message = "Group " + message + " does not exist.";
+                    } else {
+                        message = "User " + message + " does not exist.";
+                    }
+                } else {
+                    if (field == "target_groups") {
+                        message = "Groups " + message + " do not exist.";
+                    } else {
+                        message = "Users " + message + " do not exist.";
+                    }
+                }
+
+                $("#review-request-warning").html(message).show();
+            }
+
             var func = gEditorCompleteHandlers[field];
 
             if ($.isFunction(func)) {
@@ -247,7 +286,7 @@ function publishDraft() {
     if ($.trim($("#target_groups").html()) == "" &&
         $.trim($("#target_people").html()) == "") {
         alert("There must be at least one reviewer or group " +
-	      "before this review request can be published.");
+        "before this review request can be published.");
     } else if ($.trim($("#summary").html()) == "") {
         alert("The draft must have a summary.");
     } else if ($.trim($("#description").html()) == "") {
