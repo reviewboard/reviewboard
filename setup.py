@@ -92,7 +92,7 @@ setup(name=PACKAGE_NAME,
       cmdclass=cmdclasses,
       install_requires=[
           'Django>=1.2.3',
-          'django_evolution>=0.5.1',
+          'django_evolution>=0.6.0',
           'Djblets>=0.6.4',
           'Pygments>=1.3.1',
           'flup',
