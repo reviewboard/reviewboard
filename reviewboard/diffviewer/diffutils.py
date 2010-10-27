@@ -122,7 +122,7 @@ HEADER_REGEX_ALIASES = {
     'SConstruct': '.py',
     'SConscript': '.py',
     '.pyw': '.py',
-    '.sc': '.sc',
+    '.sc': '.py',
 
     # Ruby
     'Rakefile': '.rb',
