@@ -192,7 +192,7 @@ class ReviewRequestManager(ConcurrencyManager):
             *args, **kwargs)
 
     def _query(self, user=None, status='P', with_counts=False,
-               extra_query=None):
+               extra_query=None, local_site=None):
         query = Q(public=True)
 
         if user and user.is_authenticated():
@@ -202,6 +202,8 @@ class ReviewRequestManager(ConcurrencyManager):
 
         if status:
             query = query & Q(status=status)
+
+        query = query & Q(local_site=None)
 
         if extra_query:
             query = query & extra_query

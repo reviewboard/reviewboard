@@ -447,27 +447,36 @@ class ViewTests(TestCase):
         self.client.login(username='doc', password='doc')
         user = User.objects.get(username='doc')
         profile = user.get_profile()
+        local_site = profile.site_profiles.get(local_site=None)
 
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assertEqual(datagrid.counts['outgoing'],
-                         ReviewRequest.objects.from_user(user, user).count())
-        self.assertEqual(datagrid.counts['incoming'],
-                         ReviewRequest.objects.to_user(user).count())
+        self.assertEqual(
+            datagrid.counts['outgoing'],
+            ReviewRequest.objects.from_user(
+                user, user, local_site=local_site).count())
+        self.assertEqual(
+            datagrid.counts['incoming'],
+            ReviewRequest.objects.to_user(user, local_site=local_site).count())
         self.assertEqual(
             datagrid.counts['to-me'],
-            ReviewRequest.objects.to_user_directly(user).count())
+            ReviewRequest.objects.to_user_directly(
+                user, local_site=local_site).count())
         self.assertEqual(
             datagrid.counts['starred'],
-            profile.starred_review_requests.public(user).count())
+            profile.starred_review_requests.public(
+                user, local_site=local_site).count())
         self.assertEqual(datagrid.counts['mine'],
-            ReviewRequest.objects.from_user(user, user, None).count())
+            ReviewRequest.objects.from_user(
+                user, user, None, local_site=local_site).count())
         self.assertEqual(datagrid.counts['groups']['devgroup'],
-            ReviewRequest.objects.to_group('devgroup').count())
+            ReviewRequest.objects.to_group(
+                'devgroup', local_site=local_site).count())
         self.assertEqual(datagrid.counts['groups']['privgroup'],
-            ReviewRequest.objects.to_group('privgroup').count())
+            ReviewRequest.objects.to_group(
+                'privgroup', local_site=local_site).count())
 
         self.client.logout()
 

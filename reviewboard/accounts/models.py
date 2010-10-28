@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
@@ -165,25 +166,29 @@ class LocalSiteProfile(models.Model):
     direct_incoming_request_count = CounterField(
         _('direct incoming review request count'),
         initializer=
-            lambda p: ReviewRequest.objects.to_user_directly(p.user).count())
+            lambda p: ReviewRequest.objects.to_user_directly(
+                p.user, local_site=p.local_site).count())
     total_incoming_request_count = CounterField(
         _('total incoming review request count'),
         initializer=
-            lambda p: ReviewRequest.objects.to_user(p.user).count())
+            lambda p: ReviewRequest.objects.to_user(
+                p.user, local_site=p.local_site).count())
     pending_outgoing_request_count = CounterField(
         _('pending outgoing review request count'),
         initializer=
-            lambda p: ReviewRequest.objects.from_user(p.user, p.user).count())
+            lambda p: ReviewRequest.objects.from_user(
+                p.user, p.user, local_site=p.local_site).count())
     total_outgoing_request_count = CounterField(
         _('total outgoing review request count'),
         initializer=
-            lambda p: ReviewRequest.objects.from_user(p.user, p.user,
-                                                      None).count())
+            lambda p: ReviewRequest.objects.from_user(
+                p.user, p.user, None, local_site=p.local_site).count())
     starred_public_request_count = CounterField(
         _('starred public review request count'),
         initializer=lambda p: \
             p.pk and
-            (p.profile.starred_review_requests.public(p.user).count() or 0))
+            (p.profile.starred_review_requests.public(
+                p.user, local_site=p.local_site).count() or 0))
 
     class Meta:
         unique_together = (('user', 'local_site'),

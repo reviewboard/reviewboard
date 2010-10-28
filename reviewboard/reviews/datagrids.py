@@ -285,6 +285,17 @@ class SubmitterColumn(Column):
         return queryset.select_related('submitter')
 
 
+class RepositoryColumn(Column):
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, _("Repository"), db_field="repository__name",
+                        shrink=True, sortable=True, link=False,
+                        css_class='repository-column',
+                        *args, **kwargs)
+
+    def augment_queryset(self, queryset):
+        return queryset.select_related('repository')
+
+
 class PendingCountColumn(Column):
     """
     A column used to show the pending number of review requests for a
@@ -362,9 +373,7 @@ class ReviewRequestDataGrid(DataGrid):
                           shrink=True, sortable=True, link=False)
     bugs_closed  = Column(_("Bugs"), db_field="bugs_closed",
                           shrink=True, sortable=False, link=False)
-    repository   = Column(_("Repository"), db_field="repository__name",
-                          shrink=True, sortable=True, link=False,
-                          css_class='repository-column')
+    repository   = RepositoryColumn()
     time_added   = DateTimeColumn(_("Posted"),
         detailed_label=_("Posted Time"),
         format="F jS, Y, P", shrink=True,
@@ -433,8 +442,8 @@ class ReviewRequestDataGrid(DataGrid):
         return False
 
     def post_process_queryset(self, queryset):
-        return super(ReviewRequestDataGrid, self).post_process_queryset(
-            queryset.with_counts(self.request.user))
+        q = queryset.with_counts(self.request.user)
+        return super(ReviewRequestDataGrid, self).post_process_queryset(q)
 
     def link_to_object(self, obj, value):
         if value and isinstance(value, User):
@@ -595,8 +604,16 @@ class WatchedGroupDataGrid(GroupDataGrid):
 
 def get_sidebar_counts(user):
     """Returns counts used for the Dashboard sidebar."""
+    profile = user.get_profile()
+
     # TODO: Pass the LocalSite to this query.
-    site_profile = user.get_profile().site_profiles.get(local_site=None)
+    site_profile, is_new = user.get_profile().site_profiles.get_or_create(
+        local_site=None,
+        user=user,
+        profile=profile)
+
+    if is_new:
+        site_profile.save()
 
     counts = {
         'outgoing': site_profile.pending_outgoing_request_count,
@@ -604,12 +621,14 @@ def get_sidebar_counts(user):
         'to-me': site_profile.direct_incoming_request_count,
         'starred': site_profile.starred_public_request_count,
         'mine': site_profile.total_outgoing_request_count,
-        'groups': {}
+        'groups': {},
+        'starred_groups': {},
     }
 
-    q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
-
-    for group in q:
+    for group in Group.objects.filter(users=user):
         counts['groups'][group.name] = group.incoming_request_count
+
+    for group in Group.objects.filter(starred_by=user):
+        counts['starred_groups'][group.name] = group.incoming_request_count
 
     return counts

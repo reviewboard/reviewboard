@@ -90,7 +90,8 @@ class Group(models.Model):
 
     incoming_request_count = CounterField(
         _('incoming review request count'),
-        initializer=lambda g: ReviewRequest.objects.to_group(g).count())
+        initializer=lambda g: ReviewRequest.objects.to_group(
+            g, local_site=g.local_site).count())
 
     def __unicode__(self):
         return self.name

@@ -33,15 +33,15 @@
 {% dashboard_entry "main-item" "Outgoing Reviews" "outgoing" %}
 {% dashboard_entry "main-item" "Incoming Reviews" "incoming" %}
 {% dashboard_entry "sub-item"  "To Me"            "to-me" %}
-{% for g in user.review_groups.all %}
-{%  dashboard_entry "sub-item" g.name "to-group" g %}
+{% for name, value in datagrid.counts.groups.items %}
+{%  dashboard_entry "sub-item" name "to-group" name %}
 {% endfor %}
-{% ifnotequal user.get_profile.starred_groups.count 0 %}
+{% if datagrid.counts.starred_groups %}
 {%  dashboard_entry "main-item" "Watched Groups" "watched-groups" %}
-{%  for g in user.get_profile.starred_groups.all %}
-{%   dashboard_entry "sub-item" g.name "to-group" g %}
+{%  for name, value in datagrid.counts.starred_groups.items %}
+{%   dashboard_entry "sub-item" name "to-group" name %}
 {%  endfor %}
-{% endifnotequal %}
+{% endif %}
 {% dashboard_entry "main-item" "All My Requests" "mine" %}
   </tbody>
  </table>
