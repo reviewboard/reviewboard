@@ -1159,6 +1159,8 @@ class BaseWatchedObjectResource(WebAPIResource):
     watched_resource = None
     uri_object_key = 'watched_obj_id'
     profile_field = None
+    star_function = None
+    unstar_function = None
 
     allowed_methods = ('GET', 'POST', 'DELETE')
 
@@ -1222,8 +1224,8 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
-        getattr(profile, self.profile_field).add(obj)
-        profile.save()
+        star = getattr(profile, self.star_function)
+        star(obj)
 
         return 201, {
             self.item_result_key: obj,
@@ -1247,8 +1249,8 @@ class BaseWatchedObjectResource(WebAPIResource):
             Profile.objects.get_or_create(user=request.user)
 
         if not profile_is_new:
-            getattr(profile, self.profile_field).remove(obj)
-            profile.save()
+            unstar = getattr(profile, self.unstar_function)
+            unstar(obj)
 
         return 204, {}
 
@@ -1275,6 +1277,8 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
     name = 'watched_review_group'
     uri_name = 'review-groups'
     profile_field = 'starred_groups'
+    star_function = 'star_review_group'
+    unstar_function = 'unstar_review_group'
 
     @property
     def watched_resource(self):
@@ -1347,6 +1351,8 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
     name = 'watched_review_request'
     uri_name = 'review-requests'
     profile_field = 'starred_review_requests'
+    star_function = 'star_review_request'
+    unstar_function = 'unstar_review_request'
 
     @property
     def watched_resource(self):

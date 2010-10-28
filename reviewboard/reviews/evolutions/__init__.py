@@ -5,4 +5,5 @@ SEQUENCE = [
     'default_reviewer_repositories',
     'null_repository',
     'localsite',
+    'group_incoming_request_count',
 ]

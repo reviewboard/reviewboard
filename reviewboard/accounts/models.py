@@ -5,8 +5,10 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
+from djblets.util.fields import CounterField
 
 from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.site.models import LocalSite
 
 
 class ReviewRequestVisit(models.Model):
@@ -84,5 +86,108 @@ class Profile(models.Model):
     starred_groups = models.ManyToManyField(Group, blank=True,
                                             related_name="starred_by")
 
+    def star_review_request(self, review_request):
+        """Marks a review request as starred.
+
+        This will mark a review request as starred for this user and
+        immediately save to the database.
+        """
+        self.starred_review_requests.add(review_request)
+
+        if (review_request.public and
+            review_request.status == ReviewRequest.PENDING_REVIEW):
+            q = self.starred_review_requests.filter(pk=review_request.pk)
+
+            if q.count() == 0:
+                site_profile, is_new = LocalSiteProfile.objects.get_or_create(
+                    user=self.user,
+                    local_site=review_request.local_site)
+
+                if is_new:
+                    site_profile.save()
+
+                site_profile.increment_starred_public_request_count()
+
+    def unstar_review_request(self, review_request):
+        """Marks a review request as unstarred.
+
+        This will mark a review request as starred for this user and
+        immediately save to the database.
+        """
+        site_profile, is_new = LocalSiteProfile.objects.get_or_create(
+            user=self.user,
+            local_site=review_request.local_site)
+
+        if is_new:
+            site_profile.save()
+
+        site_profile.decrement_starred_public_request_count()
+
+        if (review_request.public and
+            review_request.status == ReviewRequest.PENDING_REVIEW):
+            q = self.starred_review_requests.filter(pk=review_request.pk)
+
+            if q.count() > 0:
+                self.starred_review_requests.remove(review_request)
+
+    def star_review_group(self, review_group):
+        """Marks a review group as starred.
+
+        This will mark a review group as starred for this user and
+        immediately save to the database.
+        """
+        if self.starred_groups.filter(pk=review_group.pk).count() == 0:
+            self.starred_groups.add(review_group)
+
+    def unstar_review_group(self, review_group):
+        """Marks a review group as unstarred.
+
+        This will mark a review group as starred for this user and
+        immediately save to the database.
+        """
+        if self.starred_groups.filter(pk=review_group.pk).count() > 0:
+            self.starred_groups.remove(review_group)
+
     def __unicode__(self):
         return self.user.username
+
+
+class LocalSiteProfile(models.Model):
+    """User profile information specific to a LocalSite."""
+    user = models.ForeignKey(User, related_name='site_profiles')
+    profile = models.ForeignKey(Profile, related_name='site_profiles')
+    local_site = models.ForeignKey(LocalSite, null=True, blank=True,
+                                   related_name='site_profiles')
+
+    # Counts for quickly knowing how many review requests are incoming
+    # (both directly and total), outgoing (pending and total ever made),
+    # and starred (public).
+    direct_incoming_request_count = CounterField(
+        _('direct incoming review request count'),
+        initializer=
+            lambda p: ReviewRequest.objects.to_user_directly(p.user).count())
+    total_incoming_request_count = CounterField(
+        _('total incoming review request count'),
+        initializer=
+            lambda p: ReviewRequest.objects.to_user(p.user).count())
+    pending_outgoing_request_count = CounterField(
+        _('pending outgoing review request count'),
+        initializer=
+            lambda p: ReviewRequest.objects.from_user(p.user, p.user).count())
+    total_outgoing_request_count = CounterField(
+        _('total outgoing review request count'),
+        initializer=
+            lambda p: ReviewRequest.objects.from_user(p.user, p.user,
+                                                      None).count())
+    starred_public_request_count = CounterField(
+        _('starred public review request count'),
+        initializer=lambda p: \
+            p.pk and
+            (p.profile.starred_review_requests.public(p.user).count() or 0))
+
+    class Meta:
+        unique_together = (('user', 'local_site'),
+                           ('profile', 'local_site'))
+
+    def __unicode__(self):
+        return '%s (%s)' % (self.user.username, self.local_site)

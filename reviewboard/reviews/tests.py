@@ -8,11 +8,14 @@ from django.test import TestCase
 
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.reviews.models import DefaultReviewer, \
+                                       Group, \
                                        ReviewRequest, \
                                        ReviewRequestDraft, \
                                        Review
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
 
 
 class DbQueryTests(TestCase):
@@ -442,18 +445,29 @@ class ViewTests(TestCase):
     def testDashboardSidebar(self):
         """Testing dashboard view (to-group devgroup)"""
         self.client.login(username='doc', password='doc')
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
 
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assertEqual(datagrid.counts['outgoing'], 1)
-        self.assertEqual(datagrid.counts['incoming'], 4)
-        self.assertEqual(datagrid.counts['to-me'], 2)
-        self.assertEqual(datagrid.counts['starred'], 0)
-        self.assertEqual(datagrid.counts['mine'], 2)
-        self.assertEqual(datagrid.counts['groups']['devgroup'], 2)
-        self.assertEqual(datagrid.counts['groups']['privgroup'], 1)
+        self.assertEqual(datagrid.counts['outgoing'],
+                         ReviewRequest.objects.from_user(user, user).count())
+        self.assertEqual(datagrid.counts['incoming'],
+                         ReviewRequest.objects.to_user(user).count())
+        self.assertEqual(
+            datagrid.counts['to-me'],
+            ReviewRequest.objects.to_user_directly(user).count())
+        self.assertEqual(
+            datagrid.counts['starred'],
+            profile.starred_review_requests.public(user).count())
+        self.assertEqual(datagrid.counts['mine'],
+            ReviewRequest.objects.from_user(user, user, None).count())
+        self.assertEqual(datagrid.counts['groups']['devgroup'],
+            ReviewRequest.objects.to_group('devgroup').count())
+        self.assertEqual(datagrid.counts['groups']['privgroup'],
+            ReviewRequest.objects.to_group('privgroup').count())
 
         self.client.logout()
 
@@ -723,3 +737,293 @@ class IfNeatNumberTagTests(TestCase):
             "{% endifneatnumber %}")
 
         self.assertEqual(t.render(Context({})), expected)
+
+
+class CounterTests(TestCase):
+    fixtures = ['test_scmtools.json']
+
+    def setUp(self):
+        tool = Tool.objects.get(name='Subversion')
+        repository = Repository.objects.create(name='Test1', path='path1',
+                                               tool=tool)
+
+        self.user = User.objects.create(username='testuser', password='')
+        self.profile, is_new = Profile.objects.get_or_create(user=self.user)
+        self.profile.save()
+
+        test_site = LocalSite.objects.create(name='test')
+        test_site.save()
+        self.site_profile2 = LocalSiteProfile(user=self.user,
+                                              profile=self.profile,
+                                              local_site=test_site)
+        self.site_profile2.save()
+
+        self.review_request = ReviewRequest.objects.create(self.user,
+                                                           repository)
+        self.profile.star_review_request(self.review_request)
+
+        self.site_profile = self.profile.site_profiles.get(local_site=None)
+
+        self.group = Group(name='test-group')
+        self.group.users.add(self.user)
+        self.group.save()
+
+    def test_outgoing_requests(self):
+        """Testing counters with creating outgoing review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+
+    def test_closing_requests(self, close_type=ReviewRequest.DISCARDED):
+        """Testing counters with closing outgoing review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.target_people.add(self.user)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.assertTrue(self.review_request.public)
+        self.assertEqual(self.review_request.status,
+                         ReviewRequest.PENDING_REVIEW)
+        self.review_request.close(close_type)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_deleting_requests(self):
+        """Testing counters with deleting outgoing review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.target_people.add(self.user)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.delete()
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_reopen_discarded_requests(self):
+        """Testing counters with reopening discarded outgoing review requests"""
+        self.test_closing_requests(ReviewRequest.DISCARDED)
+
+        self.review_request.reopen()
+        self.assertFalse(self.review_request.public)
+        self.assertTrue(self.review_request.status,
+                        ReviewRequest.PENDING_REVIEW)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_reopen_submitted_requests(self):
+        """Testing counters with reopening submitted outgoing review requests"""
+        self.test_closing_requests(ReviewRequest.SUBMITTED)
+
+        self.review_request.reopen()
+        self.assertTrue(self.review_request.public)
+        self.assertTrue(self.review_request.status,
+                        ReviewRequest.PENDING_REVIEW)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_add_group(self):
+        """Testing counters when adding a group reviewer"""
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.save()
+
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_remove_group(self):
+        """Testing counters when removing a group reviewer"""
+        self.test_add_group()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.remove(self.group)
+        draft.save()
+
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_add_person(self):
+        """Testing counters when adding a person reviewer"""
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people.add(self.user)
+        draft.save()
+
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+    def test_remove_person(self):
+        """Testing counters when removing a person reviewer"""
+        self.test_add_person()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people.remove(self.user)
+        draft.save()
+
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+    def _reload_objects(self):
+        self.site_profile = \
+            LocalSiteProfile.objects.get(pk=self.site_profile.pk)
+        self.site_profile2 = \
+            LocalSiteProfile.objects.get(pk=self.site_profile2.pk)
+        self.group = Group.objects.get(pk=self.group.pk)

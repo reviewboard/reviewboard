@@ -782,61 +782,62 @@
         "pk": 1, 
         "model": "reviews.group", 
         "fields": {
+            "display_name": "Dev Group", 
             "users": [
                 2, 
                 3
             ], 
-            "display_name": "Dev Group", 
-            "name": "devgroup", 
+            "local_site": null, 
+            "incoming_request_count": 0, 
             "mailing_list": "devgroup@example.com", 
-            "local_site": null
+            "name": "devgroup"
         }
     }, 
     {
         "pk": 3, 
         "model": "reviews.group", 
         "fields": {
-            "users": [], 
             "display_name": "Empty Group", 
-            "name": "emptygroup", 
+            "users": [], 
+            "local_site": null, 
+            "incoming_request_count": 0, 
             "mailing_list": "", 
-            "local_site": null
+            "name": "emptygroup"
         }
     }, 
     {
         "pk": 2, 
         "model": "reviews.group", 
         "fields": {
-            "users": [], 
             "display_name": "New Group", 
-            "name": "newgroup", 
+            "users": [], 
+            "local_site": null, 
+            "incoming_request_count": 0, 
             "mailing_list": "newgroup@example.com", 
-            "local_site": null
+            "name": "newgroup"
         }
     }, 
     {
         "pk": 4, 
         "model": "reviews.group", 
         "fields": {
+            "display_name": "Private Group", 
             "users": [
                 2, 
                 3, 
                 4
             ], 
-            "display_name": "Private Group", 
-            "name": "privgroup", 
+            "local_site": null, 
+            "incoming_request_count": 0, 
             "mailing_list": "", 
-            "local_site": null
+            "name": "privgroup"
         }
     }, 
     {
         "pk": 8, 
         "model": "reviews.reviewrequest", 
         "fields": {
-            "changedescs": [
-                2, 
-                1
-            ], 
+            "changedescs": [], 
             "last_updated": "2009-02-25 22:32:14", 
             "target_people": [
                 4

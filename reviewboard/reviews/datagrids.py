@@ -8,7 +8,7 @@ from djblets.datagrid.grids import Column, DateTimeColumn, \
                                    DateTimeSinceColumn, DataGrid
 from djblets.util.templatetags.djblets_utils import ageid
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 
@@ -49,7 +49,6 @@ class ReviewGroupStarColumn(StarColumn):
         except Profile.DoesNotExist:
             return queryset
 
-        print profile.starred_groups.all()
         pks = profile.starred_groups.filter(
             pk__in=self.datagrid.id_list).values_list('pk', flat=True)
 
@@ -596,29 +595,21 @@ class WatchedGroupDataGrid(GroupDataGrid):
 
 def get_sidebar_counts(user):
     """Returns counts used for the Dashboard sidebar."""
-    profile = user.get_profile()
+    # TODO: Pass the LocalSite to this query.
+    site_profile = user.get_profile().site_profiles.get(local_site=None)
 
     counts = {
-        'outgoing': ReviewRequest.objects.from_user(user, user).count(),
-        'incoming': ReviewRequest.objects.to_user(user, user).count(),
-        'to-me': ReviewRequest.objects.to_user_directly(user, user).count(),
-        'starred': profile.starred_review_requests.public(user).count(),
-        'mine': ReviewRequest.objects.from_user(user, user, None).count(),
+        'outgoing': site_profile.pending_outgoing_request_count,
+        'incoming': site_profile.total_incoming_request_count,
+        'to-me': site_profile.direct_incoming_request_count,
+        'starred': site_profile.starred_public_request_count,
+        'mine': site_profile.total_outgoing_request_count,
         'groups': {}
     }
 
     q = Group.objects.filter(Q(users=user) | Q(starred_by=user)).distinct()
-    group_names = list(q.values_list('name', flat=True))
 
-    q = Group.objects.filter(name__in=group_names)
-    q = q.filter((Q(review_requests__public=True) |
-                  Q(review_requests__submitter=user)) &
-                  Q(review_requests__submitter__is_active=True) &
-                  Q(review_requests__status='P'))
-    q = q.annotate(Count('review_requests'))
-
-    for group in q.values('name', 'review_requests__count'):
-        counts['groups'][group['name']] = \
-            group['review_requests__count']
+    for group in q:
+        counts['groups'][group.name] = group.incoming_request_count
 
     return counts

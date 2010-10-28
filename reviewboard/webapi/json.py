@@ -419,8 +419,7 @@ def review_request_star(request, review_request_id, *args, **kwargs):
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
-    profile.starred_review_requests.add(review_request)
-    profile.save()
+    profile.star_review_request(review_request)
 
     return WebAPIResponse(request)
 
@@ -436,8 +435,7 @@ def review_request_unstar(request, review_request_id, *args, **kwargs):
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
 
     if not profile_is_new:
-        profile.starred_review_requests.remove(review_request)
-        profile.save()
+        profile.unstar_review_request(review_request)
 
     return WebAPIResponse(request)
 
