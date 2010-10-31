@@ -28,8 +28,8 @@ def create_settings():
                 ])
 
                 out_fp.write('SECRET_KEY = "%s"\n' % secret_key)
-            elif line.startswith("DATABASE_NAME = "):
-                out_fp.write('DATABASE_NAME = "%s"\n' %
+            elif line.strip().startswith("'NAME': "):
+                out_fp.write("        'NAME': '%s',\n" %
                              os.path.abspath("reviewboard.db"))
             else:
                 out_fp.write(line)
