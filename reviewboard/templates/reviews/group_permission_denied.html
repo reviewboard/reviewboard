@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load djblets_deco %}
+{% load i18n %}
+
+{% block title %}{% trans "Permission Denied" %}{% endblock %}
+
+{% block content %}
+{%  box "important" %}
+<h1>{% trans "You don't have access to this group." %}</h1>
+<p>
+{% blocktrans %}
+ This group is invite-only. You must be a member of this group in order to see
+ any review requests assigned to it. You can ask the administrator or group
+ owner for access.
+{% endblocktrans %}
+ </p>
+{%  endbox %}
+{% endblock %}
+

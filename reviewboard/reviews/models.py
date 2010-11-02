@@ -93,6 +93,15 @@ class Group(models.Model):
         initializer=lambda g: ReviewRequest.objects.to_group(
             g, local_site=g.local_site).count())
 
+    invite_only = models.BooleanField(_('invite only'), default=False)
+
+    def is_accessible_by(self, user):
+        "Returns true if the user can access this group."""
+        return (not self.invite_only or
+                user.is_superuser or
+                (user.is_authenticated() and
+                 self.users.filter(pk=user.pk).count() > 0))
+
     def __unicode__(self):
         return self.name
 
@@ -381,8 +390,31 @@ class ReviewRequest(models.Model):
         update_obj_with_changenum(self, self.repository, changenum)
 
     def is_accessible_by(self, user):
-        "Returns true if the user can read this review request"
-        return self.public or self.is_mutable_by(user)
+        """Returns true if the user can read this review request."""
+        if not self.public and not self.is_mutable_by(user):
+            return False
+
+        if (user.is_authenticated() and
+            self.target_people.filter(pk=user.pk).count() > 0):
+            return True
+
+        groups = list(self.target_groups.all())
+
+        if not groups:
+            return True
+
+        # We specifically iterate over these instead of making it part
+        # of the query in order to keep the logic in Group, and to allow
+        # for future expansion (extensions, more advanced policy)
+        #
+        # We're looking for at least one group that the user has access
+        # to. If they can access any of the groups, then they have access
+        # to the review request.
+        for group in groups:
+            if group.is_accessible_by(user):
+                return True
+
+        return False
 
     def is_mutable_by(self, user):
         "Returns true if the user can modify this review request"

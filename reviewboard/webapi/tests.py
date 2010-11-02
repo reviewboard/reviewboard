@@ -315,6 +315,36 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1) #devgroup
 
+    def test_get_group_public(self):
+        """Testing the GET groups/<id>/ API"""
+        group = Group(name='test-group')
+        group.save()
+
+        rsp = self.apiGet("groups/%s" % group.name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['name'], group.name)
+        self.assertEqual(rsp['group']['display_name'], group.display_name)
+        self.assertEqual(rsp['group']['invite_only'], False)
+
+    def test_get_group_invite_only(self):
+        """Testing the GET groups/<id>/ API with invite-only"""
+        group = Group(name='test-group', invite_only=True)
+        group.users.add(self.user)
+        group.save()
+
+        rsp = self.apiGet("groups/%s" % group.name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['invite_only'], True)
+
+    def test_get_group_invite_only_with_permission_denied_error(self):
+        """Testing the GET groups/<id>/ API with invite-only and Permission Denied error"""
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        rsp = self.apiGet("groups/%s" % group.name, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
 
 class UserResourceTests(BaseWebAPITestCase):
     """Testing the UserResource API tests."""
@@ -791,14 +821,52 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
 
-    def test_get_reviewrequest_with_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/ API with Permission Denied error"""
+    def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
         review_request = ReviewRequest.objects.filter(public=False).\
             exclude(submitter=self.user)[0]
         rsp = self.apiGet("review-requests/%s" % review_request.id,
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/ API with invite-only group and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(public=True).\
+            exclude(submitter=self.user)[0]
+        review_request.target_groups.clear()
+        review_request.target_people.clear()
+
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        rsp = self.apiGet("review-requests/%s" % review_request.id,
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
+        """Testing the GET review-requests/<id>/ API with invite-only group and target user"""
+        review_request = ReviewRequest.objects.filter(public=True).\
+            exclude(submitter=self.user)[0]
+        review_request.target_groups.clear()
+        review_request.target_people.clear()
+
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request.target_groups.add(group)
+        review_request.target_people.add(self.user)
+        review_request.save()
+
+        rsp = self.apiGet("review-requests/%s" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'], review_request.id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
 
     def test_get_reviewrequest_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""

@@ -50,6 +50,16 @@ from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 
 
+def _render_permission_denied(
+    request,
+    template_name='reviews/review_request_permission_denied.html'):
+    """Renders a Permission Denied error for this review request."""
+
+    response = render_to_response(template_name, RequestContext(request))
+    response.status_code = 403
+    return response
+
+
 @login_required
 def new_review_request(request,
                        template_name='reviews/new_review_request.html'):
@@ -126,6 +136,9 @@ def review_detail(request, review_request_id,
     and all the reviews on it.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
 
     reviews = review_request.get_public_reviews()
     review = review_request.get_pending_review(request.user)
@@ -295,6 +308,10 @@ def review_detail(request, review_request_id,
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
 def review_draft_inline_form(request, review_request_id, template_name):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     review = review_request.get_pending_review(request.user)
 
     # This may be a brand new review. If so, we don't have a review object.
@@ -372,7 +389,11 @@ def group(request, name, template_name='reviews/datagrid.html'):
     A list of review requests belonging to a particular group.
     """
     # Make sure the group exists
-    get_object_or_404(Group, name=name)
+    group = get_object_or_404(Group, name=name)
+
+    if not group.is_accessible_by(request.user):
+        return _render_permission_denied(
+            request, 'reviews/group_permission_denied.html')
 
     datagrid = ReviewRequestDataGrid(request,
         ReviewRequest.objects.to_group(name, status=None, with_counts=True),
@@ -457,6 +478,10 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
     providing the user's current review of the diff if it exists.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     diffset = _query_for_diff(review_request, request.user, revision)
 
     interdiffset = None
@@ -509,6 +534,10 @@ def raw_diff(request, review_request_id, revision=None):
     given review request.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     diffset = _query_for_diff(review_request, request.user, revision)
 
     tool = review_request.repository.get_scmtool()
@@ -631,6 +660,10 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     diff.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     review_request.get_draft(request.user)
 
     if interdiff_revision is not None:
@@ -660,6 +693,10 @@ def preview_review_request_email(
     This is mainly used for debugging.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     siteconfig = SiteConfiguration.objects.get_current()
 
     if format == 'text':
@@ -693,6 +730,10 @@ def preview_review_email(request, review_request_id, review_id, format,
     This is mainly used for debugging.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
     siteconfig = SiteConfiguration.objects.get_current()
@@ -740,6 +781,10 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     This is mainly used for debugging.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
     reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
@@ -801,6 +846,10 @@ def view_screenshot(request, review_request_id, screenshot_id,
     Displays a screenshot, along with any comments that were made on it.
     """
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+
+    if not review_request.is_accessible_by(request.user):
+        return _render_permission_denied(request)
+
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
     review = review_request.get_pending_review(request.user)
     draft = review_request.get_draft(request.user)

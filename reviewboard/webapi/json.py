@@ -209,6 +209,9 @@ def users_in_group(request, group_name, *args, **kwargs):
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
+    if not g.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
+
     return WebAPIResponse(request, {
         'users': g.users.all(),
     })
@@ -223,6 +226,9 @@ def group_star(request, group_name, *args, **kwargs):
         group = Group.objects.get(name=group_name)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not group.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
     profile.starred_groups.add(group)
@@ -241,6 +247,9 @@ def group_unstar(request, group_name, *args, **kwargs):
         group = Group.objects.get(name=group_name)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not group.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
 

@@ -6,4 +6,5 @@ SEQUENCE = [
     'null_repository',
     'localsite',
     'group_incoming_request_count',
+    'group_invite_only',
 ]

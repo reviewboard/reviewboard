@@ -186,22 +186,13 @@ class ViewTests(TestCase):
 
     def testReviewDetail1(self):
         """Testing review_detail view (1)"""
-        response = self.client.get('/r/1/')
+        review_request = ReviewRequest.objects.public()[0]
+
+        response = self.client.get('/r/%d/' % review_request.id)
         self.assertEqual(response.status_code, 200)
 
         request = self.getContextVar(response, 'review_request')
-        self.assertEqual(request.submitter.username, 'doc')
-        self.assertEqual(request.summary, 'Comments Improvements')
-        self.assertEqual(request.description, '')
-        self.assertEqual(request.testing_done, '')
-
-        self.assertEqual(request.target_people.count(), 0)
-        self.assertEqual(request.target_groups.count(), 1)
-        self.assertEqual(request.target_groups.all()[0].name, 'devgroup')
-        self.assertEqual(request.bugs_closed, '')
-        self.assertEqual(request.status, 'P')
-
-        # TODO - diff
+        self.assertEqual(request.pk, review_request.pk)
 
     def testReviewDetail2(self):
         """Testing review_detail view (3)"""
@@ -1036,3 +1027,77 @@ class CounterTests(TestCase):
         self.site_profile2 = \
             LocalSiteProfile.objects.get(pk=self.site_profile2.pk)
         self.group = Group.objects.get(pk=self.group.pk)
+
+
+class PolicyTests(TestCase):
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def test_group_public(self):
+        """Testing access to a public review group"""
+        user = User.objects.create(username='testuser', password='')
+
+        group = Group(name='test-group')
+        group.save()
+
+        self.assertFalse(group.invite_only)
+        self.assertTrue(group.is_accessible_by(user))
+
+    def test_group_invite_only_access_denied(self):
+        """Testing no access to unjoined invite-only group"""
+        user = User.objects.create(username='testuser', password='')
+
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        self.assertTrue(group.invite_only)
+        self.assertFalse(group.is_accessible_by(user))
+
+    def test_group_invite_only_access_allowed(self):
+        """Testing access to joined invite-only group"""
+        user = User.objects.create(username='testuser', password='')
+
+        group = Group(name='test-group', invite_only=True)
+        group.users.add(user)
+        group.save()
+
+        self.assertTrue(group.invite_only)
+        self.assertTrue(group.is_accessible_by(user))
+
+    def test_review_request_public(self):
+        """Testing access to a public review request"""
+        user = User.objects.create(username='testuser', password='')
+        review_request = self._get_review_request()
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
+    def test_review_request_with_invite_only_group(self):
+        """Testing no access to a review request with only an unjoined invite-only group"""
+        user = User.objects.create(username='testuser', password='')
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request = self._get_review_request()
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        self.assertFalse(review_request.is_accessible_by(user))
+
+    def test_review_request_with_invite_only_group_and_target_user(self):
+        """Testing no access to a review request with specific target user and invite-only group"""
+        user = User.objects.create(username='testuser', password='')
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request = self._get_review_request()
+        review_request.target_groups.add(group)
+        review_request.target_people.add(user)
+        review_request.save()
+
+        self.assertTrue(review_request.is_accessible_by(user))
+
+    def _get_review_request(self):
+        # Get a review request and clear out the reviewers.
+        review_request = ReviewRequest.objects.public()[0]
+        review_request.target_people.clear()
+        review_request.target_groups.clear()
+        return review_request

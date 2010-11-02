@@ -1219,7 +1219,7 @@ class BaseWatchedObjectResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not user_resource.has_modify_permissions(request, user,
-                                                   *args, **kwargs):
+                                                    *args, **kwargs):
             return PERMISSION_DENIED
 
         profile, profile_is_new = \
@@ -1576,6 +1576,12 @@ class ReviewGroupResource(WebAPIResource):
             'description': 'The human-readable name of the group, sometimes '
                            'used as a short description.',
         },
+        'invite_only': {
+            'type': bool,
+            'description': 'Whether or not the group is invite-only. An '
+                           'invite-only group is only accessible by members '
+                           'of the group.',
+        },
         'mailing_list': {
             'type': str,
             'description': 'The e-mail address that all posts on a review '
@@ -1616,6 +1622,9 @@ class ReviewGroupResource(WebAPIResource):
 
     def serialize_url_field(self, group):
         return group.get_absolute_url()
+
+    def has_access_permissions(self, request, group, *args, **kwargs):
+        return group.is_accessible_by(request.user)
 
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):

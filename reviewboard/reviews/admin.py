@@ -43,7 +43,7 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
 
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'display_name', 'mailing_list')
+    list_display = ('name', 'display_name', 'mailing_list', 'invite_only')
     filter_horizontal = ('users',)
 
 
