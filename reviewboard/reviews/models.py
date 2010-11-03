@@ -390,8 +390,26 @@ class ReviewRequest(models.Model):
         update_obj_with_changenum(self, self.repository, changenum)
 
     def is_accessible_by(self, user):
-        """Returns true if the user can read this review request."""
+        """Returns whether or not the user can read this review request.
+
+        This performs several checks to ensure that the user has access.
+        This user has access if:
+
+          * The review request is public or the user can modify it (either
+            by being an owner or having special permissions).
+
+          * The repository is public or the user has access to it (either by
+            being explicitly on the allowed users list, or by being a member
+            of a review group on that list).
+
+          * The user is listed as a requested reviewer or the user has access
+            to one or more groups listed as requested reviewers (either by
+            being a member of an invite-only group, or the group being public).
+        """
         if not self.public and not self.is_mutable_by(user):
+            return False
+
+        if not self.repository.is_accessible_by(user):
             return False
 
         if (user.is_authenticated() and

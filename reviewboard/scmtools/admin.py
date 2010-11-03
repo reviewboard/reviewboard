@@ -38,6 +38,10 @@ class RepositoryAdmin(admin.ModelAdmin):
             ),
             'classes': ('wide',),
         }),
+        (_('Access Control'), {
+            'fields': ('public', 'users', 'review_groups'),
+            'classes': ('wide',),
+        }),
         (_('Advanced'), {
             'fields': ('encoding',),
             'classes': ('wide',),
