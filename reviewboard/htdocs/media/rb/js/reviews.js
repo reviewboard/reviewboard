@@ -1565,6 +1565,17 @@ $(document).ready(function() {
         $(this).html(linkifyText($(this).text()));
     });
 
+    /* Toggle the state of a review */
+    $(".collapse-button").click(function() {
+        $(this).closest(".box").toggleClass('collapsed');
+    });
+
+    /* Expand all reviews */
+    $("#expand-all").click(function() {
+        $(".collapsed").removeClass("collapsed");
+        return false;
+    });
+
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
             $(".editable").reviewRequestFieldEditor();

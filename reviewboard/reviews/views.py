@@ -29,6 +29,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
@@ -129,6 +130,7 @@ def review_detail(request, review_request_id,
     reviews = review_request.get_public_reviews()
     review = review_request.get_pending_review(request.user)
     review_timestamp = 0
+    last_visited = 0
     starred = False
 
     if request.user.is_authenticated():
@@ -137,6 +139,7 @@ def review_detail(request, review_request_id,
         if review_request.public and review_request.status == "P":
             visited, visited_is_new = ReviewRequestVisit.objects.get_or_create(
                 user=request.user, review_request=review_request)
+            last_visited = visited.timestamp
             visited.timestamp = datetime.now()
             visited.save()
 
@@ -180,9 +183,33 @@ def review_detail(request, review_request_id,
         temp_review.ordered_comments = \
             temp_review.comments.order_by('filediff', 'first_line')
 
+        state = ''
+
+        try:
+            latest_changedesc = changedescs.latest('timestamp')
+            latest_timestamp = latest_changedesc.timestamp
+        except ChangeDescription.DoesNotExist:
+            latest_timestamp = None
+
+        # Mark as collapsed if the review is older than the latest change
+        if latest_timestamp:
+            if temp_review.timestamp < latest_timestamp:
+                state = 'collapsed'
+
+        try:
+            latest_reply = temp_review.public_replies().latest('timestamp').timestamp
+        except Review.DoesNotExist:
+            latest_reply = None
+
+        # Mark as expanded if there is a reply newer than last_visited
+        if latest_reply:
+          if last_visited < latest_reply:
+              state = ''
+
         entries.append({
             'review': temp_review,
             'timestamp': temp_review.timestamp,
+            'class': state,
         })
 
     for changedesc in changedescs:
@@ -231,10 +258,19 @@ def review_detail(request, review_request_id,
                 'type': change_type,
             })
 
+        # Expand the latest review change
+        state = ''
+
+        # Mark as collapsed if the change is older than a newer change
+        if latest_timestamp:
+            if changedesc != latest_changedesc:
+                state = 'collapsed'
+
         entries.append({
             'changeinfo': fields_changed,
             'changedesc': changedesc,
             'timestamp': changedesc.timestamp,
+            'class': state,
         })
 
     entries.sort(key=lambda item: item['timestamp'])
