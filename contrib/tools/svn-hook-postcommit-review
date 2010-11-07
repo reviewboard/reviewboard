@@ -217,6 +217,9 @@ def main():
     args = [repository_url, username, password, publish,
             submitas, revision, base_path, reviewid]
 
+    # filter out any potentially blank args, which will confuse post-review
+    args = [i for i in args if len(i) > 1]
+
     # if not updating an existing review, add extra arguments
     if len(reviewid) == 0:
         args += [summary, description, bugs]
