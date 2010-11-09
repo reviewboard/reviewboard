@@ -162,7 +162,11 @@ class ReviewRequestManager(ConcurrencyManager):
         This is meant to be passed as an extra_query to
         ReviewRequest.objects.public().
         """
-        return Q(submitter=self._get_query_user(user_or_username))
+
+        if isinstance(user_or_username, User):
+            return Q(submitter=user_or_username)
+        else:
+            return Q(submitter__username=user_or_username)
 
     def public(self, *args, **kwargs):
         return self._query(*args, **kwargs)
