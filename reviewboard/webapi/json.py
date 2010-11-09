@@ -117,8 +117,10 @@ def repository_list(request, *args, **kwargs):
     """
     Returns a list of all known, visible repositories.
     """
+    repos = Repository.objects.filter(visible=True).select_related()
+
     return WebAPIResponse(request, {
-        'repositories': Repository.objects.filter(visible=True),
+        'repositories': repos,
     })
 
 
@@ -408,8 +410,8 @@ def review_request_by_changenum(request, repository_id, changenum,
     Returns a review request with the specified changenum.
     """
     try:
-        review_request = ReviewRequest.objects.get(changenum=changenum,
-                                                   repository=repository_id)
+        review_request = ReviewRequest.objects.get(
+            changenum=changenum, repository=repository_id).select_related()
 
         if not review_request.is_accessible_by(request.user):
             return WebAPIResponseError(request, PERMISSION_DENIED)
@@ -554,7 +556,8 @@ def review_request_list(request, func, api_format='json', *args, **kwargs):
     """
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
-        'review_requests': func(user=request.user, status=status, **kwargs)
+        'review_requests': func(user=request.user, status=status,
+                                **kwargs).select_related()
     })
 
 
@@ -628,7 +631,7 @@ def _get_reviews(review_request):
 def review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
-        'reviews': _get_reviews(review_request)
+        'reviews': _get_reviews(review_request).select_related()
     })
 
 
@@ -651,7 +654,7 @@ def review_comments_list(request, review_request_id, review_id,
         return review
 
     return WebAPIResponse(request, {
-        'comments': review.comments.all(),
+        'comments': review.comments.all().select_related(),
         'screenshot_comments': review.screenshot_comments.all(),
     })
 
@@ -1139,7 +1142,7 @@ def review_replies_list(request, review_request_id, review_id,
         return review
 
     return WebAPIResponse(request, {
-        'replies': review.public_replies()
+        'replies': review.public_replies().select_related()
     })
 
 
