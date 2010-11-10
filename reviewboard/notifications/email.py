@@ -70,7 +70,7 @@ def get_email_addresses_for_group(g):
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
             # attached to it, so just return their custom list as-is.
-            return g.mailing_list
+            return g.mailing_list.split(',')
     else:
         return [get_email_address_for_user(u)
                 for u in g.users.filter(is_active=True)]
