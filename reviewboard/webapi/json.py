@@ -410,8 +410,8 @@ def review_request_by_changenum(request, repository_id, changenum,
     Returns a review request with the specified changenum.
     """
     try:
-        review_request = ReviewRequest.objects.get(
-            changenum=changenum, repository=repository_id).select_related()
+        review_request = ReviewRequest.objects.select_related().get(
+            changenum=changenum, repository=repository_id)
 
         if not review_request.is_accessible_by(request.user):
             return WebAPIResponseError(request, PERMISSION_DENIED)
