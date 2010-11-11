@@ -307,7 +307,9 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         """Testing the GET groups/ API"""
         rsp = self.apiGet("groups")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), Group.objects.count())
+        self.assertEqual(len(rsp['groups']),
+                         Group.objects.accessible(self.user).count())
+        self.assertEqual(len(rsp['groups']), 4)
 
     def test_get_groups_with_q(self):
         """Testing the GET groups/?q= API"""
@@ -2131,7 +2133,9 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated groups API"""
         rsp = self.apiGet("groups")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), Group.objects.count())
+        self.assertEqual(len(rsp['groups']),
+                         Group.objects.accessible(self.user).count())
+        self.assertEqual(len(rsp['groups']), 4)
 
     def testGroupListQuery(self):
         """Testing the deprecated groups API with custom query"""

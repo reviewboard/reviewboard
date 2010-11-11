@@ -22,6 +22,7 @@ from reviewboard.reviews.signals import review_request_published, \
                                         reply_published, review_published
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import DefaultReviewerManager, \
+                                         ReviewGroupManager, \
                                          ReviewRequestManager, \
                                          ReviewManager
 from reviewboard.scmtools.errors import EmptyChangeSetError, \
@@ -95,6 +96,9 @@ class Group(models.Model):
             g, local_site=g.local_site).count())
 
     invite_only = models.BooleanField(_('invite only'), default=False)
+    visible = models.BooleanField(default=True)
+
+    objects = ReviewGroupManager()
 
     def is_accessible_by(self, user):
         "Returns true if the user can access this group."""

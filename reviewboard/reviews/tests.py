@@ -1,7 +1,7 @@
 import logging
 import os
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.test import TestCase
@@ -1029,6 +1029,7 @@ class PolicyTests(TestCase):
 
     def setUp(self):
         self.user = User.objects.create(username='testuser', password='')
+        self.anonymous = AnonymousUser()
 
     def test_group_public(self):
         """Testing access to a public review group"""
@@ -1036,6 +1037,10 @@ class PolicyTests(TestCase):
 
         self.assertFalse(group.invite_only)
         self.assertTrue(group.is_accessible_by(self.user))
+        self.assertTrue(group.is_accessible_by(self.anonymous))
+
+        self.assertTrue(group in Group.objects.accessible(self.user))
+        self.assertTrue(group in Group.objects.accessible(self.anonymous))
 
     def test_group_invite_only_access_denied(self):
         """Testing no access to unjoined invite-only group"""
@@ -1043,6 +1048,10 @@ class PolicyTests(TestCase):
 
         self.assertTrue(group.invite_only)
         self.assertFalse(group.is_accessible_by(self.user))
+        self.assertFalse(group.is_accessible_by(self.anonymous))
+
+        self.assertFalse(group in Group.objects.accessible(self.user))
+        self.assertFalse(group in Group.objects.accessible(self.anonymous))
 
     def test_group_invite_only_access_allowed(self):
         """Testing access to joined invite-only group"""
@@ -1051,6 +1060,48 @@ class PolicyTests(TestCase):
 
         self.assertTrue(group.invite_only)
         self.assertTrue(group.is_accessible_by(self.user))
+        self.assertFalse(group.is_accessible_by(self.anonymous))
+
+        self.assertTrue(group in Group.objects.accessible(self.user))
+        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+
+    def test_group_public_hidden(self):
+        """Testing visibility of a hidden public group"""
+        group = Group.objects.create(name='test-group', visible=False)
+
+        self.assertFalse(group.visible)
+        self.assertTrue(group.is_accessible_by(self.user))
+        self.assertTrue(
+            group in Group.objects.accessible(self.user, visible_only=False))
+        self.assertFalse(
+            group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_group_invite_only_hidden_access_denied(self):
+        """Testing visibility of a hidden unjoined invite-only group"""
+        group = Group.objects.create(name='test-group', visible=False,
+                                     invite_only=True)
+
+        self.assertFalse(group.visible)
+        self.assertTrue(group.invite_only)
+        self.assertFalse(group.is_accessible_by(self.user))
+        self.assertFalse(
+            group in Group.objects.accessible(self.user, visible_only=False))
+        self.assertFalse(
+            group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_group_invite_only_hidden_access_allowed(self):
+        """Testing visibility of a hidden joined invite-only group"""
+        group = Group.objects.create(name='test-group', visible=False,
+                                     invite_only=True)
+        group.users.add(self.user)
+
+        self.assertFalse(group.visible)
+        self.assertTrue(group.invite_only)
+        self.assertTrue(group.is_accessible_by(self.user))
+        self.assertTrue(
+            group in Group.objects.accessible(self.user, visible_only=False))
+        self.assertTrue(
+            group in Group.objects.accessible(self.user, visible_only=True))
 
     def test_repository_public(self):
         """Testing access to a public repository"""
@@ -1059,6 +1110,7 @@ class PolicyTests(TestCase):
 
         self.assertTrue(repo.public)
         self.assertTrue(repo.is_accessible_by(self.user))
+        self.assertTrue(repo.is_accessible_by(self.anonymous))
 
     def test_repository_private_access_denied(self):
         """Testing no access to a private repository"""
@@ -1068,6 +1120,7 @@ class PolicyTests(TestCase):
 
         self.assertFalse(repo.public)
         self.assertFalse(repo.is_accessible_by(self.user))
+        self.assertFalse(repo.is_accessible_by(self.anonymous))
 
     def test_repository_private_access_allowed_by_user(self):
         """Testing access to a private repository with user added"""
@@ -1078,6 +1131,7 @@ class PolicyTests(TestCase):
 
         self.assertFalse(repo.public)
         self.assertTrue(repo.is_accessible_by(self.user))
+        self.assertFalse(repo.is_accessible_by(self.anonymous))
 
     def test_repository_private_access_allowed_by_review_group(self):
         """Testing access to a private repository with joined review group added"""
@@ -1091,31 +1145,37 @@ class PolicyTests(TestCase):
 
         self.assertFalse(repo.public)
         self.assertTrue(repo.is_accessible_by(self.user))
+        self.assertFalse(repo.is_accessible_by(self.anonymous))
 
     def test_review_request_public(self):
         """Testing access to a public review request"""
         review_request = self._get_review_request()
 
         self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertTrue(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_invite_only_group(self):
         """Testing no access to a review request with only an unjoined invite-only group"""
-        group = Group.objects.create(name='test-group', invite_only=True)
+        group = Group(name='test-group', invite_only=True)
+        group.save()
 
         review_request = self._get_review_request()
         review_request.target_groups.add(group)
 
         self.assertFalse(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_invite_only_group_and_target_user(self):
         """Testing access to a review request with specific target user and invite-only group"""
-        group = Group.objects.create(name='test-group', invite_only=True)
+        group = Group(name='test-group', invite_only=True)
+        group.save()
 
         review_request = self._get_review_request()
         review_request.target_groups.add(group)
         review_request.target_people.add(self.user)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_private_repository(self):
         """Testing no access to a review request with a private repository"""
@@ -1128,6 +1188,7 @@ class PolicyTests(TestCase):
         review_request.repository.save()
 
         self.assertFalse(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_private_repository_allowed_by_user(self):
         """Testing access to a review request with a private repository with user added"""
@@ -1141,6 +1202,7 @@ class PolicyTests(TestCase):
         review_request.repository.save()
 
         self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     def test_review_request_with_private_repository_allowed_by_review_group(self):
         """Testing access to a review request with a private repository with review group added"""
@@ -1155,6 +1217,7 @@ class PolicyTests(TestCase):
         review_request.repository.save()
 
         self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
 
     def _get_review_request(self):
         # Get a review request and clear out the reviewers.

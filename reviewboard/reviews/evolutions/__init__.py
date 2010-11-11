@@ -7,4 +7,5 @@ SEQUENCE = [
     'localsite',
     'group_incoming_request_count',
     'group_invite_only',
+    'group_visible',
 ]

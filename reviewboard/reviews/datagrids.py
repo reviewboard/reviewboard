@@ -592,7 +592,7 @@ class GroupDataGrid(DataGrid):
 
     def __init__(self, request, title=_("All groups"), *args, **kwargs):
         local_site = kwargs.pop('local_site', None)
-        queryset = Group.objects.filter(local_site=local_site)
+        queryset = Group.objects.accessible(request.user, local_site=local_site)
 
         DataGrid.__init__(self, request, queryset=queryset, title=title,
                           *args, **kwargs)

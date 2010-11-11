@@ -20,14 +20,16 @@ class PreferencesForm(forms.Form):
     password1 = forms.CharField(required=False, widget=widgets.PasswordInput())
     password2 = forms.CharField(required=False, widget=widgets.PasswordInput())
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, user, *args, **kwargs):
         forms.Form.__init__(self, *args, **kwargs)
 
         siteconfig = SiteConfiguration.objects.get_current()
         auth_backend = siteconfig.get("auth_backend")
 
-        self.fields['groups'].choices = \
-            [(g.id, g.display_name) for g in Group.objects.all()]
+        self.fields['groups'].choices = [
+            (g.id, g.display_name)
+            for g in Group.objects.accessible(user=user)
+        ]
         self.fields['email'].required = (auth_backend == "builtin")
 
     def clean_password2(self):

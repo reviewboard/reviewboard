@@ -43,8 +43,23 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
 
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ('name', 'display_name', 'mailing_list', 'invite_only')
+    list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
+                    'visible')
     filter_horizontal = ('users',)
+
+    fieldsets = (
+        (_('General Information'), {
+            'fields': ('name', 'display_name', 'mailing_list',
+                       'visible'),
+        }),
+        (_('Access Control'), {
+            'fields': ('invite_only', 'users', 'local_site'),
+        }),
+        (_('State'), {
+            'fields': ('incoming_request_count',),
+            'classes': ('collapse',),
+        }),
+    )
 
 
 class ReviewAdmin(admin.ModelAdmin):

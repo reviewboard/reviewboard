@@ -26,6 +26,26 @@ class DefaultReviewerManager(Manager):
                            Q(repository=repository))
 
 
+class ReviewGroupManager(Manager):
+    """A manager for Group models."""
+    def accessible(self, user, visible_only=True, local_site=None):
+        """Returns groups that are accessible by the given user."""
+        if user.is_superuser:
+            qs = self.all()
+        else:
+            q = Q(invite_only=False)
+
+            if visible_only:
+                q = q & Q(visible=True)
+
+            if user.is_authenticated():
+                q = q | Q(users__pk=user.pk)
+
+            qs = self.filter(q).distinct()
+
+        return qs.filter(local_site=local_site)
+
+
 class ReviewRequestQuerySet(QuerySet):
     def with_counts(self, user):
         queryset = self

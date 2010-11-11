@@ -586,11 +586,17 @@ def group_members(request,
     A list of users registered for a particular group.
     """
     # Make sure the group exists
-    group = get_object_or_404(Group, name=name, local_site__name=local_site_name)
+    group = get_object_or_404(Group,
+                              name=name,
+                              local_site__name=local_site_name)
+
+    if not group.is_accessible_by(request.user):
+        return _render_permission_denied(
+            request, 'reviews/group_permission_denied.html')
 
     datagrid = SubmitterDataGrid(request,
-        group.users.filter(is_active=True),
-        _("Members of group %s") % name)
+                                 group.users.filter(is_active=True),
+                                 _("Members of group %s") % name)
 
     return datagrid.render_to_response(template_name)
 

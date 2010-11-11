@@ -186,7 +186,7 @@ def group_list(request, *args, **kwargs):
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    u = Group.objects.filter(local_site=None)
+    u = Group.objects.accessible(request.user)
 
     if query:
         q = Q(name__istartswith=query)

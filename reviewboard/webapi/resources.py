@@ -1592,7 +1592,13 @@ class ReviewGroupResource(WebAPIResource):
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
-        }
+        },
+        'visible': {
+            'type': bool,
+            'description': 'Whether or not the group is visible to users '
+                           'who are not members. This does not prevent users '
+                           'from accessing the group if they know it, though.',
+        },
     }
 
     item_child_resources = [
@@ -1605,10 +1611,13 @@ class ReviewGroupResource(WebAPIResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
-        query = self.model.objects.all()
+        if is_list:
+            query = self.model.objects.accessible(request.user)
+        else:
+            query = self.model.objects.all()
 
         if search_q:
             q = Q(name__istartswith=search_q)

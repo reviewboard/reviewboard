@@ -51,7 +51,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
     can_change_password = auth_backend in ['builtin', 'x509']
 
     if request.POST:
-        form = PreferencesForm(request.POST)
+        form = PreferencesForm(request.POST, user=request.user)
 
         if form.is_valid():
             password = form.cleaned_data['password1']
@@ -85,7 +85,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             'email': request.user.email,
             'syntax_highlighting': profile.syntax_highlighting,
             'groups': [g.id for g in request.user.review_groups.all()],
-        })
+        }, user=request.user)
 
     return render_to_response(template_name, RequestContext(request, {
         'form': form,
