@@ -317,8 +317,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_group_public(self):
         """Testing the GET groups/<id>/ API"""
-        group = Group(name='test-group')
-        group.save()
+        group = Group.objects.create(name='test-group')
 
         rsp = self.apiGet("groups/%s" % group.name)
         self.assertEqual(rsp['stat'], 'ok')
@@ -328,9 +327,8 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_group_invite_only(self):
         """Testing the GET groups/<id>/ API with invite-only"""
-        group = Group(name='test-group', invite_only=True)
+        group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
-        group.save()
 
         rsp = self.apiGet("groups/%s" % group.name)
         self.assertEqual(rsp['stat'], 'ok')
@@ -338,8 +336,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_group_invite_only_with_permission_denied_error(self):
         """Testing the GET groups/<id>/ API with invite-only and Permission Denied error"""
-        group = Group(name='test-group', invite_only=True)
-        group.save()
+        group = Group.objects.create(name='test-group', invite_only=True)
 
         rsp = self.apiGet("groups/%s" % group.name, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
