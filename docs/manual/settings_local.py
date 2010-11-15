@@ -1,7 +1,12 @@
 import os
 
-DATABASE_ENGINE = 'sqlite3'
-DATABASE_NAME = 'docs.db'
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'docs.db',
+    }
+}
+
 SECRET_KEY = 'HASJFDYWQ98r6y2hesakjfhakjfy87eyr1hakjwfa'
 CACHE_BACKEND = 'locmem://'
 LOCAL_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
