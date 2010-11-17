@@ -416,7 +416,7 @@ class ReviewRequest(models.Model):
         if not self.public and not self.is_mutable_by(user):
             return False
 
-        if not self.repository.is_accessible_by(user):
+        if self.repository and not self.repository.is_accessible_by(user):
             return False
 
         if (user.is_authenticated() and
