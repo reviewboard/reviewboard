@@ -66,6 +66,8 @@ Bug Fixes
 * The screenshot area is no longer hidden immediately after uploading a
   screenshot.
 
+* Fixed an error in the web API when serializing to XML.
+
 * Fixed broken intervals for search updating in the generated crontab file.
 
   The intervals would cause a full index to happen at every minute at
