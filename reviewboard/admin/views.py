@@ -24,7 +24,7 @@ def dashboard(request, template_name="admin/dashboard.html"):
         'user_count': User.objects.count(),
         'reviewgroup_count': Group.objects.count(),
         'defaultreviewer_count': DefaultReviewer.objects.count(),
-        'repository_count': Repository.objects.count(),
+        'repository_count': Repository.objects.accessible(request.user).count(),
         'has_cache_stats': get_has_cache_stats(),
         'title': _("Dashboard"),
         'root_path': settings.SITE_ROOT + "admin/db/"

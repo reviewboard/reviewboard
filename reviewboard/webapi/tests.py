@@ -291,7 +291,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['repositories']), Repository.objects.count())
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.accessible(self.user).count())
 
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""
@@ -2115,7 +2116,8 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated repositories API"""
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['repositories']), Repository.objects.count())
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.accessible(self.user).count())
 
     def testUserList(self):
         """Testing the deprecated users API"""

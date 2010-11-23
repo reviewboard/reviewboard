@@ -3,6 +3,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.scmtools.managers import RepositoryManager
 from reviewboard.site.models import LocalSite
 
 
@@ -75,6 +76,8 @@ class Repository(models.Model):
         verbose_name=_('review groups'),
         help_text=_('A list of invite-only review groups whose members have '
                     'explicit access to the repository.'))
+
+    objects = RepositoryManager()
 
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()

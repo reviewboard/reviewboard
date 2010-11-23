@@ -239,10 +239,12 @@ def new_review_request(request,
         if (request.user.is_anonymous() or
             not local_site.users.filter(pk=request.user.pk).exists()):
             return _render_permission_denied(requset)
+    else:
+        local_site = None
 
     if request.method == 'POST':
-        form = NewReviewRequestForm(request.POST, request.FILES,
-                                    local_site_name=local_site_name)
+        form = NewReviewRequestForm(request.user, local_site,
+                                    request.POST, request.FILES)
 
         if form.is_valid():
             try:
@@ -250,12 +252,12 @@ def new_review_request(request,
                     user=request.user,
                     diff_file=request.FILES.get('diff_path'),
                     parent_diff_file=request.FILES.get('parent_diff_path'),
-                    local_site_name=local_site_name)
+                    local_site=local_site)
                 return HttpResponseRedirect(review_request.get_absolute_url())
             except (OwnershipError, SCMError, ValueError):
                 pass
     else:
-        form = NewReviewRequestForm(local_site_name=local_site_name)
+        form = NewReviewRequestForm(request.user, local_site)
 
     return render_to_response(template_name, RequestContext(request, {
         'form': form,

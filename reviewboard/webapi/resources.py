@@ -1763,10 +1763,13 @@ class RepositoryResource(WebAPIResource):
 
     @webapi_check_login_required
     def get_queryset(self, request, *args, **kwargs):
-        return self.model.objects.filter(visible=True)
+        return self.model.objects.accessible(request.user)
 
     def serialize_tool_field(self, obj):
         return obj.tool.name
+
+    def has_access_permissions(self, request, repository, *args, **kwargs):
+        return repository.is_accessible_by(request.user)
 
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
@@ -3927,6 +3930,9 @@ class ReviewRequestResource(WebAPIResource):
             return INVALID_REPOSITORY, {
                 'repository': repository
             }
+
+        if not repository.is_accessible_by(request.user):
+            return PERMISSION_DENIED
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,

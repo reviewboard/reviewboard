@@ -117,7 +117,7 @@ def repository_list(request, *args, **kwargs):
     """
     Returns a list of all known, visible repositories.
     """
-    repos = Repository.objects.filter(visible=True).select_related()
+    repos = Repository.objects.accessible(request.user).select_related()
 
     return WebAPIResponse(request, {
         'repositories': repos,
@@ -131,6 +131,9 @@ def repository_info(request, repository_id, *args, **kwargs):
         repository = Repository.objects.get(id=repository_id)
     except Repository.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not repository.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     try:
         return WebAPIResponse(request, {
@@ -322,6 +325,9 @@ def new_review_request(request, *args, **kwargs):
                 Q(mirror_path=repository_path))
         else:
             repository = Repository.objects.get(id=repository_id)
+
+        if not repository.is_accessible_by(request.user):
+            return WebAPIResponseError(request, PERMISSION_DENIED)
 
         review_request = ReviewRequest.objects.create(
             user, repository, request.POST.get('changenum', None))

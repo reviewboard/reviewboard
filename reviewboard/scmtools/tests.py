@@ -2,6 +2,7 @@ import imp
 import os
 import nose
 
+from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 try:
     imp.find_module("P4")
@@ -11,6 +12,7 @@ except ImportError:
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
+from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.git import ShortSHA1Error
@@ -916,3 +918,66 @@ class GitTests(DjangoTestCase):
         self.assertRaises(
             ShortSHA1Error,
             lambda: self.remote_tool.get_file('README', 'd7e96b3'))
+
+
+class PolicyTests(DjangoTestCase):
+    fixtures = ['test_scmtools']
+
+    def setUp(self):
+        self.user = User.objects.create(username='testuser', password='')
+        self.anonymous = AnonymousUser()
+        self.repo = Repository.objects.create(
+            name="test",
+            path="example.com:/cvsroot/test",
+            username="anonymous",
+            tool=Tool.objects.get(name="CVS"))
+
+    def test_repository_public(self):
+        """Testing access to a public repository"""
+        self.assertTrue(self.repo.is_accessible_by(self.user))
+        self.assertTrue(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertTrue(
+            self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_private_access_denied(self):
+        """Testing no access to an inaccessible private repository"""
+        self.repo.public = False
+        self.repo.save()
+
+        self.assertFalse(self.repo.is_accessible_by(self.user))
+        self.assertFalse(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertFalse(self.repo in Repository.objects.accessible(self.user))
+        self.assertFalse(
+            self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_private_access_allowed_by_user(self):
+        """Testing access to a private repository accessible by user"""
+        self.repo.users.add(self.user)
+        self.repo.public = False
+        self.repo.save()
+
+        self.assertTrue(self.repo.is_accessible_by(self.user))
+        self.assertFalse(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertFalse(
+            self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_private_access_allowed_by_review_group(self):
+        """Testing access to a private repository accessible by review group"""
+        group = Group.objects.create(name='test-group')
+        group.users.add(self.user)
+
+        self.repo.public = False
+        self.repo.review_groups.add(group)
+        self.repo.save()
+
+        self.assertTrue(self.repo.is_accessible_by(self.user))
+        self.assertFalse(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertFalse(
+            self.repo in Repository.objects.accessible(self.anonymous))

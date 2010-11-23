@@ -84,7 +84,7 @@ class NewReviewRequestForm(forms.Form):
         widget=forms.FileInput(attrs={'size': '35'}))
     repository = forms.ModelChoiceField(
         label=_("Repository"),
-        queryset=Repository.objects.filter(visible=True).order_by('name'),
+        queryset=Repository.objects.none(),
         empty_label=NO_REPOSITORY_ENTRY,
         required=False)
 
@@ -92,28 +92,21 @@ class NewReviewRequestForm(forms.Form):
 
     field_mapping = {}
 
-    def __init__(self, *args, **kwargs):
-        local_site_name = kwargs.pop('local_site_name', None)
-        forms.Form.__init__(self, *args, **kwargs)
+    def __init__(self, user, local_site, *args, **kwargs):
+        super(NewReviewRequestForm, self).__init__(*args, **kwargs)
 
         # Repository ID : visible fields mapping.  This is so we can
         # dynamically show/hide the relevant fields with javascript.
-        valid_repos = [('', self.NO_REPOSITORY_ENTRY)]
+        valid_repos = []
+        self.field_mapping = {}
 
-        repo_ids = [
-            id for (id, name) in self.fields['repository'].choices if id
-        ]
-
-        # Show the explanation for the "None" entry when it's selected.
-        self.field_mapping[''] = ['no_repository_explanation']
-
-        for repo in Repository.objects.filter(pk__in=repo_ids).order_by("name"):
+        for repo in Repository.objects.accessible(user).order_by('name'):
             try:
                 self.field_mapping[repo.id] = repo.get_scmtool().get_fields()
 
-                if ((local_site_name and
+                if ((local_site and
                      repo.local_site and
-                     repo.local_site.name == local_site_name) or
+                     repo.local_site.name == local_site.name) or
                     repo.local_site is None):
                     valid_repos.append((repo.id, repo.name))
             except Exception, e:
@@ -121,12 +114,22 @@ class NewReviewRequestForm(forms.Form):
                               '%s (ID %d): %s' % (repo.name, repo.id, e),
                               exc_info=1)
 
-        self.fields['repository'].choices = valid_repos
+        self.fields['repository'].queryset = \
+            Repository.objects.filter(pk__in=self.field_mapping.keys())
 
         # If we have any repository entries we can show, then we should
-        # show the first one, rather than the "None" entry.
-        if len(valid_repos) > 1:
-            self.fields['repository'].initial = valid_repos[1][0]
+        # show the first one.
+        #
+        # TODO: Make this available as a per-user default.
+        if valid_repos:
+            self.fields['repository'].initial = valid_repos[0][0]
+
+        # Now add the dummy "None" repository to the choices and the
+        # associated description.
+        valid_repos.insert(0, ('', self.NO_REPOSITORY_ENTRY))
+        self.field_mapping[''] = ['no_repository_explanation']
+
+        self.fields['repository'].choices = valid_repos
 
     @staticmethod
     def create_from_list(data, constructor, error):
@@ -135,10 +138,9 @@ class NewReviewRequestForm(forms.Form):
         names = [x for x in map(str.strip, re.split(',\s*', data)) if x]
         return set([constructor(name) for name in names])
 
-    def create(self, user, diff_file, parent_diff_file, local_site_name=None):
+    def create(self, user, diff_file, parent_diff_file, local_site=None):
         repository = self.cleaned_data['repository']
         changenum = self.cleaned_data['changenum'] or None
-        local_site = get_object_or_none(LocalSite, name=local_site_name)
 
         # It's a little odd to validate this here, but we want to have access to
         # the user.
