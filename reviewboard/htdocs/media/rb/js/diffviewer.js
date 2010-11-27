@@ -73,6 +73,25 @@ var gActions = [
     { // Go to footer
         keys: "GU:",
         onPress: function() {}
+    },
+
+    { // Show review form
+        keys: "r",
+        onPress: function() { $.reviewForm(); }
+    },
+
+    { // Submit shipit review
+        keys: "R",
+        onPress: function() {
+          var data = {
+            path: getReviewDraftAPIPath() + "/publish/",
+            data: {shipit: 1},
+            success: function() {
+              window.location = gReviewRequestPath;
+            }
+          };
+          reviewRequestApiCall(data);
+        }
     }
 ];
 
