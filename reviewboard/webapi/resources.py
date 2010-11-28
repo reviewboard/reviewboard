@@ -1730,6 +1730,7 @@ class RepositoryInfoResource(WebAPIResource):
     singleton = True
     allowed_methods = ('GET',)
 
+    @webapi_check_local_site
     @webapi_check_login_required
     @webapi_response_errors(DOES_NOT_EXIST, REPO_NOT_IMPLEMENTED,
                             REPO_INFO_ERROR)
@@ -1794,8 +1795,11 @@ class RepositoryResource(WebAPIResource):
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
-    def get_queryset(self, request, *args, **kwargs):
-        return self.model.objects.accessible(request.user)
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+        local_site = get_object_or_none(LocalSite, name=local_site_name)
+        return self.model.objects.accessible(request.user,
+                                             visible_only=True,
+                                             local_site=local_site)
 
     def serialize_tool_field(self, obj):
         return obj.tool.name
@@ -1803,8 +1807,9 @@ class RepositoryResource(WebAPIResource):
     def has_access_permissions(self, request, repository, *args, **kwargs):
         return repository.is_accessible_by(request.user)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
-    def get_list(self, *args, **kwargs):
+    def get_list(self, request, *args, **kwargs):
         """Retrieves the list of repositories on the server.
 
         This will only list visible repositories. Any repository that the

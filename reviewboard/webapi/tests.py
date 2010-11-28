@@ -328,6 +328,8 @@ class SessionResourceTests(BaseWebAPITestCase):
 
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
+    local_site_name = 'local-site-1'
+
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet("repositories")
@@ -335,12 +337,46 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.accessible(self.user).count())
 
+    def test_get_repositories_with_site(self):
+        """Testing the GET repositories/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('repositories', local_site_name=self.local_site_name)
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.filter(
+                             local_site__name=self.local_site_name).count())
+
+    def test_get_repositories_with_site_no_access(self):
+        """Testing the GET repositories/ API with a local site and Permission Denied error"""
+        self.apiGet('repositories', local_site_name=self.local_site_name,
+                    expected_status=403)
+
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""
         rsp = self.apiGet("repositories/%d/info" % self.repository.pk)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['info'],
                          self.repository.get_scmtool().get_repository_info())
+
+    def test_get_repository_info_with_site(self):
+        """Testing the GET repositories/<id>/info API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        repository = Repository.objects.get(name='V8 SVN')
+        rsp = self.apiGet('repositories/%d/info' % repository.pk,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['info'],
+                         repository.get_scmtool().get_repository_info())
+
+    def test_get_repository_info_with_site_no_access(self):
+        """Testing the GET repositories/<id>/info API with a local site and Permission Denied error"""
+        repository = Repository.objects.get(name='V8 SVN')
+        self.apiGet('repositories/%d/info' % repository.pk,
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
 
 
 class ReviewGroupResourceTests(BaseWebAPITestCase):
