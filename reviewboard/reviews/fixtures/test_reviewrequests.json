@@ -834,6 +834,20 @@
         }
     }, 
     {
+        "pk": 5,
+        "model": "reviews.group",
+        "fields": {
+            "display_name": "Site-local Group",
+            "users": [
+                2
+            ],
+            "local_site": 1,
+            "incoming_request_count": 0,
+            "mailing_list": "",
+            "name": "sitegroup"
+        }
+    },
+    {
         "pk": 8, 
         "model": "reviews.reviewrequest", 
         "fields": {

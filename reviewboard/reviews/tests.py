@@ -165,7 +165,8 @@ class DbQueryTests(TestCase):
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         self.siteconfig = SiteConfiguration.objects.get_current()

@@ -20,6 +20,8 @@ For our tests, we currently have three sets of fixtures:
    - diffviewer/reviews apps
 3. :file:`reviewboard/scmtools/fixtures/test_scmtools.json`
    - scmtools app
+4. :file:`reviewboard/site/fixtures/test_site.json`
+   - site app
 
 
 .. _Django: http://www.djangoproject.com/
@@ -35,7 +37,7 @@ not already) and change the database name to something like
 
    $ ./reviewboard/manage.py syncdb --noinput
    $ ./reviewboard/manage.py reset --noinput scmtools
-   $ ./reviewboard/manage.py loaddata test_users test_scmtools test_reviewrequests
+   $ ./reviewboard/manage.py loaddata test_users test_scmtools test_reviewrequests test_site
 
 This should populate your database with the test data.
 
@@ -44,6 +46,7 @@ After you've added to the data set, dump them back out::
    $ ./reviewboard/manage.py dumpdata --indent=4 auth accounts > reviewboard/accounts/fixtures/test_users.json
    $ ./reviewboard/manage.py dumpdata --indent=4 changedescs diffviewer reviews > reviewboard/reviews/fixtures/test_reviewrequests.json
    $ ./reviewboard/manage.py dumpdata --indent=4 scmtools > reviewboard/scmtools/fixtures/test_scmtools.json
+   $ ./reviewboard/manage.py dumpdata --indent=4 site > reviewboard/scmtools/fixtures/test_site.json
 
 You can choose to only dump the data you've actually modified. If you've only
 created a review request, for example, feel free to just dump the diffviewer

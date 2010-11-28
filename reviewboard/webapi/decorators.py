@@ -3,9 +3,13 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
 from djblets.webapi.decorators import webapi_login_required, \
-                                      webapi_response_errors
+                                      webapi_response_errors, \
+                                      _find_httprequest
 from djblets.webapi.encoders import BasicAPIEncoder
-from djblets.webapi.errors import NOT_LOGGED_IN
+from djblets.webapi.errors import DOES_NOT_EXIST, NOT_LOGGED_IN, \
+                                  PERMISSION_DENIED
+
+from reviewboard.site.models import LocalSite
 
 
 @webapi_response_errors(NOT_LOGGED_IN)
@@ -92,3 +96,27 @@ def webapi_deprecated_in_1_5(view_func):
         force_error_http_status=200,
         default_api_format='json',
         encoders=_deprecated_api_encoders)(view_func)
+
+
+@webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+@simple_decorator
+def webapi_check_local_site(view_func):
+    """Checks whether a user has access to a local site given in the URL.
+
+    This decorator can be added to get/get_list methods to check whether or
+    not a user should be able to view them given the local site name in the URL.
+    """
+    def _check(*args, **kwargs):
+        request = _find_httprequest(args)
+        local_site_name = kwargs.get('local_site_name', None)
+        if local_site_name:
+            try:
+                local_site = LocalSite.objects.get(name=local_site_name)
+                if not local_site.is_accessible_by(request.user):
+                    return WebAPIResponseError(request, PERMISSION_DENIED)
+            except LocalSite.DoesNotExist:
+                return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+        return view_func(*args, **kwargs)
+
+    return _check

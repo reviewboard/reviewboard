@@ -80,19 +80,11 @@ def _find_review_request(request, review_request_id, local_site_name):
     """
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
-
-        if (request.user.is_anonymous() or
-            not local_site.users.filter(pk=request.user.pk).exists()):
-            return None, _render_permission_denied(request)
-
         review_request = get_object_or_404(ReviewRequest,
                                            local_site=local_site,
                                            local_id=review_request_id)
     else:
         review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-        if review_request.local_site is not None:
-            return None, _render_permission_denied(request)
 
     if review_request.is_accessible_by(request.user):
         return review_request, None

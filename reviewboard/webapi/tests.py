@@ -17,11 +17,13 @@ from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        Comment, Screenshot, ScreenshotComment
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import INVALID_REPOSITORY
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         initialize()
@@ -2069,7 +2071,8 @@ class ReviewScreenshotCommentResource(BaseWebAPITestCase):
 
 class DeprecatedWebAPITests(TestCase, EmailTestHelper):
     """Testing the deprecated webapi support."""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         initialize()

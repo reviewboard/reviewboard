@@ -38,8 +38,10 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.decorators import webapi_check_login_required, \
                                           webapi_deprecated_in_1_5
+from reviewboard.webapi.encoder import string_to_status
 from reviewboard.webapi.errors import INVALID_ACTION, \
                                       INVALID_CHANGE_NUMBER, \
                                       CHANGE_NUMBER_IN_USE, \
@@ -51,32 +53,6 @@ from reviewboard.webapi.errors import INVALID_ACTION, \
                                       REPO_INFO_ERROR, \
                                       NOTHING_TO_PUBLISH, \
                                       EMPTY_CHANGESET
-
-
-def status_to_string(status):
-    if status == "P":
-        return "pending"
-    elif status == "S":
-        return "submitted"
-    elif status == "D":
-        return "discarded"
-    elif status == None:
-        return "all"
-    else:
-        raise "Invalid status '%s'" % status
-
-
-def string_to_status(status):
-    if status == "pending":
-        return "P"
-    elif status == "submitted":
-        return "S"
-    elif status == "discarded":
-        return "D"
-    elif status == "all":
-        return None
-    else:
-        raise "Invalid status '%s'" % status
 
 
 @webapi
@@ -551,7 +527,8 @@ def review_request_updated(request, review_request_id, *args, **kwargs):
 
 @webapi_deprecated_in_1_5
 @webapi_check_login_required
-def review_request_list(request, func, api_format='json', *args, **kwargs):
+def review_request_list(request, func, api_format='json', local_site_name=None,
+                        *args, **kwargs):
     """
     Returns a list of review requests.
 
@@ -560,16 +537,19 @@ def review_request_list(request, func, api_format='json', *args, **kwargs):
       * status: The status of the returned review requests. This defaults
                 to "pending".
     """
+    local_site = get_object_or_none(LocalSite, name=local_site_name)
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
         'review_requests': func(user=request.user, status=status,
+                                local_site=local_site,
                                 **kwargs).select_related()
     })
 
 
 @webapi_deprecated_in_1_5
 @webapi_check_login_required
-def count_review_requests(request, func, api_format='json', *args, **kwargs):
+def count_review_requests(request, func, api_format='json',
+                          local_site_name=None, *args, **kwargs):
     """
     Returns the number of review requests.
 
@@ -578,9 +558,11 @@ def count_review_requests(request, func, api_format='json', *args, **kwargs):
       * status: The status of the returned review requests. This defaults
                 to "pending".
     """
+    local_site = get_object_or_none(LocalSite, name=local_site_name)
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
-        'count': func(user=request.user, status=status, **kwargs).count()
+        'count': func(user=request.user, status=status,
+                      local_site=local_site, **kwargs).count()
     })
 
 

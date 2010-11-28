@@ -102,6 +102,9 @@ class Group(models.Model):
 
     def is_accessible_by(self, user):
         "Returns true if the user can access this group."""
+        if self.local_site and not self.local_site.is_accessible_by(user):
+            return False
+
         return (not self.invite_only or
                 user.is_superuser or
                 (user.is_authenticated() and
@@ -396,7 +399,7 @@ class ReviewRequest(models.Model):
         """
         update_obj_with_changenum(self, self.repository, changenum)
 
-    def is_accessible_by(self, user):
+    def is_accessible_by(self, user, local_site=None):
         """Returns whether or not the user can read this review request.
 
         This performs several checks to ensure that the user has access.
@@ -417,6 +420,9 @@ class ReviewRequest(models.Model):
             return False
 
         if self.repository and not self.repository.is_accessible_by(user):
+            return False
+
+        if local_site and not local_site.is_accessible_by(user):
             return False
 
         if (user.is_authenticated() and

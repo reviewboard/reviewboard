@@ -8,6 +8,7 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
@@ -16,7 +17,9 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
                               set_last_modified
-from djblets.webapi.core import WebAPIResponseFormError, \
+from djblets.util.misc import get_object_or_none
+from djblets.webapi.core import WebAPIResponseError, \
+                                WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
                                 WebAPIResponse
 from djblets.webapi.decorators import webapi_login_required, \
@@ -44,7 +47,10 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError
-from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.site.models import LocalSite
+from reviewboard.webapi.decorators import webapi_check_login_required, \
+                                          webapi_check_local_site
+from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
                                       EMPTY_CHANGESET, \
                                       INVALID_CHANGE_NUMBER, \
@@ -110,6 +116,32 @@ class WebAPIResource(DjbletsWebAPIResource):
         implementation while still retaining the ?counts-only=1 functionality.
         """
         return super(WebAPIResource, self).get_list(request, *args, **kwargs)
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object.
+
+        This is an override of djblets.webapi.resources.WebAPIResource.get_href,
+        which takes into account our local_site_name namespacing in order to get
+        the right prefix on URLs.
+        """
+        if not self.uri_object_key:
+            return None
+
+        href_kwargs = {
+            self.uri_object_key: getattr(obj, self.model_object_key),
+        }
+        href_kwargs.update(self.get_href_parent_ids(obj))
+
+        url = reverse(self._build_named_url(self.name), kwargs=href_kwargs)
+
+        local_site_name = kwargs.get('local_site_name', None)
+        if local_site_name:
+            prefix = '%ss/%s' % (settings.SITE_ROOT, local_site_name)
+            if not url.startswith(prefix):
+                url = prefix + url
+
+        return request.build_absolute_uri(url)
+
 
 
 class BaseDiffCommentResource(WebAPIResource):
@@ -4245,32 +4277,6 @@ class RootResource(DjbletsRootResource):
         ], *args, **kwargs)
 
 root_resource = RootResource()
-
-
-def status_to_string(status):
-    if status == "P":
-        return "pending"
-    elif status == "S":
-        return "submitted"
-    elif status == "D":
-        return "discarded"
-    elif status == None:
-        return "all"
-    else:
-        raise Exception("Invalid status '%s'" % status)
-
-
-def string_to_status(status):
-    if status == "pending":
-        return "P"
-    elif status == "submitted":
-        return "S"
-    elif status == "discarded":
-        return "D"
-    elif status == "all":
-        return None
-    else:
-        raise Exception("Invalid status '%s'" % status)
 
 
 register_resource_for_model(

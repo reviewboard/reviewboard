@@ -88,5 +88,39 @@
             "password": "", 
             "tool": 1
         }
+    },
+    {
+        "pk": 3,
+        "model": "scmtools.repository",
+        "fields": {
+            "username": "",
+            "name": "Review Board Git",
+            "encoding": "",
+            "mirror_path": "",
+            "local_site": 1,
+            "visible": true,
+            "raw_file_url": "http://github.com/api/v2/yaml/blob/show/reviewboard/reviewboard/<revision>",
+            "bug_tracker": "",
+            "path": "git://github.com/reviewboard/reviewboard.git",
+            "password": "",
+            "tool": 5
+        }
+    },
+    {
+        "pk": 4, 
+        "model": "scmtools.repository", 
+        "fields": {
+            "username": "", 
+            "name": "V8 SVN", 
+            "encoding": "", 
+            "mirror_path": "", 
+            "local_site": 1, 
+            "visible": true, 
+            "raw_file_url": "", 
+            "bug_tracker": "", 
+            "path": "http://v8.googlecode.com/svn/", 
+            "password": "", 
+            "tool": 1
+        }
     }
 ]

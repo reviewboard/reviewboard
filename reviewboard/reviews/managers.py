@@ -223,10 +223,6 @@ class ReviewRequestManager(ConcurrencyManager):
             local_site=local_site,
             *args, **kwargs)
 
-    def to_group_deprecated(self, group_name, *args, **kwargs):
-        """Temporary support for the deprecated API"""
-        return self.to_group(group_name, None, *args, **kwargs)
-
     def to_user_groups(self, username, *args, **kwargs):
         return self._query(
             extra_query=self.get_to_user_groups_query(username),
