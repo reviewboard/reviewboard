@@ -309,6 +309,22 @@ class SessionResourceTests(BaseWebAPITestCase):
         self.assertTrue('session' in rsp)
         self.assertFalse(rsp['session']['authenticated'])
 
+    def test_get_session_with_site(self):
+        """Testing the GET session/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('session', local_site_name='local-site-1')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('session' in rsp)
+        self.assertTrue(rsp['session']['authenticated'])
+        self.assertEqual(rsp['session']['links']['user']['title'], 'doc')
+
+    def test_get_session_with_site_no_access(self):
+        """Testing the GET session/ API with a local site and Permission Denied error"""
+        self.apiGet('session', local_site_name='local-site-1',
+                    expected_status=403)
+
 
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""

@@ -4217,6 +4217,7 @@ class SessionResource(WebAPIResource):
     name = 'session'
     singleton = True
 
+    @webapi_check_local_site
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns information on the client's session.
@@ -4230,7 +4231,7 @@ class SessionResource(WebAPIResource):
 
         data = {
             'authenticated': authenticated,
-            'links': self.get_links(request=request),
+            'links': self.get_links(request=request, *args, **kwargs),
         }
 
         if authenticated and 'user' in expanded_resources:
