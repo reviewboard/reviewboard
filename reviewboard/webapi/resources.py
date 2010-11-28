@@ -4173,6 +4173,8 @@ class ServerInfoResource(WebAPIResource):
     name = 'info'
     singleton = True
 
+    @webapi_check_local_site
+    @webapi_response_errors(PERMISSION_DENIED)
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns the information on the Review Board server."""
@@ -4181,6 +4183,9 @@ class ServerInfoResource(WebAPIResource):
 
         url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
                              settings.SITE_ROOT)
+        local_site_name = kwargs.get('local_site_name', None)
+        if local_site_name:
+            url = '%ss/%s/' % (url, local_site_name)
 
         return 200, {
             self.item_result_key: {
@@ -4275,6 +4280,16 @@ class RootResource(DjbletsRootResource):
             session_resource,
             user_resource,
         ], *args, **kwargs)
+
+    @webapi_check_local_site
+    @augment_method_from(DjbletsRootResource)
+    def get(self, request, *args, **kwargs):
+        """Retrieves the list of top-level resources and templates.
+
+        This is a specialization of djblets.webapi.RootResource which does a
+        permissions check on the LocalSite.
+        """
+        pass
 
 root_resource = RootResource()
 

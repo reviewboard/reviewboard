@@ -67,8 +67,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return response
 
     def apiGet(self, path, query={}, follow_redirects=False,
-               expected_status=200, expected_redirects=[]):
-        path = self._normalize_path(path)
+               expected_status=200, expected_redirects=[],
+               local_site_name=None):
+        path = self._normalize_path(path, local_site_name)
 
         print 'GETing %s' % path
         print "Query data: %s" % query
@@ -124,13 +125,19 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return self._get_result(response, expected_status)
 
-    def _normalize_path(self, path):
+    def _normalize_path(self, path, local_site_name=None):
         if path.startswith(self.base_url):
             return path[len(self.base_url):]
         elif path.startswith('/api'):
-            return path
+            if local_site_name:
+                return '/s/%s%s' % (local_site_name, path)
+            else:
+                return path
         else:
-            return '/api/%s/' % path
+            if local_site_name:
+                return '/s/%s/api/%s/' % (local_site_name, path)
+            else:
+                return '/api/%s/' % path
 
     def _get_result(self, response, expected_status):
         if expected_status == 204:
@@ -264,6 +271,22 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
         self.assertTrue('info' in rsp)
         self.assertTrue('product' in rsp['info'])
         self.assertTrue('site' in rsp['info'])
+
+    def test_get_server_info_with_site(self):
+        """Testing the GET info/ API with a local site"""
+        self.client.logout()
+        self.client.login(username="doc", password="doc")
+
+        rsp = self.apiGet('info', local_site_name='local-site-1')
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('info' in rsp)
+        self.assertTrue('product' in rsp['info'])
+        self.assertTrue('site' in rsp['info'])
+
+    def test_get_server_info_with_site_no_access(self):
+        """Testing the GET info/ API with a local site and Permission Denied error"""
+        self.apiGet('info', local_site_name='local-site-1',
+                    expected_status=403)
 
 
 class SessionResourceTests(BaseWebAPITestCase):
