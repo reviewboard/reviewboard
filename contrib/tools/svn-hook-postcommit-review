@@ -178,7 +178,7 @@ def main():
 
     # check for an explicitly-provided base path (must be contained
     # within quotes)
-    m = re.search(r'base ?path:([\'"][^\'"]+[\'"])', log, re.M | re.I)
+    m = re.search(r'base ?path:[\'"]([^\'"]+)[\'"]', log, re.M | re.I)
     if m:
         base_path = m.group(1)
     else:
