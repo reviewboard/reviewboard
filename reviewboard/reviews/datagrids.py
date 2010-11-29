@@ -21,7 +21,8 @@ class StarColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "rb/images/star_on.png"
+        self.image_url = "%srb/images/star_on.png?%s" % \
+            (settings.MEDIA_URL, settings.MEDIA_SERIAL)
         self.image_width = 16
         self.image_height = 15
         self.image_alt = _("Starred")
@@ -95,7 +96,8 @@ class ShipItColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "rb/images/shipit.png"
+        self.image_url = "%srb/images/shipit.png?%s" % \
+            (settings.MEDIA_URL, settings.MEDIA_SERIAL)
         self.image_width = 16
         self.image_height = 16
         self.image_alt = _("Ship It!")
@@ -123,7 +125,8 @@ class MyCommentsColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "rb/images/comment-draft-small.png"
+        self.image_url = "%srb/images/comment-draft-small.png?%s" % \
+            (settings.MEDIA_URL, settings.MEDIA_SERIAL)
         self.image_width = 16
         self.image_height = 16
         self.image_alt = _("My Comments")
@@ -188,11 +191,12 @@ class MyCommentsColumn(Column):
             image_alt = _("Comments drafted")
         else:
             if review_request.mycomments_shipit_reviews > 0:
-                image_url = settings.MEDIA_URL + \
-                            "rb/images/comment-shipit-small.png"
+                image_url = "%srb/images/comment-shipit-small.png?%s" % \
+                    (settings.MEDIA_URL, settings.MEDIA_SERIAL)
                 image_alt = _("Comments published. Ship it!")
             else:
-                image_url = settings.MEDIA_URL + "rb/images/comment-small.png"
+                image_url = "%srb/images/comment-small.png?%s" % \
+                    (settings.MEDIA_URL, settings.MEDIA_SERIAL)
                 image_alt = _("Comments published")
 
         return '<img src="%s?%s" width="%s" height="%s" alt="%s" ' \
@@ -208,7 +212,8 @@ class NewUpdatesColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = settings.MEDIA_URL + "rb/images/convo.png"
+        self.image_url = "%srb/images/convo.png?%s" % \
+            (settings.MEDIA_URL, settings.MEDIA_SERIAL)
         self.image_width = 18
         self.image_height = 16
         self.image_alt = "New Updates"
