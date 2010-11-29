@@ -333,6 +333,7 @@ def dashboard_entry(context, level, text, view, group=None):
 
     return {
         'MEDIA_URL': settings.MEDIA_URL,
+        'MEDIA_SERIAL': settings.MEDIA_SERIAL,
         'level': level,
         'text': text,
         'view': view,
