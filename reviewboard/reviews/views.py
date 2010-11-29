@@ -653,7 +653,6 @@ def diff(request,
     diffset = _query_for_diff(review_request, request.user, revision)
 
     interdiffset = None
-    interdiffset_id = None
     review = None
     draft = None
 
@@ -662,7 +661,6 @@ def diff(request,
         # diffset.
         interdiffset = _query_for_diff(review_request, request.user,
                                        interdiff_revision)
-        interdiffset_id = interdiffset.id
 
     # Try to find an existing pending review of this diff from the
     # current user.
@@ -681,7 +679,7 @@ def diff(request,
     last_activity_time, updated_object = review_request.get_last_activity()
 
     return view_diff(
-         request, diffset.id, interdiffset_id, template_name=template_name,
+         request, diffset, interdiffset, template_name=template_name,
          extra_context=_make_review_request_context(review_request, {
             'review': review,
             'review_request_details': draft or review_request,

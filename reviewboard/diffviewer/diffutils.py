@@ -927,7 +927,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   "diffset id %s, filediff %s" %
                                   (diffset.id, filediff.id))
     else:
-        filediffs = diffset.files.all()
+        filediffs = diffset.files.select_related().all()
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
