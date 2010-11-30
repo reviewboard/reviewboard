@@ -6,13 +6,15 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import connection, models, transaction
 from django.db.models import Q, permalink
+from django.db.models import F, Q, permalink
 from django.dispatch import dispatcher
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
-from djblets.util.fields import ModificationTimestampField
+from djblets.util.decorators import root_url
+from djblets.util.fields import CounterField, ModificationTimestampField
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
@@ -22,6 +24,7 @@ from reviewboard.reviews.signals import review_request_published, \
                                         reply_published, review_published
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import DefaultReviewerManager, \
+                                         ReviewGroupManager, \
                                          ReviewRequestManager, \
                                          ReviewManager
 from reviewboard.scmtools.errors import EmptyChangeSetError, \
@@ -79,7 +82,7 @@ class Group(models.Model):
     all review requests and replies to that address. If that e-mail address is
     blank, e-mails are sent individually to each member of that group.
     """
-    name = models.SlugField(_("name"), max_length=64, blank=False, unique=True)
+    name = models.SlugField(_("name"), max_length=64, blank=False)
     display_name = models.CharField(_("display name"), max_length=64)
     mailing_list = models.EmailField(_("mailing list"), blank=True,
         help_text=_("The mailing list review requests and discussions "
@@ -89,14 +92,37 @@ class Group(models.Model):
                                    verbose_name=_("users"))
     local_site = models.ForeignKey(LocalSite, blank=True, null=True)
 
+    incoming_request_count = CounterField(
+        _('incoming review request count'),
+        initializer=lambda g: ReviewRequest.objects.to_group(
+            g, local_site=g.local_site).count())
+
+    invite_only = models.BooleanField(_('invite only'), default=False)
+    visible = models.BooleanField(default=True)
+
+    objects = ReviewGroupManager()
+
+    def is_accessible_by(self, user):
+        "Returns true if the user can access this group."""
+        return (not self.invite_only or
+                user.is_superuser or
+                (user.is_authenticated() and
+                 self.users.filter(pk=user.pk).count() > 0))
+
     def __unicode__(self):
         return self.name
 
-    @permalink
+    @root_url
     def get_absolute_url(self):
-        return ('reviewboard.reviews.views.group', None, {'name': self.name})
+        if self.local_site:
+            baseurl = '/s/%s' % self.local_site.name
+        else:
+            baseurl = ''
+
+        return '%s/groups/%s/' % (baseurl, self.name)
 
     class Meta:
+        unique_together = (('name', 'local_site'),)
         verbose_name = _("review group")
         ordering = ['name']
 
@@ -165,17 +191,13 @@ class Screenshot(models.Model):
     def __unicode__(self):
         return u"%s (%s)" % (self.caption, self.image)
 
-    @permalink
     def get_absolute_url(self):
         try:
             review = self.review_request.all()[0]
         except IndexError:
             review = self.inactive_review_request.all()[0]
 
-        return ('reviewboard.reviews.views.view_screenshot', None, {
-            'review_request_id': review.id,
-            'screenshot_id': self.id
-        })
+        return '%ss/%d/' % (review.get_absolute_url(), self.id)
 
 
 class ReviewRequest(models.Model):
@@ -258,8 +280,7 @@ class ReviewRequest(models.Model):
     last_review_timestamp = models.DateTimeField(_("last review timestamp"),
                                                  null=True, default=None,
                                                  blank=True)
-    shipit_count = models.IntegerField(_("ship-it count"), default=0,
-                                       null=True)
+    shipit_count = CounterField(_("ship-it count"), default=0)
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True)
     local_id = models.IntegerField('site-local ID', null=True)
@@ -378,8 +399,49 @@ class ReviewRequest(models.Model):
         update_obj_with_changenum(self, self.repository, changenum)
 
     def is_accessible_by(self, user):
-        "Returns true if the user can read this review request"
-        return self.public or self.is_mutable_by(user)
+        """Returns whether or not the user can read this review request.
+
+        This performs several checks to ensure that the user has access.
+        This user has access if:
+
+          * The review request is public or the user can modify it (either
+            by being an owner or having special permissions).
+
+          * The repository is public or the user has access to it (either by
+            being explicitly on the allowed users list, or by being a member
+            of a review group on that list).
+
+          * The user is listed as a requested reviewer or the user has access
+            to one or more groups listed as requested reviewers (either by
+            being a member of an invite-only group, or the group being public).
+        """
+        if not self.public and not self.is_mutable_by(user):
+            return False
+
+        if self.repository and not self.repository.is_accessible_by(user):
+            return False
+
+        if (user.is_authenticated() and
+            self.target_people.filter(pk=user.pk).count() > 0):
+            return True
+
+        groups = list(self.target_groups.all())
+
+        if not groups:
+            return True
+
+        # We specifically iterate over these instead of making it part
+        # of the query in order to keep the logic in Group, and to allow
+        # for future expansion (extensions, more advanced policy)
+        #
+        # We're looking for at least one group that the user has access
+        # to. If they can access any of the groups, then they have access
+        # to the review request.
+        for group in groups:
+            if group.is_accessible_by(user):
+                return True
+
+        return False
 
     def is_mutable_by(self, user):
         "Returns true if the user can modify this review request"
@@ -453,11 +515,20 @@ class ReviewRequest(models.Model):
 
         return changeset and changeset.pending
 
-    @permalink
+    @root_url
     def get_absolute_url(self):
-        return ('review-request-detail', None, {
-            'review_request_id': self.id,
-        })
+        # We can't parameterize URLs that include captured parameters. See
+        # Django bug 11559. Once this bug is fixed, we can make a namespaced
+        # and a non namespaced include urlconf, and go back to using
+        # @permalink
+        if self.local_site:
+            baseurl = '/s/%s' % self.local_site.name
+            urlid = self.local_id
+        else:
+            baseurl = ''
+            urlid = self.pk
+
+        return '%s/r/%d/' % (baseurl, urlid)
 
     def __unicode__(self):
         if self.summary:
@@ -465,16 +536,58 @@ class ReviewRequest(models.Model):
         else:
             return unicode(_('(no summary)'))
 
-    def save(self, **kwargs):
+    def save(self, update_counts=False, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()
         self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
 
-        if self.status != "P":
+        if update_counts or self.id is None:
+            self._update_counts()
+
+        if self.status != self.PENDING_REVIEW:
             # If this is not a pending review request now, delete any
             # and all ReviewRequestVisit objects.
             self.visits.all().delete()
 
-        super(ReviewRequest, self).save()
+        super(ReviewRequest, self).save(**kwargs)
+
+    def delete(self, **kwargs):
+        from reviewboard.accounts.models import Profile, LocalSiteProfile
+
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=self.submitter)
+
+        if profile_is_new:
+            profile.save()
+
+        local_site = self.local_site
+        site_profile, site_profile_is_new = \
+            LocalSiteProfile.objects.get_or_create(user=self.submitter,
+                                                   profile=profile,
+                                                   local_site=local_site)
+
+        site_profile.decrement_total_outgoing_request_count()
+
+        if self.status == self.PENDING_REVIEW:
+            site_profile.decrement_pending_outgoing_request_count()
+
+        people = self.target_people.all()
+        groups = self.target_groups.all()
+
+        Group.incoming_request_count.decrement(groups)
+        LocalSiteProfile.direct_incoming_request_count.decrement(
+            LocalSiteProfile.objects.filter(user__in=people,
+                                            local_site=local_site))
+        LocalSiteProfile.total_incoming_request_count.decrement(
+            LocalSiteProfile.objects.filter(
+                Q(local_site=local_site) &
+                Q(Q(user__review_groups__in=groups) |
+                  Q(user__in=people))))
+        LocalSiteProfile.starred_public_request_count.decrement(
+            LocalSiteProfile.objects.filter(
+                profile__starred_review_requests=self,
+                local_site=local_site))
+
+        super(ReviewRequest, self).delete(**kwargs)
 
     def can_publish(self):
         return not self.public or get_object_or_none(self.draft) is not None
@@ -492,7 +605,7 @@ class ReviewRequest(models.Model):
             raise AttributeError("%s is not a valid close type" % type)
 
         self.status = type
-        self.save()
+        self.save(update_counts=True)
 
         try:
             draft = self.draft.get()
@@ -514,7 +627,7 @@ class ReviewRequest(models.Model):
                 self.public = False
 
             self.status = self.PENDING_REVIEW
-            self.save()
+            self.save(update_counts=True)
 
     def update_changenum(self,changenum, user=None):
         if (user and not self.is_mutable_by(user)):
@@ -540,35 +653,92 @@ class ReviewRequest(models.Model):
             changes = None
 
         self.public = True
-        self.save()
+        self.save(update_counts=True)
 
         review_request_published.send(sender=self.__class__, user=user,
                                       review_request=self,
                                       changedesc=changes)
 
-    def increment_ship_it(self):
-        """Atomicly increments the ship-it count on the review request."""
+    def _update_counts(self):
+        from reviewboard.accounts.models import Profile, LocalSiteProfile
 
-        # TODO: When we switch to Django 1.1, change this to:
-        #
-        #       ReviewRequest.objects.filter(pk=self.id).update(
-        #           shipit_count=F('shipit_count') + 1)
+        profile, profile_is_new = \
+            Profile.objects.get_or_create(user=self.submitter)
 
-        cursor = connection.cursor()
-        cursor.execute("UPDATE reviews_reviewrequest"
-                       "   SET shipit_count = shipit_count + 1"
-                       " WHERE id = %s",
-                       [self.id])
+        if profile_is_new:
+            profile.save()
 
-        transaction.commit_unless_managed()
+        local_site = self.local_site
+        site_profile, site_profile_is_new = \
+            LocalSiteProfile.objects.get_or_create(user=self.submitter,
+                                              profile=profile,
+                                              local_site=local_site)
 
-        # Update our copy.
-        r = ReviewRequest.objects.get(pk=self.id)
-        self.shipit_count = r.shipit_count
+        if site_profile_is_new:
+            site_profile.save()
+
+        if self.id is None:
+            # This hasn't been created yet. Bump up the outgoing request
+            # count for the user.
+            site_profile.increment_total_outgoing_request_count()
+            old_status = None
+            old_public = None
+        else:
+            # We need to see if the status has changed, so that means
+            # finding out what's in the database.
+            r = ReviewRequest.objects.get(pk=self.id)
+            old_status = r.status
+            old_public = r.public
+
+        if old_status == self.status and old_public == self.public:
+            return
+
+        if self.status == self.PENDING_REVIEW:
+            if old_status != self.status:
+                site_profile.increment_pending_outgoing_request_count()
+
+            if self.public and self.id is not None:
+                groups = self.target_groups.all()
+                people = self.target_people.all()
+
+                Group.incoming_request_count.increment(groups)
+                LocalSiteProfile.direct_incoming_request_count.increment(
+                    LocalSiteProfile.objects.filter(user__in=people,
+                                                    local_site=local_site))
+                LocalSiteProfile.total_incoming_request_count.increment(
+                    LocalSiteProfile.objects.filter(
+                        Q(local_site=local_site) &
+                        Q(Q(user__review_groups__in=groups) |
+                          Q(user__in=people))))
+                LocalSiteProfile.starred_public_request_count.increment(
+                    LocalSiteProfile.objects.filter(
+                        profile__starred_review_requests=self,
+                        local_site=local_site))
+        else:
+            if old_status != self.status:
+                site_profile.decrement_pending_outgoing_request_count()
+
+            groups = self.target_groups.all()
+            people = self.target_people.all()
+
+            Group.incoming_request_count.decrement(groups)
+            LocalSiteProfile.direct_incoming_request_count.decrement(
+                LocalSiteProfile.objects.filter(user__in=people,
+                                                local_site=local_site))
+            LocalSiteProfile.total_incoming_request_count.decrement(
+                LocalSiteProfile.objects.filter(
+                    Q(local_site=local_site) &
+                    Q(Q(user__review_groups__in=groups) |
+                      Q(user__in=people))))
+            LocalSiteProfile.starred_public_request_count.decrement(
+                LocalSiteProfile.objects.filter(
+                    profile__starred_review_requests=self,
+                    local_site=local_site))
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
-        unique_together = (('changenum', 'repository'),)
+        unique_together = (('changenum', 'repository'),
+                           ('local_site', 'local_id'))
         permissions = (
             ("can_change_status", "Can change status"),
             ("can_submit_as_another_user", "Can submit as another user"),
@@ -779,6 +949,8 @@ class ReviewRequestDraft(models.Model):
         and is there to prevent duplicate notifications when being called by
         ReviewRequest.publish.
         """
+        from reviewboard.accounts.models import LocalSiteProfile
+
         if not review_request:
             review_request = self.review_request
 
@@ -800,7 +972,8 @@ class ReviewRequestDraft(models.Model):
 
                 a.__dict__[name] = value
 
-        def update_list(a, b, name, record_changes=True, name_field=None):
+        def update_list(a, b, name, record_changes=True, name_field=None,
+                        counter_infos=[]):
             aset = set([x.id for x in a.all()])
             bset = set([x.id for x in b.all()])
 
@@ -812,6 +985,15 @@ class ReviewRequestDraft(models.Model):
                 a.clear()
                 map(a.add, b.all())
 
+                # Decrement the counts on everything we had before.
+                # we lose them. We'll increment the resulting set
+                # during ReviewRequest.save.
+                for model, counter, pk_field in counter_infos:
+                    counter.decrement(
+                        model.objects.filter(**{
+                            pk_field + '__in': aset,
+                            'local_site': review_request.local_site,
+                        }))
 
         update_field(review_request, self, 'summary')
         update_field(review_request, self, 'description')
@@ -819,9 +1001,21 @@ class ReviewRequestDraft(models.Model):
         update_field(review_request, self, 'branch')
 
         update_list(review_request.target_groups, self.target_groups,
-                    'target_groups', name_field="name")
+                    'target_groups', name_field="name",
+                    counter_infos=[
+                        (Group, Group.incoming_request_count, 'pk'),
+                        (LocalSiteProfile,
+                         LocalSiteProfile.total_incoming_request_count,
+                         'user__review_groups')])
         update_list(review_request.target_people, self.target_people,
-                    'target_people', name_field="username")
+                    'target_people', name_field="username",
+                    counter_infos=[
+                        (LocalSiteProfile,
+                         LocalSiteProfile.direct_incoming_request_count,
+                         'user'),
+                        (LocalSiteProfile,
+                         LocalSiteProfile.total_incoming_request_count,
+                         'user')])
 
         # Specifically handle bug numbers
         old_bugs = set(review_request.get_bug_list())
@@ -1195,7 +1389,7 @@ class Review(models.Model):
 
         # Atomicly update the shipit_count
         if self.ship_it:
-            self.review_request.increment_ship_it()
+            self.review_request.increment_shipit_count()
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,
@@ -1219,8 +1413,7 @@ class Review(models.Model):
         super(Review, self).delete()
 
     def get_absolute_url(self):
-        return "%s#review%s" % (self.review_request.get_absolute_url(),
-                                self.id)
+        return "%s#review%s" % (self.review_request.get_absolute_url(), self.id)
 
     class Meta:
         ordering = ['timestamp']

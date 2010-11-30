@@ -117,8 +117,10 @@ def repository_list(request, *args, **kwargs):
     """
     Returns a list of all known, visible repositories.
     """
+    repos = Repository.objects.accessible(request.user).select_related()
+
     return WebAPIResponse(request, {
-        'repositories': Repository.objects.filter(visible=True),
+        'repositories': repos,
     })
 
 
@@ -129,6 +131,9 @@ def repository_info(request, repository_id, *args, **kwargs):
         repository = Repository.objects.get(id=repository_id)
     except Repository.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not repository.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     try:
         return WebAPIResponse(request, {
@@ -184,7 +189,7 @@ def group_list(request, *args, **kwargs):
     # XXX Support "query" for backwards-compatibility until after 1.0.
     query = request.GET.get('q', request.GET.get('query', None))
 
-    u = Group.objects.all()
+    u = Group.objects.accessible(request.user)
 
     if query:
         q = Q(name__istartswith=query)
@@ -205,9 +210,12 @@ def users_in_group(request, group_name, *args, **kwargs):
     Returns a list of users in a group.
     """
     try:
-        g = Group.objects.get(name=group_name)
+        g = Group.objects.get(name=group_name, local_site=None)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not g.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     return WebAPIResponse(request, {
         'users': g.users.all(),
@@ -220,9 +228,12 @@ def group_star(request, group_name, *args, **kwargs):
     Adds a group to the user's watched groups list.
     """
     try:
-        group = Group.objects.get(name=group_name)
+        group = Group.objects.get(name=group_name, local_site=None)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not group.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
     profile.starred_groups.add(group)
@@ -238,9 +249,12 @@ def group_unstar(request, group_name, *args, **kwargs):
     Removes a group from the user's watched groups list.
     """
     try:
-        group = Group.objects.get(name=group_name)
+        group = Group.objects.get(name=group_name, local_site=None)
     except Group.DoesNotExist:
         return WebAPIResponseError(request, DOES_NOT_EXIST)
+
+    if not group.is_accessible_by(request.user):
+        return WebAPIResponseError(request, PERMISSION_DENIED)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
 
@@ -311,6 +325,9 @@ def new_review_request(request, *args, **kwargs):
                 Q(mirror_path=repository_path))
         else:
             repository = Repository.objects.get(id=repository_id)
+
+        if not repository.is_accessible_by(request.user):
+            return WebAPIResponseError(request, PERMISSION_DENIED)
 
         review_request = ReviewRequest.objects.create(
             user, repository, request.POST.get('changenum', None))
@@ -399,8 +416,8 @@ def review_request_by_changenum(request, repository_id, changenum,
     Returns a review request with the specified changenum.
     """
     try:
-        review_request = ReviewRequest.objects.get(changenum=changenum,
-                                                   repository=repository_id)
+        review_request = ReviewRequest.objects.select_related().get(
+            changenum=changenum, repository=repository_id)
 
         if not review_request.is_accessible_by(request.user):
             return WebAPIResponseError(request, PERMISSION_DENIED)
@@ -419,8 +436,7 @@ def review_request_star(request, review_request_id, *args, **kwargs):
         return WebAPIResponseError(request, DOES_NOT_EXIST)
 
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
-    profile.starred_review_requests.add(review_request)
-    profile.save()
+    profile.star_review_request(review_request)
 
     return WebAPIResponse(request)
 
@@ -436,8 +452,7 @@ def review_request_unstar(request, review_request_id, *args, **kwargs):
     profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
 
     if not profile_is_new:
-        profile.starred_review_requests.remove(review_request)
-        profile.save()
+        profile.unstar_review_request(review_request)
 
     return WebAPIResponse(request)
 
@@ -547,7 +562,8 @@ def review_request_list(request, func, api_format='json', *args, **kwargs):
     """
     status = string_to_status(request.GET.get('status', 'pending'))
     return WebAPIResponse(request, {
-        'review_requests': func(user=request.user, status=status, **kwargs)
+        'review_requests': func(user=request.user, status=status,
+                                **kwargs).select_related()
     })
 
 
@@ -621,7 +637,7 @@ def _get_reviews(review_request):
 def review_list(request, review_request_id, *args, **kwargs):
     review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
     return WebAPIResponse(request, {
-        'reviews': _get_reviews(review_request)
+        'reviews': _get_reviews(review_request).select_related()
     })
 
 
@@ -644,7 +660,7 @@ def review_comments_list(request, review_request_id, review_id,
         return review
 
     return WebAPIResponse(request, {
-        'comments': review.comments.all(),
+        'comments': review.comments.all().select_related(),
         'screenshot_comments': review.screenshot_comments.all(),
     })
 
@@ -750,8 +766,9 @@ def _set_draft_field_data(draft, field_name, data):
 
             try:
                 if field_name == "target_groups":
-                    obj = Group.objects.get(Q(name__iexact=value) |
-                                            Q(display_name__iexact=value))
+                    obj = Group.objects.get((Q(name__iexact=value) |
+                                             Q(display_name__iexact=value)) &
+                                            Q(local_site=None))
                 elif field_name == "target_people":
                     obj = find_user(username=value)
 
@@ -1132,7 +1149,7 @@ def review_replies_list(request, review_request_id, review_id,
         return review
 
     return WebAPIResponse(request, {
-        'replies': review.public_replies()
+        'replies': review.public_replies().select_related()
     })
 
 

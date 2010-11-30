@@ -1163,6 +1163,8 @@ class BaseWatchedObjectResource(WebAPIResource):
     watched_resource = None
     uri_object_key = 'watched_obj_id'
     profile_field = None
+    star_function = None
+    unstar_function = None
 
     allowed_methods = ('GET', 'POST', 'DELETE')
 
@@ -1221,13 +1223,13 @@ class BaseWatchedObjectResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not user_resource.has_modify_permissions(request, user,
-                                                   *args, **kwargs):
+                                                    *args, **kwargs):
             return PERMISSION_DENIED
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
-        getattr(profile, self.profile_field).add(obj)
-        profile.save()
+        star = getattr(profile, self.star_function)
+        star(obj)
 
         return 201, {
             self.item_result_key: obj,
@@ -1251,8 +1253,8 @@ class BaseWatchedObjectResource(WebAPIResource):
             Profile.objects.get_or_create(user=request.user)
 
         if not profile_is_new:
-            getattr(profile, self.profile_field).remove(obj)
-            profile.save()
+            unstar = getattr(profile, self.unstar_function)
+            unstar(obj)
 
         return 204, {}
 
@@ -1279,6 +1281,8 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
     name = 'watched_review_group'
     uri_name = 'review-groups'
     profile_field = 'starred_groups'
+    star_function = 'star_review_group'
+    unstar_function = 'unstar_review_group'
 
     @property
     def watched_resource(self):
@@ -1351,6 +1355,8 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
     name = 'watched_review_request'
     uri_name = 'review-requests'
     profile_field = 'starred_review_requests'
+    star_function = 'star_review_request'
+    unstar_function = 'unstar_review_request'
 
     @property
     def watched_resource(self):
@@ -1574,6 +1580,12 @@ class ReviewGroupResource(WebAPIResource):
             'description': 'The human-readable name of the group, sometimes '
                            'used as a short description.',
         },
+        'invite_only': {
+            'type': bool,
+            'description': 'Whether or not the group is invite-only. An '
+                           'invite-only group is only accessible by members '
+                           'of the group.',
+        },
         'mailing_list': {
             'type': str,
             'description': 'The e-mail address that all posts on a review '
@@ -1584,7 +1596,13 @@ class ReviewGroupResource(WebAPIResource):
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
-        }
+        },
+        'visible': {
+            'type': bool,
+            'description': 'Whether or not the group is visible to users '
+                           'who are not members. This does not prevent users '
+                           'from accessing the group if they know it, though.',
+        },
     }
 
     item_child_resources = [
@@ -1597,10 +1615,13 @@ class ReviewGroupResource(WebAPIResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
-        query = self.model.objects.all()
+        if is_list:
+            query = self.model.objects.accessible(request.user)
+        else:
+            query = self.model.objects.all()
 
         if search_q:
             q = Q(name__istartswith=search_q)
@@ -1614,6 +1635,9 @@ class ReviewGroupResource(WebAPIResource):
 
     def serialize_url_field(self, group):
         return group.get_absolute_url()
+
+    def has_access_permissions(self, request, group, *args, **kwargs):
+        return group.is_accessible_by(request.user)
 
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
@@ -1743,10 +1767,13 @@ class RepositoryResource(WebAPIResource):
 
     @webapi_check_login_required
     def get_queryset(self, request, *args, **kwargs):
-        return self.model.objects.filter(visible=True)
+        return self.model.objects.accessible(request.user)
 
     def serialize_tool_field(self, obj):
         return obj.tool.name
+
+    def has_access_permissions(self, request, repository, *args, **kwargs):
+        return repository.is_accessible_by(request.user)
 
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
@@ -2360,8 +2387,9 @@ class ReviewRequestDraftResource(WebAPIResource):
 
                 try:
                     if field_name == "target_groups":
-                        obj = Group.objects.get(Q(name__iexact=value) |
-                                                Q(display_name__iexact=value))
+                        obj = Group.objects.get((Q(name__iexact=value) |
+                                                 Q(display_name__iexact=value)) &
+                                                Q(local_site=None))
                     elif field_name == "target_people":
                         obj = self._find_user(username=value)
 
@@ -3755,7 +3783,8 @@ class ReviewRequestResource(WebAPIResource):
         if is_list:
             if 'to-groups' in request.GET:
                 for group_name in request.GET.get('to-groups').split(','):
-                    q = q & self.model.objects.get_to_group_query(group_name)
+                    q = q & self.model.objects.get_to_group_query(group_name,
+                                                                  None)
 
             if 'to-users' in request.GET:
                 for username in request.GET.get('to-users').split(','):
@@ -3905,6 +3934,9 @@ class ReviewRequestResource(WebAPIResource):
             return INVALID_REPOSITORY, {
                 'repository': repository
             }
+
+        if not repository.is_accessible_by(request.user):
+            return PERMISSION_DENIED
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,

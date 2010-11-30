@@ -4,4 +4,5 @@ SEQUENCE = [
     'repository_visible',
     'repository_path_length_255',
     'localsite',
+    'repository_access_control',
 ]

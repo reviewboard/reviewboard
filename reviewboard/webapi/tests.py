@@ -291,7 +291,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['repositories']), Repository.objects.count())
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.accessible(self.user).count())
 
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""
@@ -307,13 +308,42 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         """Testing the GET groups/ API"""
         rsp = self.apiGet("groups")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), Group.objects.count())
+        self.assertEqual(len(rsp['groups']),
+                         Group.objects.accessible(self.user).count())
+        self.assertEqual(len(rsp['groups']), 4)
 
     def test_get_groups_with_q(self):
         """Testing the GET groups/?q= API"""
         rsp = self.apiGet("groups", {'q': 'dev'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['groups']), 1) #devgroup
+
+    def test_get_group_public(self):
+        """Testing the GET groups/<id>/ API"""
+        group = Group.objects.create(name='test-group')
+
+        rsp = self.apiGet("groups/%s" % group.name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['name'], group.name)
+        self.assertEqual(rsp['group']['display_name'], group.display_name)
+        self.assertEqual(rsp['group']['invite_only'], False)
+
+    def test_get_group_invite_only(self):
+        """Testing the GET groups/<id>/ API with invite-only"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        rsp = self.apiGet("groups/%s" % group.name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['invite_only'], True)
+
+    def test_get_group_invite_only_with_permission_denied_error(self):
+        """Testing the GET groups/<id>/ API with invite-only and Permission Denied error"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+
+        rsp = self.apiGet("groups/%s" % group.name, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
 class UserResourceTests(BaseWebAPITestCase):
@@ -387,7 +417,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_group(self):
         """Testing the POST users/<username>/watched/review-groups/ API"""
-        group = Group.objects.get(name='devgroup')
+        group = Group.objects.get(name='devgroup', local_site=None)
 
         rsp = self.apiPost(self.watched_url, {
             'object_id': group.name,
@@ -408,7 +438,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         # First, star it.
         self.test_post_watched_review_group()
 
-        group = Group.objects.get(name='devgroup')
+        group = Group.objects.get(name='devgroup', local_site=None)
 
         self.apiDelete('%s%s/' % (self.watched_url, group.name))
         self.assertTrue(group not in
@@ -463,7 +493,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def test_get_reviewrequests_with_to_groups_and_status(self):
         """Testing the GET review-requests/?to-groups=&status= API"""
@@ -473,7 +504,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='S').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='S').count())
 
         rsp = self.apiGet('review-requests', {
             'status': 'discarded',
@@ -481,7 +513,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='D').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='D').count())
 
     def test_get_reviewrequests_with_to_groups_and_counts_only(self):
         """Testing the GET review-requests/?to-groups=&counts-only=1 API"""
@@ -491,7 +524,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def test_get_reviewrequests_with_to_users(self):
         """Testing the GET review-requests/?to-users= API"""
@@ -791,14 +825,52 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
 
-    def test_get_reviewrequest_with_permission_denied_error(self):
-        """Testing the GET review-requests/<id>/ API with Permission Denied error"""
+    def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
         review_request = ReviewRequest.objects.filter(public=False).\
             exclude(submitter=self.user)[0]
         rsp = self.apiGet("review-requests/%s" % review_request.id,
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
+        """Testing the GET review-requests/<id>/ API with invite-only group and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(public=True).\
+            exclude(submitter=self.user)[0]
+        review_request.target_groups.clear()
+        review_request.target_people.clear()
+
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        rsp = self.apiGet("review-requests/%s" % review_request.id,
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
+        """Testing the GET review-requests/<id>/ API with invite-only group and target user"""
+        review_request = ReviewRequest.objects.filter(public=True).\
+            exclude(submitter=self.user)[0]
+        review_request.target_groups.clear()
+        review_request.target_people.clear()
+
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request.target_groups.add(group)
+        review_request.target_people.add(self.user)
+        review_request.save()
+
+        rsp = self.apiGet("review-requests/%s" % review_request.id)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'], review_request.id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
 
     def test_get_reviewrequest_with_repository_and_changenum(self):
         """Testing the GET review-requests/?repository=&changenum= API"""
@@ -2044,7 +2116,8 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated repositories API"""
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['repositories']), Repository.objects.count())
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.accessible(self.user).count())
 
     def testUserList(self):
         """Testing the deprecated users API"""
@@ -2062,7 +2135,9 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated groups API"""
         rsp = self.apiGet("groups")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), Group.objects.count())
+        self.assertEqual(len(rsp['groups']),
+                         Group.objects.accessible(self.user).count())
+        self.assertEqual(len(rsp['groups']), 4)
 
     def testGroupListQuery(self):
         """Testing the deprecated groups API with custom query"""
@@ -2074,7 +2149,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         """Testing the deprecated groups/star API"""
         rsp = self.apiGet("groups/devgroup/star")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup") in
+        self.assert_(Group.objects.get(name="devgroup", local_site=None) in
                      self.user.get_profile().starred_groups.all())
 
     def testGroupStarDoesNotExist(self):
@@ -2090,7 +2165,7 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
 
         rsp = self.apiGet("groups/devgroup/unstar")
         self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup") not in
+        self.assert_(Group.objects.get(name="devgroup", local_site=None) not in
                      self.user.get_profile().starred_groups.all())
 
     def testGroupUnstarDoesNotExist(self):
@@ -2134,7 +2209,8 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
         rsp = self.apiGet("reviewrequests/to/group/devgroup")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def testReviewRequestsToGroupWithStatus(self):
         """Testing the deprecated reviewrequests/to/group API with custom status"""
@@ -2142,20 +2218,23 @@ class DeprecatedWebAPITests(TestCase, EmailTestHelper):
                           {'status': 'submitted'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='S').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='S').count())
 
         rsp = self.apiGet("reviewrequests/to/group/devgroup",
                           {'status': 'discarded'})
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", status='D').count())
+            ReviewRequest.objects.to_group("devgroup", None,
+                                           status='D').count())
 
     def testReviewRequestsToGroupCount(self):
         """Testing the deprecated reviewrequests/to/group/count API"""
         rsp = self.apiGet("reviewrequests/to/group/devgroup/count")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_group("devgroup").count())
+                         ReviewRequest.objects.to_group("devgroup",
+                                                        None).count())
 
     def testReviewRequestsToUser(self):
         """Testing the deprecated reviewrequests/to/user API"""

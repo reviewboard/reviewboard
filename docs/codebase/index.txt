@@ -26,6 +26,7 @@ Contributor Guides
    coding-standards
    contributing-patches
    custom-forks
+   extending/auth-backends
    unit-tests/fixtures
 
 .. `Creating SCMTools`

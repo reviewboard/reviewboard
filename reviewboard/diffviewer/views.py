@@ -180,10 +180,15 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
 
 def view_diff_fragment(
-        request, diffset_id, filediff_id, interdiffset_id=None,
-        chunkindex=None,
-        template_name='diffviewer/diff_file_fragment.html',
-        error_template_name='diffviewer/diff_fragment_error.html'):
+    request,
+    diffset_id,
+    filediff_id,
+    base_url,
+    interdiffset_id=None,
+    chunkindex=None,
+    template_name='diffviewer/diff_file_fragment.html',
+    error_template_name='diffviewer/diff_fragment_error.html'):
+    """View which renders a specific fragment from a diff."""
 
     def get_requested_diff_file(get_chunks=True):
         files = get_diff_files(diffset, filediff, interdiffset, highlighting,
@@ -216,6 +221,7 @@ def view_diff_fragment(
         if file:
             context = {
                 'standalone': chunkindex is not None,
+                'base_url': base_url,
             }
 
             return HttpResponse(build_diff_fragment(request, file,
@@ -226,13 +232,9 @@ def view_diff_fragment(
             _(u"Internal error. Unable to locate file record for filediff %s") % \
             filediff.id)
     except Exception, e:
-        extra_context = {}
-
-        file = get_requested_diff_file(False)
-        extra_context['file'] = file
-
-        return exception_traceback(request, e, error_template_name,
-                                   extra_context)
+        return exception_traceback(
+            request, e, error_template_name,
+            context={'file': get_requested_diff_file(False)})
 
 
 def exception_traceback_string(request, e, template_name, extra_context={}):

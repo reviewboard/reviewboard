@@ -19,7 +19,7 @@ class EmailTestHelper(object):
                 User.objects.get(username=user)) in recipient_list,
                 u"user %s was not found in the recipient list" % user)
 
-        groups = Group.objects.filter(name__in=group_list)
+        groups = Group.objects.filter(name__in=group_list, local_site=None)
         for group in groups:
             for address in get_email_addresses_for_group(group):
                 self.assert_(address in recipient_list,

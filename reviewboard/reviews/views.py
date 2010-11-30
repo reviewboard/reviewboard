@@ -9,7 +9,8 @@ from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.dispatch import dispatcher
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-                        HttpResponseNotModified, HttpResponseServerError
+                        HttpResponseNotModified, HttpResponseServerError, \
+                        HttpResponseForbidden
 from django.shortcuts import get_object_or_404, get_list_or_404, \
                              render_to_response
 from django.template.context import RequestContext
@@ -21,15 +22,17 @@ from django.utils.translation import ugettext as _
 from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 
+from djblets.auth.util import login_required
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified, get_modified_since, \
                               set_etag, etag_if_none_match
-from djblets.auth.util import login_required
-from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
@@ -52,38 +55,57 @@ from reviewboard.reviews.models import Comment, ReviewRequest, \
                                        Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
+from reviewboard.site.models import LocalSite
 
 
-@login_required
-def new_review_request(request,
-                       template_name='reviews/new_review_request.html'):
+#####
+##### Helper functions
+#####
+
+
+def _render_permission_denied(
+    request,
+    template_name='reviews/review_request_permission_denied.html'):
+    """Renders a Permission Denied error for this review request."""
+
+    response = render_to_response(template_name, RequestContext(request))
+    response.status_code = 403
+    return response
+
+
+def _find_review_request(request, review_request_id, local_site_name):
     """
-    Displays a New Review Request form and handles the creation of a
-    review request based on either an existing changeset or the provided
-    information.
-    """
-    if request.method == 'POST':
-        form = NewReviewRequestForm(request.POST, request.FILES)
+    Find a review request based on an ID and optional LocalSite name.
 
-        if form.is_valid():
-            try:
-                review_request = form.create(
-                    user=request.user,
-                    diff_file=request.FILES.get('diff_path'),
-                    parent_diff_file=request.FILES.get('parent_diff_path'))
-                return HttpResponseRedirect(review_request.get_absolute_url())
-            except (OwnershipError, SCMError, ValueError):
-                pass
+    If a local site is passed in on the URL, we want to look up the review
+    request using the local_id instead of the pk. This allows each LocalSite
+    configured to have its own review request ID namespace starting from 1.
+
+    Returns either (None, response) or (ReviewRequest, None).
+    """
+    if local_site_name:
+        local_site = get_object_or_404(LocalSite, name=local_site_name)
+
+        if (request.user.is_anonymous() or
+            not local_site.users.filter(pk=request.user.pk).exists()):
+            return None, _render_permission_denied(request)
+
+        review_request = get_object_or_404(ReviewRequest,
+                                           local_site=local_site,
+                                           local_id=review_request_id)
     else:
-        form = NewReviewRequestForm()
+        review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
 
-    return render_to_response(template_name, RequestContext(request, {
-        'form': form,
-        'fields': simplejson.dumps(form.field_mapping),
-    }))
+        if review_request.local_site is not None:
+            return None, _render_permission_denied(request)
+
+    if review_request.is_accessible_by(request.user):
+        return review_request, None
+    else:
+        return None, _render_permission_denied(request)
 
 
-def make_review_request_context(review_request, extra_context):
+def _make_review_request_context(review_request, extra_context):
     """Returns a dictionary for template contexts used for review requests.
 
     The dictionary will contain the common data that is used for all
@@ -107,6 +129,88 @@ def make_review_request_context(review_request, extra_context):
     }, **extra_context)
 
 
+def _query_for_diff(review_request, user, revision, query_extra=None):
+    """
+    Queries for a diff based on several parameters.
+
+    If the draft does not exist, this throws an Http404 exception.
+    """
+    # Normalize the revision, since it might come in as a string.
+    if revision:
+        revision = int(revision)
+
+    # This will try to grab the diff associated with a draft if the review
+    # request has an associated draft and is either the revision being
+    # requested or no revision is being requested.
+    draft = review_request.get_draft(user)
+    if draft and draft.diffset and \
+       (revision is None or draft.diffset.revision == revision):
+        return draft.diffset
+
+    query = Q(history=review_request.diffset_history)
+
+    # Grab a revision if requested.
+    if revision is not None:
+        query = query & Q(revision=revision)
+
+    # Anything else the caller wants.
+    if query_extra:
+        query = query & query_extra
+
+    try:
+        results = DiffSet.objects.filter(query).latest()
+        return results
+    except DiffSet.DoesNotExist:
+        raise Http404
+
+
+def build_diff_comment_fragments(
+    comments, context,
+    comment_template_name='reviews/diff_comment_fragment.html',
+    error_template_name='diffviewer/diff_fragment_error.html'):
+
+    comment_entries = []
+    had_error = False
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    for comment in comments:
+        try:
+            content = render_to_string(comment_template_name, {
+                'comment': comment,
+                'chunks': list(get_file_chunks_in_range(context,
+                                                        comment.filediff,
+                                                        comment.interfilediff,
+                                                        comment.first_line,
+                                                        comment.num_lines)),
+                'domain': Site.objects.get_current().domain,
+                'domain_method': siteconfig.get("site_domain_method"),
+            })
+        except Exception, e:
+            content = exception_traceback_string(None, e,
+                                                 error_template_name, {
+                'comment': comment,
+                'file': {
+                    'depot_filename': comment.filediff.source_file,
+                    'index': None,
+                    'filediff': comment.filediff,
+                },
+                'domain': Site.objects.get_current().domain,
+                'domain_method': siteconfig.get("site_domain_method"),
+            })
+
+            # It's bad that we failed, and we'll return a 500, but we'll
+            # still return content for anything we have. This will prevent any
+            # caching.
+            had_error = True
+
+        comment_entries.append({
+            'comment': comment,
+            'html': content,
+        })
+
+    return had_error, comment_entries
+
+
 fields_changed_name_map = {
     'summary': 'Summary',
     'description': 'Description',
@@ -121,19 +225,75 @@ fields_changed_name_map = {
 }
 
 
+#####
+##### View functions
+#####
+
+@login_required
+def new_review_request(request,
+                       local_site_name=None,
+                       template_name='reviews/new_review_request.html'):
+    """
+    Displays a New Review Request form and handles the creation of a
+    review request based on either an existing changeset or the provided
+    information.
+    """
+    if local_site_name:
+        local_site = get_object_or_404(LocalSite, name=local_site_name)
+
+        if (request.user.is_anonymous() or
+            not local_site.users.filter(pk=request.user.pk).exists()):
+            return _render_permission_denied(requset)
+    else:
+        local_site = None
+
+    if request.method == 'POST':
+        form = NewReviewRequestForm(request.user, local_site,
+                                    request.POST, request.FILES)
+
+        if form.is_valid():
+            try:
+                review_request = form.create(
+                    user=request.user,
+                    diff_file=request.FILES.get('diff_path'),
+                    parent_diff_file=request.FILES.get('parent_diff_path'),
+                    local_site=local_site)
+                return HttpResponseRedirect(review_request.get_absolute_url())
+            except (OwnershipError, SCMError, ValueError):
+                pass
+    else:
+        form = NewReviewRequestForm(request.user, local_site)
+
+    return render_to_response(template_name, RequestContext(request, {
+        'form': form,
+        'fields': simplejson.dumps(form.field_mapping),
+    }))
+
+
 @check_login_required
 @valid_prefs_required
-def review_detail(request, review_request_id,
+def review_detail(request,
+                  review_request_id,
+                  local_site_name=None,
                   template_name="reviews/review_detail.html"):
     """
     Main view for review requests. This covers the review request information
     and all the reviews on it.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    # If there's a local_site passed in the URL, we want to look up the review
+    # request based on the local_id instead of the pk. This allows each
+    # local_site configured to have its own review request ID namespace
+    # starting from 1.
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
 
     reviews = review_request.get_public_reviews()
     review = review_request.get_pending_review(request.user)
     review_timestamp = 0
+    last_visited = 0
     starred = False
 
     if request.user.is_authenticated():
@@ -142,6 +302,7 @@ def review_detail(request, review_request_id,
         if review_request.public and review_request.status == "P":
             visited, visited_is_new = ReviewRequestVisit.objects.get_or_create(
                 user=request.user, review_request=review_request)
+            last_visited = visited.timestamp
             visited.timestamp = datetime.now()
             visited.save()
 
@@ -185,9 +346,33 @@ def review_detail(request, review_request_id,
         temp_review.ordered_comments = \
             temp_review.comments.order_by('filediff', 'first_line')
 
+        state = ''
+
+        try:
+            latest_changedesc = changedescs.latest('timestamp')
+            latest_timestamp = latest_changedesc.timestamp
+        except ChangeDescription.DoesNotExist:
+            latest_timestamp = None
+
+        # Mark as collapsed if the review is older than the latest change
+        if latest_timestamp:
+            if temp_review.timestamp < latest_timestamp:
+                state = 'collapsed'
+
+        try:
+            latest_reply = temp_review.public_replies().latest('timestamp').timestamp
+        except Review.DoesNotExist:
+            latest_reply = None
+
+        # Mark as expanded if there is a reply newer than last_visited
+        if latest_reply:
+          if last_visited < latest_reply:
+              state = ''
+
         entries.append({
             'review': temp_review,
             'timestamp': temp_review.timestamp,
+            'class': state,
         })
 
     for changedesc in changedescs:
@@ -236,17 +421,26 @@ def review_detail(request, review_request_id,
                 'type': change_type,
             })
 
+        # Expand the latest review change
+        state = ''
+
+        # Mark as collapsed if the change is older than a newer change
+        if latest_timestamp:
+            if changedesc != latest_changedesc:
+                state = 'collapsed'
+
         entries.append({
             'changeinfo': fields_changed,
             'changedesc': changedesc,
             'timestamp': changedesc.timestamp,
+            'class': state,
         })
 
     entries.sort(key=lambda item: item['timestamp'])
 
     response = render_to_response(
         template_name,
-        RequestContext(request, make_review_request_context(review_request, {
+        RequestContext(request, _make_review_request_context(review_request, {
             'draft': draft,
             'detail_hooks': ReviewRequestDetailHook.hooks,
             'review_request_details': draft or review_request,
@@ -263,8 +457,16 @@ def review_detail(request, review_request_id,
 
 @login_required
 @cache_control(no_cache=True, no_store=True, max_age=0, must_revalidate=True)
-def review_draft_inline_form(request, review_request_id, template_name):
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+def review_draft_inline_form(request,
+                             review_request_id,
+                             template_name,
+                             local_site_name=None):
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     review = review_request.get_pending_review(request.user)
 
     # This may be a brand new review. If so, we don't have a review object.
@@ -280,36 +482,54 @@ def review_draft_inline_form(request, review_request_id, template_name):
 
 
 @check_login_required
-def all_review_requests(request, template_name='reviews/datagrid.html'):
+def all_review_requests(request,
+                        local_site_name=None,
+                        template_name='reviews/datagrid.html'):
     """
     Displays a list of all review requests.
     """
+    local_site = get_object_or_none(LocalSite, name=local_site_name)
+    if local_site_name and not local_site:
+        raise Http404
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.public(request.user, status=None,
+        ReviewRequest.objects.public(request.user,
+                                     status=None,
+                                     local_site=local_site,
                                      with_counts=True),
-        _("All review requests"))
+        _("All review requests"),
+        local_site=local_site)
     return datagrid.render_to_response(template_name)
 
 
 @check_login_required
-def submitter_list(request, template_name='reviews/datagrid.html'):
+def submitter_list(request,
+                   local_site_name=None,
+                   template_name='reviews/datagrid.html'):
     """
     Displays a list of all users.
     """
-    return SubmitterDataGrid(request).render_to_response(template_name)
+    grid = SubmitterDataGrid(
+        request, local_site=get_object_or_none(LocalSite, name=local_site_name))
+    return grid.render_to_response(template_name)
 
 
 @check_login_required
-def group_list(request, template_name='reviews/datagrid.html'):
+def group_list(request,
+               local_site_name=None,
+               template_name='reviews/datagrid.html'):
     """
     Displays a list of all review groups.
     """
-    return GroupDataGrid(request).render_to_response(template_name)
+    grid = GroupDataGrid(
+        request, local_site=get_object_or_none(LocalSite, name=local_site_name))
+    return grid.render_to_response(template_name)
 
 
 @login_required
 @valid_prefs_required
-def dashboard(request, template_name='reviews/dashboard.html'):
+def dashboard(request,
+              template_name='reviews/dashboard.html',
+              local_site_name=None):
     """
     The dashboard view, showing review requests organized by a variety of
     lists, depending on the 'view' parameter.
@@ -326,12 +546,17 @@ def dashboard(request, template_name='reviews/dashboard.html'):
     """
     view = request.GET.get('view', None)
 
+    local_site = get_object_or_none(LocalSite, name=local_site_name)
+
     if view == "watched-groups":
         # This is special. We want to return a list of groups, not
         # review requests.
-        grid = WatchedGroupDataGrid(request)
+        grid = WatchedGroupDataGrid(request, local_site=local_site)
     else:
-        grid = DashboardDataGrid(request)
+        grid = DashboardDataGrid(request, local_site=local_site)
+
+    user = request.user
+    profile = user.get_profile()
 
     print DashboardHook.hooks
 
@@ -341,96 +566,100 @@ def dashboard(request, template_name='reviews/dashboard.html'):
 
 
 @check_login_required
-def group(request, name, template_name='reviews/datagrid.html'):
+def group(request,
+          name,
+          template_name='reviews/datagrid.html',
+          local_site_name=None):
     """
     A list of review requests belonging to a particular group.
     """
     # Make sure the group exists
-    get_object_or_404(Group, name=name)
+    local_site = get_object_or_none(LocalSite, name=local_site_name)
+    group = get_object_or_404(Group, name=name, local_site=local_site)
+
+    if not group.is_accessible_by(request.user):
+        return _render_permission_denied(
+            request, 'reviews/group_permission_denied.html')
 
     datagrid = ReviewRequestDataGrid(request,
-        ReviewRequest.objects.to_group(name, status=None, with_counts=True),
+        ReviewRequest.objects.to_group(name, local_site, status=None,
+                                       with_counts=True),
         _("Review requests for %s") % name)
 
     return datagrid.render_to_response(template_name)
 
 
 @check_login_required
-def group_members(request, name, template_name='reviews/datagrid.html'):
+def group_members(request,
+                  name,
+                  template_name='reviews/datagrid.html',
+                  local_site_name=None):
     """
     A list of users registered for a particular group.
     """
     # Make sure the group exists
-    get_object_or_404(Group, name=name)
+    group = get_object_or_404(Group,
+                              name=name,
+                              local_site__name=local_site_name)
+
+    if not group.is_accessible_by(request.user):
+        return _render_permission_denied(
+            request, 'reviews/group_permission_denied.html')
 
     datagrid = SubmitterDataGrid(request,
-        Group.objects.get(name=name).users.filter(is_active=True),
-        _("Members of group %s") % name)
+                                 group.users.filter(is_active=True),
+                                 _("Members of group %s") % name)
 
     return datagrid.render_to_response(template_name)
 
 
 @check_login_required
-def submitter(request, username, template_name='reviews/datagrid.html'):
+def submitter(request,
+              username,
+              template_name='reviews/datagrid.html',
+              local_site_name=None):
     """
     A list of review requests owned by a particular user.
     """
+    local_site = get_object_or_none(LocalSite, name=local_site_name)
+    if local_site_name and not local_site:
+        raise Http404
+
     # Make sure the user exists
-    get_object_or_404(User, username=username)
+    if local_site:
+        if not local_site.users.filter(username=username).exists():
+            raise Http404
+    else:
+        get_object_or_404(User, username=username)
 
     datagrid = ReviewRequestDataGrid(request,
         ReviewRequest.objects.from_user(username, status=None,
-                                        with_counts=True),
-        _("%s's review requests") % username)
+                                        with_counts=True,
+                                        local_site=local_site),
+        _("%s's review requests") % username,
+        local_site=local_site)
 
     return datagrid.render_to_response(template_name)
 
 
-def _query_for_diff(review_request, user, revision, query_extra=None):
-    """
-    Queries for a diff based on several parameters.
-
-    If the draft does not exist, this throws an Http404 exception.
-    """
-
-    # Normalize the revision, since it might come in as a string.
-    if revision:
-        revision = int(revision)
-
-    # This will try to grab the diff associated with a draft if the review
-    # request has an associated draft and is either the revision being
-    # requested or no revision is being requested.
-    draft = review_request.get_draft(user)
-    if draft and draft.diffset and \
-       (revision is None or draft.diffset.revision == revision):
-        return draft.diffset
-
-    query = Q(history=review_request.diffset_history)
-
-    # Grab a revision if requested.
-    if revision is not None:
-        query = query & Q(revision=revision)
-
-    # Anything else the caller wants.
-    if query_extra:
-        query = query & query_extra
-
-    try:
-        results = DiffSet.objects.filter(query).latest()
-        return results
-    except DiffSet.DoesNotExist:
-        raise Http404
-
-
 @check_login_required
-def diff(request, review_request_id, revision=None, interdiff_revision=None,
+def diff(request,
+         review_request_id,
+         revision=None,
+         interdiff_revision=None,
+         local_site_name=None,
          template_name='diffviewer/view_diff.html'):
     """
     A wrapper around diffviewer.views.view_diff that handles querying for
     diffs owned by a review request,taking into account interdiffs and
     providing the user's current review of the diff if it exists.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     diffset = _query_for_diff(review_request, request.user, revision)
 
     interdiffset = None
@@ -463,7 +692,7 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
 
     return view_diff(
          request, diffset.id, interdiffset_id, template_name=template_name,
-         extra_context=make_review_request_context(review_request, {
+         extra_context=_make_review_request_context(review_request, {
             'review': review,
             'review_request_details': draft or review_request,
             'draft': draft,
@@ -477,12 +706,20 @@ def diff(request, review_request_id, revision=None, interdiff_revision=None,
 
 
 @check_login_required
-def raw_diff(request, review_request_id, revision=None):
+def raw_diff(request,
+             review_request_id,
+             revision=None,
+             local_site_name=None):
     """
     Displays a raw diff of all the filediffs in a diffset for the
     given review request.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     diffset = _query_for_diff(review_request, request.user, revision)
 
     tool = review_request.repository.get_scmtool()
@@ -501,53 +738,6 @@ def raw_diff(request, review_request_id, revision=None):
     return resp
 
 
-def build_diff_comment_fragments(
-        comments, context,
-        comment_template_name='reviews/diff_comment_fragment.html',
-        error_template_name='diffviewer/diff_fragment_error.html'):
-
-    comment_entries = []
-    had_error = False
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    for comment in comments:
-        try:
-            content = render_to_string(comment_template_name, {
-                'comment': comment,
-                'chunks': list(get_file_chunks_in_range(context,
-                                                        comment.filediff,
-                                                        comment.interfilediff,
-                                                        comment.first_line,
-                                                        comment.num_lines)),
-                'domain': Site.objects.get_current().domain,
-                'domain_method': siteconfig.get("site_domain_method"),
-            })
-        except Exception, e:
-            content = exception_traceback_string(None, e,
-                                                 error_template_name, {
-                'comment': comment,
-                'file': {
-                    'depot_filename': comment.filediff.source_file,
-                    'index': None,
-                    'filediff': comment.filediff,
-                },
-                'domain': Site.objects.get_current().domain,
-                'domain_method': siteconfig.get("site_domain_method"),
-            })
-
-            # It's bad that we failed, and we'll return a 500, but we'll
-            # still return content for anything we have. This will prevent any
-            # caching.
-            had_error = True
-
-        comment_entries.append({
-            'comment': comment,
-            'html': content,
-        })
-
-    return had_error, comment_entries
-
-
 @check_login_required
 def comment_diff_fragments(
     request,
@@ -555,13 +745,22 @@ def comment_diff_fragments(
     comment_ids,
     template_name='reviews/load_diff_comment_fragments.js',
     comment_template_name='reviews/diff_comment_fragment.html',
-    error_template_name='diffviewer/diff_fragment_error.html'):
+    error_template_name='diffviewer/diff_fragment_error.html',
+    local_site_name=None):
     """
     Returns the fragment representing the parts of a diff referenced by the
     specified list of comment IDs. This is used to allow batch lazy-loading
     of these diff fragments based on filediffs, since they may not be cached
     and take time to generate.
     """
+    # While we don't actually need the review request, we still want to do this
+    # lookup in order to get the permissions checking.
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     comments = get_list_or_404(Comment, pk__in=comment_ids.split(","))
     latest_timestamp = get_latest_timestamp([comment.timestamp
                                              for comment in comments])
@@ -593,9 +792,14 @@ def comment_diff_fragments(
 
 
 @check_login_required
-def diff_fragment(request, review_request_id, revision, filediff_id,
-                  interdiff_revision=None, chunkindex=None,
-                  template_name='diffviewer/diff_file_fragment.html'):
+def diff_fragment(request,
+                  review_request_id,
+                  revision,
+                  filediff_id,
+                  interdiff_revision=None,
+                  chunkindex=None,
+                  template_name='diffviewer/diff_file_fragment.html',
+                  local_site_name=None):
     """
     Wrapper around diffviewer.views.view_diff_fragment that takes a review
     request.
@@ -604,7 +808,12 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     review request. The fragment is identified by the chunk index in the
     diff.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     review_request.get_draft(request.user)
 
     if interdiff_revision is not None:
@@ -617,6 +826,7 @@ def diff_fragment(request, review_request_id, revision, filediff_id,
     diffset = _query_for_diff(review_request, request.user, revision)
 
     return view_diff_fragment(request, diffset.id, filediff_id,
+                              review_request.get_absolute_url(),
                               interdiffset_id, chunkindex, template_name)
 
 
@@ -626,14 +836,20 @@ def preview_review_request_email(
     review_request_id,
     format,
     text_template_name='notifications/review_request_email.txt',
-    html_template_name='notifications/review_request_email.html'):
+    html_template_name='notifications/review_request_email.html',
+    local_site_name=None):
     """
     Previews the e-mail message that would be sent for an initial
     review request or an update.
 
     This is mainly used for debugging.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     siteconfig = SiteConfiguration.objects.get_current()
 
     if format == 'text':
@@ -659,14 +875,20 @@ def preview_review_request_email(
 def preview_review_email(request, review_request_id, review_id, format,
                          text_template_name='notifications/review_email.txt',
                          html_template_name='notifications/review_email.html',
-                         extra_context={}):
+                         extra_context={},
+                         local_site_name=None):
     """
     Previews the e-mail message that would be sent for a review of a
     review request.
 
     This is mainly used for debugging.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
     siteconfig = SiteConfiguration.objects.get_current()
@@ -706,14 +928,20 @@ def preview_review_email(request, review_request_id, review_id, format,
 def preview_reply_email(request, review_request_id, review_id, reply_id,
                         format,
                         text_template_name='notifications/reply_email.txt',
-                        html_template_name='notifications/reply_email.html'):
+                        html_template_name='notifications/reply_email.html',
+                        local_site_name=None):
     """
     Previews the e-mail message that would be sent for a reply to a
     review of a review request.
 
     This is mainly used for debugging.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
     reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
@@ -751,30 +979,45 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
 
 @login_required
-def delete_screenshot(request, review_request_id, screenshot_id):
+def delete_screenshot(request,
+                      review_request_id,
+                      screenshot_id,
+                      local_site_name=None):
     """
     Deletes a screenshot from a review request and redirects back to the
     review request page.
     """
-    request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
 
     s = Screenshot.objects.get(id=screenshot_id)
 
-    draft = ReviewRequestDraft.create(request)
+    draft = ReviewRequestDraft.create(review_request)
     draft.screenshots.remove(s)
     draft.inactive_screenshots.add(s)
     draft.save()
 
-    return HttpResponseRedirect(request.get_absolute_url())
+    return HttpResponseRedirect(review_request.get_absolute_url())
 
 
 @check_login_required
-def view_screenshot(request, review_request_id, screenshot_id,
-                    template_name='reviews/screenshot_detail.html'):
+def view_screenshot(request,
+                    review_request_id,
+                    screenshot_id,
+                    template_name='reviews/screenshot_detail.html',
+                    local_site_name=None):
     """
     Displays a screenshot, along with any comments that were made on it.
     """
-    review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
     screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
     review = review_request.get_pending_review(request.user)
     draft = review_request.get_draft(request.user)
@@ -791,7 +1034,7 @@ def view_screenshot(request, review_request_id, screenshot_id,
 
     return render_to_response(
         template_name,
-        RequestContext(request, make_review_request_context(review_request, {
+        RequestContext(request, _make_review_request_context(review_request, {
             'draft': draft,
             'review_request_details': draft or review_request,
             'review': review,
@@ -802,7 +1045,10 @@ def view_screenshot(request, review_request_id, screenshot_id,
         })))
 
 
-def search(request, template_name='reviews/search.html'):
+@check_login_required
+def search(request,
+           template_name='reviews/search.html',
+           local_site_name=None):
     """
     Searches review requests on Review Board based on a query string.
     """
@@ -855,7 +1101,8 @@ def search(request, template_name='reviews/search.html'):
 
     searcher.close()
 
-    results = ReviewRequest.objects.filter(id__in=result_ids)
+    results = ReviewRequest.objects.filter(id__in=result_ids,
+                                           local_site__name=local_site_name)
 
     return object_list(request=request,
                        queryset=results,

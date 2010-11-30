@@ -857,8 +857,7 @@ $.reviewForm = function(review) {
         type: "GET",
         dataType: "html",
         data: {},
-        url: SITE_ROOT + "r/" + gReviewRequestId +
-             "/reviews/draft/inline-form/",
+        url: gReviewRequestPath + "reviews/draft/inline-form/",
         success: function(html) {
             createForm(html);
         }
@@ -1563,6 +1562,17 @@ $(document).ready(function() {
 
     $("pre.reviewtext, #description, #testing_done").each(function() {
         $(this).html(linkifyText($(this).text()));
+    });
+
+    /* Toggle the state of a review */
+    $(".collapse-button").click(function() {
+        $(this).closest(".box").toggleClass('collapsed');
+    });
+
+    /* Expand all reviews */
+    $("#expand-all").click(function() {
+        $(".collapsed").removeClass("collapsed");
+        return false;
     });
 
     if (gUserAuthenticated) {

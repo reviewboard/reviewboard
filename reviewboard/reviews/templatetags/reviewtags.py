@@ -317,12 +317,13 @@ def dashboard_entry(context, level, text, view, param=None):
     show_count = True
     count = 0
     url = None
-    group = None
+    group_name = None
     review_requests = []
 
     if view == 'to-group':
-        group = param
-        count = datagrid.counts['groups'].get(group.name, 0)
+        group_name = param
+        count = datagrid.counts['groups'].get(group_name,
+            datagrid.counts['starred_groups'].get(group_name, 0))
     elif view == 'watched-groups':
         starred = True
         show_count = False
@@ -343,14 +344,15 @@ def dashboard_entry(context, level, text, view, param=None):
         'level': level,
         'text': text,
         'view': view,
-        'group': group,
+        'group_name': group_name,
         'url': url,
         'count': count,
         'show_count': show_count,
         'user': user,
         'starred': starred,
         'selected': context.get('view', None) == view and \
-                    (not group or context.get('group', None) == group.name),
+                    (not group_name or
+                     context.get('group', None) == group._ame),
     }
 
 
