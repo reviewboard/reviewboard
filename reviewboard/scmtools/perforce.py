@@ -199,6 +199,9 @@ class PerforceDiffParser(DiffParser):
                 info['binary'] = True
                 linenum += 1
 
+            if m.group(3) == 'D':
+                info['deleted'] = True
+
             # In this case, this *is* our diff header. We don't want to
             # let the next line's real diff header be a part of this one,
             # so return early and don't invoke the next.
