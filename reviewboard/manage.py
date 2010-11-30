@@ -147,10 +147,18 @@ def include_enabled_extensions(settings):
     into consideration.
     """
     from django.db.models.loading import load_app
+    from django.db import DatabaseError
+    from djblets.extensions.models import RegisteredExtension
+
     from reviewboard.extensions.base import get_extension_manager
 
-    manager = get_extension_manager()
-    manager.load()
+    try:
+        manager = get_extension_manager()
+        manager.load()
+    except DatabaseError:
+        # This database is from a time before extensions, so don't attempt to
+        # load any extensions yet.
+        return
 
     for extension in manager.get_enabled_extensions():
         load_app(extension.info.app_name)
