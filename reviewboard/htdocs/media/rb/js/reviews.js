@@ -1522,6 +1522,22 @@ $(document).ready(function() {
         $.reviewForm(pendingReview);
     });
 
+    $("#shipit-link").click(function() {
+        if (confirm("Are you sure?")) {
+            pendingReview.shipit = 1;
+            pendingReview.body_top = "Ship It!";
+            pendingReview.publish({
+                buttons: null,
+                success: function() {
+                    hideReviewBanner();
+                    gReviewBanner.queue(function() {
+                        window.location = gReviewRequestPath;
+                    });
+                }
+            });
+        }
+    });
+
     /* Review banner's Publish button. */
     $("#review-banner-publish").click(function() {
         pendingReview.publish({
