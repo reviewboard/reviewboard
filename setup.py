@@ -88,6 +88,12 @@ setup(name=PACKAGE_NAME,
               'perforce = reviewboard.scmtools.perforce:PerforceTool',
               'svn = reviewboard.scmtools.svn:SVNTool',
           ],
+          'reviewboard.auth_backends': [
+              'ad = reviewboard.accounts.backends:ActiveDirectoryBackend',
+              'ldap = reviewboard.accounts.backends:LDAPBackend',
+              'nis = reviewboard.accounts.backends:NISBackend',
+              'x509 = reviewboard.accounts.backends:X509Backend',
+          ],
       },
       cmdclass=cmdclasses,
       install_requires=[

@@ -1,4 +1,5 @@
 {% extends "admin/settings.html" %}
+{% load djblets_utils i18n %}
 
 {% block extrahead %}
 {{block.super}}
@@ -20,6 +21,32 @@
 </script>
 {% endblock %}
 
-{% block content %}
+{% block form_content %}
 {{block.super}}
+
+{%  for auth_form_id, auth_form in form.auth_backend_forms.items %}
+<fieldset class="module aligned wide hidden" id="fieldset_auth_{{auth_form_id}}">
+{%   spaceless %}
+<h2>
+{%    if auth_form.Meta.title %}
+{{auth_form.Meta.title}}
+{%    else %}
+{%     blocktrans with auth_form_id|upper as auth_name %}
+{{auth_name}} Authentication Settings
+{%     endblocktrans %}
+{%    endif %}
+</h2>
+{%   endspaceless %}
+{%   if auth_form.Meta.description %}
+ <div class="description">
+  {{auth_form.description|paragraphs}}
+ </div>
+{%   endif %}
+{%   with auth_form as form %}
+{%    for field in auth_form %}
+{%     include "siteconfig/settings_field.html" %}
+{%    endfor %}
+{%   endwith %}
+</fieldset>
+{%  endfor %}
 {% endblock %}

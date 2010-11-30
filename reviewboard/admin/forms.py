@@ -1,8 +1,8 @@
 #
 # reviewboard/admin/forms.py -- Form classes for the admin UI
 #
-# Copyright (c) 2008-2009  Christian Hammond
-# Copyright (c) 2008-2009  David Trowbridge
+# Copyright (c) 2008-2010  Christian Hammond
+# Copyright (c) 2008-2010  David Trowbridge
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -25,22 +25,23 @@
 #
 
 
+import logging
 import os
+import pkg_resources
 import re
-import sre_constants
 import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
-from django.utils.safestring import mark_safe
+from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 import pytz
 
-from reviewboard.admin.checks import get_can_enable_dns, \
-                                     get_can_enable_ldap, \
-                                     get_can_enable_search, \
+from reviewboard.accounts.forms import BuiltinAuthSettingsForm, \
+                                       LegacyAuthModuleSettingsForm
+from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_enable_syntax_highlighting, \
                                      get_can_use_amazon_s3, \
                                      get_can_use_couchdb
@@ -154,6 +155,19 @@ class GeneralSettingsForm(SiteSettingsForm):
 
 
 class AuthenticationSettingsForm(SiteSettingsForm):
+    BUILTIN_AUTH_ID = 'builtin'
+    CUSTOM_AUTH_ID = 'custom'
+
+    BUILTIN_AUTH_CHOICE = (BUILTIN_AUTH_ID, _('Standard Registration'))
+    CUSTOM_AUTH_CHOICE = (CUSTOM_AUTH_ID,
+                          _('Legacy Authentication Module'))
+
+    DEFAULT_BACKEND_FORMS = {
+        BUILTIN_AUTH_ID: BuiltinAuthSettingsForm,
+        CUSTOM_AUTH_ID: LegacyAuthModuleSettingsForm,
+    }
+
+
     auth_anonymous_access = forms.BooleanField(
         label=_("Allow anonymous read-only access"),
         help_text=_("If checked, users will be able to view review requests "
@@ -162,209 +176,58 @@ class AuthenticationSettingsForm(SiteSettingsForm):
 
     auth_backend = forms.ChoiceField(
         label=_("Authentication Method"),
-        choices=(
-            ("builtin", _("Standard registration")),
-            ("ad",      _("Active Directory")),
-            ("ldap",    _("LDAP")),
-            ("nis",     _("NIS")),
-            ("x509",    _("X.509 Public Key")),
-            ("custom",  _("Custom"))
-        ),
+        choices=(),
         help_text=_("The method Review Board should use for authenticating "
                     "users."),
         required=True)
 
-    auth_enable_registration = forms.BooleanField(
-        label=_("Enable registration"),
-        help_text=_("Allow users to register new accounts."),
-        required=False)
+    def __init__(self, siteconfig, *args, **kwargs):
+        super(AuthenticationSettingsForm, self).__init__(siteconfig,
+                                                         *args, **kwargs)
 
-    auth_registration_show_captcha = forms.BooleanField(
-        label=_('Show a captcha for registration'),
-        help_text=mark_safe(
-            _('Displays a captcha using <a href="%(recaptcha_url)s">'
-              'reCAPTCHA</a> on the registration page. To enable this, you '
-              'will need to go <a href="%(register_url)s">here</A> to register '
-              'an account and type in your new keys below.') % {
-                  'recaptcha_url': 'http://www.recaptcha.net/',
-                  'register_url': 'https://admin.recaptcha.net/recaptcha'
-                                  '/createsite/',
-            }),
-        required=False)
+        self.auth_backend_forms = {}
 
-    recaptcha_public_key = forms.CharField(
-        label=_('reCAPTCHA Public Key'),
-        required=False,
-        widget=forms.TextInput(attrs={'size': '40'}))
+        cur_auth_backend = (self['auth_backend'].data or
+                            self.fields['auth_backend'].initial)
 
-    recaptcha_private_key = forms.CharField(
-        label=_('reCAPTCHA Private Key'),
-        required=False,
-        widget=forms.TextInput(attrs={'size': '40'}))
+        for auth_id, auth_form_class in self.DEFAULT_BACKEND_FORMS.iteritems():
+            if auth_id == cur_auth_backend:
+                auth_form = auth_form_class(siteconfig, *args, **kwargs)
+            else:
+                auth_form = auth_form_class(siteconfig)
 
-    auth_nis_email_domain = forms.CharField(
-        label=_("E-Mail Domain"))
+            self.auth_backend_forms[auth_id] = auth_form
 
-    # TODO: Invent a URIField and use it.
-    auth_ldap_uri = forms.CharField(
-        label=_("LDAP Server"),
-        help_text=_("The LDAP server to authenticate with. "
-                    "For example: ldap://localhost:389"))
+        backend_choices = []
 
-    auth_ldap_base_dn = forms.CharField(
-        label=_("LDAP Base DN"),
-        help_text=_("The LDAP Base DN for performing LDAP searches.  For "
-                    "example: ou=users,dc=example,dc=com"),
-        required=True)
+        for ep in pkg_resources.iter_entry_points('reviewboard.auth_backends'):
+            try:
+                backend = ep.load()
 
-    auth_ldap_email_domain = forms.CharField(
-        label=_("E-Mail Domain"),
-        help_text=_("The domain name appended to the username to construct "
-                    "the user's e-mail address. This takes precedence over "
-                    '"E-Mail LDAP Attribute."'),
-        required=False)
+                if backend.settings_form:
+                    if cur_auth_backend == ep.name:
+                        backend_form = backend.settings_form(siteconfig,
+                                                             *args, **kwargs)
+                    else:
+                        backend_form = backend.settings_form(siteconfig)
 
-    auth_ldap_email_attribute = forms.CharField(
-        label=_("E-Mail LDAP Attribute"),
-        help_text=_("The attribute in the LDAP server that stores the user's "
-                    "e-mail address. For example: mail"),
-        required=False)
+                    self.auth_backend_forms[ep.name] = backend_form
+                    backend_form.load()
 
-    auth_ldap_tls = forms.BooleanField(
-        label=_("Use TLS for authentication"),
-        required=False)
+                backend_choices.append((ep.name, backend.name))
+            except Exception, e:
+                logging.error('Error loading authentication backend %s: %s'
+                              % (ep.name, e),
+                              exc_info=1)
 
-    auth_ldap_uid_mask = forms.CharField(
-        label=_("User Mask"),
-        initial="uid=%s,ou=users,dc=example,dc=com",
-        help_text=_("The string representing the user. Use \"%(varname)s\" "
-                    "where the username would normally go. For example: "
-                    "(uid=%(varname)s)") %
-                  {'varname': '%s'})
-
-    auth_ldap_anon_bind_uid = forms.CharField(
-        label=_("Anonymous User Mask"),
-        help_text=_("The user mask string for anonymous users. If specified, "
-                    "this should be in the same format as User Mask."),
-        required=False)
-
-    auth_ldap_anon_bind_passwd = forms.CharField(
-        label=_("Anonymous User Password"),
-        widget=forms.PasswordInput,
-        help_text=_("The optional password for the anonymous user."),
-        required=False)
-
-    auth_ad_domain_name = forms.CharField(
-        label=_("Domain name"),
-        help_text=_("Enter the domain name to use, (ie. example.com). This will be "
-                    "used to query for LDAP servers and to bind to the domain."),
-        required=True)
-
-    auth_ad_use_tls = forms.BooleanField(
-        label=_("Use TLS for authentication"),
-        required=False)
-
-    auth_ad_find_dc_from_dns = forms.BooleanField(
-        label=_("Find DC from DNS"),
-        help_text=_("Query DNS to find which domain controller to use"),
-        required=False)
-
-    auth_ad_domain_controller = forms.CharField(
-        label=_("Domain controller"),
-        help_text=_("If not using DNS to find the DC specify the domain "
-                    "controller here"),
-        required=False)
-
-    auth_ad_ou_name = forms.CharField(
-        label=_("OU name"),
-        help_text=_("Optionally restrict users to specified OU."),
-        required=False)
-
-    auth_ad_group_name = forms.CharField(
-        label=_("Group name"),
-        help_text=_("Optionally restrict users to specified group."),
-        required=False)
-
-    auth_ad_search_root = forms.CharField(
-        label=_("Custom search root"),
-        help_text=_("Optionally specify a custom search root, overriding "
-                    "the built-in computed search root. If set, \"OU name\" "
-                    "is ignored."),
-        required=False)
-
-    auth_ad_recursion_depth = forms.IntegerField(
-        label=_("Recursion Depth"),
-        help_text=_("Depth to recurse when checking group membership. 0 to turn off, -1 for unlimited."),
-        required=False)
-
-    auth_x509_username_field = forms.ChoiceField(
-        label=_("Username Field"),
-        choices=(
-            # Note: These names correspond to environment variables set by
-            #       mod_ssl.
-            ("SSL_CLIENT_S_DN",        _("DN (Distinguished Name)")),
-            ("SSL_CLIENT_S_DN_CN",     _("CN (Common Name)")),
-            ("SSL_CLIENT_S_DN_Email",  _("Email address")),
-        ),
-        help_text=_("The X.509 certificate field from which the Review Board "
-                    "username will be extracted."),
-        required=True)
-
-    auth_x509_username_regex = forms.CharField(
-        label=_("Username Regex"),
-        help_text=_("Optional regex used to convert the selected X.509 "
-                    "certificate field to a usable Review Board username. For "
-                    "example, if using the email field to retrieve the "
-                    "username, use this regex to get the username from an "
-                    "e-mail address: '(\s+)@yoursite.com'. There must be only "
-                    "one group in the regex."),
-        required=False)
-
-    auth_x509_autocreate_users = forms.BooleanField(
-        label=_("Automatically create new user accounts."),
-        help_text=_("Enabling this option will cause new user accounts to be "
-                    "automatically created when a new user with an X.509 "
-                    "certificate accesses Review Board."),
-        required=False)
-
-    custom_backends = forms.CharField(
-        label=_("Backends"),
-        help_text=_("A comma-separated list of custom auth backends. These "
-                    "are represented as Python module paths."))
+        backend_choices.sort(key=lambda x: x[1])
+        backend_choices.insert(0, self.BUILTIN_AUTH_CHOICE)
+        backend_choices.append(self.CUSTOM_AUTH_CHOICE)
+        self.fields['auth_backend'].choices = backend_choices
 
     def load(self):
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get("auth_require_sitewide_login")
-
-        self.fields['custom_backends'].initial = \
-            ', '.join(self.siteconfig.get('auth_custom_backends'))
-
-        can_enable_dns, reason = get_can_enable_dns()
-        if not can_enable_dns:
-            self.disabled_fields['auth_ad_find_dc_from_dns'] = reason
-
-        can_enable_ldap, reason = get_can_enable_ldap()
-
-        if not can_enable_ldap:
-            self.disabled_fields['auth_ldap_uri'] = True
-            self.disabled_fields['auth_ldap_email_domain'] = True
-            self.disabled_fields['auth_ldap_email_attribute'] = True
-            self.disabled_fields['auth_ldap_tls'] = True
-            self.disabled_fields['auth_ldap_base_dn'] = True
-            self.disabled_fields['auth_ldap_uid_mask'] = True
-            self.disabled_fields['auth_ldap_anon_bind_uid'] = True
-            self.disabled_fields['auth_ldap_anon_bind_password'] = True
-
-            self.disabled_fields['auth_ad_use_tls'] = True
-            self.disabled_fields['auth_ad_group_name'] = True
-            self.disabled_fields['auth_ad_recursion_depth'] = True
-            self.disabled_fields['auth_ad_ou_name'] = True
-            self.disabled_fields['auth_ad_search_root'] = True
-            self.disabled_fields['auth_ad_find_dc_from_dns'] = True
-            self.disabled_fields['auth_ad_domain_controller'] = True
-            self.disabled_fields['auth_ad_domain_name'] = _(reason)
-
-            self.disabled_reasons['auth_ldap_uri'] = reason
 
         super(AuthenticationSettingsForm, self).load()
 
@@ -372,24 +235,26 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         self.siteconfig.set("auth_require_sitewide_login",
                             not self.cleaned_data['auth_anonymous_access'])
 
-        self.siteconfig.set('auth_custom_backends',
-            re.split(r',\s*', self.cleaned_data['custom_backends']))
+        auth_backend = self.cleaned_data['auth_backend']
+
+        if auth_backend in self.auth_backend_forms:
+            self.auth_backend_forms[auth_backend].save()
 
         super(AuthenticationSettingsForm, self).save()
 
         # Reload any important changes into the Django settings.
         load_site_config()
 
-    def clean_auth_x509_username_regex(self):
-        """Validates that the specified regular expression is valid."""
-        regex = self.cleaned_data['auth_x509_username_regex']
+    def is_valid(self):
+        valid = super(AuthenticationSettingsForm, self).is_valid()
 
-        try:
-            re.compile(regex)
-        except sre_constants.error, e:
-            raise forms.ValidationError(e)
+        if valid:
+            auth_backend = self.cleaned_data['auth_backend']
 
-        return regex
+            if auth_backend in self.auth_backend_forms:
+                valid = self.auth_backend_forms[auth_backend].is_valid()
+
+        return valid
 
     def clean_recaptcha_public_key(self):
         """Validates that the reCAPTCHA public key is specified if needed."""
@@ -410,11 +275,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         return key
 
     def full_clean(self):
-        def set_fieldset_required(fieldset_id, required):
-            for fieldset in self.Meta.fieldsets:
-                if 'id' in fieldset and fieldset['id'] == fieldset_id:
-                    for field in fieldset['fields']:
-                        self.fields[field].required = required
+        super(AuthenticationSettingsForm, self).full_clean()
 
         if self.data:
             # Note that this isn't validated yet, but that's okay given our
@@ -422,27 +283,15 @@ class AuthenticationSettingsForm(SiteSettingsForm):
             auth_backend = self['auth_backend'].data or \
                            self.fields['auth_backend'].initial
 
-            if auth_backend != "ldap":
-                set_fieldset_required("auth_ldap", False)
-
-            if auth_backend != "nis":
-                set_fieldset_required("auth_nis", False)
-
-            if auth_backend != "ad":
-                set_fieldset_required("auth_ad", False)
-
-            if auth_backend != 'x509':
-                set_fieldset_required("auth_x509", False)
-
-            if auth_backend != "custom":
-                set_fieldset_required("auth_custom", False)
-
-        super(AuthenticationSettingsForm, self).full_clean()
-
+            if auth_backend in self.auth_backend_forms:
+                self.auth_backend_forms[auth_backend].full_clean()
+        else:
+            for form in self.auth_backend_forms.values():
+                form.full_clean()
 
     class Meta:
         title = _('Authentication Settings')
-        save_blacklist = ('auth_anonymous_access', 'custom_backends')
+        save_blacklist = ('auth_anonymous_access',)
 
         fieldsets = (
             {
@@ -450,63 +299,6 @@ class AuthenticationSettingsForm(SiteSettingsForm):
                 'title':   _('General'),
                 'fields':  ('auth_anonymous_access',
                             'auth_backend'),
-            },
-            {
-                'id':      'auth_builtin',
-                'classes': ('wide', 'hidden'),
-                'title':   _("Basic Authentication Settings"),
-                'fields':  ('auth_enable_registration',
-                            'auth_registration_show_captcha',
-                            'recaptcha_public_key',
-                            'recaptcha_private_key'),
-            },
-            {
-                'id':      'auth_nis',
-                'classes': ('wide', 'hidden'),
-                'title':   _("NIS Authentication Settings"),
-                'fields':  ('auth_nis_email_domain',),
-            },
-            {
-                'id':      'auth_ldap',
-                'classes': ('wide', 'hidden'),
-                'title':   _("LDAP Authentication Settings"),
-                'fields':  ('auth_ldap_uri',
-                            'auth_ldap_base_dn',
-                            'auth_ldap_email_domain',
-                            'auth_ldap_email_attribute',
-                            'auth_ldap_tls',
-                            'auth_ldap_uid_mask',
-                            'auth_ldap_anon_bind_uid',
-                            'auth_ldap_anon_bind_passwd'),
-            },
-            {
-                'id':      'auth_ad',
-                'classes': ('wide', 'hidden'),
-                'title':   _("Active Directory Authentication Settings"),
-                'fields':  ('auth_ad_domain_name',
-                            'auth_ad_use_tls',
-                            'auth_ad_find_dc_from_dns',
-                            'auth_ad_domain_controller',
-                            'auth_ad_ou_name',
-                            'auth_ad_group_name',
-                            'auth_ad_search_root',
-                            'auth_ad_recursion_depth',
-                            ),
-            },
-            {
-                'id':      'auth_x509',
-                'classes': ('wide', 'hidden'),
-                'title':   _("X.509 Client Certificate Authentication settings"),
-                'fields':  ('auth_x509_username_field',
-                            'auth_x509_username_regex',
-                            'auth_x509_autocreate_users',
-                            ),
-            },
-            {
-                'id':      'auth_custom',
-                'classes': ('wide', 'hidden'),
-                'title':   _("Custom Authentication Settings"),
-                'fields':  ('custom_backends',)
             },
         )
 
