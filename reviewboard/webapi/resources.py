@@ -64,6 +64,13 @@ from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
 
 
+def _get_local_site(local_site_name):
+    if local_site_name:
+        return LocalSite.objects.get(name=local_site_name)
+    else:
+        return None
+
+
 class WebAPIResource(DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
@@ -1796,7 +1803,7 @@ class RepositoryResource(WebAPIResource):
 
     @webapi_check_login_required
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
-        local_site = get_object_or_none(LocalSite, name=local_site_name)
+        local_site = _get_local_site(local_site_name)
         return self.model.objects.accessible(request.user,
                                              visible_only=True,
                                              local_site=local_site)
@@ -1817,6 +1824,7 @@ class RepositoryResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieves information on a particular repository.
