@@ -17,7 +17,6 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
                               set_last_modified
-from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIResponseError, \
                                 WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
@@ -1484,10 +1483,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         watched_resource,
     ]
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
         query = self.model.objects.filter(is_active=True)
+        if local_site_name:
+            query = query.filter(localsite__name=local_site_name)
 
         if search_q:
             q = Q(username__istartswith=search_q)
@@ -1500,6 +1501,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         return query
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'q': {
@@ -1542,6 +1544,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a registered user.
