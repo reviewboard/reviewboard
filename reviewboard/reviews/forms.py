@@ -100,15 +100,11 @@ class NewReviewRequestForm(forms.Form):
         valid_repos = []
         self.field_mapping = {}
 
-        for repo in Repository.objects.accessible(user).order_by('name'):
+        repos = Repository.objects.accessible(user, local_site=local_site)
+        for repo in repos.order_by('name'):
             try:
                 self.field_mapping[repo.id] = repo.get_scmtool().get_fields()
-
-                if ((local_site and
-                     repo.local_site and
-                     repo.local_site.name == local_site.name) or
-                    repo.local_site is None):
-                    valid_repos.append((repo.id, repo.name))
+                valid_repos.append((repo.id, repo.name))
             except Exception, e:
                 logging.error('Error loading SCMTool for repository '
                               '%s (ID %d): %s' % (repo.name, repo.id, e),
