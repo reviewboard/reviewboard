@@ -682,6 +682,7 @@ def diff(request,
             'last_activity_time': last_activity_time,
             'specific_diff_requested': revision is not None or
                                        interdiff_revision is not None,
+            'base_url': review_request.get_absolute_url(),
         }))
 
 
