@@ -178,7 +178,7 @@ def main():
 
     # check for an explicitly-provided base path (must be contained
     # within quotes)
-    m = re.search(r'base ?path:([\'"][^\'"]+[\'"])', log, re.M | re.I)
+    m = re.search(r'base ?path:[\'"]([^\'"]+)[\'"]', log, re.M | re.I)
     if m:
         base_path = m.group(1)
     else:
@@ -216,6 +216,9 @@ def main():
     # common arguments
     args = [repository_url, username, password, publish,
             submitas, revision, base_path, reviewid]
+
+    # filter out any potentially blank args, which will confuse post-review
+    args = [i for i in args if len(i) > 1]
 
     # if not updating an existing review, add extra arguments
     if len(reviewid) == 0:

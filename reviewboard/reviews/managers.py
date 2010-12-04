@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import connections, router
 from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 
@@ -23,6 +24,26 @@ class DefaultReviewerManager(Manager):
         """
         return self.filter(Q(repository__isnull=True) |
                            Q(repository=repository))
+
+
+class ReviewGroupManager(Manager):
+    """A manager for Group models."""
+    def accessible(self, user, visible_only=True, local_site=None):
+        """Returns groups that are accessible by the given user."""
+        if user.is_superuser:
+            qs = self.all()
+        else:
+            q = Q(invite_only=False)
+
+            if visible_only:
+                q = q & Q(visible=True)
+
+            if user.is_authenticated():
+                q = q | Q(users__pk=user.pk)
+
+            qs = self.filter(q).distinct()
+
+        return qs.filter(local_site=local_site)
 
 
 class ReviewRequestQuerySet(QuerySet):
@@ -63,7 +84,7 @@ class ReviewRequestManager(ConcurrencyManager):
     def get_query_set(self):
         return ReviewRequestQuerySet(self.model)
 
-    def create(self, user, repository, changenum=None):
+    def create(self, user, repository, changenum=None, local_site=None):
         """
         Creates a new review request, optionally filling in fields based off
         a change number.
@@ -88,17 +109,42 @@ class ReviewRequestManager(ConcurrencyManager):
 
         if changenum:
             review_request.update_from_changenum(changenum)
-            review_request.save()
+
+        review_request.save()
+
+        if local_site:
+            # We want to atomically set the local_id to be a monotonically
+            # increasing ID unique to the local_site. This isn't really possible
+            # in django's DB layer, so we have to drop back to pure SQL and then
+            # reload the model.
+            from reviewboard.reviews.models import ReviewRequest
+            db = router.db_for_write(ReviewRequest)
+            cursor = connections[db].cursor()
+            cursor.execute(
+                'UPDATE %(table)s'
+                '  SET local_id = COALESCE('
+                '          (SELECT MAX(local_id)'
+                '               FROM %(table)s'
+                '               WHERE local_site_id = %(local_site_id)s) + 1,'
+                '          1),'
+                '      local_site_id = %(local_site_id)s'
+                '  WHERE %(table)s.id = %(id)s' % {
+                    'table': ReviewRequest._meta.db_table,
+                    'local_site_id': local_site.pk,
+                    'id': review_request.pk,
+                })
+            review_request = ReviewRequest.objects.get(pk=review_request.pk)
 
         return review_request
 
-    def get_to_group_query(self, group_name):
+    def get_to_group_query(self, group_name, local_site):
         """Returns the query targetting a group.
 
         This is meant to be passed as an extra_query to
         ReviewRequest.objects.public().
         """
-        return Q(target_groups__name=group_name)
+        return Q(target_groups__name=group_name,
+                 local_site=local_site)
 
     def get_to_user_groups_query(self, user_or_username):
         """Returns the query targetting groups joined by a user.
@@ -162,14 +208,20 @@ class ReviewRequestManager(ConcurrencyManager):
         This is meant to be passed as an extra_query to
         ReviewRequest.objects.public().
         """
-        return Q(submitter=self._get_query_user(user_or_username))
+
+        if isinstance(user_or_username, User):
+            return Q(submitter=user_or_username)
+        else:
+            return Q(submitter__username=user_or_username)
 
     def public(self, *args, **kwargs):
         return self._query(*args, **kwargs)
 
-    def to_group(self, group_name, *args, **kwargs):
-        return self._query(extra_query=self.get_to_group_query(group_name),
-                           *args, **kwargs)
+    def to_group(self, group_name, local_site, *args, **kwargs):
+        return self._query(
+            extra_query=self.get_to_group_query(group_name, local_site),
+            local_site=local_site,
+            *args, **kwargs)
 
     def to_user_groups(self, username, *args, **kwargs):
         return self._query(
@@ -192,7 +244,7 @@ class ReviewRequestManager(ConcurrencyManager):
             *args, **kwargs)
 
     def _query(self, user=None, status='P', with_counts=False,
-               extra_query=None):
+               extra_query=None, local_site=None):
         query = Q(public=True)
 
         if user and user.is_authenticated():
@@ -202,6 +254,8 @@ class ReviewRequestManager(ConcurrencyManager):
 
         if status:
             query = query & Q(status=status)
+
+        query = query & Q(local_site=local_site)
 
         if extra_query:
             query = query & extra_query

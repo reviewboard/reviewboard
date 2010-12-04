@@ -51,7 +51,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
     can_change_password = auth_backend in ['builtin', 'x509']
 
     if request.POST:
-        form = PreferencesForm(request.POST)
+        form = PreferencesForm(request.user, request.POST)
 
         if form.is_valid():
             password = form.cleaned_data['password1']
@@ -77,7 +77,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
 
             return HttpResponseRedirect(redirect_to)
     else:
-        form = PreferencesForm({
+        form = PreferencesForm(request.user, {
             'settings': settings,
             'redirect_to': redirect_to,
             'first_name': request.user.first_name,

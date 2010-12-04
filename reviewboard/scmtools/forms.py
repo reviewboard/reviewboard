@@ -3,10 +3,13 @@ import re
 import sys
 
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.auth.models import User
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.reviews.models import Group
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import BadHostKeyError, \
                                         UnknownHostKeyError, \
@@ -351,11 +354,33 @@ class RepositoryForm(forms.ModelForm):
                     "an advanced setting and should only be used if you're "
                     "sure you need it."))
 
+    # Access Control
     local_site = forms.ModelChoiceField(
         label=_("Local site"),
         required=False,
         queryset=LocalSite.objects.all())
 
+    public = forms.BooleanField(
+        label=_('Publicly accessible'),
+        required=False,
+        help_text=_('Review requests and files on public repositories are '
+                    'visible to anyone. Private repositories must explicitly '
+                    'list the users and groups that can access them.'))
+
+    users = forms.ModelMultipleChoiceField(
+        label=_('Users with access'),
+        required=False,
+        queryset=User.objects.filter(is_active=True),
+        help_text=_('A list of users with explicit access to the repository.'),
+        widget=FilteredSelectMultiple(_('Users with access'), False))
+
+    review_groups = forms.ModelMultipleChoiceField(
+        label=_('Review groups with access'),
+        required=False,
+        queryset=Group.objects.filter(invite_only=True),
+        help_text=_('A list of invite-only review groups whose members have '
+                    'explicit access to the repository.'),
+        widget=FilteredSelectMultiple(_('Review groups with access'), False))
 
     def __init__(self, *args, **kwargs):
         super(RepositoryForm, self).__init__(*args, **kwargs)

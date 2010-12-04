@@ -69,20 +69,18 @@ def get_collapse_diff(request):
         return True
 
 
-def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
+def view_diff(request, diffset, interdiffset=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
-    diffset = get_object_or_404(DiffSet, pk=diffset_id)
-    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
     highlighting = get_enable_highlighting(request.user)
 
     try:
-        if interdiffset_id:
+        if interdiffset:
             logging.debug("Generating diff viewer page for interdiffset ids "
                           "%s-%s",
-                          diffset_id, interdiffset_id)
+                          diffset.id, interdiffset.id)
         else:
             logging.debug("Generating diff viewer page for filediff id %s",
-                          diffset_id)
+                          diffset.id)
 
         files = get_diff_files(diffset, None, interdiffset,
                                highlighting, False)
@@ -164,14 +162,14 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
                                       RequestContext(request, context))
         response.set_cookie('collapsediffs', collapse_diffs)
 
-        if interdiffset_id:
+        if interdiffset:
             logging.debug("Done generating diff viewer page for interdiffset "
                           "ids %s-%s",
-                          diffset_id, interdiffset_id)
+                          diffset.id, interdiffset.id)
         else:
             logging.debug("Done generating diff viewer page for filediff "
                           "id %s",
-                          diffset_id)
+                          diffset.id)
 
         return response
 
@@ -180,10 +178,15 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
 
 
 def view_diff_fragment(
-        request, diffset_id, filediff_id, interdiffset_id=None,
-        chunkindex=None,
-        template_name='diffviewer/diff_file_fragment.html',
-        error_template_name='diffviewer/diff_fragment_error.html'):
+    request,
+    diffset_id,
+    filediff_id,
+    base_url,
+    interdiffset_id=None,
+    chunkindex=None,
+    template_name='diffviewer/diff_file_fragment.html',
+    error_template_name='diffviewer/diff_fragment_error.html'):
+    """View which renders a specific fragment from a diff."""
 
     def get_requested_diff_file(get_chunks=True):
         files = get_diff_files(diffset, filediff, interdiffset, highlighting,
@@ -216,6 +219,7 @@ def view_diff_fragment(
         if file:
             context = {
                 'standalone': chunkindex is not None,
+                'base_url': base_url,
             }
 
             return HttpResponse(build_diff_fragment(request, file,
@@ -226,13 +230,9 @@ def view_diff_fragment(
             _(u"Internal error. Unable to locate file record for filediff %s") % \
             filediff.id)
     except Exception, e:
-        extra_context = {}
-
-        file = get_requested_diff_file(False)
-        extra_context['file'] = file
-
-        return exception_traceback(request, e, error_template_name,
-                                   extra_context)
+        return exception_traceback(
+            request, e, error_template_name,
+            context={'file': get_requested_diff_file(False)})
 
 
 def exception_traceback_string(request, e, template_name, extra_context={}):

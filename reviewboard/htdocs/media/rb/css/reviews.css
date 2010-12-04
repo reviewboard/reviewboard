@@ -304,6 +304,23 @@
 /****************************************************************************
  * Reviews
  ****************************************************************************/
+
+.box .collapse-button {
+  background: url('../images/collapse.png') no-repeat;
+  float: left;
+  height: 15px;
+  padding-right: 5px;
+  width: 15px;
+}
+
+.box.collapsed .collapse-button {
+  background: url('../images/expand.png') no-repeat;
+}
+
+.box.collapsed .body {
+  display: none;
+}
+
 .review {
   background-color: #e9edf5;
   background-image: url('../images/review_box_top_bg.png');
@@ -315,6 +332,10 @@
   clear: both;
   margin: 5px;
   padding: 10px;
+}
+
+.main .collapsed {
+  display: none;
 }
 
 .review .body pre {

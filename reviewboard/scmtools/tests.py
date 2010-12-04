@@ -2,6 +2,7 @@ import imp
 import os
 import nose
 
+from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 try:
     imp.find_module("P4")
@@ -11,6 +12,7 @@ except ImportError:
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
+from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.git import ShortSHA1Error
@@ -399,7 +401,8 @@ class PerforceTests(DjangoTestCase):
         self.assertEqual(file.origInfo, '//depot/foo/proj/README#2')
         self.assertEqual(file.newFile, '/src/proj/README')
         self.assertEqual(file.newInfo, '')
-        self.assertEqual(file.binary, False)
+        self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
         self.assertEqual(file.data, '')
 
     def testBinaryDiff(self):
@@ -413,7 +416,22 @@ class PerforceTests(DjangoTestCase):
         self.assertEqual(file.newFile, '/src/proj/test.png')
         self.assertEqual(file.newInfo, '')
         self.assertEqual(file.data, '')
-        self.assertEqual(file.binary, True)
+        self.assertTrue(file.binary)
+        self.assertFalse(file.deleted)
+
+    def testDeletedDiff(self):
+        """Testing Perforce deleted diff parsing"""
+        diff = "==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png " + \
+               "====\n"
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
+        self.assertEqual(file.origInfo, '//depot/foo/proj/test.png#1')
+        self.assertEqual(file.newFile, '/src/proj/test.png')
+        self.assertEqual(file.newInfo, '')
+        self.assertEqual(file.data, '')
+        self.assertFalse(file.binary)
+        self.assertTrue(file.deleted)
 
     def testEmptyAndNormalDiffs(self):
         """Testing Perforce empty and normal diff parsing"""
@@ -433,14 +451,16 @@ class PerforceTests(DjangoTestCase):
         self.assertEqual(files[0].origInfo, '//depot/foo/proj/test.png#1')
         self.assertEqual(files[0].newFile, '/src/proj/test.png')
         self.assertEqual(files[0].newInfo, '')
-        self.assertEqual(files[0].binary, False)
+        self.assertFalse(files[0].binary)
+        self.assertFalse(files[0].deleted)
         self.assertEqual(files[0].data, '')
 
         self.assertEqual(files[1].origFile, 'test.c')
         self.assertEqual(files[1].origInfo, '//depot/foo/proj/test.c#2')
         self.assertEqual(files[1].newFile, 'test.c')
         self.assertEqual(files[1].newInfo, '01-02-03 04:05:06')
-        self.assertEqual(files[1].binary, False)
+        self.assertFalse(files[1].binary)
+        self.assertFalse(files[1].deleted)
         self.assertEqual(files[1].data, diff2_text)
 
 
@@ -695,6 +715,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.origInfo, 'e69de29')
         self.assertEqual(file.newInfo, 'bcae657')
         self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
@@ -708,6 +729,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.origInfo, 'e69de29')
         self.assertEqual(file.newInfo, 'bcae657')
         self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
@@ -729,6 +751,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.origInfo, 'cc18ec8')
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
         self.assertEqual(len(file.data), 219)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
@@ -743,6 +766,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.origInfo, PRE_CREATION)
         self.assertEqual(file.newInfo, 'e69de29')
         self.assertFalse(file.binary)
+        self.assertFalse(file.deleted)
         self.assertEqual(len(file.data), 80)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
@@ -776,6 +800,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.origInfo, '8ebcb01')
         self.assertEqual(file.newInfo, '0000000')
         self.assertFalse(file.binary)
+        self.assertTrue(file.deleted)
         self.assertEqual(len(file.data), 84)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
@@ -790,6 +815,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.origInfo, PRE_CREATION)
         self.assertEqual(file.newInfo, '86b520c')
         self.assertTrue(file.binary)
+        self.assertFalse(file.deleted)
         self.assertEqual(len(file.data), 53)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
@@ -804,6 +830,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[0].origInfo, '5e35098')
         self.assertEqual(files[0].newInfo, 'e254ef4')
         self.assertFalse(files[0].binary)
+        self.assertFalse(files[0].deleted)
         self.assertEqual(len(files[0].data), 519)
         self.assertEqual(files[0].data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
@@ -815,6 +842,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[1].origInfo, PRE_CREATION)
         self.assertEqual(files[1].newInfo, 'e279a06')
         self.assertFalse(files[1].binary)
+        self.assertFalse(files[1].deleted)
         self.assertEqual(len(files[1].data), 138)
         self.assertEqual(files[1].data.splitlines()[0],
                          "diff --git a/tests/tests.py b/tests/tests.py")
@@ -826,6 +854,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[2].origInfo, PRE_CREATION)
         self.assertEqual(files[2].newInfo, '86b520c')
         self.assertTrue(files[2].binary)
+        self.assertFalse(files[2].deleted)
         self.assertEqual(len(files[2].data), 53)
         self.assertEqual(files[2].data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
@@ -835,6 +864,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[3].origInfo, '5e35098')
         self.assertEqual(files[3].newInfo, 'e254ef4')
         self.assertFalse(files[3].binary)
+        self.assertFalse(files[3].deleted)
         self.assertEqual(len(files[3].data), 97)
         self.assertEqual(files[3].data.splitlines()[0],
                          "diff --git a/readme b/readme")
@@ -846,6 +876,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[4].origInfo, '8ebcb01')
         self.assertEqual(files[4].newInfo, '0000000')
         self.assertFalse(files[4].binary)
+        self.assertTrue(files[4].deleted)
         self.assertEqual(len(files[4].data), 84)
         self.assertEqual(files[4].data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
@@ -857,6 +888,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[5].origInfo, '5e43098')
         self.assertEqual(files[5].newInfo, 'e248ef4')
         self.assertFalse(files[5].binary)
+        self.assertFalse(files[5].deleted)
         self.assertEqual(len(files[5].data), 101)
         self.assertEqual(files[5].data.splitlines()[0],
                          "diff --git a/readme2 b/readme2")
@@ -916,3 +948,66 @@ class GitTests(DjangoTestCase):
         self.assertRaises(
             ShortSHA1Error,
             lambda: self.remote_tool.get_file('README', 'd7e96b3'))
+
+
+class PolicyTests(DjangoTestCase):
+    fixtures = ['test_scmtools']
+
+    def setUp(self):
+        self.user = User.objects.create(username='testuser', password='')
+        self.anonymous = AnonymousUser()
+        self.repo = Repository.objects.create(
+            name="test",
+            path="example.com:/cvsroot/test",
+            username="anonymous",
+            tool=Tool.objects.get(name="CVS"))
+
+    def test_repository_public(self):
+        """Testing access to a public repository"""
+        self.assertTrue(self.repo.is_accessible_by(self.user))
+        self.assertTrue(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertTrue(
+            self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_private_access_denied(self):
+        """Testing no access to an inaccessible private repository"""
+        self.repo.public = False
+        self.repo.save()
+
+        self.assertFalse(self.repo.is_accessible_by(self.user))
+        self.assertFalse(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertFalse(self.repo in Repository.objects.accessible(self.user))
+        self.assertFalse(
+            self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_private_access_allowed_by_user(self):
+        """Testing access to a private repository accessible by user"""
+        self.repo.users.add(self.user)
+        self.repo.public = False
+        self.repo.save()
+
+        self.assertTrue(self.repo.is_accessible_by(self.user))
+        self.assertFalse(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertFalse(
+            self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_private_access_allowed_by_review_group(self):
+        """Testing access to a private repository accessible by review group"""
+        group = Group.objects.create(name='test-group')
+        group.users.add(self.user)
+
+        self.repo.public = False
+        self.repo.review_groups.add(group)
+        self.repo.save()
+
+        self.assertTrue(self.repo.is_accessible_by(self.user))
+        self.assertFalse(self.repo.is_accessible_by(self.anonymous))
+
+        self.assertTrue(self.repo in Repository.objects.accessible(self.user))
+        self.assertFalse(
+            self.repo in Repository.objects.accessible(self.anonymous))

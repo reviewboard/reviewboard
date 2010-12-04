@@ -44,6 +44,7 @@ deprecated_urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     (r'^reviewrequests/all/count/$', 'count_review_requests',
      {'func': ReviewRequest.objects.public}),
 
+    # TODO: Either plumb local_site_name or get rid of the deprecated patterns
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/$',
      'review_request_list',
      {'func': ReviewRequest.objects.to_group}),

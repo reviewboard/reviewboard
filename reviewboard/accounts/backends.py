@@ -5,11 +5,34 @@ import sys
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils.translation import ugettext as _
 from djblets.util.misc import get_object_or_none
 
+from reviewboard.accounts.forms import ActiveDirectorySettingsForm, \
+                                       LDAPSettingsForm, \
+                                       NISSettingsForm, \
+                                       X509SettingsForm
 
-class NISBackend(object):
+
+class AuthBackend(object):
+    """The base class for Review Board authentication backends."""
+    name = None
+    settings_form = None
+
+    def authenticate(self, username, password):
+        raise NotImplemented
+
+    def get_or_create_user(self, username):
+        raise NotImplemented
+
+    def get_user(self, user_id):
+        return get_object_or_none(User, pk=user_id)
+
+
+class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""
+    name = _('NIS')
+    settings_form = NISSettingsForm
 
     def authenticate(self, username, password):
         import crypt
@@ -62,12 +85,11 @@ class NISBackend(object):
                 pass
         return user
 
-    def get_user(self, user_id):
-        return get_object_or_none(User, pk=user_id)
 
-
-class LDAPBackend(object):
+class LDAPBackend(AuthBackend):
     """Authenticate against a user on an LDAP server."""
+    name = _('LDAP')
+    settings_form = LDAPSettingsForm
 
     def authenticate(self, username, password):
         username = username.strip()
@@ -184,12 +206,11 @@ class LDAPBackend(object):
 
         return None
 
-    def get_user(self, user_id):
-        return get_object_or_none(User, pk=user_id)
 
-
-class ActiveDirectoryBackend(object):
+class ActiveDirectoryBackend(AuthBackend):
     """Authenticate a user against an Active Directory server."""
+    name = _('Active Directory')
+    settings_form = ActiveDirectorySettingsForm
 
     def get_domain_name(self):
         return str(settings.AD_DOMAIN_NAME)
@@ -338,16 +359,16 @@ class ActiveDirectoryBackend(object):
             except:
                 return None
 
-    def get_user(self, user_id):
-        return get_object_or_none(User, pk=user_id)
 
-
-class X509Backend(object):
+class X509Backend(AuthBackend):
     """
     Authenticate a user from a X.509 client certificate passed in by the
     browser. This backend relies on the X509AuthMiddleware to extract a
     username field from the client certificate.
     """
+    name = _('X.509 Public Key')
+    settings_form = X509SettingsForm
+
     def authenticate(self, x509_field=""):
         username = self.clean_username(x509_field)
         return self.get_or_create_user(username)
@@ -386,6 +407,3 @@ class X509Backend(object):
                 user.save()
 
         return user
-
-    def get_user(self, user_id):
-        return get_object_or_none(User, pk=user_id)

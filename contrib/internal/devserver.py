@@ -64,10 +64,10 @@ def main():
 
     # Build ReviewBoard.egg-info if it doesn't already exist
     if not os.path.exists('ReviewBoard.egg-info'):
-        os.system("./setup.py egg_info")
+        os.system("python ./setup.py egg_info")
 
     # And now just boot up the server
-    os.system('./reviewboard/manage.py runserver 0.0.0.0:%s'
+    os.system('python ./reviewboard/manage.py runserver 0.0.0.0:%s'
               % server_port)
 
 if __name__ == "__main__":

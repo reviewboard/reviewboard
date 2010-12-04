@@ -47,4 +47,15 @@ class LocalSite(models.Model):
                                    related_name='localsite')
     admins = models.ManyToManyField(User, blank=True,
                                    related_name='localsite_admins')
-    next_id = models.IntegerField(_('next review request ID'), default=1)
+
+    def is_accessible_by(self, user):
+        """Returns whether or not the user has access to this LocalSite.
+
+        This checks that the user is logged in, and that they're listed in the
+        'users' field.
+        """
+        return (user.is_authenticated() and
+                self.users.filter(pk=user.pk).exists())
+
+    def __unicode__(self):
+        return self.name

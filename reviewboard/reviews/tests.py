@@ -1,18 +1,21 @@
 import logging
 import os
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.test import TestCase
 
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.reviews.models import DefaultReviewer, \
+                                       Group, \
                                        ReviewRequest, \
                                        ReviewRequestDraft, \
                                        Review
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
 
 
 class DbQueryTests(TestCase):
@@ -57,11 +60,11 @@ class DbQueryTests(TestCase):
     def testReviewRequestsToGroup(self):
         """Testing get_review_requests_to_group"""
         self.assertValidSummaries(
-            ReviewRequest.objects.to_group("privgroup"),
+            ReviewRequest.objects.to_group("privgroup", None),
             ["Add permission checking for JSON API"])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_group("privgroup", status=None),
+            ReviewRequest.objects.to_group("privgroup", None, status=None),
             ["Add permission checking for JSON API"])
 
     def testReviewRequestsToUserGroups(self):
@@ -162,7 +165,8 @@ class DbQueryTests(TestCase):
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         self.siteconfig = SiteConfiguration.objects.get_current()
@@ -183,22 +187,13 @@ class ViewTests(TestCase):
 
     def testReviewDetail1(self):
         """Testing review_detail view (1)"""
-        response = self.client.get('/r/1/')
+        review_request = ReviewRequest.objects.public()[0]
+
+        response = self.client.get('/r/%d/' % review_request.id)
         self.assertEqual(response.status_code, 200)
 
         request = self.getContextVar(response, 'review_request')
-        self.assertEqual(request.submitter.username, 'doc')
-        self.assertEqual(request.summary, 'Comments Improvements')
-        self.assertEqual(request.description, '')
-        self.assertEqual(request.testing_done, '')
-
-        self.assertEqual(request.target_people.count(), 0)
-        self.assertEqual(request.target_groups.count(), 1)
-        self.assertEqual(request.target_groups.all()[0].name, 'devgroup')
-        self.assertEqual(request.bugs_closed, '')
-        self.assertEqual(request.status, 'P')
-
-        # TODO - diff
+        self.assertEqual(request.pk, review_request.pk)
 
     def testReviewDetail2(self):
         """Testing review_detail view (3)"""
@@ -442,18 +437,39 @@ class ViewTests(TestCase):
     def testDashboardSidebar(self):
         """Testing dashboard view (to-group devgroup)"""
         self.client.login(username='doc', password='doc')
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        local_site = None
+        site_profile = profile.site_profiles.get(local_site=local_site)
 
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
 
         datagrid = self.getContextVar(response, 'datagrid')
-        self.assertEqual(datagrid.counts['outgoing'], 1)
-        self.assertEqual(datagrid.counts['incoming'], 4)
-        self.assertEqual(datagrid.counts['to-me'], 2)
-        self.assertEqual(datagrid.counts['starred'], 0)
-        self.assertEqual(datagrid.counts['mine'], 2)
-        self.assertEqual(datagrid.counts['groups']['devgroup'], 2)
-        self.assertEqual(datagrid.counts['groups']['privgroup'], 1)
+        self.assertEqual(
+            datagrid.counts['outgoing'],
+            ReviewRequest.objects.from_user(
+                user, user, local_site=local_site).count())
+        self.assertEqual(
+            datagrid.counts['incoming'],
+            ReviewRequest.objects.to_user(user, local_site=local_site).count())
+        self.assertEqual(
+            datagrid.counts['to-me'],
+            ReviewRequest.objects.to_user_directly(
+                user, local_site=local_site).count())
+        self.assertEqual(
+            datagrid.counts['starred'],
+            profile.starred_review_requests.public(
+                user, local_site=local_site).count())
+        self.assertEqual(datagrid.counts['mine'],
+            ReviewRequest.objects.from_user(
+                user, user, None, local_site=local_site).count())
+        self.assertEqual(datagrid.counts['groups']['devgroup'],
+            ReviewRequest.objects.to_group(
+                'devgroup', local_site=local_site).count())
+        self.assertEqual(datagrid.counts['groups']['privgroup'],
+            ReviewRequest.objects.to_group(
+                'privgroup', local_site=local_site).count())
 
         self.client.logout()
 
@@ -723,3 +739,490 @@ class IfNeatNumberTagTests(TestCase):
             "{% endifneatnumber %}")
 
         self.assertEqual(t.render(Context({})), expected)
+
+
+class CounterTests(TestCase):
+    fixtures = ['test_scmtools.json']
+
+    def setUp(self):
+        tool = Tool.objects.get(name='Subversion')
+        repository = Repository.objects.create(name='Test1', path='path1',
+                                               tool=tool)
+
+        self.user = User.objects.create(username='testuser', password='')
+        self.profile, is_new = Profile.objects.get_or_create(user=self.user)
+        self.profile.save()
+
+        test_site = LocalSite.objects.create(name='test')
+        self.site_profile2 = \
+            LocalSiteProfile.objects.create(user=self.user,
+                                            profile=self.profile,
+                                            local_site=test_site)
+
+        self.review_request = ReviewRequest.objects.create(self.user,
+                                                           repository)
+        self.profile.star_review_request(self.review_request)
+
+        self.site_profile = self.profile.site_profiles.get(local_site=None)
+
+        self.group = Group.objects.create(name='test-group')
+        self.group.users.add(self.user)
+
+    def test_outgoing_requests(self):
+        """Testing counters with creating outgoing review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+
+    def test_closing_requests(self, close_type=ReviewRequest.DISCARDED):
+        """Testing counters with closing outgoing review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.target_people.add(self.user)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.assertTrue(self.review_request.public)
+        self.assertEqual(self.review_request.status,
+                         ReviewRequest.PENDING_REVIEW)
+        self.review_request.close(close_type)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_deleting_requests(self):
+        """Testing counters with deleting outgoing review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.target_people.add(self.user)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.delete()
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_reopen_discarded_requests(self):
+        """Testing counters with reopening discarded outgoing review requests"""
+        self.test_closing_requests(ReviewRequest.DISCARDED)
+
+        self.review_request.reopen()
+        self.assertFalse(self.review_request.public)
+        self.assertTrue(self.review_request.status,
+                        ReviewRequest.PENDING_REVIEW)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_reopen_submitted_requests(self):
+        """Testing counters with reopening submitted outgoing review requests"""
+        self.test_closing_requests(ReviewRequest.SUBMITTED)
+
+        self.review_request.reopen()
+        self.assertTrue(self.review_request.public)
+        self.assertTrue(self.review_request.status,
+                        ReviewRequest.PENDING_REVIEW)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_add_group(self):
+        """Testing counters when adding a group reviewer"""
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_remove_group(self):
+        """Testing counters when removing a group reviewer"""
+        self.test_add_group()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.remove(self.group)
+
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_add_person(self):
+        """Testing counters when adding a person reviewer"""
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people.add(self.user)
+
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+    def test_remove_person(self):
+        """Testing counters when removing a person reviewer"""
+        self.test_add_person()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people.remove(self.user)
+
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+    def _reload_objects(self):
+        self.site_profile = \
+            LocalSiteProfile.objects.get(pk=self.site_profile.pk)
+        self.site_profile2 = \
+            LocalSiteProfile.objects.get(pk=self.site_profile2.pk)
+        self.group = Group.objects.get(pk=self.group.pk)
+
+
+class PolicyTests(TestCase):
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+
+    def setUp(self):
+        self.user = User.objects.create(username='testuser', password='')
+        self.anonymous = AnonymousUser()
+
+    def test_group_public(self):
+        """Testing access to a public review group"""
+        group = Group.objects.create(name='test-group')
+
+        self.assertFalse(group.invite_only)
+        self.assertTrue(group.is_accessible_by(self.user))
+        self.assertTrue(group.is_accessible_by(self.anonymous))
+
+        self.assertTrue(group in Group.objects.accessible(self.user))
+        self.assertTrue(group in Group.objects.accessible(self.anonymous))
+
+    def test_group_invite_only_access_denied(self):
+        """Testing no access to unjoined invite-only group"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+
+        self.assertTrue(group.invite_only)
+        self.assertFalse(group.is_accessible_by(self.user))
+        self.assertFalse(group.is_accessible_by(self.anonymous))
+
+        self.assertFalse(group in Group.objects.accessible(self.user))
+        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+
+    def test_group_invite_only_access_allowed(self):
+        """Testing access to joined invite-only group"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        self.assertTrue(group.invite_only)
+        self.assertTrue(group.is_accessible_by(self.user))
+        self.assertFalse(group.is_accessible_by(self.anonymous))
+
+        self.assertTrue(group in Group.objects.accessible(self.user))
+        self.assertFalse(group in Group.objects.accessible(self.anonymous))
+
+    def test_group_public_hidden(self):
+        """Testing visibility of a hidden public group"""
+        group = Group.objects.create(name='test-group', visible=False)
+
+        self.assertFalse(group.visible)
+        self.assertTrue(group.is_accessible_by(self.user))
+        self.assertTrue(
+            group in Group.objects.accessible(self.user, visible_only=False))
+        self.assertFalse(
+            group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_group_invite_only_hidden_access_denied(self):
+        """Testing visibility of a hidden unjoined invite-only group"""
+        group = Group.objects.create(name='test-group', visible=False,
+                                     invite_only=True)
+
+        self.assertFalse(group.visible)
+        self.assertTrue(group.invite_only)
+        self.assertFalse(group.is_accessible_by(self.user))
+        self.assertFalse(
+            group in Group.objects.accessible(self.user, visible_only=False))
+        self.assertFalse(
+            group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_group_invite_only_hidden_access_allowed(self):
+        """Testing visibility of a hidden joined invite-only group"""
+        group = Group.objects.create(name='test-group', visible=False,
+                                     invite_only=True)
+        group.users.add(self.user)
+
+        self.assertFalse(group.visible)
+        self.assertTrue(group.invite_only)
+        self.assertTrue(group.is_accessible_by(self.user))
+        self.assertTrue(
+            group in Group.objects.accessible(self.user, visible_only=False))
+        self.assertTrue(
+            group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_repository_public(self):
+        """Testing access to a public repository"""
+        tool = Tool.objects.get(name='CVS')
+        repo = Repository.objects.create(name='Test1', path='path1', tool=tool)
+
+        self.assertTrue(repo.public)
+        self.assertTrue(repo.is_accessible_by(self.user))
+        self.assertTrue(repo.is_accessible_by(self.anonymous))
+
+    def test_repository_private_access_denied(self):
+        """Testing no access to a private repository"""
+        tool = Tool.objects.get(name='CVS')
+        repo = Repository.objects.create(name='Test1', path='path1', tool=tool,
+                                         public=False)
+
+        self.assertFalse(repo.public)
+        self.assertFalse(repo.is_accessible_by(self.user))
+        self.assertFalse(repo.is_accessible_by(self.anonymous))
+
+    def test_repository_private_access_allowed_by_user(self):
+        """Testing access to a private repository with user added"""
+        tool = Tool.objects.get(name='CVS')
+        repo = Repository.objects.create(name='Test1', path='path1', tool=tool,
+                                         public=False)
+        repo.users.add(self.user)
+
+        self.assertFalse(repo.public)
+        self.assertTrue(repo.is_accessible_by(self.user))
+        self.assertFalse(repo.is_accessible_by(self.anonymous))
+
+    def test_repository_private_access_allowed_by_review_group(self):
+        """Testing access to a private repository with joined review group added"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        tool = Tool.objects.get(name='CVS')
+        repo = Repository.objects.create(name='Test1', path='path1', tool=tool,
+                                         public=False)
+        repo.review_groups.add(group)
+
+        self.assertFalse(repo.public)
+        self.assertTrue(repo.is_accessible_by(self.user))
+        self.assertFalse(repo.is_accessible_by(self.anonymous))
+
+    def test_review_request_public(self):
+        """Testing access to a public review request"""
+        review_request = self._get_review_request()
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertTrue(review_request.is_accessible_by(self.anonymous))
+
+    def test_review_request_with_invite_only_group(self):
+        """Testing no access to a review request with only an unjoined invite-only group"""
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request = self._get_review_request()
+        review_request.target_groups.add(group)
+
+        self.assertFalse(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
+
+    def test_review_request_with_invite_only_group_and_target_user(self):
+        """Testing access to a review request with specific target user and invite-only group"""
+        group = Group(name='test-group', invite_only=True)
+        group.save()
+
+        review_request = self._get_review_request()
+        review_request.target_groups.add(group)
+        review_request.target_people.add(self.user)
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
+
+    def test_review_request_with_private_repository(self):
+        """Testing no access to a review request with a private repository"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+
+        review_request = self._get_review_request()
+        review_request.save()
+
+        review_request.repository.public = False
+        review_request.repository.save()
+
+        self.assertFalse(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
+
+    def test_review_request_with_private_repository_allowed_by_user(self):
+        """Testing access to a review request with a private repository with user added"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+
+        review_request = self._get_review_request()
+        review_request.save()
+
+        review_request.repository.public = False
+        review_request.repository.users.add(self.user)
+        review_request.repository.save()
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
+
+    def test_review_request_with_private_repository_allowed_by_review_group(self):
+        """Testing access to a review request with a private repository with review group added"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        review_request = self._get_review_request()
+        review_request.save()
+
+        review_request.repository.public = False
+        review_request.repository.review_groups.add(group)
+        review_request.repository.save()
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
+        self.assertFalse(review_request.is_accessible_by(self.anonymous))
+
+    def _get_review_request(self):
+        # Get a review request and clear out the reviewers.
+        review_request = ReviewRequest.objects.public()[0]
+        review_request.target_people.clear()
+        review_request.target_groups.clear()
+        return review_request

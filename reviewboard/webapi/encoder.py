@@ -6,7 +6,32 @@ from reviewboard.reviews.models import ReviewRequest, Review, Group, Comment, \
                                        ReviewRequestDraft, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.json import status_to_string
+
+
+def status_to_string(status):
+    if status == "P":
+        return "pending"
+    elif status == "S":
+        return "submitted"
+    elif status == "D":
+        return "discarded"
+    elif status == None:
+        return "all"
+    else:
+        raise Exception("Invalid status '%s'" % status)
+
+
+def string_to_status(status):
+    if status == "pending":
+        return "P"
+    elif status == "submitted":
+        return "S"
+    elif status == "discarded":
+        return "D"
+    elif status == "all":
+        return None
+    else:
+        raise Exception("Invalid status '%s'" % status)
 
 
 class DeprecatedReviewBoardAPIEncoder(WebAPIEncoder):

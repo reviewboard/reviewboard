@@ -303,7 +303,7 @@ def reply_section(context, review, comment, context_type, context_id):
 
 
 @register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
-def dashboard_entry(context, level, text, view, group=None):
+def dashboard_entry(context, level, text, view, group_name=None):
     """
     Renders an entry in the dashboard sidebar.
 
@@ -318,7 +318,8 @@ def dashboard_entry(context, level, text, view, group=None):
     count = 0
 
     if view == 'to-group':
-        count = datagrid.counts['groups'].get(group.name, 0)
+        count = datagrid.counts['groups'].get(group_name,
+            datagrid.counts['starred_groups'].get(group_name, 0))
     elif view == 'watched-groups':
         starred = True
         show_count = False
@@ -333,16 +334,18 @@ def dashboard_entry(context, level, text, view, group=None):
 
     return {
         'MEDIA_URL': settings.MEDIA_URL,
+        'MEDIA_SERIAL': settings.MEDIA_SERIAL,
         'level': level,
         'text': text,
         'view': view,
-        'group': group,
+        'group_name': group_name,
         'count': count,
         'show_count': show_count,
         'user': user,
         'starred': starred,
         'selected': context.get('view', None) == view and \
-                    (not group or context.get('group', None) == group.name),
+                    (not group_name or
+                     context.get('group', None) == group._ame),
     }
 
 

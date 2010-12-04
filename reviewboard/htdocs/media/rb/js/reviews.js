@@ -880,8 +880,7 @@ $.reviewForm = function(review) {
         type: "GET",
         dataType: "html",
         data: {},
-        url: SITE_ROOT + "r/" + gReviewRequestId +
-             "/reviews/draft/inline-form/",
+        url: gReviewRequestPath + "reviews/draft/inline-form/",
         success: function(html) {
             createForm(html);
         }
@@ -1566,6 +1565,22 @@ $(document).ready(function() {
         $.reviewForm(pendingReview);
     });
 
+    $("#shipit-link").click(function() {
+        if (confirm("Are you sure?")) {
+            pendingReview.shipit = 1;
+            pendingReview.body_top = "Ship It!";
+            pendingReview.publish({
+                buttons: null,
+                success: function() {
+                    hideReviewBanner();
+                    gReviewBanner.queue(function() {
+                        window.location = gReviewRequestPath;
+                    });
+                }
+            });
+        }
+    });
+
     /* Review banner's Publish button. */
     $("#review-banner-publish").click(function() {
         pendingReview.publish({
@@ -1606,6 +1621,17 @@ $(document).ready(function() {
 
     $("pre.reviewtext, #description, #testing_done").each(function() {
         $(this).html(linkifyText($(this).text()));
+    });
+
+    /* Toggle the state of a review */
+    $(".collapse-button").click(function() {
+        $(this).closest(".box").toggleClass('collapsed');
+    });
+
+    /* Expand all reviews */
+    $("#expand-all").click(function() {
+        $(".collapsed").removeClass("collapsed");
+        return false;
     });
 
     if (gUserAuthenticated) {

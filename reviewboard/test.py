@@ -44,6 +44,7 @@ from django.conf import settings
 from django.core import management
 from django.db import connection
 from django.test.utils import setup_test_environment, teardown_test_environment
+from djblets.util.misc import generate_media_serial
 
 
 def setup_media_dirs():
@@ -85,6 +86,8 @@ def setup_media_dirs():
             shutil.copytree(src_dir, dest_dir)
         else:
             os.symlink(src_dir, dest_dir)
+
+    generate_media_serial()
 
 
 def destroy_media_dirs():

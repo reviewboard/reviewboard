@@ -175,8 +175,11 @@ class GitDiffParser(DiffParser):
         linenum += 1
 
         # We have no use for recording this info so skip it
-        if self._is_newfile_or_deleted_change(linenum):
+        if self._is_new_file(linenum):
             linenum += 1
+        elif self._is_deleted_file(linenum):
+            linenum += 1
+            file_info.deleted = True
         elif self._is_mode_change(linenum):
             linenum += 2
 
@@ -217,11 +220,15 @@ class GitDiffParser(DiffParser):
                  next_line.startswith("deleted file mode"))
                 and next_diff_start.startswith("diff --git"))
 
-    def _is_newfile_or_deleted_change(self, linenum):
+    def _is_new_file(self, linenum):
         line = self.lines[linenum]
 
-        return (line.startswith("new file mode")
-                or line.startswith("deleted file mode"))
+        return self.lines[linenum].startswith("new file mode")
+
+    def _is_deleted_file(self, linenum):
+        line = self.lines[linenum]
+
+        return self.lines[linenum].startswith("deleted file mode")
 
     def _is_mode_change(self, linenum):
         return (self.lines[linenum].startswith("old mode")
