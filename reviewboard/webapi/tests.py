@@ -328,12 +328,29 @@ class SessionResourceTests(BaseWebAPITestCase):
 
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
+    local_site_name = 'local-site-1'
+
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet("repositories")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.accessible(self.user).count())
+
+    def test_get_repositories_with_site(self):
+        """Testing the GET repositories/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('repositories', local_site_name=self.local_site_name)
+        self.assertEqual(len(rsp['repositories']),
+                         Repository.objects.filter(
+                             local_site__name=self.local_site_name).count())
+
+    def test_get_repositories_with_site_no_access(self):
+        """Testing the GET repositories/ API with a local site and Permission Denied error"""
+        self.apiGet('repositories', local_site_name=self.local_site_name,
+                    expected_status=403)
 
     def test_get_repository_info(self):
         """Testing the GET repositories/<id>/info API"""
@@ -342,9 +359,31 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['info'],
                          self.repository.get_scmtool().get_repository_info())
 
+    def test_get_repository_info_with_site(self):
+        """Testing the GET repositories/<id>/info API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        repository = Repository.objects.get(name='V8 SVN')
+        rsp = self.apiGet('repositories/%d/info' % repository.pk,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['info'],
+                         repository.get_scmtool().get_repository_info())
+
+    def test_get_repository_info_with_site_no_access(self):
+        """Testing the GET repositories/<id>/info API with a local site and Permission Denied error"""
+        repository = Repository.objects.get(name='V8 SVN')
+        self.apiGet('repositories/%d/info' % repository.pk,
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
+
 
 class ReviewGroupResourceTests(BaseWebAPITestCase):
     """Testing the ReviewGroupResource APIs."""
+
+    local_site_name = 'local-site-1'
+
     def test_get_groups(self):
         """Testing the GET groups/ API"""
         rsp = self.apiGet("groups")
@@ -352,6 +391,24 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(len(rsp['groups']),
                          Group.objects.accessible(self.user).count())
         self.assertEqual(len(rsp['groups']), 4)
+
+    def test_get_groups_with_site(self):
+        """Testing the GET groups/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        groups = Group.objects.accessible(self.user, local_site=local_site)
+
+        rsp = self.apiGet('groups', local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['groups']), groups.count())
+        self.assertEqual(len(rsp['groups']), 1)
+
+    def test_get_groups_with_site_no_access(self):
+        """Testing the GET groups/ API with a local site and Permission Denied error"""
+        self.apiGet('groups', local_site_name=self.local_site_name,
+                    expected_status=403)
 
     def test_get_groups_with_q(self):
         """Testing the GET groups/?q= API"""
@@ -386,9 +443,30 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def test_get_group_with_site(self):
+        """Testing the GET groups/<id>/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        group = Group.objects.get(name='sitegroup')
+
+        rsp = self.apiGet('groups/sitegroup',
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['group']['name'], group.name)
+        self.assertEqual(rsp['group']['display_name'], group.display_name)
+
+    def test_get_group_with_site_no_access(self):
+        """Testing the GET groups/<id>/ API with a local site and Permission Denied error"""
+        self.apiGet('groups/sitegroup', local_site_name=self.local_site_name,
+                    expected_status=403)
+
 
 class UserResourceTests(BaseWebAPITestCase):
     """Testing the UserResource API tests."""
+
+    local_site_name = 'local-site-1'
+
     def test_get_users(self):
         """Testing the GET users/ API"""
         rsp = self.apiGet("users")
@@ -401,6 +479,63 @@ class UserResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['users']), 1) # grumpy
 
+    def test_get_users_with_site(self):
+        """Testing the GET users/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        rsp = self.apiGet('users', local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['users']), local_site.users.count())
+
+    def test_get_users_with_site_no_access(self):
+        """Testing the GET users/ API with a local site and Permission Denied error"""
+        self.apiGet('users', local_site_name=self.local_site_name,
+                    expected_status=403)
+
+    def test_get_user(self):
+        """Testing the GET users/<username>/ API"""
+        username = 'doc'
+        user = User.objects.get(username=username)
+
+        rsp = self.apiGet('users/%s' % username)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['user']['username'], user.username)
+        self.assertEqual(rsp['user']['first_name'], user.first_name)
+        self.assertEqual(rsp['user']['last_name'], user.last_name)
+        self.assertEqual(rsp['user']['id'], user.id)
+        self.assertEqual(rsp['user']['email'], user.email)
+
+    def test_get_user_with_site(self):
+        """Testing the GET users/<username>/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        username = 'doc'
+        user = User.objects.get(username=username)
+
+        rsp = self.apiGet('users/%s' % username,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['user']['username'], user.username)
+        self.assertEqual(rsp['user']['first_name'], user.first_name)
+        self.assertEqual(rsp['user']['last_name'], user.last_name)
+        self.assertEqual(rsp['user']['id'], user.id)
+        self.assertEqual(rsp['user']['email'], user.email)
+
+    def test_get_missing_user_with_site(self):
+        """Testing the GET users/<username>/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('users/dopey', local_site_name=self.local_site_name,
+                          expected_status=404)
+
+    def test_get_user_with_site_no_access(self):
+        """Testing the GET users/<username>/ API with a local site and Permission Denied error."""
+        self.apiGet('users/doc', local_site_name=self.local_site_name,
+                    expected_status=403)
 
 class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the WatchedReviewRequestResource API tests."""

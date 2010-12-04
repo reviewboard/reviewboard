@@ -17,7 +17,6 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
                               set_last_modified
-from djblets.util.misc import get_object_or_none
 from djblets.webapi.core import WebAPIResponseError, \
                                 WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
@@ -62,6 +61,13 @@ from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
 
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
+
+
+def _get_local_site(local_site_name):
+    if local_site_name:
+        return LocalSite.objects.get(name=local_site_name)
+    else:
+        return None
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -1477,10 +1483,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         watched_resource,
     ]
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
         query = self.model.objects.filter(is_active=True)
+        if local_site_name:
+            query = query.filter(localsite__name=local_site_name)
 
         if search_q:
             q = Q(username__istartswith=search_q)
@@ -1493,6 +1501,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         return query
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'q': {
@@ -1535,6 +1544,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a registered user.
@@ -1553,9 +1563,13 @@ class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
     uri_object_key = None
 
-    def get_queryset(self, request, group_name, *args, **kwargs):
-        return self.model.objects.filter(review_groups__name=group_name)
+    def get_queryset(self, request, group_name, local_site_name=None,
+                     *args, **kwargs):
+        group = Group.objects.get(name=group_name,
+                                  local_site__name=local_site_name)
+        return group.users.all()
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of users belonging to a specific review group.
@@ -1643,13 +1657,16 @@ class ReviewGroupResource(WebAPIResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, is_list=False, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     *args, **kwargs):
         search_q = request.GET.get('q', None)
+        local_site = _get_local_site(local_site_name)
 
         if is_list:
-            query = self.model.objects.accessible(request.user)
+            query = self.model.objects.accessible(request.user,
+                                                  local_site=local_site)
         else:
-            query = self.model.objects.all()
+            query = self.model.objects.filter(local_site=local_site)
 
         if search_q:
             q = Q(name__istartswith=search_q)
@@ -1667,6 +1684,7 @@ class ReviewGroupResource(WebAPIResource):
     def has_access_permissions(self, request, group, *args, **kwargs):
         return group.is_accessible_by(request.user)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a review group.
@@ -1679,6 +1697,7 @@ class ReviewGroupResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'q': {
@@ -1730,6 +1749,7 @@ class RepositoryInfoResource(WebAPIResource):
     singleton = True
     allowed_methods = ('GET',)
 
+    @webapi_check_local_site
     @webapi_check_login_required
     @webapi_response_errors(DOES_NOT_EXIST, REPO_NOT_IMPLEMENTED,
                             REPO_INFO_ERROR)
@@ -1794,8 +1814,11 @@ class RepositoryResource(WebAPIResource):
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
-    def get_queryset(self, request, *args, **kwargs):
-        return self.model.objects.accessible(request.user)
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+        local_site = _get_local_site(local_site_name)
+        return self.model.objects.accessible(request.user,
+                                             visible_only=True,
+                                             local_site=local_site)
 
     def serialize_tool_field(self, obj):
         return obj.tool.name
@@ -1803,8 +1826,9 @@ class RepositoryResource(WebAPIResource):
     def has_access_permissions(self, request, repository, *args, **kwargs):
         return repository.is_accessible_by(request.user)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
-    def get_list(self, *args, **kwargs):
+    def get_list(self, request, *args, **kwargs):
         """Retrieves the list of repositories on the server.
 
         This will only list visible repositories. Any repository that the
@@ -1812,6 +1836,7 @@ class RepositoryResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieves information on a particular repository.
