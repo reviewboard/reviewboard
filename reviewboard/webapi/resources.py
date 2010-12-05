@@ -2282,14 +2282,9 @@ class ReviewRequestDraftResource(WebAPIResource):
         if request.POST.get('public', False):
             review_request.publish(user=request.user)
 
-            return 303, {}, {
-                'Location': review_request_resource.get_href(
-                    review_request, request, *args, **kwargs)
-            }
-        else:
-            return 200, {
-                self.item_result_key: draft,
-            }
+        return 200, {
+            self.item_result_key: draft,
+        }
 
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
