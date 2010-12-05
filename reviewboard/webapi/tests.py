@@ -1003,8 +1003,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=False).\
-            exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(public=False,
+            local_site=None).exclude(submitter=self.user)[0]
         rsp = self.apiGet("review-requests/%s" % review_request.id,
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -1012,8 +1012,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_invite_only_group_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with invite-only group and Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True).\
-            exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
         review_request.target_groups.clear()
         review_request.target_people.clear()
 
@@ -1030,8 +1030,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_invite_only_group_and_target_user(self):
         """Testing the GET review-requests/<id>/ API with invite-only group and target user"""
-        review_request = ReviewRequest.objects.filter(public=True).\
-            exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
         review_request.target_groups.clear()
         review_request.target_people.clear()
 
@@ -1081,8 +1081,8 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_delete_reviewrequest_with_permission_denied_error(self):
         """Testing the DELETE review-requests/<id>/ API with Permission Denied error"""
-        review_request_id = \
-            ReviewRequest.objects.exclude(submitter=self.user)[0].id
+        review_request_id = ReviewRequest.objects.filter(
+            local_site=None).exclude(submitter=self.user)[0].id
         rsp = self.apiDelete("review-requests/%s" % review_request_id,
                              expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -1944,8 +1944,8 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     def test_post_screenshots_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True).\
-            exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
@@ -2016,8 +2016,8 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
 
     def test_post_screenshots_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/screenshots/ API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True).\
-            exclude(submitter=self.user)[0]
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
 
         f = open(self._getTrophyFilename(), "r")
         self.assert_(f)
