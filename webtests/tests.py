@@ -25,7 +25,8 @@ def create_screenshot(r, caption=""):
 
 
 class SeleniumUnitTest(testcases.SeleniumUnitTest):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         super(SeleniumUnitTest, self).setUp()
@@ -539,8 +540,10 @@ class ReviewRequestTests(SeleniumUnitTest):
     # This is a test for bug #1586
     def test_linkified_text_for_non_editable_description(self):
         """Testing linkified text in non-editable description"""
-        r = ReviewRequest.objects.filter(public=True, status='P')\
-            .exclude(submitter=self.user)[0]
+        q = ReviewRequest.objects.filter(public=True, status='P',
+                                         local_site=None)
+        q = q.exclude(submitter=self.user)
+        r = q[0]
         r.description = "Testing linkified text\n\n/r/123"
         r.save()
         transaction.commit()
