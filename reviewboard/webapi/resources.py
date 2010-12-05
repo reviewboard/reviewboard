@@ -3747,7 +3747,8 @@ class ReviewRequestResource(WebAPIResource):
         'discarded': ReviewRequest.DISCARDED,
     }
 
-    def get_queryset(self, request, is_list=False, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     *args, **kwargs):
         """Returns a queryset for ReviewRequest models.
 
         By default, this returns all published or formerly published
@@ -3826,6 +3827,7 @@ class ReviewRequestResource(WebAPIResource):
             * ``2010-06-27T16:26:30``
             * ``2010-06-27T16:26:30-08:00``
         """
+        local_site = _get_local_site(local_site_name)
         q = Q()
 
         if is_list:
@@ -3885,9 +3887,10 @@ class ReviewRequestResource(WebAPIResource):
             status = string_to_status(request.GET.get('status', 'pending'))
 
             return self.model.objects.public(user=request.user, status=status,
+                                             local_site=local_site,
                                              extra_query=q)
         else:
-            return self.model.objects.all()
+            return self.model.objects.filter(local_site=local_site)
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
@@ -3901,6 +3904,13 @@ class ReviewRequestResource(WebAPIResource):
     def serialize_status_field(self, obj):
         return status_to_string(obj.status)
 
+    def serialize_id_field(self, obj):
+        if obj.local_site:
+            return obj.local_id
+        else:
+            return obj.id
+
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(PERMISSION_DENIED, INVALID_USER,
                             INVALID_REPOSITORY, CHANGE_NUMBER_IN_USE,
@@ -3931,7 +3941,7 @@ class ReviewRequestResource(WebAPIResource):
             },
         })
     def create(self, request, repository, submit_as=None, changenum=None,
-               *args, **kwargs):
+               local_site_name=None, *args, **kwargs):
         """Creates a new review request.
 
         The new review request will start off as private and pending, and
@@ -3960,6 +3970,7 @@ class ReviewRequestResource(WebAPIResource):
         that need to create review requests for another user.
         """
         user = request.user
+        local_site = _get_local_site(local_site_name)
 
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user'):
@@ -3972,12 +3983,14 @@ class ReviewRequestResource(WebAPIResource):
 
         try:
             try:
-                repository = Repository.objects.get(pk=int(repository))
+                repository = Repository.objects.get(pk=int(repository),
+                                                    local_site=local_site)
             except ValueError:
                 # The repository is not an ID.
                 repository = Repository.objects.get(
-                    Q(path=repository) |
-                    Q(mirror_path=repository))
+                    (Q(path=repository) |
+                     Q(mirror_path=repository)) &
+                    Q(local_site=local_site))
         except Repository.DoesNotExist, e:
             return INVALID_REPOSITORY, {
                 'repository': repository
@@ -3988,7 +4001,7 @@ class ReviewRequestResource(WebAPIResource):
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,
-                                                          changenum)
+                                                          changenum, local_site)
 
             return 201, {
                 self.item_result_key: review_request
@@ -4002,6 +4015,7 @@ class ReviewRequestResource(WebAPIResource):
         except EmptyChangeSetError:
             return EMPTY_CHANGESET
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -4050,6 +4064,7 @@ class ReviewRequestResource(WebAPIResource):
             self.item_result_key: review_request,
         }
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
         """Deletes the review request permanently.
@@ -4066,6 +4081,7 @@ class ReviewRequestResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'changenum': {
@@ -4172,6 +4188,48 @@ class ReviewRequestResource(WebAPIResource):
         error will be returned.
         """
         pass
+
+    def get_object(self, request, review_request_id, local_site_name=None,
+                   *args, **kwargs):
+        """Returns an object, given captured parameters from a URL.
+
+        This is an override of the djblets WebAPIResource get_object, which
+        knows about local_id and local_site_name.
+        """
+        queryset = self.get_queryset(request, local_site_name=local_site_name,
+                                     review_request_id=review_request_id,
+                                     *args, **kwargs)
+
+        if local_site_name:
+            return queryset.get(local_id=review_request_id)
+        else:
+            return queryset.get(pk=review_request_id)
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object.
+
+        This is an override of WebAPIResource.get_href which will use the
+        local_id instead of the pk.
+        """
+        if obj.local_site:
+            id = obj.local_id
+        else:
+            id = obj.pk
+
+        href_kwargs = {
+            self.uri_object_key: id,
+        }
+        href_kwargs.update(self.get_href_parent_ids(obj))
+
+        url = reverse(self._build_named_url(self.name), kwargs=href_kwargs)
+
+        if obj.local_site:
+            prefix = '%ss/%s' % (settings.SITE_ROOT, obj.local_site.name)
+            if not url.startswith(prefix):
+                url = prefix + url
+
+        return request.build_absolute_uri(url)
+
 
     def _parse_date(self, timestamp_str):
         try:
