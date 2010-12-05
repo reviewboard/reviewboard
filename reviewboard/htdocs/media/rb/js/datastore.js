@@ -1514,10 +1514,11 @@ function rbApiCall(options) {
             $.funcQueue("rbapicall").next();
         };
 
+        data.data = $.extend({
+            api_format: 'json'
+        }, data.data || {});
+
         if (options.form) {
-            data.data = $.extend({
-                api_format: 'json'
-            }, data.data || {});
             options.form.ajaxSubmit(data);
         } else {
             $.ajax(data);
