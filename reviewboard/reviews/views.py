@@ -327,6 +327,12 @@ def review_detail(request,
 
     changedescs = review_request.changedescs.filter(public=True)
 
+    try:
+        latest_changedesc = changedescs.latest('timestamp')
+        latest_timestamp = latest_changedesc.timestamp
+    except ChangeDescription.DoesNotExist:
+        latest_timestamp = None
+
     entries = []
 
     for temp_review in reviews:
@@ -335,16 +341,9 @@ def review_detail(request,
 
         state = ''
 
-        try:
-            latest_changedesc = changedescs.latest('timestamp')
-            latest_timestamp = latest_changedesc.timestamp
-        except ChangeDescription.DoesNotExist:
-            latest_timestamp = None
-
         # Mark as collapsed if the review is older than the latest change
-        if latest_timestamp:
-            if temp_review.timestamp < latest_timestamp:
-                state = 'collapsed'
+        if latest_timestamp and temp_review.timestamp < latest_timestamp:
+            state = 'collapsed'
 
         try:
             latest_reply = temp_review.public_replies().latest('timestamp').timestamp
@@ -352,9 +351,8 @@ def review_detail(request,
             latest_reply = None
 
         # Mark as expanded if there is a reply newer than last_visited
-        if latest_reply:
-          if last_visited < latest_reply:
-              state = ''
+        if latest_reply and last_visited < latest_reply:
+          state = ''
 
         entries.append({
             'review': temp_review,
@@ -412,9 +410,8 @@ def review_detail(request,
         state = ''
 
         # Mark as collapsed if the change is older than a newer change
-        if latest_timestamp:
-            if changedesc != latest_changedesc:
-                state = 'collapsed'
+        if latest_timestamp and changedesc.timestamp < latest_timestamp:
+            state = 'collapsed'
 
         entries.append({
             'changeinfo': fields_changed,
@@ -682,6 +679,7 @@ def diff(request,
             'last_activity_time': last_activity_time,
             'specific_diff_requested': revision is not None or
                                        interdiff_revision is not None,
+            'base_url': review_request.get_absolute_url(),
         }))
 
 
