@@ -819,7 +819,7 @@
             "is_active": true, 
             "is_superuser": true, 
             "is_staff": true, 
-            "last_login": "2007-06-24 00:42:12", 
+            "last_login": "2010-12-03 16:48:53", 
             "groups": [], 
             "user_permissions": [], 
             "password": "sha1$b2c09$12c1820af5195a026c703a6149467800d7937dd6", 
@@ -885,15 +885,24 @@
     }, 
     {
         "pk": 1, 
+        "model": "accounts.reviewrequestvisit", 
+        "fields": {
+            "timestamp": "2010-12-02 10:57:37", 
+            "review_request": 9, 
+            "user": 1
+        }
+    }, 
+    {
+        "pk": 1, 
         "model": "accounts.profile", 
         "fields": {
-            "review_request_columns": "", 
+            "review_request_columns": "star,summary,submitter,time_added,last_updated_since", 
             "starred_groups": [], 
-            "dashboard_columns": "", 
+            "dashboard_columns": "new_updates,star,summary,submitter,time_added,last_updated_since", 
             "sort_group_columns": "", 
             "show_submitted": true, 
             "sort_submitter_columns": "", 
-            "sort_dashboard_columns": "", 
+            "sort_dashboard_columns": "-last_updated", 
             "submitter_columns": "", 
             "user": 1, 
             "first_time_setup_done": true, 
@@ -901,7 +910,7 @@
             "group_columns": "", 
             "collapsed_diffs": true, 
             "starred_review_requests": [], 
-            "sort_review_request_columns": "", 
+            "sort_review_request_columns": "-last_updated", 
             "syntax_highlighting": true
         }
     }, 
@@ -957,8 +966,8 @@
             "direct_incoming_request_count": 0, 
             "local_site": null, 
             "starred_public_request_count": 0, 
-            "total_outgoing_request_count": 2, 
-            "pending_outgoing_request_count": 2, 
+            "total_outgoing_request_count": 4, 
+            "pending_outgoing_request_count": 4, 
             "user": 1, 
             "total_incoming_request_count": 0
         }
@@ -989,6 +998,20 @@
             "pending_outgoing_request_count": 1, 
             "user": 4, 
             "total_incoming_request_count": 2
+        }
+    }, 
+    {
+        "pk": 4, 
+        "model": "accounts.localsiteprofile", 
+        "fields": {
+            "profile": 1, 
+            "direct_incoming_request_count": 0, 
+            "local_site": 1, 
+            "starred_public_request_count": 0, 
+            "total_outgoing_request_count": -1, 
+            "pending_outgoing_request_count": -1, 
+            "user": 1, 
+            "total_incoming_request_count": 0
         }
     }
 ]
