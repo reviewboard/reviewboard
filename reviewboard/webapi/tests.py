@@ -945,11 +945,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
             ReviewRequest.objects.from_user(self.user.username)[0].id
         rsp = self.apiPut("review-requests/%s/draft" % review_request_id, {
             'public': True,
-        }, follow_redirects=True, expected_redirects=[
-            reverse('review-request-resource', kwargs={
-                'review_request_id': review_request_id,
-            })
-        ])
+        })
 
         self.assertEqual(rsp['stat'], 'ok')
 
@@ -978,11 +974,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPut("review-requests/%s/draft" % review_request.id, {
             'public': True,
-        }, follow_redirects=True, expected_redirects=[
-            reverse('review-request-resource', kwargs={
-                'review_request_id': review_request.id,
-            })
-        ])
+        })
 
         self.assertEqual(rsp['stat'], 'ok')
 
