@@ -161,7 +161,6 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
             var comment = comments[i];
 
             if (comment.localdraft) {
-                console.log(comment);
                 this._createDraftComment(comment.comment_id, comment.text);
             } else {
                 this.comments.push(comment);
