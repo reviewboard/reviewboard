@@ -1066,25 +1066,46 @@ $.fn.reviewRequestFieldEditor = function() {
 
 
 /*
- * Adds inline editing capabilities to a field for a screenshot.
+ * Handles interaction and events with a screenshot thumbnail.
+
+ * @return {jQuery} The provided screenshot containers.
  */
-$.fn.screenshotFieldEditor = function() {
-    return this.each(function() {
-        $(this)
+$.fn.screenshotThumbnail = function() {
+    return $(this).each(function() {
+        var self = $(this);
+
+        var screenshot_id = self.attr("data-screenshot-id");
+        var screenshot = gReviewRequest.createScreenshot(screenshot_id);
+        var captionEl = self.find(".screenshot-caption");
+
+        captionEl.find("a.edit")
             .inlineEditor({
                 cls: this.id + "-editor",
                 editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
                 showButtons: false
             })
             .bind("complete", function(e, value) {
-                setDraftField(this.id, value);
+                screenshot.ready(function() {
+                    screenshot.caption = value;
+                    screenshot.save()
+                });
+            });
+
+        captionEl.find("a.delete")
+            .click(function() {
+                screenshot.ready(function() {
+                    screenshot.deleteScreenshot()
+                    self.empty();
+                });
+
+                return false;
             });
     });
 }
 
 
 /*
- * Adds a thumbnail to the thumbnail list.
+ * Adds a new, dynamic thumbnail to the thumbnail list.
  *
  * If a screenshot object is given, then this will display actual
  * thumbnail data. Otherwise, this will display a spinner.
@@ -1093,7 +1114,7 @@ $.fn.screenshotFieldEditor = function() {
  *
  * @return {jQuery} The root screenshot thumbnail div.
  */
-$.screenshotThumbnail = function(screenshot) {
+$.newScreenshotThumbnail = function(screenshot) {
     var container = $('<div/>')
         .addClass("screenshot-container");
 
@@ -1118,15 +1139,15 @@ $.screenshotThumbnail = function(screenshot) {
 
         captionArea
             .append($("<a/>")
-                .addClass("editable")
-                .addClass("screenshot-editable")
+                .addClass("screenshot-editable edit")
                 .attr({
                     href: screenshot.image_url,
                     id: "screenshot_" + screenshot.id + "_caption"
                 })
             )
             .append($("<a/>")
-                .attr("href", screenshot.image_url + "delete/")
+                .addClass("delete")
+                .attr("href", "#")
                 .append($("<img/>")
                     .attr({
                         src: MEDIA_URL + "rb/images/delete.png?" +
@@ -1136,7 +1157,9 @@ $.screenshotThumbnail = function(screenshot) {
                 )
             );
 
-        container.find(".editable").screenshotFieldEditor()
+        container
+            .attr("data-screenshot-id", screenshot.id)
+            .screenshotThumbnail();
     } else {
         body.addClass("loading");
 
@@ -1437,7 +1460,7 @@ function initScreenshotDnD() {
 
     function uploadScreenshot(file) {
         /* Create a temporary screenshot thumbnail. */
-        var thumb = $.screenshotThumbnail()
+        var thumb = $.newScreenshotThumbnail()
             .css("opacity", 0)
             .fadeTo(1000, 1);
 
@@ -1446,7 +1469,7 @@ function initScreenshotDnD() {
         screenshot.save({
             buttons: gDraftBannerButtons,
             success: function(rsp, screenshot) {
-                thumb.replaceWith($.screenshotThumbnail(screenshot));
+                thumb.replaceWith($.newScreenshotThumbnail(screenshot));
                 gDraftBanner.show();
             },
             error: function(rsp, msg) {
@@ -1637,6 +1660,7 @@ $(document).ready(function() {
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
             $(".editable").reviewRequestFieldEditor();
+            $(".screenshot-container").screenshotThumbnail();
 
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");

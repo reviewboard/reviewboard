@@ -956,31 +956,6 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
         mimetype=mimetype)
 
 
-@login_required
-def delete_screenshot(request,
-                      review_request_id,
-                      screenshot_id,
-                      local_site_name=None):
-    """
-    Deletes a screenshot from a review request and redirects back to the
-    review request page.
-    """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
-
-    if not review_request:
-        return response
-
-    s = Screenshot.objects.get(id=screenshot_id)
-
-    draft = ReviewRequestDraft.create(review_request)
-    draft.screenshots.remove(s)
-    draft.inactive_screenshots.add(s)
-    draft.save()
-
-    return HttpResponseRedirect(review_request.get_absolute_url())
-
-
 @check_login_required
 def view_screenshot(request,
                     review_request_id,

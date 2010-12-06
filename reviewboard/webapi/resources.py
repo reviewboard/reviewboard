@@ -1971,6 +1971,7 @@ class BaseScreenshotResource(WebAPIResource):
             },
         }
     )
+    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     def update(self, request, caption=None, *args, **kwargs):
         """Updates the screenshot's data.
 
@@ -2000,6 +2001,29 @@ class BaseScreenshotResource(WebAPIResource):
         return 200, {
             self.item_result_key: screenshot,
         }
+
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    def delete(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            screenshot = screenshot_resource.get_object(request, *args,
+                                                        **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        try:
+            draft = review_request_draft_resource.prepare_draft(request,
+                                                                review_request)
+        except PermissionDenied:
+            return PERMISSION_DENIED
+
+        draft.screenshots.remove(screenshot)
+        draft.inactive_screenshots.add(screenshot)
+        draft.save()
+
+        return 204, {}
 
 
 class DraftScreenshotResource(BaseScreenshotResource):
@@ -3529,8 +3553,7 @@ class ScreenshotResource(BaseScreenshotResource):
         """
         pass
 
-    @webapi_login_required
-    @augment_method_from(WebAPIResource)
+    @augment_method_from(BaseScreenshotResource)
     def delete(self, *args, **kwargs):
         """Deletes the screenshot.
 
