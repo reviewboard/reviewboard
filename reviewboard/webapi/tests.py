@@ -154,16 +154,19 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     #
     # Some utility functions shared across test suites.
     #
-    def _postNewReviewRequest(self):
+    def _postNewReviewRequest(self, local_site_name=None,
+                              repository=None):
         """Creates a review request and returns the payload response."""
-        rsp = self.apiPost("review-requests", {
-            'repository': self.repository.path,
-        })
+        if not repository:
+            repository = self.repository
+        rsp = self.apiPost("review-requests",
+                           { 'repository': repository.path, },
+                           local_site_name=local_site_name)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review_request']['links']['repository']['href'],
                          self.base_url + reverse('repository-resource', kwargs={
-                             'repository_id': self.repository.id,
+                             'repository_id': repository.id,
                          }))
 
         return rsp
@@ -1999,6 +2002,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
 class FileDiffResourceTests(BaseWebAPITestCase):
     """Testing the FileDiffResource APIs."""
+
+    local_site_name = 'local-site-1'
+
     def test_post_diffs(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
         rsp = self._postNewReviewRequest()
@@ -2050,19 +2056,97 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('basedir' in rsp['fields'])
 
+    def test_post_diffs_with_site(self):
+        """Testing the POST review-requests/<id>/diffs/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        repo = Repository.objects.get(name='Review Board Git')
+        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
+                                         repository=repo)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = ReviewRequest.objects.get(
+            local_id=rsp['review_request']['id'],
+            local_site__name=self.local_site_name)
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'scmtools', 'testdata', 'git_deleted_file_indication.diff')
+        f = open(diff_filename, 'r')
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'],
+                           { 'path': f, },
+                           local_site_name=self.local_site_name)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff']['name'],
+                         'git_deleted_file_indication.diff')
+
+
     def test_get_diffs(self):
         """Testing the GET review-requests/<id>/diffs/ API"""
         rsp = self.apiGet("review-requests/2/diffs")
 
+        self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diffs'][0]['id'], 2)
         self.assertEqual(rsp['diffs'][0]['name'], 'cleaned_data.diff')
+
+    def test_get_diffs_with_site(self):
+        """Testing the GET review-requests/<id>/diffs API with a local site"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('review-requests/%s/diffs' % review_request.local_id,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diffs'][0]['id'],
+                         review_request.diffset_history.diffsets.latest().id)
+        self.assertEqual(rsp['diffs'][0]['name'],
+                         review_request.diffset_history.diffsets.latest().name)
+
+    def test_get_diffs_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/diffs API with a local site and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        self.apiGet('review-requests/%s/diffs' % review_request.local_id,
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
 
     def test_get_diff(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""
         rsp = self.apiGet("review-requests/2/diffs/1")
 
+        self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['id'], 2)
         self.assertEqual(rsp['diff']['name'], 'cleaned_data.diff')
+
+    def test_get_diff_with_site(self):
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        diff = review_request.diffset_history.diffsets.latest()
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('review-requests/%s/diffs/%s' % (review_request.local_id,
+                                                           diff.revision),
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff']['id'], diff.id)
+        self.assertEqual(rsp['diff']['name'], diff.name)
+
+    def test_get_diff_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        diff = review_request.diffset_history.diffsets.latest()
+        self.apiGet('review-requests/%s/diffs/%s' % (review_request.local_id,
+                                                     diff.revision),
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
 
 
 class ScreenshotDraftResourceTests(BaseWebAPITestCase):

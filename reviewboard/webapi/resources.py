@@ -987,9 +987,15 @@ class DiffResource(WebAPIResource):
         'text/x-patch'
     ]
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+        except ReviewRequest.DoesNotExist:
+            raise self.model.DoesNotExist
+
         return self.model.objects.filter(
-            history__review_request=review_request_id)
+            history__review_request=review_request)
 
     def get_parent_object(self, diffset):
         history = diffset.history
@@ -1004,14 +1010,19 @@ class DiffResource(WebAPIResource):
         review_request = diffset.history.review_request.get()
         return review_request.is_accessible_by(request.user)
 
-    @augment_method_from(WebAPIResource)
+    @webapi_check_local_site
+    @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, *args, **kwargs):
         """Returns the list of public diffs on the review request.
 
         Each diff has a revision and list of per-file diffs associated with it.
         """
-        pass
+        try:
+            return super(DiffResource, self).get_list(*args, **kwargs)
+        except self.model.DoesNotExist:
+            return DOES_NOT_EXIST
 
+    @webapi_check_local_site
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns the information or contents on a particular diff.
@@ -1060,6 +1071,7 @@ class DiffResource(WebAPIResource):
 
         return resp
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA)
