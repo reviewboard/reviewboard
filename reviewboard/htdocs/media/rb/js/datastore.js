@@ -471,8 +471,13 @@ $.extend(RB.ReviewRequest.prototype, {
     },
 
     setDraftField: function(options) {
-        data = {}
+        data = {};
         data[options.field] = options.value;
+
+        if (options.field == "target_people" ||
+            options.field == "target_groups") {
+            data.expand = options.field;
+        }
 
         this._apiCall({
             type: "PUT",
