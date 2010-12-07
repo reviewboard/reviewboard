@@ -28,7 +28,6 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
         (r'^media/(?P<path>.*)$', 'serve', {
             'show_indexes': True,
             'document_root': settings.MEDIA_ROOT,
-            'insecure': True,
             }),
     )
 
