@@ -415,9 +415,13 @@ class ReviewRequestDataGrid(DataGrid):
         if profile:
             self.show_submitted = profile.show_submitted
 
-        self.show_submitted = \
-            int(self.request.GET.get('show_submitted',
+        try:
+            self.show_submitted = \
+                int(self.request.GET.get('show_submitted',
                                      self.show_submitted)) != 0
+        except ValueError:
+            # do nothing
+            pass
 
         if self.show_submitted:
             # There are only three states: Published, Submitted and Discarded.
