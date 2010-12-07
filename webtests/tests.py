@@ -968,7 +968,7 @@ class ScreenshotTests(SeleniumUnitTest):
         self.selenium.open(r.get_absolute_url())
         self.selenium.click('css=.screenshot-caption '
                             'img[alt="Delete Screenshot"]')
-        self.selenium.wait_for_page_to_load("6000")
+        self.wait_for_ajax_finish()
 
         draft = r.get_draft(self.user)
         self.assertNotEqual(draft, None)
