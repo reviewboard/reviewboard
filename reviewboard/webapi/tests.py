@@ -85,8 +85,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
-    def api_post_with_response(self, path, query={}, expected_status=201):
-        path = self._normalize_path(path)
+    def api_post_with_response(self, path, query={}, expected_status=201,
+                               local_site_name=None):
+        path = self._normalize_path(path, local_site_name)
 
         print 'POSTing to %s' % path
         print "Post data: %s" % query
@@ -102,8 +103,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return rsp
 
     def apiPut(self, path, query={}, expected_status=200,
-               follow_redirects=False, expected_redirects=[]):
-        path = self._normalize_path(path)
+               follow_redirects=False, expected_redirects=[],
+               local_site_name=None):
+        path = self._normalize_path(path, local_site_name)
 
         print 'PUTing to %s' % path
         print "Post data: %s" % query
@@ -115,8 +117,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return self._get_result(response, expected_status)
 
-    def apiDelete(self, path, expected_status=204):
-        path = self._normalize_path(path)
+    def apiDelete(self, path, expected_status=204, local_site_name=None):
+        path = self._normalize_path(path, local_site_name)
 
         print 'DELETEing %s' % path
         response = self.client.delete(path)
@@ -152,16 +154,19 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     #
     # Some utility functions shared across test suites.
     #
-    def _postNewReviewRequest(self):
+    def _postNewReviewRequest(self, local_site_name=None,
+                              repository=None):
         """Creates a review request and returns the payload response."""
-        rsp = self.apiPost("review-requests", {
-            'repository': self.repository.path,
-        })
+        if not repository:
+            repository = self.repository
+        rsp = self.apiPost("review-requests",
+                           { 'repository': repository.path, },
+                           local_site_name=local_site_name)
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['review_request']['links']['repository']['href'],
                          self.base_url + reverse('repository-resource', kwargs={
-                             'repository_id': self.repository.id,
+                             'repository_id': repository.id,
                          }))
 
         return rsp
@@ -590,6 +595,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
                                    kwargs={
                                        'username': self.user.username,
                                    })
+        self.local_site_name = 'local-site-1'
 
     def test_post_watched_review_group(self):
         """Testing the POST users/<username>/watched/review-groups/ API"""
@@ -609,6 +615,51 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    def test_post_watched_review_group_with_site(self):
+        """Testing the POST users/<username>/watched/review-groups/ API with a local site"""
+        username = 'doc'
+        user = User.objects.get(username=username)
+        watched_url = reverse('watched-review-groups-resource',
+                              kwargs={
+                                  'username': username,
+                              })
+        self.client.logout()
+        self.client.login(username=username, password='doc')
+
+        group = Group.objects.get(name='sitegroup',
+                                  local_site__name=self.local_site_name)
+
+        rsp = self.apiPost(watched_url,
+                           { 'object_id': group.name, },
+                           local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue(group in user.get_profile().starred_groups.all())
+
+    def test_post_watched_review_group_with_site_does_not_exist_error(self):
+        """Testing the POST users/<username>/watched/review-groups/ API with a local site and Does Not Exist error"""
+        username = 'doc'
+        watched_url = reverse('watched-review-groups-resource',
+                              kwargs={ 'username': username, })
+        self.client.logout()
+        self.client.login(username=username, password='doc')
+
+        rsp = self.apiPost(watched_url,
+                           { 'object_id': 'devgroup', },
+                           local_site_name=self.local_site_name,
+                           expected_status=404)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_post_watched_review_group_with_site_no_access(self):
+        """Testing the POST users/<username>/watched/review-groups/ API with a local site and Permission Denied error"""
+        rsp = self.apiPost(self.watched_url,
+                           { 'object_id': 'devgroup', },
+                           local_site_name=self.local_site_name,
+                           expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+
     def test_delete_watched_review_group(self):
         """Testing the DELETE users/<username>/watched/review-groups/<id>/ API"""
         # First, star it.
@@ -627,15 +678,100 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
+    def test_delete_watched_review_group_with_site(self):
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with a local site"""
+        self.test_post_watched_review_group_with_site()
+
+        user = User.objects.get(username='doc')
+        group = Group.objects.get(name='sitegroup',
+                                  local_site__name=self.local_site_name)
+        watched_url = reverse('watched-review-groups-resource',
+                              kwargs={ 'username': user.username, })
+
+        self.apiDelete('%s%s/' % (watched_url, group.name),
+                       local_site_name=self.local_site_name)
+        self.assertTrue(group not in user.get_profile().starred_groups.all())
+
+    def test_delete_watched_review_group_with_site_no_access(self):
+        """Testing the DELETE users/<username>/watched/review-groups/<id>/ API with a local site and Permission Denied error"""
+        rsp = self.apiDelete('%s%s/' % (self.watched_url, 'group'),
+                             local_site_name=self.local_site_name,
+                             expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_watched_review_groups(self):
+        """Testing the GET users/<username>/watched/review-groups/ API"""
+        self.test_post_watched_review_group()
+
+        rsp = self.apiGet(self.watched_url)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        watched = self.user.get_profile().starred_groups.all()
+        apigroups = rsp['watched_review_groups']
+
+        self.assertEqual(len(apigroups), len(watched))
+
+        for id in range(len(watched)):
+            self.assertEqual(apigroups[id]['watched_review_group']['name'],
+                             watched[id].name)
+
+    def test_get_watched_review_groups_with_site(self):
+        """Testing the GET users/<username>/watched/review-groups/ API with a local site"""
+        self.test_post_watched_review_group_with_site()
+
+        watched_url = reverse('watched-review-groups-resource',
+                              kwargs={ 'username': 'doc', })
+        rsp = self.apiGet(watched_url, local_site_name=self.local_site_name)
+
+        watched = self.user.get_profile().starred_groups.filter(
+            local_site__name=self.local_site_name)
+        apigroups = rsp['watched_review_groups']
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        for id in range(len(watched)):
+            self.assertEqual(apigroups[id]['watched_review_group']['name'],
+                             watched[id].name)
+
+    def test_get_watched_review_groups_with_site_no_access(self):
+        """Testing the GET users/<username>/watched/review-groups/ API with a local site and Permission Denied error"""
+        rsp = self.apiGet(self.watched_url,
+                          local_site_name=self.local_site_name,
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
 
 class ReviewRequestResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestResource API tests."""
+
+    local_site_name = 'local-site-1'
+
     def test_get_reviewrequests(self):
         """Testing the GET review-requests/ API"""
         rsp = self.apiGet("review-requests")
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
                          ReviewRequest.objects.public().count())
+
+    def test_get_reviewrequests_with_site(self):
+        """Testing the GET review-requests/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        rsp = self.apiGet('review-requests',
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']),
+                         ReviewRequest.objects.public(
+                             local_site=local_site).count())
+
+    def test_get_reviewrequests_with_site_no_access(self):
+        """Testing the GET review-requests/ API with a local site and Permission Denied error"""
+        self.apiGet('review-requests', local_site_name=self.local_site_name,
+                    expected_status=403)
 
     def test_get_reviewrequests_with_status(self):
         """Testing the GET review-requests/?status= API"""
@@ -910,10 +1046,56 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    def test_post_reviewrequests_with_site(self):
+        """Testing the POST review-requests/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        repository = Repository.objects.filter(
+            local_site__name=self.local_site_name)[0]
+
+        rsp = self.apiPost('review-requests',
+                           { 'repository': repository.path, },
+                           local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['links']['repository']['title'],
+                         repository.name)
+
+    def test_post_reviewrequests_with_site_no_access(self):
+        """Testing the POST review-requests/ API with a local site and Permission Denied error"""
+        repository = Repository.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        self.apiPost('review-requests',
+                     { 'repository': repository.path, },
+                     local_site_name=self.local_site_name,
+                     expected_status=403)
+
+    def test_post_reviewrequests_with_site_invalid_repository_error(self):
+        """Testing the POST review-requests/ API with a local site and Invalid Repository error"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiPost('review-requests',
+                           { 'repository': self.repository.path, },
+                           local_site_name=self.local_site_name,
+                           expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+
     def test_post_reviewrequests_with_invalid_repository_error(self):
         """Testing the POST review-requests/ API with Invalid Repository error"""
         rsp = self.apiPost("review-requests", {
             'repository': 'gobbledygook',
+        }, expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+
+    def test_post_reviewrequests_with_no_site_invalid_repository_error(self):
+        """Testing the POST review-requests/ API with Invalid Repository error from a site-local repository"""
+        repository = Repository.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        rsp = self.apiPost("review-requests", {
+            'repository': repository.path,
         }, expected_status=400)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
@@ -992,6 +1174,34 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'S')
 
+    def test_put_reviewrequest_status_submitted_with_site(self):
+        """Testing the PUT review-requests/<id>/?status=submitted API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter__username='doc',
+                                         local_site__name=self.local_site_name)[0]
+
+        rsp = self.apiPut('review-requests/%s' % r.local_id,
+                          { 'status': 'submitted' },
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.status, 'S')
+
+    def test_put_reviewrequest_status_submitted_with_site_no_access(self):
+        """Testing the PUT review-requests/<id>/?status=submitted API with a local site and Permission Denied error"""
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter__username='doc',
+                                         local_site__name=self.local_site_name)[0]
+
+        self.apiPut('review-requests/%s' % r.local_id,
+                    { 'status': 'submitted' },
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
+
     def test_get_reviewrequest(self):
         """Testing the GET review-requests/<id>/ API"""
         review_request = ReviewRequest.objects.public()[0]
@@ -1000,6 +1210,30 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['review_request']['id'], review_request.id)
         self.assertEqual(rsp['review_request']['summary'],
                          review_request.summary)
+
+    def test_get_reviewrequest_with_site(self):
+        """Testing the GET review-requests/<id>/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+
+        rsp = self.apiGet('review-requests/%s' % review_request.local_id,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['id'],
+                         review_request.local_id)
+        self.assertEqual(rsp['review_request']['summary'],
+                         review_request.summary)
+
+    def test_get_reviewrequest_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/ API with a local site and Permission Denied error"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        self.apiGet('review-requests/%s' % review_request.local_id,
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
 
     def test_get_reviewrequest_with_non_public_and_permission_denied_error(self):
         """Testing the GET review-requests/<id>/ API with non-public and Permission Denied error"""
@@ -1098,6 +1332,27 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         rsp = self.apiDelete("review-requests/999", expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_delete_reviewrequest_with_site(self):
+        """Testing the DELETE review-requests/<id>/ API with a lotal site"""
+        user = User.objects.get(username='doc')
+        user.user_permissions.add(
+            Permission.objects.get(codename='delete_reviewrequest'))
+        user.save()
+
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.filter(local_site=local_site,
+            submitter__username='doc')[0]
+        pk = review_request.id
+
+        rsp = self.apiDelete('review-requests/%s' % review_request.local_id,
+                             local_site_name=self.local_site_name)
+        self.assertEqual(rsp, None)
+        self.assertRaises(ReviewRequest.DoesNotExist,
+                          ReviewRequest.objects.get, pk=pk)
 
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
@@ -1857,6 +2112,9 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
 class FileDiffResourceTests(BaseWebAPITestCase):
     """Testing the FileDiffResource APIs."""
+
+    local_site_name = 'local-site-1'
+
     def test_post_diffs(self):
         """Testing the POST review-requests/<id>/diffs/ API"""
         rsp = self._postNewReviewRequest()
@@ -1908,19 +2166,97 @@ class FileDiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('basedir' in rsp['fields'])
 
+    def test_post_diffs_with_site(self):
+        """Testing the POST review-requests/<id>/diffs/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        repo = Repository.objects.get(name='Review Board Git')
+        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
+                                         repository=repo)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = ReviewRequest.objects.get(
+            local_id=rsp['review_request']['id'],
+            local_site__name=self.local_site_name)
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'scmtools', 'testdata', 'git_deleted_file_indication.diff')
+        f = open(diff_filename, 'r')
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'],
+                           { 'path': f, },
+                           local_site_name=self.local_site_name)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff']['name'],
+                         'git_deleted_file_indication.diff')
+
+
     def test_get_diffs(self):
         """Testing the GET review-requests/<id>/diffs/ API"""
         rsp = self.apiGet("review-requests/2/diffs")
 
+        self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diffs'][0]['id'], 2)
         self.assertEqual(rsp['diffs'][0]['name'], 'cleaned_data.diff')
+
+    def test_get_diffs_with_site(self):
+        """Testing the GET review-requests/<id>/diffs API with a local site"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('review-requests/%s/diffs' % review_request.local_id,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diffs'][0]['id'],
+                         review_request.diffset_history.diffsets.latest().id)
+        self.assertEqual(rsp['diffs'][0]['name'],
+                         review_request.diffset_history.diffsets.latest().name)
+
+    def test_get_diffs_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/diffs API with a local site and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        self.apiGet('review-requests/%s/diffs' % review_request.local_id,
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
 
     def test_get_diff(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API"""
         rsp = self.apiGet("review-requests/2/diffs/1")
 
+        self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['id'], 2)
         self.assertEqual(rsp['diff']['name'], 'cleaned_data.diff')
+
+    def test_get_diff_with_site(self):
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        diff = review_request.diffset_history.diffsets.latest()
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        rsp = self.apiGet('review-requests/%s/diffs/%s' % (review_request.local_id,
+                                                           diff.revision),
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff']['id'], diff.id)
+        self.assertEqual(rsp['diff']['name'], diff.name)
+
+    def test_get_diff_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+        diff = review_request.diffset_history.diffsets.latest()
+        self.apiGet('review-requests/%s/diffs/%s' % (review_request.local_id,
+                                                     diff.revision),
+                    local_site_name=self.local_site_name,
+                    expected_status=403)
 
 
 class ScreenshotDraftResourceTests(BaseWebAPITestCase):

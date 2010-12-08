@@ -1,0 +1,215 @@
+commit 535c73db3a908d1b07db355a7db3b815fdaf7351
+Author: Christian Hammond <chipx86@chipx86.com>
+Date:   Tue Nov 30 02:06:08 2010 -0800
+
+    Add support for deleted file indication on Git and Perforce.
+    
+    In 1.5, the diff viewer and CVS gained support for marking a file as
+    deleted and showing it specially. The Git and Perforce support has been
+    updated to flag this as well.
+    
+    Reviewed at http://reviews.reviewboard.org/r/1939/
+
+diff --git a/reviewboard/scmtools/git.py b/reviewboard/scmtools/git.py
+index c82336051ae19168a79670d8fea5486cc8622001..14e2422d19cb21a98bd6d0b98972c2716b21d15c 100644
+--- a/reviewboard/scmtools/git.py
++++ b/reviewboard/scmtools/git.py
+@@ -175,8 +175,11 @@ class GitDiffParser(DiffParser):
+         linenum += 1
+ 
+         # We have no use for recording this info so skip it
+-        if self._is_newfile_or_deleted_change(linenum):
++        if self._is_new_file(linenum):
+             linenum += 1
++        elif self._is_deleted_file(linenum):
++            linenum += 1
++            file_info.deleted = True
+         elif self._is_mode_change(linenum):
+             linenum += 2
+ 
+@@ -217,11 +220,15 @@ class GitDiffParser(DiffParser):
+                  next_line.startswith("deleted file mode"))
+                 and next_diff_start.startswith("diff --git"))
+ 
+-    def _is_newfile_or_deleted_change(self, linenum):
++    def _is_new_file(self, linenum):
++        line = self.lines[linenum]
++
++        return self.lines[linenum].startswith("new file mode")
++
++    def _is_deleted_file(self, linenum):
+         line = self.lines[linenum]
+ 
+-        return (line.startswith("new file mode")
+-                or line.startswith("deleted file mode"))
++        return self.lines[linenum].startswith("deleted file mode")
+ 
+     def _is_mode_change(self, linenum):
+         return (self.lines[linenum].startswith("old mode")
+diff --git a/reviewboard/scmtools/perforce.py b/reviewboard/scmtools/perforce.py
+index f3a4d9fe3ffdf01e466d861376b7f64bc9011185..c391c88d38e6b296fae654a9b0c217163dac2ff3 100644
+--- a/reviewboard/scmtools/perforce.py
++++ b/reviewboard/scmtools/perforce.py
+@@ -199,6 +199,9 @@ class PerforceDiffParser(DiffParser):
+                 info['binary'] = True
+                 linenum += 1
+ 
++            if m.group(3) == 'D':
++                info['deleted'] = True
++
+             # In this case, this *is* our diff header. We don't want to
+             # let the next line's real diff header be a part of this one,
+             # so return early and don't invoke the next.
+diff --git a/reviewboard/scmtools/tests.py b/reviewboard/scmtools/tests.py
+index 29e1fcafe2c753c2c5da8c0c7bf3f82806d98e76..c00ff8965716562e45aaeb8f58a0e913a46c0c2e 100644
+--- a/reviewboard/scmtools/tests.py
++++ b/reviewboard/scmtools/tests.py
+@@ -401,7 +401,8 @@ class PerforceTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, '//depot/foo/proj/README#2')
+         self.assertEqual(file.newFile, '/src/proj/README')
+         self.assertEqual(file.newInfo, '')
+-        self.assertEqual(file.binary, False)
++        self.assertFalse(file.binary)
++        self.assertFalse(file.deleted)
+         self.assertEqual(file.data, '')
+ 
+     def testBinaryDiff(self):
+@@ -415,7 +416,22 @@ class PerforceTests(DjangoTestCase):
+         self.assertEqual(file.newFile, '/src/proj/test.png')
+         self.assertEqual(file.newInfo, '')
+         self.assertEqual(file.data, '')
+-        self.assertEqual(file.binary, True)
++        self.assertTrue(file.binary)
++        self.assertFalse(file.deleted)
++
++    def testDeletedDiff(self):
++        """Testing Perforce deleted diff parsing"""
++        diff = "==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png " + \
++               "====\n"
++
++        file = self.tool.get_parser(diff).parse()[0]
++        self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
++        self.assertEqual(file.origInfo, '//depot/foo/proj/test.png#1')
++        self.assertEqual(file.newFile, '/src/proj/test.png')
++        self.assertEqual(file.newInfo, '')
++        self.assertEqual(file.data, '')
++        self.assertFalse(file.binary)
++        self.assertTrue(file.deleted)
+ 
+     def testEmptyAndNormalDiffs(self):
+         """Testing Perforce empty and normal diff parsing"""
+@@ -435,14 +451,16 @@ class PerforceTests(DjangoTestCase):
+         self.assertEqual(files[0].origInfo, '//depot/foo/proj/test.png#1')
+         self.assertEqual(files[0].newFile, '/src/proj/test.png')
+         self.assertEqual(files[0].newInfo, '')
+-        self.assertEqual(files[0].binary, False)
++        self.assertFalse(files[0].binary)
++        self.assertFalse(files[0].deleted)
+         self.assertEqual(files[0].data, '')
+ 
+         self.assertEqual(files[1].origFile, 'test.c')
+         self.assertEqual(files[1].origInfo, '//depot/foo/proj/test.c#2')
+         self.assertEqual(files[1].newFile, 'test.c')
+         self.assertEqual(files[1].newInfo, '01-02-03 04:05:06')
+-        self.assertEqual(files[1].binary, False)
++        self.assertFalse(files[1].binary)
++        self.assertFalse(files[1].deleted)
+         self.assertEqual(files[1].data, diff2_text)
+ 
+ 
+@@ -697,6 +715,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, 'e69de29')
+         self.assertEqual(file.newInfo, 'bcae657')
+         self.assertFalse(file.binary)
++        self.assertFalse(file.deleted)
+         self.assertEqual(file.data.splitlines()[0],
+                          "diff --git a/testing b/testing")
+         self.assertEqual(file.data.splitlines()[-1], "+ADD")
+@@ -710,6 +729,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, 'e69de29')
+         self.assertEqual(file.newInfo, 'bcae657')
+         self.assertFalse(file.binary)
++        self.assertFalse(file.deleted)
+         self.assertEqual(file.data.splitlines()[0],
+                          "diff --git a/testing b/testing")
+         self.assertEqual(file.data.splitlines()[-1], "+ADD")
+@@ -731,6 +751,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, 'cc18ec8')
+         self.assertEqual(file.newInfo, '5e70b73')
+         self.assertFalse(file.binary)
++        self.assertFalse(file.deleted)
+         self.assertEqual(len(file.data), 219)
+         self.assertEqual(file.data.splitlines()[0],
+                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+@@ -745,6 +766,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, PRE_CREATION)
+         self.assertEqual(file.newInfo, 'e69de29')
+         self.assertFalse(file.binary)
++        self.assertFalse(file.deleted)
+         self.assertEqual(len(file.data), 80)
+         self.assertEqual(file.data.splitlines()[0],
+                          "diff --git a/IAMNEW b/IAMNEW")
+@@ -778,6 +800,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, '8ebcb01')
+         self.assertEqual(file.newInfo, '0000000')
+         self.assertFalse(file.binary)
++        self.assertTrue(file.deleted)
+         self.assertEqual(len(file.data), 84)
+         self.assertEqual(file.data.splitlines()[0],
+                          "diff --git a/OLDFILE b/OLDFILE")
+@@ -792,6 +815,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(file.origInfo, PRE_CREATION)
+         self.assertEqual(file.newInfo, '86b520c')
+         self.assertTrue(file.binary)
++        self.assertFalse(file.deleted)
+         self.assertEqual(len(file.data), 53)
+         self.assertEqual(file.data.splitlines()[0],
+                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+@@ -806,6 +830,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(files[0].origInfo, '5e35098')
+         self.assertEqual(files[0].newInfo, 'e254ef4')
+         self.assertFalse(files[0].binary)
++        self.assertFalse(files[0].deleted)
+         self.assertEqual(len(files[0].data), 519)
+         self.assertEqual(files[0].data.splitlines()[0],
+                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+@@ -817,6 +842,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(files[1].origInfo, PRE_CREATION)
+         self.assertEqual(files[1].newInfo, 'e279a06')
+         self.assertFalse(files[1].binary)
++        self.assertFalse(files[1].deleted)
+         self.assertEqual(len(files[1].data), 138)
+         self.assertEqual(files[1].data.splitlines()[0],
+                          "diff --git a/tests/tests.py b/tests/tests.py")
+@@ -828,6 +854,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(files[2].origInfo, PRE_CREATION)
+         self.assertEqual(files[2].newInfo, '86b520c')
+         self.assertTrue(files[2].binary)
++        self.assertFalse(files[2].deleted)
+         self.assertEqual(len(files[2].data), 53)
+         self.assertEqual(files[2].data.splitlines()[0],
+                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+@@ -837,6 +864,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(files[3].origInfo, '5e35098')
+         self.assertEqual(files[3].newInfo, 'e254ef4')
+         self.assertFalse(files[3].binary)
++        self.assertFalse(files[3].deleted)
+         self.assertEqual(len(files[3].data), 97)
+         self.assertEqual(files[3].data.splitlines()[0],
+                          "diff --git a/readme b/readme")
+@@ -848,6 +876,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(files[4].origInfo, '8ebcb01')
+         self.assertEqual(files[4].newInfo, '0000000')
+         self.assertFalse(files[4].binary)
++        self.assertTrue(files[4].deleted)
+         self.assertEqual(len(files[4].data), 84)
+         self.assertEqual(files[4].data.splitlines()[0],
+                          "diff --git a/OLDFILE b/OLDFILE")
+@@ -859,6 +888,7 @@ class GitTests(DjangoTestCase):
+         self.assertEqual(files[5].origInfo, '5e43098')
+         self.assertEqual(files[5].newInfo, 'e248ef4')
+         self.assertFalse(files[5].binary)
++        self.assertFalse(files[5].deleted)
+         self.assertEqual(len(files[5].data), 101)
+         self.assertEqual(files[5].data.splitlines()[0],
+                          "diff --git a/readme2 b/readme2")
