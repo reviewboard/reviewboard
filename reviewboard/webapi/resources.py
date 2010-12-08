@@ -1261,9 +1261,9 @@ class BaseWatchedObjectResource(WebAPIResource):
     })
     def create(self, request, object_id, *args, **kwargs):
         try:
-            obj = self.watched_resource.get_object(request, **dict({
-                self.watched_resource.uri_object_key: object_id,
-            }))
+            obj_kwargs = kwargs.copy()
+            obj_kwargs[self.watched_resource.uri_object_key] = object_id
+            obj = self.watched_resource.get_object(request, *args, **obj_kwargs)
             user = user_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1284,9 +1284,9 @@ class BaseWatchedObjectResource(WebAPIResource):
     @webapi_login_required
     def delete(self, request, watched_obj_id, *args, **kwargs):
         try:
-            obj = self.watched_resource.get_object(request, **dict({
-                self.watched_resource.uri_object_key: watched_obj_id,
-            }))
+            obj_kwargs = kwargs.copy()
+            obj_kwargs[self.watched_resource.uri_object_key] = watched_obj_id
+            obj = self.watched_resource.get_object(request, *args, **obj_kwargs)
             user = user_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1339,6 +1339,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         return review_group_resource
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
         """Returned an :http:`302` pointing to the review group being
@@ -1353,6 +1354,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of watched review groups.
@@ -1364,6 +1366,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def create(self, *args, **kwargs):
         """Marks a review group as being watched.
@@ -1373,6 +1376,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def delete(self, *args, **kwargs):
         """Deletes a watched review group entry.
