@@ -1218,10 +1218,18 @@ class BaseWatchedObjectResource(WebAPIResource):
     def uri_object_key_regex(self):
         return self.watched_resource.uri_object_key_regex
 
-    def get_queryset(self, request, username, *args, **kwargs):
+    def get_queryset(self, request, username, local_site_name=None,
+                     *args, **kwargs):
         try:
-            profile = Profile.objects.get(user__username=username)
-            q = self.watched_resource.get_queryset(request, *args, **kwargs)
+            local_site = _get_local_site(local_site_name)
+            if local_site:
+                user = local_site.users.get(username=username)
+                profile = user.get_profile()
+            else:
+                profile = Profile.objects.get(user__username=username)
+
+            q = self.watched_resource.get_queryset(
+                    request, local_site_name=local_site_name, *args, **kwargs)
             q = q.filter(starred_by=profile)
             return q
         except Profile.DoesNotExist:
@@ -1239,17 +1247,20 @@ class BaseWatchedObjectResource(WebAPIResource):
             self.watched_resource.get_href(obj, request, *args, **kwargs))
 
     @webapi_check_login_required
+    @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, request, *args, **kwargs):
         # TODO: Handle pagination and ?counts-only=1
-        objects = [
-            self.serialize_object(obj)
-            for obj in self.get_queryset(request, is_list=True,
-                                         *args, **kwargs)
-        ]
+        try:
+            objects = [
+                self.serialize_object(obj)
+                for obj in self.get_queryset(request, is_list=True, *args, **kwargs)
+            ]
 
-        return 200, {
-            self.list_result_key: objects,
-        }
+            return 200, {
+                self.list_result_key: objects,
+            }
+        except User.DoesNotExist:
+            return DOES_NOT_EXIST
 
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
@@ -1417,6 +1428,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         return review_request_resource
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
         """Returned an :http:`302` pointing to the review request being
@@ -1431,6 +1443,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of watched review requests.
@@ -1442,6 +1455,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def create(self, *args, **kwargs):
         """Marks a review request as being watched.
@@ -1451,6 +1465,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def delete(self, *args, **kwargs):
         """Deletes a watched review request entry.
