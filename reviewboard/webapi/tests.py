@@ -1715,12 +1715,38 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
 
 class ReviewResourceTests(BaseWebAPITestCase):
     """Testing the ReviewResource APIs."""
+
+    local_site_name = 'local-site-1'
+
     def test_get_reviews(self):
         """Testing the GET review-requests/<id>/reviews/ API"""
         review_request = Review.objects.filter()[0].review_request
         rsp = self.apiGet("review-requests/%s/reviews" % review_request.id)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
+
+    def test_get_reviews_with_site(self):
+        """Testing the GET review-requests/<id>/reviews/ API with a local site"""
+        self.test_post_reviews_with_site(public=True)
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+
+        rsp = self.apiGet('review-requests/%s/reviews' % review_request.local_id,
+                          local_site_name=self.local_site_name)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
+
+    def test_get_reviews_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/reviews/ API with a local site and Permission Denied error"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        rsp = self.apiGet('review-requests/%s/reviews' % review_request.local_id,
+                          local_site_name=self.local_site_name,
+                          expected_status=403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_get_reviews_with_counts_only(self):
         """Testing the GET review-requests/<id>/reviews/?counts-only=1 API"""
@@ -1738,7 +1764,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         ship_it = True
 
         # Clear out any reviews on the first review request we find.
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = ReviewRequest.objects.public(local_site=None)[0]
         review_request.reviews = []
         review_request.save()
 
@@ -1771,6 +1797,64 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_post_reviews_with_site(self, public=False):
+        """Testing the POST review-requests/<id>/reviews/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        body_top = ""
+        body_bottom = "My Body Bottom"
+        ship_it = True
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        # Clear out any reviews on the first review request we find.
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        review_request.reviews = []
+        review_request.save()
+
+        post_data = {
+            'ship_it': ship_it,
+            'body_top': body_top,
+            'body_bottom': body_bottom,
+            'public': public,
+        }
+
+        rsp, response = self.api_post_with_response(
+            'review-requests/%s/reviews' % review_request.local_id,
+            post_data, local_site_name=self.local_site_name)
+
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('Location' in response)
+
+        reviews = review_request.reviews.all()
+        self.assertEqual(len(reviews), 1)
+        review = reviews[0]
+
+        self.assertEqual(rsp['review']['id'], review.id)
+
+        self.assertEqual(review.ship_it, ship_it)
+        self.assertEqual(review.body_top, body_top)
+        self.assertEqual(review.body_bottom, body_bottom)
+        self.assertEqual(review.public, public)
+
+        if public:
+            self.assertEqual(len(mail.outbox), 1)
+        else:
+            self.assertEqual(len(mail.outbox), 0)
+
+    def test_post_reviews_with_site_no_access(self):
+        """Testing the POST review-requests/<id>/reviews/ API with a local site and Permission Denied error"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+
+        rsp = self.apiPost('review-requests/%s/reviews' % review_request.local_id,
+                           local_site_name=self.local_site_name,
+                           expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_put_review(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API"""
         body_top = ""
@@ -1778,7 +1862,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
         ship_it = True
 
         # Clear out any reviews on the first review request we find.
-        review_request = ReviewRequest.objects.public()[0]
+        review_request = ReviewRequest.objects.public(local_site=None)[0]
         review_request.reviews = []
         review_request.save()
 
@@ -1810,6 +1894,72 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         # Make this easy to use in other tests.
         return review
+
+    def test_put_review_with_site(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/ API with a local site"""
+        self.client.logout()
+        self.client.login(username='doc', password='doc')
+
+        body_top = ""
+        body_bottom = "My Body Bottom"
+        ship_it = True
+
+        # Clear out any reviews on the first review request we find.
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        review_request.reviews = []
+        review_request.save()
+
+        rsp, response = self.api_post_with_response(
+            'review-requests/%s/reviews' % review_request.local_id,
+            local_site_name=self.local_site_name)
+
+        self.assertTrue('stat' in rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('Location' in response)
+
+        review_url = response['Location']
+
+        put_kwargs = {
+            'ship_it': ship_it,
+            'body_top': body_top,
+            'body_bottom': body_bottom,
+        }
+
+        rsp = self.apiPut(review_url, put_kwargs,
+                          local_site_name=self.local_site_name)
+
+        reviews = review_request.reviews.filter(user__username='doc')
+        self.assertEqual(len(reviews), 1)
+        review = reviews[0]
+
+        self.assertEqual(review.ship_it, ship_it)
+        self.assertEqual(review.body_top, body_top)
+        self.assertEqual(review.body_bottom, body_bottom)
+        self.assertEqual(review.public, False)
+
+        self.assertEqual(len(mail.outbox), 0)
+
+        # Make this easy to use in other tests.
+        return review
+
+    def test_put_review_with_site_no_access(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/ API with a local site and Permission Denied error"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        review = Review()
+        review.review_request = review_request
+        review.user = User.objects.get(username='doc')
+        review.save()
+
+        rsp = self.apiPut(
+            'review-requests/%s/reviews/%s' % (review_request.local_id,
+                                                review.id),
+            { 'ship_it': True, },
+            local_site_name=self.local_site_name,
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_put_review_with_published_review(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API with pre-published review"""
@@ -1906,6 +2056,36 @@ class ReviewResourceTests(BaseWebAPITestCase):
                              review_request.id, expected_status=404)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
+
+    def test_delete_review_with_local_site(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with a local site"""
+        review = self.test_put_review_with_site()
+
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+
+        self.apiDelete(
+            'review-requests/%s/reviews/%s' % (review_request.local_id,
+                                               review.id),
+            local_site_name=self.local_site_name)
+        self.assertEqual(review_request.reviews.count(), 0)
+
+    def test_delete_review_with_local_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/reviews/<id>/ API with a local site and Permission Denied error"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        review_request = ReviewRequest.objects.public(local_site=local_site)[0]
+        review = Review()
+        review.review_request = review_request
+        review.user = User.objects.get(username='doc')
+        review.save()
+
+        rsp = self.apiDelete(
+            'review-requests/%s/reviews/%s' % (review_request.local_id,
+                                               review.id),
+            local_site_name=self.local_site_name,
+            expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
 class ReviewCommentResourceTests(BaseWebAPITestCase):
