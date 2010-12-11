@@ -2239,6 +2239,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     def has_delete_permissions(self, request, draft, *args, **kwargs):
         return draft.review_request.is_mutable_by(request.user)
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={
@@ -2299,6 +2300,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return result
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={
@@ -2401,9 +2403,10 @@ class ReviewRequestDraftResource(WebAPIResource):
             self.item_result_key: draft,
         }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
-    def delete(self, request, review_request_id, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         """Deletes a draft of a review request.
 
         This is equivalent to pressing :guilabel:`Discard Draft` in the
@@ -2413,8 +2416,11 @@ class ReviewRequestDraftResource(WebAPIResource):
         # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
-            draft = ReviewRequestDraft.objects.get(
-                review_request=review_request_id)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            draft = review_request.draft.get()
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
         except ReviewRequestDraft.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -2425,6 +2431,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return 204, {}
 
+    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, request, review_request_id, *args, **kwargs):

@@ -1486,7 +1486,12 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
 class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
     """Testing the ReviewRequestDraftResource API tests."""
-    def _create_update_review_request(self, apiFunc, review_request_id=None):
+
+    local_site_name = 'local-site-1'
+
+    def _create_update_review_request(self, apiFunc, expected_status,
+                                      review_request_id=None,
+                                      local_site_name=None):
         summary = "My Summary"
         description = "My Description"
         testing_done = "My Testing Done"
@@ -1497,35 +1502,79 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
             review_request_id = \
                 ReviewRequest.objects.from_user(self.user.username)[0].id
 
-        rsp = apiFunc("review-requests/%s/draft" % review_request_id, {
+        func_kwargs = {
             'summary': summary,
             'description': description,
             'testing_done': testing_done,
             'branch': branch,
             'bugs_closed': bugs,
-        })
+        }
 
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['draft']['summary'], summary)
-        self.assertEqual(rsp['draft']['description'], description)
-        self.assertEqual(rsp['draft']['testing_done'], testing_done)
-        self.assertEqual(rsp['draft']['branch'], branch)
-        self.assertEqual(rsp['draft']['bugs_closed'], ['123', '456'])
+        rsp = apiFunc("review-requests/%s/draft" % review_request_id,
+                      func_kwargs, local_site_name=local_site_name,
+                      expected_status=expected_status)
 
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
-        self.assertEqual(draft.summary, summary)
-        self.assertEqual(draft.description, description)
-        self.assertEqual(draft.testing_done, testing_done)
-        self.assertEqual(draft.branch, branch)
-        self.assertEqual(draft.get_bug_list(), ['123', '456'])
+        if expected_status >= 200 and expected_status < 300:
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertEqual(rsp['draft']['summary'], summary)
+            self.assertEqual(rsp['draft']['description'], description)
+            self.assertEqual(rsp['draft']['testing_done'], testing_done)
+            self.assertEqual(rsp['draft']['branch'], branch)
+            self.assertEqual(rsp['draft']['bugs_closed'], ['123', '456'])
+
+            draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+            self.assertEqual(draft.summary, summary)
+            self.assertEqual(draft.description, description)
+            self.assertEqual(draft.testing_done, testing_done)
+            self.assertEqual(draft.branch, branch)
+            self.assertEqual(draft.get_bug_list(), ['123', '456'])
+
+        return rsp
+
+    def _create_update_review_request_with_site(self, apiFunc, expected_status,
+                                                relogin=True,
+                                                review_request_id=None):
+        if relogin:
+            self.client.logout()
+            self.client.login(username='doc', password='doc')
+
+        if review_request_id is None:
+            review_request = ReviewRequest.objects.from_user('doc',
+                local_site=LocalSite.objects.get(name=self.local_site_name))[0]
+            review_request_id = review_request.local_id
+
+        return self._create_update_review_request(
+            apiFunc, expected_status, review_request_id, self.local_site_name)
 
     def test_put_reviewrequestdraft(self):
         """Testing the PUT review-requests/<id>/draft/ API"""
-        self._create_update_review_request(self.apiPut)
+        self._create_update_review_request(self.apiPut, 200)
+
+    def test_put_reviewrequestdraft_with_site(self):
+        """Testing the PUT review-requests/<id>/draft/ API with a local site"""
+        self._create_update_review_request_with_site(self.apiPut, 200)
+
+    def test_put_reviewrequestdraft_with_site_no_access(self):
+        """Testing the PUT review-requests/<id>/draft/ API with a local site and Permission Denied error"""
+        rsp = self._create_update_review_request_with_site(
+            self.apiPut, 403, relogin=False)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_post_reviewrequestdraft(self):
         """Testing the POST review-requests/<id>/draft/ API"""
-        self._create_update_review_request(self.apiPost)
+        self._create_update_review_request(self.apiPost, 201)
+
+    def test_post_reviewrequestdraft_with_site(self):
+        """Testing the POST review-requests/<id>/draft/ API with a local site"""
+        self._create_update_review_request_with_site(self.apiPost, 201)
+
+    def test_post_reviewrequestdraft_with_site_no_access(self):
+        """Testing the POST review-requests/<id>/draft/ API with a local site and Permission Denied error"""
+        rsp = self._create_update_review_request_with_site(
+            self.apiPost, 403, relogin=False)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def test_put_reviewrequestdraft_with_changedesc(self):
         """Testing the PUT review-requests/<id>/draft/ API with a change description"""
@@ -1602,7 +1651,8 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         ]
         review_request.save()
 
-        self._create_update_review_request(self.apiPut, review_request.id)
+        self._create_update_review_request(self.apiPut, 200,
+                                           review_request.id)
 
         rsp = self.apiPut("review-requests/%s/draft" % review_request.id, {
             'public': True,
@@ -1635,6 +1685,32 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.summary, summary)
         self.assertEqual(review_request.description, description)
+
+    def test_delete_reviewrequestdraft_with_site(self):
+        """Testing the DELETE review-requests/<id>/draft/ API with a local site"""
+        review_request = ReviewRequest.objects.from_user('doc',
+            local_site=LocalSite.objects.get(name=self.local_site_name))[0]
+        summary = review_request.summary
+        description = review_request.description
+
+        self.test_put_reviewrequestdraft_with_site()
+
+        self.apiDelete('review-requests/%s/draft' % review_request.local_id,
+                       local_site_name=self.local_site_name)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, summary)
+        self.assertEqual(review_request.description, description)
+
+    def test_delete_reviewrequestdraft_with_site_no_access(self):
+        """Testing the DELETE review-requests/<id>/draft/ API with a local site and Permission Denied error"""
+        review_request = ReviewRequest.objects.from_user('doc',
+            local_site=LocalSite.objects.get(name=self.local_site_name))[0]
+        rsp = self.apiDelete('review-requests/%s/draft' % review_request.local_id,
+                             local_site_name=self.local_site_name,
+                             expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
 
 class ReviewResourceTests(BaseWebAPITestCase):
