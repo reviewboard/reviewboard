@@ -8,7 +8,8 @@ from django.db import transaction
 from djblets.testing import testcases
 
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
-                                       ReviewRequestDraft, Screenshot
+                                       ReviewRequestDraft, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools.models import Repository, Tool
 
 
@@ -832,6 +833,57 @@ class ReviewReplyTests(SeleniumUnitTest):
             self.assertEqual(reply_comment.text,
                              make_comment_text(review_comment))
 
+    def test_reply_screenshot_comment(self):
+        """Testing making a reply to a screenshot comment"""
+
+        def make_comment_text(comment):
+            return 'This is a reply to comment %s' % comment.id
+
+        # First, create the review request to test against.
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user,
+                                         local_site=None)[0]
+        r.screenshots = []
+        r.reviews = []
+        screenshot = create_screenshot(r)
+
+        # Now create a dummy reply.
+        review = Review.objects.create(review_request=r,
+                                       user=self.user,
+                                       public=True)
+        comment = ScreenshotComment.objects.create(
+            screenshot=screenshot,
+            text='This is the original comment.',
+            x=0, y=0, w=20, h=20)
+        review.screenshot_comments.add(comment)
+
+        # Now start the test to reply.
+        comments = list(review.screenshot_comments.all())
+        self.assertTrue(len(comments) > 0)
+
+        self.selenium.open(review.review_request.get_absolute_url())
+        self.assertTrue(
+            self.selenium.is_element_present('review%s' % review.id))
+
+        for comment in comments:
+            self._add_comment(make_comment_text(comment), review,
+                              'screenshot_comment', comment)
+
+        self.assertEqual(review.replies.count(), 1)
+        reply = review.replies.get()
+        self.assertFalse(reply.public)
+        self.assertEqual(reply.base_reply_to, review)
+
+        reply_comments = list(reply.screenshot_comments.all())
+        self.assertEqual(len(reply_comments), len(comments))
+
+        for reply_comment in reply_comments:
+            review_comment = reply_comment.reply_to
+            self.assertNotEqual(review_comment, None)
+
+            self.assertEqual(reply_comment.text,
+                             make_comment_text(review_comment))
+
     def test_reply_publish(self):
         """Testing publishing a reply to a review"""
         body_top = 'Reply to body top'
@@ -866,7 +918,10 @@ class ReviewReplyTests(SeleniumUnitTest):
         self.assertEqual(review.replies.count(), 0)
 
     def _get_review(self, **kwargs):
-        review = Review.objects.filter(public=True, **kwargs)[0]
+        reviews = Review.objects.filter(public=True, **kwargs)
+        self.assertTrue(len(reviews) > 0)
+
+        review = revews[0]
         review.body_top = 'Review body top'
         review.body_bottom = 'Review body bottom'
         review.replies = []
@@ -878,7 +933,7 @@ class ReviewReplyTests(SeleniumUnitTest):
     def _add_comment(self, text, review, context_type, comment=None):
         key = '%s_%s' % (review.id, context_type)
 
-        if context_type == 'comment':
+        if context_type in ('comment', 'screenshot_comment'):
             self.assertNotEqual(comment, None)
             key += '_%s' % comment.id
 

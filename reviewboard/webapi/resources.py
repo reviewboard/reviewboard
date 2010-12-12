@@ -216,9 +216,11 @@ class BaseDiffCommentResource(WebAPIResource):
         on the URL to match the given interdiff revision, and
         ``?line=`` to match comments on the given line number.
         """
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
         q = self.model.objects.filter(
             Q(review__public=True) | Q(review__user=request.user),
-            filediff__diffset__history__review_request=review_request_id)
+            filediff__diffset__history__review_request=review_request)
 
         if is_list:
             if 'interdiff-revision' in request.GET:
@@ -1218,10 +1220,18 @@ class BaseWatchedObjectResource(WebAPIResource):
     def uri_object_key_regex(self):
         return self.watched_resource.uri_object_key_regex
 
-    def get_queryset(self, request, username, *args, **kwargs):
+    def get_queryset(self, request, username, local_site_name=None,
+                     *args, **kwargs):
         try:
-            profile = Profile.objects.get(user__username=username)
-            q = self.watched_resource.get_queryset(request, *args, **kwargs)
+            local_site = _get_local_site(local_site_name)
+            if local_site:
+                user = local_site.users.get(username=username)
+                profile = user.get_profile()
+            else:
+                profile = Profile.objects.get(user__username=username)
+
+            q = self.watched_resource.get_queryset(
+                    request, local_site_name=local_site_name, *args, **kwargs)
             q = q.filter(starred_by=profile)
             return q
         except Profile.DoesNotExist:
@@ -1239,17 +1249,20 @@ class BaseWatchedObjectResource(WebAPIResource):
             self.watched_resource.get_href(obj, request, *args, **kwargs))
 
     @webapi_check_login_required
+    @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, request, *args, **kwargs):
         # TODO: Handle pagination and ?counts-only=1
-        objects = [
-            self.serialize_object(obj)
-            for obj in self.get_queryset(request, is_list=True,
-                                         *args, **kwargs)
-        ]
+        try:
+            objects = [
+                self.serialize_object(obj)
+                for obj in self.get_queryset(request, is_list=True, *args, **kwargs)
+            ]
 
-        return 200, {
-            self.list_result_key: objects,
-        }
+            return 200, {
+                self.list_result_key: objects,
+            }
+        except User.DoesNotExist:
+            return DOES_NOT_EXIST
 
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
@@ -1417,6 +1430,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         return review_request_resource
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
         """Returned an :http:`302` pointing to the review request being
@@ -1431,6 +1445,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of watched review requests.
@@ -1442,6 +1457,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def create(self, *args, **kwargs):
         """Marks a review request as being watched.
@@ -1451,6 +1467,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def delete(self, *args, **kwargs):
         """Deletes a watched review request entry.
@@ -2248,6 +2265,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     def has_delete_permissions(self, request, draft, *args, **kwargs):
         return draft.review_request.is_mutable_by(request.user)
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={
@@ -2308,6 +2326,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return result
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={
@@ -2410,9 +2429,10 @@ class ReviewRequestDraftResource(WebAPIResource):
             self.item_result_key: draft,
         }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
-    def delete(self, request, review_request_id, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         """Deletes a draft of a review request.
 
         This is equivalent to pressing :guilabel:`Discard Draft` in the
@@ -2422,8 +2442,11 @@ class ReviewRequestDraftResource(WebAPIResource):
         # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
-            draft = ReviewRequestDraft.objects.get(
-                review_request=review_request_id)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            draft = review_request.draft.get()
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
         except ReviewRequestDraft.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -2434,6 +2457,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return 204, {}
 
+    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, request, review_request_id, *args, **kwargs):
@@ -2889,6 +2913,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.model(screenshot=comment.screenshot,
+                                 reply_to=comment,
                                  x=comment.x,
                                  y=comment.y,
                                  w=comment.w,
@@ -3020,7 +3045,9 @@ class BaseReviewResource(WebAPIResource):
 
     def get_queryset(self, request, review_request_id, is_list=False,
                      *args, **kwargs):
-        q = Q(review_request=review_request_id) & \
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
+        q = Q(review_request=review_request) & \
             Q(**self.get_base_reply_to_field(*args, **kwargs))
 
         if is_list:
@@ -3041,6 +3068,13 @@ class BaseReviewResource(WebAPIResource):
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return not review.public and review.user == request.user
 
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_request_resource.get_href(
+            obj.review_request, request, *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
+
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -3111,6 +3145,7 @@ class BaseReviewResource(WebAPIResource):
                 'Location': self.get_href(review, request, *args, **kwargs),
             }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -3156,6 +3191,7 @@ class BaseReviewResource(WebAPIResource):
 
         return self._update_review(request, review, *args, **kwargs)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
         """Deletes the draft review.
@@ -3169,6 +3205,7 @@ class BaseReviewResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on a particular review.
@@ -3455,6 +3492,13 @@ class ReviewReplyResource(BaseReviewResource):
             self.item_result_key: reply,
         }
 
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        print obj
+        base = review_resource.get_href(obj.base_reply_to, request,
+                                        *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
+
 review_reply_resource = ReviewReplyResource()
 
 
@@ -3499,6 +3543,7 @@ class ReviewResource(BaseReviewResource):
         review_draft_resource,
     ]
 
+    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of all public reviews on a review request."""

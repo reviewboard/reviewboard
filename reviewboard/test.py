@@ -129,12 +129,14 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
                           'teardown_test_environment'])
 
     nose_argv = ['test.py', '-v',
-                 '--with-coverage',
                  '--with-doctest', '--doctest-extension=.txt',
                  '-e', exclusion]
 
-    nose_argv += ['--cover-package=reviewboard',
-                  '--where=reviewboard']
+    if '--with-coverage' in sys.argv:
+        nose_argv += ['--with-coverage',
+                      '--cover-package=reviewboard',
+                      '--where=reviewboard']
+        sys.argv.remove('--with-coverage')
 
     if '--with-webtests' in sys.argv:
         nose_argv += ['--where=webtests']
