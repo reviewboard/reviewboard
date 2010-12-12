@@ -2889,6 +2889,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.model(screenshot=comment.screenshot,
+                                 reply_to=comment,
                                  x=comment.x,
                                  y=comment.y,
                                  w=comment.w,

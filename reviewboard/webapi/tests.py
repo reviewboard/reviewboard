@@ -2493,6 +2493,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         reply_comment = ScreenshotComment.objects.get(
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
+        self.assertEqual(reply_comment.reply_to, comment)
 
 
 class FileDiffResourceTests(BaseWebAPITestCase):
