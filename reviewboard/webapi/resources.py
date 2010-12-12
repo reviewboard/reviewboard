@@ -242,6 +242,7 @@ class BaseDiffCommentResource(WebAPIResource):
     def serialize_user_field(self, obj):
         return obj.review.get().user
 
+    @webapi_check_local_site
     @webapi_request_fields(optional={
         'interdiff-revision': {
             'type': int,
@@ -257,6 +258,7 @@ class BaseDiffCommentResource(WebAPIResource):
     def get_list(self, *args, **kwargs):
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on the comment."""
@@ -291,6 +293,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
             request, review_request_id, *args, **kwargs)
         return q.filter(filediff__diffset__revision=diff_revision)
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of comments on a file in a diff.
@@ -305,6 +308,12 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         the second revision in the range using ``?interdiff-revision=``.
         """
         pass
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_request_resource.get_href(
+            obj.filediff.diffset.history.review_request, request,
+            *args, **kwargs)
 
 filediff_comment_resource = FileDiffCommentResource()
 
@@ -329,6 +338,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         review = comment.review.get()
         return not review.public and review.user == request.user
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             PERMISSION_DENIED)
@@ -420,6 +430,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             self.item_result_key: new_comment,
         }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -465,6 +476,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             self.item_result_key: diff_comment,
         }
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes the comment.
@@ -478,6 +490,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of comments made on a review.
@@ -519,6 +532,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             PERMISSION_DENIED)
@@ -576,6 +590,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             self.item_result_key: new_comment,
         }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -614,6 +629,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             self.item_result_key: diff_comment,
         }
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes a comment from a draft reply.
@@ -627,6 +643,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get(self, *args, **kwargs):
         """Returns information on a reply to a comment.
@@ -638,6 +655,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of replies to comments made on a review reply.
@@ -652,6 +670,12 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         the second revision in the range using ``?interdiff-revision=``.
         """
         pass
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_reply_resource.get_href(
+            obj.review.get(), request, *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 review_reply_diff_comment_resource = ReviewReplyDiffCommentResource()
 
@@ -712,6 +736,7 @@ class FileDiffResource(WebAPIResource):
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of public per-file diffs on the review request.
@@ -938,6 +963,12 @@ class FileDiffResource(WebAPIResource):
         set_last_modified(resp, filediff.diffset.timestamp)
 
         return resp
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_request_resource.get_href(
+            obj.diffset.history.review_request.get(), request, *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 filediff_resource = FileDiffResource()
 
@@ -1921,7 +1952,9 @@ class BaseScreenshotResource(WebAPIResource):
     uri_object_key = 'screenshot_id'
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id)
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
+        return self.model.objects.filter(review_request=review_request)
 
     def serialize_path_field(self, obj):
         return obj.image.name
@@ -2058,6 +2091,12 @@ class BaseScreenshotResource(WebAPIResource):
 
         return 204, {}
 
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_request_resource.get_href(
+            obj.review_request.get(), request, *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
+
 
 class DraftScreenshotResource(BaseScreenshotResource):
     """Provides information on new screenshots being added to a draft of
@@ -2089,11 +2128,13 @@ class DraftScreenshotResource(BaseScreenshotResource):
     def serialize_caption_field(self, obj):
         return obj.draft_caption or obj.caption
 
+    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         pass
 
+    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
@@ -2110,6 +2151,7 @@ class DraftScreenshotResource(BaseScreenshotResource):
         """
         pass
 
+    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
@@ -2626,9 +2668,11 @@ class BaseScreenshotCommentResource(WebAPIResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, *args, **kwargs):
+        review_request = \
+            review_request_resource.get_object(request, *args, **kwargs)
         return self.model.objects.filter(
-            screenshot__review_request=review_request_id,
+            screenshot__review_request=review_request,
             review__isnull=False)
 
     def serialize_public_field(self, obj):
@@ -2640,6 +2684,7 @@ class BaseScreenshotCommentResource(WebAPIResource):
     def serialize_user_field(self, obj):
         return obj.review.get().user
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on the comment.
@@ -2650,6 +2695,12 @@ class BaseScreenshotCommentResource(WebAPIResource):
         position of the comment for use as an overlay on the screenshot.
         """
         pass
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_resource.get_href(
+            obj.review.all()[0], request, *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
 class ScreenshotCommentResource(BaseScreenshotCommentResource):
@@ -2669,6 +2720,7 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
         q = q.filter(screenshot=screenshot_id)
         return q
 
+    @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of screenshot comments on a screenshot.
@@ -2701,6 +2753,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         review = comment.review.get()
         return not review.public and review.user == request.user
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         required = {
@@ -2769,6 +2822,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             self.item_result_key: new_comment,
         }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -2823,6 +2877,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             self.item_result_key: screenshot_comment,
         }
 
+    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes the comment.
@@ -2836,6 +2891,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of screenshot comments made on a review."""
@@ -2990,6 +3046,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of replies to screenshot comments made on a
@@ -3335,6 +3392,7 @@ class ReviewReplyResource(BaseReviewResource):
             'base_reply_to': Review.objects.get(pk=review_id),
         }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -3448,11 +3506,13 @@ class ReviewReplyResource(BaseReviewResource):
 
         return self._update_reply(request, reply, *args, **kwargs)
 
+    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of all public replies on a review."""
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get(self, *args, **kwargs):
         """Returns information on a particular reply.
@@ -3494,7 +3554,6 @@ class ReviewReplyResource(BaseReviewResource):
 
     def get_href(self, obj, request, *args, **kwargs):
         """Returns the URL for this object"""
-        print obj
         base = review_resource.get_href(obj.base_reply_to, request,
                                         *args, **kwargs)
         return '%s%s/%s/' % (base, self.uri_name, obj.id)
