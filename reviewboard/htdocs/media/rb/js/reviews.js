@@ -185,7 +185,7 @@ function setDraftField(field, value) {
             var func = gEditorCompleteHandlers[field];
 
             if ($.isFunction(func)) {
-                $("#" + field).html(func(rsp[field]));
+                $("#" + field).html(func(rsp['draft'][field]));
             }
 
             gDraftBanner.show();
@@ -396,10 +396,24 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                 .bind("complete", function(e, value) {
                     self.html(linkifyText(self.text()));
 
-                    review_reply.addComment({
-                        context_id: context_id,
-                        context_type: context_type,
-                        text: value,
+                    if (context_type == "body_top" ||
+                        context_type == "body_bottom") {
+                        review_reply[context_type] = value;
+                        obj = review_reply;
+                    } else if (context_type == "comment") {
+                        obj = new RB.DiffCommentReply(review_reply, null,
+                                                      context_id);
+                        obj.setText(value);
+                    } else if (context_type == "screenshot_comment") {
+                        obj = new RB.ScreenshotCommentReply(review_reply, null,
+                                                            context_id);
+                        obj.setText(value);
+                    } else {
+                        /* Shouldn't be reached. */
+                        return;
+                    }
+
+                    obj.save({
                         buttons: bannerButtonsEl,
                         success: function() {
                             removeCommentFormIfEmpty(self);
@@ -433,6 +447,11 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
             }
 
             addCommentLink.fadeIn();
+
+            /* Find out if we need to discard this. */
+            review_reply.discardIfEmpty({
+                buttons: bannerButtonsEl
+            });
         });
     }
 
@@ -629,7 +648,7 @@ $.fn.commentDlg = function() {
         });
     }
 
-    if (!LOGGED_IN) {
+    if (!gUserAuthenticated) {
         textField.attr("disabled", true);
         saveButton.attr("disabled", true);
     }
@@ -782,11 +801,15 @@ $.fn.commentDlg = function() {
         }
 
         comment = newComment;
-        textField.val(comment.text);
-        dirty = false;
 
-        /* Set the initial button states */
-        deleteButton.setVisible(comment.saved);
+        comment.ready(function() {
+            textField.val(comment.text);
+            dirty = false;
+
+            /* Set the initial button states */
+            deleteButton.setVisible(comment.loaded);
+        });
+
         saveButton.attr("disabled", true);
 
         /* Clear the status field. */
@@ -936,7 +959,7 @@ $.reviewForm = function(review) {
     /*
      * Saves the review.
      *
-     * This sets the shipit and body values, and saves all comments.
+     * This sets the ship_it and body values, and saves all comments.
      */
     function saveReview(publish) {
         $.funcQueue("reviewForm").clear();
@@ -956,7 +979,7 @@ $.reviewForm = function(review) {
         });
 
         $.funcQueue("reviewForm").add(function() {
-            review.shipit = $("#id_shipit", dlg)[0].checked ? 1 : 0;
+            review.ship_it = $("#id_shipit", dlg)[0].checked ? 1 : 0;
             review.body_top = $(".body-top", dlg).text();;
             review.body_bottom = $(".body-bottom", dlg).text();;
 
@@ -1043,7 +1066,52 @@ $.fn.reviewRequestFieldEditor = function() {
 
 
 /*
- * Adds a thumbnail to the thumbnail list.
+ * Handles interaction and events with a screenshot thumbnail.
+
+ * @return {jQuery} The provided screenshot containers.
+ */
+$.fn.screenshotThumbnail = function() {
+    return $(this).each(function() {
+        var self = $(this);
+
+        var screenshot_id = self.attr("data-screenshot-id");
+        var screenshot = gReviewRequest.createScreenshot(screenshot_id);
+        var captionEl = self.find(".screenshot-caption");
+
+        captionEl.find("a.edit")
+            .inlineEditor({
+                cls: this.id + "-editor",
+                editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                showButtons: false
+            })
+            .bind("complete", function(e, value) {
+                screenshot.ready(function() {
+                    screenshot.caption = value;
+                    screenshot.save({
+                        buttons: gDraftBannerButtons,
+                        success: function(rsp) {
+                            gDraftBanner.show();
+                        }
+                    });
+                });
+            });
+
+        captionEl.find("a.delete")
+            .click(function() {
+                screenshot.ready(function() {
+                    screenshot.deleteScreenshot()
+                    self.empty();
+                    gDraftBanner.show();
+                });
+
+                return false;
+            });
+    });
+}
+
+
+/*
+ * Adds a new, dynamic thumbnail to the thumbnail list.
  *
  * If a screenshot object is given, then this will display actual
  * thumbnail data. Otherwise, this will display a spinner.
@@ -1052,7 +1120,7 @@ $.fn.reviewRequestFieldEditor = function() {
  *
  * @return {jQuery} The root screenshot thumbnail div.
  */
-$.screenshotThumbnail = function(screenshot) {
+$.newScreenshotThumbnail = function(screenshot) {
     var container = $('<div/>')
         .addClass("screenshot-container");
 
@@ -1066,7 +1134,7 @@ $.screenshotThumbnail = function(screenshot) {
 
     if (screenshot) {
         body.append($("<a/>")
-            .attr("href", screenshot.image_url)
+            .attr("href", "s/" + screenshot.id + "/")
             .append($("<img/>")
                 .attr({
                     src: screenshot.thumbnail_url,
@@ -1077,15 +1145,15 @@ $.screenshotThumbnail = function(screenshot) {
 
         captionArea
             .append($("<a/>")
-                .addClass("editable")
-                .addClass("screenshot-editable")
+                .addClass("screenshot-editable edit")
                 .attr({
                     href: screenshot.image_url,
                     id: "screenshot_" + screenshot.id + "_caption"
                 })
             )
             .append($("<a/>")
-                .attr("href", screenshot.image_url + "delete/")
+                .addClass("delete")
+                .attr("href", "#")
                 .append($("<img/>")
                     .attr({
                         src: MEDIA_URL + "rb/images/delete.png?" +
@@ -1095,7 +1163,9 @@ $.screenshotThumbnail = function(screenshot) {
                 )
             );
 
-        container.find(".editable").reviewRequestFieldEditor()
+        container
+            .attr("data-screenshot-id", screenshot.id)
+            .screenshotThumbnail();
     } else {
         body.addClass("loading");
 
@@ -1383,8 +1453,10 @@ function initScreenshotDnD() {
             thumbnailsContainerVisible = true;
             handleDragExit(null);
         } else {
-            dropIndicator.html("None of the dropped files were valid " +
-                               "images");
+            if (dropIndicator) {
+                dropIndicator.html("None of the dropped files were valid " +
+                                   "images");
+            }
 
             setTimeout(function() {
                 handleDragExit(null);
@@ -1394,7 +1466,7 @@ function initScreenshotDnD() {
 
     function uploadScreenshot(file) {
         /* Create a temporary screenshot thumbnail. */
-        var thumb = $.screenshotThumbnail()
+        var thumb = $.newScreenshotThumbnail()
             .css("opacity", 0)
             .fadeTo(1000, 1);
 
@@ -1403,7 +1475,7 @@ function initScreenshotDnD() {
         screenshot.save({
             buttons: gDraftBannerButtons,
             success: function(rsp, screenshot) {
-                thumb.replaceWith($.screenshotThumbnail(screenshot));
+                thumb.replaceWith($.newScreenshotThumbnail(screenshot));
                 gDraftBanner.show();
             },
             error: function(rsp, msg) {
@@ -1522,6 +1594,22 @@ $(document).ready(function() {
         $.reviewForm(pendingReview);
     });
 
+    $("#shipit-link").click(function() {
+        if (confirm("Are you sure?")) {
+            pendingReview.shipit = 1;
+            pendingReview.body_top = "Ship It!";
+            pendingReview.publish({
+                buttons: null,
+                success: function() {
+                    hideReviewBanner();
+                    gReviewBanner.queue(function() {
+                        window.location = gReviewRequestPath;
+                    });
+                }
+            });
+        }
+    });
+
     /* Review banner's Publish button. */
     $("#review-banner-publish").click(function() {
         pendingReview.publish({
@@ -1578,6 +1666,7 @@ $(document).ready(function() {
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
             $(".editable").reviewRequestFieldEditor();
+            $(".screenshot-container").screenshotThumbnail();
 
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");

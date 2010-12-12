@@ -28,7 +28,8 @@ class EmailTestHelper(object):
 
 class EmailTests(TestCase, EmailTestHelper):
     """Tests the e-mail support."""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         initialize()

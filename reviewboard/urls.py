@@ -27,11 +27,18 @@ urlpatterns = patterns('',
 
 # Add static media if running in DEBUG mode
 if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
+    from django import VERSION
+
+    static_args = {
+        'show_indexes': True,
+        'document_root': settings.MEDIA_ROOT,
+    }
+
+    if (VERSION[0] > 1 or (VERSION[0] == 1 and VERSION[1] >= 3)):
+        static_args['insecure'] = True
+
     urlpatterns += patterns('django.views.static',
-        (r'^media/(?P<path>.*)$', 'serve', {
-            'show_indexes': True,
-            'document_root': settings.MEDIA_ROOT,
-            }),
+        (r'^media/(?P<path>.*)$', 'serve', static_args)
     )
 
 rss_feeds = {
@@ -51,7 +58,8 @@ atom_feeds = {
 # Main includes
 urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
-    (r'^api/', include('reviewboard.webapi.urls')),
+    (r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?api/',
+     include('reviewboard.webapi.urls')),
     (r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?r/',
      include('reviewboard.reviews.urls')),
     #(r'^reports/', include('reviewboard.reports.urls')),

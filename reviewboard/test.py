@@ -44,6 +44,7 @@ from django.conf import settings
 from django.core import management
 from django.db import connection
 from django.test.utils import setup_test_environment, teardown_test_environment
+from djblets.util.misc import generate_media_serial
 
 
 def setup_media_dirs():
@@ -86,6 +87,8 @@ def setup_media_dirs():
         else:
             os.symlink(src_dir, dest_dir)
 
+    generate_media_serial()
+
 
 def destroy_media_dirs():
     for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):
@@ -126,12 +129,14 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
                           'teardown_test_environment'])
 
     nose_argv = ['test.py', '-v',
-                 '--with-coverage',
                  '--with-doctest', '--doctest-extension=.txt',
                  '-e', exclusion]
 
-    nose_argv += ['--cover-package=reviewboard',
-                  '--where=reviewboard']
+    if '--with-coverage' in sys.argv:
+        nose_argv += ['--with-coverage',
+                      '--cover-package=reviewboard',
+                      '--where=reviewboard']
+        sys.argv.remove('--with-coverage')
 
     if '--with-webtests' in sys.argv:
         nose_argv += ['--where=webtests']

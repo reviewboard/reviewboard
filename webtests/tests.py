@@ -8,7 +8,8 @@ from django.db import transaction
 from djblets.testing import testcases
 
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
-                                       ReviewRequestDraft, Screenshot
+                                       ReviewRequestDraft, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools.models import Repository, Tool
 
 
@@ -25,7 +26,8 @@ def create_screenshot(r, caption=""):
 
 
 class SeleniumUnitTest(testcases.SeleniumUnitTest):
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
+    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
+                'test_site']
 
     def setUp(self):
         super(SeleniumUnitTest, self).setUp()
@@ -113,12 +115,12 @@ class DiffTests(SeleniumUnitTest):
         f = open(diff_filename, "r")
         self.client.login(username="grumpy", password="grumpy")
         response = self.client.post(
-            '/api/json/reviewrequests/%s/diff/new/' % r.id, {
+            '/api/review-requests/%s/diffs/' % r.id, {
                 'path': f,
                 'basedir': '/trunk',
             }
         )
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
         self.assertTrue('"ok"' in response.content)
         f.close()
 
@@ -174,6 +176,7 @@ class DiffCommentTests(SeleniumUnitTest):
         self.open_comment_box(file.id, first_line, last_line)
         self.selenium.type_keys('comment_text', comment_text)
         self.selenium.click('comment_save')
+        self.wait_for_visible('review-banner')
         self.selenium.click('review-banner-publish')
         self.selenium.wait_for_page_to_load("6000")
 
@@ -266,7 +269,7 @@ class DiffCommentTests(SeleniumUnitTest):
         self.wait_for_ajax_finish()
         time.sleep(0.25) # It will be animating, so wait.
 
-        self.assertEqual(r.reviews.count(), 0)
+        self.assertEqual(r.reviews.count(), 1)
 
     def open_comment_box(self, file_id, first_line, last_line):
         first_line_locator = self.build_line_locator(file_id, first_line)
@@ -400,7 +403,7 @@ class ReviewRequestTests(SeleniumUnitTest):
 
         summary = 'My new summary'
         branch = 'mybranch'
-        bugs_closed = '123, 789'
+        bugs_closed = '123,789'
         target_groups = 'devgroup'
         target_people = 'grumpy'
         description = 'My new description'
@@ -539,8 +542,10 @@ class ReviewRequestTests(SeleniumUnitTest):
     # This is a test for bug #1586
     def test_linkified_text_for_non_editable_description(self):
         """Testing linkified text in non-editable description"""
-        r = ReviewRequest.objects.filter(public=True, status='P')\
-            .exclude(submitter=self.user)[0]
+        q = ReviewRequest.objects.filter(public=True, status='P',
+                                         local_site=None)
+        q = q.exclude(submitter=self.user)
+        r = q[0]
         r.description = "Testing linkified text\n\n/r/123"
         r.save()
         transaction.commit()
@@ -741,7 +746,8 @@ class ReviewTests(SeleniumUnitTest):
         self.assertTrue(self.selenium.is_visible('review-banner'))
 
     def _click_discard(self):
-        self._click_dlg_button('Discard Review', reloads_page=True)
+        self._click_dlg_button('Discard Review')
+        self.assertFalse(self.selenium.is_visible('review-banner'))
 
 
 class ReviewGroupTests(SeleniumUnitTest):
@@ -827,6 +833,57 @@ class ReviewReplyTests(SeleniumUnitTest):
             self.assertEqual(reply_comment.text,
                              make_comment_text(review_comment))
 
+    def test_reply_screenshot_comment(self):
+        """Testing making a reply to a screenshot comment"""
+
+        def make_comment_text(comment):
+            return 'This is a reply to comment %s' % comment.id
+
+        # First, create the review request to test against.
+        r = ReviewRequest.objects.filter(public=True, status='P',
+                                         submitter=self.user,
+                                         local_site=None)[0]
+        r.screenshots = []
+        r.reviews = []
+        screenshot = create_screenshot(r)
+
+        # Now create a dummy reply.
+        review = Review.objects.create(review_request=r,
+                                       user=self.user,
+                                       public=True)
+        comment = ScreenshotComment.objects.create(
+            screenshot=screenshot,
+            text='This is the original comment.',
+            x=0, y=0, w=20, h=20)
+        review.screenshot_comments.add(comment)
+
+        # Now start the test to reply.
+        comments = list(review.screenshot_comments.all())
+        self.assertTrue(len(comments) > 0)
+
+        self.selenium.open(review.review_request.get_absolute_url())
+        self.assertTrue(
+            self.selenium.is_element_present('review%s' % review.id))
+
+        for comment in comments:
+            self._add_comment(make_comment_text(comment), review,
+                              'screenshot_comment', comment)
+
+        self.assertEqual(review.replies.count(), 1)
+        reply = review.replies.get()
+        self.assertFalse(reply.public)
+        self.assertEqual(reply.base_reply_to, review)
+
+        reply_comments = list(reply.screenshot_comments.all())
+        self.assertEqual(len(reply_comments), len(comments))
+
+        for reply_comment in reply_comments:
+            review_comment = reply_comment.reply_to
+            self.assertNotEqual(review_comment, None)
+
+            self.assertEqual(reply_comment.text,
+                             make_comment_text(review_comment))
+
     def test_reply_publish(self):
         """Testing publishing a reply to a review"""
         body_top = 'Reply to body top'
@@ -861,7 +918,10 @@ class ReviewReplyTests(SeleniumUnitTest):
         self.assertEqual(review.replies.count(), 0)
 
     def _get_review(self, **kwargs):
-        review = Review.objects.filter(public=True, **kwargs)[0]
+        reviews = Review.objects.filter(public=True, **kwargs)
+        self.assertTrue(len(reviews) > 0)
+
+        review = revews[0]
         review.body_top = 'Review body top'
         review.body_bottom = 'Review body bottom'
         review.replies = []
@@ -873,7 +933,7 @@ class ReviewReplyTests(SeleniumUnitTest):
     def _add_comment(self, text, review, context_type, comment=None):
         key = '%s_%s' % (review.id, context_type)
 
-        if context_type == 'comment':
+        if context_type in ('comment', 'screenshot_comment'):
             self.assertNotEqual(comment, None)
             key += '_%s' % comment.id
 
@@ -963,7 +1023,7 @@ class ScreenshotTests(SeleniumUnitTest):
         self.selenium.open(r.get_absolute_url())
         self.selenium.click('css=.screenshot-caption '
                             'img[alt="Delete Screenshot"]')
-        self.selenium.wait_for_page_to_load("6000")
+        self.wait_for_ajax_finish()
 
         draft = r.get_draft(self.user)
         self.assertNotEqual(draft, None)
@@ -1022,7 +1082,7 @@ class ScreenshotCommentTests(SeleniumUnitTest):
         self.selenium.click('comment_delete')
         self.wait_for_ajax_finish()
 
-        self.assertEqual(r.reviews.count(), 0)
+        self.assertEqual(r.reviews.count(), 1)
 
     def _get_review_request(self):
         r = ReviewRequest.objects.filter(public=True, status='P',

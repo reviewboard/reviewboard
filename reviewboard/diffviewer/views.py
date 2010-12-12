@@ -69,20 +69,18 @@ def get_collapse_diff(request):
         return True
 
 
-def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
+def view_diff(request, diffset, interdiffset=None, extra_context={},
               template_name='diffviewer/view_diff.html'):
-    diffset = get_object_or_404(DiffSet, pk=diffset_id)
-    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
     highlighting = get_enable_highlighting(request.user)
 
     try:
-        if interdiffset_id:
+        if interdiffset:
             logging.debug("Generating diff viewer page for interdiffset ids "
                           "%s-%s",
-                          diffset_id, interdiffset_id)
+                          diffset.id, interdiffset.id)
         else:
             logging.debug("Generating diff viewer page for filediff id %s",
-                          diffset_id)
+                          diffset.id)
 
         files = get_diff_files(diffset, None, interdiffset,
                                highlighting, False)
@@ -164,14 +162,14 @@ def view_diff(request, diffset_id, interdiffset_id=None, extra_context={},
                                       RequestContext(request, context))
         response.set_cookie('collapsediffs', collapse_diffs)
 
-        if interdiffset_id:
+        if interdiffset:
             logging.debug("Done generating diff viewer page for interdiffset "
                           "ids %s-%s",
-                          diffset_id, interdiffset_id)
+                          diffset.id, interdiffset.id)
         else:
             logging.debug("Done generating diff viewer page for filediff "
                           "id %s",
-                          diffset_id)
+                          diffset.id)
 
         return response
 

@@ -108,6 +108,7 @@ there's a Python script that will prepare your source directory for
 development use. You will need to run this::
 
     $ cd reviewboard
+    $ python setup.py develop
     $ python ./contrib/internal/prepare-dev.py
 
 If all went well, you will see "Your Review Board tree is ready for
@@ -132,9 +133,13 @@ Go back to your source directory and check out a copy of RBTools::
 This will download the latest bleeding-edge build of RBTools into the
 :file:`rbtools` directory.
 
-Unlike Djblets and Review Board, you **will** want to install this version,
-since you will actively use it to post code up for review. You can do this
-by typing::
+We highly recommend installing RBTools onto your system, since you will actively
+use it to post code up for review. If you just want to develop rbtools, you can
+set that up using this command::
+
+    $ python setup.py develop
+
+If you want to install RBTools onto your system, use::
 
     $ sudo python setup.py install
 

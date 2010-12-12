@@ -8,6 +8,7 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
@@ -17,7 +18,8 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
                               set_last_modified
-from djblets.webapi.core import WebAPIResponseFormError, \
+from djblets.webapi.core import WebAPIResponseError, \
+                                WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
                                 WebAPIResponse
 from djblets.webapi.decorators import webapi_login_required, \
@@ -48,7 +50,10 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError
-from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.site.models import LocalSite
+from reviewboard.webapi.decorators import webapi_check_login_required, \
+                                          webapi_check_local_site
+from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
                                       EMPTY_CHANGESET, \
                                       INVALID_CHANGE_NUMBER, \
@@ -60,6 +65,13 @@ from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
 
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
+
+
+def _get_local_site(local_site_name):
+    if local_site_name:
+        return LocalSite.objects.get(name=local_site_name)
+    else:
+        return None
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -114,6 +126,32 @@ class WebAPIResource(DjbletsWebAPIResource):
         implementation while still retaining the ?counts-only=1 functionality.
         """
         return super(WebAPIResource, self).get_list(request, *args, **kwargs)
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object.
+
+        This is an override of djblets.webapi.resources.WebAPIResource.get_href,
+        which takes into account our local_site_name namespacing in order to get
+        the right prefix on URLs.
+        """
+        if not self.uri_object_key:
+            return None
+
+        href_kwargs = {
+            self.uri_object_key: getattr(obj, self.model_object_key),
+        }
+        href_kwargs.update(self.get_href_parent_ids(obj))
+
+        url = reverse(self._build_named_url(self.name), kwargs=href_kwargs)
+
+        local_site_name = kwargs.get('local_site_name', None)
+        if local_site_name:
+            prefix = '%ss/%s' % (settings.SITE_ROOT, local_site_name)
+            if not url.startswith(prefix):
+                url = prefix + url
+
+        return request.build_absolute_uri(url)
+
 
 
 class BaseDiffCommentResource(WebAPIResource):
@@ -182,9 +220,11 @@ class BaseDiffCommentResource(WebAPIResource):
         on the URL to match the given interdiff revision, and
         ``?line=`` to match comments on the given line number.
         """
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
         q = self.model.objects.filter(
             Q(review__public=True) | Q(review__user=request.user),
-            filediff__diffset__history__review_request=review_request_id)
+            filediff__diffset__history__review_request=review_request)
 
         if is_list:
             if 'interdiff-revision' in request.GET:
@@ -953,9 +993,15 @@ class DiffResource(WebAPIResource):
         'text/x-patch'
     ]
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+        except ReviewRequest.DoesNotExist:
+            raise self.model.DoesNotExist
+
         return self.model.objects.filter(
-            history__review_request=review_request_id)
+            history__review_request=review_request)
 
     def get_parent_object(self, diffset):
         history = diffset.history
@@ -970,14 +1016,19 @@ class DiffResource(WebAPIResource):
         review_request = diffset.history.review_request.get()
         return review_request.is_accessible_by(request.user)
 
-    @augment_method_from(WebAPIResource)
+    @webapi_check_local_site
+    @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, *args, **kwargs):
         """Returns the list of public diffs on the review request.
 
         Each diff has a revision and list of per-file diffs associated with it.
         """
-        pass
+        try:
+            return super(DiffResource, self).get_list(*args, **kwargs)
+        except self.model.DoesNotExist:
+            return DOES_NOT_EXIST
 
+    @webapi_check_local_site
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns the information or contents on a particular diff.
@@ -1026,6 +1077,7 @@ class DiffResource(WebAPIResource):
 
         return resp
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA)
@@ -1172,10 +1224,18 @@ class BaseWatchedObjectResource(WebAPIResource):
     def uri_object_key_regex(self):
         return self.watched_resource.uri_object_key_regex
 
-    def get_queryset(self, request, username, *args, **kwargs):
+    def get_queryset(self, request, username, local_site_name=None,
+                     *args, **kwargs):
         try:
-            profile = Profile.objects.get(user__username=username)
-            q = self.watched_resource.get_queryset(request, *args, **kwargs)
+            local_site = _get_local_site(local_site_name)
+            if local_site:
+                user = local_site.users.get(username=username)
+                profile = user.get_profile()
+            else:
+                profile = Profile.objects.get(user__username=username)
+
+            q = self.watched_resource.get_queryset(
+                    request, local_site_name=local_site_name, *args, **kwargs)
             q = q.filter(starred_by=profile)
             return q
         except Profile.DoesNotExist:
@@ -1193,17 +1253,20 @@ class BaseWatchedObjectResource(WebAPIResource):
             self.watched_resource.get_href(obj, request, *args, **kwargs))
 
     @webapi_check_login_required
+    @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, request, *args, **kwargs):
         # TODO: Handle pagination and ?counts-only=1
-        objects = [
-            self.serialize_object(obj)
-            for obj in self.get_queryset(request, is_list=True,
-                                         *args, **kwargs)
-        ]
+        try:
+            objects = [
+                self.serialize_object(obj)
+                for obj in self.get_queryset(request, is_list=True, *args, **kwargs)
+            ]
 
-        return 200, {
-            self.list_result_key: objects,
-        }
+            return 200, {
+                self.list_result_key: objects,
+            }
+        except User.DoesNotExist:
+            return DOES_NOT_EXIST
 
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
@@ -1215,9 +1278,9 @@ class BaseWatchedObjectResource(WebAPIResource):
     })
     def create(self, request, object_id, *args, **kwargs):
         try:
-            obj = self.watched_resource.get_object(request, **dict({
-                self.watched_resource.uri_object_key: object_id,
-            }))
+            obj_kwargs = kwargs.copy()
+            obj_kwargs[self.watched_resource.uri_object_key] = object_id
+            obj = self.watched_resource.get_object(request, *args, **obj_kwargs)
             user = user_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1238,9 +1301,9 @@ class BaseWatchedObjectResource(WebAPIResource):
     @webapi_login_required
     def delete(self, request, watched_obj_id, *args, **kwargs):
         try:
-            obj = self.watched_resource.get_object(request, **dict({
-                self.watched_resource.uri_object_key: watched_obj_id,
-            }))
+            obj_kwargs = kwargs.copy()
+            obj_kwargs[self.watched_resource.uri_object_key] = watched_obj_id
+            obj = self.watched_resource.get_object(request, *args, **obj_kwargs)
             user = user_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -1293,6 +1356,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         return review_group_resource
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
         """Returned an :http:`302` pointing to the review group being
@@ -1307,6 +1371,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of watched review groups.
@@ -1318,6 +1383,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def create(self, *args, **kwargs):
         """Marks a review group as being watched.
@@ -1327,6 +1393,7 @@ class WatchedReviewGroupResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def delete(self, *args, **kwargs):
         """Deletes a watched review group entry.
@@ -1367,6 +1434,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         return review_request_resource
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get(self, *args, **kwargs):
         """Returned an :http:`302` pointing to the review request being
@@ -1381,6 +1449,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of watched review requests.
@@ -1392,6 +1461,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def create(self, *args, **kwargs):
         """Marks a review request as being watched.
@@ -1401,6 +1471,7 @@ class WatchedReviewRequestResource(BaseWatchedObjectResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(BaseWatchedObjectResource)
     def delete(self, *args, **kwargs):
         """Deletes a watched review request entry.
@@ -1449,10 +1520,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         watched_resource,
     ]
 
-    def get_queryset(self, request, *args, **kwargs):
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
         query = self.model.objects.filter(is_active=True)
+        if local_site_name:
+            query = query.filter(localsite__name=local_site_name)
 
         if search_q:
             q = Q(username__istartswith=search_q)
@@ -1465,6 +1538,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         return query
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'q': {
@@ -1507,6 +1581,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a registered user.
@@ -1525,9 +1600,13 @@ class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
     uri_object_key = None
 
-    def get_queryset(self, request, group_name, *args, **kwargs):
-        return self.model.objects.filter(review_groups__name=group_name)
+    def get_queryset(self, request, group_name, local_site_name=None,
+                     *args, **kwargs):
+        group = Group.objects.get(name=group_name,
+                                  local_site__name=local_site_name)
+        return group.users.all()
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of users belonging to a specific review group.
@@ -1615,13 +1694,16 @@ class ReviewGroupResource(WebAPIResource):
 
     allowed_methods = ('GET',)
 
-    def get_queryset(self, request, is_list=False, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     *args, **kwargs):
         search_q = request.GET.get('q', None)
+        local_site = _get_local_site(local_site_name)
 
         if is_list:
-            query = self.model.objects.accessible(request.user)
+            query = self.model.objects.accessible(request.user,
+                                                  local_site=local_site)
         else:
-            query = self.model.objects.all()
+            query = self.model.objects.filter(local_site=local_site)
 
         if search_q:
             q = Q(name__istartswith=search_q)
@@ -1639,6 +1721,7 @@ class ReviewGroupResource(WebAPIResource):
     def has_access_permissions(self, request, group, *args, **kwargs):
         return group.is_accessible_by(request.user)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieve information on a review group.
@@ -1651,6 +1734,7 @@ class ReviewGroupResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'q': {
@@ -1702,6 +1786,7 @@ class RepositoryInfoResource(WebAPIResource):
     singleton = True
     allowed_methods = ('GET',)
 
+    @webapi_check_local_site
     @webapi_check_login_required
     @webapi_response_errors(DOES_NOT_EXIST, REPO_NOT_IMPLEMENTED,
                             REPO_INFO_ERROR)
@@ -1766,8 +1851,11 @@ class RepositoryResource(WebAPIResource):
     allowed_methods = ('GET',)
 
     @webapi_check_login_required
-    def get_queryset(self, request, *args, **kwargs):
-        return self.model.objects.accessible(request.user)
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+        local_site = _get_local_site(local_site_name)
+        return self.model.objects.accessible(request.user,
+                                             visible_only=True,
+                                             local_site=local_site)
 
     def serialize_tool_field(self, obj):
         return obj.tool.name
@@ -1775,8 +1863,9 @@ class RepositoryResource(WebAPIResource):
     def has_access_permissions(self, request, repository, *args, **kwargs):
         return repository.is_accessible_by(request.user)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
-    def get_list(self, *args, **kwargs):
+    def get_list(self, request, *args, **kwargs):
         """Retrieves the list of repositories on the server.
 
         This will only list visible repositories. Any repository that the
@@ -1784,6 +1873,7 @@ class RepositoryResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Retrieves information on a particular repository.
@@ -1918,6 +2008,7 @@ class BaseScreenshotResource(WebAPIResource):
             },
         }
     )
+    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     def update(self, request, caption=None, *args, **kwargs):
         """Updates the screenshot's data.
 
@@ -1947,6 +2038,29 @@ class BaseScreenshotResource(WebAPIResource):
         return 200, {
             self.item_result_key: screenshot,
         }
+
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    def delete(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            screenshot = screenshot_resource.get_object(request, *args,
+                                                        **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        try:
+            draft = review_request_draft_resource.prepare_draft(request,
+                                                                review_request)
+        except PermissionDenied:
+            return PERMISSION_DENIED
+
+        draft.screenshots.remove(screenshot)
+        draft.inactive_screenshots.add(screenshot)
+        draft.save()
+
+        return 204, {}
 
 
 class DraftScreenshotResource(BaseScreenshotResource):
@@ -2155,6 +2269,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     def has_delete_permissions(self, request, draft, *args, **kwargs):
         return draft.review_request.is_mutable_by(request.user)
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={
@@ -2215,6 +2330,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return result
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_request_fields(
         optional={
@@ -2313,18 +2429,14 @@ class ReviewRequestDraftResource(WebAPIResource):
         if request.POST.get('public', False):
             review_request.publish(user=request.user)
 
-            return 303, {}, {
-                'Location': review_request_resource.get_href(
-                    review_request, request, *args, **kwargs)
-            }
-        else:
-            return 200, {
-                self.item_result_key: draft,
-            }
+        return 200, {
+            self.item_result_key: draft,
+        }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
-    def delete(self, request, review_request_id, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         """Deletes a draft of a review request.
 
         This is equivalent to pressing :guilabel:`Discard Draft` in the
@@ -2334,8 +2446,11 @@ class ReviewRequestDraftResource(WebAPIResource):
         # Make sure this exists. We don't want to use prepare_draft, or
         # we'll end up creating a new one.
         try:
-            draft = ReviewRequestDraft.objects.get(
-                review_request=review_request_id)
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            draft = review_request.draft.get()
+        except ReviewRequest.DoesNotExist:
+            return DOES_NOT_EXIST
         except ReviewRequestDraft.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -2346,6 +2461,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
         return 204, {}
 
+    @webapi_check_local_site
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def get(self, request, review_request_id, *args, **kwargs):
@@ -2801,6 +2917,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.model(screenshot=comment.screenshot,
+                                 reply_to=comment,
                                  x=comment.x,
                                  y=comment.y,
                                  w=comment.w,
@@ -2932,7 +3049,9 @@ class BaseReviewResource(WebAPIResource):
 
     def get_queryset(self, request, review_request_id, is_list=False,
                      *args, **kwargs):
-        q = Q(review_request=review_request_id) & \
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
+        q = Q(review_request=review_request) & \
             Q(**self.get_base_reply_to_field(*args, **kwargs))
 
         if is_list:
@@ -2953,6 +3072,13 @@ class BaseReviewResource(WebAPIResource):
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return not review.public and review.user == request.user
 
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        base = review_request_resource.get_href(
+            obj.review_request, request, *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
+
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -3023,6 +3149,7 @@ class BaseReviewResource(WebAPIResource):
                 'Location': self.get_href(review, request, *args, **kwargs),
             }
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -3068,6 +3195,7 @@ class BaseReviewResource(WebAPIResource):
 
         return self._update_review(request, review, *args, **kwargs)
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
         """Deletes the draft review.
@@ -3081,6 +3209,7 @@ class BaseReviewResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
         """Returns information on a particular review.
@@ -3367,6 +3496,13 @@ class ReviewReplyResource(BaseReviewResource):
             self.item_result_key: reply,
         }
 
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object"""
+        print obj
+        base = review_resource.get_href(obj.base_reply_to, request,
+                                        *args, **kwargs)
+        return '%s%s/%s/' % (base, self.uri_name, obj.id)
+
 review_reply_resource = ReviewReplyResource()
 
 
@@ -3411,6 +3547,7 @@ class ReviewResource(BaseReviewResource):
         review_draft_resource,
     ]
 
+    @webapi_check_local_site
     @augment_method_from(BaseReviewResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of all public reviews on a review request."""
@@ -3481,8 +3618,7 @@ class ScreenshotResource(BaseScreenshotResource):
         """
         pass
 
-    @webapi_login_required
-    @augment_method_from(WebAPIResource)
+    @augment_method_from(BaseScreenshotResource)
     def delete(self, *args, **kwargs):
         """Deletes the screenshot.
 
@@ -3699,7 +3835,8 @@ class ReviewRequestResource(WebAPIResource):
         'discarded': ReviewRequest.DISCARDED,
     }
 
-    def get_queryset(self, request, is_list=False, *args, **kwargs):
+    def get_queryset(self, request, is_list=False, local_site_name=None,
+                     *args, **kwargs):
         """Returns a queryset for ReviewRequest models.
 
         By default, this returns all published or formerly published
@@ -3778,6 +3915,7 @@ class ReviewRequestResource(WebAPIResource):
             * ``2010-06-27T16:26:30``
             * ``2010-06-27T16:26:30-08:00``
         """
+        local_site = _get_local_site(local_site_name)
         q = Q()
 
         if is_list:
@@ -3837,9 +3975,10 @@ class ReviewRequestResource(WebAPIResource):
             status = string_to_status(request.GET.get('status', 'pending'))
 
             return self.model.objects.public(user=request.user, status=status,
+                                             local_site=local_site,
                                              extra_query=q)
         else:
-            return self.model.objects.all()
+            return self.model.objects.filter(local_site=local_site)
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
@@ -3853,6 +3992,13 @@ class ReviewRequestResource(WebAPIResource):
     def serialize_status_field(self, obj):
         return status_to_string(obj.status)
 
+    def serialize_id_field(self, obj):
+        if obj.local_site:
+            return obj.local_id
+        else:
+            return obj.id
+
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(PERMISSION_DENIED, INVALID_USER,
                             INVALID_REPOSITORY, CHANGE_NUMBER_IN_USE,
@@ -3883,7 +4029,7 @@ class ReviewRequestResource(WebAPIResource):
             },
         })
     def create(self, request, repository, submit_as=None, changenum=None,
-               *args, **kwargs):
+               local_site_name=None, *args, **kwargs):
         """Creates a new review request.
 
         The new review request will start off as private and pending, and
@@ -3912,6 +4058,7 @@ class ReviewRequestResource(WebAPIResource):
         that need to create review requests for another user.
         """
         user = request.user
+        local_site = _get_local_site(local_site_name)
 
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user'):
@@ -3924,12 +4071,14 @@ class ReviewRequestResource(WebAPIResource):
 
         try:
             try:
-                repository = Repository.objects.get(pk=int(repository))
+                repository = Repository.objects.get(pk=int(repository),
+                                                    local_site=local_site)
             except ValueError:
                 # The repository is not an ID.
                 repository = Repository.objects.get(
-                    Q(path=repository) |
-                    Q(mirror_path=repository))
+                    (Q(path=repository) |
+                     Q(mirror_path=repository)) &
+                    Q(local_site=local_site))
         except Repository.DoesNotExist, e:
             return INVALID_REPOSITORY, {
                 'repository': repository
@@ -3940,7 +4089,7 @@ class ReviewRequestResource(WebAPIResource):
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,
-                                                          changenum)
+                                                          changenum, local_site)
 
             return 201, {
                 self.item_result_key: review_request
@@ -3954,6 +4103,7 @@ class ReviewRequestResource(WebAPIResource):
         except EmptyChangeSetError:
             return EMPTY_CHANGESET
 
+    @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
     @webapi_request_fields(
@@ -4002,6 +4152,7 @@ class ReviewRequestResource(WebAPIResource):
             self.item_result_key: review_request,
         }
 
+    @webapi_check_local_site
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
         """Deletes the review request permanently.
@@ -4018,6 +4169,7 @@ class ReviewRequestResource(WebAPIResource):
         """
         pass
 
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'changenum': {
@@ -4125,6 +4277,48 @@ class ReviewRequestResource(WebAPIResource):
         """
         pass
 
+    def get_object(self, request, review_request_id, local_site_name=None,
+                   *args, **kwargs):
+        """Returns an object, given captured parameters from a URL.
+
+        This is an override of the djblets WebAPIResource get_object, which
+        knows about local_id and local_site_name.
+        """
+        queryset = self.get_queryset(request, local_site_name=local_site_name,
+                                     review_request_id=review_request_id,
+                                     *args, **kwargs)
+
+        if local_site_name:
+            return queryset.get(local_id=review_request_id)
+        else:
+            return queryset.get(pk=review_request_id)
+
+    def get_href(self, obj, request, *args, **kwargs):
+        """Returns the URL for this object.
+
+        This is an override of WebAPIResource.get_href which will use the
+        local_id instead of the pk.
+        """
+        if obj.local_site:
+            id = obj.local_id
+        else:
+            id = obj.pk
+
+        href_kwargs = {
+            self.uri_object_key: id,
+        }
+        href_kwargs.update(self.get_href_parent_ids(obj))
+
+        url = reverse(self._build_named_url(self.name), kwargs=href_kwargs)
+
+        if obj.local_site:
+            prefix = '%ss/%s' % (settings.SITE_ROOT, obj.local_site.name)
+            if not url.startswith(prefix):
+                url = prefix + url
+
+        return request.build_absolute_uri(url)
+
+
     def _parse_date(self, timestamp_str):
         try:
             return dateutil.parser.parse(timestamp_str)
@@ -4145,6 +4339,8 @@ class ServerInfoResource(WebAPIResource):
     name = 'info'
     singleton = True
 
+    @webapi_check_local_site
+    @webapi_response_errors(PERMISSION_DENIED)
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns the information on the Review Board server."""
@@ -4153,6 +4349,9 @@ class ServerInfoResource(WebAPIResource):
 
         url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
                              settings.SITE_ROOT)
+        local_site_name = kwargs.get('local_site_name', None)
+        if local_site_name:
+            url = '%ss/%s/' % (url, local_site_name)
 
         return 200, {
             self.item_result_key: {
@@ -4184,6 +4383,7 @@ class SessionResource(WebAPIResource):
     name = 'session'
     singleton = True
 
+    @webapi_check_local_site
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns information on the client's session.
@@ -4197,7 +4397,7 @@ class SessionResource(WebAPIResource):
 
         data = {
             'authenticated': authenticated,
-            'links': self.get_links(request=request),
+            'links': self.get_links(request=request, *args, **kwargs),
         }
 
         if authenticated and 'user' in expanded_resources:
@@ -4252,33 +4452,17 @@ class RootResource(DjbletsRootResource):
             user_resource,
         ], *args, **kwargs)
 
+    @webapi_check_local_site
+    @augment_method_from(DjbletsRootResource)
+    def get(self, request, *args, **kwargs):
+        """Retrieves the list of top-level resources and templates.
+
+        This is a specialization of djblets.webapi.RootResource which does a
+        permissions check on the LocalSite.
+        """
+        pass
+
 root_resource = RootResource()
-
-
-def status_to_string(status):
-    if status == "P":
-        return "pending"
-    elif status == "S":
-        return "submitted"
-    elif status == "D":
-        return "discarded"
-    elif status == None:
-        return "all"
-    else:
-        raise Exception("Invalid status '%s'" % status)
-
-
-def string_to_status(status):
-    if status == "pending":
-        return "P"
-    elif status == "submitted":
-        return "S"
-    elif status == "discarded":
-        return "D"
-    elif status == "all":
-        return None
-    else:
-        raise Exception("Invalid status '%s'" % status)
 
 
 register_resource_for_model(

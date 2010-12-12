@@ -90,6 +90,9 @@ class Repository(models.Model):
         the user has access to it (either by being explicitly on the allowed
         users list, or by being a member of a review group on that list).
         """
+        if self.local_site and not self.local_site.is_accessible_by(user):
+            return False
+
         return (self.public or
                 (user.is_authenticated() and
                  (self.review_groups.filter(users__pk=user.pk).count() > 0 or

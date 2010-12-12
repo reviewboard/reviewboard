@@ -229,8 +229,7 @@
 {%  endif %}
 <script type="text/javascript">
   $(document).ready(function() {
-  loadFileDiff("{{review_request_details.get_absolute_url}}", "{{file.filediff.id}}",
-               "{{file.filediff.diffset.revision}}",
+  loadFileDiff("{{base_url}}", "{{file.filediff.id}}", "{{file.filediff.diffset.revision}}",
 {% if file.interfilediff %}
                "{{file.interfilediff.id}}", "{{file.interfilediff.diffset.revision}}",
 {% else %}

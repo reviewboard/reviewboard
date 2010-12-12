@@ -31,7 +31,7 @@
         fields: {% form_dialog_fields upload_screenshot_form %},
         success: function(rsp) {
             if (!$("#screenshot-thumbnails").length == 0) {
-                $.screenshotThumbnail(rsp.screenshot);
+                $.newScreenshotThumbnail(rsp.screenshot);
             }
 
             gDraftBanner.show();

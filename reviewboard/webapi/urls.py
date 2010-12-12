@@ -47,10 +47,10 @@ deprecated_urlpatterns += never_cache_patterns('reviewboard.webapi.json',
     # TODO: Either plumb local_site_name or get rid of the deprecated patterns
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/$',
      'review_request_list',
-     {'func': ReviewRequest.objects.to_group_deprecated}),
+     {'func': ReviewRequest.objects.to_group}),
     (r'^reviewrequests/to/group/(?P<group_name>[A-Za-z0-9_-]+)/count/$',
      'count_review_requests',
-     {'func': ReviewRequest.objects.to_group_deprecated}),
+     {'func': ReviewRequest.objects.to_group}),
 
     (r'^reviewrequests/to/user/(?P<user_or_username>[A-Za-z0-9_-]+)/$',
      'review_request_list',

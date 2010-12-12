@@ -85,19 +85,11 @@ def _find_review_request(request, review_request_id, local_site_name):
     """
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
-
-        if (request.user.is_anonymous() or
-            not local_site.users.filter(pk=request.user.pk).exists()):
-            return None, _render_permission_denied(request)
-
         review_request = get_object_or_404(ReviewRequest,
                                            local_site=local_site,
                                            local_id=review_request_id)
     else:
         review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
-
-        if review_request.local_site is not None:
-            return None, _render_permission_denied(request)
 
     if review_request.is_accessible_by(request.user):
         return review_request, None
@@ -340,6 +332,12 @@ def review_detail(request,
 
     changedescs = review_request.changedescs.filter(public=True)
 
+    try:
+        latest_changedesc = changedescs.latest('timestamp')
+        latest_timestamp = latest_changedesc.timestamp
+    except ChangeDescription.DoesNotExist:
+        latest_timestamp = None
+
     entries = []
 
     for temp_review in reviews:
@@ -348,16 +346,9 @@ def review_detail(request,
 
         state = ''
 
-        try:
-            latest_changedesc = changedescs.latest('timestamp')
-            latest_timestamp = latest_changedesc.timestamp
-        except ChangeDescription.DoesNotExist:
-            latest_timestamp = None
-
         # Mark as collapsed if the review is older than the latest change
-        if latest_timestamp:
-            if temp_review.timestamp < latest_timestamp:
-                state = 'collapsed'
+        if latest_timestamp and temp_review.timestamp < latest_timestamp:
+            state = 'collapsed'
 
         try:
             latest_reply = temp_review.public_replies().latest('timestamp').timestamp
@@ -365,9 +356,8 @@ def review_detail(request,
             latest_reply = None
 
         # Mark as expanded if there is a reply newer than last_visited
-        if latest_reply:
-          if last_visited < latest_reply:
-              state = ''
+        if latest_reply and last_visited < latest_reply:
+          state = ''
 
         entries.append({
             'review': temp_review,
@@ -425,9 +415,8 @@ def review_detail(request,
         state = ''
 
         # Mark as collapsed if the change is older than a newer change
-        if latest_timestamp:
-            if changedesc != latest_changedesc:
-                state = 'collapsed'
+        if latest_timestamp and changedesc.timestamp < latest_timestamp:
+            state = 'collapsed'
 
         entries.append({
             'changeinfo': fields_changed,
@@ -663,7 +652,6 @@ def diff(request,
     diffset = _query_for_diff(review_request, request.user, revision)
 
     interdiffset = None
-    interdiffset_id = None
     review = None
     draft = None
 
@@ -672,7 +660,6 @@ def diff(request,
         # diffset.
         interdiffset = _query_for_diff(review_request, request.user,
                                        interdiff_revision)
-        interdiffset_id = interdiffset.id
 
     # Try to find an existing pending review of this diff from the
     # current user.
@@ -691,7 +678,7 @@ def diff(request,
     last_activity_time, updated_object = review_request.get_last_activity()
 
     return view_diff(
-         request, diffset.id, interdiffset_id, template_name=template_name,
+         request, diffset, interdiffset, template_name=template_name,
          extra_context=_make_review_request_context(review_request, {
             'review': review,
             'review_request_details': draft or review_request,
@@ -702,6 +689,7 @@ def diff(request,
             'last_activity_time': last_activity_time,
             'specific_diff_requested': revision is not None or
                                        interdiff_revision is not None,
+            'base_url': review_request.get_absolute_url(),
         }))
 
 
@@ -976,31 +964,6 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     return HttpResponse(
         render_to_string(template_name, RequestContext(request, context)),
         mimetype=mimetype)
-
-
-@login_required
-def delete_screenshot(request,
-                      review_request_id,
-                      screenshot_id,
-                      local_site_name=None):
-    """
-    Deletes a screenshot from a review request and redirects back to the
-    review request page.
-    """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
-
-    if not review_request:
-        return response
-
-    s = Screenshot.objects.get(id=screenshot_id)
-
-    draft = ReviewRequestDraft.create(review_request)
-    draft.screenshots.remove(s)
-    draft.inactive_screenshots.add(s)
-    draft.save()
-
-    return HttpResponseRedirect(review_request.get_absolute_url())
 
 
 @check_login_required
