@@ -130,12 +130,12 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
 
     nose_argv = ['test.py', '-v',
                  '--with-doctest', '--doctest-extension=.txt',
+                 '--where=reviewboard',
                  '-e', exclusion]
 
     if '--with-coverage' in sys.argv:
         nose_argv += ['--with-coverage',
-                      '--cover-package=reviewboard',
-                      '--where=reviewboard']
+                      '--cover-package=reviewboard']
         sys.argv.remove('--with-coverage')
 
     if '--with-webtests' in sys.argv:
