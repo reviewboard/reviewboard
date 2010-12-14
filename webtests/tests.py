@@ -921,7 +921,7 @@ class ReviewReplyTests(SeleniumUnitTest):
         reviews = Review.objects.filter(public=True, **kwargs)
         self.assertTrue(len(reviews) > 0)
 
-        review = revews[0]
+        review = reviews[0]
         review.body_top = 'Review body top'
         review.body_bottom = 'Review body bottom'
         review.replies = []
