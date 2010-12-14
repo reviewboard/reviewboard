@@ -27,6 +27,7 @@ Contributor Guides
    contributing-patches
    custom-forks
    extending/auth-backends
+   extending/legacy-auth-backends
    unit-tests/fixtures
 
 .. `Creating SCMTools`
