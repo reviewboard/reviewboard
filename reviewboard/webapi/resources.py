@@ -4339,14 +4339,32 @@ class ReviewRequestResource(WebAPIResource):
                                'be changed to close or reopen the review '
                                'request',
             },
+            'changenum': {
+                'type': int,
+                'description': 'The optional changenumber to set or update. '
+                               'This can be used to re-associate with a new '
+                               'change number, or to create/update a draft '
+                               'with new information from the current '
+                               'change number. This only works with '
+                               'repositories that support server-side '
+                               'changesets.',
+            },
         },
     )
-    def update(self, request, status=None, *args, **kwargs):
+    def update(self, request, status=None, changenum=None, *args, **kwargs):
         """Updates the status of the review request.
 
         The only supported update to a review request's resource is to change
-        the status, in order to close it as discarded or submitted, or to
-        reopen as pending.
+        the status, the associated server-side, change number, or to update
+        information from the existing change number.
+
+        The status can be set in order to close the review request as
+        discarded or submitted, or to reopen as pending.
+
+        The change number can either be changed to a new number, or the
+        current change number can be passed. In either case, a new draft will
+        be created or an existing one updated to include information from
+        the server based on the change number.
 
         Changes to a review request's fields, such as the summary or the
         list of reviewers, is made on the Review Request Draft resource.
@@ -4375,6 +4393,24 @@ class ReviewRequestResource(WebAPIResource):
                                          "should never be reached." % status)
             except PermissionError:
                 return _no_access_error(request.user)
+
+        if changenum is not None:
+            if changenum != review_request.changenum:
+                review_request.update_changenum(changenum, request.user)
+
+            try:
+                draft = ReviewRequestDraftResource.prepare_draft(
+                    request, review_request)
+            except PermissionDenied:
+                return PERMISSION_DENIED
+
+            try:
+                draft.update_from_changenum(changenum)
+            except InvalidChangeNumberError:
+                return INVALID_CHANGE_NUMBER
+
+            draft.save()
+            review_request.reopen()
 
         return 200, {
             self.item_result_key: review_request,
