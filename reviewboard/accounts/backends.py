@@ -1,23 +1,38 @@
 import logging
+import pkg_resources
 import re
 import sre_constants
 import sys
+from warnings import warn
 
 from django.conf import settings
+from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
+from django.contrib.auth import get_backends
 from django.utils.translation import ugettext as _
 from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.forms import ActiveDirectorySettingsForm, \
                                        LDAPSettingsForm, \
                                        NISSettingsForm, \
+                                       StandardAuthSettingsForm, \
                                        X509SettingsForm
+
+
+_auth_backends = []
+_auth_backend_setting = None
 
 
 class AuthBackend(object):
     """The base class for Review Board authentication backends."""
     name = None
     settings_form = None
+    supports_anonymous_user = True
+    supports_object_permissions = True
+    supports_registration = False
+    supports_change_name = False
+    supports_change_email = False
+    supports_change_password = False
 
     def authenticate(self, username, password):
         raise NotImplemented
@@ -27,6 +42,21 @@ class AuthBackend(object):
 
     def get_user(self, user_id):
         return get_object_or_none(User, pk=user_id)
+
+
+class StandardAuthBackend(AuthBackend, ModelBackend):
+    name = _('Standard Registration')
+    settings_form = StandardAuthSettingsForm
+    supports_registration = True
+    supports_change_name = True
+    supports_change_email = True
+    supports_change_password = True
+
+    def authenticate(self, username, password):
+        return ModelBackend.authenticate(self, username, password)
+
+    def get_or_create_user(self, username):
+        return ModelBackend.get_or_create_user(self, username)
 
 
 class NISBackend(AuthBackend):
@@ -51,6 +81,8 @@ class NISBackend(AuthBackend):
             # FIXME I'm not sure under what situations this would fail (maybe if
             # their NIS server is down), but it'd be nice to inform the user.
             pass
+
+        return None
 
     def get_or_create_user(self, username, passwd=None):
         import nis
@@ -368,6 +400,7 @@ class X509Backend(AuthBackend):
     """
     name = _('X.509 Public Key')
     settings_form = X509SettingsForm
+    supports_change_password = True
 
     def authenticate(self, x509_field=""):
         username = self.clean_username(x509_field)
@@ -407,3 +440,58 @@ class X509Backend(AuthBackend):
                 user.save()
 
         return user
+
+
+def get_registered_auth_backends():
+    """Returns all registered Review Board authentication backends.
+
+    This will return all backends provided both by Review Board and by
+    third parties that have properly registered with the
+    "reviewboard.auth_backends" entry point.
+    """
+    # Always ensure that the standard built-in auth backend is included.
+    yield "builtin", StandardAuthBackend
+
+    for entry in pkg_resources.iter_entry_points('reviewboard.auth_backends'):
+        try:
+            yield entry.name, entry.load()
+        except Exception, e:
+            logging.error('Error loading authentication backend %s: %s'
+                          % (entry.name, e),
+                          exc_info=1)
+
+
+def get_auth_backends():
+    """Returns all authentication backends being used by Review Board.
+
+    The returned list contains every authentication backend that Review Board
+    will try, in order.
+    """
+    global _auth_backends
+    global _auth_backend_setting
+
+    if (not _auth_backends or
+        _auth_backend_setting != settings.AUTHENTICATION_BACKENDS):
+        _auth_backends = []
+        for backend in get_backends():
+            if not isinstance(backend, AuthBackend):
+                warn('Authentication backends should inherit from '
+                     'reviewboard.accounts.backends.AuthBackend. Please '
+                     'update %s.' % backend.__class__)
+
+                for field, default in (('name', None),
+                                       ('supports_registration', False),
+                                       ('supports_change_name', False),
+                                       ('supports_change_email', False),
+                                       ('supports_change_password', False)):
+                    if not hasattr(backend, field):
+                        warn("Authentication backends should define a '%s' "
+                             "attribute. Please define it in %s or inherit "
+                             "from AuthBackend." % (field, backend.__class__))
+                        setattr(backend, field, False)
+
+            _auth_backends.append(backend)
+
+        _auth_backend_setting = settings.AUTHENTICATION_BACKENDS
+
+    return _auth_backends

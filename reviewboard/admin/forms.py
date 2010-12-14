@@ -27,7 +27,6 @@
 
 import logging
 import os
-import pkg_resources
 import re
 import urlparse
 
@@ -39,8 +38,7 @@ from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
 import pytz
 
-from reviewboard.accounts.forms import BuiltinAuthSettingsForm, \
-                                       LegacyAuthModuleSettingsForm
+from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_enable_syntax_highlighting, \
                                      get_can_use_amazon_s3, \
@@ -155,17 +153,8 @@ class GeneralSettingsForm(SiteSettingsForm):
 
 
 class AuthenticationSettingsForm(SiteSettingsForm):
-    BUILTIN_AUTH_ID = 'builtin'
     CUSTOM_AUTH_ID = 'custom'
-
-    BUILTIN_AUTH_CHOICE = (BUILTIN_AUTH_ID, _('Standard Registration'))
-    CUSTOM_AUTH_CHOICE = (CUSTOM_AUTH_ID,
-                          _('Legacy Authentication Module'))
-
-    DEFAULT_BACKEND_FORMS = {
-        BUILTIN_AUTH_ID: BuiltinAuthSettingsForm,
-        CUSTOM_AUTH_ID: LegacyAuthModuleSettingsForm,
-    }
+    CUSTOM_AUTH_CHOICE = (CUSTOM_AUTH_ID, _('Legacy Authentication Module'))
 
 
     auth_anonymous_access = forms.BooleanField(
@@ -182,6 +171,8 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         required=True)
 
     def __init__(self, siteconfig, *args, **kwargs):
+        from reviewboard.accounts.backends import get_registered_auth_backends
+
         super(AuthenticationSettingsForm, self).__init__(siteconfig,
                                                          *args, **kwargs)
 
@@ -190,38 +181,42 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         cur_auth_backend = (self['auth_backend'].data or
                             self.fields['auth_backend'].initial)
 
-        for auth_id, auth_form_class in self.DEFAULT_BACKEND_FORMS.iteritems():
-            if auth_id == cur_auth_backend:
-                auth_form = auth_form_class(siteconfig, *args, **kwargs)
-            else:
-                auth_form = auth_form_class(siteconfig)
+        if cur_auth_backend == self.CUSTOM_AUTH_ID:
+            custom_auth_form = LegacyAuthModuleSettingsForm(siteconfig,
+                                                            *args, **kwargs)
+        else:
+            custom_auth_form = LegacyAuthModuleSettingsForm(siteconfig)
 
-            self.auth_backend_forms[auth_id] = auth_form
+        self.auth_backend_forms[self.CUSTOM_AUTH_ID] = custom_auth_form
 
         backend_choices = []
+        builtin_auth_choice = None
 
-        for ep in pkg_resources.iter_entry_points('reviewboard.auth_backends'):
+        for backend_id, backend in get_registered_auth_backends():
             try:
-                backend = ep.load()
-
                 if backend.settings_form:
-                    if cur_auth_backend == ep.name:
+                    if cur_auth_backend == backend_id:
                         backend_form = backend.settings_form(siteconfig,
                                                              *args, **kwargs)
                     else:
                         backend_form = backend.settings_form(siteconfig)
 
-                    self.auth_backend_forms[ep.name] = backend_form
+                    self.auth_backend_forms[backend_id] = backend_form
                     backend_form.load()
 
-                backend_choices.append((ep.name, backend.name))
+                choice = (backend_id, backend.name)
+
+                if backend_id == 'builtin':
+                    builtin_auth_choice = choice
+                else:
+                    backend_choices.append(choice)
             except Exception, e:
                 logging.error('Error loading authentication backend %s: %s'
-                              % (ep.name, e),
+                              % (backend_id, e),
                               exc_info=1)
 
         backend_choices.sort(key=lambda x: x[1])
-        backend_choices.insert(0, self.BUILTIN_AUTH_CHOICE)
+        backend_choices.insert(0, builtin_auth_choice)
         backend_choices.append(self.CUSTOM_AUTH_CHOICE)
         self.fields['auth_backend'].choices = backend_choices
 
@@ -255,24 +250,6 @@ class AuthenticationSettingsForm(SiteSettingsForm):
                 valid = self.auth_backend_forms[auth_backend].is_valid()
 
         return valid
-
-    def clean_recaptcha_public_key(self):
-        """Validates that the reCAPTCHA public key is specified if needed."""
-        key = self.cleaned_data['recaptcha_public_key'].strip()
-
-        if self.cleaned_data['auth_registration_show_captcha'] and not key:
-            raise forms.ValidationError(_('This field is required.'))
-
-        return key
-
-    def clean_recaptcha_private_key(self):
-        """Validates that the reCAPTCHA private key is specified if needed."""
-        key = self.cleaned_data['recaptcha_private_key'].strip()
-
-        if self.cleaned_data['auth_registration_show_captcha'] and not key:
-            raise forms.ValidationError(_('This field is required.'))
-
-        return key
 
     def full_clean(self):
         super(AuthenticationSettingsForm, self).full_clean()
@@ -476,6 +453,7 @@ class LoggingSettingsForm(SiteSettingsForm):
         # Reload any important changes into the Django settings.
         load_site_config()
         restart_logging()
+
 
     class Meta:
         title = _("Logging Settings")

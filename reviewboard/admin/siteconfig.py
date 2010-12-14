@@ -40,19 +40,9 @@ from djblets.siteconfig.django_settings import apply_django_settings, \
                                                get_django_settings_map
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.backends import get_registered_auth_backends
 from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_enable_syntax_highlighting
-
-
-# A mapping of our supported authentication backend names to backend class
-# paths.
-auth_backend_map = {
-    'builtin': 'django.contrib.auth.backends.ModelBackend',
-    'nis':     'reviewboard.accounts.backends.NISBackend',
-    'ldap':    'reviewboard.accounts.backends.LDAPBackend',
-    'x509':    'reviewboard.accounts.backends.X509Backend',
-    'ad':      'reviewboard.accounts.backends.ActiveDirectoryBackend',
-}
 
 
 # A mapping of our supported storage backend names to backend class paths.
@@ -215,10 +205,13 @@ def load_site_config():
 
 
     # Set the auth backends
-    auth_backend = siteconfig.settings.get("auth_backend", "builtin")
-    builtin_backend = auth_backend_map['builtin']
+    auth_backend_map = dict(get_registered_auth_backends())
+    auth_backend_id = siteconfig.settings.get("auth_backend", "builtin")
+    builtin_backend_obj = auth_backend_map['builtin']
+    builtin_backend = "%s.%s" % (builtin_backend_obj.__module__,
+                                 builtin_backend_obj.__name__)
 
-    if auth_backend == "custom":
+    if auth_backend_id == "custom":
         custom_backends = siteconfig.settings.get("auth_custom_backends")
 
         if isinstance(custom_backends, basestring):
@@ -230,9 +223,12 @@ def load_site_config():
 
         if builtin_backend not in custom_backends:
             settings.AUTHENTICATION_BACKENDS += (builtin_backend,)
-    elif auth_backend != "builtin" and auth_backend in auth_backend_map:
+    elif auth_backend_id != "builtin" and auth_backend_id in auth_backend_map:
+        backend = auth_backend_map[auth_backend_id]
+
         settings.AUTHENTICATION_BACKENDS = \
-            (auth_backend_map[auth_backend], builtin_backend)
+            ("%s.%s" % (backend.__module__, backend.__name__),
+             builtin_backend)
     else:
         settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
 
