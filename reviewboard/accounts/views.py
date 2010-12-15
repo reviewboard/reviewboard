@@ -1,10 +1,3 @@
-import time
-
-try:
-    from hashlib import sha1
-except ImportError:
-    from sha import sha as sha1
-
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.core.urlresolvers import reverse
@@ -53,28 +46,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         form = PreferencesForm(request.user, request.POST)
 
         if form.is_valid():
-            password = form.cleaned_data['password1']
-
-            if auth_backends[0].supports_change_password and password:
-                salt = sha1(str(time.time())).hexdigest()[:5]
-                hash = sha1(salt + password)
-                newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
-                request.user.password = newpassword
-
-            if auth_backends[0].supports_change_name:
-                request.user.first_name = form.cleaned_data['first_name']
-                request.user.last_name = form.cleaned_data['last_name']
-
-            if auth_backends[0].supports_change_email:
-                request.user.email = form.cleaned_data['email']
-
-            request.user.review_groups = form.cleaned_data['groups']
-            request.user.save()
-
-            profile.first_time_setup_done = True
-            profile.syntax_highlighting = \
-                form.cleaned_data['syntax_highlighting']
-            profile.save()
+            form.save(request.user)
 
             return HttpResponseRedirect(redirect_to)
     else:

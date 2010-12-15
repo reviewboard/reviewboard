@@ -1,5 +1,11 @@
 import re
 import sre_constants
+import time
+
+try:
+    from hashlib import sha1
+except ImportError:
+    from sha import sha as sha1
 
 from django import forms
 from django.forms import widgets
@@ -40,6 +46,35 @@ class PreferencesForm(forms.Form):
             for g in Group.objects.accessible(user=user)
         ]
         self.fields['email'].required = auth_backends[0].supports_change_email
+
+    def save(self, user):
+        from reviewboard.accounts.backends import get_auth_backends
+
+        auth_backends = get_auth_backends()
+        primary_backend = auth_backends[0]
+
+        password = self.cleaned_data['password1']
+
+        if primary_backend.supports_change_password and password:
+            salt = sha1(str(time.time())).hexdigest()[:5]
+            hash = sha1(salt + password)
+            newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
+            user.password = newpassword
+
+        if primary_backend.supports_change_name:
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+
+        if primary_backend.supports_change_email:
+            user.email = self.cleaned_data['email']
+
+        user.review_groups = self.cleaned_data['groups']
+        user.save()
+
+        profile = user.get_profile()
+        profile.first_time_setup_done = True
+        profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
+        profile.save()
 
     def clean_password2(self):
         p1 = self.cleaned_data['password1']
