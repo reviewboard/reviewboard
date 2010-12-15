@@ -6,6 +6,7 @@ var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
 var gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
+                                          gReviewRequestSitePrefix,
                                           gReviewRequestPath);
 
 
