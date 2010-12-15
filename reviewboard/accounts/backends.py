@@ -3,7 +3,13 @@ import pkg_resources
 import re
 import sre_constants
 import sys
+import time
 from warnings import warn
+
+try:
+    from hashlib import sha1
+except ImportError:
+    from sha import sha as sha1
 
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
@@ -43,6 +49,45 @@ class AuthBackend(object):
     def get_user(self, user_id):
         return get_object_or_none(User, pk=user_id)
 
+    def update_password(self, user, password):
+        """Updates the user's password on the backend.
+
+        Authentication backends can override this to update the password
+        on the backend. This will only be called if
+        :py:attr:`supports_change_password` is ``True``.
+
+        By default, this will raise NotImplemented.
+        """
+        raise NotImplemented
+
+    def update_name(self, user):
+        """Updates the user's name on the backend.
+
+        The first name and last name will already be stored in the provided
+        ``user`` object.
+
+        Authentication backends can override this to update the name
+        on the backend based on the values in ``user``. This will only be
+        called if :py:attr:`supports_change_name` is ``True``.
+
+        By default, this will do nothing.
+        """
+        pass
+
+    def update_email(self, user):
+        """Updates the user's e-mail address on the backend.
+
+        The e-mail address will already be stored in the provided
+        ``user`` object.
+
+        Authentication backends can override this to update the e-mail
+        address on the backend based on the values in ``user``. This will only
+        be called if :py:attr:`supports_change_email` is ``True``.
+
+        By default, this will do nothing.
+        """
+        pass
+
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
     name = _('Standard Registration')
@@ -57,6 +102,12 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
 
     def get_or_create_user(self, username):
         return ModelBackend.get_or_create_user(self, username)
+
+    def update_password(self, user, password):
+        salt = sha1(str(time.time())).hexdigest()[:5]
+        hash = sha1(salt + password)
+        new_password = 'sha1$%s$%s' % (salt, hash.hexdigest())
+        user.password = new_password
 
 
 class NISBackend(AuthBackend):

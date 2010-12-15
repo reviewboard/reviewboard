@@ -1,11 +1,5 @@
 import re
 import sre_constants
-import time
-
-try:
-    from hashlib import sha1
-except ImportError:
-    from sha import sha as sha1
 
 from django import forms
 from django.forms import widgets
@@ -56,17 +50,16 @@ class PreferencesForm(forms.Form):
         password = self.cleaned_data['password1']
 
         if primary_backend.supports_change_password and password:
-            salt = sha1(str(time.time())).hexdigest()[:5]
-            hash = sha1(salt + password)
-            newpassword = 'sha1$%s$%s' % (salt, hash.hexdigest())
-            user.password = newpassword
+            primary_backend.update_password(user, password)
 
         if primary_backend.supports_change_name:
             user.first_name = self.cleaned_data['first_name']
             user.last_name = self.cleaned_data['last_name']
+            primary_backend.update_name(user)
 
         if primary_backend.supports_change_email:
             user.email = self.cleaned_data['email']
+            primary_backend.update_email(user)
 
         user.review_groups = self.cleaned_data['groups']
         user.save()
