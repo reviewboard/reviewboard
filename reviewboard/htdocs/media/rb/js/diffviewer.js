@@ -1325,7 +1325,7 @@ function toggleExtraWhitespace(init)
     }
 
     /* Toggle highlighting */
-    $("table.sidebyside .ew").toggleClass("ewhl");
+    $("#diffs").toggleClass("ewhl");
 
     /* Toggle the display of the button itself */
     $(".review-request ul.controls li.ew").toggle();
