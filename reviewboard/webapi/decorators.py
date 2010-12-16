@@ -22,8 +22,11 @@ def webapi_check_login_required(view_func):
     """
     def _check(*args, **kwargs):
         siteconfig = SiteConfiguration.objects.get_current()
+        request = _find_httprequest(args)
 
-        if siteconfig.get("auth_require_sitewide_login"):
+        if (siteconfig.get("auth_require_sitewide_login") or
+            (request.user.is_anonymous() and
+             'HTTP_AUTHORIZATION' in request.META)):
             return webapi_login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)

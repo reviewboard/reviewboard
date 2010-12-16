@@ -2245,7 +2245,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
         comment_text = "Test diff comment"
 
-        rsp, review_request_id, review_id, interfilediff_id = \
+        rsp, review_request_id, review_id, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
         rsp = self.apiGet("review-requests/%s/reviews/%s/diff-comments" %
@@ -2259,12 +2259,12 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API with interdiff"""
         comment_text = "Test diff comment"
 
-        rsp, review_request_id, review_id, interfilediff_id = \
+        rsp, review_request_id, review_id, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
         rsp = self.apiGet("review-requests/%s/reviews/%s/diff-comments" %
                           (review_request_id, review_id), {
-            'interdiff_fileid': interfilediff_id,
+            'interdiff-revision': interdiff_revision,
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('diff_comments' in rsp)
@@ -2275,7 +2275,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API"""
         comment_text = "This is a test comment."
 
-        rsp, review_request_id, review_id, interfilediff_id = \
+        rsp, review_request_id, review_id, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
         rsp = self.apiDelete(rsp['diff_comment']['links']['self']['href'])
@@ -2345,7 +2345,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
                                        filediff_id=filediff.id,
                                        interfilediff_id=interfilediff.id)
 
-        return rsp, review_request.id, review_id, interfilediff.id
+        return rsp, review_request.id, review_id, interdiffset.revision
 
 
 class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):

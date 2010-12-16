@@ -25,7 +25,7 @@ from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_response_errors, \
                                       webapi_request_fields
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
-                                  PERMISSION_DENIED
+                                  NOT_LOGGED_IN, PERMISSION_DENIED
 from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
                                      UserResource as DjbletsUserResource, \
                                      RootResource as DjbletsRootResource, \
@@ -68,6 +68,19 @@ def _get_local_site(local_site_name):
         return LocalSite.objects.get(name=local_site_name)
     else:
         return None
+
+
+def _no_access_error(user):
+    """Returns a WebAPIError indicating the user has no access.
+
+    Which error this returns depends on whether or not the user is logged in.
+    If logged in, this will return _no_access_error(request.user). Otherwise, it will
+    return NOT_LOGGED_IN.
+    """
+    if user.is_authenticated():
+        return PERMISSION_DENIED
+    else:
+        return NOT_LOGGED_IN
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -243,17 +256,22 @@ class BaseDiffCommentResource(WebAPIResource):
         return obj.review.get().user
 
     @webapi_check_local_site
-    @webapi_request_fields(optional={
-        'interdiff-revision': {
-            'type': int,
-            'description': 'The second revision in an interdiff revision '
-                           'range. The comments will be limited to this range.',
+    @webapi_request_fields(
+        optional={
+            'interdiff-revision': {
+                'type': int,
+                'description': 'The second revision in an interdiff revision '
+                               'range. The comments will be limited to this '
+                               'range.',
+            },
+            'line': {
+                'type': int,
+                'description': 'The line number that each comment must '
+                               'start on.',
+            },
         },
-        'line': {
-            'type': int,
-            'description': 'The line number that each comment must start on.',
-        },
-    })
+        allow_unknown=True
+    )
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         pass
@@ -341,7 +359,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
-                            PERMISSION_DENIED)
+                            NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         required = {
             'filediff_id': {
@@ -384,7 +402,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         filediff = None
         interfilediff = None
@@ -432,7 +450,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional = {
             'first_line': {
@@ -462,7 +480,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         for field in ('text', 'first_line', 'num_lines'):
             value = kwargs.get(field, None)
@@ -535,7 +553,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
-                            PERMISSION_DENIED)
+                            NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         required = {
             'reply_to_id': {
@@ -561,7 +579,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         try:
             comment = \
@@ -592,7 +610,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         required = {
             'text': {
@@ -615,7 +633,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         for field in ('text',):
             value = kwargs.get(field, None)
@@ -1106,7 +1124,7 @@ class DiffResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
                             REPO_FILE_NOT_FOUND, INVALID_FORM_DATA)
     @webapi_request_fields(
         required={
@@ -1170,7 +1188,7 @@ class DiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         form_data = request.POST.copy()
         form = UploadDiffForm(review_request, form_data, request.FILES)
@@ -1215,7 +1233,7 @@ class DiffResource(WebAPIResource):
                 draft = ReviewRequestDraftResource.prepare_draft(
                     request, review_request)
             except PermissionDenied:
-                return PERMISSION_DENIED
+                return _no_access_error(request.user)
 
         draft.diffset = diffset
 
@@ -1296,7 +1314,7 @@ class BaseWatchedObjectResource(WebAPIResource):
             return DOES_NOT_EXIST
 
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(required={
         'object_id': {
             'type': str,
@@ -1314,7 +1332,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         if not user_resource.has_modify_permissions(request, user,
                                                     *args, **kwargs):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
@@ -1337,7 +1355,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         if not user_resource.has_modify_permissions(request, user,
                                                    *args, **kwargs):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
@@ -1966,7 +1984,7 @@ class BaseScreenshotResource(WebAPIResource):
         return obj.get_thumbnail_url()
 
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
                             INVALID_FORM_DATA)
     @webapi_request_fields(
         required={
@@ -2007,7 +2025,7 @@ class BaseScreenshotResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         form_data = request.POST.copy()
         form = UploadScreenshotForm(form_data, request.FILES)
@@ -2037,7 +2055,7 @@ class BaseScreenshotResource(WebAPIResource):
             },
         }
     )
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     def update(self, request, caption=None, *args, **kwargs):
         """Updates the screenshot's data.
 
@@ -2053,13 +2071,13 @@ class BaseScreenshotResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         try:
             review_request_draft_resource.prepare_draft(request,
                                                         review_request)
         except PermissionDenied:
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         screenshot.draft_caption = caption
         screenshot.save()
@@ -2069,7 +2087,7 @@ class BaseScreenshotResource(WebAPIResource):
         }
 
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     def delete(self, request, *args, **kwargs):
         try:
             review_request = \
@@ -2083,7 +2101,7 @@ class BaseScreenshotResource(WebAPIResource):
             draft = review_request_draft_resource.prepare_draft(request,
                                                                 review_request)
         except PermissionDenied:
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         draft.screenshots.remove(screenshot)
         draft.inactive_screenshots.add(screenshot)
@@ -2436,7 +2454,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         try:
             draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         modified_objects = []
         invalid_fields = {}
@@ -2473,7 +2491,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     def delete(self, request, *args, **kwargs):
         """Deletes a draft of a review request.
 
@@ -2493,7 +2511,7 @@ class ReviewRequestDraftResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, draft, *args, **kwargs):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         draft.delete()
 
@@ -2721,7 +2739,7 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
         return q
 
     @webapi_check_local_site
-    @augment_method_from(BaseDiffCommentResource)
+    @augment_method_from(BaseScreenshotCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of screenshot comments on a screenshot.
 
@@ -2799,7 +2817,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         try:
             screenshot = Screenshot.objects.get(pk=screenshot_id,
@@ -2824,7 +2842,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional = {
             'x': {
@@ -2863,7 +2881,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_resource.has_modify_permissions(request, review):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         for field in ('x', 'y', 'w', 'h', 'text'):
             value = kwargs.get(field, None)
@@ -2926,7 +2944,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
 
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
-                            PERMISSION_DENIED)
+                            NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         required = {
             'reply_to_id': {
@@ -2953,7 +2971,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         try:
             comment = review_screenshot_comment_resource.get_object(
@@ -2985,7 +3003,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         }
 
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         required = {
             'text': {
@@ -3008,7 +3026,7 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         if not review_reply_resource.has_modify_permissions(request, reply):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         for field in ('text',):
             value = kwargs.get(field, None)
@@ -3133,7 +3151,7 @@ class BaseReviewResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional = {
             'ship_it': {
@@ -3204,7 +3222,7 @@ class BaseReviewResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional = {
             'ship_it': {
@@ -3278,7 +3296,7 @@ class BaseReviewResource(WebAPIResource):
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         for field in ('ship_it', 'body_top', 'body_bottom'):
             value = kwargs.get(field, None)
@@ -3394,7 +3412,7 @@ class ReviewReplyResource(BaseReviewResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional = {
             'body_top': {
@@ -3463,7 +3481,7 @@ class ReviewReplyResource(BaseReviewResource):
             }
 
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional = {
             'body_top': {
@@ -3528,7 +3546,7 @@ class ReviewReplyResource(BaseReviewResource):
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
             # to the user.
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)
@@ -3753,7 +3771,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if not review_request_resource.has_access_permissions(request,
                                                               review_request):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         timestamp, updated_object = review_request.get_last_activity()
         user = None
@@ -4055,7 +4073,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(PERMISSION_DENIED, INVALID_USER,
+    @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, INVALID_USER,
                             INVALID_REPOSITORY, CHANGE_NUMBER_IN_USE,
                             INVALID_CHANGE_NUMBER, EMPTY_CHANGESET)
     @webapi_request_fields(
@@ -4117,7 +4135,7 @@ class ReviewRequestResource(WebAPIResource):
 
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user'):
-                return PERMISSION_DENIED
+                return _no_access_error(request.user)
 
             try:
                 user = User.objects.get(username=submit_as)
@@ -4140,7 +4158,7 @@ class ReviewRequestResource(WebAPIResource):
             }
 
         if not repository.is_accessible_by(request.user):
-            return PERMISSION_DENIED
+            return _no_access_error(request.user)
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,
@@ -4160,7 +4178,7 @@ class ReviewRequestResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(
         optional={
             'status': {
@@ -4201,7 +4219,7 @@ class ReviewRequestResource(WebAPIResource):
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
-                return PERMISSION_DENIED
+                return _no_access_error(request.user)
 
         return 200, {
             self.item_result_key: review_request,
@@ -4395,7 +4413,7 @@ class ServerInfoResource(WebAPIResource):
     singleton = True
 
     @webapi_check_local_site
-    @webapi_response_errors(PERMISSION_DENIED)
+    @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):
         """Returns the information on the Review Board server."""
