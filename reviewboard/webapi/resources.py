@@ -4066,10 +4066,7 @@ class ReviewRequestResource(WebAPIResource):
         return status_to_string(obj.status)
 
     def serialize_id_field(self, obj):
-        if obj.local_site:
-            return obj.local_id
-        else:
-            return obj.id
+        return obj.display_id
 
     @webapi_check_local_site
     @webapi_login_required
@@ -4372,13 +4369,8 @@ class ReviewRequestResource(WebAPIResource):
         This is an override of WebAPIResource.get_href which will use the
         local_id instead of the pk.
         """
-        if obj.local_site:
-            id = obj.local_id
-        else:
-            id = obj.pk
-
         href_kwargs = {
-            self.uri_object_key: id,
+            self.uri_object_key: obj.display_id,
         }
         href_kwargs.update(self.get_href_parent_ids(obj))
 

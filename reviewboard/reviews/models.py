@@ -386,6 +386,15 @@ class ReviewRequest(models.Model):
             if group not in existing_groups:
                 self.target_groups.add(group)
 
+    def get_display_id(self):
+        """Gets the ID which should be exposed to the user."""
+        if self.local_site:
+            return self.local_id
+        else:
+            return self.id
+
+    display_id = property(get_display_id)
+
     def get_public_reviews(self):
         """
         Returns all public top-level reviews for this review request.
@@ -527,12 +536,10 @@ class ReviewRequest(models.Model):
         # @permalink
         if self.local_site:
             baseurl = '/s/%s' % self.local_site.name
-            urlid = self.local_id
         else:
             baseurl = ''
-            urlid = self.pk
 
-        return '%s/r/%d/' % (baseurl, urlid)
+        return '%s/r/%d/' % (baseurl, self.display_id)
 
     def __unicode__(self):
         if self.summary:
