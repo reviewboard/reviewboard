@@ -3,7 +3,8 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
 from djblets.webapi.decorators import webapi_login_required, \
-                                      webapi_response_errors
+                                      webapi_response_errors, \
+                                      _find_httprequest
 from djblets.webapi.encoders import BasicAPIEncoder
 from djblets.webapi.errors import NOT_LOGGED_IN
 
@@ -18,8 +19,11 @@ def webapi_check_login_required(view_func):
     """
     def _check(*args, **kwargs):
         siteconfig = SiteConfiguration.objects.get_current()
+        request = _find_httprequest(args)
 
-        if siteconfig.get("auth_require_sitewide_login"):
+        if (siteconfig.get("auth_require_sitewide_login") or
+            (request.user.is_anonymous() and
+             'HTTP_AUTHORIZATION' in request.META)):
             return webapi_login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)
