@@ -351,7 +351,7 @@ def review_detail(request,
             latest_reply = None
 
         # Mark as expanded if there is a reply newer than last_visited
-        if latest_reply and last_visited < latest_reply:
+        if latest_reply and last_visited and last_visited < latest_reply:
           state = ''
 
         entries.append({
