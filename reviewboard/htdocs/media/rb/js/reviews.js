@@ -1596,8 +1596,8 @@ $(document).ready(function() {
     });
 
     $("#shipit-link").click(function() {
-        if (confirm("Are you sure?")) {
-            pendingReview.shipit = 1;
+        if (confirm("Are you sure you want to post this review?")) {
+            pendingReview.ship_it = true;
             pendingReview.body_top = "Ship It!";
             pendingReview.publish({
                 buttons: null,
