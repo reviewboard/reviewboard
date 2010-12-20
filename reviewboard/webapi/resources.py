@@ -8,7 +8,6 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
@@ -47,6 +46,7 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError
 from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import webapi_check_login_required, \
                                           webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
@@ -151,16 +151,9 @@ class WebAPIResource(DjbletsWebAPIResource):
         }
         href_kwargs.update(self.get_href_parent_ids(obj))
 
-        url = reverse(self._build_named_url(self.name), kwargs=href_kwargs)
-
-        local_site_name = kwargs.get('local_site_name', None)
-        if local_site_name:
-            prefix = '%ss/%s' % (settings.SITE_ROOT, local_site_name)
-            if not url.startswith(prefix):
-                url = prefix + url
-
-        return request.build_absolute_uri(url)
-
+        return request.build_absolute_uri(
+            local_site_reverse(self._build_named_url(self.name),
+                               kwargs=href_kwargs))
 
 
 class BaseDiffCommentResource(WebAPIResource):
@@ -4369,20 +4362,20 @@ class ReviewRequestResource(WebAPIResource):
         This is an override of WebAPIResource.get_href which will use the
         local_id instead of the pk.
         """
+        if obj.local_site:
+            local_site_name = obj.local_site.name
+        else:
+            local_site_name = None
+
         href_kwargs = {
             self.uri_object_key: obj.display_id,
         }
         href_kwargs.update(self.get_href_parent_ids(obj))
 
-        url = reverse(self._build_named_url(self.name), kwargs=href_kwargs)
-
-        if obj.local_site:
-            prefix = '%ss/%s' % (settings.SITE_ROOT, obj.local_site.name)
-            if not url.startswith(prefix):
-                url = prefix + url
-
-        return request.build_absolute_uri(url)
-
+        return request.build_absolute_uri(
+            local_site_reverse(self._build_named_url(self.name),
+                               kwargs=href_kwargs,
+                               local_site_name=local_site_name))
 
     def _parse_date(self, timestamp_str):
         try:
@@ -4413,10 +4406,7 @@ class ServerInfoResource(WebAPIResource):
         siteconfig = SiteConfiguration.objects.get_current()
 
         url = '%s://%s%s' % (siteconfig.get('site_domain_method'), site.domain,
-                             settings.SITE_ROOT)
-        local_site_name = kwargs.get('local_site_name', None)
-        if local_site_name:
-            url = '%ss/%s/' % (url, local_site_name)
+                             local_site_reverse('root', request=request))
 
         return 200, {
             self.item_result_key: {

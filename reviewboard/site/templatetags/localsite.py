@@ -1,7 +1,6 @@
 from django import template
 from django.core.urlresolvers import NoReverseMatch
 from django.template.defaulttags import url as django_url
-from djblets.util.decorators import basictag, root_url
 
 
 register = template.Library()

@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.db import connection, models, transaction
 from django.db.models import F, Q, permalink
 from django.utils.html import escape
@@ -11,7 +10,6 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
-from djblets.util.decorators import root_url
 from djblets.util.fields import CounterField, ModificationTimestampField
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
@@ -29,6 +27,7 @@ from reviewboard.scmtools.errors import EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 # The model for the review request summary only allows it to be 300 chars long
@@ -113,14 +112,14 @@ class Group(models.Model):
     def __unicode__(self):
         return self.name
 
-    @root_url
     def get_absolute_url(self):
         if self.local_site:
-            baseurl = '/s/%s' % self.local_site.name
+            local_site_name = self.local_site.name
         else:
-            baseurl = ''
+            local_site_name = None
 
-        return '%s/groups/%s/' % (baseurl, self.name)
+        return local_site_reverse('group', local_site_name=local_site_name,
+                                  kwargs={'name': self.name})
 
     class Meta:
         unique_together = (('name', 'local_site'),)
@@ -194,11 +193,22 @@ class Screenshot(models.Model):
 
     def get_absolute_url(self):
         try:
-            review = self.review_request.all()[0]
+            review_request = self.review_request.all()[0]
         except IndexError:
-            review = self.inactive_review_request.all()[0]
+            review_request = self.inactive_review_request.all()[0]
 
-        return '%ss/%d/' % (review.get_absolute_url(), self.id)
+        if review_request.local_site:
+            local_site_name = review_request.local_site_name
+        else:
+            local_site_name = None
+
+        return local_site_reverse(
+            'screenshot',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': review_request.display_id,
+                'screenshot_id': self.pk,
+            })
 
 
 class ReviewRequest(models.Model):
@@ -528,18 +538,15 @@ class ReviewRequest(models.Model):
 
         return changeset and changeset.pending
 
-    @root_url
     def get_absolute_url(self):
-        # We can't parameterize URLs that include captured parameters. See
-        # Django bug 11559. Once this bug is fixed, we can make a namespaced
-        # and a non namespaced include urlconf, and go back to using
-        # @permalink
         if self.local_site:
-            baseurl = '/s/%s' % self.local_site.name
+            local_site_name = self.local_site.name
         else:
-            baseurl = ''
+            local_site_name = None
 
-        return '%s/r/%d/' % (baseurl, self.display_id)
+        return local_site_reverse('review-request-detail',
+                                  local_site_name=local_site_name,
+                                  kwargs={'review_request_id': self.display_id})
 
     def __unicode__(self):
         if self.summary:
@@ -1071,11 +1078,18 @@ class ReviewRequestDraft(models.Model):
 
         if self.diffset:
             if self.changedesc:
+                if review_request.local_site:
+                    local_site_name = review_request.local_site.name
+                else:
+                    local_site_name = None
+
+                url = local_site_reverse(
+                    'view_diff_revision',
+                    local_site_name=local_site_name,
+                    args=[review_request.display_id, self.diffset.revision])
                 self.changedesc.fields_changed['diff'] = {
                     'added': [(_("Diff r%s") % self.diffset.revision,
-                               reverse("view_diff_revision",
-                                       args=[review_request.id,
-                                             self.diffset.revision]),
+                               url,
                                self.diffset.id)],
                 }
 

@@ -23,8 +23,10 @@ def account_register(request):
 
     if (auth_backends[0].supports_registration and
         siteconfig.get("auth_enable_registration")):
+
+        # TODO: Figure out the right place to redirect when using a LocalSite.
         return register(request,
-                        next_page=settings.SITE_ROOT + 'dashboard/',
+                        next_page=reverse('dashboard'),
                         form_class=RegistrationForm)
 
     return HttpResponseRedirect(reverse("login"))
@@ -32,6 +34,7 @@ def account_register(request):
 
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
+    # TODO: Figure out the right place to redirect when using a LocalSite.
     redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME,
                                       reverse("dashboard"))
 

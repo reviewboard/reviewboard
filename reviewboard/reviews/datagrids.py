@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.db.models import Q, Count
 from django.http import Http404
 from django.utils.html import conditional_escape
@@ -12,6 +11,7 @@ from djblets.util.templatetags.djblets_utils import ageid
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class StarColumn(Column):
@@ -326,7 +326,9 @@ class GroupMemberCountColumn(Column):
         return str(group.users.count())
 
     def link_to_object(self, group, value):
-        return reverse('group_members', args=[group.name])
+        return local_site_reverse('group_members',
+                                  request=self.datagrid.request,
+                                  args=[group.name])
 
 
 class ReviewCountColumn(Column):
@@ -458,7 +460,8 @@ class ReviewRequestDataGrid(DataGrid):
 
     def link_to_object(self, obj, value):
         if value and isinstance(value, User):
-            return reverse("user", args=[value])
+            return local_site_reverse("user", request=self.request,
+                                      args=[value])
 
         return obj.get_absolute_url()
 
@@ -578,9 +581,9 @@ class SubmitterDataGrid(DataGrid):
             "username", "fullname", "pending_count"
         ]
 
-    @staticmethod
-    def link_to_object(obj, value):
-        return reverse("user", args=[obj.username])
+    def link_to_object(self, obj, value):
+        return local_site_reverse("user", request=self.request,
+                                  args=[obj.username])
 
 
 class GroupDataGrid(DataGrid):
