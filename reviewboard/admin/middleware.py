@@ -13,7 +13,7 @@ from reviewboard.admin.views import manual_updates_required
 from reviewboard.webapi.json import service_not_configured
 
 
-class LoadSettingsMiddleware:
+class LoadSettingsMiddleware(object):
     """
     Middleware that loads the settings on each request.
     """
@@ -22,7 +22,7 @@ class LoadSettingsMiddleware:
         load_site_config()
 
 
-class CheckUpdatesRequiredMiddleware:
+class CheckUpdatesRequiredMiddleware(object):
     """
     Middleware that checks if manual updates need to be made on the
     installation. If updates are required, all attempts to access a

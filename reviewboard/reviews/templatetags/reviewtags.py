@@ -298,7 +298,8 @@ def reply_section(context, review, comment, context_type, context_id):
         'comment': comment,
         'context_type': context_type,
         'context_id': context_id,
-        'user': context.get('user', None)
+        'user': context.get('user', None),
+        'local_site_name': context.get('local_site_name'),
     }
 
 
@@ -346,6 +347,7 @@ def dashboard_entry(context, level, text, view, group_name=None):
         'selected': context.get('view', None) == view and \
                     (not group_name or
                      context.get('group', None) == group._ame),
+        'local_site_name': context.get('local_site_name'),
     }
 
 
