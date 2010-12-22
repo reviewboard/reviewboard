@@ -198,7 +198,7 @@ class Screenshot(models.Model):
             review_request = self.inactive_review_request.all()[0]
 
         if review_request.local_site:
-            local_site_name = review_request.local_site_name
+            local_site_name = review_request.local_site.name
         else:
             local_site_name = None
 
