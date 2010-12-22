@@ -101,10 +101,3 @@ urlpatterns += patterns('django.contrib',
     url(r'^account/logout/$', 'auth.views.logout',
         {'next_page': settings.LOGIN_URL}, name="logout")
 )
-
-
-# And the rest ...
-urlpatterns += patterns('',
-    # This must be last.
-    url(r'^iphone/', include('reviewboard.iphone.urls', namespace='iphone')),
-)
