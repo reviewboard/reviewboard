@@ -121,18 +121,20 @@ class ReviewRequestManager(ConcurrencyManager):
             db = router.db_for_write(ReviewRequest)
             cursor = connections[db].cursor()
             cursor.execute(
-                'UPDATE %(table)s'
-                '  SET local_id = COALESCE('
-                '          (SELECT MAX(local_id)'
-                '               FROM %(table)s'
-                '               WHERE local_site_id = %(local_site_id)s) + 1,'
-                '          1),'
-                '      local_site_id = %(local_site_id)s'
-                '  WHERE %(table)s.id = %(id)s' % {
+                'UPDATE %(table)s SET'
+                '  local_id = COALESCE('
+                '    (SELECT MAX(local_id) from'
+                '      (SELECT local_id FROM %(table)s'
+                '        WHERE local_site_id = %(local_site_id)s) as x'
+                '      ) + 1,'
+                '    1),'
+                '  local_site_id = %(local_site_id)s'
+                '    WHERE %(table)s.id = %(id)s' % {
                     'table': ReviewRequest._meta.db_table,
                     'local_site_id': local_site.pk,
                     'id': review_request.pk,
-                })
+            })
+
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
 
         return review_request
