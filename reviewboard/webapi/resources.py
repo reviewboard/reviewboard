@@ -153,6 +153,7 @@ class WebAPIResource(DjbletsWebAPIResource):
 
         return request.build_absolute_uri(
             local_site_reverse(self._build_named_url(self.name),
+                               request=request,
                                kwargs=href_kwargs))
 
 
