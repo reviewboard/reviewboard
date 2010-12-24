@@ -780,6 +780,8 @@ class StorageSettingsForm(SiteSettingsForm):
             self.disabled_fields['couchdb_default_server'] = True
             self.disabled_reasons['couchdb_default_server'] = reason
 
+        super(StorageSettingsForm, self).load()
+
     def save(self):
         super(StorageSettingsForm, self).save()
         load_site_config()
