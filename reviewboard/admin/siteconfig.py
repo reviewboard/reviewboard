@@ -48,7 +48,7 @@ from reviewboard.admin.checks import get_can_enable_search, \
 # A mapping of our supported storage backend names to backend class paths.
 storage_backend_map = {
     'builtin': 'django.core.files.storage.FileSystemStorage',
-    's3':      'backends.s3.S3Storage',
+    's3':      'storages.backends.s3.S3Storage',
 }
 
 

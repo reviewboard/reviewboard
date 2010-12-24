@@ -189,7 +189,7 @@ def get_can_enable_dns():
 def get_can_use_amazon_s3():
     """Checks whether django-storages (with the Amazon S3 backend) is installed."""
     try:
-        from backends.s3 import S3Storage
+        from storages.backends.s3 import S3Storage
         return (True, None)
     except ImportError:
         return (False, _(
@@ -200,7 +200,7 @@ def get_can_use_amazon_s3():
 def get_can_use_couchdb():
     """Checks whether django-storages (with the CouchDB backend) is installed."""
     try:
-        from backends.couchdb import CouchDBStorage
+        from storages.backends.couchdb import CouchDBStorage
         return (True, None)
     except ImportError:
         return (False, _(
