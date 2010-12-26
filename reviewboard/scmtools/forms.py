@@ -287,8 +287,11 @@ class RepositoryForm(forms.ModelForm):
         max_length=128,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("The API token provided by the hosting service. This is "
-                    "needed in order to access files on this repository."))
+        help_text=_('The API token provided by the hosting service. This is '
+                    'needed in order to access files on this repository. '
+                    'On GitHub, you can find this on your '
+                    '<a href="http://github.com/account">Account</a> page '
+                    'under "Account Admin."'))
 
     tool = forms.ModelChoiceField(
         label=_("Repository type"),
@@ -416,10 +419,16 @@ class RepositoryForm(forms.ModelForm):
                                    field_info['mirror_path'], [])[0]:
                 continue
 
-            if ('raw_file_url' in field_info and
-                not self._match_url(self.instance.raw_file_url,
-                                    field_info['raw_file_url'], [])[0]):
-                continue
+            if 'raw_file_url' in field_info:
+                is_raw_match, raw_field_data = \
+                    self._match_url(self.instance.raw_file_url,
+                                    field_info['raw_file_url'],
+                                    info['fields'])
+
+                if not is_raw_match:
+                    continue
+
+                field_data.update(raw_field_data)
 
             # It all matched.
             self.fields['hosting_type'].initial = service_id
