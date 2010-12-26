@@ -31,6 +31,67 @@ def get_host_keys_filename():
     return os.path.expanduser('~/.ssh/known_hosts')
 
 
+def get_user_key():
+    """Returns the keypair of the user running Review Board.
+
+    This will be an instance of :py:mod:`paramiko.PKey`, representing
+    a DSS or RSA key, as long as one exists. Otherwise, it may return None.
+    """
+    keyfiles = []
+
+    for cls, filename in ((paramiko.RSAKey, 'id_rsa'),
+                          (paramiko.DSSKey, 'id_dsa')):
+        # Paramiko looks in ~/.ssh and ~/ssh, depending on the platform,
+        # so check both.
+        for sshdir in ('.ssh', 'ssh'):
+            path = os.path.expanduser('~/%s/%s' % (sshdir, filename))
+
+            if os.path.isfile(path):
+                keyfiles.append((cls, path))
+
+    for cls, keyfile in keyfiles:
+        try:
+            return cls.from_private_key_file(keyfile)
+        except paramiko.SSHException, e:
+            logging.error('SSH: Unknown error accessing local key file %s: %s'
+                          % (keyfile, e))
+        except paramiko.PasswordRequiredException, e:
+            logging.error('SSH: Unable to access password protected key file '
+                          '%s: %s' % (keyfile, e))
+        except IOError, e:
+            logging.error('SSH: Error reading local key file %s: %s'
+                          % (keyfile, e))
+
+    return None
+
+
+def generate_user_key():
+    """Generates a new RSA keypair for the user running Review Board.
+
+    This will store the new key in $HOME/.ssh/id_rsa and return the
+    resulting key as an instance of :py:mod:`paramiko.RSAKey`.
+
+    If a key already exists in the id_rsa file, it's returned instead.
+
+    Callers are expected to handle any exceptions. This may raise
+    IOError for any problems in writing the key file, or
+    paramiko.SSHException for any other problems.
+    """
+    filename = os.path.expanduser('~/.ssh/id_rsa')
+
+    if os.path.isfile(filename):
+        return get_user_key()
+
+    parent_dir = os.path.dirname(filename)
+
+    if not os.path.exists(parent_dir):
+        os.mkdir(parent_dir, 0700)
+
+    key = paramiko.RSAKey.generate(2048)
+    key.write_private_key_file(filename)
+    return key
+
+
 def is_ssh_uri(url):
     """Returns whether or not a URL represents an SSH connection."""
     return urlparse.urlparse(url)[0] in ssh_uri_schemes

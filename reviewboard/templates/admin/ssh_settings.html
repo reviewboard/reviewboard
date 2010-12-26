@@ -1,0 +1,54 @@
+{% extends "admin/settings.html" %}
+{% load djblets_utils i18n %}
+
+{% block content %}
+{% if error %}
+<div class="error">
+ <ul class="errorlist">
+  <li>{{error}}</li>
+ </ul>
+</div>
+{% endif %}
+<p>
+{% blocktrans %}
+ The SSH key configured here will be used for communication with any
+ SSH-backend repositories.
+{% endblocktrans %}
+</p>
+{% if key %}
+<div class="module aligned">
+ <div class="form-row">
+  <label class="required">{% trans "Key type:" %}</label>
+  {{key.get_name}}
+ </div>
+ <div class="form-row">
+  <label class="required">{% trans "Bits:" %}</label>
+  {{key.get_bits}}
+ </div>
+ <div class="form-row">
+  <label class="required">{% trans "Fingerprint:" %}</label>
+  <code>{{fingerprint}}</code>
+ </div>
+ <div class="form-row">
+  <label class="required">{% trans "Public key:" %}</label>
+  <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{public_key}}</textarea>
+ </div>
+</div>
+{% else %}
+<p>
+{% blocktrans %}
+ It is highly recommended that you generate a SSH key. This will be owned
+ and used by Review Board.
+{% endblocktrans %}
+</p>
+<p>
+{% blocktrans %}
+ Note that this may take some time. Don't generate a key more than once.
+{% endblocktrans %}
+</p>
+<form method="POST" action=".">
+ <input type="hidden" name="generate-key" value="1" />
+ <input type="submit" value="{% trans "Generate an SSH key" %}" />
+</form>
+{% endif %}
+{% endblock %}
