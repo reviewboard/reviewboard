@@ -200,6 +200,7 @@ class BaseCommentIssueResource(WebAPIResource):
 
         return 200, {
             self.item_result_key: {
+                'last_activity_time': last_activity_time,
                 'status': self.serialize_status_field(comment),
             }
         }
@@ -233,6 +234,7 @@ class BaseCommentIssueResource(WebAPIResource):
 
         return 200, {
             self.item_result_key: {
+                'last_activity_time': last_activity_time,
                 'status': self.serialize_status_field(comment),
             }
         }
@@ -3576,7 +3578,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
             if value is not None:
                 setattr(screenshot_comment, field, value)
-        
+
         screenshot_comment.save()
 
         return 200, {
