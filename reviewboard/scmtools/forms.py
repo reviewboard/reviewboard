@@ -362,8 +362,7 @@ class RepositoryForm(forms.ModelForm):
 
     def _populate_hosting_service_fields(self):
         if (not self.instance or
-            not self.instance.path or
-            not self.instance.mirror_path):
+            not self.instance.path):
             return
 
         tool_name = self.instance.tool.name
