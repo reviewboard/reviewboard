@@ -105,9 +105,9 @@ class GitTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
-        super(GitTool, cls).check_repository(path, username, password)
-
         client = GitClient(path)
+
+        super(GitTool, cls).check_repository(client.path, username, password)
 
         if not client.is_valid_repository():
             raise RepositoryNotFoundError()
