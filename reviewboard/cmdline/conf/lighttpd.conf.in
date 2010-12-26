@@ -33,7 +33,7 @@ $HTTP["host"] =~ "@sitedomain_escaped@" {
     url.rewrite-once = (
         "^(/media/.*)$" => "$1",
         "^(/errordocs/.*)$" => "$1",
-	"^(/reviewboard.fcgi.*)$" => "$1"
+        "^(/reviewboard.fcgi.*)$" => "$1",
         "^(/.*)$" => "/reviewboard.fcgi$1",
     )
 
