@@ -30,10 +30,6 @@
           'api_key': '{{api_key}}'
       }).issueUI();
 
-      if(window['gEditable']) {
-        comment_issue.issueButtons();
-      }
-
       comment_issue.appendTo($("#{{context_id}}-{{review.id}} .issue-indicator"));
 {% endif %}
 

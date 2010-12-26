@@ -178,9 +178,9 @@ $.extend(RB.DiffComment.prototype, {
         this.beginLineNum = rsp.diff_comment.first_line;
         this.endLineNum = rsp.diff_comment.num_lines + this.beginLineNum;
         this.links = rsp.diff_comment.links;
-        this.issue_opened = rsp.diff_comment.issue_opened;
         this.url = rsp.diff_comment.links.self.href;
         this.loaded = true;
+        this.issue_opened = rsp.diff_comment.issue_opened;
     }
 });
 
@@ -1396,6 +1396,7 @@ $.extend(RB.ScreenshotComment.prototype, {
         this.links = rsp.screenshot_comment.links;
         this.url = rsp.screenshot_comment.links.self.href;
         this.loaded = true;
+        this.issue_opened = rsp.screenshot_comment.issue_opened;
     }
 });
 
