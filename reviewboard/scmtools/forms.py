@@ -388,10 +388,16 @@ class RepositoryForm(forms.ModelForm):
                                    field_info['mirror_path'], [])[0]:
                 continue
 
-            if ('raw_file_url' in field_info and
-                not self._match_url(self.instance.raw_file_url,
-                                    field_info['raw_file_url'], [])[0]):
-                continue
+            if 'raw_file_url' in field_info:
+                is_raw_match, raw_field_data = \
+                    self._match_url(self.instance.raw_file_url,
+                                    field_info['raw_file_url'],
+                                    info['fields'])
+
+                if not is_raw_match:
+                    continue
+
+                field_data.update(raw_field_data)
 
             # It all matched.
             self.fields['hosting_type'].initial = service_id
