@@ -283,8 +283,11 @@ class RepositoryForm(forms.ModelForm):
         max_length=128,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("The API token provided by the hosting service. This is "
-                    "needed in order to access files on this repository."))
+        help_text=_('The API token provided by the hosting service. This is '
+                    'needed in order to access files on this repository. '
+                    'On GitHub, you can find this on your '
+                    '<a href="http://github.com/account">Account</a> page '
+                    'under "Account Admin."'))
 
     tool = forms.ModelChoiceField(
         label=_("Repository type"),
