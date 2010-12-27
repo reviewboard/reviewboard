@@ -115,8 +115,12 @@ def webapi_check_local_site(view_func):
         if local_site_name:
             try:
                 local_site = LocalSite.objects.get(name=local_site_name)
+
                 if not local_site.is_accessible_by(request.user):
-                    return WebAPIResponseError(request, PERMISSION_DENIED)
+                    if request.user.is_authenticated():
+                        return WebAPIResponseError(request, PERMISSION_DENIED)
+                    else:
+                        return WebAPIResponseError(request, NOT_LOGGED_IN)
             except LocalSite.DoesNotExist:
                 return WebAPIResponseError(request, DOES_NOT_EXIST)
 
