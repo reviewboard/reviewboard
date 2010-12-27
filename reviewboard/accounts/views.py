@@ -35,7 +35,9 @@ def account_register(request):
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
     # TODO: Figure out the right place to redirect when using a LocalSite.
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, None)
+    redirect_to = \
+        request.REQUEST.get(REDIRECT_FIELD_NAME,
+            request.REQUEST.get('redirect_to', None))
 
     if not redirect_to:
         redirect_to = reverse("dashboard")
