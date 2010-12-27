@@ -5,7 +5,8 @@
 	# Error handlers
 	ErrorDocument 500 /errordocs/500.html
 
-        WSGIScriptAlias "@siteroot@" "@sitedir@/htdocs/reviewboard.wsgi"
+	WSGIPassAuthorization On
+    WSGIScriptAlias "@siteroot@" "@sitedir@/htdocs/reviewboard.wsgi"
 
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
