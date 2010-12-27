@@ -33,35 +33,38 @@ from reviewboard.admin import forms
 
 NEWS_FEED = "http://www.reviewboard.org/news/feed/"
 
-urlpatterns = patterns('reviewboard.admin.views',
-    (r'^$', 'dashboard'),
-    (r'^cache/$', 'cache_stats'),
-
-    # Settings
-    url(r'^settings/general/$', 'site_settings',
+settings_urlpatterns = patterns('reviewboard.admin.views',
+    url(r'^general/$', 'site_settings',
         {'form_class': forms.GeneralSettingsForm,
          'template_name': 'admin/settings.html'},
         name="settings-general"),
-    url(r'^settings/authentication/$', 'site_settings',
+    url(r'^authentication/$', 'site_settings',
         {'form_class': forms.AuthenticationSettingsForm,
          'template_name': 'admin/authentication_settings.html'},
         name="settings-authentication"),
-    url(r'^settings/email/$', 'site_settings',
+    url(r'^email/$', 'site_settings',
         {'form_class': forms.EMailSettingsForm,
          'template_name': 'admin/settings.html'},
         name="settings-email"),
-    url(r'^settings/diffs/$', 'site_settings',
+    url(r'^diffs/$', 'site_settings',
         {'form_class': forms.DiffSettingsForm,
          'template_name': 'admin/settings.html'},
         name="settings-diffs"),
-    url(r'^settings/logging/$', 'site_settings',
+    url(r'^logging/$', 'site_settings',
         {'form_class': forms.LoggingSettingsForm,
          'template_name': 'admin/settings.html'},
         name="settings-logging"),
-    url(r'^settings/storage/$', 'site_settings',
+    url(r'^ssh/$', 'ssh_settings', name="settings-ssh"),
+    url(r'^storage/$', 'site_settings',
         {'form_class': forms.StorageSettingsForm,
          'template_name': 'admin/storage_settings.html'},
         name="settings-storage"),
+)
+
+urlpatterns = patterns('reviewboard.admin.views',
+    (r'^$', 'dashboard'),
+    (r'^cache/$', 'cache_stats'),
+    (r'^settings/', include(settings_urlpatterns)),
 )
 
 urlpatterns += patterns('',
