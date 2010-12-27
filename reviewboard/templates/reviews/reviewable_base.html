@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% load i18n %}
 
+{% block jsconsts %}
+{{block.super}}
+  var gUserURL = "{% url user user %}";
+{% endblock %}
+
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }
 {% endblock %}
