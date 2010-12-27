@@ -101,7 +101,7 @@ def webapi_deprecated_in_1_5(view_func):
         encoders=_deprecated_api_encoders)(view_func)
 
 
-@webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+@webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
 @simple_decorator
 def webapi_check_local_site(view_func):
     """Checks whether a user has access to a local site given in the URL.
