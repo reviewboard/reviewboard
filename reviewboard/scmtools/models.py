@@ -41,8 +41,8 @@ class Tool(models.Model):
 
 
 class Repository(models.Model):
-    name = models.CharField(max_length=64, unique=True)
-    path = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=64)
+    path = models.CharField(max_length=255)
     mirror_path = models.CharField(max_length=255, blank=True)
     raw_file_url = models.CharField(max_length=255, blank=True)
     username = models.CharField(max_length=32, blank=True)
@@ -103,3 +103,5 @@ class Repository(models.Model):
 
     class Meta:
         verbose_name_plural = "Repositories"
+        unique_together = (('name', 'local_site'),
+                           ('path', 'local_site'))

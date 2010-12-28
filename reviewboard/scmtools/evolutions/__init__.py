@@ -5,4 +5,5 @@ SEQUENCE = [
     'repository_path_length_255',
     'localsite',
     'repository_access_control',
+    'group_site',
 ]
