@@ -84,7 +84,7 @@
    </div>
    <div id="page-container">
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
-    <form method="get" action="{% url search %}">
+    {% if siteconfig.settings.search_enable %}<form method="get" action="{% url search %}">{% endif %}
      <div id="navbar-outer">
       <ul id="navbar">
 {% if user.is_authenticated %}
@@ -103,7 +103,7 @@
        {% endif %}
       </ul>
      </div>
-    </form>
+     {% if siteconfig.settings.search_enable %}</form>{% endif %}
     {% endif %}
 {% endblock %}
     <noscript>
