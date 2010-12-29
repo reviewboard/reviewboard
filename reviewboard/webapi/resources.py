@@ -1562,16 +1562,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
-        query = self.model.objects.filter(is_active=True)
-        if local_site_name:
-            query = query.filter(localsite__name=local_site_name)
+        local_site = _get_local_site(local_site_name)
+        if local_site:
+            query = local_site.users.filter(is_active=True)
+        else:
+            query = self.model.objects.filter(is_active=True)
 
         if search_q:
             q = Q(username__istartswith=search_q)
 
             if request.GET.get('fullname', None):
-                q = q | (Q(first_name__istartswith=query) |
-                         Q(last_name__istartswith=query))
+                q = q | (Q(first_name__istartswith=search_q) |
+                         Q(last_name__istartswith=search_q))
 
             query = query.filter(q)
 

@@ -255,7 +255,7 @@ $.fn.reviewsAutoComplete = function(options) {
 
                     return parsed;
                 },
-                url: SITE_ROOT + "api/json/" + options.fieldName + "/",
+                url: SITE_ROOT + gReviewRequestSitePrefix + "api/" + options.fieldName + "/",
                 extraParams: options.extraParams
             })
             .bind("autocompleteshow", function() {
