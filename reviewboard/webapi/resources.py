@@ -1466,8 +1466,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             q = Q(username__istartswith=search_q)
 
             if request.GET.get('fullname', None):
-                q = q | (Q(first_name__istartswith=query) |
-                         Q(last_name__istartswith=query))
+                q = q | (Q(first_name__istartswith=search_q) |
+                         Q(last_name__istartswith=search_q))
 
             query = query.filter(q)
 
