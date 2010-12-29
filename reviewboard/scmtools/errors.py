@@ -1,6 +1,7 @@
 import socket
 
 from django.utils.translation import ugettext as _
+from djblets.util.templatetags.djblets_utils import humanize_list
 
 
 class SCMError(Exception):
@@ -70,11 +71,28 @@ class RepositoryNotFoundError(SCMError):
 
 
 class AuthenticationError(SCMError):
-    """An error representing a failed authentication for a repository."""
-    def __init__(self):
-        SCMError.__init__(self, _('Unable to authenticate against this '
-                                  'repository with the provided username '
-                                  'and password.'))
+    """An error representing a failed authentication for a repository.
+
+    This takes a list of authentication types that are allowed. These
+    are dependant on the backend, but are loosely based on SSH authentication
+    mechanisms. Primarily, we respond to "password" and "publickey".
+
+    This may also take the user's SSH key that was tried, if any.
+    """
+    def __init__(self, allowed_types, user_key=None):
+        if allowed_types:
+            msg = _('Unable to authenticate against this repository using one '
+                    'of the supported authentication types '
+                    '(%(allowed_types)s).') % {
+                'allowed_types': humanize_list(allowed_types),
+            }
+        else:
+            msg = _('Unable to authenticate against this repository using one '
+                    'of the supported authentication types.')
+
+        SCMError.__init__(self, msg)
+        self.allowed_types = allowed_types
+        self.user_key = user_key
 
 
 class UnverifiedCertificateError(SCMError):
