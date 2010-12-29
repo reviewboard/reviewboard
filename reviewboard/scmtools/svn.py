@@ -24,6 +24,8 @@ from reviewboard.scmtools.errors import SCMError, \
 # Register these URI schemes so we can handle them properly.
 sshutils.ssh_uri_schemes.append('svn+ssh')
 
+sshutils.register_rbssh('SVN_SSH')
+
 
 class SVNCertificateFailures:
     """SVN HTTPS certificate failure codes.

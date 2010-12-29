@@ -16,6 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
+from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         InvalidRevisionFormatError, \
@@ -29,6 +30,8 @@ GIT_DIFF_PREFIX = re.compile('^[ab]/')
 
 # Register these URI schemes so we can handle them properly.
 urlparse.uses_netloc.append('git')
+
+sshutils.register_rbssh('GIT_SSH')
 
 
 class ShortSHA1Error(InvalidRevisionFormatError):
@@ -278,13 +281,8 @@ class GitClient(object):
         if url_parts[0] == 'file':
             self.git_dir = url_parts[2]
 
-            p = subprocess.Popen(
-                ['git', '--git-dir=%s' % self.git_dir, 'config',
-                     'core.repositoryformatversion'],
-                stderr=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                close_fds=(os.name != 'nt')
-            )
+            p = self._run_git(['--git-dir=%s' % self.git_dir, 'config',
+                               'core.repositoryformatversion'])
             failure = p.wait()
 
             if failure:
@@ -298,12 +296,7 @@ class GitClient(object):
 
     def is_valid_repository(self):
         """Checks if this is a valid Git repository."""
-        p = subprocess.Popen(
-            ['git', 'ls-remote', self.path, 'HEAD'],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
+        p = self._run_git(['ls-remote', self.path, 'HEAD'])
         errmsg = p.stderr.read()
         failure = p.wait()
 
@@ -353,6 +346,15 @@ class GitClient(object):
         if self.raw_file_url and len(sha1) != self.FULL_SHA1_LENGTH:
             raise ShortSHA1Error(path, sha1)
 
+    def _run_git(self, args):
+        """Runs a git command, returning a subprocess.Popen."""
+        return subprocess.Popen(
+            ['git'] + args,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            close_fds=(os.name != 'nt')
+        )
+
     def _build_raw_url(self, path, revision):
         url = self.raw_file_url
         url = url.replace("<revision>", revision)
@@ -372,12 +374,8 @@ class GitClient(object):
         """
         commit = self._resolve_head(revision, path)
 
-        p = subprocess.Popen(
-            ['git', '--git-dir=%s' % self.git_dir, 'cat-file', option, commit],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
+        p = self._run_git(['--git-dir=%s' % self.git_dir, 'cat-file',
+                           option, commit])
         contents = p.stdout.read()
         errmsg = p.stderr.read()
         failure = p.wait()

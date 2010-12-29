@@ -213,3 +213,15 @@ def check_host(hostname, username=None, password=None):
         raise AuthenticationError(allowed_types, key)
     except paramiko.SSHException, e:
         raise SCMError(unicode(e))
+
+
+def register_rbssh(envvar):
+    """Registers rbssh in an environment variable.
+
+    This is a convenience method for making sure that rbssh is set properly
+    in the environment for different tools. In some cases, we need to
+    specifically place it in the system environment using ``os.putenv``,
+    while in others (Mercurial, Bazaar), we need to place it in ``os.environ``.
+    """
+    os.putenv(envvar, 'rbssh')
+    os.environ[envvar] = 'rbssh'

@@ -13,8 +13,7 @@ from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 
 
-# Register these URI schemes so we can handle them properly.
-sshutils.ssh_uri_schemes.append('svn+ssh')
+sshutils.register_rbssh('CVS_RSH')
 
 
 class CVSTool(SCMTool):
