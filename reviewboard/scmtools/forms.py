@@ -11,7 +11,8 @@ from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.errors import BadHostKeyError, \
+from reviewboard.scmtools.errors import AuthenticationError, \
+                                        BadHostKeyError, \
                                         UnknownHostKeyError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Tool
@@ -390,6 +391,7 @@ class RepositoryForm(forms.ModelForm):
 
         self.hostkeyerror = None
         self.certerror = None
+        self.userkeyerror = None
 
         self._populate_hosting_service_fields()
         self._populate_bug_tracker_fields()
@@ -617,6 +619,7 @@ class RepositoryForm(forms.ModelForm):
         return (super(RepositoryForm, self).is_valid() and
                 not self.hostkeyerror and
                 not self.certerror and
+                not self.userkeyerror and
                 not self.cleaned_data['reedit_repository'])
 
     def _match_url(self, url, format, fields):
@@ -720,5 +723,11 @@ class RepositoryForm(forms.ModelForm):
                 else:
                     self.certerror = e
                     break
+            except AuthenticationError, e:
+                if 'publickey' in e.allowed_types and e.user_key is None:
+                    self.userkeyerror = e
+                    break
+
+                raise forms.ValidationError(e)
             except Exception, e:
                 raise forms.ValidationError(e)
