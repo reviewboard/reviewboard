@@ -200,11 +200,15 @@ def check_host(hostname, username=None, password=None):
     except paramiko.BadHostKeyException, e:
         raise BadHostKeyError(e.hostname, e.key, e.expected_key)
     except paramiko.AuthenticationException, e:
-        if 'publickey' in e.allowed_types:
+        # Some AuthenticationException instances have allowed_types set,
+        # and some don't.
+        allowed_types = getattr(e, 'allowed_types', [])
+
+        if 'publickey' in allowed_types:
             key = get_user_key()
         else:
             key = None
 
-        raise AuthenticationError(e.allowed_types, key)
+        raise AuthenticationError(allowed_types, key)
     except paramiko.SSHException, e:
         raise SCMError(unicode(e))
