@@ -44,6 +44,7 @@ from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_use_amazon_s3, \
                                      get_can_use_couchdb
 from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.scmtools import sshutils
 
 
 class GeneralSettingsForm(SiteSettingsForm):
@@ -470,6 +471,43 @@ class LoggingSettingsForm(SiteSettingsForm):
                 'fields':  ('logging_allow_profiling',),
             }
         )
+
+
+class SSHSettingsForm(forms.Form):
+    generate_key = forms.BooleanField(required=False,
+                                      initial=True,
+                                      widget=forms.HiddenInput)
+    keyfile = forms.FileField(label=_('Key file'),
+                              required=False,
+                              widget=forms.FileInput(attrs={'size': '35'}))
+
+    def create(self, files):
+        if self.cleaned_data['generate_key']:
+            try:
+                sshutils.generate_user_key()
+            except IOError, e:
+                self.errors['generate_key'] = forms.util.ErrorList([
+                    _('Unable to write SSH key file: %s') % e
+                ])
+                raise
+            except Exception, e:
+                self.errors['generate_key'] = forms.util.ErrorList([
+                    _('Error generating SSH key: %s') % e
+                ])
+                raise
+        elif self.cleaned_data['keyfile']:
+            try:
+                sshutils.import_user_key(files['keyfile'])
+            except IOError, e:
+                self.errors['keyfile'] = forms.util.ErrorList([
+                    _('Unable to write SSH key file: %s') % e
+                ])
+                raise
+            except Exception, e:
+                self.errors['keyfile'] = forms.util.ErrorList([
+                    _('Error uploading SSH key: %s') % e
+                ])
+                raise
 
 
 class StorageSettingsForm(SiteSettingsForm):

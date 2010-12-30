@@ -7,7 +7,8 @@ import paramiko
 
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, SCMError, \
-                                        UnknownHostKeyError
+                                        UnknownHostKeyError, \
+                                        UnsupportedSSHKeyError
 
 
 # A list of known SSH URL schemes.
@@ -66,10 +67,27 @@ def get_user_key():
     return None
 
 
+def ensure_ssh_dir():
+    """Ensures the existance of the .ssh directory.
+
+    If the directory doesn't exist, it will be created.
+    The full path to the directory will be returned.
+
+    Callers are expected to handle any exceptions. This may raise
+    IOError for any problems in creating the directory.
+    """
+    sshdir = os.path.expanduser('~/.ssh')
+
+    if not os.path.exists(sshdir):
+        os.mkdir(sshdir, 0700)
+
+    return sshdir
+
+
 def generate_user_key():
     """Generates a new RSA keypair for the user running Review Board.
 
-    This will store the new key in $HOME/.ssh/id_rsa and return the
+    This will store the new key in :file:`$HOME/.ssh/id_rsa` and return the
     resulting key as an instance of :py:mod:`paramiko.RSAKey`.
 
     If a key already exists in the id_rsa file, it's returned instead.
@@ -78,19 +96,52 @@ def generate_user_key():
     IOError for any problems in writing the key file, or
     paramiko.SSHException for any other problems.
     """
-    filename = os.path.expanduser('~/.ssh/id_rsa')
+    sshdir = ensure_ssh_dir()
+    filename = os.path.join(sshdir, 'id_rsa')
 
     if os.path.isfile(filename):
         return get_user_key()
 
-    parent_dir = os.path.dirname(filename)
-
-    if not os.path.exists(parent_dir):
-        os.mkdir(parent_dir, 0700)
-
     key = paramiko.RSAKey.generate(2048)
     key.write_private_key_file(filename)
     return key
+
+
+def import_user_key(keyfile):
+    """Imports an uploaded key file into Review Board.
+
+    ``keyfile`` is expected to be an ``UploadedFile``. If this is a
+    valid key file, it will be saved in :file:`$HOME/.ssh/`` and the
+    resulting key as an instance of :py:mod:`paramiko.RSAKey` will be
+    returned.
+
+    If a key of this name already exists, it will be overwritten.
+
+    Callers are expected to handle any exceptions. This may raise
+    IOError for any problems in writing the key file, or
+    paramiko.SSHException for any other problems.
+
+    This will raise UnsupportedSSHKeyError if the uploaded key is not
+    a supported type.
+    """
+    sshdir = ensure_ssh_dir()
+
+    # Try to find out what key this is.
+    for cls, filename in ((paramiko.RSAKey, 'id_rsa'),
+                          (paramiko.DSSKey, 'id_dsa')):
+        try:
+            keyfile.seek(0)
+            key = cls.from_private_key(keyfile)
+        except paramiko.SSHException, e:
+            # We don't have more detailed info than this, but most
+            # likely, it's not a valid key. Skip to the next.
+            continue
+
+        if key:
+            key.write_private_key_file(os.path.join(sshdir, filename))
+            return key
+
+    raise UnsupportedSSHKeyError()
 
 
 def is_ssh_uri(url):
@@ -213,3 +264,15 @@ def check_host(hostname, username=None, password=None):
         raise AuthenticationError(allowed_types, key)
     except paramiko.SSHException, e:
         raise SCMError(unicode(e))
+
+
+def register_rbssh(envvar):
+    """Registers rbssh in an environment variable.
+
+    This is a convenience method for making sure that rbssh is set properly
+    in the environment for different tools. In some cases, we need to
+    specifically place it in the system environment using ``os.putenv``,
+    while in others (Mercurial, Bazaar), we need to place it in ``os.environ``.
+    """
+    os.putenv(envvar, 'rbssh')
+    os.environ[envvar] = 'rbssh'

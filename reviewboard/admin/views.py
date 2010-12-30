@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
@@ -11,6 +13,7 @@ from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
+from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.reviews.models import Group, DefaultReviewer
 from reviewboard.scmtools.models import Repository
 from reviewboard.scmtools import sshutils
@@ -60,17 +63,19 @@ def site_settings(request, form_class,
 @staff_member_required
 def ssh_settings(request, template_name='admin/ssh_settings.html'):
     key = sshutils.get_user_key()
-    error = None
 
-    if request.method == 'POST' and 'generate-key' in request.POST and not key:
-        try:
-            sshutils.generate_user_key()
+    if request.method == 'POST':
+        form = SSHSettingsForm(request.POST, request.FILES)
 
-            return HttpResponseRedirect('.')
-        except IOError, e:
-            error = _('Unable to write SSH key file: %s') % e
-        except Exception, e:
-            error = _('Error generating SSH key: %s') % e
+        if form.is_valid():
+            try:
+                form.create(request.FILES)
+                return HttpResponseRedirect('.')
+            except Exception, e:
+                # Fall through. It will be reported inline and in the log.
+                logging.error('Uploading SSH key failed: %s' % e)
+    else:
+        form = SSHSettingsForm()
 
     public_key = ''
 
@@ -89,7 +94,7 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         'key': key,
         'fingerprint': fingerprint,
         'public_key': public_key,
-        'error': error,
+        'form': form,
     }))
 
 

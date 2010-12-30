@@ -174,6 +174,8 @@ class HgClient(object):
             hg_ui = ui.ui()
             hg_ui.setconfig('ui', 'interactive', 'off')
 
+        hg_ui.setconfig('ui', 'ssh', 'rbssh')
+
         self.repo = hg.repository(hg_ui, path=repoPath)
 
     def cat_file(self, path, rev="tip"):

@@ -2,13 +2,6 @@
 {% load djblets_utils i18n %}
 
 {% block content %}
-{% if error %}
-<div class="error">
- <ul class="errorlist">
-  <li>{{error}}</li>
- </ul>
-</div>
-{% endif %}
 <p>
 {% blocktrans %}
  The SSH key configured here will be used for communication with any
@@ -35,20 +28,35 @@
  </div>
 </div>
 {% else %}
+<h3>{% trans "Generate an SSH Key" %}</h3>
 <p>
 {% blocktrans %}
- It is highly recommended that you generate a SSH key. This will be owned
- and used by Review Board.
+ You can generate a brand new RSA key specific to this installation of
+ Review Board.
 {% endblocktrans %}
 </p>
 <p>
 {% blocktrans %}
- Note that this may take some time. Don't generate a key more than once.
+ Note that generating a key may take some time. Don't click more than once.
 {% endblocktrans %}
 </p>
 <form method="POST" action=".">
- <input type="hidden" name="generate-key" value="1" />
- <input type="submit" value="{% trans "Generate an SSH key" %}" />
+ {{form.generate_key}}
+ <input type="submit" value="{% trans "Generate Key" %}" />
+</form>
+
+<h3>{% trans "Upload an SSH Key" %}</h3>
+<p>
+{% blocktrans %}
+ If you already have an SSH key (<tt>id_dsa</tt> or <tt>id_rsa</tt> file)
+ you want to use, you can upload it. Note that this key will be readable
+ by the web server, so provide one you feel safe using.
+{% endblocktrans %}
+</p>
+<form method="POST" action="." enctype="multipart/form-data">
+ {{form.keyfile.errors}}
+ {{form.keyfile}}<br />
+ <input type="submit" value="{% trans "Upload Key" %}" />
 </form>
 {% endif %}
 {% endblock %}

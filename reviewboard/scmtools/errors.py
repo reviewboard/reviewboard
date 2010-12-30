@@ -103,6 +103,13 @@ class UnverifiedCertificateError(SCMError):
         self.certificate = certificate
 
 
+class UnsupportedSSHKeyError(SCMError):
+    """An error representing an unsupported type of SSH key."""
+    def __init__(self):
+        SCMError.__init__(self,
+                          _('This SSH key is not a valid RSA or DSS key.'))
+
+
 class SSHKeyError(SCMError):
     """An error involving a host key on an SSH connection."""
     def __init__(self, hostname, key, message):

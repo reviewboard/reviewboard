@@ -78,6 +78,7 @@ setup(name=PACKAGE_NAME,
       entry_points = {
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
+              'rbssh = reviewboard.cmdline.rbssh:main',
           ],
           'reviewboard.scmtools': [
               'bzr = reviewboard.scmtools.bzr:BZRTool',
