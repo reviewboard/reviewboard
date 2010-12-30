@@ -8,6 +8,7 @@
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
 {% block jsconsts %}
+{{block.super}}
 {% include "reviews/review_flags.js" %}
   var gRevision = '{{diffset.revision}}';
 {% if interdiffset %}
