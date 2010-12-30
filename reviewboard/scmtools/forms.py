@@ -343,12 +343,14 @@ class RepositoryForm(forms.ModelForm):
         label=_("Username"),
         max_length=32,
         required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+        widget=forms.TextInput(attrs={'size': '30',
+                                      'autocomplete': 'off'}))
 
     password = forms.CharField(
         label=_("Password"),
         required=False,
-        widget=forms.PasswordInput(attrs={'size': '30'}))
+        widget=forms.PasswordInput(attrs={'size': '30',
+                                          'autocomplete': 'off'}))
 
     encoding = forms.CharField(
         label=_("Encoding"),
