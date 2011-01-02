@@ -32,7 +32,7 @@
 
 import os.path
 
-from django.conf import settings
+from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from djblets.log import siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import apply_django_settings, \
@@ -176,6 +176,18 @@ def load_site_config():
     # Populate defaults if they weren't already set.
     if not siteconfig.get_defaults():
         siteconfig.add_defaults(defaults)
+
+    # The default value for DEFAULT_EMAIL_FROM (webmaster@localhost)
+    # is less than good, so use a better one if it's set to that or if
+    # we haven't yet set this value in siteconfig.
+    mail_default_from = \
+        siteconfig.settings.get('mail_default_from',
+                                global_settings.DEFAULT_FROM_EMAIL)
+
+    if (not mail_default_from or
+        mail_default_from == global_settings.DEFAULT_FROM_EMAIL):
+        domain = siteconfig.site.domain.split(':')[0]
+        siteconfig.set('mail_default_from', 'noreply@' + domain)
 
 
     # Populate the settings object with anything relevant from the siteconfig.

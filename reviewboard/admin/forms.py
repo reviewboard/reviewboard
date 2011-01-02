@@ -288,6 +288,12 @@ class EMailSettingsForm(SiteSettingsForm):
     mail_send_review_mail = forms.BooleanField(
         label=_("Send e-mails for review requests and reviews"),
         required=False)
+    mail_default_from = forms.CharField(
+        label=_("Sender e-mail address"),
+        help_text=_('The e-mail address that all e-mails will be sent from. '
+                    'The "Sender" header will be used to make e-mails appear '
+                    'to come from the user triggering the e-mail.'),
+        required=False)
     mail_host = forms.CharField(
         label=_("Mail Server"),
         required=False)
