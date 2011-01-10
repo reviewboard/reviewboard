@@ -1,0 +1,239 @@
+================================
+Review Board 1.5.2 Release Notes
+================================
+
+
+**Release date**: January 10, 2011
+
+
+Important Updates
+=================
+
+* Users using existing WSGI configurations must update their configuration
+  for authentication with the new API to work.
+
+  By default, the ``HTTP_AUTHORIZATION`` flag we use for authentication
+  is stripped from requests when using WSGI. For new sites created with
+  Review Board 1.5.2, you won't encounter any problems, but existing
+  users will have to update their configuration to make this work.
+
+  To fix this, add the following to your configuration::
+
+      WSGIPassAuthorization On
+
+  And make sure you have this line as well::
+
+      WSGIScriptAlias "/" "/path/to/site/htdocs/reviewboard.wsgi"
+
+  If you have a subdirectory installation, replace ``"/"`` with
+  the subdirectory (and include a trailing slash).
+
+
+New Features
+============
+
+* Added SSH key management for SSH-backed repositories.
+
+  A new SSH settings page has been added to the administration UI for
+  creating a new SSH key, uploading an existing SSH key, or viewing a
+  configured SSH key. This SSH key will be owned and managed by Review Board,
+  and can be used for working with SSH-backed repositories.
+
+  After Review Board is configured with a SSH key, the SSH settings page
+  will show information on the SSH key, including the public key. The public
+  key can be used on the repository's end to grant Review Board permission to
+  access the repository.
+
+* Authentication failures when setting up repositories are now more useful.
+
+  When failing to authenticate with a repository, we provided a very unhelpful
+  error talking about the username and password being wrong. However,
+  sometimes the username/password aren't even allowed, and the real factor is
+  the public key. In those cases, the user wouldn't even know.
+
+  Now we refrain from mentioning specifics, but instead list of authentication
+  types we know were tried. This of course assumes the backend is using this
+  new error, which right now is only used for SSH errors.
+
+  When we get an authentication error that mentions that a public key is an
+  acceptable form of authentication, and no public key has been generated on
+  the server, we tell the user this and give them a link (which opens in a new
+  tab/window) to generate a new key.
+
+* Added our own SSH replacement for standardizing on behavior and working
+  around OpenSSH limitations.
+
+  We now provide our own SSH wrapper that allows us to use a Review Board
+  installation's configured SSH key. OpenSSH and possibly other SSH
+  implementations used the web server's user's home directory, and this was
+  often hard-coded on systems to a non-writeable directory, preventing
+  SSH from working out of the box.
+
+  This shouldn't affect any access to repositories negatively, but any
+  issues that do come up should be reported so we can diagnose them.
+
+* The Repository page in the administration UI now talks about API Tokens
+  and links to the GitHub Account page for Git repositories, making it easier
+  to set up a GitHub repository.
+
+
+API Fixes
+=========
+
+* Fixed logging in on requests using HTTP Basic Auth.
+
+  There were issues preventing proper login when using HTTP Basic Auth.
+  Sending an HTTP_AUTHORIZATION header would fail to log in the user if it
+  wasn't in response to a HTTP 401 Unauthorized. This meant that
+  clients couldn't log in with their first request, and users wouldn't
+  know that the credentials were invalid until later.
+
+  Now clients can send a HTTP_AUTHORIZATION with any request to trigger
+  a log in.
+
+* Fixed wrong responses when performing a request requiring authentication
+  as an anonymous user.
+
+  Any request made that required a logged in user would return an
+  HTTP 403 Forbidden, instead of requesting that the client log in. Now
+  it'll send HTTP 401 Unauthorized instead, prompting the client to log in.
+
+* Fixed anonymous access to the API when anonymous access is enabled.
+
+  Even when the Review Board server is set to allow anonymous access, the API
+  wouldn't always allow access without first logging in. Now the anonymous
+  access setting is being checked correctly.
+
+* Fixed replies to screenshot comments in the new web API.
+
+  While saving a reply would appear to work, it would never be associated with
+  the review.
+
+* Fixed removing screenshots from review requests.
+
+  The API now allows for removing screenshots from a review request draft
+  by sending a HTTP DELETE to the screenshot's resource.
+
+* Changed the request when doing a ``HTTP PUT`` on a review request draft.
+
+  Previously, when doing an ``HTTP PUT`` with ``public=`` on a draft, the
+  response would be a ``HTTP 303 See Other``, which redirected to the draft.
+  While useful in theory, this made any interaction with in-browser
+  AJAX libraries impossible, as the browser would hide the redirect,
+  preventing the client from properly handling the request or even really
+  returning the expected result (JSON or XML).
+
+  Now, we just return the same payload that other updates to the resource
+  returned, which is more consistent and reliable. The result will contain
+  the draft of the review request.
+
+* Fixed search queries in :file:`/api/users/`.
+
+  Passing ``?fullname=`` to the users resource would result in an HTTP 500
+  error. The query being constructed on the server was wrong.
+
+
+Bug Fixes
+=========
+
+* Fixed a problem with SSH host checking on Git repositories.
+
+  SSH host checking on Git repositories was busted when using the
+  ``user@address:/path`` form, without a leading ``ssh://``. We were
+  using the raw provided path, and not the normalized path, when doing the
+  verification. Since it didn't appear as a SSH path, the host wasn't
+  checked.
+
+* Fixed support for private GitHub repositories.
+
+  SSH URLs containing a username weren't being parsed correctly, leading
+  to a problem when attempting to access private GitHub repositories and
+  other SSH-backed repositories.
+
+  We also weren't matching private GitHub repositories in the repository
+  page in the administration UI.
+
+  This should fix problems for both standard and organization repositories.
+
+* The API Token for GitHub repositories are now extracted properly in the
+  Repository page in the administration UI.
+
+* Fixed extra whitespace highlight toggling.
+
+  There were bugs in toggling extra whitespace highlighting for loaded
+  diffs. Now it should work for all diffs. Patch by Mikhail Rogozhin.
+
+* Images on the dashboard are now cached, reducing the number of
+  requests made to the server. Patch by Ben Hollis.
+
+* Disabled auto-complete and default values for the repository
+  username/password fields.
+
+  Web browsers like to supply defaults for username/password fields, based on
+  any account on the site, but these are almost always wrong for the
+  repositories. We now turn off the ``autocomplete`` flag on these fields to
+  tell the browsers not to fill in the fields or offer auto-complete.
+
+* Support for Amazon S3 now works again with new versions of
+  Django Storages.
+
+* Authentication with the new API now works with new Apache+wsgi setups.
+
+  By default, mod_wsgi prevents our API's authentication from working.
+  The ``WSGIPassAuthorization On`` setting must be added to the Apache
+  configuration file. This is now added for brand new sites.
+
+* Fixed some rewrite rule for fastcgi.
+
+  The RewriteRules for fastcgi referenced :file:`/docs/` and not
+  :file:`/errordocs/`, causing the error pages to not show up correctly. It
+  also failed to work with ``mod_fastcgi`` at all, only ``mod_fcgid``.
+
+  This fix only applies to new installs. Existing installs will have to
+  modify their RewriteRules manually to::
+
+    <IfModule mod_fcgid.c>
+        RewriteRule ^/(media.*)$ /$1 [QSA,L,PT]
+        RewriteRule ^/(errordocs.*)$ /$1 [QSA,L,PT]
+    </IfModule>
+    <IfModule mod_fastcgi.c>
+        RewriteRule ^/(media.*)$ /$1 [QSA,L,PT]
+        RewriteRule ^/(errordocs.*)$ /$1 [QSA,L,PT]
+    </IfModule>
+
+* Fix 404 errors with newly generated :file:`lighttpd.conf` files.
+
+  Several installs with lighttpd have been causing 404 errors due to a broken
+  The generated :file:`lighttpd.conf` now contains a rewrite rule that
+  fixes this.
+
+  For existing installations, add the following to your ``url.rewrite-once``
+  block::
+
+      "^(/reviewboard.fcgi.*)$" => "$1",
+
+* Fixed errrors when passing a non-integer value for ``?show_submitted=``
+  on the dashboard or other review request listings.
+
+  This wasn't really a user-facing problem, but could cause spurious log
+  messages under certain conditions, such as when certain search bots
+  crawled the site. Patch by Severin Gehwolf.
+
+* Fixed a crash when attempting to log SSH-related problems.
+
+* The contributed :file:`svn-hook-postcommit-review` script wasn't parsing
+  the base path correctly. Patch by Lance Hudson.
+
+
+Contributors
+============
+
+* Ben Hollis
+* Christian Hammond
+* David Trowbridge
+* Lance Hudson
+* Mikhail Rogozhin
+* Severin Gehwolf
+
+
+.. comment: vim: ft=rst et
