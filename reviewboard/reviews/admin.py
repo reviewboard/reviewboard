@@ -17,7 +17,7 @@ class CommentAdmin(admin.ModelAdmin):
     ordering = ['-timestamp']
 
     def review_request_id(self, obj):
-        return obj.review.get().review_request.id
+        return obj.review.get().review_request.local_id
     review_request_id.short_description = _('Review request ID')
 
 
