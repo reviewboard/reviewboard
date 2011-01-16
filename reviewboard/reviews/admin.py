@@ -26,7 +26,7 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
     filter_horizontal = ('repository', 'groups', 'people',)
     fieldsets = (
         (_('General Information'), {
-            'fields': ('name', 'file_regex'),
+            'fields': ('name', 'file_regex', 'local_site'),
             'classes': ['wide'],
         }),
         (_('Reviewers'), {

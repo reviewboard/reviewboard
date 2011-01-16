@@ -51,6 +51,47 @@ class DefaultReviewerForm(forms.ModelForm):
 
         return file_regex
 
+    def clean_people(self):
+        """Validates that the users' LocalSites match."""
+        local_site = self.cleaned_data['local_site']
+        users = self.cleaned_data['people']
+
+        if local_site:
+            for user in users:
+                if not user.local_site.filter(pk=local_site.pk).exists():
+                    raise forms.ValidationError(
+                        ["The user %s is not a member of this site."
+                         % user.username])
+
+        return users
+
+    def clean_groups(self):
+        """Validates that the review groups' LocalSites match."""
+        local_site = self.cleaned_data['local_site']
+        groups = self.cleaned_data['groups']
+
+        for group in groups:
+            if group.local_site != local_site:
+                raise forms.ValidationError(
+                    ["The review group %s does not exist." % group.name])
+
+        return groups
+
+    def clean_repository(self):
+        """Validates that the repositories' LocalSites match."""
+        local_site = self.cleaned_data['local_site']
+        repositories = self.cleaned_data['repository']
+
+        for repository in repositories:
+            if repository.local_site != local_site:
+                raise forms.ValidationError([
+                    _("The repository '%s' doesn't exist on the local site.")
+                    % repository.name,
+                ])
+
+        return repositories
+
+
     class Meta:
         model = DefaultReviewer
 
