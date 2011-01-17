@@ -9,13 +9,28 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.models import DefaultReviewer, ReviewRequest, \
+from reviewboard.reviews.models import DefaultReviewer, Group, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+
+
+def _validate_users(form, users_field='users'):
+    """Validates that the users all have a valid, matching LocalSite."""
+    local_site = form.cleaned_data['local_site']
+    users = form.cleaned_data[users_field]
+
+    if local_site:
+        for user in users:
+            if not user.local_site.filter(pk=local_site.pk).exists():
+                raise forms.ValidationError(
+                    ["The user %s is not a member of this site."
+                     % user.username])
+
+    return users
 
 
 class DefaultReviewerForm(forms.ModelForm):
@@ -53,17 +68,7 @@ class DefaultReviewerForm(forms.ModelForm):
 
     def clean_people(self):
         """Validates that the users' LocalSites match."""
-        local_site = self.cleaned_data['local_site']
-        users = self.cleaned_data['people']
-
-        if local_site:
-            for user in users:
-                if not user.local_site.filter(pk=local_site.pk).exists():
-                    raise forms.ValidationError(
-                        ["The user %s is not a member of this site."
-                         % user.username])
-
-        return users
+        return _validate_users(self, 'people')
 
     def clean_groups(self):
         """Validates that the review groups' LocalSites match."""
@@ -94,6 +99,13 @@ class DefaultReviewerForm(forms.ModelForm):
 
     class Meta:
         model = DefaultReviewer
+
+
+class GroupForm(forms.ModelForm):
+    clean_users = _validate_users
+
+    class Meta:
+        model = Group
 
 
 class NewReviewRequestForm(forms.Form):

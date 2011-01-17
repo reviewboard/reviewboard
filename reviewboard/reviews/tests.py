@@ -10,7 +10,7 @@ from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
-from reviewboard.reviews.forms import DefaultReviewerForm
+from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.models import DefaultReviewer, \
                                        Group, \
                                        ReviewRequest, \
@@ -802,6 +802,41 @@ class DefaultReviewerTests(TestCase):
             'name': 'Test',
             'file_regex': '.*',
             'repository': [repo.pk],
+        })
+        self.assertFalse(form.is_valid())
+
+
+class GroupTests(TestCase):
+    def test_form_with_localsite(self):
+        """Tests GroupForm with a LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        user = User.objects.create(username='testuser', password='')
+        test_site.users.add(user)
+
+        form = GroupForm({
+            'name': 'test',
+            'display_name': 'Test',
+            'local_site': test_site.pk,
+            'users': [user.pk],
+        })
+        self.assertTrue(form.is_valid())
+        group = form.save()
+
+        self.assertEquals(group.local_site, test_site)
+        self.assertEquals(group.users.get(), user)
+
+    def test_form_with_localsite_and_bad_user(self):
+        """Tests GroupForm with a User not on the same LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        user = User.objects.create(username='testuser', password='')
+
+        form = GroupForm({
+            'name': 'test',
+            'display_name': 'Test',
+            'local_site': test_site.pk,
+            'users': [user.pk],
         })
         self.assertFalse(form.is_valid())
 

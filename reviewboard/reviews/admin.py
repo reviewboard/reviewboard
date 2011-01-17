@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
-from reviewboard.reviews.forms import DefaultReviewerForm
+from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
                                        Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot, \
@@ -43,6 +43,7 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
 
 
 class GroupAdmin(admin.ModelAdmin):
+    form = GroupForm
     list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
                     'visible')
     filter_horizontal = ('users',)
