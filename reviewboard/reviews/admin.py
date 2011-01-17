@@ -24,6 +24,8 @@ class CommentAdmin(admin.ModelAdmin):
 class DefaultReviewerAdmin(admin.ModelAdmin):
     form = DefaultReviewerForm
     filter_horizontal = ('repository', 'groups', 'people',)
+    list_display = ('name', 'file_regex')
+    raw_id_fields = ('local_site',)
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'file_regex', 'local_site'),
@@ -39,7 +41,6 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
             'fields': ('repository',),
         })
     )
-    list_display = ('name', 'file_regex')
 
 
 class GroupAdmin(admin.ModelAdmin):
@@ -47,7 +48,7 @@ class GroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
                     'visible')
     filter_horizontal = ('users',)
-
+    raw_id_fields = ('local_site',)
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'display_name', 'mailing_list',
@@ -99,7 +100,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                    'repository')
     search_fields = ['summary']
     raw_id_fields = ('submitter', 'diffset_history', 'screenshots',
-                     'inactive_screenshots', 'changedescs')
+                     'inactive_screenshots', 'changedescs', 'local_site')
     filter_horizontal = ('target_people', 'target_groups')
     fieldsets = (
         (_('General Information'), {
