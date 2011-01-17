@@ -16,21 +16,7 @@ from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
-
-
-def _validate_users(form, users_field='users'):
-    """Validates that the users all have a valid, matching LocalSite."""
-    local_site = form.cleaned_data['local_site']
-    users = form.cleaned_data[users_field]
-
-    if local_site:
-        for user in users:
-            if not user.local_site.filter(pk=local_site.pk).exists():
-                raise forms.ValidationError(
-                    ["The user %s is not a member of this site."
-                     % user.username])
-
-    return users
+from reviewboard.site.validation import validate_review_groups, validate_users
 
 
 class DefaultReviewerForm(forms.ModelForm):
@@ -68,19 +54,11 @@ class DefaultReviewerForm(forms.ModelForm):
 
     def clean_people(self):
         """Validates that the users' LocalSites match."""
-        return _validate_users(self, 'people')
+        return validate_users(self, 'people')
 
     def clean_groups(self):
         """Validates that the review groups' LocalSites match."""
-        local_site = self.cleaned_data['local_site']
-        groups = self.cleaned_data['groups']
-
-        for group in groups:
-            if group.local_site != local_site:
-                raise forms.ValidationError(
-                    ["The review group %s does not exist." % group.name])
-
-        return groups
+        return validate_review_groups(self, 'groups')
 
     def clean_repository(self):
         """Validates that the repositories' LocalSites match."""
@@ -102,7 +80,7 @@ class DefaultReviewerForm(forms.ModelForm):
 
 
 class GroupForm(forms.ModelForm):
-    clean_users = _validate_users
+    clean_users = validate_users
 
     class Meta:
         model = Group

@@ -15,8 +15,9 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, \
                                         UnknownHostKeyError, \
                                         UnverifiedCertificateError
-from reviewboard.scmtools.models import Tool
+from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.site.validation import validate_review_groups, validate_users
 
 
 class RepositoryForm(forms.ModelForm):
@@ -220,20 +221,6 @@ class RepositoryForm(forms.ModelForm):
         required=False)
 
     # Fields
-    name = forms.CharField(
-        label=_("Name"),
-        max_length=64,
-        required=True,
-        widget=forms.TextInput(attrs={'size': '30'}))
-
-    visible = forms.BooleanField(
-        label=_('Show this repository'),
-        help_text=_('Use this to control whether or not a repository is '
-                    'shown when creating new review requests. Existing '
-                    'review requests are unaffected.'),
-        initial=True,
-        required=False)
-
     hosting_type = forms.ChoiceField(
         label=_("Hosting service"),
         required=True,
@@ -252,37 +239,6 @@ class RepositoryForm(forms.ModelForm):
         max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
-
-    path = forms.CharField(
-        label=_("Path"),
-        max_length=255,
-        required=True,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("This should be the path to the repository. For most "
-                    "version control systems, this will be a URI of some "
-                    "form or another. For CVS, this should be a pserver "
-                    "path. For Perforce, this should be a port name. For "
-                    "git, this should be the path to the .git repository "
-                    "on the local disk. For Plastic, this should be a "
-                    "repository spec in the form [repo]@[hostname]:[port]."))
-
-    mirror_path = forms.CharField(
-        label=_("Mirror path"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}))
-
-    raw_file_url = forms.CharField(
-        label=_("Raw file URL mask"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("A URL mask used to check out a particular revision of a "
-                    "file using HTTP. This is needed for repository types "
-                    "that can't access remote files natively. "
-                    "Use <tt>&lt;revision&gt;</tt> and "
-                    "<tt>&lt;filename&gt;</tt> in the URL in place of the "
-                    "revision and filename parts of the path."))
 
     api_token = forms.CharField(
         label=_("API token"),
@@ -331,63 +287,6 @@ class RepositoryForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_("This should be the path to the bug tracker for this "
                     "repository."))
-
-    bug_tracker = forms.CharField(
-        label=_("Bug tracker URL"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("This should be the full path to a bug in the bug tracker "
-                    "for this repository, using '%s' in place of the bug ID."))
-
-    username = forms.CharField(
-        label=_("Username"),
-        max_length=32,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30',
-                                      'autocomplete': 'off'}))
-
-    password = forms.CharField(
-        label=_("Password"),
-        required=False,
-        widget=forms.PasswordInput(attrs={'size': '30',
-                                          'autocomplete': 'off'}))
-
-    encoding = forms.CharField(
-        label=_("Encoding"),
-        max_length=32,
-        required=False,
-        help_text=_("The encoding used for files in this repository. This is "
-                    "an advanced setting and should only be used if you're "
-                    "sure you need it."))
-
-    # Access Control
-    local_site = forms.ModelChoiceField(
-        label=_("Local site"),
-        required=False,
-        queryset=LocalSite.objects.all())
-
-    public = forms.BooleanField(
-        label=_('Publicly accessible'),
-        required=False,
-        help_text=_('Review requests and files on public repositories are '
-                    'visible to anyone. Private repositories must explicitly '
-                    'list the users and groups that can access them.'))
-
-    users = forms.ModelMultipleChoiceField(
-        label=_('Users with access'),
-        required=False,
-        queryset=User.objects.filter(is_active=True),
-        help_text=_('A list of users with explicit access to the repository.'),
-        widget=FilteredSelectMultiple(_('Users with access'), False))
-
-    review_groups = forms.ModelMultipleChoiceField(
-        label=_('Review groups with access'),
-        required=False,
-        queryset=Group.objects.filter(invite_only=True),
-        help_text=_('A list of invite-only review groups whose members have '
-                    'explicit access to the repository.'),
-        widget=FilteredSelectMultiple(_('Review groups with access'), False))
 
     def __init__(self, *args, **kwargs):
         super(RepositoryForm, self).__init__(*args, **kwargs)
@@ -575,6 +474,9 @@ class RepositoryForm(forms.ModelForm):
         data = self.cleaned_data['bug_tracker_base_url']
         return data.rstrip("/")
 
+    clean_users = validate_users
+    clean_review_groups = validate_review_groups
+
     def clean_tool(self):
         """
         Checks the SCMTool used for this repository for dependencies.
@@ -734,3 +636,19 @@ class RepositoryForm(forms.ModelForm):
                 raise forms.ValidationError(e)
             except Exception, e:
                 raise forms.ValidationError(e)
+
+    class Meta:
+        model = Repository
+        widgets = {
+            'path': forms.TextInput(attrs={'size': '60'}),
+            'mirror_path': forms.TextInput(attrs={'size': '60'}),
+            'raw_file_url': forms.TextInput(attrs={'size': '60'}),
+            'bug_tracker': forms.TextInput(attrs={'size': '60'}),
+            'username': forms.TextInput(attrs={'size': '30',
+                                               'autocomplete': 'off'}),
+            'password': forms.PasswordInput(attrs={'size': '30',
+                                                   'autocomplete': 'off'}),
+            'users': FilteredSelectMultiple(_('users with access'), False),
+            'review_groups': FilteredSelectMultiple(
+                _('review groups with access'), False),
+        }
