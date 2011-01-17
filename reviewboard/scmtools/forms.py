@@ -263,7 +263,8 @@ class RepositoryForm(forms.ModelForm):
                     "form or another. For CVS, this should be a pserver "
                     "path. For Perforce, this should be a port name. For "
                     "git, this should be the path to the .git repository "
-                    "on the local disk."))
+                    "on the local disk. For Plastic, this should be a "
+                    "repository spec in the form [repo]@[hostname]:[port]."))
 
     mirror_path = forms.CharField(
         label=_("Mirror path"),

@@ -87,6 +87,7 @@ setup(name=PACKAGE_NAME,
               'git = reviewboard.scmtools.git:GitTool',
               'hg = reviewboard.scmtools.hg:HgTool',
               'perforce = reviewboard.scmtools.perforce:PerforceTool',
+              'plastic = reviewboard.scmtools.plastic:PlasticTool',
               'svn = reviewboard.scmtools.svn:SVNTool',
           ],
           'reviewboard.auth_backends': [
