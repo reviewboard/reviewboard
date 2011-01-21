@@ -9,7 +9,7 @@ def validate_users(form, field='users'):
     required to be a part of that LocalSite. Otherwise, any User is allowed.
     """
     local_site = form.cleaned_data['local_site']
-    users = form.cleaned_data[field]
+    users = form.cleaned_data.get(field, [])
 
     if local_site:
         for user in users:
@@ -28,7 +28,7 @@ def validate_review_groups(form, field='review_groups'):
     each added Group. Each Group must have the same LocalSite that the form
     is using.
     """
-    groups = form.cleaned_data[field]
+    groups = form.cleaned_data.get(field, [])
     local_site = form.cleaned_data['local_site']
 
     for group in groups:
