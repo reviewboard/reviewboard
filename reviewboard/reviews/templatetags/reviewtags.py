@@ -224,7 +224,8 @@ def reply_list(context, review, comment, context_type, context_id):
     the JavaScript code for storing and categorizing the comments.
     """
     def generate_reply_html(reply, timestamp, text):
-        return render_to_string('reviews/review_reply.html', {
+        new_context = context
+        new_context.update({
             'context_id': context_id,
             'id': reply.id,
             'review': review,
@@ -233,6 +234,7 @@ def reply_list(context, review, comment, context_type, context_id):
             'reply_user': reply.user,
             'draft': not reply.public
         })
+        return render_to_string('reviews/review_reply.html', new_context)
 
     def process_body_replies(queryset, attrname, user):
         if user.is_anonymous():

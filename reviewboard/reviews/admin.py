@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
-from reviewboard.reviews.forms import DefaultReviewerForm
+from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
                                        Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot, \
@@ -17,7 +17,7 @@ class CommentAdmin(admin.ModelAdmin):
     ordering = ['-timestamp']
 
     def review_request_id(self, obj):
-        return obj.review.get().review_request.id
+        return obj.review.get().review_request.display_id
     review_request_id.short_description = _('Review request ID')
 
 
@@ -26,7 +26,7 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
     filter_horizontal = ('repository', 'groups', 'people',)
     fieldsets = (
         (_('General Information'), {
-            'fields': ('name', 'file_regex'),
+            'fields': ('name', 'file_regex', 'local_site'),
             'classes': ['wide'],
         }),
         (_('Reviewers'), {
@@ -43,6 +43,7 @@ class DefaultReviewerAdmin(admin.ModelAdmin):
 
 
 class GroupAdmin(admin.ModelAdmin):
+    form = GroupForm
     list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
                     'visible')
     filter_horizontal = ('users',)

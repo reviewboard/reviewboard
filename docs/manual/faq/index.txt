@@ -36,7 +36,7 @@ more information.
 
 Review Board was initially designed for :term:`pre-commit review` and large
 changes need to be made before post-commit reviews can be handled in the web
-UI. We plan to get to this after Review Board 1.0.
+UI. We plan to implement this in a future release.
 
 
 What are pre-commit and post-commit reviews?
@@ -188,6 +188,23 @@ The "It's All Text" extension has been known to have problems with
 Review Board. If you're encountering problems related to text areas or
 slowdown in the Edit Review page, try disabling this extension and seeing if
 it makes a difference.
+
+
+I'm using post-review (or a third party program) with Review Board on WSGI and can't log in.
+--------------------------------------------------------------------------------------------
+
+By default, mod_wsgi filters out the authentication requests that are used
+for logging in with our API. Any brand new installations created using
+Review Board 1.5.2 or higher should work, but if you're upgrading from an
+older install, you will need to add the following to your web server's
+configuration file::
+
+    WSGIPassAuthorization On
+
+This would usually go right above your ``WSGIScriptAlias`` line.
+
+Once you've added this, restart your web server and try again. If it still
+won't work, contact us on our mailing list.
 
 
 Developing Review Board

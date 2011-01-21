@@ -14,7 +14,6 @@
     var MEDIA_URL = "{{MEDIA_URL}}";
     var SITE_ROOT = "{{SITE_ROOT}}";
 
-    var gUserURL = "{% url user user %}";
     var gUserAuthenticated = {{user.is_authenticated|lower}};
 {% if not user.is_anonymous %}
     var gUserName = "{{user.username}}";
@@ -85,7 +84,7 @@
    </div>
    <div id="page-container">
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
-    <form method="get" action="{% url search %}">
+    {% if siteconfig.settings.search_enable %}<form method="get" action="{% url search %}">{% endif %}
      <div id="navbar-outer">
       <ul id="navbar">
 {% if user.is_authenticated %}
@@ -104,7 +103,7 @@
        {% endif %}
       </ul>
      </div>
-    </form>
+     {% if siteconfig.settings.search_enable %}</form>{% endif %}
     {% endif %}
 {% endblock %}
     <noscript>

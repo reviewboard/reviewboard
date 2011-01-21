@@ -61,13 +61,13 @@
 {% endfor %}
   }{% endspaceless %}
 
-{% if adminform.form.hostkeyerror or adminform.form.certerror %}
+{% if adminform.form.hostkeyerror or adminform.form.certerror or adminform.userkeyerror %}
 $(document).ready(function() {
   var inputs = $("fieldset, .submit-row").find("input, select");
 
   inputs.attr("disabled", true);
 
-  $(".host-confirmation input").click(function() {
+  $(".confirmation input").click(function() {
       inputs.attr("disabled", false);
   })
 });
@@ -81,7 +81,7 @@ $(document).ready(function() {
 {%  with adminform.form.certerror as certerror %}
 {%  with adminform.form.certerror.certificate as certificate %}
 {%   if hostkeyerror or certerror %}
-<div class="host-confirmation">
+<div class="confirmation">
 
 {%   if hostkeyerror %}
  {{hostkeyerror|paragraphs}}
@@ -128,5 +128,20 @@ $(document).ready(function() {
 {%   endif %}
 {%  endwith %}
 {%  endwith %}
+{%  endwith %}
+
+{%  with adminform.form.userkeyerror as userkeyerror %}
+{%   if userkeyerror %}
+<div class="confirmation">
+{{userkeyerror|paragraphs}}
+
+{% url settings-ssh as ssh_settings_url %}
+<p>{% blocktrans %}
+ Review Board doesn't have a public key to send to the server. You can
+ <a href="{{ssh_settings_url}}" target="ssh_settings">create one</a>, add it to the server,
+ and then try again.
+{% endblocktrans %}</p>
+</div>
+{%   endif %}
 {%  endwith %}
 {% endblock %}

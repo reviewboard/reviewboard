@@ -44,9 +44,9 @@ class LocalSite(models.Model):
     """
     name = models.SlugField(_('name'), max_length=32, blank=False, unique=True)
     users = models.ManyToManyField(User, blank=True,
-                                   related_name='localsite')
+                                   related_name='local_site')
     admins = models.ManyToManyField(User, blank=True,
-                                   related_name='localsite_admins')
+                                   related_name='local_site_admins')
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to this LocalSite.

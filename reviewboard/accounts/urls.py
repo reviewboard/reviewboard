@@ -3,7 +3,8 @@ from django.conf.urls.defaults import patterns, url
 
 
 urlpatterns = patterns("reviewboard.accounts.views",
-    url(r'^register/$', 'account_register', name="register"),
+    url(r'^register/$', 'account_register',
+        { 'next_url': 'dashboard' }, name="register"),
     url(r'^preferences/$', 'user_preferences', name="user-preferences"),
 )
 

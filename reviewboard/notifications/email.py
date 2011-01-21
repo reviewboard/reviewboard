@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -53,11 +54,15 @@ def connect_signals():
     reply_published.connect(reply_published_cb, sender=Review)
 
 
-def get_email_address_for_user(u):
-    if not u.get_full_name():
-        return u.email
+def build_email_address(fullname, email):
+    if not fullname:
+        return email
     else:
-        return u'"%s" <%s>' % (u.get_full_name(), u.email)
+        return u'"%s" <%s>' % (fullname, email)
+
+
+def get_email_address_for_user(u):
+    return build_email_address(u.get_full_name(), u.email)
 
 
 def get_email_addresses_for_group(g):
@@ -77,36 +82,50 @@ def get_email_addresses_for_group(g):
 
 
 class SpiffyEmailMessage(EmailMultiAlternatives):
-    def __init__(self, subject, text_body, html_body, from_email, to, cc,
-                 in_reply_to, headers={}):
-        EmailMultiAlternatives.__init__(self, subject, text_body,
-                                        from_email, to, headers=headers)
+    """An EmailMessage subclass with improved header and message ID support.
+
+    Django's pre-1.3 EmailMessage class doesn't natively support CC addresses.
+    While added in 1.3, we still need to have this support for older versions.
+
+    This also knows about several headers (standard and variations),
+    including Sender/X-Sender, In-Reply-To/References, and Reply-To.
+
+    The generated Message-ID header from the e-mail can be accessed
+    through the :py:attr:`message_id` attribute after the e-mail is sent.
+    """
+    def __init__(self, subject, text_body, html_body, from_email, sender,
+                 to, cc, in_reply_to, headers={}):
+        headers = headers.copy()
+
+        if sender:
+            headers['Sender'] = sender
+            headers['X-Sender'] = sender
+
+        if cc:
+            headers['Cc'] = ','.join(cc)
+
+        if in_reply_to:
+            headers['In-Reply-To'] = in_reply_to
+            headers['References'] = in_reply_to
+
+        headers['Reply-To'] = from_email
+
+        super(SpiffyEmailMessage, self).__init__(subject, text_body,
+                                                 from_email, to,
+                                                 headers=headers)
 
         self.cc = cc or []
-
-        self.in_reply_to = in_reply_to
         self.message_id = None
 
         self.attach_alternative(html_body, "text/html")
 
     def message(self):
         msg = super(SpiffyEmailMessage, self).message()
-
-        if self.cc:
-            msg['Cc'] = ','.join(self.cc)
-
-        if self.in_reply_to:
-            msg['In-Reply-To'] = self.in_reply_to
-            msg['References'] = self.in_reply_to
-
         self.message_id = msg['Message-ID']
-
         return msg
 
     def recipients(self):
-        """
-        Returns a list of all recipients of the e-mail.
-        """
+        """Returns a list of all recipients of the e-mail. """
         return self.to + self.bcc + self.cc
 
 
@@ -151,6 +170,9 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     context['domain'] = current_site.domain
     context['domain_method'] = domain_method
     context['review_request'] = review_request
+    if review_request.local_site:
+        context['local_site_name'] = review_request.local_site.name
+
     text_body = render_to_string(text_template_name, context)
     html_body = render_to_string(html_template_name, context)
 
@@ -170,9 +192,20 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         'X-ReviewRequest-URL': base_url + review_request.get_absolute_url(),
     }
 
+    sender = None
+
+    if settings.DEFAULT_FROM_EMAIL:
+        sender = build_email_address(user.get_full_name(),
+                                     settings.DEFAULT_FROM_EMAIL)
+
+        if sender == from_email:
+            # RFC 2822 states that we should only include Sender if the
+            # two are not equal.
+            sender = None
+
     message = SpiffyEmailMessage(subject.strip(), text_body, html_body,
-                                 from_email, list(to_field), list(cc_field),
-                                 in_reply_to, headers)
+                                 from_email, sender, list(to_field),
+                                 list(cc_field), in_reply_to, headers)
     try:
         message.send()
     except Exception, e:

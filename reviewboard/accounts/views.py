@@ -13,7 +13,7 @@ from reviewboard.accounts.forms import PreferencesForm, RegistrationForm
 from reviewboard.accounts.models import Profile
 
 
-def account_register(request):
+def account_register(request, next_url='dashboard'):
     """
     Handles redirection to the appropriate registration page, depending
     on the authentication type the user has configured.
@@ -24,9 +24,8 @@ def account_register(request):
     if (auth_backends[0].supports_registration and
         siteconfig.get("auth_enable_registration")):
 
-        # TODO: Figure out the right place to redirect when using a LocalSite.
         return register(request,
-                        next_page=reverse('dashboard'),
+                        next_page=reverse(next_url),
                         form_class=RegistrationForm)
 
     return HttpResponseRedirect(reverse("login"))
@@ -35,8 +34,12 @@ def account_register(request):
 @login_required
 def user_preferences(request, template_name='accounts/prefs.html'):
     # TODO: Figure out the right place to redirect when using a LocalSite.
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME,
-                                      reverse("dashboard"))
+    redirect_to = \
+        request.REQUEST.get(REDIRECT_FIELD_NAME,
+            request.REQUEST.get('redirect_to', None))
+
+    if not redirect_to:
+        redirect_to = reverse("dashboard")
 
     profile, profile_is_new = \
         Profile.objects.get_or_create(user=request.user)

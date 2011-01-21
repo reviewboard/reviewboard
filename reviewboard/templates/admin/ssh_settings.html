@@ -1,0 +1,62 @@
+{% extends "admin/settings.html" %}
+{% load djblets_utils i18n %}
+
+{% block content %}
+<p>
+{% blocktrans %}
+ The SSH key configured here will be used for communication with any
+ SSH-backend repositories.
+{% endblocktrans %}
+</p>
+{% if key %}
+<div class="module aligned">
+ <div class="form-row">
+  <label class="required">{% trans "Key type:" %}</label>
+  {{key.get_name}}
+ </div>
+ <div class="form-row">
+  <label class="required">{% trans "Bits:" %}</label>
+  {{key.get_bits}}
+ </div>
+ <div class="form-row">
+  <label class="required">{% trans "Fingerprint:" %}</label>
+  <code>{{fingerprint}}</code>
+ </div>
+ <div class="form-row">
+  <label class="required">{% trans "Public key:" %}</label>
+  <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{public_key}}</textarea>
+ </div>
+</div>
+{% else %}
+<h3>{% trans "Generate an SSH Key" %}</h3>
+<p>
+{% blocktrans %}
+ You can generate a brand new RSA key specific to this installation of
+ Review Board.
+{% endblocktrans %}
+</p>
+<p>
+{% blocktrans %}
+ Note that generating a key may take some time. Don't click more than once.
+{% endblocktrans %}
+</p>
+<form method="POST" action=".">
+ {{form.generate_key}}
+ <input type="submit" value="{% trans "Generate Key" %}" />
+</form>
+
+<h3>{% trans "Upload an SSH Key" %}</h3>
+<p>
+{% blocktrans %}
+ If you already have an SSH key (<tt>id_dsa</tt> or <tt>id_rsa</tt> file)
+ you want to use, you can upload it. Note that this key will be readable
+ by the web server, so provide one you feel safe using.
+{% endblocktrans %}
+</p>
+<form method="POST" action="." enctype="multipart/form-data">
+ {{form.keyfile.errors}}
+ {{form.keyfile}}<br />
+ <input type="submit" value="{% trans "Upload Key" %}" />
+</form>
+{% endif %}
+{% endblock %}

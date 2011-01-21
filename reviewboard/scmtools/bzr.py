@@ -19,6 +19,8 @@ urlparse.uses_netloc.append('bzr+ssh')
 urlparse.uses_netloc.append('bzr')
 sshutils.ssh_uri_schemes.append('bzr+ssh')
 
+sshutils.register_rbssh('BZR_SSH')
+
 
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 

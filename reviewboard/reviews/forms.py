@@ -9,13 +9,14 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.errors import OwnershipError
-from reviewboard.reviews.models import DefaultReviewer, ReviewRequest, \
+from reviewboard.reviews.models import DefaultReviewer, Group, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot
 from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+from reviewboard.site.validation import validate_review_groups, validate_users
 
 
 class DefaultReviewerForm(forms.ModelForm):
@@ -51,8 +52,38 @@ class DefaultReviewerForm(forms.ModelForm):
 
         return file_regex
 
+    def clean_people(self):
+        """Validates that the users' LocalSites match."""
+        return validate_users(self, 'people')
+
+    def clean_groups(self):
+        """Validates that the review groups' LocalSites match."""
+        return validate_review_groups(self, 'groups')
+
+    def clean_repository(self):
+        """Validates that the repositories' LocalSites match."""
+        local_site = self.cleaned_data['local_site']
+        repositories = self.cleaned_data['repository']
+
+        for repository in repositories:
+            if repository.local_site != local_site:
+                raise forms.ValidationError([
+                    _("The repository '%s' doesn't exist on the local site.")
+                    % repository.name,
+                ])
+
+        return repositories
+
+
     class Meta:
         model = DefaultReviewer
+
+
+class GroupForm(forms.ModelForm):
+    clean_users = validate_users
+
+    class Meta:
+        model = Group
 
 
 class NewReviewRequestForm(forms.Form):

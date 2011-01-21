@@ -1562,16 +1562,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
-        query = self.model.objects.filter(is_active=True)
-        if local_site_name:
-            query = query.filter(localsite__name=local_site_name)
+        local_site = _get_local_site(local_site_name)
+        if local_site:
+            query = local_site.users.filter(is_active=True)
+        else:
+            query = self.model.objects.filter(is_active=True)
 
         if search_q:
             q = Q(username__istartswith=search_q)
 
             if request.GET.get('fullname', None):
-                q = q | (Q(first_name__istartswith=query) |
-                         Q(last_name__istartswith=query))
+                q = q | (Q(first_name__istartswith=search_q) |
+                         Q(last_name__istartswith=search_q))
 
             query = query.filter(q)
 
@@ -2427,7 +2429,8 @@ class ReviewRequestDraftResource(WebAPIResource):
             },
         },
     )
-    def update(self, request, always_save=False, *args, **kwargs):
+    def update(self, request, always_save=False, local_site_name=None,
+               *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -2440,8 +2443,8 @@ class ReviewRequestDraftResource(WebAPIResource):
         then be deleted.
         """
         try:
-            review_request = \
-                review_request_resource.get_object(request, *args, **kwargs)
+            review_request =  review_request_resource.get_object(
+                request, local_site_name=local_site_name, *args, **kwargs)
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
 
@@ -2458,7 +2461,8 @@ class ReviewRequestDraftResource(WebAPIResource):
                 kwargs.get(field_name, None) is not None):
                 field_result, field_modified_objects, invalid = \
                     self._set_draft_field_data(draft, field_name,
-                                               kwargs[field_name])
+                                               kwargs[field_name],
+                                               local_site_name)
 
                 if invalid:
                     invalid_fields[field_name] = invalid
@@ -2474,6 +2478,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         if invalid_fields:
             return INVALID_FORM_DATA, {
                 'fields': invalid_fields,
+                self.item_result_key: draft,
             }
 
         if request.POST.get('public', False):
@@ -2518,7 +2523,7 @@ class ReviewRequestDraftResource(WebAPIResource):
         """Returns the current draft of a review request."""
         pass
 
-    def _set_draft_field_data(self, draft, field_name, data):
+    def _set_draft_field_data(self, draft, field_name, data, local_site_name):
         """Sets a field on a draft.
 
         This will update a draft's field based on the provided data.
@@ -2552,12 +2557,14 @@ class ReviewRequestDraftResource(WebAPIResource):
                     continue
 
                 try:
+                    local_site = _get_local_site(local_site_name)
                     if field_name == "target_groups":
                         obj = Group.objects.get((Q(name__iexact=value) |
                                                  Q(display_name__iexact=value)) &
-                                                Q(local_site=None))
+                                                Q(local_site=local_site))
                     elif field_name == "target_people":
-                        obj = self._find_user(username=value)
+                        obj = self._find_user(username=value,
+                                              local_site=local_site)
 
                     target.add(obj)
                 except:
@@ -2598,13 +2605,16 @@ class ReviewRequestDraftResource(WebAPIResource):
 
                 yield bug
 
-    def _find_user(self, username):
+    def _find_user(self, username, local_site):
         """Finds a User object matching ``username``.
 
         This will search all authentication backends, and may create the
         User object if the authentication backend knows that the user exists.
         """
         username = username.strip()
+
+        if local_site:
+            return local_site.users.get(username=username)
 
         try:
             return User.objects.get(username=username)

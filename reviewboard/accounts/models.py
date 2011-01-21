@@ -102,7 +102,8 @@ class Profile(models.Model):
             if q.count() == 0:
                 site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                     user=self.user,
-                    local_site=review_request.local_site)
+                    local_site=review_request.local_site,
+                    profile=self.user.get_profile())
 
                 if is_new:
                     site_profile.save()

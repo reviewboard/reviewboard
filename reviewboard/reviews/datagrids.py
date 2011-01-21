@@ -569,7 +569,7 @@ class SubmitterDataGrid(DataGrid):
                  title=_("All submitters"),
                  local_site=None):
         if local_site:
-            qs = queryset.filter(localsite=local_site)
+            qs = queryset.filter(local_site=local_site)
         else:
             qs = queryset
 

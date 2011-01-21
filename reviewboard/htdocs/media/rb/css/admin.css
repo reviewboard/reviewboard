@@ -1,5 +1,9 @@
 /* DASHBOARD */
 
+h3 {
+  padding-top: 1em;
+}
+
 .dashboard .module table th {
     width: 100%;
 }
@@ -127,48 +131,61 @@ div.breadcrumbs {
 /***************************************************************************
  * Change form
  ***************************************************************************/
-.host-confirmation {
+.confirmation {
   border: 1px solid #FFBD09;
   color: black;
   display: block;
   margin: 1em 0;
-  padding: 6px 12px;
+  padding: 0 1em;
   background: #FFFDC9;
   -moz-border-radius: 10px;
   -webkit-border-radius: 10px;
   border-radius: 10px;
 }
 
-.host-confirmation li {
+.confirmation p {
+  margin: 1em 0;
+}
+
+.confirmation a,
+.confirmation a:visited {
+  color: blue;
+}
+
+.confirmation li {
   font-size: 12px;
   line-height: 16px;
 }
 
-.host-confirmation .form-row {
+.confirmation .form-row {
   border: 0;
 }
 
-.host-confirmation label {
+.confirmation label {
   color: #222222 !important;
 }
 
-.host-confirmation .cert-info {
+.confirmation .cert-info {
   margin: 2em 0;
 }
 
-.host-confirmation .cert-info h3 {
+.confirmation .cert-info h3 {
   color: black;
   font-weight: bold;
   font-size: 12px;
   margin-bottom: 1em;
 }
 
-.host-confirmation .cert-info label {
+.confirmation .cert-info label {
   display: block;
   float: left;
   font-weight: bold !important;
   margin-left: 2em;
   width: 9em;
+}
+
+.public-key {
+  font-family: monospace;
 }
 
 
@@ -292,10 +309,6 @@ td, th {
 .module.news table td a {
   display: inline;
   padding: 0;
-}
-
-.module.news .entry {
-  padding-bottom: 0.8em;
 }
 
 .module.news .entry-title {
