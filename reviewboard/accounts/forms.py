@@ -35,10 +35,18 @@ class PreferencesForm(forms.Form):
         siteconfig = SiteConfiguration.objects.get_current()
         auth_backends = get_auth_backends()
 
-        self.fields['groups'].choices = [
-            (g.id, g.display_name)
-            for g in Group.objects.accessible(user=user)
-        ]
+
+        choices = []
+        for g in Group.objects.accessible(user=user).order_by('display_name'):
+            choices.append((g.id, g.display_name))
+
+        for site in user.local_site.all().order_by('name'):
+            for g in Group.objects.accessible(
+                user=user, local_site=site).order_by('display_name'):
+                display_name = '%s / %s' % (g.local_site.name, g.display_name)
+                choices.append((g.id, display_name))
+
+        self.fields['groups'].choices = choices
         self.fields['email'].required = auth_backends[0].supports_change_email
 
     def save(self, user):
