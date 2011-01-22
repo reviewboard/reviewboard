@@ -59,6 +59,7 @@ MIDDLEWARE_CLASSES = (
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
     'reviewboard.admin.middleware.X509AuthMiddleware',
+    'reviewboard.site.middleware.LocalSiteMiddleware',
 )
 
 TEMPLATE_CONTEXT_PROCESSORS = (
@@ -72,7 +73,9 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'djblets.util.context_processors.siteRoot',
     'djblets.util.context_processors.ajaxSerial',
     'djblets.util.context_processors.mediaSerial',
+    'reviewboard.accounts.context_processors.auth_backends',
     'reviewboard.admin.context_processors.version',
+    'reviewboard.site.context_processors.localsite',
 )
 
 SITE_ROOT_URLCONF = 'reviewboard.urls'
@@ -107,7 +110,6 @@ INSTALLED_APPS = (
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
     'reviewboard.extensions',
-    'reviewboard.iphone',
     'reviewboard.notifications',
     'reviewboard.reports',
     'reviewboard.reviews',

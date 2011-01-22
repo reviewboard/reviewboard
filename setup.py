@@ -78,6 +78,7 @@ setup(name=PACKAGE_NAME,
       entry_points = {
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
+              'rbssh = reviewboard.cmdline.rbssh:main',
           ],
           'reviewboard.scmtools': [
               'bzr = reviewboard.scmtools.bzr:BZRTool',
@@ -86,6 +87,7 @@ setup(name=PACKAGE_NAME,
               'git = reviewboard.scmtools.git:GitTool',
               'hg = reviewboard.scmtools.hg:HgTool',
               'perforce = reviewboard.scmtools.perforce:PerforceTool',
+              'plastic = reviewboard.scmtools.plastic:PlasticTool',
               'svn = reviewboard.scmtools.svn:SVNTool',
           ],
           'reviewboard.auth_backends': [
@@ -97,9 +99,9 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.2.3',
+          'Django>=1.2.4',
           'django_evolution>=0.6.2',
-          'Djblets>=0.6.5',
+          'Djblets>=0.6.7',
           'Pygments>=1.3.1',
           'flup',
           'paramiko',

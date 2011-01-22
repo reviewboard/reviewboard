@@ -9,6 +9,7 @@
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
 {% block jsconsts %}
+{{block.super}}
 {% include "reviews/review_flags.js" %}
   var gRevision = '{{diffset.revision}}';
 {% if interdiffset %}
@@ -24,7 +25,7 @@
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css?{{MEDIA_SERIAL}}" />
 {% if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
 <style type="text/css">
-  .ewhl { background: #ee3434; }
+  #diffs.ewhl table.sidebyside .ew { background: #ee3434; }
 </style>
 {% endif %}
 {% endblock %}

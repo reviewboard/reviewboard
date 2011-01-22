@@ -22,8 +22,11 @@ def webapi_check_login_required(view_func):
     """
     def _check(*args, **kwargs):
         siteconfig = SiteConfiguration.objects.get_current()
+        request = _find_httprequest(args)
 
-        if siteconfig.get("auth_require_sitewide_login"):
+        if (siteconfig.get("auth_require_sitewide_login") or
+            (request.user.is_anonymous() and
+             'HTTP_AUTHORIZATION' in request.META)):
             return webapi_login_required(view_func)(*args, **kwargs)
         else:
             return view_func(*args, **kwargs)
@@ -98,7 +101,7 @@ def webapi_deprecated_in_1_5(view_func):
         encoders=_deprecated_api_encoders)(view_func)
 
 
-@webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED)
+@webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
 @simple_decorator
 def webapi_check_local_site(view_func):
     """Checks whether a user has access to a local site given in the URL.
@@ -112,8 +115,12 @@ def webapi_check_local_site(view_func):
         if local_site_name:
             try:
                 local_site = LocalSite.objects.get(name=local_site_name)
+
                 if not local_site.is_accessible_by(request.user):
-                    return WebAPIResponseError(request, PERMISSION_DENIED)
+                    if request.user.is_authenticated():
+                        return WebAPIResponseError(request, PERMISSION_DENIED)
+                    else:
+                        return WebAPIResponseError(request, NOT_LOGGED_IN)
             except LocalSite.DoesNotExist:
                 return WebAPIResponseError(request, DOES_NOT_EXIST)
 

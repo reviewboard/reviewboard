@@ -3,7 +3,7 @@
 {% load i18n %}
 {% load reviewtags %}
 
-{% ifneatnumber review_request.id %}
+{% ifneatnumber review_request.display_id %}
 {%  box "yay" %}
  <img src="{{MEDIA_URL}}rb/images/{% if milestone %}trophy{% else %}fish-trophy{% endif %}.png?{{MEDIA_SERIAL}}" width="32" height="48" border="0" alt="" />
  <h1>{% blocktrans with review_request.submitter|user_displayname as submitter and review_request.id as id %}{{submitter}} got review request #{{id}}!{% endblocktrans %}</h1>

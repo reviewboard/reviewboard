@@ -1,6 +1,7 @@
 import logging
 import os
 
+from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
@@ -9,6 +10,7 @@ from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.models import DefaultReviewer, \
                                        Group, \
                                        ReviewRequest, \
@@ -688,7 +690,7 @@ class ConcurrencyTests(TestCase):
 class DefaultReviewerTests(TestCase):
     fixtures = ['test_scmtools.json']
 
-    def testForRepository(self):
+    def test_for_repository(self):
         """Testing DefaultReviewer.objects.for_repository"""
         tool = Tool.objects.get(name='CVS')
 
@@ -713,6 +715,130 @@ class DefaultReviewerTests(TestCase):
         default_reviewers = DefaultReviewer.objects.for_repository(repo2)
         self.assert_(len(default_reviewers) == 1)
         self.assert_(default_reviewer2 in default_reviewers)
+
+    def test_form_with_localsite(self):
+        """Testing DefaultReviewerForm with a LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        tool = Tool.objects.get(name='CVS')
+        repo = Repository.objects.create(name='Test', path='path', tool=tool,
+                                         local_site=test_site)
+        user = User.objects.create(username='testuser', password='')
+        test_site.users.add(user)
+
+        group = Group.objects.create(name='test', display_name='Test',
+                                     local_site=test_site)
+
+        form = DefaultReviewerForm({
+            'name': 'Test',
+            'file_regex': '.*',
+            'local_site': test_site.pk,
+            'repository': [repo.pk],
+            'people': [user.pk],
+            'groups': [group.pk],
+        })
+        self.assertTrue(form.is_valid())
+        default_reviewer = form.save()
+
+        self.assertEquals(default_reviewer.local_site, test_site)
+        self.assertEquals(default_reviewer.repository.get(), repo)
+        self.assertEquals(default_reviewer.people.get(), user)
+        self.assertEquals(default_reviewer.groups.get(), group)
+
+    def test_form_with_localsite_and_bad_user(self):
+        """Testing DefaultReviewerForm with a User not on the same LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+        user = User.objects.create(username='testuser', password='')
+
+        form = DefaultReviewerForm({
+            'name': 'Test',
+            'file_regex': '.*',
+            'local_site': test_site.pk,
+            'people': [user.pk],
+        })
+        self.assertFalse(form.is_valid())
+
+    def test_form_with_localsite_and_bad_group(self):
+        """Testing DefaultReviewerForm with a Group not on the same LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+        group = Group.objects.create(name='test', display_name='Test')
+
+        form = DefaultReviewerForm({
+            'name': 'Test',
+            'file_regex': '.*',
+            'local_site': test_site.pk,
+            'groups': [group.pk],
+        })
+        self.assertFalse(form.is_valid())
+
+        group.local_site = test_site
+        group.save()
+
+        form = DefaultReviewerForm({
+            'name': 'Test',
+            'file_regex': '.*',
+            'groups': [group.pk],
+        })
+        self.assertFalse(form.is_valid())
+
+    def test_form_with_localsite_and_bad_repository(self):
+        """Testing DefaultReviewerForm with a Repository not on the same LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+        tool = Tool.objects.get(name='CVS')
+        repo = Repository.objects.create(name='Test', path='path', tool=tool)
+
+        form = DefaultReviewerForm({
+            'name': 'Test',
+            'file_regex': '.*',
+            'local_site': test_site.pk,
+            'repository': [repo.pk],
+        })
+        self.assertFalse(form.is_valid())
+
+        repo.local_site = test_site
+        repo.save()
+
+        form = DefaultReviewerForm({
+            'name': 'Test',
+            'file_regex': '.*',
+            'repository': [repo.pk],
+        })
+        self.assertFalse(form.is_valid())
+
+
+class GroupTests(TestCase):
+    def test_form_with_localsite(self):
+        """Tests GroupForm with a LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        user = User.objects.create(username='testuser', password='')
+        test_site.users.add(user)
+
+        form = GroupForm({
+            'name': 'test',
+            'display_name': 'Test',
+            'local_site': test_site.pk,
+            'users': [user.pk],
+        })
+        self.assertTrue(form.is_valid())
+        group = form.save()
+
+        self.assertEquals(group.local_site, test_site)
+        self.assertEquals(group.users.get(), user)
+
+    def test_form_with_localsite_and_bad_user(self):
+        """Tests GroupForm with a User not on the same LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        user = User.objects.create(username='testuser', password='')
+
+        form = GroupForm({
+            'name': 'test',
+            'display_name': 'Test',
+            'local_site': test_site.pk,
+            'users': [user.pk],
+        })
+        self.assertFalse(form.is_valid())
 
 
 class IfNeatNumberTagTests(TestCase):

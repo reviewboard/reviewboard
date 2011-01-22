@@ -404,8 +404,9 @@ $.extend(RB.Diff.prototype, {
 });
 
 
-RB.ReviewRequest = function(id, path) {
+RB.ReviewRequest = function(id, prefix, path) {
     this.id = id;
+    this.prefix = prefix;
     this.path = path;
     this.reviews = {};
     this.draft_review = null;
@@ -625,6 +626,7 @@ $.extend(RB.ReviewRequest.prototype, {
     _apiCall: function(options) {
         var self = this;
 
+        options.prefix = this.prefix;
         options.path = "/review-requests/" + this.id + options.path;
 
         if (!options.success) {
@@ -1506,6 +1508,8 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
  *    buttons  - An optional list of buttons to disable/enable.
  *    form     - A form to upload, if any.
  *    type     - The request type (defaults to "POST").
+ *    prefix   - The prefix to put on the API path (after SITE_ROOT, before
+ *               "api")
  *    path     - The relative path to the Review Board API tree.
  *    data     - Data to send with the request.
  *    success  - An optional success callback. The default one will reload
@@ -1518,7 +1522,8 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
  * @param {object} options  The options, listed above.
  */
 function rbApiCall(options) {
-    var url = options.url || (SITE_ROOT + "api" + options.path);
+    var prefix = options.prefix || "";
+    var url = options.url || (SITE_ROOT + prefix + "api" + options.path);
 
     function doCall() {
         if (options.buttons) {

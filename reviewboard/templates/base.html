@@ -17,7 +17,6 @@
     var MEDIA_URL = "{{MEDIA_URL}}";
     var SITE_ROOT = "{{SITE_ROOT}}";
 
-    var gUserURL = "{% url user user %}";
     var gUserAuthenticated = {{user.is_authenticated|lower}};
 {% if not user.is_anonymous %}
     var gUserName = "{{user.username}}";
@@ -58,23 +57,23 @@
 {% block headerbar %}
    <div id="headerbar">
     <ul id="accountnav">
-    {% if user.is_authenticated %}
-     {% blocktrans with user|realname|escape as username %}<li>Welcome, <b>{{username}}</b></li>{% endblocktrans %}
+{% if user.is_authenticated %}
+{%  blocktrans with user|realname|escape as username %}
+     <li>Welcome, <b>{{username}}</b></li>
+{% endblocktrans %}
      <li>- <a href="{% url user-preferences %}">{% trans "My account" %}</a></li>
-{% if user.is_staff %}
+{%  if user.is_staff %}
      <li>- <a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Admin" %}</a></li>
-{% endif %}
+{%  endif %}
      <li>- <a href="{% url logout %}">{% trans "Log out" %}</a></li>
 {% else %}
      <li><a href="{% url login %}?next_page={{request.path}}">{% trans "Log in" %}</a></li>
 {#  XXX Using default sucks, but siteconfig defaults don't #}
 {#      work from templates.                               #}
-{%  ifequal siteconfig.settings.auth_backend "builtin" %}
-{%   if siteconfig.settings.auth_enable_registration|default_if_none:1 %}
+{%  if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
      <li>- <a href="{% url register %}">{% trans "Register" %}</a></li>
-{%   endif %}
-{%  endifequal %}
-{% endif %}{# !is_staff #}
+{%  endif %}
+{% endif %}{# !is_authenticated #}
      <li>- <a href="http://www.reviewboard.org/docs/manual/dev/">{% trans "Documentation" %}</a></li>
      <li>- <a href="http://www.reviewboard.org/bugs/">{% trans "Bugs" %}</a></li>
      <li>- <a href="http://www.reviewboard.org/bugs/new/">{% trans "Report bug" %}</a></li>
@@ -91,7 +90,7 @@
    <div id="page-container">
    {% template_hook_point "base-before-navbar" %}
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
-    <form method="get" action="{% url search %}">
+    {% if siteconfig.settings.search_enable %}<form method="get" action="{% url search %}">{% endif %}
      <div id="navbar-outer">
       <ul id="navbar">
 {% if user.is_authenticated %}
@@ -111,7 +110,7 @@
        {% endif %}
       </ul>
      </div>
-    </form>
+     {% if siteconfig.settings.search_enable %}</form>{% endif %}
     {% endif %}
 {% endblock %}
     <noscript>

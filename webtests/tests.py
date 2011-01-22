@@ -665,6 +665,21 @@ class ReviewTests(SeleniumUnitTest):
         self.assertTrue(review.ship_it)
         self.assertTrue(review.public)
 
+    def test_one_click_ship_it(self):
+        """Testing one-click Ship It"""
+        r = self._get_review_request()
+
+        self.selenium.open(r.get_absolute_url())
+        self.selenium.wait_for_page_to_load("6000")
+
+        self.assertFalse(self.selenium.is_visible('review-banner'))
+        self.selenium.click('shipit-link')
+        self.assertTrue(self.selenium.is_confirmation_present())
+        self.selenium.wait_for_page_to_load("6000")
+
+        review = r.reviews.latest()
+        self.assertTrue(review.ship_it)
+
     def test_discard_review_from_form(self):
         """Testing modifying and then deleting a new review from the form"""
         body_top_text = 'This is the body top text'
@@ -921,7 +936,7 @@ class ReviewReplyTests(SeleniumUnitTest):
         reviews = Review.objects.filter(public=True, **kwargs)
         self.assertTrue(len(reviews) > 0)
 
-        review = revews[0]
+        review = reviews[0]
         review.body_top = 'Review body top'
         review.body_bottom = 'Review body bottom'
         review.replies = []

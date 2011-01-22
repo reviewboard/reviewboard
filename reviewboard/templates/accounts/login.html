@@ -6,14 +6,14 @@
 {% block title %}{% trans "Log In" %}{% endblock %}
 
 {% block content %}
-{% ifnotequal siteconfig.settings.auth_backend "builtin" %}
+{%  if not auth_backends.0.supports_registration %}
 {%  box "important" %}
 <h1>{% trans "Log in with your standard username and password" %}</h1>
  <p>
  {% blocktrans %}There's no need to register a new account. Your standard username and password should work fine.{% endblocktrans %}
  </p>
 {%  endbox %}
-{% endifnotequal %}
+{% endif%}
 
 {% box "loginform" %}
 <form method="post" action=".">
@@ -29,24 +29,22 @@
   <tr>
    <td class="label"><label for="id_username">{% trans "Username" %}</label></td>
    <td class="field"><input type="text" name="username" id="id_username" tabindex="1" /></td>
-{% ifequal siteconfig.settings.auth_backend "builtin" %}
+{% if auth_backends.0.supports_registration and siteconfig.settings.auth_enable_registration|default_if_none:1 %}
    <td class="hint">
-{%   if siteconfig.settings.auth_enable_registration|default_if_none:1 %}
-      {% trans "Don't have an account?" %}
-      <a href="{% url register %}">{% trans "Create one now" %}</a>
-{%   endif %}
+    {% trans "Don't have an account?" %}
+    <a href="{% url register %}">{% trans "Create one now" %}</a>
    </td>
-{% endifequal %}
+{% endif %}
   </tr>
   <tr>
    <td class="label"><label for="id_password">{% trans "Password" %}</label></td>
    <td class="field"><input type="password" name="password" id="id_password" tabindex="2" /></td>
-{% ifequal siteconfig.settings.auth_backend "builtin" %}
+{% if auth_backends.0.supports_registration %}
    <td class="hint">
     {% trans "Forgot your password?" %}
     <a href="{% url recover %}">{% trans "Recover it" %}</a>
    </td>
-{% endifequal %}
+{% endif %}
   </tr>
   <tr>
    <td>&nbsp;</td>

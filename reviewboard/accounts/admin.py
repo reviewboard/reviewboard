@@ -5,7 +5,8 @@ from django.contrib.auth.forms import UserChangeForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
-from reviewboard.accounts.models import ReviewRequestVisit, Profile
+from reviewboard.accounts.models import ReviewRequestVisit, Profile, \
+                                        LocalSiteProfile
 
 
 USERNAME_REGEX = r'^[-\w.]+$'
@@ -55,9 +56,15 @@ class ProfileAdmin(admin.ModelAdmin):
     raw_id_fields = ('user', 'starred_review_requests', 'starred_groups')
 
 
+class LocalSiteProfileAdmin(admin.ModelAdmin):
+    list_display = ('__unicode__',)
+    raw_id_fields = ('user', 'profile', 'local_site')
+
+
 # Get rid of the old User admin model, and replace it with our own.
 admin.site.unregister(User)
 admin.site.register(User, RBUserAdmin)
 
 admin.site.register(ReviewRequestVisit, ReviewRequestVisitAdmin)
 admin.site.register(Profile, ProfileAdmin)
+admin.site.register(LocalSiteProfile, LocalSiteProfileAdmin)

@@ -32,7 +32,7 @@
 
 import os.path
 
-from django.conf import settings
+from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from djblets.log import siteconfig as log_siteconfig
 from djblets.siteconfig.django_settings import apply_django_settings, \
@@ -40,25 +40,15 @@ from djblets.siteconfig.django_settings import apply_django_settings, \
                                                get_django_settings_map
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.backends import get_registered_auth_backends
 from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_enable_syntax_highlighting
-
-
-# A mapping of our supported authentication backend names to backend class
-# paths.
-auth_backend_map = {
-    'builtin': 'django.contrib.auth.backends.ModelBackend',
-    'nis':     'reviewboard.accounts.backends.NISBackend',
-    'ldap':    'reviewboard.accounts.backends.LDAPBackend',
-    'x509':    'reviewboard.accounts.backends.X509Backend',
-    'ad':      'reviewboard.accounts.backends.ActiveDirectoryBackend',
-}
 
 
 # A mapping of our supported storage backend names to backend class paths.
 storage_backend_map = {
     'builtin': 'django.core.files.storage.FileSystemStorage',
-    's3':      'backends.s3.S3Storage',
+    's3':      'storages.backends.s3.S3Storage',
 }
 
 
@@ -187,6 +177,18 @@ def load_site_config():
     if not siteconfig.get_defaults():
         siteconfig.add_defaults(defaults)
 
+    # The default value for DEFAULT_EMAIL_FROM (webmaster@localhost)
+    # is less than good, so use a better one if it's set to that or if
+    # we haven't yet set this value in siteconfig.
+    mail_default_from = \
+        siteconfig.settings.get('mail_default_from',
+                                global_settings.DEFAULT_FROM_EMAIL)
+
+    if (not mail_default_from or
+        mail_default_from == global_settings.DEFAULT_FROM_EMAIL):
+        domain = siteconfig.site.domain.split(':')[0]
+        siteconfig.set('mail_default_from', 'noreply@' + domain)
+
 
     # Populate the settings object with anything relevant from the siteconfig.
     apply_django_settings(siteconfig, settings_map)
@@ -215,10 +217,13 @@ def load_site_config():
 
 
     # Set the auth backends
-    auth_backend = siteconfig.settings.get("auth_backend", "builtin")
-    builtin_backend = auth_backend_map['builtin']
+    auth_backend_map = dict(get_registered_auth_backends())
+    auth_backend_id = siteconfig.settings.get("auth_backend", "builtin")
+    builtin_backend_obj = auth_backend_map['builtin']
+    builtin_backend = "%s.%s" % (builtin_backend_obj.__module__,
+                                 builtin_backend_obj.__name__)
 
-    if auth_backend == "custom":
+    if auth_backend_id == "custom":
         custom_backends = siteconfig.settings.get("auth_custom_backends")
 
         if isinstance(custom_backends, basestring):
@@ -230,9 +235,12 @@ def load_site_config():
 
         if builtin_backend not in custom_backends:
             settings.AUTHENTICATION_BACKENDS += (builtin_backend,)
-    elif auth_backend != "builtin" and auth_backend in auth_backend_map:
+    elif auth_backend_id != "builtin" and auth_backend_id in auth_backend_map:
+        backend = auth_backend_map[auth_backend_id]
+
         settings.AUTHENTICATION_BACKENDS = \
-            (auth_backend_map[auth_backend], builtin_backend)
+            ("%s.%s" % (backend.__module__, backend.__name__),
+             builtin_backend)
     else:
         settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
 

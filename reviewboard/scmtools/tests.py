@@ -15,8 +15,10 @@ from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
+from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.site.models import LocalSite
 
 
 class CoreTests(DjangoTestCase):
@@ -1011,3 +1013,55 @@ class PolicyTests(DjangoTestCase):
         self.assertTrue(self.repo in Repository.objects.accessible(self.user))
         self.assertFalse(
             self.repo in Repository.objects.accessible(self.anonymous))
+
+    def test_repository_form_with_local_site_and_bad_group(self):
+        """Testing adding a Group to a RepositoryForm with the wrong LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+        tool = Tool.objects.get(name='Subversion')
+        group = Group.objects.create(name='test-group')
+
+        svn_repo_path = 'file://' + os.path.join(os.path.dirname(__file__),
+                                                 'testdata/svn_repo')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'path': svn_repo_path,
+            'hosting_type': 'custom',
+            'bug_tracker_type': 'custom',
+            'review_groups': [group.pk],
+            'local_site': test_site.pk,
+            'tool': tool.pk,
+        })
+        self.assertFalse(form.is_valid())
+
+        group.local_site = test_site
+        group.save()
+
+        form = RepositoryForm({
+            'name': 'test',
+            'path': svn_repo_path,
+            'hosting_type': 'custom',
+            'bug_tracker_type': 'custom',
+            'review_groups': [group.pk],
+            'tool': tool.pk,
+        })
+        self.assertFalse(form.is_valid())
+
+    def test_repository_form_with_local_site_and_bad_user(self):
+        """Testing adding a User to a RepositoryForm with the wrong LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+        tool = Tool.objects.get(name='Subversion')
+
+        svn_repo_path = 'file://' + os.path.join(os.path.dirname(__file__),
+                                                 'testdata/svn_repo')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'path': svn_repo_path,
+            'hosting_type': 'custom',
+            'bug_tracker_type': 'custom',
+            'users': [self.user.pk],
+            'local_site': test_site.pk,
+            'tool': tool.pk,
+        })
+        self.assertFalse(form.is_valid())

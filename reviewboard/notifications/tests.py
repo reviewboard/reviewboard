@@ -4,7 +4,9 @@ from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import initialize
-from reviewboard.notifications.email import get_email_address_for_user, \
+from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.notifications.email import build_email_address, \
+                                            get_email_address_for_user, \
                                             get_email_addresses_for_group
 from reviewboard.reviews.models import Group, Review, ReviewRequest
 
@@ -33,21 +35,33 @@ class EmailTests(TestCase, EmailTestHelper):
 
     def setUp(self):
         initialize()
+
+        mail.outbox = []
+        self.sender = 'noreply@example.com'
+
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
+        siteconfig.set("mail_default_from", self.sender)
         siteconfig.save()
-        mail.outbox = []
+        load_site_config()
 
     def testNewReviewRequestEmail(self):
         """Testing sending an e-mail when creating a new review request"""
         review_request = ReviewRequest.objects.get(
             summary="Made e-mail improvements")
         review_request.publish(review_request.submitter)
+        from_email = get_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Review Request: Made e-mail improvements")
         self.assertValidRecipients(["grumpy", "doc"], [])
+
+        message = mail.outbox[0].message()
+        print review_request.submitter
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
 
     def testReviewEmail(self):
         """Testing sending an e-mail when replying to a review request"""
@@ -64,11 +78,17 @@ class EmailTests(TestCase, EmailTestHelper):
         self.assertEqual(review.body_top, "Test")
         review.publish()
 
+        from_email = get_email_address_for_user(review.user)
+
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Re: Review Request: Add permission checking " +
                          "for JSON API")
         self.assertValidRecipients(["admin", "doc", "dopey", "grumpy"], [])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'], self._get_sender(review.user))
 
     def testReviewReplyEmail(self):
         """Testing sending an e-mail when replying to a review"""
@@ -88,11 +108,17 @@ class EmailTests(TestCase, EmailTestHelper):
                                    user__username="dopey")
         reply.publish()
 
+        from_email = get_email_address_for_user(reply.user)
+
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Re: Review Request: Add permission checking " +
                          "for JSON API")
         self.assertValidRecipients(["admin", "doc", "dopey", "admin"], [])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'], self._get_sender(reply.user))
 
     def testUpdateReviewRequestEmail(self):
         """Testing sending an e-mail when updating a review request"""
@@ -101,9 +127,17 @@ class EmailTests(TestCase, EmailTestHelper):
         review_request.email_message_id = "junk"
         review_request.publish(review_request.submitter)
 
+        from_email = get_email_address_for_user(review_request.submitter)
+
         self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Re: Review Request: Update for cleaned_data changes")
         self.assertValidRecipients(["dopey", "doc"], ["devgroup"])
 
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
 
+    def _get_sender(self, user):
+        return build_email_address(user.get_full_name(), self.sender)

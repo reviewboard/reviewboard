@@ -6,6 +6,7 @@
 {% block title %}{% trans "Screenshot" %}{%if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
 
 {% block jsconsts %}
+{{block.super}}
 {%  include "reviews/review_flags.js" %}
   var gScreenshotId = '{{screenshot.id}}';
 {% endblock %}

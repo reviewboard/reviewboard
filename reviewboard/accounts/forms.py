@@ -28,16 +28,46 @@ class PreferencesForm(forms.Form):
     password2 = forms.CharField(required=False, widget=widgets.PasswordInput())
 
     def __init__(self, user, *args, **kwargs):
-        forms.Form.__init__(self, *args, **kwargs)
+        from reviewboard.accounts.backends import get_auth_backends
+
+        super(forms.Form, self).__init__(*args, **kwargs)
 
         siteconfig = SiteConfiguration.objects.get_current()
-        auth_backend = siteconfig.get("auth_backend")
+        auth_backends = get_auth_backends()
 
         self.fields['groups'].choices = [
             (g.id, g.display_name)
             for g in Group.objects.accessible(user=user)
         ]
-        self.fields['email'].required = (auth_backend == "builtin")
+        self.fields['email'].required = auth_backends[0].supports_change_email
+
+    def save(self, user):
+        from reviewboard.accounts.backends import get_auth_backends
+
+        auth_backends = get_auth_backends()
+        primary_backend = auth_backends[0]
+
+        password = self.cleaned_data['password1']
+
+        if primary_backend.supports_change_password and password:
+            primary_backend.update_password(user, password)
+
+        if primary_backend.supports_change_name:
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            primary_backend.update_name(user)
+
+        if primary_backend.supports_change_email:
+            user.email = self.cleaned_data['email']
+            primary_backend.update_email(user)
+
+        user.review_groups = self.cleaned_data['groups']
+        user.save()
+
+        profile = user.get_profile()
+        profile.first_time_setup_done = True
+        profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
+        profile.save()
 
     def clean_password2(self):
         p1 = self.cleaned_data['password1']
@@ -174,7 +204,7 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
         title = _('Active Directory Authentication Settings')
 
 
-class BuiltinAuthSettingsForm(SiteSettingsForm):
+class StandardAuthSettingsForm(SiteSettingsForm):
     auth_enable_registration = forms.BooleanField(
         label=_("Enable registration"),
         help_text=_("Allow users to register new accounts."),
@@ -202,6 +232,24 @@ class BuiltinAuthSettingsForm(SiteSettingsForm):
         label=_('reCAPTCHA Private Key'),
         required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
+
+    def clean_recaptcha_public_key(self):
+        """Validates that the reCAPTCHA public key is specified if needed."""
+        key = self.cleaned_data['recaptcha_public_key'].strip()
+
+        if self.cleaned_data['auth_registration_show_captcha'] and not key:
+            raise forms.ValidationError(_('This field is required.'))
+
+        return key
+
+    def clean_recaptcha_private_key(self):
+        """Validates that the reCAPTCHA private key is specified if needed."""
+        key = self.cleaned_data['recaptcha_private_key'].strip()
+
+        if self.cleaned_data['auth_registration_show_captcha'] and not key:
+            raise forms.ValidationError(_('This field is required.'))
+
+        return key
 
     class Meta:
         title = _('Basic Authentication Settings')

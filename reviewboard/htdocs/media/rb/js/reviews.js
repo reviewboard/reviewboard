@@ -6,6 +6,7 @@ var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
 var gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
+                                          gReviewRequestSitePrefix,
                                           gReviewRequestPath);
 
 
@@ -144,7 +145,7 @@ function setDraftField(field, value) {
         buttons: gDraftBannerButtons,
         success: function(rsp) {
             /* Checking if invalid user or group was entered. */
-            if (rsp["invalid_" + field] && rsp["invalid_" + field].length) {
+            if (rsp.stat == "fail" && rsp.fields) {
 
                 $('#review-request-warning')
                     .delay(6000)
@@ -153,19 +154,19 @@ function setDraftField(field, value) {
                 });
 
                 /* Wrap each term in quotes or a leading 'and'. */
-                $.each(rsp["invalid_" + field], function(key, value) {
-                    var size = rsp["invalid_" + field].length;
+                $.each(rsp.fields[field], function(key, value) {
+                    var size = rsp.fields[field].length;
 
                     if (key == size - 1 && size > 1) {
-                      rsp["invalid_" + field][key] = "and '" + value + "'";
+                      rsp.fields[field][key] = "and '" + value + "'";
                     } else {
-                      rsp["invalid_" + field][key] = "'" + value + "'";
+                      rsp.fields[field][key] = "'" + value + "'";
                     }
                 });
 
-                var message = rsp["invalid_" + field].join(", ");
+                var message = rsp.fields[field].join(", ");
 
-                if (rsp["invalid_" + field].length == 1) {
+                if (rsp.fields[field].length == 1) {
                     if (field == "target_groups") {
                         message = "Group " + message + " does not exist.";
                     } else {
@@ -254,7 +255,7 @@ $.fn.reviewsAutoComplete = function(options) {
 
                     return parsed;
                 },
-                url: SITE_ROOT + "api/json/" + options.fieldName + "/",
+                url: SITE_ROOT + gReviewRequestSitePrefix + "api/" + options.fieldName + "/",
                 extraParams: options.extraParams
             })
             .bind("autocompleteshow", function() {
@@ -1595,8 +1596,8 @@ $(document).ready(function() {
     });
 
     $("#shipit-link").click(function() {
-        if (confirm("Are you sure?")) {
-            pendingReview.shipit = 1;
+        if (confirm("Are you sure you want to post this review?")) {
+            pendingReview.ship_it = true;
             pendingReview.body_top = "Ship It!";
             pendingReview.publish({
                 buttons: null,

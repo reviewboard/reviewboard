@@ -125,8 +125,8 @@ class SCMTool(object):
         """
         Returns a 2-tuple of the username and hostname, given the path.
 
-        If a username is implicitly passed via the path (user@host), and no
-        explicit username was defined, we use the implied username.
+        If a username is implicitly passed via the path (user@host), it
+        takes precedence over a passed username.
         """
         url = urlparse.urlparse(path)
 
@@ -136,7 +136,7 @@ class SCMTool(object):
             hostname = url[1]
             netloc_username = None
 
-        if not username and not netloc_username:
+        if netloc_username:
             return netloc_username, hostname
         else:
             return username, hostname

@@ -54,38 +54,44 @@ atom_feeds = {
     'groups': AtomGroupReviewsFeed,
 }
 
+localsite_urlpatterns = patterns('',
+    url(r'^$', 'django.views.generic.simple.redirect_to',
+        {'url': 'dashboard/'},
+        name="root"),
+
+    (r'^api/', include('reviewboard.webapi.urls')),
+    (r'^r/', include('reviewboard.reviews.urls')),
+
+    # Dashboard
+    url(r'^dashboard/$',
+        'reviewboard.reviews.views.dashboard', name="dashboard"),
+
+    # Users
+    url(r'^users/$',
+        'reviewboard.reviews.views.submitter_list', name="all-users"),
+    url(r'^users/(?P<username>[A-Za-z0-9@_\-\.]+)/$',
+        'reviewboard.reviews.views.submitter', name="user"),
+
+    # Groups
+    url(r'^groups/$',
+        'reviewboard.reviews.views.group_list', name="all-groups"),
+    url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/$',
+        'reviewboard.reviews.views.group', name="group"),
+    url(r'^groups/(?P<name>[A-Za-z0-9_-]+)/members/$',
+        'reviewboard.reviews.views.group_members', name="group_members"),
+)
+
 
 # Main includes
 urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
-    (r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?api/',
-     include('reviewboard.webapi.urls')),
-    (r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?r/',
-     include('reviewboard.reviews.urls')),
     #(r'^reports/', include('reviewboard.reports.urls')),
+
+    (r'^s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/',
+     include(localsite_urlpatterns)),
 )
 
-
-# reviewboard.reviews.views
-urlpatterns += patterns('reviewboard.reviews.views',
-    # Review request browsing
-    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?dashboard/$',
-        'dashboard', name="dashboard"),
-
-    # Users
-    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?users/$',
-        'submitter_list', name="all-users"),
-    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?users/(?P<username>[A-Za-z0-9@_\-\.]+)/$',
-        'submitter', name="user"),
-
-    # Groups
-    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?groups/$',
-        'group_list', name="all-groups"),
-    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?groups/(?P<name>[A-Za-z0-9_-]+)/$',
-        'group', name="group"),
-    url(r'^(s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/)?groups/(?P<name>[A-Za-z0-9_-]+)/members/$',
-        'group_members', name="group_members"),
-)
+urlpatterns += localsite_urlpatterns
 
 
 # django.contrib
@@ -97,16 +103,6 @@ urlpatterns += patterns('django.contrib',
         {'feed_dict': atom_feeds}, name="atom-feed"),
     url(r'^account/logout/$', 'auth.views.logout',
         {'next_page': settings.LOGIN_URL}, name="logout")
-)
-
-
-# And the rest ...
-urlpatterns += patterns('',
-    url(r'^$', 'django.views.generic.simple.redirect_to',
-        {'url': 'dashboard/'}, name="root"),
-
-    # This must be last.
-    url(r'^iphone/', include('reviewboard.iphone.urls', namespace='iphone')),
 )
 
 initialize()

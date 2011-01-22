@@ -64,6 +64,10 @@ def initialize():
     from reviewboard import signals
     from reviewboard.extensions.base import get_extension_manager
 
+    # This overrides a default django templatetag (url), and we want to make
+    # sure it will always get loaded in every python instance.
+    import reviewboard.site.templatetags
+
 
     # Set up logging.
     log.init_logging()
