@@ -28,8 +28,7 @@ from djblets.util.http import set_last_modified, get_modified_since, \
                               set_etag, etag_if_none_match
 from djblets.util.misc import get_object_or_none
 
-from reviewboard.accounts.decorators import check_login_required, \
-                                            valid_prefs_required
+from reviewboard.accounts.decorators import check_login_required
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
@@ -258,7 +257,6 @@ def new_review_request(request,
 
 
 @check_login_required
-@valid_prefs_required
 def review_detail(request,
                   review_request_id,
                   local_site_name=None,
@@ -509,7 +507,6 @@ def group_list(request,
 
 
 @login_required
-@valid_prefs_required
 def dashboard(request,
               template_name='reviews/dashboard.html',
               local_site_name=None):
@@ -537,9 +534,6 @@ def dashboard(request,
         grid = WatchedGroupDataGrid(request, local_site=local_site)
     else:
         grid = DashboardDataGrid(request, local_site=local_site)
-
-    user = request.user
-    profile = user.get_profile()
 
     return grid.render_to_response(template_name)
 

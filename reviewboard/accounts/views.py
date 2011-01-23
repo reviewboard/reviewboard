@@ -43,7 +43,6 @@ def user_preferences(request, template_name='accounts/prefs.html'):
 
     profile, profile_is_new = \
         Profile.objects.get_or_create(user=request.user)
-    must_configure = not profile.first_time_setup_done
     profile.save()
 
     auth_backends = get_auth_backends()
@@ -70,5 +69,4 @@ def user_preferences(request, template_name='accounts/prefs.html'):
         'form': form,
         'settings': settings,
         'can_change_password': auth_backends[0].supports_change_password,
-        'must_configure': must_configure,
     }))

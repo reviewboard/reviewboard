@@ -4,19 +4,6 @@
 {% block title %}{% trans "My Account" %}{% endblock %}
 
 {% block content %}
-{% if must_configure %}
-{% box "important" %}
-<h1>{% trans "Apologies for the interruption, but please read this." %}</h1>
- <p>
-  {% trans "Before you can continue to use Review Board, you'll need to set a few things. This will help us get to know each other better." %}
- </p>
- <p>
-  {% trans "At a minimum, make sure you have joined one or more groups." %}
- </p>
-</div>
-{% endbox %}
-{% endif %}
-
 <form method="post" action=".">
  {{form.redirect_to}}
 {% box "prefsuser" %}

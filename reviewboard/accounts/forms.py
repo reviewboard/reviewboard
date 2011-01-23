@@ -93,6 +93,8 @@ class RegistrationForm(DjbletsRegistrationForm):
     for use when generating the widget so that the widget can properly display
     the error.
     """
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
     recaptcha_challenge_field = forms.CharField(required=False)
     recaptcha_response_field = forms.CharField(required=False)
 
@@ -140,6 +142,16 @@ class RegistrationForm(DjbletsRegistrationForm):
                     _('You need to respond to the captcha'))
 
         return super(RegistrationForm, self).clean()
+
+    def save(self):
+        user = DjbletsRegistrationForm.save(self)
+
+        if user:
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            user.save()
+
+        return user
 
 
 class ActiveDirectorySettingsForm(SiteSettingsForm):
