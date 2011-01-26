@@ -40,16 +40,10 @@ def valid_prefs_required(view_func):
     be used with @check_login_required.
     """
     def _check_valid_prefs(request, *args, **kwargs):
-        try:
-            if (request.user.is_anonymous() or
-                request.user.get_profile().first_time_setup_done):
-                return view_func(request, *args, **kwargs)
-        except Profile.DoesNotExist:
-            pass
+        profile, profile_is_new = Profile.objects.get_or_create(user=instance)
 
-        return HttpResponseRedirect("%s?%s=%s" %
-                                    (reverse("user-preferences"),
-                                     REDIRECT_FIELD_NAME,
-                                     quote(request.get_full_path())))
+        if profile_is_new:
+            profile.save()
+        return view_func(request, *args, **kwargs)
 
     return _check_valid_prefs

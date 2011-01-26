@@ -3,7 +3,6 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
-from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
@@ -154,18 +153,6 @@ class Profile(models.Model):
 
     def __unicode__(self):
         return self.user.username
-
-
-def on_user_save(sender, instance, **kwargs):
-    """post_save handler for the user object to create a profile"""
-    profile, profile_is_new = Profile.objects.get_or_create(user=instance)
-
-    if profile_is_new:
-        profile.save()
-
-
-# XXX: once we have django 1.3, we should switch to @receiver
-post_save.connect(on_user_save, sender=User)
 
 
 class LocalSiteProfile(models.Model):
