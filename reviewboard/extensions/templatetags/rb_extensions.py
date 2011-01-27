@@ -26,7 +26,7 @@ def action_hooks(context, hookcls, template_name="extensions/action.html"):
             new_context = {
                 'action': action_info
             }
-            new_context.update(context)
+            context.update(new_context)
 
             s += render_to_string(template_name, new_context)
 
