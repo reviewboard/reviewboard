@@ -149,11 +149,11 @@ class Command(NoArgsCommand):
         doc.add(lucene.Field('summary', request.summary,
                              lucene.Field.Store.NO,
                              lucene_tokenized))
-	    if request.changenum:
-	        doc.add(lucene.Field('changenum',
-                             unicode(request.changenum),
-                             lucene.Field.Store.NO,
-                             lucene_tokenized))
+        if request.changenum:
+            doc.add(lucene.Field('changenum',
+                                 unicode(request.changenum),
+                                 lucene.Field.Store.NO,
+                                 lucene_tokenized))
         # Remove commas, since lucene won't tokenize it right with them
         bugs = ' '.join(request.bugs_closed.split(','))
         doc.add(lucene.Field('bug', bugs,
