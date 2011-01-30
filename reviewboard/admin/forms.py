@@ -142,7 +142,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         if not os.path.exists(index_file):
             raise forms.ValidationError(_("Search index path doesn't exists."))
 
-        if not os.access(index_file, os.W_OK)
+        if not os.access(index_file, os.W_OK):
             raise forms.ValidationError(_("Search index path is not writable."))
 
 
