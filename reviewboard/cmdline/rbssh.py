@@ -81,6 +81,9 @@ def parse_options(args):
 
     parser = OptionParser(usage='%prog [options] [user@]hostname command',
                           version='%prog ' + get_version_string())
+    parser.add_option('-l',
+                      dest='username', metavar='USERNAME', default=None,
+                      help='the user to log in as on the remote machine')
     parser.add_option('-p', '--port',
                       dest='port', metavar='PORT', default=None,
                       help='the port to connect to')
@@ -189,15 +192,15 @@ def main():
         fd, name = tempfile.mkstemp(prefix='rbssh', suffix='.log')
         debug_fp = os.fdopen(fd, "w+b")
 
-        fp.write('%s\n' % sys.argv)
-        fp.write('PID %s\n' % os.getpid())
+        debug_fp.write('%s\n' % sys.argv)
+        debug_fp.write('PID %s\n' % os.getpid())
 
     path, command = parse_options(sys.argv[1:])
 
     if '://' not in path:
         path = 'ssh://' + path
 
-    username, hostname = SCMTool.get_auth_from_uri(path, None)
+    username, hostname = SCMTool.get_auth_from_uri(path, options.username)
 
     debug('%s, %s, %s\n' % (hostname, username, command))
 
