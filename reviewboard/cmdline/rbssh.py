@@ -3,7 +3,7 @@
 # rbssh.py -- A custom SSH client for use in Review Board.
 #
 # This is used as an ssh replacement that can be used across platforms with
-# a cusotm .ssh directory. OpenSSH doesn't respect $HOME, instead reading
+# a custom .ssh directory. OpenSSH doesn't respect $HOME, instead reading
 # /etc/passwd directly, which causes problems for us. Using rbssh, we can
 # work around this.
 #
@@ -44,7 +44,7 @@ from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool
 
 
-DEBUG = False
+DEBUG = os.getenv('DEBUG_RBSSH')
 
 
 options = None
