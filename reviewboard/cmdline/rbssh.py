@@ -205,7 +205,12 @@ def main():
     debug('%s, %s, %s\n' % (hostname, username, command))
 
     client = sshutils.get_ssh_client()
-    client.connect(hostname, username=username)
+
+    try:
+        client.connect(hostname, username=username)
+    except Exception, e:
+        debug('Unknown exception during connect: %s' % e)
+        sys.exit(1)
 
     transport = client.get_transport()
     channel = transport.open_session()
