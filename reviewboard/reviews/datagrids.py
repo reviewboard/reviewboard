@@ -50,7 +50,6 @@ class ReviewGroupStarColumn(StarColumn):
         except Profile.DoesNotExist:
             return queryset
 
-        print profile.starred_groups.all()
         pks = profile.starred_groups.filter(
             pk__in=self.datagrid.id_list).values_list('pk', flat=True)
 
@@ -58,8 +57,6 @@ class ReviewGroupStarColumn(StarColumn):
 
         for pk in pks:
             self.all_starred[pk] = True
-
-        print self.all_starred
 
         return queryset
 
