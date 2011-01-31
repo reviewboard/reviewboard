@@ -459,6 +459,9 @@ class RepositoryForm(forms.ModelForm):
         self._clean_hosting_info()
         self._clean_bug_tracker_info()
 
+        validate_review_groups(self)
+        validate_users(self)
+
         if not self.cleaned_data['reedit_repository']:
             self._verify_repository_path()
 
@@ -473,9 +476,6 @@ class RepositoryForm(forms.ModelForm):
     def clean_bug_tracker_base_url(self):
         data = self.cleaned_data['bug_tracker_base_url']
         return data.rstrip("/")
-
-    clean_users = validate_users
-    clean_review_groups = validate_review_groups
 
     def clean_tool(self):
         """

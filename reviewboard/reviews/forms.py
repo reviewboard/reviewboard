@@ -52,16 +52,11 @@ class DefaultReviewerForm(forms.ModelForm):
 
         return file_regex
 
-    def clean_people(self):
-        """Validates that the users' LocalSites match."""
-        return validate_users(self, 'people')
+    def clean(self):
+        validate_users(self, 'people')
+        validate_review_groups(self, 'groups')
 
-    def clean_groups(self):
-        """Validates that the review groups' LocalSites match."""
-        return validate_review_groups(self, 'groups')
-
-    def clean_repository(self):
-        """Validates that the repositories' LocalSites match."""
+        # Now make sure the repositories are valid.
         local_site = self.cleaned_data['local_site']
         repositories = self.cleaned_data['repository']
 
@@ -72,15 +67,17 @@ class DefaultReviewerForm(forms.ModelForm):
                     % repository.name,
                 ])
 
-        return repositories
-
+        return self.cleaned_data
 
     class Meta:
         model = DefaultReviewer
 
 
 class GroupForm(forms.ModelForm):
-    clean_users = validate_users
+    def clean(self):
+        validate_users(self)
+
+        return self.cleaned_data
 
     class Meta:
         model = Group

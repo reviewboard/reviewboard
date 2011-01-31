@@ -205,6 +205,7 @@ You can also indicate the repository using :option:`--repository-url`::
 
     $ post-review --repository-url="/view/vobs" --clearcase-view-type="dynamic" --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
 
+
 .. index:: post-commit review
 .. _postingcommittedcode:
 
@@ -592,6 +593,11 @@ Perforce Options
 .. cmdoption:: --p4-port=<P4_PORT>
 
    Specifies the Perforce server IP address used when generating the diff.
+
+.. cmdoption:: --p4-passwd=<PASSWORD_OR_TICKET>
+
+   Specifies the Perforce Ticket or clear-text password used to authenticate
+   with the repository.
 
 
 Subversion Options

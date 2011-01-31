@@ -35,10 +35,18 @@ class PreferencesForm(forms.Form):
         siteconfig = SiteConfiguration.objects.get_current()
         auth_backends = get_auth_backends()
 
-        self.fields['groups'].choices = [
-            (g.id, g.display_name)
-            for g in Group.objects.accessible(user=user)
-        ]
+
+        choices = []
+        for g in Group.objects.accessible(user=user).order_by('display_name'):
+            choices.append((g.id, g.display_name))
+
+        for site in user.local_site.all().order_by('name'):
+            for g in Group.objects.accessible(
+                user=user, local_site=site).order_by('display_name'):
+                display_name = '%s / %s' % (g.local_site.name, g.display_name)
+                choices.append((g.id, display_name))
+
+        self.fields['groups'].choices = choices
         self.fields['email'].required = auth_backends[0].supports_change_email
 
     def save(self, user):
@@ -85,6 +93,8 @@ class RegistrationForm(DjbletsRegistrationForm):
     for use when generating the widget so that the widget can properly display
     the error.
     """
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
     recaptcha_challenge_field = forms.CharField(required=False)
     recaptcha_response_field = forms.CharField(required=False)
 
@@ -132,6 +142,16 @@ class RegistrationForm(DjbletsRegistrationForm):
                     _('You need to respond to the captcha'))
 
         return super(RegistrationForm, self).clean()
+
+    def save(self):
+        user = DjbletsRegistrationForm.save(self)
+
+        if user:
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            user.save()
+
+        return user
 
 
 class ActiveDirectorySettingsForm(SiteSettingsForm):

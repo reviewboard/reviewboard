@@ -7,6 +7,7 @@ from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
                                       AtomSubmitterReviewsFeed, \
                                       RssGroupReviewsFeed, \
                                       AtomGroupReviewsFeed
+from reviewboard.webapi.resources import root_resource
 from reviewboard import initialize
 
 
@@ -51,12 +52,13 @@ atom_feeds = {
     'groups': AtomGroupReviewsFeed,
 }
 
+
 localsite_urlpatterns = patterns('',
     url(r'^$', 'django.views.generic.simple.redirect_to',
         {'url': 'dashboard/'},
         name="root"),
 
-    (r'^api/', include('reviewboard.webapi.urls')),
+    (r'^api/', include(root_resource.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),
 
     # Dashboard

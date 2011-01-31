@@ -3,7 +3,7 @@
 # rbssh.py -- A custom SSH client for use in Review Board.
 #
 # This is used as an ssh replacement that can be used across platforms with
-# a cusotm .ssh directory. OpenSSH doesn't respect $HOME, instead reading
+# a custom .ssh directory. OpenSSH doesn't respect $HOME, instead reading
 # /etc/passwd directly, which causes problems for us. Using rbssh, we can
 # work around this.
 #
@@ -44,7 +44,7 @@ from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool
 
 
-DEBUG = False
+DEBUG = os.getenv('DEBUG_RBSSH')
 
 
 options = None
@@ -81,6 +81,9 @@ def parse_options(args):
 
     parser = OptionParser(usage='%prog [options] [user@]hostname command',
                           version='%prog ' + get_version_string())
+    parser.add_option('-l',
+                      dest='username', metavar='USERNAME', default=None,
+                      help='the user to log in as on the remote machine')
     parser.add_option('-p', '--port',
                       dest='port', metavar='PORT', default=None,
                       help='the port to connect to')
@@ -189,20 +192,25 @@ def main():
         fd, name = tempfile.mkstemp(prefix='rbssh', suffix='.log')
         debug_fp = os.fdopen(fd, "w+b")
 
-        fp.write('%s\n' % sys.argv)
-        fp.write('PID %s\n' % os.getpid())
+        debug_fp.write('%s\n' % sys.argv)
+        debug_fp.write('PID %s\n' % os.getpid())
 
     path, command = parse_options(sys.argv[1:])
 
     if '://' not in path:
         path = 'ssh://' + path
 
-    username, hostname = SCMTool.get_auth_from_uri(path, None)
+    username, hostname = SCMTool.get_auth_from_uri(path, options.username)
 
     debug('%s, %s, %s\n' % (hostname, username, command))
 
     client = sshutils.get_ssh_client()
-    client.connect(hostname, username=username)
+
+    try:
+        client.connect(hostname, username=username)
+    except Exception, e:
+        debug('Unknown exception during connect: %s' % e)
+        sys.exit(1)
 
     transport = client.get_transport()
     channel = transport.open_session()

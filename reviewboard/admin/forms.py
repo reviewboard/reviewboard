@@ -131,6 +131,20 @@ class GeneralSettingsForm(SiteSettingsForm):
         # Reload any important changes into the Django settings.
         load_site_config()
 
+    def clean_search_index_file(self):
+        """Validates that the specified index file is valid."""
+        index_file = self.cleaned_data['search_index_file'].strip()
+
+        if not os.path.isabs(index_file):
+            raise forms.ValidationError(_("Search index path should be absolute."))
+
+        if not os.path.exists(index_file):
+            raise forms.ValidationError(_("Search index path doesn't exists."))
+
+        if not os.access(index_file, os.W_OK):
+            raise forms.ValidationError(_("Search index path is not writable."))
+
+
 
     class Meta:
         title = _("General Settings")

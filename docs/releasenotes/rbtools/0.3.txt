@@ -1,0 +1,212 @@
+===========================
+RBTools 0.3.0 Release Notes
+===========================
+
+
+**Release date**: January 30, 2011
+
+
+Features
+========
+
+post-review
+-----------
+
+* Added support for the new Review Board 1.5.x API.
+
+  This requires Review Board 1.5.2 or higher. New features will only implement
+  support for the new API, as the old API in 1.0.x is deprecated and being
+  removed in Review Board 1.6.
+
+  On Review Board 1.5.0 and 1.5.1 servers, this will continue to use the old
+  API, as we require some fixes and enhancements only available in 1.5.2 and
+  higher.
+
+  Support for older Review Board servers may be removed in a future release,
+  but there aren't any specific plans at this point.
+
+* Added a :option:`--reopen` parameter for reopening an existing review
+  request. This requires passing the :option:`-r` parameter. Patch by Jan
+  Koprowski. (:bug:`1607`)
+
+* The debug log now contains the RBTools version and home directory, in order
+  to aid debugging.
+
+
+ClearCase
+---------
+
+* Added support for :option:`--revision-range` on ClearCase. Patch by Jan Koprowski.
+  (:bug:`1588`)
+
+* Added support for :option:`--repository-url` on ClearCase. This can be used
+  to specify an alternate dynamic view. Patch by Jan Koprowski.
+
+* Added support for directory diffs on ClearCase. Patch by Jan Koprowski.
+  (:bug:`1626`)
+
+
+CVS
+---
+
+* Added support for :option:`--revision-range` and individual files for CVS.
+  Patch by Daniel LaMotte. (:bug:`1852`)
+
+
+Mercurial
+---------
+
+* Added support for reading ``reviewboard.url`` from a local :file:`hgrc`
+  file for Mercurial. Patch by Dan Buch.
+
+* Added support for posting reviews of locally-committed changes (instead of
+  requiring that all changes be uncommitted). Patch by Dan Buch.
+
+* Added support for :option:`--parent` for parent branches. Patch by Dan Buch.
+
+
+Perforce
+--------
+
+* Added a new :option:`--p4-passwd` command line option.
+
+  This allows a user to supply a Perforce Ticket or clear-text password,
+  which is useful in cases where the Perforce password or ticket is not
+  available in the environment where post-review is run. Patch by Ryan Shelley.
+
+
+Plastic SCM
+-----------
+
+* Added support for `Plastic SCM`_.
+
+  This supports changeset IDs and branch specifications as the diff argument,
+  and is known to work with the latest version of Plastic SCM. Patch by Dick
+  Porter.
+
+  This requires Plastic SCM support in Review Board, which will be available
+  in 1.6.
+
+.. _`Plastic SCM`: http://www.plasticscm.com/
+
+
+Bug Fixes
+=========
+
+post-review
+-----------
+
+* The :py:mod:`json` module is now only imported if it's the one we expect.
+  We look for Python 2.6's version of the :py:mod:`json` module specifically,
+  and disregard the third-party :py:mod:`json` module, which is not compatible.
+  If the third-party one is found, we try to import :py:mod:`simplejson`
+  instead.
+
+* The login cookie is no longer used when providing the
+  :option:`--username`/:option:`--password` or :option:`--submit-as`
+  parameters. That was preventing these options from working as they should
+  have. (:bug:`762`)
+
+* post-review no longer crashes if the cookie can't be saved. Instead, we
+  log some debug output and proceed. (:bug:`1557`)
+
+* Fixed cookie storage when using bare hostnames (such as ``http://reviews/``).
+  Patch by Noah Kantrowitz.
+
+* post-review provides a better error message when the generated diff is
+  empty. Patch by Ben Hollis.
+
+* post-review provides better error messages when failing to find
+  repositories. If matching against multiple found repositories, we display
+  each repository we found and each valid repository. Patch by Dana Locaste.
+  (:bug:`1717`)
+
+
+ClearCase
+---------
+
+* We no longer hard-code the ``VIEWTYPE:`` information in descriptions in ClearCase.
+  Patch by Jan Koprowski. (:bug:`1610`)
+
+* Fixed support ClearCase deployments where VOBs are mounted as
+  subdirectories of :file:`/vobs`. Patch by Bryan Halter. (:bug:`1421`)
+
+
+Git
+---
+
+* Fixed working with code on branch names with slashes in the name. Patch by
+  Petr Novák.
+
+* We now prevent external diff tools from being used when generating a diff on
+  Git. Users could have a :file:`.gitconfig` that specified an alternate diff
+  tool, which would break with post-review. (:bug:`1524`)
+
+* We now check for the existence of :file:`.git/svn` and for any files
+  in that directory before calling ``git svn info``. This speeds up use on all
+  standard Git repositories and prevents the generation of the
+  :file:`.git/svn` directory.
+
+
+Mercurial
+---------
+
+* The Mercurial support does a better job of checking for a hgsubversion
+  clone. Patch by Dan Buch.
+
+
+Perforce
+--------
+
+* Speed up creating diffs for a range of files. We are now smarter about the
+  file and revision comparisons when generating diffs. Patch by Gyula Faller.
+
+* post-review provides a more meaningful error message when a Perforce
+  changelist doesn't exist or when there aren't changes in the changelist.
+  Patch by Ben Hollis. (:bug:`832`)
+
+* If no change number is provided, Perforce will default to the ``default``
+  changelist. Patch by Ben Hollis. (:bug:`1191`)
+
+* Support ``move/delete`` changes in Perforce.
+
+  A ``move/delete`` change wouldn't be properly flagged and processed. We now
+  treat it as a delete, as there will be a corresponding file add to go with
+  it.
+
+  Patch by Gordon McGregor.
+
+
+Subversion
+----------
+
+* Fixed problems with detecting relative paths when using Subversion.
+
+  Depending on the repository configuration on the Subversion server and on
+  Review Board, we would fail to find the correct repository. This was first
+  reported with Apache's Review Board setup.
+
+  Patch by Andrew Stitcher.
+
+
+Contributors
+============
+
+* Andrew Stitcher
+* Ben Hollis
+* Bryan Halter
+* Christian Hammond
+* Dan Buch
+* Dana Locaste
+* Daniel LaMotte
+* David Trowbridge
+* Dick Porter
+* Gordon McGregor
+* Gyula Faller
+* Jan Koprowski
+* Noah Kantrowitz
+* Petr Novák
+* Ryan Shelley
+
+
+.. comment: vim: ft=rst et
