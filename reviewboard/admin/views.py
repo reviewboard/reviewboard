@@ -81,11 +81,6 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
 
     if key:
         fingerprint = sshutils.humanize_key(key)
-        base64 = key.get_base64()
-
-        # TODO: Move this wrapping logic into a common templatetag.
-        for i in range(0, len(base64), 64):
-            public_key += base64[i:i + 64] + '\n'
     else:
         fingerprint = None
 
@@ -93,7 +88,7 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         'title': _('SSH Settings'),
         'key': key,
         'fingerprint': fingerprint,
-        'public_key': public_key,
+        'public_key': sshutils.get_public_key(key),
         'form': form,
     }))
 

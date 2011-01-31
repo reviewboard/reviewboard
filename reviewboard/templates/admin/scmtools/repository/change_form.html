@@ -69,14 +69,26 @@ $(document).ready(function() {
 
   $(".confirmation input").click(function() {
       inputs.attr("disabled", false);
-  })
+  });
 });
 {% endif %}
 
 </script>
 {% endblock %}
 
+{% block object-tools-items %}
+{% if adminform.form.public_key %}
+ <li><a href="#" id="show-ssh-key-link">{% trans "Show SSH Public Key" %}</a></li>
+{% endif %}
+{{block.super}}
+{% endblock %}
+
 {% block form_top %}
+<div class="confirmation" id="ssh-public-key-popup">
+ <p><label class="required">{% trans "SSH Public Key:" %}</label></p>
+ <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{adminform.form.public_key}}</textarea>
+</div>
+
 {%  with adminform.form.hostkeyerror as hostkeyerror %}
 {%  with adminform.form.certerror as certerror %}
 {%  with adminform.form.certerror.certificate as certificate %}
@@ -144,4 +156,14 @@ $(document).ready(function() {
 </div>
 {%   endif %}
 {%  endwith %}
+
+{% if adminform.form.public_key %}
+<p>
+ <b>{% trans "Note:" %}</b>
+{% blocktrans %}
+ If your provider or repository requires an SSH key for access, you can click
+ "Show SSH Public Key" to the right.
+ {% endblocktrans %}
+</p>
+{% endif %}
 {% endblock %}
