@@ -521,6 +521,7 @@ def group_list(request,
 
 
 @login_required
+@valid_prefs_required
 def dashboard(request,
               template_name='reviews/dashboard.html',
               local_site_name=None):

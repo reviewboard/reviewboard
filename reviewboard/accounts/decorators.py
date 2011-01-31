@@ -40,9 +40,9 @@ def valid_prefs_required(view_func):
     be used with @check_login_required.
     """
     def _check_valid_prefs(request, *args, **kwargs):
-        profile, profile_is_new = Profile.objects.get_or_create(user=instance)
+        profile, is_new = Profile.objects.get_or_create(user=request.user)
 
-        if profile_is_new:
+        if is_new:
             profile.save()
         return view_func(request, *args, **kwargs)
 
