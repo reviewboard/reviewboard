@@ -131,6 +131,25 @@ div.breadcrumbs {
 /***************************************************************************
  * Change form
  ***************************************************************************/
+#ssh-public-key-popup {
+  display: none;
+}
+
+#ssh-public-key-popup textarea {
+  background: #FFFDC9;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.change-form h1 {
+  margin-bottom: 0.5em;
+}
+
+.change-form fieldset {
+  margin: 1em 0;
+}
+
 .confirmation {
   border: 1px solid #FFBD09;
   color: black;

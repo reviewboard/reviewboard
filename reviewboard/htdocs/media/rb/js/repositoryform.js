@@ -149,5 +149,17 @@ $(document).ready(function() {
             updateFormDisplay("bug_tracker_type", BUG_TRACKER_FIELDS);
         })
         .triggerHandler("change");
+
+    var publicKeyPopup = $("#ssh-public-key-popup");
+
+    $("#show-ssh-key-link").toggle(function() {
+        $(this).text("Hide SSH Public Key");
+        publicKeyPopup.show();
+        return false;
+    }, function() {
+        $(this).text("Show SSH Public Key");
+        publicKeyPopup.hide();
+        return false;
+    });
 });
 
