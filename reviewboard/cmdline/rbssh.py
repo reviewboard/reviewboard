@@ -225,7 +225,7 @@ def main():
     client.close()
 
     if debug_fp:
-        fp.close()
+        debug_fp.close()
 
     return status
 
