@@ -29,6 +29,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
+import getpass
 import os
 import select
 import socket
@@ -51,139 +52,179 @@ options = None
 debug_fp = None
 
 
+class PlatformHandler(object):
+    def __init__(self, channel):
+        self.channel = channel
+
+    def shell(self):
+        raise NotImplemented
+
+    def transfer(self):
+        raise NotImplemented
+
+    def process_channel(self):
+        if self.channel.recv_ready():
+            data = self.channel.recv(4096)
+            #debug('<< %s\n' % data)
+
+            if not data:
+                print '\r\n*** EOF\r\n'
+                debug('!! stdout empty\n')
+                return False
+
+            sys.stdout.write(data)
+            sys.stdout.flush()
+
+        if self.channel.recv_stderr_ready():
+            data = self.channel.recv_stderr(4096)
+
+            if not data:
+                debug('!! stderr empty\n')
+                return False
+
+            #debug('E>> %s\n' % data)
+            sys.stderr.write(data)
+            sys.stderr.flush()
+
+        if self.channel.exit_status_ready():
+            debug('!!! exit_status_ready\n')
+            return False
+
+        return True
+
+
+    def process_stdin(self):
+        buf = os.read(sys.stdin.fileno(), 1)
+
+        if not buf:
+            debug('!! stdin empty\n')
+            return False
+
+        #debug('>> %s\n' % buf)
+        result = self.channel.send(buf)
+
+        return True
+
+
+class PosixHandler(PlatformHandler):
+    def shell(self):
+        import termios
+        import tty
+
+        oldtty = termios.tcgetattr(sys.stdin)
+
+        try:
+            tty.setraw(sys.stdin.fileno())
+            tty.setcbreak(sys.stdin.fileno())
+
+            self.handle_communications()
+        finally:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
+
+    def transfer(self):
+        import fcntl
+
+        fd = sys.stdin.fileno()
+        fl = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+        self.handle_communications()
+
+    def handle_communications(self):
+        while True:
+            rl, wl, el = select.select([self.channel, sys.stdin], [], [])
+
+            if self.channel in rl:
+                if not self.process_channel():
+                    break
+
+            if sys.stdin in rl:
+                if not self.process_stdin():
+                    self.channel.shutdown_write()
+                    break
+
+
+class WindowsHandler(PlatformHandler):
+    def shell(self):
+        self.handle_communications()
+
+    def transfer(self):
+        self.handle_communications()
+
+    def handle_communications(self):
+        import threading
+
+        debug('!! begin_windows_transfer\n')
+
+        def read_stdin(channel):
+            while process_stdin(channel):
+                time.sleep(0.1)
+
+        writer = threading.Thread(target=read_stdin, args=(self.channel,))
+        writer.setDaemon(True)
+        writer.start()
+
+        try:
+            while self.process_channel():
+                time.sleep(0.1)
+        except EOFError:
+            pass
+
+
 def debug(s):
     if debug_fp:
         debug_fp.write(s)
         debug_fp.flush()
 
 
+def print_version(option, opt, value, parser):
+    parser.print_version()
+    sys.exit(0)
+
+
 def parse_options(args):
     global options
 
-    # There are two sets of arguments we may find. We want to handle
-    # anything before the hostname, but nothing after it. So, split
-    # up the argument list.
+    hostname = None
 
-    rbssh_args = []
-    command_args = []
-
-    found_hostname = False
-
-    for arg in args:
-        if arg.startswith('-'):
-            if found_hostname:
-                command_args.append(arg)
-            else:
-                rbssh_args.append(arg)
-        else:
-            found_hostname = True
-            rbssh_args.append(arg)
-
-    parser = OptionParser(usage='%prog [options] [user@]hostname command',
+    parser = OptionParser(usage='%prog [options] [user@]hostname [command]',
                           version='%prog ' + get_version_string())
+    parser.disable_interspersed_args()
     parser.add_option('-l',
                       dest='username', metavar='USERNAME', default=None,
                       help='the user to log in as on the remote machine')
     parser.add_option('-p', '--port',
-                      dest='port', metavar='PORT', default=None,
+                      type='int', dest='port', metavar='PORT', default=None,
                       help='the port to connect to')
     parser.add_option('-q', '--quiet',
                       action='store_true', dest='quiet', default=False,
                       help='suppress any unnecessary output')
+    parser.add_option('-s',
+                      dest='subsystem', metavar='SUBSYSTEM', default=None,
+                      nargs=2,
+                      help='the subsystem to use (ssh or sftp)')
+    parser.add_option('-V',
+                      action='callback', callback=print_version,
+                      help='display the version information and exit')
 
-    (options, args) = parser.parse_args(rbssh_args)
+    (options, args) = parser.parse_args(args)
 
-    if len(rbssh_args) < 2:
-        parser.print_help()
-        sys.exit(1)
+    if options.subsystem:
+        if len(options.subsystem) != 2:
+            parser.error('-s requires a hostname and a valid subsystem')
+        elif options.subsystem[1] not in ('sftp', 'ssh'):
+            parser.error('Invalid subsystem %s' % options.subsystem[1])
 
-    return args[0], args[1:] + command_args
+        hostname, options.subsystem = options.subsystem
 
+    if len(args) == 0 and not hostname:
+        parser.error('A hostname must be specified')
 
-def process_channel(channel):
-    if channel.recv_ready():
-        data = channel.recv(4096)
-        debug('<< %s\n' % data)
+    if not hostname:
+        hostname = args[0]
+        args = args[1:]
 
-        if not data:
-            debug('!! stdout empty\n')
-            return False
-
-        sys.stdout.write(data)
-        sys.stdout.flush()
-
-    if channel.recv_stderr_ready():
-        data = channel.recv_stderr(4096)
-
-        if not data:
-            debug('!! stderr empty\n')
-            return False
-
-        debug('E>> %s\n' % data)
-        sys.stderr.write(data)
-        sys.stderr.flush()
-
-    if channel.exit_status_ready():
-        debug('exit_status_ready\n')
-        return False
-
-    return True
-
-
-def process_stdin(channel):
-    buf = os.read(sys.stdin.fileno(), 4096)
-
-    if not buf:
-        debug('!! stdin empty\n')
-        return False
-
-    debug('>> %s\n' % buf)
-    result = channel.send(buf)
-
-    return True
-
-
-def begin_posix(channel):
-    import fcntl
-
-    fd = sys.stdin.fileno()
-    fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-
-    debug('!! begin_posix\n')
-
-    while True:
-        rl, wl, el = select.select([channel, sys.stdin], [], [])
-
-        if channel in rl:
-            if not process_channel(channel):
-                break
-
-        if sys.stdin in rl:
-            if not process_stdin(channel):
-                channel.shutdown_write()
-                break
-
-    debug('!! done\n')
-
-
-def begin_windows(channel):
-    debug('!! begin_windows\n')
-    import threading
-
-    def read_stdin(channel):
-        while process_stdin(channel):
-            time.sleep(0.1)
-
-    writer = threading.Thread(target=read_stdin, args=(channel,))
-    writer.setDaemon(True)
-    writer.start()
-
-    try:
-        while process_channel(channel):
-            time.sleep(0.1)
-    except EOFError:
-        pass
+    return hostname, args
 
 
 def main():
@@ -205,27 +246,56 @@ def main():
     debug('%s, %s, %s\n' % (hostname, username, command))
 
     client = sshutils.get_ssh_client()
+    attempts = 0
+    password = None
+    success = False
 
-    try:
-        client.connect(hostname, username=username)
-    except Exception, e:
-        debug('Unknown exception during connect: %s' % e)
-        sys.exit(1)
+    while True:
+        try:
+            client.connect(hostname, username=username, password=password)
+            break
+        except paramiko.AuthenticationException, e:
+            if attempts == 3 or not sys.stdin.isatty():
+                sys.stderr.write('Too many authentication failures for %s\n' %
+                                 username)
+                sys.exit(1)
+
+            attempts += 1
+            password = getpass.getpass("%s@%s's password: " %
+                                       (username, hostname))
+        except Exception, e:
+            debug('Unknown exception during connect: %s (%s)' % (e, type(e)))
+            sys.exit(1)
 
     transport = client.get_transport()
+
     channel = transport.open_session()
-    channel.exec_command(' '.join(command))
 
     if os.name == 'posix':
-        begin_posix(channel)
+        handler = PosixHandler(channel)
     else:
-        begin_windows(channel)
+        handler = WindowsHandler(channel)
 
+    if options.subsystem == 'sftp':
+        debug('!!! Invoking sftp subsystem')
+        channel.invoke_subsystem('sftp')
+        handler.transfer()
+    elif command:
+        debug('!!! Sending command %s' % command)
+        channel.exec_command(' '.join(command))
+        handler.transfer()
+    else:
+        debug('!!! Opening shell')
+        channel.get_pty()
+        channel.invoke_shell()
+        handler.shell()
+
+    debug('!!! Done')
     status = channel.recv_exit_status()
     client.close()
 
     if debug_fp:
-        fp.close()
+        debug_fp.close()
 
     return status
 
