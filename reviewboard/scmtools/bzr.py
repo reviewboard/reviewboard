@@ -6,8 +6,11 @@ import urlparse
 try:
     from bzrlib import bzrdir, revisionspec
     from bzrlib.errors import BzrError, NotBranchError
+    from bzrlib.transport.ssh import SubprocessVendor, register_ssh_vendor, \
+                                     register_default_ssh_vendor
+    has_bzrlib = True
 except ImportError:
-    pass
+    has_bzrlib = False
 
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool, PRE_CREATION
@@ -19,8 +22,33 @@ urlparse.uses_netloc.append('bzr+ssh')
 urlparse.uses_netloc.append('bzr')
 sshutils.ssh_uri_schemes.append('bzr+ssh')
 
-sshutils.register_rbssh('BZR_SSH')
 
+if has_bzrlib:
+    class RBSSHVendor(SubprocessVendor):
+        """SSH vendor class that uses rbssh"""
+        executable_path = 'rbssh'
+
+        def _get_vendor_specific_argv(self, username, host, port,
+                                      subsystem=None, command=None):
+            args = [self.executable_path]
+
+            if port is not None:
+                args.extend(['-p', str(port)])
+
+            if username is not None:
+                args.extend(['-l', username])
+
+            if subsystem is not None:
+                args.extend(['-s', host, subsystem])
+            else:
+                args.extend([host] + command)
+
+            return args
+
+    vendor = RBSSHVendor()
+    register_ssh_vendor("rbssh", vendor)
+    register_default_ssh_vendor(vendor)
+    sshutils.register_rbssh('BZR_SSH')
 
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 
