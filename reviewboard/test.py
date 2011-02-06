@@ -85,7 +85,10 @@ def setup_media_dirs():
         if platform.system() == 'windows':
             shutil.copytree(src_dir, dest_dir)
         else:
-            os.symlink(src_dir, dest_dir)
+            try:
+                os.symlink(src_dir, dest_dir)
+            except OSError:
+                pass
 
     generate_media_serial()
 
@@ -130,7 +133,6 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
 
     nose_argv = ['test.py', '-v',
                  '--with-doctest', '--doctest-extension=.txt',
-                 '--where=reviewboard',
                  '-e', exclusion]
 
     if '--with-coverage' in sys.argv:
@@ -138,8 +140,9 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
                       '--cover-package=reviewboard']
         sys.argv.remove('--with-coverage')
 
+    nose_argv += settings.TEST_PACKAGES
     if '--with-webtests' in sys.argv:
-        nose_argv += ['--where=webtests']
+        nose_argv += ['webtests']
         sys.argv.remove('--with-webtests')
 
     # manage.py captures everything before "--"

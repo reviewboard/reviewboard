@@ -4,7 +4,8 @@
         "model": "site.localsite",
         "fields": {
             "name": "local-site-1",
-            "users": [1, 2]
+            "users": [1, 2],
+            "admins": [1]
         }
     }
 ]
