@@ -244,8 +244,15 @@ def check_host(hostname, username=None, password=None):
     exception will be one of BadHostKeyError, UnknownHostKeyError, or
     SCMError.
     """
+    from django.conf import settings
+
     client = get_ssh_client()
     client.set_missing_host_key_policy(RaiseUnknownHostKeyPolicy())
+
+    # We normally want to notify on unknown host keys, but not when running
+    # unit tests.
+    if getattr(settings, 'RUNNING_TEST', False):
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     try:
         client.connect(hostname, username=username, password=password)
