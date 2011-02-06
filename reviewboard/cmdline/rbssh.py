@@ -62,9 +62,13 @@ class PlatformHandler(object):
     def transfer(self):
         raise NotImplemented
 
-    def process_channel(self):
-        if self.channel.recv_ready():
-            data = self.channel.recv(4096)
+    def process_channel(self, channel):
+        if channel.closed:
+            return False
+
+        debug('!! process_channel\n')
+        if channel.recv_ready():
+            data = channel.recv(4096)
             #debug('<< %s\n' % data)
 
             if not data:
@@ -75,8 +79,8 @@ class PlatformHandler(object):
             sys.stdout.write(data)
             sys.stdout.flush()
 
-        if self.channel.recv_stderr_ready():
-            data = self.channel.recv_stderr(4096)
+        if channel.recv_stderr_ready():
+            data = channel.recv_stderr(4096)
 
             if not data:
                 debug('!! stderr empty\n')
@@ -86,22 +90,26 @@ class PlatformHandler(object):
             sys.stderr.write(data)
             sys.stderr.flush()
 
-        if self.channel.exit_status_ready():
+        if channel.exit_status_ready():
             debug('!!! exit_status_ready\n')
             return False
 
         return True
 
+    def process_stdin(self, channel):
+        debug('!! process_stdin\n')
 
-    def process_stdin(self):
-        buf = os.read(sys.stdin.fileno(), 1)
+        try:
+            buf = os.read(sys.stdin.fileno(), 1)
+        except OSError:
+            buf = None
 
         if not buf:
             debug('!! stdin empty\n')
             return False
 
         #debug('>> %s\n' % buf)
-        result = self.channel.send(buf)
+        result = channel.send(buf)
 
         return True
 
@@ -135,11 +143,11 @@ class PosixHandler(PlatformHandler):
             rl, wl, el = select.select([self.channel, sys.stdin], [], [])
 
             if self.channel in rl:
-                if not self.process_channel():
+                if not self.process_channel(self.channel):
                     break
 
             if sys.stdin in rl:
-                if not self.process_stdin():
+                if not self.process_stdin(self.channel):
                     self.channel.shutdown_write()
                     break
 
@@ -156,19 +164,26 @@ class WindowsHandler(PlatformHandler):
 
         debug('!! begin_windows_transfer\n')
 
-        def read_stdin(channel):
-            while process_stdin(channel):
-                time.sleep(0.1)
+        self.channel.setblocking(0)
 
-        writer = threading.Thread(target=read_stdin, args=(self.channel,))
-        writer.setDaemon(True)
+        def writeall(channel):
+            while self.process_channel(channel):
+                pass
+
+            debug('!! Shutting down reading\n')
+            channel.shutdown_read()
+
+        writer = threading.Thread(target=writeall, args=(self.channel,))
         writer.start()
 
         try:
-            while self.process_channel():
-                time.sleep(0.1)
+            while self.process_stdin(self.channel):
+                pass
         except EOFError:
             pass
+
+        debug('!! Shutting down writing\n')
+        self.channel.shutdown_write()
 
 
 def debug(s):
@@ -218,7 +233,8 @@ def parse_options(args):
         hostname, options.subsystem = options.subsystem
 
     if len(args) == 0 and not hostname:
-        parser.error('A hostname must be specified')
+        parser.print_help()
+        sys.exit(1)
 
     if not hostname:
         hostname = args[0]
@@ -243,9 +259,14 @@ def main():
 
     username, hostname = SCMTool.get_auth_from_uri(path, options.username)
 
-    debug('%s, %s, %s\n' % (hostname, username, command))
+    if username is None:
+        username = os.getlogin()
+
+    debug('!!! %s, %s, %s\n' % (hostname, username, command))
 
     client = sshutils.get_ssh_client()
+    client.set_missing_host_key_policy(paramiko.WarningPolicy())
+
     attempts = 0
     password = None
     success = False
@@ -256,6 +277,7 @@ def main():
             break
         except paramiko.AuthenticationException, e:
             if attempts == 3 or not sys.stdin.isatty():
+                debug('Too many authentication failures for %s\n' % username)
                 sys.stderr.write('Too many authentication failures for %s\n' %
                                  username)
                 sys.exit(1)
@@ -263,34 +285,39 @@ def main():
             attempts += 1
             password = getpass.getpass("%s@%s's password: " %
                                        (username, hostname))
+        except paramiko.SSHException, e:
+            debug('Error connecting to server: %s\n' % e)
+            sys.stderr.write('Error connecting to server: %s\n' % e)
+            sys.exit(1)
         except Exception, e:
-            debug('Unknown exception during connect: %s (%s)' % (e, type(e)))
+            debug('Unknown exception during connect: %s (%s)\n' % (e, type(e)))
             sys.exit(1)
 
     transport = client.get_transport()
-
     channel = transport.open_session()
 
-    if os.name == 'posix':
-        handler = PosixHandler(channel)
-    else:
+    if sys.platform in ('cygwin', 'win32'):
+        debug('!!! Using WindowsHandler\n')
         handler = WindowsHandler(channel)
+    else:
+        debug('!!! Using PosixHandler\n')
+        handler = PosixHandler(channel)
 
     if options.subsystem == 'sftp':
-        debug('!!! Invoking sftp subsystem')
+        debug('!!! Invoking sftp subsystem\n')
         channel.invoke_subsystem('sftp')
         handler.transfer()
     elif command:
-        debug('!!! Sending command %s' % command)
+        debug('!!! Sending command %s\n' % command)
         channel.exec_command(' '.join(command))
         handler.transfer()
     else:
-        debug('!!! Opening shell')
+        debug('!!! Opening shell\n')
         channel.get_pty()
         channel.invoke_shell()
         handler.shell()
 
-    debug('!!! Done')
+    debug('!!! Done\n')
     status = channel.recv_exit_status()
     client.close()
 
