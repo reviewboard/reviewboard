@@ -30,6 +30,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 import getpass
+import logging
 import os
 import select
 import socket
@@ -49,7 +50,6 @@ DEBUG = os.getenv('DEBUG_RBSSH')
 
 
 options = None
-debug_fp = None
 
 
 class PlatformHandler(object):
@@ -66,14 +66,12 @@ class PlatformHandler(object):
         if channel.closed:
             return False
 
-        debug('!! process_channel\n')
+        logging.debug('!! process_channel\n')
         if channel.recv_ready():
             data = channel.recv(4096)
-            #debug('<< %s\n' % data)
 
             if not data:
-                print '\r\n*** EOF\r\n'
-                debug('!! stdout empty\n')
+                logging.debug('!! stdout empty\n')
                 return False
 
             sys.stdout.write(data)
@@ -83,21 +81,20 @@ class PlatformHandler(object):
             data = channel.recv_stderr(4096)
 
             if not data:
-                debug('!! stderr empty\n')
+                logging.debug('!! stderr empty\n')
                 return False
 
-            #debug('E>> %s\n' % data)
             sys.stderr.write(data)
             sys.stderr.flush()
 
         if channel.exit_status_ready():
-            debug('!!! exit_status_ready\n')
+            logging.debug('!!! exit_status_ready\n')
             return False
 
         return True
 
     def process_stdin(self, channel):
-        debug('!! process_stdin\n')
+        logging.debug('!! process_stdin\n')
 
         try:
             buf = os.read(sys.stdin.fileno(), 1)
@@ -105,10 +102,9 @@ class PlatformHandler(object):
             buf = None
 
         if not buf:
-            debug('!! stdin empty\n')
+            logging.debug('!! stdin empty\n')
             return False
 
-        #debug('>> %s\n' % buf)
         result = channel.send(buf)
 
         return True
@@ -162,7 +158,7 @@ class WindowsHandler(PlatformHandler):
     def handle_communications(self):
         import threading
 
-        debug('!! begin_windows_transfer\n')
+        logging.debug('!! begin_windows_transfer\n')
 
         self.channel.setblocking(0)
 
@@ -170,7 +166,7 @@ class WindowsHandler(PlatformHandler):
             while self.process_channel(channel):
                 pass
 
-            debug('!! Shutting down reading\n')
+            logging.debug('!! Shutting down reading\n')
             channel.shutdown_read()
 
         writer = threading.Thread(target=writeall, args=(self.channel,))
@@ -182,14 +178,8 @@ class WindowsHandler(PlatformHandler):
         except EOFError:
             pass
 
-        debug('!! Shutting down writing\n')
+        logging.debug('!! Shutting down writing\n')
         self.channel.shutdown_write()
-
-
-def debug(s):
-    if debug_fp:
-        debug_fp.write(s)
-        debug_fp.flush()
 
 
 def print_version(option, opt, value, parser):
@@ -245,12 +235,21 @@ def parse_options(args):
 
 def main():
     if DEBUG:
-        global debug_fp
-        fd, name = tempfile.mkstemp(prefix='rbssh', suffix='.log')
-        debug_fp = os.fdopen(fd, "w+b")
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s %(name)-18s %(levelname)-8s '
+                                   '%(message)s',
+                            datefmt='%m-%d %H:%M',
+                            filename='rbssh.log',
+                            filemode='w')
 
-        debug_fp.write('%s\n' % sys.argv)
-        debug_fp.write('PID %s\n' % os.getpid())
+        logging.debug('%s' % sys.argv)
+        logging.debug('PID %s' % os.getpid())
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter('%(message)s'))
+    ch.addFilter(logging.Filter('root'))
+    logging.getLogger('').addHandler(ch)
 
     path, command = parse_options(sys.argv[1:])
 
@@ -262,7 +261,7 @@ def main():
     if username is None:
         username = os.getlogin()
 
-    debug('!!! %s, %s, %s\n' % (hostname, username, command))
+    logging.debug('!!! %s, %s, %s' % (hostname, username, command))
 
     client = sshutils.get_ssh_client()
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
@@ -277,52 +276,48 @@ def main():
             break
         except paramiko.AuthenticationException, e:
             if attempts == 3 or not sys.stdin.isatty():
-                debug('Too many authentication failures for %s\n' % username)
-                sys.stderr.write('Too many authentication failures for %s\n' %
-                                 username)
+                logging.error('Too many authentication failures for %s' %
+                              username)
                 sys.exit(1)
 
             attempts += 1
             password = getpass.getpass("%s@%s's password: " %
                                        (username, hostname))
         except paramiko.SSHException, e:
-            debug('Error connecting to server: %s\n' % e)
-            sys.stderr.write('Error connecting to server: %s\n' % e)
+            logging.error('Error connecting to server: %s' % e)
             sys.exit(1)
         except Exception, e:
-            debug('Unknown exception during connect: %s (%s)\n' % (e, type(e)))
+            logging.error('Unknown exception during connect: %s (%s)' %
+                          (e, type(e)))
             sys.exit(1)
 
     transport = client.get_transport()
     channel = transport.open_session()
 
     if sys.platform in ('cygwin', 'win32'):
-        debug('!!! Using WindowsHandler\n')
+        logging.debug('!!! Using WindowsHandler')
         handler = WindowsHandler(channel)
     else:
-        debug('!!! Using PosixHandler\n')
+        logging.debug('!!! Using PosixHandler')
         handler = PosixHandler(channel)
 
     if options.subsystem == 'sftp':
-        debug('!!! Invoking sftp subsystem\n')
+        logging.debug('!!! Invoking sftp subsystem')
         channel.invoke_subsystem('sftp')
         handler.transfer()
     elif command:
-        debug('!!! Sending command %s\n' % command)
+        logging.debug('!!! Sending command %s' % command)
         channel.exec_command(' '.join(command))
         handler.transfer()
     else:
-        debug('!!! Opening shell\n')
+        logging.debug('!!! Opening shell')
         channel.get_pty()
         channel.invoke_shell()
         handler.shell()
 
-    debug('!!! Done\n')
+    logging.debug('!!! Done')
     status = channel.recv_exit_status()
     client.close()
-
-    if debug_fp:
-        debug_fp.close()
 
     return status
 
