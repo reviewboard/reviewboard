@@ -348,38 +348,42 @@ To set the property on a directory, type::
 .reviewboardrc
 ~~~~~~~~~~~~~~
 
-You can set the repository URL in :file:`.reviewboardrc` file in any
-directory. This must be a directory in the user's checkout path to work.
+The :file:`.reviewboardrc` file is a generic place for configuring a
+repository. This must be in a directory in the user's checkout path to work.
+It must parse as a valid Python file, or you'll see an error when using
+:command:`post-review`.
 
-The contents of the file should be::
+
+REPOSITORY
+^^^^^^^^^^
+
+.. versionadded: 0.3.1
+
+Normally, the repository path is automatically determined and passed to
+Review Board, but on more complex setups you may need to tell
+:command:`post-review` and Review Board specifically which repository you
+want to use.
+
+You can use the ``REPOSITORY`` setting to specify the path or the numeric
+ID of the repository to use. For example::
+
+    REPOSITORY = 'https://svn.example.com/'
+
+If using Review Board 1.5.3 or higher, you can also choose to specify the
+repository name. This is the same name as on Review Board's New Review Request
+page. For example::
+
+    REPOSITORY = 'RBTools'
+
+
+REVIEWBOARD_URL
+^^^^^^^^^^^^^^^
+
+To specify the Review Board server to use, you can use the
+``REVIEWBOARD_URL`` setting. This takes the URL to the Review Board server
+as a value. For example::
 
     REVIEWBOARD_URL = "http://reviewboard.example.com"
-
-
-Internal post-review Configuration
-----------------------------------
-
-:command:`post-review` itself can be modified with the path of the
-repository. This is useful in companies where there's only one Review
-Board server and the other methods aren't acceptable.
-
-You can edit :command:`post-review` and look for the line::
-
-    REVIEWBOARD_URL = None
-
-And replace this with the server path, such as::
-
-    REVIEWBOARD_URL = "http://reviewboard.example.com"
-
-There are also other more advanced customization options available for
-specialized cases. See the documentation and variables inside
-:command:`post-review` for more information.
-
-.. warning:: If you customize this file, it may make it harder to upgrade
-             to newer versions of :command:`post-review` in the future.
-             It's advised that you use a custom copy of the script and
-             not one that was installed by a package, or your changes
-             *will* get overridden.
 
 
 Custom User Configuration
