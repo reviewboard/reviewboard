@@ -700,6 +700,21 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    def test_post_reviewrequests_with_repository_name(self):
+        """Testing the POST review-requests/ API with a repository name"""
+        rsp = self.apiPost(self.get_list_url(), {
+            'repository': self.repository.name,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['review_request']['links']['repository']['href'],
+            self.base_url +
+            RepositoryResourceTests.get_item_url(self.repository.id))
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
     def test_post_reviewrequests_with_invalid_repository_error(self):
         """Testing the POST review-requests/ API with Invalid Repository error"""
         rsp = self.apiPost("review-requests", {
