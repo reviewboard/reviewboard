@@ -4119,10 +4119,11 @@ class ReviewRequestResource(WebAPIResource):
         when that first draft is published.
 
         The only requirement when creating a review request is that a valid
-        repository is passed. This can either be a numeric repository ID, or
-        the path to a repository (matching exactly the registered repository's
-        Path field in the adminstration interface). Failing to pass a valid
-        repository will result in an error.
+        repository is passed. This can be a numeric repository ID, the name
+        of a repository, or the path to a repository (matching exactly the
+        registered repository's Path or Mirror Path fields in the
+        adminstration interface). Failing to pass a valid repository will
+        result in an error.
 
         Clients can create review requests on behalf of another user by setting
         the ``submit_as`` parameter to the username of the desired user. This
@@ -4151,7 +4152,8 @@ class ReviewRequestResource(WebAPIResource):
                 # The repository is not an ID.
                 repository = Repository.objects.get(
                     (Q(path=repository) |
-                     Q(mirror_path=repository)) &
+                     Q(mirror_path=repository) |
+                     Q(name=repository)) &
                     Q(local_site=local_site))
         except Repository.DoesNotExist, e:
             return INVALID_REPOSITORY, {

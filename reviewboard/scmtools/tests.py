@@ -2,6 +2,7 @@ import imp
 import os
 import nose
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 try:
@@ -13,12 +14,26 @@ except ImportError:
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.reviews.models import Group
+from reviewboard.scmtools.bzr import BZRTool
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+
+
+def _get_repo_test_info(repo_key):
+    prefix = 'TEST_REPO_%s' % repo_key
+    repo_path = getattr(settings, '%s_PATH' % prefix, None)
+
+    if not repo_path:
+        raise nose.SkipTest('settings.%s_PATH is not defined' % prefix)
+
+    username = getattr(settings, '%s_USER' % prefix, None)
+    password = getattr(settings, '%s_PASS' % prefix, None)
+
+    return repo_path, username, password
 
 
 class CoreTests(DjangoTestCase):
@@ -35,6 +50,21 @@ class CoreTests(DjangoTestCase):
         self.assertEqual(cs.branch, '')
         self.assert_(len(cs.bugs_closed) == 0)
         self.assert_(len(cs.files) == 0)
+
+
+class BZRTests(DjangoTestCase):
+    """Unit tests for bzr."""
+    fixtures = ['test_scmtools.json']
+
+    def test_ssh(self):
+        """Testing a SSH-backed bzr repository"""
+        repo_path, username, password = _get_repo_test_info('BZR_SSH')
+        BZRTool.check_repository(repo_path, username, password)
+
+    def test_sftp(self):
+        """Testing a SFTP-backed bzr repository"""
+        repo_path, username, password = _get_repo_test_info('BZR_SFTP')
+        BZRTool.check_repository(repo_path, username, password)
 
 
 class CVSTests(DjangoTestCase):
@@ -200,6 +230,11 @@ class CVSTests(DjangoTestCase):
 
         self.assertRaises(SCMError, lambda: badtool.get_file(file, rev))
 
+    def test_ssh(self):
+        """Testing a SSH-backed CVS repository"""
+        repo_path, username, password = _get_repo_test_info('CVS_SSH')
+        self.tool.check_repository(repo_path, username, password)
+
 
 class SubversionTests(DjangoTestCase):
     """Unit tests for subversion."""
@@ -216,6 +251,11 @@ class SubversionTests(DjangoTestCase):
             self.tool = self.repository.get_scmtool()
         except ImportError:
             raise nose.SkipTest('pysvn is not installed')
+
+    def test_ssh(self):
+        """Testing a SSH-backed Subversion repository"""
+        repo_path, username, password = _get_repo_test_info('SVN_SSH')
+        self.tool.check_repository(repo_path, username, password)
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -707,6 +747,11 @@ class GitTests(DjangoTestCase):
 
     def _getFileInDiff(self, diff, filenum=0):
         return self.tool.get_parser(diff).parse()[filenum]
+
+    def test_ssh(self):
+        """Testing a SSH-backed git repository"""
+        repo_path, username, password = _get_repo_test_info('GIT_SSH')
+        self.tool.check_repository(repo_path, username, password)
 
     def testFilemodeDiff(self):
         """Testing parsing filemode changes Git diff"""
