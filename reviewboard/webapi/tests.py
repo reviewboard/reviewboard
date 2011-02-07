@@ -702,14 +702,15 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_repository_name(self):
         """Testing the POST review-requests/ API with a repository name"""
-        rsp = self.apiPost(self.get_list_url(), {
+        rsp = self.apiPost('review-requests', {
             'repository': self.repository.name,
         })
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
-            self.base_url +
-            RepositoryResourceTests.get_item_url(self.repository.id))
+            self.base_url + reverse('repository-resource', kwargs={
+                'repository_id': self.repository.id,
+            }))
 
         # See if we can fetch this. Also return it for use in other
         # unit tests.
