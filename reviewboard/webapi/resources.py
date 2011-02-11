@@ -4060,6 +4060,9 @@ class ReviewRequestResource(WebAPIResource):
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
 
+    def has_modify_permissions(self, request, review_request, *args, **kwargs):
+        return review_request.is_mutable_by(request.user)
+
     def has_delete_permissions(self, request, review_request, *args, **kwargs):
         return request.user.has_perm('reviews.delete_reviewrequest')
 
@@ -4209,6 +4212,9 @@ class ReviewRequestResource(WebAPIResource):
                 review_request_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
+        if not self.has_modify_permissions(request, review_request):
+            return _no_access_error(request.user)
 
         if (status is not None and
             review_request.status != string_to_status(status)):

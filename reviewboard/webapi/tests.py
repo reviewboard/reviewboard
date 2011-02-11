@@ -1362,6 +1362,18 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'D')
 
+    def test_put_reviewrequest_status_discarded_with_permission_denied(self):
+        """Testing the PUT review-requests/<id>/?status=discarded API with Permission Denied"""
+        q = ReviewRequest.objects.filter(public=True, status='P')
+        r = q.exclude(submitter=self.user)[0]
+
+        rsp = self.apiPut(self.get_item_url(r.display_id), {
+            'status': 'discarded',
+        }, expected_status=403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_put_reviewrequest_status_pending(self):
         """Testing the PUT review-requests/<id>/?status=pending API"""
         r = ReviewRequest.objects.filter(public=True, status='P',
