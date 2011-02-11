@@ -136,15 +136,19 @@ class GeneralSettingsForm(SiteSettingsForm):
         """Validates that the specified index file is valid."""
         index_file = self.cleaned_data['search_index_file'].strip()
 
-        if not os.path.isabs(index_file):
-            raise forms.ValidationError(_("Search index path should be absolute."))
+        if index_file:
+            if not os.path.isabs(index_file):
+                raise forms.ValidationError(
+                    _("The search index path must be absolute."))
 
-        if not os.path.exists(index_file):
-            raise forms.ValidationError(_("Search index path doesn't exists."))
+            if (os.path.exists(index_file) and
+                not os.access(index_file, os.W_OK)):
+                raise forms.ValidationError(
+                    _('The search index path is not writable. Make sure the '
+                      'web server has write access to it and its parent '
+                      'directory.'))
 
-        if not os.access(index_file, os.W_OK):
-            raise forms.ValidationError(_("Search index path is not writable."))
-
+        return index_file
 
 
     class Meta:
