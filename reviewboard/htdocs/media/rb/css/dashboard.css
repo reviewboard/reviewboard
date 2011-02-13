@@ -63,3 +63,12 @@
 #dashboard-navbar td img {
   vertical-align: bottom;
 }
+
+#dashboard-navbar tbody td {
+  font-size: 0.9em;
+}
+
+#dashboard-navbar tbody td label {
+  color: #575012;
+  font-weight: bold;
+}

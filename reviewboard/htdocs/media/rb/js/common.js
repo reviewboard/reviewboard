@@ -238,6 +238,17 @@ $(document).ready(function() {
         .text("Loading...")
         .hide()
         .appendTo("body");
+
+    $('#submitter, .reviewer a').hover(
+        function() {
+            $(this).append(
+                $("<div id='user-infobox'></div>")
+                .load($(this).attr('href') + "infobox/"));
+        },
+        function() {
+            $(this).find("div").remove();
+        }
+    );
 });
 
 // vim: set et:sw=4:

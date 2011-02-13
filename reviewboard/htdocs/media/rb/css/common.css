@@ -480,6 +480,44 @@ form table td.label {
 }
 
 
+/****************************************************************************
+ * User page hover
+ ****************************************************************************/
+
+#user-infobox {
+  background-image: url("../images/bubble.png");
+  bottom: 1em;
+  display: block;
+  height: 155px;
+  left: -20px;
+  position: absolute;
+  width: 330px;
+  z-index: 25;
+}
+
+#user-infobox #infobox-content {
+  height: 120px;
+  margin: 18px auto 0 auto;
+  width: 300px;
+}
+
+#user-infobox #infobox-content #infobox-pic {
+  float: left;
+  margin: 15px 10px 10px 10px;
+  width: 85px;
+}
+
+#user-infobox #infobox-content #infobox-text {
+  color: black;
+  float: left;
+  font-size: 0.8em;
+}
+
+#submitter {
+  position: relative;
+}
+
+
 /*
  * clearfix hack. See http://www.webtoolkit.info/css-clearfix.html
  */
