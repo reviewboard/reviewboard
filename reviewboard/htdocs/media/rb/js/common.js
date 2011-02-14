@@ -241,12 +241,21 @@ $(document).ready(function() {
 
     $('#submitter, .reviewer a').hover(
         function() {
-            $(this).append(
-                $("<div id='user-infobox'></div>")
-                .load($(this).attr('href') + "infobox/"));
+            var infobox = $(this).find(".user-infobox");
+
+            if (infobox.length > 0) {
+                infobox.show();
+            } else {
+                infobox = $(this).append(
+                   $("<div class='user-infobox loading'/>")
+                       .load($(this).attr('href') + "infobox/",
+                             function(responseText, textStatus) {
+                                 infobox.removeClass("loading");
+                             }));
+            }
         },
         function() {
-            $(this).find("div").remove();
+            $(this).find(".user-infobox").hide();
         }
     );
 });

@@ -1113,6 +1113,15 @@ def user_infobox(request, username,
         if not local_site.is_accessible_by(request.user):
             return _render_permission_denied(request)
 
-    return render_to_response(template_name, {
+    etag = ':'.join([user.first_name, user.last_name, user.email,
+                     str(user.last_login), str(settings.AJAX_SERIAL)])
+
+    if etag_if_none_match(request, etag):
+        return HttpResponseNotModified()
+
+    response = render_to_response(template_name, {
         'user': user,
     })
+    set_etag(response, etag)
+
+    return response
