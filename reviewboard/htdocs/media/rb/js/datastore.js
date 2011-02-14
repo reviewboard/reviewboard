@@ -1148,7 +1148,7 @@ $.extend(RB.Screenshot.prototype, {
         var blob = "";
         blob += "--" + boundary + "\r\n";
         blob += 'Content-Disposition: form-data; name="path"; ' +
-                           'filename="' + this.file.name + '"\r\n';
+                'filename="' + this.file.name + '"\r\n';
         blob += 'Content-Type: application/octet-stream\r\n';
         blob += '\r\n';
         blob += this.file.getAsBinary();
@@ -1607,9 +1607,11 @@ function rbApiCall(options) {
             $.funcQueue("rbapicall").next();
         };
 
-        data.data = $.extend({
-            api_format: 'json'
-        }, data.data || {});
+        if (typeof data.data == "object") {
+            data.data = $.extend({
+                api_format: 'json'
+            }, data.data || {});
+        }
 
         if (options.form) {
             options.form.ajaxSubmit(data);
