@@ -29,13 +29,16 @@ ul.actionlist li {
 
 #logo {
   padding: 0.5em;
-  position: absolute;
+  position: relative;
+  display: inline;
+  vertical-align: middle;
 }
 
 #branding h1 {
   padding-top: 0.5em;
   padding-bottom: 0.5em;
-  margin-left: 3.5em;
+  display: inline;
+  vertical-align: middle;
 }
 
 #admin-nav, #admin-subnav {
