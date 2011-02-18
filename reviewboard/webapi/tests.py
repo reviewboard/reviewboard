@@ -142,6 +142,30 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     #
     # Some utility functions shared across test suites.
     #
+    def _login_user(self, local_site=False, admin=False):
+        """Creates a user for a test.
+
+        The proper user will be created based on whether a valid LocalSite
+        user is needed, and/or an admin user is needed.
+        """
+        self.client.logout()
+
+        # doc is a member of the default LocalSite.
+        username = 'doc'
+
+        if admin:
+            if local_site:
+                user = User.objects.get(username=username)
+                local_site = LocalSite.objects.get(name=self.local_site_name)
+                local_site.admins.add(user)
+            else:
+                username = 'admin'
+        elif not local_site:
+            # Pick a user that's not part of the default LocalSite.
+            username = 'grumpy'
+
+        self.assertTrue(self.client.login(username=username, password=username))
+
     def _postNewReviewRequest(self, local_site_name=None,
                               repository=None):
         """Creates a review request and returns the payload response."""
@@ -301,9 +325,7 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
 
     def test_get_server_info_with_site(self):
         """Testing the GET info/ API with a local site"""
-        self.client.logout()
-        self.client.login(username="doc", password="doc")
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_url(self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('info' in rsp)
@@ -342,9 +364,7 @@ class SessionResourceTests(BaseWebAPITestCase):
 
     def test_get_session_with_site(self):
         """Testing the GET session/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_url(self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('session' in rsp)
@@ -373,9 +393,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     def test_get_repositories_with_site(self):
         """Testing the GET repositories/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_list_url(self.local_site_name))
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.filter(
@@ -410,9 +428,7 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_info_with_site(self):
         """Testing the GET repositories/<id>/info API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         repository = Repository.objects.get(name='V8 SVN')
         rsp = self.apiGet(self.get_url(repository, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
@@ -447,9 +463,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_groups_with_site(self):
         """Testing the GET groups/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         groups = Group.objects.accessible(self.user, local_site=local_site)
 
@@ -499,9 +513,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_group_with_site(self):
         """Testing the GET groups/<id>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         group = Group.objects.get(name='sitegroup')
 
         rsp = self.apiGet(self.get_item_url('sitegroup', self.local_site_name))
@@ -543,9 +555,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def test_get_users_with_site(self):
         """Testing the GET users/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         rsp = self.apiGet(self.get_list_url(self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
@@ -571,8 +581,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def test_get_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         username = 'doc'
         user = User.objects.get(username=username)
@@ -587,9 +596,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_item_url('dopey', self.local_site_name),
                           expected_status=404)
 
@@ -634,11 +641,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_request_with_site(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site"""
+        self._login_user(local_site=True)
+
         username = 'doc'
         user = User.objects.get(username=username)
-
-        self.client.logout()
-        self.client.login(username=username, password='doc')
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
@@ -651,9 +657,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_request_with_site_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiPost(self.get_list_url('doc', self.local_site_name),
                            { 'object_id': 10, },
                            expected_status=404)
@@ -755,9 +759,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_watched_review_requests_with_site_does_not_exist(self):
         """Testing the GET users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_list_url(self.user.username,
                                              self.local_site_name),
                           expected_status=404)
@@ -803,12 +805,10 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_group_with_site(self):
         """Testing the POST users/<username>/watched/review-groups/ API with a local site"""
+        self._login_user(local_site=True)
+
         username = 'doc'
         user = User.objects.get(username=username)
-
-        self.client.logout()
-        self.client.login(username=username, password='doc')
-
         group = Group.objects.get(name='sitegroup',
                                   local_site__name=self.local_site_name)
 
@@ -821,9 +821,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         """Testing the POST users/<username>/watched/review-groups/ API with a local site and Does Not Exist error"""
         username = 'doc'
 
-        self.client.logout()
-        self.client.login(username=username, password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiPost(self.get_list_url(username, self.local_site_name),
                            { 'object_id': 'devgroup', },
                            expected_status=404)
@@ -952,8 +950,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequests_with_site(self):
         """Testing the GET review-requests/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
         rsp = self.apiGet(self.get_list_url(self.local_site_name))
@@ -1267,8 +1264,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_site(self):
         """Testing the POST review-requests/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repository = Repository.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -1290,9 +1286,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API with a local site and Invalid Repository error"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiPost(self.get_list_url(self.local_site_name),
                            { 'repository': self.repository.path, },
                            expected_status=400)
@@ -1406,9 +1400,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_put_reviewrequest_status_submitted_with_site(self):
         """Testing the PUT review-requests/<id>/?status=submitted API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         r = ReviewRequest.objects.filter(public=True, status='P',
                                          submitter__username='doc',
                                          local_site__name=self.local_site_name)[0]
@@ -1443,9 +1435,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_site(self):
         """Testing the GET review-requests/<id>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
 
@@ -1575,9 +1565,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             Permission.objects.get(codename='delete_reviewrequest'))
         user.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.filter(local_site=local_site,
             submitter__username='doc')[0]
@@ -1650,8 +1638,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
                                                 relogin=True,
                                                 review_request=None):
         if relogin:
-            self.client.logout()
-            self.client.login(username='doc', password='doc')
+            self._login_user(local_site=True)
 
         if review_request is None:
             review_request = ReviewRequest.objects.from_user('doc',
@@ -1916,8 +1903,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     def test_post_reviews_with_site(self, public=False):
         """Testing the POST review-requests/<id>/reviews/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         body_top = ""
         body_bottom = "My Body Bottom"
@@ -2014,8 +2000,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     def test_put_review_with_site(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         body_top = ""
         body_bottom = "My Body Bottom"
@@ -2247,8 +2232,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiGet(self.get_list_url(review, self.local_site_name),
                           expected_status=403)
@@ -2291,8 +2275,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiPost(
             ReviewResourceTests.get_list_url(review_request,
@@ -2398,8 +2381,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request = review.review_request
         comment = review.comments.all()[0]
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiDelete(
             self.get_item_url(review, comment.id, self.local_site_name),
@@ -2498,8 +2480,7 @@ class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         screenshot_comment_text = "Test screenshot comment"
         x, y, w, h = 2, 2, 10, 10
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -2596,8 +2577,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply.base_reply_to = review
         reply.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         public_replies = review.public_replies()
 
@@ -2652,8 +2632,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review.public = True
         review.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
                            { 'body_top': 'Test', })
@@ -2737,8 +2716,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review.public = True
         review.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp, response = self.api_post_with_response(
             self.get_list_url(review, self.local_site_name))
@@ -2831,9 +2809,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply.base_reply_to = review
         reply.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         self.apiDelete(self.get_item_url(review, reply.id,
                                          self.local_site_name))
         self.assertEqual(review.replies.count(), 0)
@@ -2924,8 +2900,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         review.user = User.objects.get(username='doc')
         review.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self._postNewDiffComment(review_request, review.id, 'Comment')
         review = Review.objects.get(pk=review.id)
@@ -2951,8 +2926,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         }
 
         if badlogin:
-            self.client.logout()
-            self.client.login(username='grumpy', password='grumpy')
+            self._login_user()
             rsp = self.apiPost(rsp['reply']['links']['diff_comments']['href'],
                                post_data,
                                expected_status=403)
@@ -3012,9 +2986,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
-
+        self._login_user()
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'],
                           { 'text': new_comment_text, },
                           expected_status=403)
@@ -3080,8 +3052,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "My Comment Text"
         x, y, w, h = 10, 10, 20, 20
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -3186,8 +3157,7 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diffs_with_site(self):
         """Testing the POST review-requests/<id>/diffs/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repo = Repository.objects.get(name='Review Board Git')
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
@@ -3224,8 +3194,7 @@ class DiffResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs API with a local site"""
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiGet(self.get_list_url(review_request,
                                             self.local_site_name))
@@ -3256,8 +3225,7 @@ class DiffResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
         diff = review_request.diffset_history.diffsets.latest()
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiGet(self.get_item_url(review_request, diff.revision,
                                             self.local_site_name))
@@ -3330,8 +3298,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     def test_post_screenshots_with_site(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repo = Repository.objects.get(name='Review Board Git')
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
@@ -3435,8 +3402,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         review_request, screenshot_id = self.test_post_screenshots_with_site()
         review_request.publish(User.objects.get(username='doc'))
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiPut(self.get_item_url(review_request, screenshot_id,
                                             self.local_site_name),
@@ -3499,8 +3465,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def _test_review_request_with_site(self):
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repo = Repository.objects.get(name='Review Board Git')
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
@@ -3526,8 +3491,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
     def test_post_screenshots_with_site_no_access(self):
         """Testing the POST review-requests/<id>/screenshots/ API with a local site and Permission Denied error"""
         screenshots_url = self._test_review_request_with_site()
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
@@ -3579,8 +3543,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site"""
         diff_comment_text = 'Sample comment.'
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -3609,8 +3572,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site and Permission Denied error"""
         diff_comment_text = 'Sample comment.'
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -3626,8 +3588,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
 
         self._postNewDiffComment(review_request, review_id, diff_comment_text)
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiGet(self.get_list_url(filediff, self.local_site_name),
                           expected_status=403)
@@ -3730,8 +3691,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request.
         repo = Repository.objects.get(name='Review Board Git')
@@ -3778,8 +3738,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request.
         repo = Repository.objects.get(name='Review Board Git')
@@ -3807,8 +3766,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         self._postNewScreenshotComment(review_request, review.id, screenshot,
                                        comment_text, x, y, w, h)
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiGet(comments_url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -3853,8 +3811,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -3891,8 +3848,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -3914,8 +3870,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
                            { 'screenshot_id': screenshot.id, },
@@ -3962,8 +3917,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -4004,8 +3958,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -4034,8 +3987,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                                              screenshot, comment_text,
                                              x, y, w, h)
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiDelete(rsp['screenshot_comment']['links']['self']['href'],
                              expected_status=403)
