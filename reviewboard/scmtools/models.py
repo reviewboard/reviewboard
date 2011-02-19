@@ -133,6 +133,17 @@ class Repository(models.Model):
                  (self.review_groups.filter(users__pk=user.pk).count() > 0 or
                   self.users.filter(pk=user.pk).count() > 0)))
 
+    def is_mutable_by(self, user):
+        """Returns whether or not the user can modify or delete the repository.
+
+        The repository is mutable by the user if the user is an administrator
+        with proper permissions or the repository is part of a LocalSite and
+        the user is in the admin list.
+        """
+        return (user.has_perm('scmtools.change_repository') or
+                (self.local_site and
+                 self.local_site.admins.filter(pk=user.pk).exists()))
+
     def __unicode__(self):
         return self.name
 

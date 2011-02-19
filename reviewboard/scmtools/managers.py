@@ -20,3 +20,8 @@ class RepositoryManager(Manager):
             qs = self.filter(q).distinct()
 
         return qs.filter(local_site=local_site)
+
+    def can_create(self, user, local_site=None):
+        return (user.has_perm('scmtools.create_repository') or
+                (local_site and
+                 local_site.admins.filter(pk=user.pk).exists()))

@@ -1,0 +1,40 @@
+.. _webapi2.0-error-215:
+
+=========================
+215 - Unverified Host Key
+=========================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 215                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`403`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``The SSH key on the host is unverified``           |
++----------------------+-----------------------------------------------------+
+| **Description**      | Review Board encountered an unverified SSH key on   |
+|                      | another host (typically a repository). The key      |
+|                      | needs to be verified before Review Board can access |
+|                      | the host.                                           |
+|                      |                                                     |
+|                      | The hostname and key (in base64) will be returned   |
+|                      | along with the error.                               |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 215,
+       msg: "The  SSH key on the host is unverified"
+     },
+     hostname: "svn.example.com",
+     key: "<key in base64>"
+   }
+
+
+.. comment: vim: ft=rst et ts=3

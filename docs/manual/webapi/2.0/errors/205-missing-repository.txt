@@ -1,0 +1,34 @@
+.. _webapi2.0-error-205:
+
+========================
+205 - Missing Repository
+========================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 205                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`400`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``There was no repository found at the specified    |
+|                      | path``                                              |
++----------------------+-----------------------------------------------------+
+| **Description**      | A repository path was specified that didn't seem to |
+|                      | contain a valid repository.                         |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 205,
+       msg: "There was no repository found at the specified path"
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3

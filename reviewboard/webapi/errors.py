@@ -16,8 +16,8 @@ INVALID_CHANGE_NUMBER     = WebAPIError(203, "The change number specified "
 CHANGE_NUMBER_IN_USE      = WebAPIError(204, "The change number specified "
                                              "has already been used",
                                         http_status=409) # 409 Conflict
-MISSING_REPOSITORY        = WebAPIError(205, "A repository path must be "
-                                             "specified",
+MISSING_REPOSITORY        = WebAPIError(205, "There was no repository found "
+                                             "at the specified path",
                                         http_status=400) # 400 Bad Request
 INVALID_REPOSITORY        = WebAPIError(206, "The repository path specified "
                                              "is not in the list of known "
@@ -33,13 +33,34 @@ REPO_NOT_IMPLEMENTED      = WebAPIError(209, "The specified repository is "
                                         http_status=501) # 501 Not Implemented
 REPO_INFO_ERROR           = WebAPIError(210, "There was an error fetching "
                                              "extended information for this "
-                                             "repository.",
+                                             "repository",
                                         http_status=500) # 500 Internal Server
                                                          #     Error
 NOTHING_TO_PUBLISH        = WebAPIError(211, "You attempted to publish a "
                                              "review request that doesn't "
-                                             "have an associated draft.",
+                                             "have an associated draft",
                                         http_status=400) # 400 Bad Request
 EMPTY_CHANGESET           = WebAPIError(212, "The change number specified "
                                              "represents an empty changeset",
                                         http_status=400) # 400 Bad Request
+SERVER_CONFIG_ERROR       = WebAPIError(213, "There was an error storing "
+                                             "configuration on the server",
+                                        http_status=500) # 500 Internal Server
+                                                         #     Error
+BAD_HOST_KEY              = WebAPIError(214, "The SSH key on the host does "
+                                             "not match the stored key",
+                                        http_status=403) # 403 Forbidden
+UNVERIFIED_HOST_KEY       = WebAPIError(215, "The SSH key on the host is "
+                                             "unverified",
+                                        http_status=403) # 403 Forbidden
+UNVERIFIED_HOST_CERT      = WebAPIError(216, "The HTTPS certificate on the "
+                                             "host is unverified",
+                                        http_status=403) # 403 Forbidden
+MISSING_USER_KEY          = WebAPIError(217, "A public SSH key was requested, "
+                                             "but no SSH key was available "
+                                             "to send",
+                                        http_status=403) # 403 Forbidden
+REPO_AUTHENTICATION_ERROR = WebAPIError(218, "Unable to authenticate with "
+                                             "the repository using the "
+                                             "provided credentials",
+                                        http_status=403) # 403 Forbidden

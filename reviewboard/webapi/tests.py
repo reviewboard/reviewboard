@@ -8,6 +8,7 @@ from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
                                   INVALID_FORM_DATA, PERMISSION_DENIED
+import paramiko
 
 from reviewboard import initialize
 from reviewboard.diffviewer.models import DiffSet
@@ -15,10 +16,26 @@ from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        Comment, Screenshot, ScreenshotComment
+from reviewboard.scmtools import sshutils
+from reviewboard.scmtools.errors import AuthenticationError, \
+                                        BadHostKeyError, \
+                                        UnknownHostKeyError, \
+                                        UnverifiedCertificateError
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.errors import INVALID_REPOSITORY
+from reviewboard.webapi.errors import BAD_HOST_KEY, \
+                                      INVALID_REPOSITORY, \
+                                      MISSING_USER_KEY, \
+                                      REPO_AUTHENTICATION_ERROR, \
+                                      UNVERIFIED_HOST_CERT, \
+                                      UNVERIFIED_HOST_KEY
+
+
+# A couple classes need keys to test with, so generate them only once.
+key1 = paramiko.RSAKey.generate(256)
+key2 = paramiko.RSAKey.generate(256)
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
@@ -384,6 +401,24 @@ class SessionResourceTests(BaseWebAPITestCase):
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
 
+    def setUp(self):
+        super(RepositoryResourceTests, self).setUp()
+
+        # Some tests will temporarily replace some functions, so back them up
+        # so we can restore them.
+        self._old_check_repository = SVNTool.check_repository
+        self._old_accept_certificate = SVNTool.accept_certificate
+        self._old_add_host_key = sshutils.add_host_key
+        self._old_replace_host_key = sshutils.replace_host_key
+
+    def tearDown(self):
+        super(RepositoryResourceTests, self).tearDown()
+
+        SVNTool.check_repository = self._old_check_repository
+        SVNTool.accept_certificate = self._old_accept_certificate
+        sshutils.add_host_key = self._old_add_host_key
+        sshutils.replace_host_key = self._old_replace_host_key
+
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet(self.get_list_url())
@@ -403,6 +438,351 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/ API with a local site and Permission Denied error"""
         self.apiGet(self.get_list_url(self.local_site_name),
                     expected_status=403)
+
+    def test_post_repository(self):
+        """Testing the POST repositories/ API"""
+        self._login_user(admin=True)
+        self._post_repository(False)
+
+    def test_post_repository_with_bad_host_key(self):
+        """Testing the POST repositories/ API with Bad Host Key error"""
+        hostname = 'example.com'
+        key = key1
+        expected_key = key2
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise BadHostKeyError(hostname, key, expected_key)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], BAD_HOST_KEY.code)
+        self.assertTrue('hostname' in rsp)
+        self.assertTrue('expected_key' in rsp)
+        self.assertTrue('key' in rsp)
+        self.assertEqual(rsp['hostname'], hostname)
+        self.assertEqual(rsp['expected_key'], expected_key.get_base64())
+        self.assertEqual(rsp['key'], key.get_base64())
+
+    def test_post_repository_with_bad_host_key_and_trust_host(self):
+        """Testing the POST repositories/ API with Bad Host Key error and trust_host=1"""
+        hostname = 'example.com'
+        key = key1
+        expected_key = key2
+        saw = {'replace_host_key': False}
+
+        def _replace_host_key(_hostname, _expected_key, _key):
+            self.assertEqual(hostname, _hostname)
+            self.assertEqual(expected_key, _expected_key)
+            self.assertEqual(key, _key)
+            saw['replace_host_key'] = True
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            if not saw['replace_host_key']:
+                raise BadHostKeyError(hostname, key, expected_key)
+
+        SVNTool.check_repository = _check_repository
+        sshutils.replace_host_key = _replace_host_key
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={
+            'trust_host': 1,
+        })
+
+        self.assertTrue(saw['replace_host_key'])
+
+    def test_post_repository_with_unknown_host_key(self):
+        """Testing the POST repositories/ API with Unknown Host Key error"""
+        hostname = 'example.com'
+        key = key1
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise UnknownHostKeyError(hostname, key)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_KEY.code)
+        self.assertTrue('hostname' in rsp)
+        self.assertTrue('key' in rsp)
+        self.assertEqual(rsp['hostname'], hostname)
+        self.assertEqual(rsp['key'], key.get_base64())
+
+    def test_post_repository_with_unknown_host_key_and_trust_host(self):
+        """Testing the POST repositories/ API with Unknown Host Key error and trust_host=1"""
+        hostname = 'example.com'
+        key = key1
+        saw = {'add_host_key': False}
+
+        def _add_host_key(_hostname, _key):
+            self.assertEqual(hostname, _hostname)
+            self.assertEqual(key, _key)
+            saw['add_host_key'] = True
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            if not saw['add_host_key']:
+                raise UnknownHostKeyError(hostname, key)
+
+        SVNTool.check_repository = _check_repository
+        sshutils.add_host_key = _add_host_key
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={
+            'trust_host': 1,
+        })
+
+        self.assertTrue(saw['add_host_key'])
+
+    def test_post_repository_with_unknown_cert(self):
+        """Testing the POST repositories/ API with Unknown Certificate error"""
+        class Certificate(object):
+            failures = ['failures']
+            fingerprint = 'fingerprint'
+            hostname = 'example.com'
+            issuer = 'issuer'
+            valid_from = 'valid_from'
+            valid_until = 'valid_until'
+
+        cert = Certificate()
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise UnverifiedCertificateError(cert)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_CERT.code)
+        self.assertEqual(rsp['failures'], cert.failures)
+        self.assertEqual(rsp['fingerprint'], cert.fingerprint)
+        self.assertEqual(rsp['hostname'], cert.hostname)
+        self.assertEqual(rsp['issuer'], cert.issuer)
+        self.assertEqual(rsp['valid']['from'], cert.valid_from)
+        self.assertEqual(rsp['valid']['until'], cert.valid_until)
+
+    def test_post_repository_with_unknown_cert_and_trust_host(self):
+        """Testing the POST repositories/ API with Unknown Certificate error and trust_host=1"""
+        class Certificate(object):
+            failures = ['failures']
+            fingerprint = 'fingerprint'
+            hostname = 'example.com'
+            issuer = 'issuer'
+            valid_from = 'valid_from'
+            valid_until = 'valid_until'
+
+        cert = Certificate()
+        saw = {'accept_certificate': False}
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            if not saw['accept_certificate']:
+                raise UnverifiedCertificateError(cert)
+
+        @classmethod
+        def _accept_certificate(cls, path):
+            saw['accept_certificate'] = True
+
+        SVNTool.check_repository = _check_repository
+        SVNTool.accept_certificate = _accept_certificate
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={
+            'trust_host': 1,
+        })
+        self.assertTrue(saw['accept_certificate'])
+
+    def test_post_repository_with_missing_user_key(self):
+        """Testing the POST repositories/ API with Missing User Key error"""
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise AuthenticationError(['publickey'], user_key=None)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], MISSING_USER_KEY.code)
+
+    def test_post_repository_with_authentication_error(self):
+        """Testing the POST repositories/ API with Authentication Error"""
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise AuthenticationError([])
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], REPO_AUTHENTICATION_ERROR.code)
+        self.assertTrue('reason' in rsp)
+
+    def test_post_repository_with_site(self):
+        """Testing the POST repositories/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._post_repository(True)
+
+    def test_post_repository_full_info(self):
+        """Testing the POST repositories/ API with all available info"""
+        self._login_user(admin=True)
+        self._post_repository(False, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_post_repository_with_no_access(self):
+        """Testing the POST repositories/ API with no access"""
+        self._login_user()
+        self._post_repository(True, expected_status=403)
+
+    def test_post_repository_with_site_no_access(self):
+        """Testing the POST repositories/ API with a local site and no access"""
+        self._login_user(local_site=True)
+        self._post_repository(True, expected_status=403)
+
+    def test_put_repository(self):
+        """Testing the PUT repositories/<id>/ API"""
+        self._login_user(admin=True)
+        self._put_repository(False, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_put_repository_with_site(self):
+        """Testing the PUT repositories/<id>/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._put_repository(True, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_put_repository_with_no_access(self):
+        """Testing the PUT repositories/<id>/ API with no access"""
+        self._login_user()
+        self._put_repository(False, expected_status=403)
+
+    def test_put_repository_with_site_no_access(self):
+        """Testing the PUT repositories/<id>/ API with a local site and no access"""
+        self._login_user(local_site=True)
+        self._put_repository(False, expected_status=403)
+
+    def test_delete_repository(self):
+        """Testing the DELETE repositories/<id>/ API"""
+        self._login_user(admin=True)
+        self._delete_repository(False)
+
+    def test_delete_repository_with_site(self):
+        """Testing the DELETE repositories/<id>/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._delete_repository(True)
+
+    def test_delete_repository_with_no_access(self):
+        """Testing the DELETE repositories/<id>/ API with no access"""
+        self._login_user()
+        self._delete_repository(False, expected_status=403)
+
+    def test_delete_repository_with_site_no_access(self):
+        """Testing the DELETE repositories/<id>/ API with a local site and no access"""
+        self._login_user(local_site=True)
+        self._delete_repository(True, expected_status=403)
+
+    def _post_repository(self, use_local_site, data={}, expected_status=201):
+        repo_name = 'Test Repository'
+        repo_path = 'file://' + os.path.abspath(
+            os.path.join(os.path.dirname(__file__),
+                         '../scmtools/testdata/svn_repo'))
+
+        local_site_name = self._get_local_site_info(use_local_site)[1]
+
+        rsp = self.apiPost(self.get_list_url(local_site_name), dict({
+            'name': repo_name,
+            'path': repo_path,
+            'tool': 'Subversion',
+        }, **data), expected_status=expected_status)
+
+        if 200 <= expected_status < 300:
+            self._verify_repository_info(rsp, repo_name, repo_path, data)
+
+            self.assertEqual(
+                rsp['repository']['links']['self']['href'],
+                self.base_url + self.get_item_url(rsp['repository']['id'],
+                                                  local_site_name))
+
+        return rsp
+
+    def _put_repository(self, use_local_site, data={}, expected_status=200):
+        repo_name = 'New Test Repository'
+        repo_path = 'file://' + os.path.abspath(
+            os.path.join(os.path.dirname(__file__),
+                         '../scmtools/testdata/svn_repo'))
+
+        local_site, local_site_name = self._get_local_site_info(use_local_site)
+        repo_id = Repository.objects.filter(local_site=local_site,
+                                            tool__name='Subversion')[0].pk
+
+
+        rsp = self.apiPut(self.get_item_url(repo_id, local_site_name), dict({
+            'name': repo_name,
+            'path': repo_path,
+        }, **data), expected_status=expected_status)
+
+        if 200 <= expected_status < 300:
+            self._verify_repository_info(rsp, repo_name, repo_path, data)
+
+    def _delete_repository(self, use_local_site, expected_status=204):
+        local_site, local_site_name = self._get_local_site_info(use_local_site)
+        repo_id = Repository.objects.filter(local_site=local_site,
+                                            tool__name='Subversion')[0].pk
+
+        self.apiDelete(self.get_item_url(repo_id, local_site_name),
+                       expected_status=expected_status)
+
+    def _get_local_site_info(self, use_local_site):
+        if use_local_site:
+            return (LocalSite.objects.get(name=self.local_site_name),
+                    self.local_site_name)
+        else:
+            return None, None
+
+    def _verify_repository_info(self, rsp, repo_name, repo_path, data):
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('repository' in rsp)
+
+        repository = Repository.objects.get(pk=rsp['repository']['id'])
+        self.assertEqual(rsp['repository']['name'], repo_name)
+        self.assertEqual(rsp['repository']['path'], repo_path)
+        self.assertEqual(repository.name, repo_name)
+        self.assertEqual(repository.path, repo_path)
+
+        for key, value in data.iteritems():
+            if hasattr(repository, key):
+                self.assertEqual(getattr(repository, key), value)
 
     def get_list_url(self, local_site_name=None):
         return local_site_reverse('repositories-resource',

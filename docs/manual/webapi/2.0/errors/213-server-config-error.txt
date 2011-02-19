@@ -1,0 +1,37 @@
+.. _webapi2.0-error-213:
+
+================================
+213 - Server Configuration Error
+================================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 213                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`500`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``There was an error storing configuration on the   |
+|                      | server``                                            |
++----------------------+-----------------------------------------------------+
+| **Description**      | Review Board attempted to store data in the         |
+|                      | database or a configuration file as needed to       |
+|                      | fulfill this request, but wasn't able to. The       |
+|                      | reason for this will be stored in ``reason``.       |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 213,
+       msg: "There was an error storing configuration on the server"
+     },
+     reason: "Unable to write to /path/to/file."
+   }
+
+
+.. comment: vim: ft=rst et ts=3
