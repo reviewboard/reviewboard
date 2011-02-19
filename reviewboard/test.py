@@ -140,9 +140,11 @@ def runner(module_list, verbosity=1, interactive=True, extra_tests=[]):
                       '--cover-package=reviewboard']
         sys.argv.remove('--with-coverage')
 
-    nose_argv += settings.TEST_PACKAGES
+    for package in settings.TEST_PACKAGES:
+        nose_argv.append('--where=%s' % package)
+
     if '--with-webtests' in sys.argv:
-        nose_argv += ['webtests']
+        nose_argv.append('--where=webtests')
         sys.argv.remove('--with-webtests')
 
     # manage.py captures everything before "--"
