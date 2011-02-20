@@ -35,8 +35,8 @@ from reviewboard.webapi.errors import BAD_HOST_KEY, \
 
 
 # A couple classes need keys to test with, so generate them only once.
-key1 = paramiko.RSAKey.generate(256)
-key2 = paramiko.RSAKey.generate(256)
+key1 = paramiko.RSAKey.generate(1024)
+key2 = paramiko.RSAKey.generate(1024)
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
