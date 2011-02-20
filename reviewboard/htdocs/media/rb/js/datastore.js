@@ -1607,7 +1607,8 @@ function rbApiCall(options) {
             $.funcQueue("rbapicall").next();
         };
 
-        if (typeof data.data == "object") {
+        if (data.data == null || data.data == undefined ||
+            typeof data.data == "object") {
             data.data = $.extend({
                 api_format: 'json'
             }, data.data || {});
