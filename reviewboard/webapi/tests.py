@@ -563,12 +563,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         rsp = self._post_repository(False, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_CERT.code)
-        self.assertEqual(rsp['failures'], cert.failures)
-        self.assertEqual(rsp['fingerprint'], cert.fingerprint)
-        self.assertEqual(rsp['hostname'], cert.hostname)
-        self.assertEqual(rsp['issuer'], cert.issuer)
-        self.assertEqual(rsp['valid']['from'], cert.valid_from)
-        self.assertEqual(rsp['valid']['until'], cert.valid_until)
+        self.assertTrue('certificate' in rsp)
+        self.assertEqual(rsp['certificate']['failures'], cert.failures)
+        self.assertEqual(rsp['certificate']['fingerprint'], cert.fingerprint)
+        self.assertEqual(rsp['certificate']['hostname'], cert.hostname)
+        self.assertEqual(rsp['certificate']['issuer'], cert.issuer)
+        self.assertEqual(rsp['certificate']['valid']['from'], cert.valid_from)
+        self.assertEqual(rsp['certificate']['valid']['until'], cert.valid_until)
 
     def test_post_repository_with_unknown_cert_and_trust_host(self):
         """Testing the POST repositories/ API with Unknown Certificate error and trust_host=1"""
