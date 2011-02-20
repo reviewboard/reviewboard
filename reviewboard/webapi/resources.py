@@ -1776,9 +1776,6 @@ class RepositoryResource(WebAPIResource):
     def serialize_tool_field(self, obj):
         return obj.tool.name
 
-    def has_access_permissions(self, request, repository, *args, **kwargs):
-        return repository.is_accessible_by(request.user)
-
     def has_modify_permissions(self, request, repository, *args, **kwargs):
         return repository.is_mutable_by(request.user)
 
