@@ -1,6 +1,8 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 
+from reviewboard.scmtools.managers import RepositoryManager
+
 
 class Tool(models.Model):
     name = models.CharField(max_length=32, unique=True)
@@ -47,10 +49,20 @@ class Repository(models.Model):
     encoding = models.CharField(max_length=32, blank=True)
     visible = models.BooleanField(default=True)
 
+    objects = RepositoryManager()
+
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()
         return cls(self)
 
+
+    def is_mutable_by(self, user):
+        """Returns whether or not the user can modify or delete the repository.
+
+        The repository is mutable by the user if the user is an administrator
+        with proper permissions.
+        """
+        return user.has_perm('scmtools.change_repository')
 
     def __unicode__(self):
         return self.name

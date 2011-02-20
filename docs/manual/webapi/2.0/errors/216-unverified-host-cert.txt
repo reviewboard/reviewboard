@@ -1,0 +1,49 @@
+.. _webapi2.0-error-216:
+
+=================================
+216 - Unverified Host Certificate
+=================================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 216                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`403`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``The HTTPS certificate on the host is unverified`` |
++----------------------+-----------------------------------------------------+
+| **Description**      | Review Board encountered an unverified HTTPS        |
+|                      | certificate another host (typically a repository).  |
+|                      | The certificate needs to be verified before         |
+|                      | Review Board can access the host.                   |
+|                      |                                                     |
+|                      | The certificate information will be returned along  |
+|                      | with the error.                                     |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 216,
+       msg: "The HTTPS certificate on the host is unverified"
+     },
+     certificate: {
+       failures: ["failure 1", "failure 2", ...],
+       fingerprint: "<https certificate fingerprint>",
+       hostname: "svn.example.com",
+       issuer: "MyIssuer",
+       valid: {
+         from: "<date>",
+         until: "<date>",
+       }
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3
+
