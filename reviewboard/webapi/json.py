@@ -484,7 +484,8 @@ def review_request_close(request, review_request_id, type, *args, **kwargs):
 
 @webapi_deprecated_in_1_5
 @webapi_login_required
-def review_request_update_changenum(request, review_request_id, changenum):
+def review_request_update_changenum(request, review_request_id, changenum,
+                                    *args, **kwargs):
     try:
         review_request = ReviewRequest.objects.get(pk=review_request_id)
         review_request.update_changenum(changenum, request.user)
