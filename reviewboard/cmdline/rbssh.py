@@ -259,7 +259,7 @@ def main():
     username, hostname = SCMTool.get_auth_from_uri(path, options.username)
 
     if username is None:
-        username = os.getlogin()
+        username = getpass.getuser()
 
     logging.debug('!!! %s, %s, %s' % (hostname, username, command))
 
