@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -151,6 +152,8 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     context['domain'] = current_site.domain
     context['domain_method'] = domain_method
     context['review_request'] = review_request
+    context['MEDIA_URL'] = settings.MEDIA_URL
+    context['MEDIA_SERIAL'] = settings.MEDIA_SERIAL
     text_body = render_to_string(text_template_name, context)
     html_body = render_to_string(html_template_name, context)
 
