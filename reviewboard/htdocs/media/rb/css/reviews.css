@@ -432,6 +432,10 @@
   font-weight: bold;
 }
 
+.review .reviewer a {
+  position: relative;
+}
+
 .review .posted_time {
   text-align: right;
 }

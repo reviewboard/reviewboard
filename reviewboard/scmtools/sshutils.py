@@ -67,6 +67,23 @@ def get_user_key():
     return None
 
 
+def get_public_key(key):
+    """Returns the public key portion of an SSH key.
+
+    This will be formatted for display.
+    """
+    public_key = ''
+
+    if key:
+        base64 = key.get_base64()
+
+        # TODO: Move this wrapping logic into a common templatetag.
+        for i in range(0, len(base64), 64):
+            public_key += base64[i:i + 64] + '\n'
+
+    return public_key
+
+
 def ensure_ssh_dir():
     """Ensures the existance of the .ssh directory.
 
@@ -244,8 +261,15 @@ def check_host(hostname, username=None, password=None):
     exception will be one of BadHostKeyError, UnknownHostKeyError, or
     SCMError.
     """
+    from django.conf import settings
+
     client = get_ssh_client()
     client.set_missing_host_key_policy(RaiseUnknownHostKeyPolicy())
+
+    # We normally want to notify on unknown host keys, but not when running
+    # unit tests.
+    if getattr(settings, 'RUNNING_TEST', False):
+        client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     try:
         client.connect(hostname, username=username, password=password)

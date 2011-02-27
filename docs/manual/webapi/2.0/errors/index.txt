@@ -12,12 +12,19 @@ Errors
    105-invalid-form-data
    203-invalid-change-number
    204-change-number-in-use
+   205-missing-repository
    206-invalid-repository
    207-repository-file-not-found
    208-invalid-user
    209-repository-action-not-supported
    210-repository-info-error
    212-empty-changeset
+   213-server-config-error
+   214-bad-host-key
+   215-unverified-host-key
+   216-unverified-host-cert
+   217-missing-user-key
+   218-repo-authentication-error
 
 
 .. comment: vim: ft=rst et ts=3

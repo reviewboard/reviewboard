@@ -1,0 +1,65 @@
+================================
+Review Board 1.5.3 Release Notes
+================================
+
+
+**Release date**: February 7, 2011
+
+
+New Features
+============
+
+* Added support for matching repository names instead of paths with
+  RBTools 0.3.1.
+
+  Along with the new RBTools 0.3.1 release, we can now match a specific
+  repository name (the same names you'd see in the New Review Request page)
+  instead of a repository path. This helps administrators get around the
+  problem of having too many possible repository paths (such as when there
+  must be a username in the URL).
+
+  This makes use of a ``REPOSITORY = "..."`` setting in
+  :file:`.reviewboardrc`. You can set it to the exact name of the repository,
+  or to a repository path.
+
+  For more information, see the `REPOSITORY documentation`_ for post-review.
+
+.. _`REPOSITORY documentation`:
+    http://www.reviewboard.org/docs/manual/dev/users/tools/post-review/#repository
+
+
+Bug Fixes
+=========
+
+* Fixed many compatibility issues with the new SSH implementation.
+
+  The new SSH implementation added in 1.5.2 had a few regressions on
+  certain configurations. Depending on your CVS, Bazaar, or Windows
+  configuration, you may encounter certain bugs.
+
+  We have now fixed all known bugs. This means CVS works, Bazaar works,
+  and SSH on Windows works again. We've added tests to make sure these don't
+  break again.
+
+* Removed some spurious print statements causing mod_wsgi to have problems.
+  (:bug:`1952`)
+
+  We have some debugging statements left in that conflicted with
+  mod_wsgi, breaking sites that accessed that code.
+
+* The Search Index setting in the administration UI now validates the
+  path to ensure that it's an absolute path, it exists, and it's writeable.
+  Patch by Jan Koprowski. (:bug:`1831`)
+
+* Updated the version of Python Setuptools that we install if the system
+  doesn't already have it, since the version we used before no longer exists.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Jan Koprowski
+
+.. comment: vim: ft=rst et

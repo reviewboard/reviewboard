@@ -1,0 +1,58 @@
+{% extends "datagrid/datagrid.html" %}
+{% load djblets_deco %}
+{% load i18n %}
+{% load reviewtags %}
+{% load gravatars %}
+{% block title %}{% trans "My Page" %}{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css?{{MEDIA_SERIAL}}" />
+{% endblock %}
+
+{% block scripts-post %}
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
+{% endblock %}
+
+{% block content %}
+{% box "dashboard" %}
+<div id="dashboard-wrapper">
+ <table class="datagrid" id="dashboard-navbar">
+  <colgroup>
+   <col class="summary" />
+   <col class="count" />
+  </colgroup>
+  <tbody>
+    <tr>
+      <td>{% gravatar user 175 %}</td>
+    </tr>
+    <tr>
+      <td><h2>{{user}}</h2></td>
+    </tr>
+    <tr>
+      <td><p><label>{% trans "Name:" %}</label></p> {{user.first_name}} {{user.last_name}}</td>
+    </tr>
+    <tr>
+      <td><p><label>{% trans "Email:" %}</label></p> {{user.email}}</td>
+    </tr>
+    <tr>
+      <td><p><label>{% trans "Last Login:" %}</label></p> {{user.last_login|date:"F jS, Y"}}</td>
+    </tr>
+    <tr>
+      <td><p><label>{% trans "Date Joined:" %}</label></p> {{user.date_joined|date:"F jS, Y"}}</td>
+    </tr>
+    <tr>
+      <td>
+        <p><label>{% trans "Groups:" %}</label></p>
+        {% for group in user.review_groups.all %}
+        <a href="{% url group group %}">{{group}}</a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      </td>
+    </tr>
+  </tbody>
+ </table>
+ <div id="dashboard-main" class="clearfix">
+  {{datagrid.render_listview}}
+ </div>
+</div>
+{% endbox %}
+{% endblock %}

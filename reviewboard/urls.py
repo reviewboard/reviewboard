@@ -70,6 +70,8 @@ localsite_urlpatterns = patterns('',
         'reviewboard.reviews.views.submitter_list', name="all-users"),
     url(r'^users/(?P<username>[A-Za-z0-9@_\-\.]+)/$',
         'reviewboard.reviews.views.submitter', name="user"),
+    url(r'^users/(?P<username>[A-Za-z0-9@_\-\.]+)/infobox/$',
+        'reviewboard.reviews.views.user_infobox', name="user-infobox"),
 
     # Groups
     url(r'^groups/$',

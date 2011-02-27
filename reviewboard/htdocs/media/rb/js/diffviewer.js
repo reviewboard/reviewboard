@@ -890,7 +890,7 @@ function findLineNumRow(table, linenum, startRow, endRow) {
     var low = startRow || 1;
     var high = Math.min(endRow || table.rows.length, table.rows.length);
 
-    if (endRow != undefined) {
+    if (endRow != undefined && endRow < table.rows.length) {
         /* See if we got lucky and found it in the last row. */
         if (parseInt(table.rows[endRow].getAttribute('line')) == linenum) {
             return table.rows[endRow];

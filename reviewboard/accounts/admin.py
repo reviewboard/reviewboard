@@ -9,12 +9,12 @@ from reviewboard.accounts.models import ReviewRequestVisit, Profile, \
                                         LocalSiteProfile
 
 
-USERNAME_REGEX = r'^[-\w.]+$'
+USERNAME_REGEX = r'^[-@\w.]+$'
 USERNAME_HELP_TEXT = _("Required. 30 characters or fewer. Alphanumeric "
-                       "characters only (letters, digits, underscores, and "
-                       "periods).")
+                       "characters (letters, digits, underscores, and "
+                       "periods) and '@'.")
 USERNAME_ERROR_MESSAGE = _("This value must contain only letters, numbers, "
-                           "underscores, and periods.")
+                           "underscores, periods and '@'.")
 
 
 class RBUserChangeForm(UserChangeForm):

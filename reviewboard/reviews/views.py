@@ -622,7 +622,7 @@ def group_members(request,
 @check_login_required
 def submitter(request,
               username,
-              template_name='reviews/datagrid.html',
+              template_name='reviews/user_page.html',
               local_site_name=None):
     """
     A list of review requests owned by a particular user.
@@ -1094,3 +1094,34 @@ def search(request,
                        extra_context={'query': query,
                                       'extra_query': 'q=%s' % query,
                                      })
+
+
+@check_login_required
+def user_infobox(request, username,
+                 template_name='accounts/user_infobox.html',
+                 local_site_name=None):
+    """Displays a user info popup.
+
+    This is meant to be embedded in other pages, rather than being
+    a standalone page.
+    """
+    user = get_object_or_404(User, username=username)
+
+    if local_site_name:
+        local_site = get_object_or_404(LocalSite, name=local_site_name)
+
+        if not local_site.is_accessible_by(request.user):
+            return _render_permission_denied(request)
+
+    etag = ':'.join([user.first_name, user.last_name, user.email,
+                     str(user.last_login), str(settings.AJAX_SERIAL)])
+
+    if etag_if_none_match(request, etag):
+        return HttpResponseNotModified()
+
+    response = render_to_response(template_name, {
+        'user': user,
+    })
+    set_etag(response, etag)
+
+    return response

@@ -238,6 +238,26 @@ $(document).ready(function() {
         .text("Loading...")
         .hide()
         .appendTo("body");
+
+    $('#submitter, .reviewer a').hover(
+        function() {
+            var infobox = $(this).find(".user-infobox");
+
+            if (infobox.length > 0) {
+                infobox.show();
+            } else {
+                infobox = $(this).append(
+                   $("<div class='user-infobox loading'/>")
+                       .load($(this).attr('href') + "infobox/",
+                             function(responseText, textStatus) {
+                                 infobox.removeClass("loading");
+                             }));
+            }
+        },
+        function() {
+            $(this).find(".user-infobox").hide();
+        }
+    );
 });
 
 // vim: set et:sw=4:

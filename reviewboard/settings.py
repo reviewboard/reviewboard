@@ -98,6 +98,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'djblets.datagrid',
     'djblets.feedview',
+    'djblets.gravatars',
     'djblets.log',
     'djblets.siteconfig',
     'djblets.util',
@@ -193,3 +194,5 @@ SESSION_COOKIE_PATH = SITE_ROOT
 
 # The list of directories that will be searched to generate a media serial.
 MEDIA_SERIAL_DIRS = ["admin", "djblets", "rb"]
+
+TEST_PACKAGES = ['reviewboard']

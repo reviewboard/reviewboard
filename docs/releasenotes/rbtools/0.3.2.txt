@@ -1,0 +1,36 @@
+===========================
+RBTools 0.3.2 Release Notes
+===========================
+
+
+**Release date**: February 9, 2011
+
+
+Bug Fixes
+=========
+
+post-review
+-----------
+
+* Fixed using Perforce change numbers with Review Board 1.5.2.
+  (:bug:`1976`)
+
+  The change number updating API is broken in Review Board 1.5.2. When
+  attempting to use a change number on this version of Review Board, we
+  fall back to the old version of the API. A fix to Review Board will be out
+  soon.
+
+* Fixed parsing CVSROOTs with ``:ext:`` schemes not containing a username.
+  (:bug:`1970`)
+
+* Mercurial no longer takes precedence over Perforce if a valid Mercurial
+  user configuration is found.
+
+
+Contributors
+============
+
+* Christian Hammond
+
+
+.. comment: vim: ft=rst et

@@ -359,7 +359,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                         .attr("for", yourcomment_id)
                         .append($("<a/>")
                             .attr("href", gUserURL)
-                            .text(gUserFullName)
+                            .html(gUserFullName)
                         )
                     )
                     .append('<dd><pre id="' + yourcomment_id + '"/></dd>')

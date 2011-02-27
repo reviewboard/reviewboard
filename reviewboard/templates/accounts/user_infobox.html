@@ -1,0 +1,18 @@
+{% load i18n %}
+{% load djblets_deco %}
+{% load djblets_utils %}
+{% load gravatars %}
+{% load reviewtags %}
+
+<div class="infobox-content" class="vcard">
+ <div class="infobox-pic" class="logo">
+  {% gravatar user 85 %}
+ </div>
+ <div class="infobox-text">
+  <h2 class="nickname">{{user}}</h2>
+  <p class="fn">{{user.first_name}} {{user.last_name}}</p>
+  <p class="email">{{user.email}}</p>
+  <p class="logged-in">Last logged in {{user.last_login|date:"F jS, Y"}}</p>
+  <p class="joined">Joined {{user.date_joined|date:"F jS, Y"}}</p>
+ </div>
+</div>
