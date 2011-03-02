@@ -296,7 +296,7 @@ class ReviewRequest(models.Model):
     shipit_count = CounterField(_("ship-it count"), default=0)
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True)
-    local_id = models.IntegerField('site-local ID', null=True)
+    local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
