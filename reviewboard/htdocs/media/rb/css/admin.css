@@ -111,14 +111,6 @@ div.breadcrumbs {
   float: right;
 }
 
-.module caption span.title {
-  float: left;
-}
-
-.module caption {
-  width: 100%;
-}
-
 .module table {
   width: 100%;
 }
