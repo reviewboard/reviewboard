@@ -55,11 +55,11 @@ class ActionHook(ExtensionHook):
         This should be a dict with the following keys:
 
            * `id`:           The ID of this action (optional).
-           * `image`:        The path to the image used for the icon.
-           * `image_width`:  The width of the image.
-           * `image_height`: The height of the image.
+           * `image`:        The path to the image used for the icon (optional).
+           * `image_width`:  The width of the image (optional).
+           * `image_height`: The height of the image (optional).
            * `label`:        The label for the action.
-           * `url`:          The URI to invoke when the action is clicked.
+           * `uri`:          The URI to invoke when the action is clicked.
                              This could be a javascript: URI.
         """
         raise NotImplemented
