@@ -3,8 +3,18 @@ import os
 
 from django.conf import settings
 from django.contrib import auth
-from django.core.handlers.modpython import ModPythonRequest
-from django.core.handlers.wsgi import WSGIRequest
+
+try:
+    from django.core.handlers.modpython import ModPythonRequest
+except ImportError:
+    class ModPythonRequest:
+        pass
+
+try:
+    from django.core.handlers.wsgi import WSGIRequest
+except ImportError:
+    class WSGIRequest:
+        pass
 
 
 from reviewboard.admin.checks import check_updates_required
