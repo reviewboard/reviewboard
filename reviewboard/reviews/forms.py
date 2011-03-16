@@ -97,19 +97,19 @@ class NewReviewRequestForm(forms.Form):
         required=False,
         help_text=_("The absolute path in the repository the diff was "
                     "generated in."),
-        widget=forms.TextInput(attrs={'size': '35'}))
+        widget=forms.TextInput(attrs={'size': '62'}))
     diff_path = forms.FileField(
         label=_("Diff"),
         required=False,
         help_text=_("The new diff to upload."),
-        widget=forms.FileInput(attrs={'size': '35'}))
+        widget=forms.FileInput(attrs={'size': '62'}))
     parent_diff_path = forms.FileField(
         label=_("Parent Diff"),
         required=False,
         help_text=_("An optional diff that the main diff is based on. "
                     "This is usually used for distributed revision control "
                     "systems (Git, Mercurial, etc.)."),
-        widget=forms.FileInput(attrs={'size': '35'}))
+        widget=forms.FileInput(attrs={'size': '62'}))
     repository = forms.ModelChoiceField(
         label=_("Repository"),
         queryset=Repository.objects.none(),
