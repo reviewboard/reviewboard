@@ -708,10 +708,6 @@ class ReviewRequest(models.Model):
             # finding out what's in the database.
             r = ReviewRequest.objects.get(pk=self.id)
             old_status = r.status
-            old_public = r.public
-
-        if old_status == self.status and old_public == self.public:
-            return
 
         if self.status == self.PENDING_REVIEW:
             if old_status != self.status:
