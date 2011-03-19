@@ -99,16 +99,15 @@ class Profile(models.Model):
             review_request.status == ReviewRequest.PENDING_REVIEW):
             q = self.starred_review_requests.filter(pk=review_request.pk)
 
-            if q.count() == 0:
-                site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-                    user=self.user,
-                    local_site=review_request.local_site,
-                    profile=self.user.get_profile())
+            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
+                user=self.user,
+                local_site=review_request.local_site,
+                profile=self.user.get_profile())
 
-                if is_new:
-                    site_profile.save()
+            if is_new:
+                site_profile.save()
 
-                site_profile.increment_starred_public_request_count()
+            site_profile.increment_starred_public_request_count()
 
     def unstar_review_request(self, review_request):
         """Marks a review request as unstarred.
