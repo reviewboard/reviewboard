@@ -619,7 +619,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             #       once instead of twice.
             markup_a = apply_pygments(old or '', source_file)
             markup_b = apply_pygments(new or '', dest_file)
-        except ValueError:
+        except:
             pass
 
     if not markup_a:
