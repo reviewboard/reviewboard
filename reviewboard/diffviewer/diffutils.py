@@ -475,14 +475,17 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         if not possible_functions:
             raise StopIteration
 
-        if is_modified_file:
-            last_index = last_header_index[1]
-            i1 = lines[start][4]
-            i2 = lines[end - 1][4]
-        else:
-            last_index = last_header_index[0]
-            i1 = lines[start][1]
-            i2 = lines[end - 1][1]
+        try:
+            if is_modified_file:
+                last_index = last_header_index[1]
+                i1 = lines[start][4]
+                i2 = lines[end - 1][4]
+            else:
+                last_index = last_header_index[0]
+                i1 = lines[start][1]
+                i2 = lines[end - 1][1]
+        except IndexError:
+            raise StopIteration
 
         for i in xrange(last_index, len(possible_functions)):
             linenum, line = possible_functions[i]
