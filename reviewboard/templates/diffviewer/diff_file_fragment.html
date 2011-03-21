@@ -17,7 +17,12 @@
  </colgroup>
  <thead>
   <tr onClick="gotoAnchor('{{file.index}}');">
+{%   if file.dest_filename == file.depot_filename %}
    <th colspan="4"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
+{%   else %}
+   <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
+   <th colspan="2">{{ file.dest_filename }}</th>
+{%   endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
   <tr>
    <th colspan="2" class="rev">{{file.revision}}</th>

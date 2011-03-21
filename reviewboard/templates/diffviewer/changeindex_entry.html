@@ -1,5 +1,9 @@
 {% load i18n %}
-<a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.depot_filename}}</a>:
+<a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.dest_filename}}</a>
+{% if file.dest_filename != file.depot_filename %}
+ (was {{file.depot_filename}})
+{% endif %}
+:
 {% if error %}
 {%  trans "Diff currently unavailable." %}
 {% else %}

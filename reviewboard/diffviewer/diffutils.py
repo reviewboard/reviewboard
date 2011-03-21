@@ -1028,6 +1028,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
         file = {
             'depot_filename': filediff.source_file,
+            'dest_filename': filediff.dest_file or filediff.source_file,
             'basename': basename,
             'basepath': basepath,
             'revision': source_revision,
