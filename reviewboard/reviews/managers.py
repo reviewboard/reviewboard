@@ -333,7 +333,7 @@ class ReviewManager(ConcurrencyManager):
                 if (review_value and not getattr(master_review, attname)):
                     setattr(master_review, attname, review_value)
 
-            for attname in ["comments", "screenshot_comments"]:
+            for attname in ["comments", "screenshot_comments","file_comments"]:
                 master_m2m = getattr(master_review, attname)
                 review_m2m = getattr(review, attname)
 

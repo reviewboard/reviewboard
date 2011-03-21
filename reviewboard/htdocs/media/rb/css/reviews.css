@@ -776,6 +776,24 @@
   text-align: center;
 }
 
+/****************************************************************************
+ * List of Attached Files
+ ****************************************************************************/
+#file-list {
+  margin: 2px;
+  padding: 0.5em;
+}
+
+#file-list.dragover {
+  border: 2px green dashed;
+  display: block;
+  margin: 0;
+}
+
+#file-list h1.drop-indicator {
+  clear: both;
+  text-align: center;
+}
 
 /****************************************************************************
  * Comment detail dialog

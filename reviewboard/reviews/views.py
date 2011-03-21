@@ -36,6 +36,7 @@ from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
+from reviewboard.filemanager.forms import UploadFileForm, CommentFileForm
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -68,7 +69,7 @@ def _render_permission_denied(
     return response
 
 
-def _find_review_request(request, review_request_id, local_site_name):
+def find_review_request(request, review_request_id, local_site_name):
     """
     Find a review request based on an ID and optional LocalSite name.
 
@@ -115,6 +116,8 @@ def _make_review_request_context(review_request, extra_context):
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'upload_screenshot_form': UploadScreenshotForm(),
+        'upload_file_form': UploadFileForm(),
+        'comment_file_form': CommentFileForm(),
         'scmtool': scmtool,
     }, **extra_context)
 
@@ -211,6 +214,8 @@ fields_changed_name_map = {
     'target_people': 'Reviewers (People)',
     'screenshots': 'Screenshots',
     'screenshot_captions': 'Screenshot Captions',
+    'files': 'Uploaded Files',
+    'file_captions': 'Uploaded File Captions',
     'diff': 'Diff',
 }
 
@@ -272,7 +277,7 @@ def review_detail(request,
     # local_site configured to have its own review request ID namespace
     # starting from 1.
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -395,6 +400,8 @@ def review_detail(request,
                         info['new'][0] = mark_safe(info['new'][0])
             elif name == "screenshot_captions":
                 change_type = 'screenshot_captions'
+            elif name == "file_captions":
+                change_type = 'file_captions'
             else:
                 # No clue what this is. Bail.
                 continue
@@ -445,7 +452,7 @@ def review_draft_inline_form(request,
                              template_name,
                              local_site_name=None):
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -664,7 +671,7 @@ def diff(request,
     providing the user's current review of the diff if it exists.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -723,7 +730,7 @@ def raw_diff(request,
     given review request.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -764,7 +771,7 @@ def comment_diff_fragments(
     # While we don't actually need the review request, we still want to do this
     # lookup in order to get the permissions checking.
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -817,7 +824,7 @@ def diff_fragment(request,
     diff.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -853,7 +860,7 @@ def preview_review_request_email(
     This is mainly used for debugging.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -892,7 +899,7 @@ def preview_review_email(request, review_request_id, review_id, format,
     This is mainly used for debugging.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -945,7 +952,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     This is mainly used for debugging.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -996,7 +1003,7 @@ def view_screenshot(request,
     Displays a screenshot, along with any comments that were made on it.
     """
     review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+        find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response

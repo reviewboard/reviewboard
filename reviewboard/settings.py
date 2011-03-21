@@ -107,6 +107,7 @@ INSTALLED_APPS = (
     'reviewboard.admin',
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
+    'reviewboard.filemanager',
     'reviewboard.notifications',
     'reviewboard.reports',
     'reviewboard.reviews',

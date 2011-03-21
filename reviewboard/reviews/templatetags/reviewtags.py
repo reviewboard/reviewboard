@@ -11,8 +11,9 @@ from djblets.util.templatetags.djblets_utils import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.filemanager.models import UploadedFile
 from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
-                                       ScreenshotComment
+                                       ScreenshotComment, UploadedFileComment
 
 
 register = template.Library()
@@ -212,8 +213,8 @@ def reply_list(context, review, comment, context_type, context_id):
     to display replies to a type of object. In each case, the replies will
     be rendered using the template :template:`reviews/review_reply.html`.
 
-    If ``context_type`` is ``"comment"`` or ``"screenshot_comment"``,
-    the generated list of replies are to ``comment``.
+    If ``context_type`` is ``"comment"``, ``"screenshot_comment"``
+    or ``"file_comment"``, the generated list of replies are to ``comment``.
 
     If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
     the generated list of replies are to ``review``. Depending on the
@@ -255,7 +256,8 @@ def reply_list(context, review, comment, context_type, context_id):
 
     s = ""
 
-    if context_type == "comment" or context_type == "screenshot_comment":
+    if context_type == "comment" or context_type == "screenshot_comment" \
+        or context_type == "file_comment":
         for reply_comment in comment.public_replies(user):
             s += generate_reply_html(reply_comment.review.get(),
                                      reply_comment.timestamp,
@@ -293,6 +295,8 @@ def reply_section(context, review, comment, context_type, context_id):
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
+        elif type(comment) is UploadedFileComment:
+            context_id += 'f'
         context_id += str(comment.id)
 
     return {

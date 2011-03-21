@@ -16,6 +16,7 @@ from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.filemanager.models import UploadedFile
 from reviewboard.reviews.signals import review_request_published, \
                                         reply_published, review_published
 from reviewboard.reviews.errors import PermissionError
@@ -280,6 +281,17 @@ class ReviewRequest(models.Model):
     inactive_screenshots = models.ManyToManyField(Screenshot,
         verbose_name=_("inactive screenshots"),
         help_text=_("A list of screenshots that used to be but are no "
+                    "longer associated with this review request."),
+        related_name="inactive_review_request",
+        blank=True)
+    files = models.ManyToManyField(
+        UploadedFile,
+        related_name="review_request",
+        verbose_name=_("uploaded files"),
+        blank=True)
+    inactive_files = models.ManyToManyField(UploadedFile,
+        verbose_name=_("inactive files"),
+        help_text=_("A list of uploaded files that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
         blank=True)
@@ -808,6 +820,14 @@ class ReviewRequestDraft(models.Model):
         verbose_name=_("inactive screenshots"),
         related_name="inactive_drafts",
         blank=True)
+    files = models.ManyToManyField(UploadedFile,
+                                   related_name="drafts",
+                                   verbose_name=_("uploaded files"),
+                                   blank=True)
+    inactive_files = models.ManyToManyField(UploadedFile,
+        verbose_name=_("inactive files"),
+        related_name="inactive_drafts",
+        blank=True)
 
     submitter = property(lambda self: self.review_request.submitter)
 
@@ -878,6 +898,16 @@ class ReviewRequestDraft(models.Model):
                 screenshot.draft_caption = screenshot.caption
                 screenshot.save()
                 draft.inactive_screenshots.add(screenshot)
+
+            for upfile in review_request.files.all():
+                upfile.draft_caption = upfile.caption
+                upfile.save()
+                draft.files.add(upfile)
+
+            for upfile in review_request.inactive_files.all():
+                upfile.draft_caption = upfile.caption
+                upfile.save()
+                draft.inactive_files.add(upfile)
 
             draft.save();
 
@@ -1078,6 +1108,33 @@ class ReviewRequestDraft(models.Model):
         map(review_request.inactive_screenshots.add,
             self.inactive_screenshots.all())
 
+        # Files are treated like screenshots. The list of files can
+        # change, but so can captions within each file.
+        files = self.files.all()
+        caption_changes = {}
+
+        for f in review_request.files.all():
+            if f in files and f.caption != f.draft_caption:
+                caption_changes[f.id] = {
+                    'old': (f.caption,),
+                    'new': (f.draft_caption,),
+                }
+
+                f.caption = f.draft_caption
+                f.save()
+
+        if caption_changes and self.changedesc:
+            self.changedesc.fields_changed['file_captions'] = \
+                caption_changes
+
+        update_list(review_request.files, self.files,
+                    'files', name_field="caption")
+
+        # There's no change notification required for this field.
+        review_request.inactive_files.clear()
+        map(review_request.inactive_files.add,
+            self.inactive_files.all())
+
         if self.diffset:
             if self.changedesc:
                 if review_request.local_site:
@@ -1275,6 +1332,61 @@ class ScreenshotComment(models.Model):
         ordering = ['timestamp']
 
 
+class UploadedFileComment(models.Model):
+    """
+    A comment on an uploaded file.
+    """
+    upfile = models.ForeignKey(UploadedFile, verbose_name=_('uploaded file'),
+                                   related_name="comments")
+    reply_to = models.ForeignKey('self', blank=True, null=True,
+                                 related_name='replies',
+                                 verbose_name=_("reply to"))
+    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    text = models.TextField(_('comment text'))
+
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
+
+    def public_replies(self, user=None):
+        """
+        Returns a list of public replies to this comment, optionally
+        specifying the user replying.
+        """
+        if user:
+            return self.replies.filter(Q(review__public=True) |
+                                       Q(review__user=user))
+        else:
+            return self.replies.filter(review__public=True)
+
+    def get_file(self):
+        """
+        Generates the file referenced by this
+        comment and returns the HTML markup embedding it.
+        """
+        return '<a href="%s" alt="%s" />' % \
+            (self.upfile.upfile, escape(self.text))
+
+    def get_review_url(self):
+        return "%s#scomment%d" % \
+            (self.review.get().review_request.get_absolute_url(), self.id)
+
+    def save(self, **kwargs):
+        super(UploadedFileComment, self).save()
+
+        try:
+            # Update the review timestamp.
+            review = self.review.get()
+            review.timestamp = datetime.now()
+            review.save()
+        except Review.DoesNotExist:
+            pass
+
+    def __unicode__(self):
+        return self.text
+
+    class Meta:
+        ordering = ['timestamp']
+
 class Review(models.Model):
     """
     A review of a review request.
@@ -1323,6 +1435,11 @@ class Review(models.Model):
     screenshot_comments = models.ManyToManyField(
         ScreenshotComment,
         verbose_name=_("screenshot comments"),
+        related_name="review",
+        blank=True)
+    file_comments = models.ManyToManyField(
+        UploadedFileComment,
+        verbose_name=_("uploaded file comments"),
         related_name="review",
         blank=True)
 
@@ -1410,6 +1527,10 @@ class Review(models.Model):
             comment.timetamp = self.timestamp
             comment.save()
 
+        for comment in self.file_comments.all():
+            comment.timetamp = self.timestamp
+            comment.save()
+
         # Update the last_updated timestamp on the review request.
         self.review_request.last_review_timestamp = self.timestamp
         self.review_request.save()
@@ -1435,6 +1556,9 @@ class Review(models.Model):
             comment.delete()
 
         for comment in self.screenshot_comments.all():
+            comment.delete()
+
+        for comment in self.file_comments.all():
             comment.delete()
 
         super(Review, self).delete()
