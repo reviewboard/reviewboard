@@ -357,8 +357,8 @@ def get_original_file(filediff):
         file = filediff.source_file
         revision = filediff.source_revision
 
-        key = "%s:%s:%s" % (filediff.diffset.repository.path, urlquote(file),
-                            revision)
+        key = "%s:%s:%s" % (urlquote(filediff.diffset.repository.path),
+                            urlquote(file), urlquote(revision))
 
         # We wrap the result of get_file in a list and then return the first
         # element after getting the result from the cache. This prevents the
