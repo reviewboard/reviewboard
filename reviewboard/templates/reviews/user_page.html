@@ -23,27 +23,27 @@
   </colgroup>
   <tbody>
     <tr>
-      <td>{% gravatar user 175 %}</td>
+      <td>{% gravatar viewing_user 175 %}</td>
     </tr>
     <tr>
-      <td><h2>{{user}}</h2></td>
+      <td><h2>{{viewing_user}}</h2></td>
     </tr>
     <tr>
-      <td><p><label>{% trans "Name:" %}</label></p> {{user.first_name}} {{user.last_name}}</td>
+      <td><p><label>{% trans "Name:" %}</label></p> {{viewing_user.first_name}} {{viewing_user.last_name}}</td>
     </tr>
     <tr>
-      <td><p><label>{% trans "Email:" %}</label></p> {{user.email}}</td>
+      <td><p><label>{% trans "Email:" %}</label></p> {{viewing_user.email}}</td>
     </tr>
     <tr>
-      <td><p><label>{% trans "Last Login:" %}</label></p> {{user.last_login|date:"F jS, Y"}}</td>
+      <td><p><label>{% trans "Last Login:" %}</label></p> {{viewing_user.last_login|date:"F jS, Y"}}</td>
     </tr>
     <tr>
-      <td><p><label>{% trans "Date Joined:" %}</label></p> {{user.date_joined|date:"F jS, Y"}}</td>
+      <td><p><label>{% trans "Date Joined:" %}</label></p> {{viewing_user.date_joined|date:"F jS, Y"}}</td>
     </tr>
     <tr>
       <td>
         <p><label>{% trans "Groups:" %}</label></p>
-        {% for group in user.review_groups.all %}
+        {% for group in viewing_user.review_groups.all %}
         <a href="{% url group group %}">{{group}}</a>{% if not forloop.last %}, {% endif %}
         {% endfor %}
       </td>
