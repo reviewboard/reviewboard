@@ -1028,6 +1028,187 @@ $.extend(RB.ReviewReply.prototype, {
 });
 
 
+RB.UploadedFile = function(review_request, id) {
+    this.review_request = review_request;
+    this.id = id;
+    this.caption = null;
+    this.thumbnail_url = null;
+    this.path = null;
+    this.url = null;
+    this.loaded = false;
+
+    return this;
+}
+
+
+$.extend(RB.UploadedFile.prototype, {
+    setFile: function(file) {
+        this.uploaded_file = file;
+    },
+
+    setForm: function(form) {
+        this.form = form;
+    },
+
+    ready: function(on_done) {
+        if (this.loaded && this.id) {
+            on_done.apply(this, arguments);
+        } else {
+            this._load(on_done);
+        }
+    },
+
+    save: function(options) {
+        options = $.extend(true, {
+            success: function() {},
+            error: function() {}
+        }, options);
+
+        if (this.id) {
+            var data = {};
+            if (this.caption != null) {
+                data.caption = this.caption;
+            }
+
+            var self = this;
+            this.ready(function() {
+                rbApiCall({
+                    type: "PUT",
+                    url: self.url,
+                    data: data,
+                    buttons: options.buttons,
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+
+                        if ($.isFunction(options.success)) {
+                            options.success(rsp);
+                        }
+                    }
+                });
+            });
+        } else {
+            if (this.form) {
+                this._saveForm(options);
+            } else if (this.file) {
+                this._saveFile(options);
+            } else {
+                options.error("No data has been set for this screenshot. " +
+                              "This is a script error. Please report it.");
+            }
+        }
+    },
+
+    deleteUploadedFile: function() {
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall({
+                    type: "DELETE",
+                    url: self.url,
+                    success: function() {
+                        $.event.trigger("deleted", null, self);
+                        self._deleteAndDestruct();
+                    }
+                });
+            }
+        });
+    },
+
+    _load: function(on_done) {
+        if (!this.id) {
+            on_done.apply(this, arguments);
+            return;
+        }
+
+        var self = this;
+
+        self.review_request.ready(function() {
+            rbApiCall({
+                type: "GET",
+                url: self.review_request.links.file.href + self.id + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done.apply(this, arguments);
+                }
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+        this.id = rsp.file.id;
+        this.caption = rsp.file.caption;
+        this.thumbnail_url = rsp.file.thumbnail_url;
+        this.path = rsp.file.path;
+        this.url = rsp.file.links.self.href;
+        this.loaded = true;
+    },
+
+    _saveForm: function(options) {
+        this._saveApiCall(options.success, options.error, {
+            buttons: options.buttons,
+            form: this.form
+        });
+    },
+
+    _saveFile: function(options) {
+        var boundary = "-----multipartformboundary" + new Date().getTime();
+        var blob = "";
+        blob += "--" + boundary + "\r\n";
+        blob += 'Content-Disposition: form-data; name="path"; ' +
+                'filename="' + this.file.name + '"\r\n';
+        blob += 'Content-Type: application/octet-stream\r\n';
+        blob += '\r\n';
+        blob += this.file.getAsBinary();
+        blob += '\r\n';
+        blob += "--" + boundary + "--\r\n";
+        blob += '\r\n';
+
+        this._saveApiCall(options.success, options.error, {
+            buttons: options.buttons,
+            data: blob,
+            processData: false,
+            contentType: "multipart/form-data; boundary=" + boundary,
+            xhr: function() {
+                var xhr = $.ajaxSettings.xhr()
+                xhr.send = function(data) {
+                    xhr.sendAsBinary(blob);
+                };
+
+                return xhr;
+            }
+        });
+    },
+
+    _saveApiCall: function(onSuccess, onError, options) {
+        var self = this;
+        self.review_request.ready(function() {
+            rbApiCall($.extend(options, {
+                url: self.review_request.links.uploaded_files.href,
+                success: function(rsp) {
+                    if (rsp.stat == "ok") {
+                        self._loadDataFromResponse(rsp);
+
+                        if ($.isFunction(onSuccess)) {
+                            onSuccess(rsp, rsp.uploaded_file);
+                        }
+                    } else if ($.isFunction(onError)) {
+                        onError(rsp, rsp.err.msg);
+                    }
+                }
+            }));
+        });
+    },
+
+    _deleteAndDestruct: function() {
+        $.event.trigger("destroyed", null, this);
+    }
+});
+
+
 RB.UploadedFileCommentReply = function(reply, id, reply_to_id) {
     this.id = id;
     this.reply = reply;
@@ -1042,7 +1223,7 @@ RB.UploadedFileCommentReply = function(reply, id, reply_to_id) {
 $.extend(RB.UploadedFileCommentReply.prototype, {
     ready: function(on_ready) {
         if (this.loaded) {
-            on_ready();
+            on_ready.apply(this, arguments);
         } else {
             this._load(on_ready);
         }
@@ -1122,11 +1303,9 @@ $.extend(RB.UploadedFileCommentReply.prototype, {
     },
 
     deleteIfEmpty: function() {
-        if (this.text != "") {
-            return;
+        if (this.text = "") {
+            this.deleteComment();
         }
-
-        this.deleteComment();
     },
 
     _deleteAndDestruct: function() {
@@ -1137,13 +1316,13 @@ $.extend(RB.UploadedFileCommentReply.prototype, {
         var self = this;
 
         if (!self.id) {
-            on_done();
+            on_done.apply(this, arguments);
             return;
         }
 
         self.reply.ready(function() {
             if (!self.reply.loaded) {
-                on_done();
+                on_done.apply(this, arguments);
                 return;
             }
 
@@ -1155,7 +1334,7 @@ $.extend(RB.UploadedFileCommentReply.prototype, {
                         self._loadDataFromResponse(rsp);
                     }
 
-                    on_done();
+                    on_done.apply(this, arguments);
                 },
             });
         });
@@ -1169,6 +1348,7 @@ $.extend(RB.UploadedFileCommentReply.prototype, {
         this.loaded = true;
     }
 });
+
 
 RB.Screenshot = function(review_request, id) {
     this.review_request = review_request;
@@ -1241,7 +1421,7 @@ $.extend(RB.Screenshot.prototype, {
         }
     },
 
-    deleteScreenshot: function() {
+    deleteFile: function() {
         var self = this;
 
         self.ready(function() {
@@ -1505,6 +1685,160 @@ $.extend(RB.ScreenshotComment.prototype, {
         this.links = rsp.screenshot_comment.links;
         this.url = rsp.screenshot_comment.links.self.href;
         this.loaded = true;
+    }
+});
+
+
+RB.FileComment = function(review, file_id, id) {
+    this.id = id;
+    this.review = review;
+    this.file_id = file_id;
+    this.text = "";
+    this.loaded = false;
+    this.url = null;
+    return this;
+}
+
+$.extend(RB.FileComment.prototype, {
+    ready: function(on_ready) {
+        if (this.loaded) {
+            on_ready.apply(this, arguments);
+        } else {
+            this._load(on_ready);
+        }
+    },
+
+    /*
+     * Sets the current text in the comment block.
+     *
+     * @param {string} text  The new text to set.
+     */
+    setText: function(text) {
+        this.text = text;
+        $.event.trigger("textChanged", null, this);
+    },
+
+    setForm: function(form) {
+        this.form = form;
+    },
+
+    _saveForm: function(options) {
+        this._saveApiCall(options.success, options.error, {
+            buttons: options.buttons,
+            form: this.form
+        });
+    },
+
+    /*
+     * Saves the comment on the server.
+     */
+    save: function(options) {
+        var self = this;
+
+        options = $.extend({
+            success: function() {}
+        }, options);
+
+        self.ready(function() {
+            self.review.ensureCreated(function() {
+                var type;
+                var url;
+                var data = {
+                    text: self.text,
+                };
+
+                if (self.loaded) {
+                    type = "PUT";
+                    url = self.url;
+                } else {
+                    data.file_id = self.file_id;
+                    url = self.review.links.file_comments.href;
+                }
+
+                rbApiCall({
+                    type: type,
+                    url: url,
+                    data: data,
+                    success: function(rsp) {
+                        self._loadDataFromResponse(rsp);
+                        $.event.trigger("saved", null, self);
+                        options.success();
+                    }
+                });
+            });
+        });
+    },
+
+    /*
+     * Deletes the comment from the server.
+     */
+    deleteComment: function() {
+        var self = this;
+
+        self.ready(function() {
+            if (self.loaded) {
+                rbApiCall({
+                    type: "DELETE",
+                    url: self.url,
+                    success: function() {
+                        $.event.trigger("deleted", null, self);
+                        self._deleteAndDestruct();
+                    }
+                });
+            } else {
+                this._deleteAndDestruct();
+            }
+        });
+    },
+
+    deleteIfEmpty: function() {
+        if (this.text != "") {
+            return;
+        }
+
+        this.deleteComment();
+    },
+
+    _deleteAndDestruct: function() {
+        $.event.trigger("destroyed", null, this);
+    },
+
+    _load: function(on_done) {
+            var self = this;
+
+            if (!self.id) {
+                    on_done.apply(this, arguments);
+                    return;
+            }
+
+            self.review.ready(function() {
+                    if (!self.review.loaded) {
+                    on_done.apply(this, arguments);
+                    return;
+             }
+
+            rbApiCall({
+                type: "GET",
+                url: self.review.links.uploaded_file_comments.href +
+                        self.id + "/",
+                success: function(rsp, status) {
+                    if (status != 404) {
+                        self._loadDataFromResponse(rsp);
+                    }
+
+                    on_done.apply(this, arguments);
+
+                },
+            });
+        });
+    },
+
+    _loadDataFromResponse: function(rsp) {
+            this.id = rsp.file_comment.id;
+            this.text = rsp.file_comment.text;
+            this.links = rsp.file_comment.links;
+            this.url = rsp.file_comment.links.self.href;
+            this.loaded = true;
     }
 });
 

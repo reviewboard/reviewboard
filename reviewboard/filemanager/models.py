@@ -30,32 +30,27 @@ from reviewboard.site.models import LocalSite
 class UploadedFile(models.Model):
     """A file associated with a review request.
 
-    Like diffs, a screenshot can have comments associated with it.
+    Like diffs, a file can have comments associated with it.
     These comments are of type :model:`reviews.FileComment`.
     """
     caption = models.CharField(_("caption"), max_length=256, blank=True)
     draft_caption = models.CharField(_("draft caption"),
                                      max_length=256, blank=True)
-    upfile = models.FileField(_("file"),
+    file = models.FileField(_("file"),
                               upload_to=os.path.join('uploaded', 'files',
                                                      '%Y', '%m', '%d'))
 
     def get_path(self):
         """Returns the file path for downloading purposes."""
-        return self.upfile.url
+        return self.file.url
 
     def get_title(self):
         """Returns the file title for display purposes"""
-        return os.path.basename(self.upfile.name)
+        return os.path.basename(self.file.name)
 
     def __unicode__(self):
         return self.caption
 
     def get_absolute_url(self):
-        try:
-            review = self.review_request.all()[0]
-        except IndexError:
-            review = self.inactive_review_request.all()[0]
-
-        return '%sf/%d/' % (review.get_absolute_url(), self.id)
+        return self.file.url
 
