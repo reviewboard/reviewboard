@@ -192,43 +192,48 @@ $.fn.formDlg = function(options) {
 
 /*
  * Toggles whether an object is starred. Right now, we support
- * "reviewrequests" and "groups" types.
+ * "reviewrequests" and "groups" types. Loads parameters from
+ * data attributes on the element. Attaches via 'live' so it applies
+ * to future stars matching the current jQuery selector.
  *
- * @param {string} type      The type used for constructing the path.
- * @param {string} objid     The object ID to star/unstar.
- * @param {bool}   default_  The default value.
+ * @param {string} object-type  The type used for constructing the path.
+ * @param {string} object-id    The object ID to star/unstar.
+ * @param {bool}   starred      The default value.
  */
-$.fn.toggleStar = function(type, objid, default_) {
-    return this.each(function() {
+$.fn.toggleStar = function() {
+    // Constants
+    var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
+    var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
+
+    return this.live('click', function() {
         var self = $(this);
 
-        // Constants
-        var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
-        var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
+        var obj = self.data("rb.obj");
 
-        var obj;
-        var on = default_;
+        if (!obj) {
+            var type = self.attr("data-object-type");
+            var objid = self.attr("data-object-id");
 
-        self.click(function() {
-            on = !on;
-
-            if (!obj) {
-                if (type == "reviewrequests") {
-                    obj = new RB.ReviewRequest(objid);
-                } else if (type == "groups") {
-                    obj = new RB.ReviewGroup(objid);
-                } else {
-                    self.remove();
-                    return;
-                }
+            if (type == "reviewrequests") {
+                obj = new RB.ReviewRequest(objid);
+            } else if (type == "groups") {
+                obj = new RB.ReviewGroup(objid);
+            } else {
+                self.remove();
+                return;
             }
+        }
 
-            obj.setStarred(on);
-            self.attr("src", (on ? STAR_ON_IMG : STAR_OFF_IMG));
+        var on = (parseInt(self.attr("data-starred")) == 1) ? 0 : 1;
+        obj.setStarred(on);
+        self.data("rb.obj", obj);
 
-            var alt_title = on ? "Starred" : "Click to star";
-            self.attr("alt", alt_title);
-            self.attr("title", alt_title);
+        var alt_title = on ? "Starred" : "Click to star";
+        self.attr({
+            src: (on ? STAR_ON_IMG : STAR_OFF_IMG),
+            'data-starred': on,
+            alt: alt_title,
+            title: alt_title
         });
     });
 };
@@ -258,6 +263,8 @@ $(document).ready(function() {
             $(this).find(".user-infobox").hide();
         }
     );
+
+    $('.star').toggleStar();
 });
 
 // vim: set et:sw=4:

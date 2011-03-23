@@ -38,7 +38,11 @@ try:
     from PIL import Image
     Image.init()
 except ImportError:
-    pass
+    try:
+        from Image import Image
+        Image.init()
+    except ImportError:
+        pass
 
 from django.conf import settings
 from django.core import management

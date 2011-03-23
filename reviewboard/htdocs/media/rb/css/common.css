@@ -55,6 +55,9 @@ ul.errorlist li {
   vertical-align: text-bottom;
 }
 
+textarea {
+  resize: none;
+}
 
 /****************************************************************************
  * Banners

@@ -198,7 +198,8 @@ class NewReviewRequestForm(forms.Form):
         except ChangeNumberInUseError:
             # The user is updating an existing review request, rather than
             # creating a new one.
-            review_request = ReviewRequest.objects.get(changenum=changenum)
+            review_request = ReviewRequest.objects.get(changenum=changenum,
+                                                       repository=repository)
             review_request.update_from_changenum(changenum)
 
             if review_request.status == 'D':
