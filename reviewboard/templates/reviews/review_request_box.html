@@ -98,7 +98,7 @@
      <a href="#" id="{{upfile.id}}" class="file-review" >{% trans "Review File" %}</a>
      <a href="{{upfile.get_path}}">{% trans "Download File" %}</a>
      {% ifuserorperm review_request.submitter "reviews.delete_file" %}
-      <a href="{{upfile.get_absolute_url}}delete/">
+      <a href="#" class="delete">
        <img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
       </a>
      {% endifuserorperm %}

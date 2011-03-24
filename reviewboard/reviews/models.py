@@ -284,6 +284,7 @@ class ReviewRequest(models.Model):
                     "longer associated with this review request."),
         related_name="inactive_review_request",
         blank=True)
+
     files = models.ManyToManyField(
         UploadedFile,
         related_name="review_request",
@@ -820,11 +821,13 @@ class ReviewRequestDraft(models.Model):
         verbose_name=_("inactive screenshots"),
         related_name="inactive_drafts",
         blank=True)
+
     files = models.ManyToManyField(UploadedFile,
                                    related_name="drafts",
                                    verbose_name=_("uploaded files"),
                                    blank=True)
-    inactive_files = models.ManyToManyField(UploadedFile,
+    inactive_files = models.ManyToManyField(
+        UploadedFile,
         verbose_name=_("inactive files"),
         related_name="inactive_drafts",
         blank=True)
@@ -1333,10 +1336,8 @@ class ScreenshotComment(models.Model):
 
 
 class UploadedFileComment(models.Model):
-    """
-    A comment on an uploaded file.
-    """
-    upfile = models.ForeignKey(UploadedFile, verbose_name=_('uploaded file'),
+    """A comment on an uploaded file."""
+    upfile = models.ForeignKey(UploadedFile, verbose_name=_('uploaded_file'),
                                    related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',

@@ -59,8 +59,3 @@ urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^search/$', 'search', name="search"),
 )
 
-urlpatterns += patterns('reviewboard.filemanager.views',
-   # Uploaded files
-    (r'^(?P<review_request_id>[0-9]+)/f/(?P<file_id>[0-9]+)/delete/$',
-     'delete_file'),
-)

@@ -40,7 +40,7 @@
 
       return false;
     });
-    
+
     $("#upload-file-link").click(function() {
       $("<div/>").formDlg({
         title: "{% trans "Upload File" %}",
@@ -51,7 +51,7 @@
         fields: {% form_dialog_fields upload_file_form %},
         success: function(rsp) {
             if (!$("#file-list").length == 0) {
-                $.fileDisplay(rsp.uploaded_file);
+                $.newFileDisplay(rsp.uploaded_file);
             }
 
             gDraftBanner.show();

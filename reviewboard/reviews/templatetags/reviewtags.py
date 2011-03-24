@@ -256,8 +256,7 @@ def reply_list(context, review, comment, context_type, context_id):
 
     s = ""
 
-    if context_type == "comment" or context_type == "screenshot_comment" \
-        or context_type == "file_comment":
+    if context_type in ('comment', 'screenshot_comment', 'file_comment'):
         for reply_comment in comment.public_replies(user):
             s += generate_reply_html(reply_comment.review.get(),
                                      reply_comment.timestamp,
