@@ -28,16 +28,16 @@ class UploadFileForm(forms.Form):
     path = forms.FileField(required=True)
 
     def create(self, file, review_request):
-        upFile = UploadedFile(caption=self.cleaned_data['caption'])
-        upFile.upfile.save(file.name, file, save=True)
+        uploaded_file = UploadedFile(caption=self.cleaned_data['caption'])
+        uploaded_file.file.save(file.name, file, save=True)
 
-        review_request.files.add(upFile)
+        review_request.files.add(uploaded_file)
 
         draft = ReviewRequestDraft.create(review_request)
-        draft.files.add(upFile)
+        draft.files.add(uploaded_file)
         draft.save()
 
-        return upFile
+        return uploaded_file
 
 
 class CommentFileForm(forms.Form):
@@ -45,13 +45,13 @@ class CommentFileForm(forms.Form):
     review = forms.CharField(
         widget=forms.Textarea(attrs={'rows':'8','cols':'70'}))
 
-    def create(self, upfile, review_request):
+    def create(self, file, review_request):
         comment = UploadedFileComment(text=self.cleaned_data['review'],
-                                      upfile=upfile)
+                                      file=file)
 
         comment.timestamp = datetime.now()
         comment.save(save=True)
-        review_request.files.add(upFile)
+        review_request.files.add(file)
 
         draft = ReviewRequestDraft.create(review_request)
         draft.file_comments.add(comment)

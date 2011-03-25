@@ -91,20 +91,20 @@
 <div class="content clearfix"{% ifequal review_request_details.files.count 0 %} style="display: none;"{% endifequal %}>
 <label for="file-list">{% trans "Uploaded Files" %}:</label>
  <div id="file-list">
-  {% for upfile in review_request_details.files.all %}
+  {% for file in review_request_details.files.all %}
    <div class="file-container">
    <dd>
-    <label for="uploaded_file_{{upfile.id}}_caption">{{upfile.get_title}}
-     <a href="#" id="{{upfile.id}}" class="file-review" >{% trans "Review File" %}</a>
-     <a href="{{upfile.get_path}}">{% trans "Download File" %}</a>
+    <label for="uploaded_file_{{file.id}}_caption">{{file.get_title}}
+     <a href="#" id="{{file.id}}" class="file-review" >{% trans "Review File" %}</a>
+     <a href="{{file.get_path}}">{% trans "Download File" %}</a>
      {% ifuserorperm review_request.submitter "reviews.delete_file" %}
       <a href="#" class="delete">
        <img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
       </a>
      {% endifuserorperm %}
     </label>
-    <pre id="uploaded_file_{{upfile.id}}_caption" class="editable file-editable">
-     {% if draft %}{{upfile.draft_caption}}{% else %}{{upfile.caption}}{% endif %}
+    <pre id="uploaded_file_{{file.id}}_caption" class="editable file-editable">
+     {% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}
     </pre>
    </dd>
    </div>

@@ -1139,11 +1139,11 @@ $.extend(RB.UploadedFile.prototype, {
     },
 
     _loadDataFromResponse: function(rsp) {
-        this.id = rsp.file.id;
-        this.caption = rsp.file.caption;
-        this.thumbnail_url = rsp.file.thumbnail_url;
-        this.path = rsp.file.path;
-        this.url = rsp.file.links.self.href;
+        this.id = rsp.uploaded_file.id;
+        this.caption = rsp.uploaded_file.caption;
+        this.thumbnail_url = rsp.uploaded_file.thumbnail_url;
+        this.path = rsp.uploaded_file.path;
+        this.url = rsp.uploaded_file.links.self.href;
         this.loaded = true;
     },
 

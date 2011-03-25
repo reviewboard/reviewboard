@@ -2677,7 +2677,7 @@ class BaseUploadedFileResource(WebAPIResource):
             return WebAPIResponseFormError(request, form)
 
         try:
-            upfile = form.create(request.FILES['path'], review_request)
+            file = form.create(request.FILES['path'], review_request)
         except ValueError, e:
             return INVALID_FORM_DATA, {
                 'fields': {
@@ -2686,7 +2686,7 @@ class BaseUploadedFileResource(WebAPIResource):
             }
 
         return 201, {
-            self.item_result_key: upfile,
+            self.item_result_key: file,
         }
 
     @webapi_check_local_site
@@ -2709,7 +2709,7 @@ class BaseUploadedFileResource(WebAPIResource):
         try:
             review_request = \
                 review_request_resource.get_object(request, *args, **kwargs)
-            upfile = uploaded_file_resource.get_object(request, *args,
+            file = uploaded_file_resource.get_object(request, *args,
                                                         **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
@@ -2723,8 +2723,8 @@ class BaseUploadedFileResource(WebAPIResource):
         except PermissionDenied:
             return _no_access_error(request.user)
 
-        upfile.draft_caption = caption
-        upfile.save()
+        file.draft_caption = caption
+        file.save()
 
         return 200, {
             self.item_result_key: screenshot,
@@ -3711,7 +3711,7 @@ class BaseFileCommentResource(WebAPIResource):
             'type': int,
             'description': 'The numeric ID of the comment.',
         },
-        'upfile': {
+        'file': {
             'type': 'reviewboard.webapi.resources.UploadedFileResource',
             'description': 'The file the comment was made on.',
         },
@@ -3787,7 +3787,7 @@ class FileCommentResource(BaseFileCommentResource):
                      *args, **kwargs):
         q = super(FileCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        q = q.filter(upfile=file_id)
+        q = q.filter(file=file_id)
         return q
 
     @webapi_check_local_site
@@ -3824,8 +3824,9 @@ class ReviewFileCommentResource(BaseFileCommentResource):
         return not review.public and review.user == request.user
 
     @webapi_check_local_site
-    @webapi_response_errors
     @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,  
+                            PERMISSION_DENIED, NOT_LOGGED_IN)
     @webapi_request_fields(
         required = {
             'file_id': {
@@ -3838,7 +3839,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
             },
         },
     )
-    def create(self, request, file_id, text, *args, **kwargs):
+    def create(self, request, file_id=None, text=None, *args, **kwargs):
         """Creates a file comment on a review.
 
         This will create a new comment on a file as part of a review.
@@ -3856,7 +3857,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
             return _no_access_error(request.user)
 
         try:
-            upfile = UploadedFile.objects.get(pk=file_id,
+            file = UploadedFile.objects.get(pk=file_id,
                                               review_request=review_request)
         except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
@@ -3865,7 +3866,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
                 }
             }
 
-        new_comment = self.model(upfile=upfile, text=text)
+        new_comment = self.model(file=file, text=text)
         new_comment.save()
 
         review.file_comments.add(new_comment)
@@ -4004,7 +4005,7 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
                 }
             }
 
-        new_comment = self.model(upfile=comment.upfile,
+        new_comment = self.model(file=comment.file,
                                  text=text)
         new_comment.save()
 

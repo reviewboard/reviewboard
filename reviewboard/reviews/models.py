@@ -902,15 +902,15 @@ class ReviewRequestDraft(models.Model):
                 screenshot.save()
                 draft.inactive_screenshots.add(screenshot)
 
-            for upfile in review_request.files.all():
-                upfile.draft_caption = upfile.caption
-                upfile.save()
-                draft.files.add(upfile)
+            for file in review_request.files.all():
+                file.draft_caption = file.caption
+                file.save()
+                draft.files.add(file)
 
-            for upfile in review_request.inactive_files.all():
-                upfile.draft_caption = upfile.caption
-                upfile.save()
-                draft.inactive_files.add(upfile)
+            for file in review_request.inactive_files.all():
+                file.draft_caption = file.caption
+                file.save()
+                draft.inactive_files.add(file)
 
             draft.save();
 
@@ -1337,7 +1337,7 @@ class ScreenshotComment(models.Model):
 
 class UploadedFileComment(models.Model):
     """A comment on an uploaded file."""
-    upfile = models.ForeignKey(UploadedFile, verbose_name=_('uploaded_file'),
+    file = models.ForeignKey(UploadedFile, verbose_name=_('uploaded_file'),
                                    related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
@@ -1365,7 +1365,7 @@ class UploadedFileComment(models.Model):
         comment and returns the HTML markup embedding it.
         """
         return '<a href="%s" alt="%s" />' % \
-            (self.upfile.upfile, escape(self.text))
+            (self.file.file, escape(self.text))
 
     def get_review_url(self):
         return "%s#scomment%d" % \

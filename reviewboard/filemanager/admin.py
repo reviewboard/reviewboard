@@ -10,8 +10,8 @@ from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
 
 
 class UploadedFileAdmin(admin.ModelAdmin):
-    list_display = ('upfile', 'caption', 'review_request_id')
-    list_display_links = ('upfile', 'caption')
+    list_display = ('file', 'caption', 'review_request_id')
+    list_display_links = ('file', 'caption')
     search_fields = ('caption',)
 
     def review_request_id(self, obj):
@@ -20,10 +20,10 @@ class UploadedFileAdmin(admin.ModelAdmin):
 
 
 class UploadedFileCommentAdmin(admin.ModelAdmin):
-    list_display = ('text', 'upfile', 'review_request_id', 'timestamp')
+    list_display = ('text', 'file', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
-    search_fields = ('caption', 'upfile')
-    raw_id_fields = ('upfile', 'reply_to')
+    search_fields = ('caption', 'file')
+    raw_id_fields = ('file', 'reply_to')
 
     def review_request_id(self, obj):
         return obj.review.get().review_request.id
