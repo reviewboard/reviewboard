@@ -193,11 +193,23 @@ class Screenshot(models.Model):
     def __unicode__(self):
         return u"%s (%s)" % (self.caption, self.image)
 
-    def get_absolute_url(self):
+    def get_review_request(self):
         try:
-            review_request = self.review_request.all()[0]
+            return self.review_request.all()[0]
         except IndexError:
-            review_request = self.inactive_review_request.all()[0]
+            try:
+                return self.inactive_review_request.all()[0]
+            except IndexError:
+                # Maybe it's on a draft.
+                try:
+                    draft = self.drafts.get()
+                except ReviewRequestDraft.DoesNotExist:
+                    draft = self.inactive_drafts.get()
+
+                return draft.review_request
+
+    def get_absolute_url(self):
+        review_request = self.get_review_request()
 
         if review_request.local_site:
             local_site_name = review_request.local_site.name

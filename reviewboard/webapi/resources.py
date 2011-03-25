@@ -2334,10 +2334,28 @@ class BaseScreenshotResource(WebAPIResource):
 
     uri_object_key = 'screenshot_id'
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, review_request_id, is_list=False, *args, **kwargs):
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
-        return self.model.objects.filter(review_request=review_request)
+
+        q = Q(review_request=review_request)
+
+        if not is_list:
+            q = q | Q(inactive_review_request=review_request)
+
+        if request.user == review_request.submitter:
+            try:
+                draft = review_request_draft_resource.get_object(
+                    request, review_request_id, *args, **kwargs)
+
+                q = q | Q(drafts=draft)
+
+                if not is_list:
+                    q = q | Q(inactive_drafts=draft)
+            except ObjectDoesNotExist:
+                pass
+
+        return self.model.objects.filter(q)
 
     def serialize_path_field(self, obj):
         return obj.image.name
@@ -2476,8 +2494,9 @@ class BaseScreenshotResource(WebAPIResource):
 
     def get_href(self, obj, request, *args, **kwargs):
         """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.review_request.get(), request, *args, **kwargs)
+        review_request = obj.get_review_request()
+        base = review_request_resource.get_href(review_request, request,
+                                                *args, **kwargs)
         return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 

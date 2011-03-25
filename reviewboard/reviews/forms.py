@@ -316,8 +316,6 @@ class UploadScreenshotForm(forms.Form):
                                 draft_caption=self.cleaned_data['caption'])
         screenshot.image.save(file.name, file, save=True)
 
-        review_request.screenshots.add(screenshot)
-
         draft = ReviewRequestDraft.create(review_request)
         draft.screenshots.add(screenshot)
         draft.save()

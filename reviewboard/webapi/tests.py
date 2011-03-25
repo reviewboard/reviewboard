@@ -183,6 +183,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         self.assertTrue(self.client.login(username=username, password=username))
 
+        return User.objects.get(username=username)
+
     def _postNewReviewRequest(self, local_site_name=None,
                               repository=None):
         """Creates a review request and returns the payload response."""
@@ -3388,6 +3390,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        review_request.publish(self.user)
 
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
@@ -3433,13 +3436,14 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "My Comment Text"
         x, y, w, h = 10, 10, 20, 20
 
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        review_request.publish(user)
 
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
