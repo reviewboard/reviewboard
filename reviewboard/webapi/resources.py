@@ -33,6 +33,7 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.errors import PermissionError
@@ -997,6 +998,149 @@ class FileDiffResource(WebAPIResource):
         return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 filediff_resource = FileDiffResource()
+
+
+class ChangeResource(WebAPIResource):
+    """Provides information on a change made to a public review request.
+
+    A change includes, optionally, text entered by the user describing the
+    change, and also includes a list of fields that were changed on the
+    review request.
+
+    The list of fields changed are in ``fields_changed``. The keys are the
+    names of the fields, and the values are details on that particular
+    change to the field.
+
+    For ``summary``, ``description``, ``testing_done`` and ``branch`` fields,
+    the following detail keys will be available:
+
+      * ``old``: The old value of the field.
+      * ``new``: The new value of the field.
+
+    For ``diff` fields:
+
+      * ``added``: The diff that was added.
+
+    For ``bugs_closed`` fields:
+
+      * ``old``: A list of old bugs.
+      * ``new``: A list of new bugs.
+      * ``removed``: A list of bugs that were removed, if any.
+      * ``added``: A list of bugs that were added, if any.
+
+    For ``screenshots``, ``target_people`` and ``target_groups`` fields:
+
+      * ``old``: A list of old items.
+      * ``new``: A list of new items.
+      * ``removed``: A list of items that were removed, if any.
+      * ``added``: A list of items that were added, if any.
+
+    For ``screenshot_captions`` fields:
+
+      * ``old``: The old caption.
+      * ``new``: The new caption.
+      * ``screenshot``: The screenshot that was updated.
+    """
+    model = ChangeDescription
+    name = 'change'
+    fields = {
+        'id': {
+            'type': int,
+            'description': 'The numeric ID of the change description.',
+        },
+        'fields_changed': {
+            'type': dict,
+            'description': 'The fields that were changed.',
+        },
+        'text': {
+            'type': str,
+            'description': 'The description of the change written by the '
+                           'submitter.'
+        },
+        'timestamp': {
+            'type': str,
+            'description': 'The date and time that the change was made '
+                           '(in YYYY-MM-DD HH:MM:SS format).',
+        },
+    }
+    uri_object_key = 'change_id'
+    model_parent_key = 'review_request'
+    allowed_methods = ('GET',)
+
+    _changed_fields_to_models = {
+        'screenshots': Screenshot,
+        'target_people': User,
+        'target_groups': Group,
+    }
+
+    def serialize_fields_changed_field(self, obj):
+        def get_object_cached(model, pk, obj_cache={}):
+            if model not in obj_cache:
+                obj_cache[model] = {}
+
+            if pk not in obj_cache[model]:
+                obj_cache[model][pk] = model.objects.get(pk=pk)
+
+            return obj_cache[model][pk]
+
+        fields_changed = obj.fields_changed.copy()
+
+        for field, data in fields_changed.iteritems():
+            if field == 'screenshot_captions':
+                fields_changed[field] = [
+                    {
+                        'old': data[pk]['old'][0],
+                        'new': data[pk]['new'][0],
+                        'screenshot': get_object_cached(Screenshot, pk),
+                    }
+                    for pk, values in data.iteritems()
+                ]
+            elif field == 'diff':
+                data['added'] = get_object_cached(DiffSet, data['added'][0][2])
+            elif field == 'bugs_closed':
+                for key in ('new', 'old', 'added', 'removed'):
+                    if key in data:
+                        data[key] = [bug[0] for bug in data[key]]
+            elif field in ('summary', 'description', 'testing_done', 'branch'):
+                if 'old' in data:
+                    data['old'] = data['old'][0]
+
+                if 'new' in data:
+                    data['new'] = data['new'][0]
+            elif field in self._changed_fields_to_models:
+                model = self._changed_fields_to_models[field]
+
+                for key in ('new', 'old', 'added', 'removed'):
+                    if key in data:
+                        data[key] = [
+                            get_object_cached(model, item[2])
+                            for item in data[key]
+                        ]
+            else:
+                # Just ignore everything else. We don't want to have people
+                # depend on some sort of data that we later need to change the
+                # format of.
+                pass
+
+        return fields_changed
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(review_request=review_request_id,
+                                         public=True)
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get_list(self, *args, **kwargs):
+        """Returns a list of changes made on a review request."""
+        pass
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get(self, *args, **kwargs):
+        """Returns the information on a change to a review request."""
+        pass
+
+change_resource = ChangeResource()
 
 
 class DiffResource(WebAPIResource):
@@ -4286,6 +4430,7 @@ class ReviewRequestResource(WebAPIResource):
     }
     uri_object_key = 'review_request_id'
     item_child_resources = [
+        change_resource,
         diffset_resource,
         review_request_draft_resource,
         review_request_last_update_resource,
@@ -4960,6 +5105,7 @@ class RootResource(DjbletsRootResource):
 root_resource = RootResource()
 
 
+register_resource_for_model(ChangeDescription, change_resource)
 register_resource_for_model(
     Comment,
     lambda obj: obj.review.get().is_reply() and
