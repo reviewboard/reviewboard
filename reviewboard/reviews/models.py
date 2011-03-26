@@ -1050,17 +1050,16 @@ class ReviewRequestDraft(models.Model):
                          'user')])
 
         # Specifically handle bug numbers
-        old_bugs = set(review_request.get_bug_list())
-        new_bugs = set(self.get_bug_list())
+        old_bugs = review_request.get_bug_list()
+        new_bugs = self.get_bug_list()
 
-        if old_bugs != new_bugs:
+        if set(old_bugs) != set(new_bugs):
             update_field(review_request, self, 'bugs_closed',
                          record_changes=False)
 
             if self.changedesc:
                 self.changedesc.record_field_change('bugs_closed',
-                                                    old_bugs - new_bugs,
-                                                    new_bugs - old_bugs)
+                                                    old_bugs, new_bugs)
 
 
         # Screenshots are a bit special.  The list of associated screenshots can
