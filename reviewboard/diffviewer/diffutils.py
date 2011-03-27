@@ -3,15 +3,7 @@ import os
 import re
 import subprocess
 import tempfile
-import logging
-import signal
 from difflib import SequenceMatcher
-
-class TimeoutException(Exception):
-    pass
-
-def our_timeout_handler(signum, frame):
-    raise TimeoutException()
 
 try:
     import pygments
@@ -517,21 +509,8 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         except AttributeError:
             pass
 
-        # Sometimes pygments spins forever trying to highlight something, give it 10 seconds then give up.
-        old_alarm_handler = signal.signal(signal.SIGALRM, our_timeout_handler)
-        signal.alarm(10)
-        try:
-            log_timer = log_timed("Syntax highlighting file '%s' with lexer %s" % (filename, lexer.name))
-            result = pygments.highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
-        except TimeoutException:
-            logging.warn("Timed out trying to highlight data for file '%s' with lexer %s" % (filename, lexer.name))
-            return
-        finally:
-            signal.signal(signal.SIGALRM, old_alarm_handler)
-            log_timer.done()
-        signal.alarm(0)
+        return pygments.highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
-        return result
 
     # There are three ways this function is called:
     #
