@@ -50,7 +50,8 @@ class Repository(models.Model):
                     "path. For Perforce, this should be a port name. For "
                     "git, this should be the path to the .git repository "
                     "on the local disk. For Plastic, this should be a "
-                    "repository spec in the form [repo]@[hostname]:[port]."))
+                    "repository spec in the form [repo]@[hostname]:[port]."
+                    "In case of ClearCase enter absolute path to VOB."))
     mirror_path = models.CharField(max_length=255, blank=True)
     raw_file_url = models.CharField(
         _('Raw file URL mask'),

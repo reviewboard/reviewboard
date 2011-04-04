@@ -1029,9 +1029,13 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             basepath = ""
             basename = filediff.source_file
 
+        tool = filediff.diffset.repository.get_scmtool()
+        depot_filename = tool.normalize_path_for_display(filediff.source_file)
+        dest_filename = tool.normalize_path_for_display(filediff.dest_file)
+
         file = {
-            'depot_filename': filediff.source_file,
-            'dest_filename': filediff.dest_file or filediff.source_file,
+            'depot_filename': depot_filename,
+            'dest_filename': dest_filename or depot_filename,
             'basename': basename,
             'basepath': basepath,
             'revision': source_revision,

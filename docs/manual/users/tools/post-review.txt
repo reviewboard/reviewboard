@@ -177,33 +177,26 @@ ClearCase
 ---------
 
 :command:`post-review` provides basic support for posting ClearCase reviews.
-To post the review request, you must pass a list of modified files to
-:command:`post-review`. If you want to post a review of all checked out files
-in your view, you can do this with the following command line in a suitable
-shell::
+If you want to post a review of all currently checked out files in your view
+simply run::
 
-    $ cleartool lsco -cview -me -recurse -short | xargs post-review
-
-On Windows, you'll need to fix the paths to contain forward-slashes::
-
-    $ cleartool lsco -cview -me -recurse -short | sed "s/\\\\/\//g" | xargs post-review
-
-.. note:: Only uncommited code reviews are currently supported.
+     post-review
 
 If you collect changesets, for example, using ClearCase/ClearQuest
-integration, you can pass the changeset using :option:`--revision-range`::
+integration, you can pass the changeset using :option:`--revision-range`.
+Repository will be determined based on your current VOB's uuid or name::
 
-    $ post-review --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
+    $ post-review --revision-range="/vobs/proj/file.c@@/main/0:/vobs/proj/file.c@@/main/1"
 
-To determine the repository type, use :option:`--clearcase-viewtype`::
+Another way for post-commit review is send changes developed on branch by
+:option:`--tracking` option::
 
-    $ post-review --clearcase-view-type="dynamic" --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
+    $ post-review --tracking my_dev_branch
 
-.. note:: Snapshot views are not currently supported.
-
-You can also indicate the repository using :option:`--repository-url`::
-
-    $ post-review --repository-url="/view/vobs" --clearcase-view-type="dynamic" --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
+.. note:: :command:`post-review` trying match reviewboard's repository based on
+          VOB's UUID. In case of problems Your VOB's name will be used.
+          Remember. You can always overwrite this behavior using
+          :file:`.reviewboardrc `file or passing :option:`--repository-url`.
 
 
 .. index:: post-commit review
