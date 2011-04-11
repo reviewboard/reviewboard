@@ -20,18 +20,11 @@ urlpatterns = patterns('',
 
 # Add static media if running in DEBUG mode
 if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
-    from django import VERSION
-
-    static_args = {
-        'show_indexes': True,
-        'document_root': settings.MEDIA_ROOT,
-    }
-
-    if (VERSION[0] > 1 or (VERSION[0] == 1 and VERSION[1] >= 3)):
-        static_args['insecure'] = True
-
     urlpatterns += patterns('django.views.static',
-        (r'^media/(?P<path>.*)$', 'serve', static_args)
+        (r'^media/(?P<path>.*)$', 'serve', {
+            'show_indexes': True,
+            'document_root': settings.MEDIA_ROOT,
+        })
     )
 
 localsite_urlpatterns = patterns('',
