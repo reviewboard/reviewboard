@@ -238,11 +238,103 @@ $.fn.toggleStar = function() {
     });
 };
 
+/*
+ * The wrapper function of autocomplete for the search field.
+ * Currently, quick search searches for users, groups, and review
+ * requests through the usage of search resource.
+ */
+$.fn.searchAutoComplete = function() {
+    $("#search_field")
+        .autocomplete({
+            formatItem: function(data) {
+                var s;
+
+                if (data.username) {
+                    //For the format of users
+                    s = data.username;
+                    s += " <span>(" + data.fullname + ")</span>";
+                }
+
+
+                else if (data.name) {
+                    //For the format of groups
+                    s = data.name;
+                    s += " <span>(" + data.display_name + ")</span>";
+                }
+
+
+                else if (data.summary) {
+                    //For the format of review requests
+                    if(data.summary.length < 28)
+                        s = data.summary;
+                    else
+                        s = (data.summary).substring(0, 28);
+                    s += " <span>(" + data.id + ")</span>";
+                }
+
+                return s;
+            },
+            matchCase: false,
+            multiple: true,
+            clickToURL: true,
+            selectFirst: false,
+            width: 240,
+            parse: function(data) {
+                var jsonData = JSON.parse(data);
+                var jsonDataSearch = jsonData.search;
+                var parsed = [];
+
+                var objects = ["users", "groups", "review_requests"];
+
+                var values = ["username", "name", "summary"];
+
+                var items;
+
+                for (var j = 0; j < objects.length; j++) {
+                    items = jsonDataSearch[objects[j]];
+
+                    for (var i = 0; i < items.length; i++) {
+                        var value = items[i];
+
+                        if (j != 2) {
+                            parsed.push({
+                                data: value,
+                                value: value[values[j]],
+                                result: value[values[j]]
+                            });
+                        }
+
+                        else if (value.public) {
+                            // Only show review requests that are public
+                            value.url = SITE_ROOT + "r/" + value.id;
+                            parsed.push({
+                                data: value,
+                                value: value[values[j]],
+                                result: value[values[j]]
+                            });
+                        }
+
+                    }
+                }
+
+                return parsed;
+            },
+            url: SITE_ROOT + "api/" + "search/"
+        })
+};
+
+
 $(document).ready(function() {
     $('<div id="activity-indicator" />')
         .text("Loading...")
         .hide()
         .appendTo("body");
+
+    var searchGroupsEl = $("#search_field");
+
+    if (searchGroupsEl.length > 0) {
+        searchGroupsEl.searchAutoComplete();
+    }
 
     $('#submitter, .reviewer a').hover(
         function() {
