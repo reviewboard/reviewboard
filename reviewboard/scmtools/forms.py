@@ -62,7 +62,7 @@ class RepositoryForm(forms.ModelForm):
         }),
         ('github-private', {
             'label': _('GitHub (Private)'),
-            'fields': ['hosting_project_name', 'hosting_owner', 'api_token'],
+            'fields': ['hosting_project_name', 'hosting_owner', 'api_token', 'username'],
             'hidden_fields': ['raw_file_url'],
             'tools': {
                 'Git': {
@@ -73,7 +73,7 @@ class RepositoryForm(forms.ModelForm):
                                     '%(hosting_owner)s/'
                                     '%(hosting_project_name)s/'
                                     '<revision>'
-                                    '?login=%(hosting_owner)s'
+                                    '?login=%(username)s'
                                     '&token=%(api_token)s'
                 },
             },
