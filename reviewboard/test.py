@@ -98,7 +98,10 @@ class RBTestRunner(DjangoTestSuiteRunner):
         self.teardown_databases(old_config)
         self.teardown_test_environment()
 
-        return result
+        if result.success:
+            return 0
+        else:
+            return 1
 
     def _setup_media_dirs(self):
         settings.MEDIA_ROOT = tempfile.mkdtemp(prefix='rb-tests-')
