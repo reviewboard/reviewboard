@@ -814,15 +814,20 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
     def test_get_repository_info_with_site(self):
         """Testing the GET repositories/<id>/info API with a local site"""
         self._login_user(local_site=True)
-        repository = Repository.objects.get(name='V8 SVN')
-        rsp = self.apiGet(self.get_url(repository, self.local_site_name))
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
+
+        rsp = self.apiGet(self.get_url(self.repository, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['info'],
-                         repository.get_scmtool().get_repository_info())
+                         self.repository.get_scmtool().get_repository_info())
 
     def test_get_repository_info_with_site_no_access(self):
         """Testing the GET repositories/<id>/info API with a local site and Permission Denied error"""
-        repository = Repository.objects.get(name='V8 SVN')
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
 
         self.apiGet(self.get_url(self.repository, self.local_site_name),
                     expected_status=403)
