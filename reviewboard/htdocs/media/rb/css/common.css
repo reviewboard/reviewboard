@@ -79,6 +79,15 @@ textarea {
   margin-left: 10px;
 }
 
+.offscreen-top {
+   position:fixed;
+   top:0;
+}
+
+.offscreen-bottom {
+   position:fixed;
+   bottom:0;
+}
 
 /****************************************************************************
  * Box classes

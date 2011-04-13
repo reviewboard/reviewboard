@@ -471,6 +471,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
         if (bannersEl.children().length == 0) {
             bannersEl.append($("<div/>")
                 .addClass("banner")
+                .addClass("float-element")
                 .append("<h1>This reply is a draft</h1>")
                 .append(" Be sure to publish when finished.")
                 .append($('<input type="button"/>')

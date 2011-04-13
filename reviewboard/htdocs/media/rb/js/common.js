@@ -359,4 +359,52 @@ $(document).ready(function() {
     $('.star').toggleStar();
 });
 
+function update_floater(el) {
+    var container = el.closest('.float-element-container');
+    var container_top = container.offset().top;
+    var window_top = $(window).scrollTop();
+    var top = el.closest('.float-element-location').offset().top - window_top;
+    if (container.length == 0 ||
+        (container_top < window_top &&
+            window_top < (container_top +
+                container.outerHeight() - el.outerHeight()))) {
+        // Above the window frame
+        if (top < 0) {
+            el.addClass("offscreen-top");
+            el.removeClass("offscreen-bottom");
+        }
+        // Below the window frame
+        else if (top > $(window).height() - el.outerHeight()) {
+            el.addClass("offscreen-bottom");
+            el.removeClass("offscreen-top");
+        }
+        // In the window frame
+        else {
+            el.removeClass("offscreen-top");
+            el.removeClass("offscreen-bottom");
+        }
+    }
+    else {
+        el.removeClass("offscreen-top");
+        el.removeClass("offscreen-bottom");
+    }
+}
+
+$(document).ready(function() {
+    $('.float-element').each(function() {
+        $(this).wrap('<div class="float-element-location" style="height:' +
+            $(this).outerHeight() + 'px;width:' +
+            $(this).outerWidth() + 'px;z-index:999;" />')
+        .wrap('<div class="float-element-wrapper" style="height:' +
+            $(this).outerHeight() + 'px;width:' +
+            $(this).outerWidth() + 'px;z-index:999;" />');
+        update_floater($(this));
+    });
+    $(window).scroll(function() {
+        $('.float-element-wrapper').each(function() {
+            update_floater($(this));
+        });
+    });
+});
+
 // vim: set et:sw=4:
