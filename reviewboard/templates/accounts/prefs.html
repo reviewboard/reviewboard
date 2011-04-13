@@ -45,6 +45,7 @@
   </table>
  </div>
 {% endbox %}
+{% if form.fields.groups.choices %}
 {% box "prefsgroup" %}
  <h1 class="title">{% trans "Groups" %}</h1>
  <div class="main">
@@ -52,6 +53,7 @@
   {{form.groups}}
  </div>
 {% endbox %}
+{% endif %}
  <div class="prefsbuttons">
   <input type="submit" value="{% trans "Save Preferences" %}" />
  </div>

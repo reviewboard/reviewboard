@@ -232,7 +232,7 @@ def view_diff_fragment(
     except Exception, e:
         return exception_traceback(
             request, e, error_template_name,
-            context={'file': get_requested_diff_file(False)})
+            extra_context={'file': get_requested_diff_file(False)})
 
 
 def exception_traceback_string(request, e, template_name, extra_context={}):

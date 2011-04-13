@@ -636,10 +636,12 @@ def submitter(request,
 
     # Make sure the user exists
     if local_site:
-        if not local_site.users.filter(username=username).exists():
+        try:
+            user = local_site.users.get(username=username)
+        except User.DoesNotExist:
             raise Http404
     else:
-        get_object_or_404(User, username=username)
+        user = get_object_or_404(User, username=username)
 
     datagrid = ReviewRequestDataGrid(request,
         ReviewRequest.objects.from_user(username, status=None,
@@ -648,7 +650,9 @@ def submitter(request,
         _("%s's review requests") % username,
         local_site=local_site)
 
-    return datagrid.render_to_response(template_name)
+    return datagrid.render_to_response(template_name, extra_context={
+        'viewing_user': user,
+    })
 
 
 @check_login_required
@@ -1045,6 +1049,11 @@ def search(request,
     if not query:
         # FIXME: I'm not super thrilled with this
         return HttpResponseRedirect(reverse("root"))
+
+    if query.isdigit():
+        query_review_request = get_object_or_none(ReviewRequest, pk=query)
+        if query_review_request:
+            return HttpResponseRedirect(query_review_request.get_absolute_url())
 
     import lucene
     lv = [int(x) for x in lucene.VERSION.split('.')]

@@ -177,13 +177,17 @@ class GitDiffParser(DiffParser):
                                   'information', linenum)
         linenum += 1
 
-        # We have no use for recording this info so skip it
+        # Save the new file, deleted file, mode change and index
         if self._is_new_file(linenum):
+            file_info.data += self.lines[linenum] + "\n"
             linenum += 1
         elif self._is_deleted_file(linenum):
+            file_info.data += self.lines[linenum] + "\n"
             linenum += 1
             file_info.deleted = True
         elif self._is_mode_change(linenum):
+            file_info.data += self.lines[linenum] + "\n"
+            file_info.data += self.lines[linenum + 1] + "\n"
             linenum += 2
 
         if self._is_index_range_line(linenum):
@@ -195,6 +199,7 @@ class GitDiffParser(DiffParser):
             if self.pre_creation_regexp.match(file_info.origInfo):
                 file_info.origInfo = PRE_CREATION
 
+            file_info.data += self.lines[linenum] + "\n"
             linenum += 1
 
         # Get the changes

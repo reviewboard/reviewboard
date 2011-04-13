@@ -131,7 +131,7 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 # Custom test runner, which uses nose to find tests and execute them.  This
 # gives us a somewhat more comprehensive test execution than django's built-in
 # runner, as well as some special features like a code coverage report.
-TEST_RUNNER = 'reviewboard.test.runner'
+TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this

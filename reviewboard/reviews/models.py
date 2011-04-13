@@ -193,11 +193,23 @@ class Screenshot(models.Model):
     def __unicode__(self):
         return u"%s (%s)" % (self.caption, self.image)
 
-    def get_absolute_url(self):
+    def get_review_request(self):
         try:
-            review_request = self.review_request.all()[0]
+            return self.review_request.all()[0]
         except IndexError:
-            review_request = self.inactive_review_request.all()[0]
+            try:
+                return self.inactive_review_request.all()[0]
+            except IndexError:
+                # Maybe it's on a draft.
+                try:
+                    draft = self.drafts.get()
+                except ReviewRequestDraft.DoesNotExist:
+                    draft = self.inactive_drafts.get()
+
+                return draft.review_request
+
+    def get_absolute_url(self):
+        review_request = self.get_review_request()
 
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -296,7 +308,7 @@ class ReviewRequest(models.Model):
     shipit_count = CounterField(_("ship-it count"), default=0)
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True)
-    local_id = models.IntegerField('site-local ID', null=True)
+    local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
@@ -657,12 +669,38 @@ class ReviewRequest(models.Model):
         self.save()
 
     def publish(self, user):
+        from reviewboard.accounts.models import LocalSiteProfile
+
         """
         Save the current draft attached to this review request. Send out the
         associated email. Returns the review request that was saved.
         """
         if not self.is_mutable_by(user):
             raise PermissionError
+
+        # Decrement the counts on everything. we lose them.
+        # We'll increment the resulting set during ReviewRequest.save.
+        # This should be done before the draft is published.
+        # Once the draft is published, the target people
+        # and groups will be updated with new values.
+        # Decrement should not happen while publishing
+        # a new request or a discarded request
+        if self.public:
+            Group.incoming_request_count.decrement(self.target_groups.all())
+            LocalSiteProfile.direct_incoming_request_count.decrement(
+                    LocalSiteProfile.objects.filter(
+                        user__in=self.target_people.all(),
+                        local_site=self.local_site))
+            LocalSiteProfile.total_incoming_request_count.decrement(
+                    LocalSiteProfile.objects.filter(
+                        Q(local_site=self.local_site) &
+                        Q(Q(user__review_groups__in= \
+                            self.target_groups.all()) |
+                          Q(user__in=self.target_people.all()))))
+            LocalSiteProfile.starred_public_request_count.decrement(
+                    LocalSiteProfile.objects.filter(
+                        profile__starred_review_requests=self,
+                        local_site=self.local_site))
 
         draft = get_object_or_none(self.draft)
         if draft is not None:
@@ -702,16 +740,11 @@ class ReviewRequest(models.Model):
             # count for the user.
             site_profile.increment_total_outgoing_request_count()
             old_status = None
-            old_public = None
         else:
             # We need to see if the status has changed, so that means
             # finding out what's in the database.
             r = ReviewRequest.objects.get(pk=self.id)
             old_status = r.status
-            old_public = r.public
-
-        if old_status == self.status and old_public == self.public:
-            return
 
         if self.status == self.PENDING_REVIEW:
             if old_status != self.status:
@@ -992,8 +1025,7 @@ class ReviewRequestDraft(models.Model):
 
                 a.__dict__[name] = value
 
-        def update_list(a, b, name, record_changes=True, name_field=None,
-                        counter_infos=[]):
+        def update_list(a, b, name, record_changes=True, name_field=None):
             aset = set([x.id for x in a.all()])
             bset = set([x.id for x in b.all()])
 
@@ -1005,50 +1037,27 @@ class ReviewRequestDraft(models.Model):
                 a.clear()
                 map(a.add, b.all())
 
-                # Decrement the counts on everything we had before.
-                # we lose them. We'll increment the resulting set
-                # during ReviewRequest.save.
-                for model, counter, pk_field in counter_infos:
-                    counter.decrement(
-                        model.objects.filter(**{
-                            pk_field + '__in': aset,
-                            'local_site': review_request.local_site,
-                        }))
-
         update_field(review_request, self, 'summary')
         update_field(review_request, self, 'description')
         update_field(review_request, self, 'testing_done')
         update_field(review_request, self, 'branch')
 
         update_list(review_request.target_groups, self.target_groups,
-                    'target_groups', name_field="name",
-                    counter_infos=[
-                        (Group, Group.incoming_request_count, 'pk'),
-                        (LocalSiteProfile,
-                         LocalSiteProfile.total_incoming_request_count,
-                         'user__review_groups')])
+                    'target_groups', name_field="name")
         update_list(review_request.target_people, self.target_people,
-                    'target_people', name_field="username",
-                    counter_infos=[
-                        (LocalSiteProfile,
-                         LocalSiteProfile.direct_incoming_request_count,
-                         'user'),
-                        (LocalSiteProfile,
-                         LocalSiteProfile.total_incoming_request_count,
-                         'user')])
+                    'target_people', name_field="username")
 
         # Specifically handle bug numbers
-        old_bugs = set(review_request.get_bug_list())
-        new_bugs = set(self.get_bug_list())
+        old_bugs = review_request.get_bug_list()
+        new_bugs = self.get_bug_list()
 
-        if old_bugs != new_bugs:
+        if set(old_bugs) != set(new_bugs):
             update_field(review_request, self, 'bugs_closed',
                          record_changes=False)
 
             if self.changedesc:
                 self.changedesc.record_field_change('bugs_closed',
-                                                    old_bugs - new_bugs,
-                                                    new_bugs - old_bugs)
+                                                    old_bugs, new_bugs)
 
 
         # Screenshots are a bit special.  The list of associated screenshots can

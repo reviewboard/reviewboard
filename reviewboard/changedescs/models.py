@@ -75,8 +75,8 @@ class ChangeDescription(models.Model):
             new_set = set(new_value)
 
             self.fields_changed[field] = {
-                'old': serialize_changed_obj_list(old_set, name_field),
-                'new': serialize_changed_obj_list(new_set, name_field),
+                'old': serialize_changed_obj_list(old_value, name_field),
+                'new': serialize_changed_obj_list(new_value, name_field),
                 'added': serialize_changed_obj_list(new_set - old_set,
                                                     name_field),
                 'removed': serialize_changed_obj_list(old_set - new_set,

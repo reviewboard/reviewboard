@@ -799,7 +799,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 219)
+        self.assertEqual(len(file.data), 249)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
@@ -814,7 +814,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, 'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 80)
+        self.assertEqual(len(file.data), 124)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
@@ -848,7 +848,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, '0000000')
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
-        self.assertEqual(len(file.data), 84)
+        self.assertEqual(len(file.data), 132)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
@@ -863,7 +863,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, '86b520c')
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 53)
+        self.assertEqual(len(file.data), 97)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
 
@@ -878,10 +878,10 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[0].newInfo, 'e254ef4')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
-        self.assertEqual(len(files[0].data), 519)
+        self.assertEqual(len(files[0].data), 549)
         self.assertEqual(files[0].data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
-        self.assertEqual(files[0].data.splitlines()[12],
+        self.assertEqual(files[0].data.splitlines()[13],
                          "         if isinstance(value, basestring):")
 
         self.assertEqual(files[1].origFile, 'tests/tests.py')
@@ -890,7 +890,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[1].newInfo, 'e279a06')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
-        self.assertEqual(len(files[1].data), 138)
+        self.assertEqual(len(files[1].data), 182)
         self.assertEqual(files[1].data.splitlines()[0],
                          "diff --git a/tests/tests.py b/tests/tests.py")
         self.assertEqual(files[1].data.splitlines()[-1],
@@ -902,7 +902,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[2].newInfo, '86b520c')
         self.assertTrue(files[2].binary)
         self.assertFalse(files[2].deleted)
-        self.assertEqual(len(files[2].data), 53)
+        self.assertEqual(len(files[2].data), 97)
         self.assertEqual(files[2].data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
 
@@ -912,7 +912,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[3].newInfo, 'e254ef4')
         self.assertFalse(files[3].binary)
         self.assertFalse(files[3].deleted)
-        self.assertEqual(len(files[3].data), 97)
+        self.assertEqual(len(files[3].data), 127)
         self.assertEqual(files[3].data.splitlines()[0],
                          "diff --git a/readme b/readme")
         self.assertEqual(files[3].data.splitlines()[-1],
@@ -924,7 +924,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[4].newInfo, '0000000')
         self.assertFalse(files[4].binary)
         self.assertTrue(files[4].deleted)
-        self.assertEqual(len(files[4].data), 84)
+        self.assertEqual(len(files[4].data), 132)
         self.assertEqual(files[4].data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(files[4].data.splitlines()[-1],
@@ -936,7 +936,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[5].newInfo, 'e248ef4')
         self.assertFalse(files[5].binary)
         self.assertFalse(files[5].deleted)
-        self.assertEqual(len(files[5].data), 101)
+        self.assertEqual(len(files[5].data), 131)
         self.assertEqual(files[5].data.splitlines()[0],
                          "diff --git a/readme2 b/readme2")
         self.assertEqual(files[5].data.splitlines()[-1],
