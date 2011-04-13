@@ -260,15 +260,28 @@ class DiffCommentIssueResource(BaseCommentIssueResource):
 
 diff_comment_issue_resource = DiffCommentIssueResource()
 
+class BaseCommentResource(WebAPIResource):
 
-class BaseDiffCommentResource(WebAPIResource):
+    fields ={
+        'issue_opened': {
+            'type': bool,
+            'description': 'Whether or not a comment opens an issue.'
+        },
+        'issue_status': {
+            'type': str,
+            'description': 'The status of an issue.'
+        },
+    }
+
+
+class BaseDiffCommentResource(BaseCommentResource):
     """Base class for diff comment resources.
 
     Provides common fields and functionality for all diff comment resources.
     """
     model = Comment
     name = 'diff_comment'
-    fields = {
+    fields = dict({
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
@@ -309,19 +322,11 @@ class BaseDiffCommentResource(WebAPIResource):
             'type': 'reviewboard.webapi.resources.UserResource',
             'description': 'The user who made the comment.',
         },
-        'issue_opened': {
-            'type': bool,
-            'description': 'Whether or not a comment opens an issue.'
-        },
-    }
+    }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
 
     allowed_methods = ('GET',)
-
-    item_child_resources = [
-        diff_comment_issue_resource,
-    ]
 
     def get_queryset(self, request, review_request_id, is_list=False,
                      *args, **kwargs):
@@ -3283,12 +3288,12 @@ class ReviewRequestDraftResource(WebAPIResource):
 review_request_draft_resource = ReviewRequestDraftResource()
 
 
-class BaseScreenshotCommentResource(WebAPIResource):
+class BaseScreenshotCommentResource(BaseCommentResource):
     """A base resource for screenshot comments."""
     model = ScreenshotComment
     name = 'screenshot_comment'
 
-    fields = {
+    fields = dict({
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
@@ -3339,7 +3344,7 @@ class BaseScreenshotCommentResource(WebAPIResource):
             'type': bool,
             'description': 'Whether or not the comment opens an issue.',
         },
-    }
+    }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
 
@@ -3428,10 +3433,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
-
-    item_child_resources = [
-        review_screenshot_comment_issue_resource,
-    ]
 
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
