@@ -540,7 +540,6 @@ $.fn.inlineIssue = function(comments, comment_index) {
     }
 
     this.on_response = function(response) {
-        return;
     }
 
     return this;
@@ -549,96 +548,117 @@ $.fn.inlineIssue = function(comments, comment_index) {
 $.fn.issueUI = function() {
     var self = this;
 
-    self.addClass('issue');
-    var msg = $('<span/>').addClass('message').appendTo(self);
+    self.DROPPED = "dropped";
+    self.OPEN = "open";
+    self.RESOLVED = "resolved";
 
-    this.appear_as_state = function(state){
+    self.addClass('issue');
+    var msg = $('<span/>')
+        .addClass('message')
+        .appendTo(self);
+
+    self.appear_as_state = function(state){
         self.removeClass('open_issue');
         self.removeClass('resolved_issue');
         self.removeClass('dropped_issue');
 
-        switch(state) {
-            case 'open':
+        switch (state) {
+            case self.OPEN:
                 self.addClass('open_issue');
                 msg.text('An issue was opened.');
                 break;
-            case 'resolved':
+
+            case self.RESOLVED:
                 self.addClass('resolved_issue');
                 msg.text('Issue resolved. Thanks!');
                 break;
-            case 'dropped':
+
+            case self.DROPPED:
                 self.addClass('dropped_issue');
                 msg.text('Issue dropped.');
                 break;
+
+            default:
+                msg.text('Issue is in an unknown state, and might' +
+                         'require a page reload.');
         }
     }
 
     self.appear_as_state(self.get_issue_status());
 
-    if(window['gEditable']) {
+    if (window['gEditable']) {
         self.issueButtons();
     }
 
     return this;
 }
 
-
 $.fn.issueButtons = function() {
-
     var self = this;
-
-    var buttons = $('<div/>').addClass('buttons').appendTo(self);
-
-    var fixed_button = $('<input type="button" value="Fixed"/>')
+    var buttons = $('<div/>')
+        .addClass('buttons')
+        .appendTo(self);
+    var fixed_button = $('<input type="button"/>')
+        .attr("value", "Fixed")
         .click(function() {
-            self.save('resolved');
-        }).appendTo(buttons).hide();
-
-    var drop_button = $('<input type="button" value="Drop"/>')
+            self.save(self.RESOLVED);
+        })
+        .appendTo(buttons)
+        .hide();
+    var drop_button = $('<input type="button"/>')
+        .attr("value", "Drop")
         .click(function() {
-            self.save('dropped');
-        }).appendTo(buttons).hide();
-
-    var reopen_button = $('<input type="button" value="Reopen"/>')
+            self.save(self.DROPPED);
+        })
+        .appendTo(buttons)
+        .hide();
+    var reopen_button = $('<input type="button"/>')
+        .attr("value", "Reopen")
         .click(function() {
-            self.save('open');
-        }).appendTo(buttons).hide();
+            self.save(self.OPEN);
+        })
+        .appendTo(buttons)
+        .hide();
 
     this.set_state = function(state) {
         drop_button.hide();
         reopen_button.hide();
         fixed_button.hide();
 
-        switch(state) {
-            case 'open':
+        switch (state) {
+            case self.OPEN:
                 self.state_open();
-                self.appear_as_state('open');
                 break;
-            case 'dropped':
+
+            case self.DROPPED:
                 self.state_dropped();
-                self.appear_as_state('dropped');
                 break;
-            case 'resolved':
+
+            case self.RESOLVED:
                 self.state_resolved();
-                self.appear_as_state('resolved');
+                break;
+
+            default:
                 break;
         }
+
+        self.appear_as_state(state);
     }
 
     this.state_open = function() {
-        self.set_issue_status('open');
+        self.set_issue_status(self.OPEN);
         drop_button.show();
         fixed_button.show();
     }
 
     this.state_resolved = function() {
-        self.set_issue_status('resolved');
+        self.set_issue_status(self.RESOLVED);
         self.addClass('resolved_issue');
         reopen_button.show();
     }
 
     this.state_dropped = function() {
-        self.set_issue_status('dropped');
+        self.set_issue_status(self.DROPPED);
         self.addClass('dropped_issue');
         reopen_button.show();
     }
@@ -802,7 +822,7 @@ $.fn.commentDlg = function() {
     var statusField  = $(".status", draftForm);
     var issueOptions = $("#comment-issue-options", draftForm);
 
-    var issueField   = $("#comment_issue", draftForm)
+    var issueField = $("#comment_issue", draftForm)
         .click(function() {
             saveButton.attr("disabled", textField.val() == "");
             self.make_dirty();
@@ -1058,12 +1078,11 @@ $.fn.commentDlg = function() {
                     .appendTo(actions);
                 $("<pre/>").appendTo(item).text(this.text);
 
-                if(this.issue_opened) {
+                if (this.issue_opened) {
                     var issue = $('<div/>')
                         .inlineIssue(comments, i)
-                        .issueUI();
-
-                    issue.appendTo(item);
+                        .issueUI()
+                        .appendTo(item);
                 }
 
                 item.appendTo(commentsList);

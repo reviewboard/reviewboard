@@ -1152,13 +1152,11 @@ class Comment(models.Model):
     two filediffs. It can also have multiple replies.
     """
 
-    UNDEFINED      = ""
     OPEN           = "O"
     RESOLVED       = "R"
     DROPPED        = "D"
 
     ISSUE_STATUSES = (
-        (UNDEFINED, _('Undefined')),
         (OPEN,      _('Open')),
         (RESOLVED,  _('Resolved')),
         (DROPPED,   _('Dropped')),
@@ -1186,8 +1184,11 @@ class Comment(models.Model):
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     issue_opened = models.BooleanField(_("issue opened"), default=False)
-    issue_status = models.CharField(_("issue status"), max_length=1,
-                                    choices=ISSUE_STATUSES, default=UNDEFINED,
+    issue_status = models.CharField(_("issue status"),
+                                    max_length=1,
+                                    choices=ISSUE_STATUSES,
+                                    blank=True,
+                                    null=True,
                                     db_index=True)
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
@@ -1269,13 +1270,11 @@ class ScreenshotComment(models.Model):
     A comment on a screenshot.
     """
 
-    UNDEFINED      = ""
     OPEN           = "O"
     RESOLVED       = "R"
     DROPPED        = "D"
 
     ISSUE_STATUSES = (
-        (UNDEFINED, _('Undefined')),
         (OPEN,      _('Open')),
         (RESOLVED,  _('Resolved')),
         (DROPPED,   _('Dropped')),
@@ -1290,8 +1289,11 @@ class ScreenshotComment(models.Model):
     text = models.TextField(_('comment text'))
 
     issue_opened = models.BooleanField(_("issue opened"), default=False)
-    issue_status = models.CharField(_("issue status"), max_length=1,
-                                    choices=ISSUE_STATUSES, default=UNDEFINED,
+    issue_status = models.CharField(_("issue status"),
+                                    max_length=1,
+                                    choices=ISSUE_STATUSES,
+                                    blank=True,
+                                    null=True,
                                     db_index=True)
 
     # This is a sub-region of the screenshot.  Null X indicates the entire

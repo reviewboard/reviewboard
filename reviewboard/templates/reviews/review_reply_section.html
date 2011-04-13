@@ -22,13 +22,15 @@
 {% endif %}
 
 {% if comment.issue_opened %}
-      var comment_issue = $('<div/>').reviewDetailIssue({
-          'review_request_id':{{review.review_request.id}},
-          'review_id': {{review.id}},
-          'comment_id': {{comment.id}},
-          'issue_status': '{{issue_status}}',
-          'api_key': '{{api_key}}'
-      }).issueUI();
+      var comment_issue = $('<div/>')
+          .reviewDetailIssue({
+              'review_request_id': {{review.review_request.id}},
+              'review_id': {{review.id}},
+              'comment_id': {{comment.id}},
+              'issue_status': '{{issue_status}}',
+              'api_key': '{{api_key}}'
+          })
+          .issueUI();
 
       comment_issue.appendTo($("#{{context_id}}-{{review.id}} .issue-indicator"));
 {% endif %}
