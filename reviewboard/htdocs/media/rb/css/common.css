@@ -67,6 +67,7 @@ textarea {
   border: 1px #4e9a06 solid;
   margin-bottom: 10px;
   padding: 8px 10px;
+  z-index: 999;
 }
 
 .banner h1 {
@@ -79,15 +80,6 @@ textarea {
   margin-left: 10px;
 }
 
-.offscreen-top {
-   position:fixed;
-   top:0;
-}
-
-.offscreen-bottom {
-   position:fixed;
-   bottom:0;
-}
 
 /****************************************************************************
  * Box classes
