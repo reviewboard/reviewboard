@@ -506,6 +506,10 @@ class UIToolkit(object):
         """
         raise NotImplemented
 
+    def disclaimer(self, page, text):
+        """Displays a block of disclaimer text to the user."""
+        raise NotImplemented
+
     def urllink(self, page, url):
         """
         Displays a URL to the user.
@@ -677,6 +681,9 @@ class ConsoleUI(UIToolkit):
             print
 
         print self.text_wrapper.fill(text)
+
+    def disclaimer(self, page, text):
+        self.text(page, 'NOTE: %s' % text)
 
     def urllink(self, page, url):
         """
@@ -1005,6 +1012,23 @@ class GtkUI(UIToolkit):
         page['widget'].pack_start(label, False, True, 0)
         label.set_alignment(0, 0)
 
+    def disclaimer(self, page, text):
+        """Displays a block of disclaimer text to the user, with an icon."""
+        hbox = gtk.HBox(False, 6)
+        hbox.show()
+        page['widget'].pack_start(hbox, False, True, 0)
+
+        icon = gtk.image_new_from_icon_name(gtk.STOCK_DIALOG_WARNING,
+                                            gtk.ICON_SIZE_MENU)
+        icon.show()
+        hbox.pack_start(icon, False, False, 0)
+        icon.set_alignment(0, 0)
+
+        label = gtk.Label(textwrap.fill(text, 80))
+        label.show()
+        hbox.pack_start(label, True, True, 0)
+        label.set_alignment(0, 0)
+
     def urllink(self, page, url):
         """
         Displays a URL to the user.
@@ -1322,8 +1346,10 @@ class InstallCommand(Command):
         page = ui.page("What database name should Review Board use?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
-        ui.text(page, "You may need to create this database and grant a "
-                      "user modification rights before continuing.")
+        ui.disclaimer(page, "You need to create this database and grant "
+                            "user modification rights before continuing. "
+                            "See your database documentation for more "
+                            "information.")
 
         ui.prompt_input(page, "Database Name", site.db_name,
                         save_obj=site, save_var="db_name")
@@ -1350,8 +1376,9 @@ class InstallCommand(Command):
         page = ui.page("What is the login and password for this database?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
-        ui.text(page, "This must be a user that has creation and modification "
-                      "rights on the database.")
+        ui.text(page, "This must be a user that has table creation and "
+                      "modification rights on the database you already "
+                      "specified.")
 
         ui.prompt_input(page, "Database Username", site.db_user,
                         save_obj=site, save_var="db_user")
