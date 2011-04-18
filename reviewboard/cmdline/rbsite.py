@@ -306,7 +306,7 @@ class Site(object):
 
         fp.write("DATABASES = {\n")
         fp.write("    'default': {\n")
-        fp.write("        'ENGINE': '%s',\n" % db_engine)
+        fp.write("        'ENGINE': 'django.db.backends.%s',\n" % db_engine)
         fp.write("        'NAME': '%s',\n" % self.db_name.replace("\\", "\\\\"))
 
         if self.db_type != "sqlite3":
