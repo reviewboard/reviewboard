@@ -24,7 +24,6 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.svn import SVNTool
-from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       INVALID_REPOSITORY, \
@@ -641,14 +640,14 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                 self.assertEqual(getattr(repository, key), value)
 
     def get_list_url(self):
-        return local_site_reverse('repositories-resource')
+        return reverse('repositories-resource')
 
     @classmethod
     def get_item_url(cls, repository_id):
-        return local_site_reverse('repository-resource',
-                                  kwargs={
-                                      'repository_id': repository_id,
-                                  })
+        return reverse('repository-resource',
+                       kwargs={
+                           'repository_id': repository_id,
+                       })
 
 
 class RepositoryInfoResourceTests(BaseWebAPITestCase):
