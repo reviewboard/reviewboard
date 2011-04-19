@@ -24,7 +24,6 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.svn import SVNTool
-from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       INVALID_REPOSITORY, \
                                       MISSING_USER_KEY, \
