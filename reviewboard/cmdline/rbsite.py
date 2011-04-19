@@ -581,6 +581,10 @@ class UIToolkit(object):
         """
         raise NotImplemented
 
+    def disclaimer(self, page, text):
+        """Displays a block of disclaimer text to the user."""
+        raise NotImplemented
+
     def urllink(self, page, url):
         """
         Displays a URL to the user.
@@ -705,14 +709,18 @@ class ConsoleUI(UIToolkit):
         i = 0
 
         for choice in choices:
+            description = ''
+            enabled = True
+
             if isinstance(choice, basestring):
                 text = choice
-                enabled = True
-            else:
+            elif len(choice) == 2:
                 text, enabled = choice
+            else:
+                text, description, enabled = choice
 
             if enabled:
-                self.text(page, "(%d) %s\n" % (i + 1, text),
+                self.text(page, "(%d) %s %s\n" % (i + 1, text, description),
                           leading_newline=(i == 0))
                 valid_choices.append(text)
                 i += 1
@@ -752,6 +760,9 @@ class ConsoleUI(UIToolkit):
             print
 
         print self.text_wrapper.fill(text)
+
+    def disclaimer(self, page, text):
+        self.text(page, 'NOTE: %s' % text)
 
     def urllink(self, page, url):
         """
@@ -1026,9 +1037,11 @@ class GtkUI(UIToolkit):
         """
         Prompts the user for an item amongst a list of choices.
         """
+        valid_choices = {}
+
         def on_toggled(radio_button):
             if radio_button.get_active():
-                setattr(save_obj, save_var, radio_button.get_label())
+                setattr(save_obj, save_var, valid_choices[radio_button])
 
         hbox = gtk.HBox(False, 0)
         hbox.show()
@@ -1052,18 +1065,25 @@ class GtkUI(UIToolkit):
         buttons = []
 
         for choice in choices:
+            description = ''
+            enabled = True
+
             if isinstance(choice, basestring):
                 text = choice
-                enabled = True
-            else:
+            elif len(choice) == 2:
                 text, enabled = choice
+            else:
+                text, description, enabled = choice
 
-            radio_button = gtk.RadioButton(label=text, use_underline=False)
+            radio_button = gtk.RadioButton(label='%s %s' % (text, description),
+                                           use_underline=False)
             radio_button.show()
             vbox.pack_start(radio_button, False, True, 0)
             buttons.append(radio_button)
             radio_button.set_sensitive(enabled)
             radio_button.connect('toggled', on_toggled)
+
+            valid_choices[radio_button] = text
 
             if buttons[0] != radio_button:
                 radio_button.set_group(buttons[0])
@@ -1078,6 +1098,23 @@ class GtkUI(UIToolkit):
         label = gtk.Label(textwrap.fill(text, 80))
         label.show()
         page['widget'].pack_start(label, False, True, 0)
+        label.set_alignment(0, 0)
+
+    def disclaimer(self, page, text):
+        """Displays a block of disclaimer text to the user, with an icon."""
+        hbox = gtk.HBox(False, 6)
+        hbox.show()
+        page['widget'].pack_start(hbox, False, True, 0)
+
+        icon = gtk.image_new_from_icon_name(gtk.STOCK_DIALOG_WARNING,
+                                            gtk.ICON_SIZE_MENU)
+        icon.show()
+        hbox.pack_start(icon, False, False, 0)
+        icon.set_alignment(0, 0)
+
+        label = gtk.Label(textwrap.fill(text, 80))
+        label.show()
+        hbox.pack_start(label, True, True, 0)
         label.set_alignment(0, 0)
 
     def urllink(self, page, url):
@@ -1371,7 +1408,9 @@ class InstallCommand(Command):
         ui.prompt_choice(page, "Database Type",
                          [("mysql", Dependencies.get_support_mysql()),
                           ("postgresql", Dependencies.get_support_postgresql()),
-                          ("sqlite3", Dependencies.get_support_sqlite())],
+                          ("sqlite3",
+                           "(not supported for production use)",
+                           Dependencies.get_support_sqlite())],
                          save_obj=site, save_var="db_type")
 
     def ask_database_name(self):
@@ -1397,8 +1436,10 @@ class InstallCommand(Command):
         page = ui.page("What database name should Review Board use?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
-        ui.text(page, "You may need to create this database and grant a "
-                      "user modification rights before continuing.")
+        ui.disclaimer(page, "You need to create this database and grant "
+                            "user modification rights before continuing. "
+                            "See your database documentation for more "
+                            "information.")
 
         ui.prompt_input(page, "Database Name", site.db_name,
                         save_obj=site, save_var="db_name")
@@ -1425,8 +1466,9 @@ class InstallCommand(Command):
         page = ui.page("What is the login and password for this database?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
-        ui.text(page, "This must be a user that has creation and modification "
-                      "rights on the database.")
+        ui.text(page, "This must be a user that has table creation and "
+                      "modification rights on the database you already "
+                      "specified.")
 
         ui.prompt_input(page, "Database Username", site.db_user,
                         save_obj=site, save_var="db_user")
@@ -1440,7 +1482,8 @@ class InstallCommand(Command):
                       "you have a good reason not to.")
 
         ui.prompt_choice(page, "Cache Type",
-                         [("memcached", Dependencies.get_support_memcached()),
+                         [("memcached", "(recommended)",
+                           Dependencies.get_support_memcached()),
                           "file"],
                          save_obj=site, save_var="cache_type")
 
@@ -1478,7 +1521,12 @@ class InstallCommand(Command):
         ui.text(page, "Based on our experiences, we recommend using "
                       "modpython with Review Board.")
 
-        ui.prompt_choice(page, "Python Loader", ["modpython", "fastcgi", "wsgi"],
+        ui.prompt_choice(page, "Python Loader",
+                         [
+                          ("wsgi", "(recommended)", True),
+                          "fastcgi",
+                          ("modpython", "(no longer supported)", True),
+                         ],
                          save_obj=site, save_var="python_loader")
 
     def ask_admin_user(self):
