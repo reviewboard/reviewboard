@@ -1,4 +1,5 @@
 from django import template
+from django.conf import settings
 from django.template.loader import render_to_string
 
 from djblets.extensions.hooks import TemplateHook
@@ -6,13 +7,15 @@ from djblets.util.decorators import basictag
 
 from reviewboard.extensions.hooks import DiffViewerActionHook, \
                                          NavigationBarHook, \
-                                         ReviewRequestActionHook
+                                         ReviewRequestActionHook, \
+                                         ReviewRequestDropdownActionHook
 
 
 register = template.Library()
 
 
-def action_hooks(context, hookcls, template_name="extensions/action.html"):
+def action_hooks(context, hookcls, action_key="action",
+                 template_name="extensions/action.html"):
     """
     Displays all registered action hooks from the specified ActionHook
     class.
@@ -24,7 +27,9 @@ def action_hooks(context, hookcls, template_name="extensions/action.html"):
 
         if action_info:
             new_context = {
-                'action': action_info
+                'MEDIA_URL': settings.MEDIA_URL,
+                'MEDIA_SERIAL': settings.MEDIA_SERIAL,
+                action_key: action_info
             }
             context.update(new_context)
 
@@ -49,6 +54,16 @@ def review_request_action_hooks(context):
     Displays all registered action hooks for review requests.
     """
     return action_hooks(context, ReviewRequestActionHook)
+
+
+@register.tag
+@basictag(takes_context=True)
+def review_request_dropdown_action_hooks(context):
+    """ Displays all registered action hooks for review requests. """
+    return action_hooks(context,
+                        ReviewRequestDropdownActionHook,
+                        "actions",
+                        "extensions/action_dropdown.html")
 
 
 @register.tag

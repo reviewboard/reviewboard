@@ -70,6 +70,36 @@ class ReviewRequestActionHook(ActionHook):
     __metaclass__ = ExtensionHookPoint
 
 
+class ReviewRequestDropdownActionHook(ActionHook):
+    """A hook for adding an drop down action to the review request page.
+
+    The 'get_action_info' method for a drop down action should contain:
+
+       * `id`:      The ID of this action (optional).
+       * `title`:   The title of the dashboard select field.
+       * `options`: A list of ActionHook-style dicts (see ActionHook params).
+
+    For example::
+
+        def get_action_info(self, context):
+            'id': 'id 0',
+            'title': 'Title',
+            'options': [
+                {
+                    'id': 'id 1',
+                    'label': 'Item 1',
+                    'uri': 'javascript: ...',
+                },
+                {
+                    'id': 'id 2',
+                    'label': 'Item 2',
+                    'uri': 'javascript: ...',
+                }
+            ]
+    """
+    __metaclass__ = ExtensionHookPoint
+
+
 class DiffViewerActionHook(ActionHook):
     """A hook for adding an action to the diff viewer page."""
     __metaclass__ = ExtensionHookPoint
