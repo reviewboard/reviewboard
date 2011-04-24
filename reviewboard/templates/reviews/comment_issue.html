@@ -1,0 +1,15 @@
+<span class="issue-state resolved">The issue has been resolved</span>
+<span class="issue-state open">The issue is open</span>
+<span class="issue-state dropped">The issue has been dropped</span>
+
+<input type="button" value="Fixed" class="issue-button resolve"/>
+<input type="button" value="Drop" class="issue-button drop"/>
+<input type="button" value="Re-open" class="issue-button reopen"/>
+
+<script language="javascript">
+  $(document).ready(function() {
+    $("#comment-{{comment.id}}-issue")
+        .reviewDetailIssue({{comment.id}}, "{{issue_status}}");
+  });
+</script>
+
