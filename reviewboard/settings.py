@@ -28,6 +28,9 @@ LANGUAGE_CODE = 'en-us'
 # figure out URLs to stick in e-mails and related pages.
 SITE_ID = 1
 
+# The prefix for e-mail subjects sent to administrators.
+EMAIL_SUBJECT_PREFIX = "[Review Board] "
+
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = False
