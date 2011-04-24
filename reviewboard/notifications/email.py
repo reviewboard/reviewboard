@@ -3,10 +3,12 @@ import logging
 
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.core.mail import EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, mail_admins
+from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.signals import user_registered
 from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard.reviews.signals import review_request_published, \
                                         review_published, reply_published
@@ -47,11 +49,23 @@ def reply_published_cb(sender, user, reply, **kwargs):
         mail_reply(user, reply)
 
 
+def user_registered_cb(user, **kwargs):
+    """
+    Listens for new user registrations and sends a new user registration
+    e-mail to administrators, if enabled.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    if siteconfig.get("mail_send_new_user_mail"):
+        mail_new_user(user)
+
+
 def connect_signals():
     review_request_published.connect(review_request_published_cb,
                                      sender=ReviewRequest)
     review_published.connect(review_published_cb, sender=Review)
     reply_published.connect(reply_published_cb, sender=Review)
+    user_registered.connect(user_registered_cb)
 
 
 def build_email_address(fullname, email):
@@ -334,3 +348,33 @@ def mail_reply(user, reply):
                          extra_context)
     reply.time_emailed = datetime.now()
     reply.save()
+
+
+def mail_new_user(user):
+    """Sends an e-mail to administrators for newly registered users."""
+    current_site = Site.objects.get_current()
+    siteconfig = current_site.config.get_current()
+    domain_method = siteconfig.get("site_domain_method")
+    subject = "New Review Board user registration for %s" % user.username
+    from_email = get_email_address_for_user(user)
+
+    context = {
+        'domain': current_site.domain,
+        'domain_method': domain_method,
+        'user': user,
+        'user_url': reverse('admin:auth_user_change', args=(user.id,))
+    }
+
+    text_message = render_to_string('notifications/new_user_email.txt', context)
+    html_message = render_to_string('notifications/new_user_email.html',
+                                    context)
+
+    try:
+        mail_admins(subject.strip(), text_message, html_message=html_message)
+    except Exception, e:
+        logging.error("Error sending e-mail notification with subject '%s' on "
+                      "behalf of '%s' to admin: %s",
+                      subject.strip(),
+                      from_email,
+                      e,
+                      exc_info=1)
