@@ -10,7 +10,7 @@ RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
     this.endLineNum = endLineNum;
     this.text = "";
     this.issue_opened = false;
-    this.issue_status = null;
+    this.issue_status = "";
     this.loaded = false;
     this.url = null;
 
@@ -85,6 +85,7 @@ $.extend(RB.DiffComment.prototype, {
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
+                    data.issue_status = self.issue_status;
                 } else {
                     data.filediff_id = self.filediff.id;
                     url = self.review.links.diff_comments.href;
@@ -181,6 +182,7 @@ $.extend(RB.DiffComment.prototype, {
         this.url = rsp.diff_comment.links.self.href;
         this.loaded = true;
         this.issue_opened = rsp.diff_comment.issue_opened;
+        this.issue_status = rsp.diff_comment.issue_status;
     }
 });
 
@@ -1233,7 +1235,7 @@ RB.ScreenshotComment = function(review, id, screenshot_id, x, y, width,
     this.height = height;
     this.text = "";
     this.issue_opened = false;
-    this.issue_status = null;
+    this.issue_status = "";
     this.loaded = false;
     this.url = null;
 
@@ -1298,12 +1300,13 @@ $.extend(RB.ScreenshotComment.prototype, {
                     y: self.y,
                     w: self.width,
                     h: self.height,
-                    issue_opened: self.issue_opened
+                    issue_opened: self.issue_opened,
                 };
 
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
+                    data.issue_status = self.issue_status;
                 } else {
                     data.screenshot_id = self.screenshot_id;
                     url = self.review.links.screenshot_comments.href;
@@ -1397,6 +1400,7 @@ $.extend(RB.ScreenshotComment.prototype, {
         this.url = rsp.screenshot_comment.links.self.href;
         this.loaded = true;
         this.issue_opened = rsp.screenshot_comment.issue_opened;
+        this.issue_status = rsp.screenshot_comment.issue_status;
     }
 });
 

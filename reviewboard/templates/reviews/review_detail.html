@@ -93,6 +93,11 @@
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
+{% if comment.issue_opened %}
+     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+       {% comment_issue comment "rc" %}
+     </div>
+{% endif %}
      {% reply_section entry.review comment "screenshot_comment" "rc" %}
     </dd>
 {% endfor %}
@@ -126,6 +131,11 @@
     </dt>
     <dd>
      <pre class="reviewtext">{{comment.text|escape}}</pre>
+{% if comment.issue_opened %}
+     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+       {% comment_issue comment "rc" %}
+     </div>
+{% endif %}
      {% reply_section entry.review comment "comment" "rc" %}
     </dd>
     <script type="text/javascript">

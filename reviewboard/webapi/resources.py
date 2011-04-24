@@ -38,7 +38,7 @@ from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
-from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
+from reviewboard.reviews.models import BaseComment, Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        ScreenshotComment, Screenshot
@@ -172,106 +172,49 @@ class WebAPIResource(DjbletsWebAPIResource):
                                kwargs=href_kwargs))
 
 
-class BaseCommentIssueResource(WebAPIResource):
-    """A resource representing an issue associated with a comment.
-
-    This resource is writable, and only deals with the issue fields
-    of a comment.
-    """
-    singleton = True
-    name = 'issue'
-    name_plural = 'issue'
-
-    allowed_methods = ('GET','PUT',)
-
-    def get(self, request, *args, **kwargs):
-
-        try:
-            comment = \
-                self.get_comment_resource().get_object(request, *args, **kwargs)
-            review_request = comment.review.get().review_request
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
-
-        if not comment.issue_opened:
-            return DOES_NOT_EXIST
-
-        last_activity_time, updated_object = review_request.get_last_activity()
-
-        return 200, {
-            self.item_result_key: {
-                'last_activity_time': last_activity_time,
-                'status': self.serialize_status_field(comment),
-            }
-        }
-
-    @webapi_request_fields(
-        required = {
-            'status': {
-                'type': str,
-                'description': 'The status of the comment issue.',
-            },
-        }
-    )
-    def put(self, request, *args, **kwargs):
-        try:
-            comment = \
-                self.get_comment_resource().get_object(request, *args, **kwargs)
-            review_request = comment.review.get().review_request
-        except ObjectDoesNotExist:
-            return DOES_NOT_EXIST
-
-        if not self.has_update_permissions(request, comment, *args, **kwargs):
-            return PERMISSION_DENIED
-
-        # We can only update the status of the issue
-        issue_status = self.model.string_to_status(kwargs.get('status'))
-
-        comment.issue_status = issue_status
-        comment.save()
-
-        last_activity_time, updated_object = review_request.get_last_activity()
-
-        return 200, {
-            self.item_result_key: {
-                'last_activity_time': last_activity_time,
-                'status': self.serialize_status_field(comment),
-            }
-        }
-
-    def has_update_permissions(self, request, comment, *args, **kwargs):
-        review_request = comment.review.get().review_request
-
-        return review_request.status == ReviewRequest.PENDING_REVIEW and \
-            review_request.is_mutable_by(request.user)
-
-    def serialize_status_field(self, obj):
-        return self.model.status_to_string(obj.issue_status)
-
-    def get_comment_resource(self):
-        raise NotImplemented
-
-
-class DiffCommentIssueResource(BaseCommentIssueResource):
-    model = Comment
-
-    def get_comment_resource(self):
-        return base_diff_comment_resource
-
-diff_comment_issue_resource = DiffCommentIssueResource()
-
 class BaseCommentResource(WebAPIResource):
 
     fields ={
         'issue_opened': {
             'type': bool,
-            'description': 'Whether or not a comment opens an issue.'
+            'description': 'Whether or not a comment opens an issue.',
         },
         'issue_status': {
-            'type': str,
-            'description': 'The status of an issue.'
+            'type': ('dropped', 'open', 'resolved'),
+            'description': 'The status of an issue.',
         },
     }
+    def update_issue_status(self, request, comment_resource, *args, **kwargs):
+        try:
+            review_request = review_request_resource.get_object(request, *args,
+                                                                **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
+            comment = comment_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        # We want to ensure that the user that is trying to modify the state
+        # of an issue is the user who created the review request.
+        if not review_request_resource.has_modify_permissions(request, review_request):
+            return _no_access_error(request.user)
+
+        # We can only update the status of an issue if an issue has been
+        # opened
+        if not comment.issue_opened:
+           raise PermissionDenied
+
+        # We can only update the status of the issue
+        issue_status = BaseComment.issue_string_to_status(kwargs.get('issue_status'))
+        comment.issue_status = issue_status
+        comment.save()
+
+        return comment
+
+    def serialize_issue_status_field(self, obj):
+        return BaseComment.issue_status_to_string(obj.issue_status)
+
+
+comment_resource = BaseCommentResource()
 
 
 class BaseDiffCommentResource(BaseCommentResource):
@@ -492,10 +435,6 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': str,
                 'description': 'The comment text.',
             },
-            'issue_opened': {
-                'type': bool,
-                'description': 'Whether the comment opens an issue.',
-            },
         },
         optional = {
             'interfilediff_id': {
@@ -503,10 +442,14 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'description': 'The ID of the second file diff in the '
                                'interdiff the comment is on.',
             },
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether the comment opens an issue.',
+            },
         },
     )
     def create(self, request, first_line, num_lines, text,
-               filediff_id, issue_opened, interfilediff_id=None, *args,
+               filediff_id, issue_opened=False, interfilediff_id=None, *args,
                **kwargs):
         """Creates a new diff comment.
 
@@ -561,7 +504,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                                  issue_opened=issue_opened)
 
         if issue_opened:
-            new_comment.issue_status = self.model.OPEN
+            new_comment.issue_status = BaseComment.OPEN
 
         new_comment.save()
 
@@ -593,6 +536,10 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
             },
+            'issue_status': {
+                'type': ('dropped', 'open', 'resolved'),
+                'description': 'The status of an open issue.',
+            }
         },
     )
     def update(self, request, *args, **kwargs):
@@ -600,6 +547,16 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         This can update the text or line range of an existing comment.
         """
+        # If the user has passed in issue_status as a parameter, delegate
+        # to the BaseCommentResource handler
+        if kwargs.has_key('issue_status'):
+            diff_comment = \
+                comment_resource.update_issue_status(request, self, *args,
+                                                     **kwargs)
+            return 200, {
+                self.item_result_key: diff_comment,
+            }
+
         try:
             review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
@@ -607,12 +564,15 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        if not diff_comment.issue_opened:
-            if kwargs.get('issue_opened', False):
-                diff_comment.issue_status = self.model.OPEN
+        # If we've updated the comment from having no issue opened,
+        # to having an issue opened, we need to set the issue status
+        # to OPEN.
+        if not diff_comment.issue_opened and kwargs.get('issue_opened', False):
+            diff_comment.issue_status = BaseComment.OPEN
 
         for field in ('text', 'first_line', 'num_lines', 'issue_opened'):
             value = kwargs.get(field, None)
@@ -2951,7 +2911,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     def prepare_draft(self, request, review_request):
         """Creates a draft, if the user has permission to."""
         if not review_request.is_mutable_by(request.user):
-            raise PermissionDenied
+           raise PermissionDenied
 
         return ReviewRequestDraft.create(review_request)
 
@@ -3415,15 +3375,6 @@ class ScreenshotCommentResource(BaseScreenshotCommentResource):
 screenshot_comment_resource = ScreenshotCommentResource()
 
 
-class ReviewScreenshotCommentIssueResource(BaseCommentIssueResource):
-    model = ScreenshotComment
-
-    def get_comment_resource(self):
-        return review_screenshot_comment_resource
-
-review_screenshot_comment_issue_resource = ReviewScreenshotCommentIssueResource()
-
-
 class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     """Provides information on screenshots comments made on a review.
 
@@ -3512,7 +3463,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                                  text=text, issue_opened=issue_opened)
 
         if issue_opened:
-            new_comment.issue_status = self.model.OPEN
+            new_comment.issue_status = BaseComment.OPEN
 
         new_comment.save()
 
@@ -3552,6 +3503,10 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
             },
+            'issue_status': {
+                'type': ('dropped', 'open', 'resolved'),
+                'description': 'The status of an open issue.',
+            },
         },
     )
     def update(self, request, *args, **kwargs):
@@ -3560,6 +3515,16 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         This can update the text or region of an existing comment. It
         can only be done for comments that are part of a draft review.
         """
+        # If the user has passed in issue_status as a parameter, delegate
+        # to the BaseCommentResource handler
+        if kwargs.has_key('issue_status'):
+            screenshot_comment = \
+                comment_resource.update_issue_status(request, self, *args,
+                                                     **kwargs)
+            return 200, {
+                self.item_result_key: screenshot_comment,
+            }
+
         try:
             review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
@@ -3570,9 +3535,12 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        if not screenshot_comment.issue_opened:
-            if kwargs.get('issue_opened', False):
-                screenshot_comment.issue_status = self.model.OPEN
+        # If we've changed the screenshot comment from having no issue
+        # opened, to having an issue opened, we should update the issue
+        # status to be OPEN
+        if not screenshot_comment.issue_opened \
+            and kwargs.get('issue_opened', False):
+            screenshot_comment.issue_status = BaseComment.OPEN
 
         for field in ('x', 'y', 'w', 'h', 'text', 'issue_opened'):
             value = kwargs.get(field, None)

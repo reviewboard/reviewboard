@@ -476,77 +476,103 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 };
 
 
-$.fn.reviewDetailIssue = function(params) {
+$.fn.commentIssue = function(review_id, comment_id, issue_status) {
     var self = this;
-    self.params = params;
+    var OPEN = 'open';
+    var RESOLVED = 'resolved';
+    var DROPPED = 'dropped';
 
-    this.set_issue_status = function(status) {
-        self.params['issue_status'] = status;
+    var issue_reopen_button = $(".issue-button.reopen", this);
+    var issue_resolve_button = $(".issue-button.resolve", this);
+    var issue_drop_button = $(".issue-button.drop", this);
+    self.review_id = review_id;
+    self.comment_id = comment_id;
+    self.issue_status = issue_status;
+
+    function getComment() {
+        return gReviewRequest.createReview(review_id)
+                             .createDiffComment(comment_id, null, null, null, null);
     }
 
-    this.get_issue_status = function() {
-        return self.params['issue_status'];
+    issue_reopen_button.click(function() {
+      self.enter_state(OPEN);
+      var comment = getComment();
+      comment.ready(function() {
+        comment.issue_status = OPEN;
+        comment.save();
+      });
+    });
+    issue_resolve_button.click(function() {
+      self.enter_state(RESOLVED);
+      var comment = getComment();
+      comment.ready(function() {
+        comment.issue_status = RESOLVED;
+        comment.save();
+      });
+    });
+    issue_drop_button.click(function() {
+      self.enter_state(DROPPED);
+      var comment = getComment();
+      comment.ready(function() {
+        comment.issue_status = DROPPED;
+        comment.save();
+      });
+    });
+
+    self.enter_state = function(state_id) {
+      self.state = self.STATES[state_id];
+      self.state.enter();
     }
 
-    this.get_review_request_id = function() {
-        return self.params['review_request_id'];
+    var open_state = {
+        enter: function() {
+          $(".issue-button.reopen", self).hide();
+          $(".issue-state.dropped", self).hide();
+          $(".issue-state.resolved", self).hide();
+
+          $(".issue-state.open", self).show();
+          $(".issue-button.drop", self).show();
+          $(".issue-button.resolve", self).show();
+        }
     }
 
-    this.get_review_id = function() {
-        return self.params['review_id'];
+    var resolved_state = {
+        enter: function() {
+          $(".issue-button.resolve", self).hide();
+          $(".issue-button.drop", self).hide();
+          $(".issue-state.dropped", self).hide();
+          $(".issue-state.open", self).hide();
+
+          $(".issue-state.resolved", self).show();
+          $(".issue-button.reopen", self).show();
+        }
     }
 
-    this.get_comment_id = function() {
-        return self.params['comment_id'];
+    var dropped_state = {
+        enter: function() {
+          $(".issue-button.resolve", self).hide();
+          $(".issue-button.drop", self).hide();
+          $(".issue-state.resolved", self).hide();
+          $(".issue-state.open", self).hide();
+
+          $(".issue-state.dropped", self).show();
+          $(".issue-button.reopen", self).show();
+        }
     }
 
-    this.get_api_key = function() {
-        return self.params['api_key'];
-    }
+    self.STATES = {};
+    self.STATES[OPEN] = open_state;
+    self.STATES[RESOLVED] = resolved_state;
+    self.STATES[DROPPED] = dropped_state;
 
-    this.on_response = function(response) {
-        registerForUpdates(response['issue']['last_activity_time']);
-    }
+    self.enter_state(self.issue_status);
 
-    return this;
+    return self;
 }
 
-
-$.fn.inlineIssue = function(comments, comment_index) {
-    var self = this;
-
-    this.set_issue_status = function(status) {
-        comments[comment_index].issue_status = status;
-    }
-
-    this.get_issue_status = function() {
-        return comments[comment_index].issue_status;
-    }
-
-    this.get_review_request_id = function() {
-        return comments[comment_index].review_request_id;
-    }
-
-    this.get_review_id = function() {
-        return comments[comment_index].review_id;
-    }
-
-    this.get_comment_id = function() {
-        return comments[comment_index].comment_id;
-    }
-
-    this.get_api_key = function() {
-        return comments[comment_index].api_key;
-    }
-
-    this.on_response = function(response) {
-    }
-
-    return this;
-}
 
 $.fn.issueUI = function() {
-    var self = this;
+/*    var self = this;
 
     self.DROPPED = "dropped";
     self.OPEN = "open";
@@ -580,7 +606,7 @@ $.fn.issueUI = function() {
 
             default:
                 msg.text('Issue is in an unknown state, and might' +
-                         'require a page reload.');
+                         ' require a page reload.');
         }
     }
 
@@ -589,7 +615,7 @@ $.fn.issueUI = function() {
     if (window['gEditable']) {
         self.issueButtons();
     }
-
+*/
     return this;
 }
 
@@ -598,95 +624,18 @@ $.fn.issueButtons = function() {
     var buttons = $('<div/>')
         .addClass('buttons')
         .appendTo(self);
-    var fixed_button = $('<input type="button"/>')
+    var fixed_button = $('<input type="button" class="issue-button resolve"/>')
         .attr("value", "Fixed")
-        .click(function() {
-            self.save(self.RESOLVED);
-        })
-        .appendTo(buttons)
-        .hide();
-    var drop_button = $('<input type="button"/>')
+        .appendTo(buttons);
+//        .hide();
+    var drop_button = $('<input type="button" class="issue-button drop"/>')
         .attr("value", "Drop")
-        .click(function() {
-            self.save(self.DROPPED);
-        })
-        .appendTo(buttons)
-        .hide();
-    var reopen_button = $('<input type="button"/>')
+        .appendTo(buttons);
+//        .hide();
+    var reopen_button = $('<input type="button" class="issue-button reopen"/>')
         .attr("value", "Reopen")
-        .click(function() {
-            self.save(self.OPEN);
-        })
-        .appendTo(buttons)
-        .hide();
-
-    this.set_state = function(state) {
-        drop_button.hide();
-        reopen_button.hide();
-        fixed_button.hide();
-
-        switch (state) {
-            case self.OPEN:
-                self.state_open();
-                break;
-
-            case self.DROPPED:
-                self.state_dropped();
-                break;
-
-            case self.RESOLVED:
-                self.state_resolved();
-                break;
-
-            default:
-                break;
-        }
-
-        self.appear_as_state(state);
-    }
-
-    this.state_open = function() {
-        self.set_issue_status(self.OPEN);
-        drop_button.show();
-        fixed_button.show();
-    }
-
-    this.state_resolved = function() {
-        self.set_issue_status(self.RESOLVED);
-        self.addClass('resolved_issue');
-        reopen_button.show();
-    }
-
-    this.state_dropped = function() {
-        self.set_issue_status(self.DROPPED);
-        self.addClass('dropped_issue');
-        reopen_button.show();
-    }
-
-    this.save = function(status) {
-        review_request_id = self.get_review_request_id();
-        review_id = self.get_review_id();
-        comment_id = self.get_comment_id();
-        api_key = self.get_api_key();
-
-        var path = "/api/review-requests/" + review_request_id +
-                   "/reviews/" + review_id +
-                   "/" + api_key + "/" + comment_id + "/issue/";
-
-        rbApiCall({
-            type: "PUT",
-            data: {'status': status},
-            url: path,
-            success: this.on_success
-        });
-    }
-
-    this.on_success = function(response) {
-        self.set_state(response['issue']['status']);
-        self.on_response(response);
-    }
-
-    this.set_state(self.get_issue_status());
+        .appendTo(buttons);
+//        .hide();
 
     return this;
 }
@@ -1080,8 +1029,8 @@ $.fn.commentDlg = function() {
 
                 if (this.issue_opened) {
                     var issue = $('<div/>')
-                        .inlineIssue(comments, i)
-                        .issueUI()
+                        .issueButtons()
+                        .commentIssue(this.review_id, this.comment_id, this.issue_status)
                         .appendTo(item);
                 }
 

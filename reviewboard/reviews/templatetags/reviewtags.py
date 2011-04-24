@@ -11,7 +11,7 @@ from djblets.util.templatetags.djblets_utils import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
+from reviewboard.reviews.models import BaseComment, Comment, Group, ReviewRequest, \
                                        ScreenshotComment
 
 
@@ -106,12 +106,9 @@ def commentcounts(context, filediff, interfilediff=None):
                          for the user
       url                The URL to the comment
       localdraft         True if this is the current user's draft comment
-      issue_opened       True if this comment opens an issue
-      issue_status       The current status of an opened issue
       review_id          The ID of the review this comment is associated with
       review_request_id  The ID of the review request this comment is
                          associated with
-      api_key            The key to the resource
       ================== ====================================================
     """
     comment_dict = {}
@@ -143,11 +140,10 @@ def commentcounts(context, filediff, interfilediff=None):
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and \
                               not review.public,
-                'issue_opened': comment.issue_opened,
-                'issue_status': Comment.status_to_string(comment.issue_status),
                 'review_id': review.id,
                 'review_request_id': review.review_request.id,
-                'api_key': 'diff-comments',
+                'issue_opened': comment.issue_opened,
+                'issue_status': BaseComment.issue_status_to_string(comment.issue_status),
             })
 
     comments_array = []
@@ -182,12 +178,9 @@ def screenshotcommentcounts(context, screenshot):
       y                  The Y location of the comment's region
       w                  The width of the comment's region
       h                  The height of the comment's region
-      issue_opened       True if this comment opens an issue
-      issue_status       The current status of an opened issue
       review_id          The ID of the review this comment is associated with
       review_request_id  The ID of the review request this comment is
                          associated with
-      api_key            The key to the resource
       ================== ====================================================
     """
     comments = {}
@@ -214,11 +207,8 @@ def screenshotcommentcounts(context, screenshot):
                 'y' : comment.y,
                 'w' : comment.w,
                 'h' : comment.h,
-                'issue_opened': comment.issue_opened,
-                'issue_status': ScreenshotComment.status_to_string(comment.issue_status),
                 'review_id': review.id,
                 'review_request_id': review.review_request.id,
-                'api_key': 'screenshot-comments',
             })
 
     return simplejson.dumps(comments)
@@ -313,24 +303,19 @@ def reply_section(context, review, comment, context_type, context_id):
     variables through. It does not make use of them itself.
     """
     issue_status = ""
-    api_key = 'diff-comments'
 
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
-            api_key = 'screenshot-comments'
         context_id += str(comment.id)
-        issue_status = Comment.status_to_string(comment.issue_status)
 
     return {
         'review': review,
         'comment': comment,
-        'issue_status': issue_status,
         'context_type': context_type,
         'context_id': context_id,
         'user': context.get('user', None),
         'local_site_name': context.get('local_site_name'),
-        'api_key': api_key,
     }
 
 
@@ -559,3 +544,20 @@ def render_star(user, obj):
         'user': user,
         'MEDIA_URL': settings.MEDIA_URL,
     })
+
+
+@register.inclusion_tag('reviews/comment_issue.html',
+                        takes_context=True)
+def comment_issue(context, comment, context_id):
+    """
+    TODO: Document
+    """
+
+    issue_status = BaseComment.issue_status_to_string(comment.issue_status)
+
+    return {
+        'comment': comment,
+        'context_id': context_id,
+        'issue_status': issue_status,
+        'review': comment.review.get(),
+    }
