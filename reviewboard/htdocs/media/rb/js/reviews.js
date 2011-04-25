@@ -476,7 +476,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 };
 
 
-$.fn.commentIssue = function(review_id, comment_id, issue_status) {
+$.fn.commentIssue = function(review_id, comment_id, comment_type,
+                             issue_status) {
     var self = this;
     var OPEN = 'open';
     var RESOLVED = 'resolved';
@@ -489,38 +490,55 @@ $.fn.commentIssue = function(review_id, comment_id, issue_status) {
     self.comment_id = comment_id;
     self.issue_status = issue_status;
 
+    function disableButtons() {
+        issue_reopen_button.attr("disabled", true);
+        issue_resolve_button.attr("disabled", true);
+        issue_drop_button.attr("disabled", true);
+    }
+
+    function enableButtons() {
+        issue_reopen_button.attr("disabled", false);
+        issue_resolve_button.attr("disabled", false);
+        issue_drop_button.attr("disabled", false);
+    }
+
     function getComment() {
-        return gReviewRequest.createReview(review_id)
-                             .createDiffComment(comment_id, null, null, null, null);
+        if (comment_type == "comment")
+          return gReviewRequest.createReview(review_id)
+                               .createDiffComment(comment_id, null, null,
+                                                  null, null);
+        if (comment_type == "screenshot_comment")
+           return gReviewRequest.createReview(review_id)
+                                .createScreenshotComment(comment_id, null, null, 
+                                                         null, null, null);
+    }
+
+    function requestState(state) {
+      disableButtons();
+      var comment = getComment();
+      comment.ready(function() {
+          comment.issue_status = state;
+          comment.save({
+              success: function() {
+                  enableButtons();
+                  self.enter_state(state);
+              }
+          });
+      });
     }
 
     issue_reopen_button.click(function() {
-      self.enter_state(OPEN);
-      var comment = getComment();
-      comment.ready(function() {
-        comment.issue_status = OPEN;
-        comment.save();
-      });
+        requestState(OPEN);
     });
     issue_resolve_button.click(function() {
-      self.enter_state(RESOLVED);
-      var comment = getComment();
-      comment.ready(function() {
-        comment.issue_status = RESOLVED;
-        comment.save();
-      });
+        requestState(RESOLVED);
     });
     issue_drop_button.click(function() {
-      self.enter_state(DROPPED);
-      var comment = getComment();
-      comment.ready(function() {
-        comment.issue_status = DROPPED;
-        comment.save();
-      });
+        requestState(DROPPED);
     });
 
-    self.enter_state = function(state_id) {
-      self.state = self.STATES[state_id];
+    self.enter_state = function(state) {
+      self.state = self.STATES[state];
       self.state.enter();
     }
 
@@ -1030,7 +1048,7 @@ $.fn.commentDlg = function() {
                 if (this.issue_opened) {
                     var issue = $('<div/>')
                         .issueButtons()
-                        .commentIssue(this.review_id, this.comment_id, this.issue_status)
+                        .commentIssue(this.review_id, this.comment_id, replyType, this.issue_status)
                         .appendTo(item);
                 }
 

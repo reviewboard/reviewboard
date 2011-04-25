@@ -210,6 +210,11 @@ class BaseCommentResource(WebAPIResource):
 
         return comment
 
+    def should_update_issue_status(self, comment, **kwargs):
+        return comment.issue_opened and \
+            BaseComment.issue_string_to_status(kwargs.get('issue_status')) \
+                != comment.issue_status
+
     def serialize_issue_status_field(self, obj):
         return BaseComment.issue_status_to_string(obj.issue_status)
 
@@ -505,6 +510,8 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
+        else:
+            new_comment.issue_status = ""
 
         new_comment.save()
 
@@ -547,16 +554,6 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         This can update the text or line range of an existing comment.
         """
-        # If the user has passed in issue_status as a parameter, delegate
-        # to the BaseCommentResource handler
-        if kwargs.has_key('issue_status'):
-            diff_comment = \
-                comment_resource.update_issue_status(request, self, *args,
-                                                     **kwargs)
-            return 200, {
-                self.item_result_key: diff_comment,
-            }
-
         try:
             review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
@@ -564,6 +561,15 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        # Determine whether or not we're updating the issue status.
+        # If so, delegate to the comment_resource.
+        if comment_resource.should_update_issue_status(diff_comment, **kwargs):
+            diff_comment = \
+                comment_resource.update_issue_status(request, self, *args,
+                                                     **kwargs)
+            return 200, {
+                self.item_result_key: diff_comment,
+            }
 
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
@@ -3464,6 +3470,8 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
+        else:
+            new_comment.issue_status = ""
 
         new_comment.save()
 
@@ -3515,22 +3523,23 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         This can update the text or region of an existing comment. It
         can only be done for comments that are part of a draft review.
         """
-        # If the user has passed in issue_status as a parameter, delegate
-        # to the BaseCommentResource handler
-        if kwargs.has_key('issue_status'):
-            screenshot_comment = \
-                comment_resource.update_issue_status(request, self, *args,
-                                                     **kwargs)
-            return 200, {
-                self.item_result_key: screenshot_comment,
-            }
-
         try:
             review_request_resource.get_object(request, *args, **kwargs)
             review = review_resource.get_object(request, *args, **kwargs)
             screenshot_comment = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
+        # Determine whether or not we're updating the issue status.
+        # If so, delegate to the comment_resource.
+        if comment_resource.should_update_issue_status(screenshot_comment,
+                                                       **kwargs):
+            screenshot_comment = \
+                comment_resource.update_issue_status(request, self, *args,
+                                                     **kwargs)
+            return 200, {
+                self.item_result_key: screenshot_comment,
+            }
 
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
@@ -3544,7 +3553,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
         for field in ('x', 'y', 'w', 'h', 'text', 'issue_opened'):
             value = kwargs.get(field, None)
-
             if value is not None:
                 setattr(screenshot_comment, field, value)
 

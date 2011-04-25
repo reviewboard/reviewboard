@@ -209,6 +209,8 @@ def screenshotcommentcounts(context, screenshot):
                 'h' : comment.h,
                 'review_id': review.id,
                 'review_request_id': review.review_request.id,
+                'issue_opened': comment.issue_opened,
+                'issue_status': BaseComment.issue_status_to_string(comment.issue_status),
             })
 
     return simplejson.dumps(comments)
@@ -548,7 +550,7 @@ def render_star(user, obj):
 
 @register.inclusion_tag('reviews/comment_issue.html',
                         takes_context=True)
-def comment_issue(context, comment, context_id):
+def comment_issue(context, comment, comment_type):
     """
     TODO: Document
     """
@@ -557,7 +559,7 @@ def comment_issue(context, comment, context_id):
 
     return {
         'comment': comment,
-        'context_id': context_id,
+        'comment_type': comment_type,
         'issue_status': issue_status,
         'review': comment.review.get(),
     }
