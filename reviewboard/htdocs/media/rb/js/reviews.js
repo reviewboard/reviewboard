@@ -589,54 +589,6 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 }
 
 
-$.fn.issueUI = function() {
-/*    var self = this;
-
-    self.DROPPED = "dropped";
-    self.OPEN = "open";
-    self.RESOLVED = "resolved";
-
-    self.addClass('issue');
-    var msg = $('<span/>')
-        .addClass('message')
-        .appendTo(self);
-
-    self.appear_as_state = function(state){
-        self.removeClass('open_issue');
-        self.removeClass('resolved_issue');
-        self.removeClass('dropped_issue');
-
-        switch (state) {
-            case self.OPEN:
-                self.addClass('open_issue');
-                msg.text('An issue was opened.');
-                break;
-
-            case self.RESOLVED:
-                self.addClass('resolved_issue');
-                msg.text('Issue resolved. Thanks!');
-                break;
-
-            case self.DROPPED:
-                self.addClass('dropped_issue');
-                msg.text('Issue dropped.');
-                break;
-
-            default:
-                msg.text('Issue is in an unknown state, and might' +
-                         ' require a page reload.');
-        }
-    }
-
-    self.appear_as_state(self.get_issue_status());
-
-    if (window['gEditable']) {
-        self.issueButtons();
-    }
-*/
-    return this;
-}
-
 $.fn.issueButtons = function() {
     var self = this;
     var issue_indicator = $('<div/>')
@@ -664,15 +616,14 @@ $.fn.issueButtons = function() {
     var fixed_button = $('<input type="button" class="issue-button resolve"/>')
         .attr("value", "Fixed")
         .appendTo(buttons);
-//        .hide();
+
     var drop_button = $('<input type="button" class="issue-button drop"/>')
         .attr("value", "Drop")
         .appendTo(buttons);
-//        .hide();
+
     var reopen_button = $('<input type="button" class="issue-button reopen"/>')
         .attr("value", "Reopen")
         .appendTo(buttons);
-//        .hide();
 
     return this;
 }
