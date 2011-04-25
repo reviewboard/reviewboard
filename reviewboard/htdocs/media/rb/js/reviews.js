@@ -639,9 +639,28 @@ $.fn.issueUI = function() {
 
 $.fn.issueButtons = function() {
     var self = this;
+    var issue_indicator = $('<div/>')
+        .appendTo(self);
+
+    var state_open = $('<div/>')
+        .addClass('issue-state')
+        .addClass('open')
+        .appendTo(issue_indicator);
+
+    var state_resolved = $('<div/>')
+        .addClass('issue-state')
+        .addClass('resolved')
+        .appendTo(issue_indicator);
+
+    var state_dropped = $('<div/>')
+        .addClass('issue-state')
+        .addClass('dropped')
+        .appendTo(issue_indicator);
+
     var buttons = $('<div/>')
         .addClass('buttons')
-        .appendTo(self);
+        .appendTo(issue_indicator);
+
     var fixed_button = $('<input type="button" class="issue-button resolve"/>')
         .attr("value", "Fixed")
         .appendTo(buttons);
@@ -1048,7 +1067,8 @@ $.fn.commentDlg = function() {
                 if (this.issue_opened) {
                     var issue = $('<div/>')
                         .issueButtons()
-                        .commentIssue(this.review_id, this.comment_id, replyType, this.issue_status)
+                        .commentIssue(this.review_id, this.comment_id,
+                                      replyType, this.issue_status)
                         .appendTo(item);
                 }
 
