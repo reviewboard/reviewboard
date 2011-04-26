@@ -121,6 +121,7 @@ defaults.update({
     'diffviewer_syntax_highlighting_threshold': 0,
     'diffviewer_show_trailing_whitespace': True,
     'mail_send_review_mail':               False,
+    'mail_send_new_user_mail':             False,
     'search_enable':                       False,
     'site_domain_method':                  'http',
 

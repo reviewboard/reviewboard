@@ -67,6 +67,7 @@ textarea {
   border: 1px #4e9a06 solid;
   margin-bottom: 10px;
   padding: 8px 10px;
+  z-index: 999;
 }
 
 .banner h1 {

@@ -469,36 +469,112 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
      */
     function showReplyDraftBanner(review_id) {
         if (bannersEl.children().length == 0) {
-            bannersEl.append($("<div/>")
-                .addClass("banner")
-                .append("<h1>This reply is a draft</h1>")
-                .append(" Be sure to publish when finished.")
-                .append($('<input type="button"/>')
-                    .val("Publish")
-                    .click(function() {
-                        review_reply.publish({
-                            buttons: bannerButtonsEl,
-                            success: function() {
-                                window.location = gReviewRequestPath;
-                            }
-                        });
-                    })
-                )
-                .append($('<input type="button"/>')
-                    .val("Discard")
-                    .click(function() {
-                        review_reply.discard({
-                            buttons: bannerButtonsEl,
-                            success: function() {
-                                window.location = gReviewRequestPath;
-                            }
-                        });
-                    })
-                )
-            );
+            bannersEl.append($.replyDraftBanner(review_reply,
+                                                bannerButtonsEl));
         }
     }
 };
+
+
+/*
+ * Creates a floating reply banner. The banner will stay in view while the
+ * parent review is visible on screen.
+ */
+$.replyDraftBanner = function(review_reply, bannerButtonsEl) {
+    var banner = $("<div/>")
+        .addClass("banner")
+        .append("<h1>This reply is a draft</h1>")
+        .append(" Be sure to publish when finished.")
+        .append($('<input type="button"/>')
+            .val("Publish")
+            .click(function() {
+                review_reply.publish({
+                    buttons: bannerButtonsEl,
+                    success: function() {
+                        window.location = gReviewRequestPath;
+                    }
+                });
+            })
+        )
+        .append($('<input type="button"/>')
+            .val("Discard")
+            .click(function() {
+                review_reply.discard({
+                    buttons: bannerButtonsEl,
+                    success: function() {
+                        window.location = gReviewRequestPath;
+                    }
+                });
+            })
+        )
+        .floatReplyDraftBanner();
+
+    return banner;
+}
+
+/*
+ * Floats a reply draft banner. This ensures it's always visible on screen
+ * when the review is visible.
+ */
+$.fn.floatReplyDraftBanner = function() {
+    return $(this).each(function() {
+        var self = $(this);
+        var floatSpacer = null;
+        var container = null;
+
+        $(window).scroll(updateFloatPosition);
+        $(window).resize(updateSize);
+        updateFloatPosition();
+
+        function updateSize() {
+            if (floatSpacer != null) {
+                floatSpacer.height(self.height() +
+                                   self.getExtents("bpm", "tb"));
+                self.width(floatSpacer.parent().width() -
+                           self.getExtents("bpm", "lr"));
+            }
+        }
+
+        function updateFloatPosition() {
+            if (self.parent().length == 0) {
+                return;
+            }
+
+            if (floatSpacer == null) {
+                floatSpacer = self.wrap($("<div/>")).parent();
+                updateSize();
+            }
+
+            if (container == null) {
+                container = self.closest('.review');
+            }
+
+            var containerTop = container.offset().top;
+            var windowTop = $(window).scrollTop();
+            var topOffset = floatSpacer.offset().top - windowTop;
+            var outerHeight = self.outerHeight();
+
+            if (!container.hasClass("collapsed") &&
+                topOffset < 0 &&
+                containerTop < windowTop &&
+                windowTop < (containerTop + container.outerHeight() -
+                             outerHeight)) {
+                console.log(floatSpacer.parent().innerWidth());
+                self.css({
+                    top: 0,
+                    position: "fixed"
+                });
+
+                updateSize();
+            } else {
+                self.css({
+                    top: null,
+                    position: null
+                });
+            }
+        }
+    });
+}
 
 
 /*

@@ -97,6 +97,7 @@ def check_updates_required():
                 "admin/manual-updates/install-patch.html", {
                     'platform': sys.platform,
                     'binaryname': binaryname,
+                    'search_path': os.getenv('PATH'),
                 }
             ))
 
