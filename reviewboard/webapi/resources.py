@@ -195,7 +195,8 @@ class BaseCommentResource(WebAPIResource):
 
         # We want to ensure that the user that is trying to modify the state
         # of an issue is the user who created the review request.
-        if not review_request_resource.has_modify_permissions(request, review_request):
+        if not review_request_resource.has_modify_permissions(request,
+                                                              review_request):
             return _no_access_error(request.user)
 
         # We can only update the status of an issue if an issue has been
@@ -204,7 +205,8 @@ class BaseCommentResource(WebAPIResource):
            raise PermissionDenied
 
         # We can only update the status of the issue
-        issue_status = BaseComment.issue_string_to_status(kwargs.get('issue_status'))
+        issue_status = \
+            BaseComment.issue_string_to_status(kwargs.get('issue_status'))
         comment.issue_status = issue_status
         comment.save()
 

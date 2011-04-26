@@ -95,9 +95,9 @@ def commentcounts(context, filediff, interfilediff=None):
 
     Each entry in the array has a dictionary containing the following keys:
 
-      ================== ====================================================
+      =========== ==================================================
       Key                Description
-      ================== ====================================================
+      =========== ==================================================
       comment_id         The ID of the comment
       text               The text of the comment
       line               The first line number
@@ -107,9 +107,7 @@ def commentcounts(context, filediff, interfilediff=None):
       url                The URL to the comment
       localdraft         True if this is the current user's draft comment
       review_id          The ID of the review this comment is associated with
-      review_request_id  The ID of the review request this comment is
-                         associated with
-      ================== ====================================================
+      ==============================================================
     """
     comment_dict = {}
     user = context.get('user', None)
@@ -210,7 +208,9 @@ def screenshotcommentcounts(context, screenshot):
                 'review_id': review.id,
                 'review_request_id': review.review_request.id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment.issue_status_to_string(comment.issue_status),
+                'issue_status': BaseComment
+                                .issue_status_to_string(comment
+                                                        .issue_status),
             })
 
     return simplejson.dumps(comments)
