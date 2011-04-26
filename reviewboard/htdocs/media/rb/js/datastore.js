@@ -37,25 +37,6 @@ $.extend(RB.DiffComment.prototype, {
     },
 
     /*
-     * Sets whether or not the current comment opens
-     * an issue.
-     *
-     * @param {boolean} issue_opened  Whether or not an isue was opened.
-     */
-    setIssueOpened: function(issue_opened) {
-        this.issue_opened = (issue_opened ? 1 : 0);
-    },
-
-    /*
-     * Sets the current status of an issue on the current comment.
-     *
-     * @param {str} issue_status  The status of the issue.
-     */
-    setIssueStatus: function(issue_status) {
-        this.issue_status = issue_status;
-    },
-
-    /*
      * Returns the number of lines that this comment covers.
      *
      * @return {int} The number of lines this comment covers.
@@ -1261,26 +1242,7 @@ $.extend(RB.ScreenshotComment.prototype, {
         $.event.trigger("textChanged", null, this);
     },
 
-    /*
-     * Sets whether or not the current comment opens
-     * an issue.
-     *
-     * @param {boolean} issue_opened  Whether or not an isue was opened.
-     */
-    setIssueOpened: function(issue_opened) {
-        this.issue_opened = (issue_opened ? 1 : 0);
-    },
-
-    /*
-     * Sets the current status of an issue on the current comment.
-     *
-     * @param {str} issue_status  The status of the issue.
-     */
-    setIssueStatus: function(issue_status) {
-        this.issue_status = issue_status;
-    },
-
-    /*
+   /*
      * Saves the comment on the server.
      */
     save: function(options) {
