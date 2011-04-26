@@ -504,13 +504,15 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 
     function getComment() {
         if (comment_type == "comment")
-          return gReviewRequest.createReview(review_id)
-                               .createDiffComment(comment_id, null, null,
-                                                  null, null);
+          return gReviewRequest
+                 .createReview(review_id)
+                 .createDiffComment(comment_id, null, null,
+                                    null, null);
         if (comment_type == "screenshot_comment")
-           return gReviewRequest.createReview(review_id)
-                                .createScreenshotComment(comment_id, null, null, 
-                                                         null, null, null);
+           return gReviewRequest
+                  .createReview(review_id)
+                  .createScreenshotComment(comment_id, null, null,
+                                           null, null, null);
     }
 
     function requestState(state) {
