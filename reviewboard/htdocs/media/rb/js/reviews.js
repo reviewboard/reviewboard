@@ -547,12 +547,14 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     var open_state = {
         enter: function() {
           $(".issue-button.reopen", self).hide();
-          $(".issue-state.dropped", self).hide();
-          $(".issue-state.resolved", self).hide();
-
-          $(".issue-state.open", self).show();
+          $(".issue-state", self)
+              .removeClass("dropped")
+              .removeClass("resolved")
+              .addClass("open");
           $(".issue-button.drop", self).show();
           $(".issue-button.resolve", self).show();
+          $(".issue-message", self)
+              .text("An issue was opened.");
         }
     }
 
@@ -560,11 +562,13 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
         enter: function() {
           $(".issue-button.resolve", self).hide();
           $(".issue-button.drop", self).hide();
-          $(".issue-state.dropped", self).hide();
-          $(".issue-state.open", self).hide();
-
-          $(".issue-state.resolved", self).show();
+          $(".issue-state", self)
+              .removeClass("dropped")
+              .removeClass("open")
+              .addClass("resolved");
           $(".issue-button.reopen", self).show();
+          $(".issue-message", self)
+              .text("The issue has been resolved.");
         }
     }
 
@@ -572,11 +576,13 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
         enter: function() {
           $(".issue-button.resolve", self).hide();
           $(".issue-button.drop", self).hide();
-          $(".issue-state.resolved", self).hide();
-          $(".issue-state.open", self).hide();
-
-          $(".issue-state.dropped", self).show();
+          $(".issue-state", self)
+              .removeClass("open")
+              .removeClass("resolved")
+              .addClass("dropped");
           $(".issue-button.reopen", self).show();
+          $(".issue-message", self)
+              .text("The issue has been dropped.");
         }
     }
 
@@ -594,22 +600,8 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 $.fn.issueButtons = function() {
     var self = this;
     var issue_indicator = $('<div/>')
+        .addClass('issue-state')
         .appendTo(self);
-
-    var state_open = $('<div/>')
-        .addClass('issue-state')
-        .addClass('open')
-        .appendTo(issue_indicator);
-
-    var state_resolved = $('<div/>')
-        .addClass('issue-state')
-        .addClass('resolved')
-        .appendTo(issue_indicator);
-
-    var state_dropped = $('<div/>')
-        .addClass('issue-state')
-        .addClass('dropped')
-        .appendTo(issue_indicator);
 
     var buttons = $('<div/>')
         .addClass('buttons')
@@ -779,7 +771,7 @@ $.fn.commentDlg = function() {
     var saveButton = $("#comment_save", this)
         .click(function() {
             comment.setText(textField.val());
-            comment.setIssueOpened(issueField.attr('checked'));
+            comment.issue_opened = issueField.attr('checked') ? 1 : 0;
             comment.save();
             self.close();
         });
