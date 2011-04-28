@@ -95,7 +95,7 @@
      <pre>{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
-       {% comment_issue comment "screenshot_comment" %}
+       {% comment_issue review_request_details comment "screenshot_comment" %}
      </div>
 {% endif %}
      {% reply_section entry.review comment "screenshot_comment" "rc" %}
@@ -133,7 +133,7 @@
      <pre class="reviewtext">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
-       {% comment_issue comment "comment" %}
+       {% comment_issue review_request_details comment "comment" %}
      </div>
 {% endif %}
      {% reply_section entry.review comment "comment" "rc" %}

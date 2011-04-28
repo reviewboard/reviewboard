@@ -86,7 +86,7 @@ $.extend(RB.DiffComment.prototype, {
                         $.event.trigger("saved", null, self);
 
                         if ($.isFunction(options.success)) {
-                            options.success();
+                            options.success(rsp);
                         }
                     }
                 });
@@ -1281,7 +1281,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                     success: function(rsp) {
                         self._loadDataFromResponse(rsp);
                         $.event.trigger("saved", null, self);
-                        options.success();
+                        options.success(rsp);
                     }
                 });
             });

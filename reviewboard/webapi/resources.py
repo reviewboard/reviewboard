@@ -210,7 +210,12 @@ class BaseCommentResource(WebAPIResource):
         comment.issue_status = issue_status
         comment.save()
 
-        return comment
+        last_activity_time, updated_object = review_request.get_last_activity()
+
+        return 200, {
+            comment_resource.item_result_key: comment,
+            'last_activity_time': last_activity_time,
+        }
 
     def should_update_issue_status(self, comment, **kwargs):
         return comment.issue_opened and \
@@ -221,7 +226,7 @@ class BaseCommentResource(WebAPIResource):
         return BaseComment.issue_status_to_string(obj.issue_status)
 
 
-comment_resource = BaseCommentResource()
+base_comment_resource = BaseCommentResource()
 
 
 class BaseDiffCommentResource(BaseCommentResource):
@@ -564,14 +569,10 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         # Determine whether or not we're updating the issue status.
-        # If so, delegate to the comment_resource.
-        if comment_resource.should_update_issue_status(diff_comment, **kwargs):
-            diff_comment = \
-                comment_resource.update_issue_status(request, self, *args,
+        # If so, delegate to the base_comment_resource.
+        if base_comment_resource.should_update_issue_status(diff_comment, **kwargs):
+            return base_comment_resource.update_issue_status(request, self, *args,
                                                      **kwargs)
-            return 200, {
-                self.item_result_key: diff_comment,
-            }
 
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
@@ -3533,15 +3534,11 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             return DOES_NOT_EXIST
 
         # Determine whether or not we're updating the issue status.
-        # If so, delegate to the comment_resource.
-        if comment_resource.should_update_issue_status(screenshot_comment,
+        # If so, delegate to the base_comment_resource.
+        if base_comment_resource.should_update_issue_status(screenshot_comment,
                                                        **kwargs):
-            screenshot_comment = \
-                comment_resource.update_issue_status(request, self, *args,
-                                                     **kwargs)
-            return 200, {
-                self.item_result_key: screenshot_comment,
-            }
+            return base_comment_resource.update_issue_status(request, self, *args,
+                                                        **kwargs)
 
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)

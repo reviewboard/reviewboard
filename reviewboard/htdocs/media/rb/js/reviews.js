@@ -477,7 +477,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 
 
 $.fn.commentIssue = function(review_id, comment_id, comment_type,
-                             issue_status) {
+                             issue_status, interactive) {
     var self = this;
     var OPEN = 'open';
     var RESOLVED = 'resolved';
@@ -489,6 +489,7 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     self.review_id = review_id;
     self.comment_id = comment_id;
     self.issue_status = issue_status;
+    self.interactive = interactive;
 
     function disableButtons() {
         issue_reopen_button.attr("disabled", true);
@@ -521,9 +522,12 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
       comment.ready(function() {
           comment.issue_status = state;
           comment.save({
-              success: function() {
+              success: function(rsp) {
                   enableButtons();
                   self.enter_state(state);
+                  if (rsp.last_activity_time) {
+                    registerForUpdates(rsp.last_activity_time);
+                  }
               }
           });
       });
@@ -540,49 +544,58 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     });
 
     self.enter_state = function(state) {
-      self.state = self.STATES[state];
-      self.state.enter();
+        self.state = self.STATES[state];
+        self.state.enter();
+        if(self.interactive) {
+            self.state.showButtons();
+        }
     }
 
     var open_state = {
         enter: function() {
-          $(".issue-button.reopen", self).hide();
-          $(".issue-state", self)
-              .removeClass("dropped")
-              .removeClass("resolved")
-              .addClass("open");
-          $(".issue-button.drop", self).show();
-          $(".issue-button.resolve", self).show();
-          $(".issue-message", self)
-              .text("An issue was opened.");
+            $(".issue-button.reopen", self).hide();
+            $(".issue-state", self)
+                .removeClass("dropped")
+                .removeClass("resolved")
+                .addClass("open");
+            $(".issue-message", self)
+                .text("An issue was opened.");
+        },
+        showButtons: function() {
+            $(".issue-button.drop", self).show();
+            $(".issue-button.resolve", self).show();
         }
     }
 
     var resolved_state = {
         enter: function() {
-          $(".issue-button.resolve", self).hide();
-          $(".issue-button.drop", self).hide();
-          $(".issue-state", self)
-              .removeClass("dropped")
-              .removeClass("open")
-              .addClass("resolved");
-          $(".issue-button.reopen", self).show();
-          $(".issue-message", self)
-              .text("The issue has been resolved.");
+            $(".issue-button.resolve", self).hide();
+            $(".issue-button.drop", self).hide();
+            $(".issue-state", self)
+                .removeClass("dropped")
+                .removeClass("open")
+                .addClass("resolved");
+            $(".issue-message", self)
+                .text("The issue has been resolved.");
+        },
+        showButtons: function() {
+            $(".issue-button.reopen", self).show();
         }
     }
 
     var dropped_state = {
         enter: function() {
-          $(".issue-button.resolve", self).hide();
-          $(".issue-button.drop", self).hide();
-          $(".issue-state", self)
-              .removeClass("open")
-              .removeClass("resolved")
-              .addClass("dropped");
-          $(".issue-button.reopen", self).show();
-          $(".issue-message", self)
-              .text("The issue has been dropped.");
+            $(".issue-button.resolve", self).hide();
+            $(".issue-button.drop", self).hide();
+            $(".issue-state", self)
+                .removeClass("open")
+                .removeClass("resolved")
+                .addClass("dropped");
+            $(".issue-message", self)
+                .text("The issue has been dropped.");
+        },
+        showButtons: function() {
+            $(".issue-button.reopen", self).show();
         }
     }
 
@@ -1010,10 +1023,11 @@ $.fn.commentDlg = function() {
                 $("<pre/>").appendTo(item).text(this.text);
 
                 if (this.issue_opened) {
+                    var interactive = window['gEditable'];
                     var issue = $('<div/>')
                         .issueButtons()
                         .commentIssue(this.review_id, this.comment_id,
-                                      replyType, this.issue_status)
+                                      replyType, this.issue_status, interactive)
                         .appendTo(item);
                 }
 

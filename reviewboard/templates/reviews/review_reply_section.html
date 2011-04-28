@@ -12,14 +12,14 @@
 {% endif %}
   </div>
 
+{% if user.is_authenticated %}
   <script language="javascript">
   $(document).ready(function() {
-{% if user.is_authenticated %}
       $("#{{context_id}}-{{review.id}}").commentSection(
           "{{review.id}}",
           {% if comment %}"{{comment.id}}"{% else %}null{% endif %},
           "{{context_type}}");
-{% endif %}
   });
   </script>
+{% endif %}
 
