@@ -895,11 +895,11 @@
 }
 
 .issue-state.dropped {
-  background: url('../images/flag_green.png') #989898 no-repeat 5px 50%;
+  background: url('../images/cancel_grey.png') #989898 no-repeat 5px 50%;
 }
 
 .issue-state.open {
-  background: url('../images/bug.png') #FAFFAA no-repeat 5px 50%;
+  background: url('../images/warning.png') #FAFFAA no-repeat 5px 50%;
 }
 
 .issue-state.resolved {
