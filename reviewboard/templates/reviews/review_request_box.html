@@ -27,7 +27,7 @@
   </tr>
   <tr>
    <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
-   <td class="value"><a id="submitter" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
+   <td class="value"><a id="submitter" class="user" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
    <td class="caption" colspan="2">{% trans "Reviewers" %}</td>
   </tr>
   <tr>
@@ -52,7 +52,7 @@
    <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>
    <td class="value" id="target-people-value-cell"><span id="target_people" class="editable comma-editable">{% spaceless %}
 {%  for person in review_request_details.target_people.all %}
-<a href="{% url user person %}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
+<a href="{% url user person %}" class="user{% if not person.is_active %} inactive{% endif %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
 {% endspaceless %}</span></td>
   </tr>

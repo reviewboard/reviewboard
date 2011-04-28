@@ -323,6 +323,62 @@ $.fn.searchAutoComplete = function() {
         })
 };
 
+var gUserInfoBoxCache = {};
+
+/*
+ * Displays a infobox when hovering over a user.
+ *
+ * The infobox is displayed after a 1 second delay.
+ */
+$.fn.user_infobox = function() {
+    var POPUP_DELAY_MS = 1000;
+    var OFFSET_LEFT = -20;
+    var OFFSET_TOP = -30;
+
+    var infobox = $("#user-infobox");
+
+    if (infobox.length == 0) {
+        infobox = $("<div id='user-infobox'/>'");
+        $(document.body).append(infobox);
+    }
+
+    return this.each(function() {
+        var self = $(this);
+        var timeout = null;
+        var url = self.attr('href') + 'infobox/';
+
+        self.hover(
+            function() {
+                timeout = setTimeout(function() {
+                    if (!gUserInfoBoxCache[url]) {
+                        infobox
+                            .empty()
+                            .addClass("loading")
+                            .load(url,
+                                  function(responseText, textStatus) {
+                                      gUserInfoBoxCache[url] = responseText;
+                                      infobox.removeClass("loading");
+                                  });
+                    } else {
+                        infobox.html(gUserInfoBoxCache[url]);
+                    }
+
+                    var offset = self.offset();
+
+                    infobox
+                        .move(offset.left + OFFSET_LEFT,
+                              offset.top - infobox.height() + OFFSET_TOP,
+                              "absolute")
+                        .show();
+                }, POPUP_DELAY_MS);
+            },
+            function() {
+                clearTimeout(timeout);
+                infobox.hide();
+            });
+    });
+}
+
 
 $(document).ready(function() {
     $('<div id="activity-indicator" />')
@@ -336,26 +392,7 @@ $(document).ready(function() {
         searchGroupsEl.searchAutoComplete();
     }
 
-    $('#submitter, .reviewer a').hover(
-        function() {
-            var infobox = $(this).find(".user-infobox");
-
-            if (infobox.length > 0) {
-                infobox.show();
-            } else {
-                infobox = $(this).append(
-                   $("<div class='user-infobox loading'/>")
-                       .load($(this).attr('href') + "infobox/",
-                             function(responseText, textStatus) {
-                                 infobox.removeClass("loading");
-                             }));
-            }
-        },
-        function() {
-            $(this).find(".user-infobox").hide();
-        }
-    );
-
+    $('.user').user_infobox();
     $('.star').toggleStar();
 });
 

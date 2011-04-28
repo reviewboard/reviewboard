@@ -31,10 +31,11 @@ var gEditorCompleteHandlers = {
         );
     },
     'target_people': function(data) {
-        return urlizeList(data,
-            function(item) { return item.url; },
-            function(item) { return item.username; }
-        );
+        return $(urlizeList(data,
+                            function(item) { return item.url; },
+                            function(item) { return item.username; }))
+            .addClass("user")
+            .user_infobox();
     },
     'description': linkifyText,
     'testing_done': linkifyText
@@ -131,15 +132,17 @@ var gCommentIssueManager = new function() {
  * By default, this will use the item as the URL and as the hyperlink text.
  * By overriding urlFunc and textFunc, the URL and text can be customized.
  *
- * @param {array}    list     The list of items.
- * @param {function} urlFunc  A function to return the URL for an item in
- *                            the list.
- * @param {function} textFunc A function to return the text for an item in
- *                            the list.
+ * @param {array}    list            The list of items.
+ * @param {function} urlFunc         A function to return the URL for an item
+ *                                   in the list.
+ * @param {function} textFunc        A function to return the text for an item
+ *                                   in the list.
+ * @param {function} postProcessFunc Post-process generated elements in the
+                                     list.
  *
  * @return A string containing the HTML markup for the list of hyperlinks.
  */
-function urlizeList(list, urlFunc, textFunc) {
+function urlizeList(list, urlFunc, textFunc, postProcessFunc) {
     var str = "";
 
     for (var i = 0; i < list.length; i++) {
