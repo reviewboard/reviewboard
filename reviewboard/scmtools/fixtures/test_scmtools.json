@@ -76,26 +76,6 @@
         }
     }, 
     {
-        "pk": 2, 
-        "model": "scmtools.repository", 
-        "fields": {
-            "username": "", 
-            "name": "Navi SVN", 
-            "review_groups": [], 
-            "encoding": "", 
-            "mirror_path": "", 
-            "local_site": null, 
-            "public": true, 
-            "visible": true, 
-            "raw_file_url": "", 
-            "bug_tracker": "", 
-            "path": "http://svn.navi.cx/misc", 
-            "password": "", 
-            "tool": 1, 
-            "users": []
-        }
-    }, 
-    {
         "pk": 3, 
         "model": "scmtools.repository", 
         "fields": {

@@ -131,6 +131,24 @@ class GeneralSettingsForm(SiteSettingsForm):
         # Reload any important changes into the Django settings.
         load_site_config()
 
+    def clean_search_index_file(self):
+        """Validates that the specified index file is valid."""
+        index_file = self.cleaned_data['search_index_file'].strip()
+
+        if index_file:
+            if not os.path.isabs(index_file):
+                raise forms.ValidationError(
+                    _("The search index path must be absolute."))
+
+            if (os.path.exists(index_file) and
+                not os.access(index_file, os.W_OK)):
+                raise forms.ValidationError(
+                    _('The search index path is not writable. Make sure the '
+                      'web server has write access to it and its parent '
+                      'directory.'))
+
+        return index_file
+
 
     class Meta:
         title = _("General Settings")
@@ -287,6 +305,9 @@ class EMailSettingsForm(SiteSettingsForm):
     """
     mail_send_review_mail = forms.BooleanField(
         label=_("Send e-mails for review requests and reviews"),
+        required=False)
+    mail_send_new_user_mail = forms.BooleanField(
+        label=_("Send e-mails when new users register an account"),
         required=False)
     mail_default_from = forms.CharField(
         label=_("Sender e-mail address"),

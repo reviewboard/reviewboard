@@ -1,0 +1,50 @@
+===========================
+RBTools 0.3.1 Release Notes
+===========================
+
+
+**Release date**: February 7, 2011
+
+
+Features
+========
+
+post-review
+-----------
+
+* Added a :file:`.reviewboardrc` setting for specifying the repository to use.
+  (:bug:`1803`)
+
+  By default, post-review tries to figure out the repository path to use
+  when creating a new review request. This works fine on simpler setups, but
+  setups involving very different URLs (such as when a username is involved
+  in the URL) it falls apart.
+
+  Now, users can add a ``REPOSITORY = '...'`` setting in
+  :file:`.reviewboardrc` to specify the repository path or numeric ID to
+  match.
+
+  If using Review Board 1.5.3 or higher, you can use the repository's
+  human-readable name (for example, "Review Board" or "RBTools") instead.
+
+
+Bug Fixes
+=========
+
+post-review
+-----------
+
+* Fixed a crash when using the old, deprecated API and accessing an existing
+  review request. (:bug:`1972`)
+
+* Updated the version of Python Setuptools that we install if the system
+  doesn't already have it, since the version we used before no longer exists.
+
+
+Contributors
+============
+
+* Christian Hammond
+
+
+.. comment: vim: ft=rst et

@@ -2,6 +2,7 @@ import imp
 import os
 import nose
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 try:
@@ -13,12 +14,26 @@ except ImportError:
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.reviews.models import Group
+from reviewboard.scmtools.bzr import BZRTool
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+
+
+def _get_repo_test_info(repo_key):
+    prefix = 'TEST_REPO_%s' % repo_key
+    repo_path = getattr(settings, '%s_PATH' % prefix, None)
+
+    if not repo_path:
+        raise nose.SkipTest('settings.%s_PATH is not defined' % prefix)
+
+    username = getattr(settings, '%s_USER' % prefix, None)
+    password = getattr(settings, '%s_PASS' % prefix, None)
+
+    return repo_path, username, password
 
 
 class CoreTests(DjangoTestCase):
@@ -35,6 +50,21 @@ class CoreTests(DjangoTestCase):
         self.assertEqual(cs.branch, '')
         self.assert_(len(cs.bugs_closed) == 0)
         self.assert_(len(cs.files) == 0)
+
+
+class BZRTests(DjangoTestCase):
+    """Unit tests for bzr."""
+    fixtures = ['test_scmtools.json']
+
+    def test_ssh(self):
+        """Testing a SSH-backed bzr repository"""
+        repo_path, username, password = _get_repo_test_info('BZR_SSH')
+        BZRTool.check_repository(repo_path, username, password)
+
+    def test_sftp(self):
+        """Testing a SFTP-backed bzr repository"""
+        repo_path, username, password = _get_repo_test_info('BZR_SFTP')
+        BZRTool.check_repository(repo_path, username, password)
 
 
 class CVSTests(DjangoTestCase):
@@ -200,6 +230,11 @@ class CVSTests(DjangoTestCase):
 
         self.assertRaises(SCMError, lambda: badtool.get_file(file, rev))
 
+    def test_ssh(self):
+        """Testing a SSH-backed CVS repository"""
+        repo_path, username, password = _get_repo_test_info('CVS_SSH')
+        self.tool.check_repository(repo_path, username, password)
+
 
 class SubversionTests(DjangoTestCase):
     """Unit tests for subversion."""
@@ -216,6 +251,11 @@ class SubversionTests(DjangoTestCase):
             self.tool = self.repository.get_scmtool()
         except ImportError:
             raise nose.SkipTest('pysvn is not installed')
+
+    def test_ssh(self):
+        """Testing a SSH-backed Subversion repository"""
+        repo_path, username, password = _get_repo_test_info('SVN_SSH')
+        self.tool.check_repository(repo_path, username, password)
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -708,6 +748,11 @@ class GitTests(DjangoTestCase):
     def _getFileInDiff(self, diff, filenum=0):
         return self.tool.get_parser(diff).parse()[filenum]
 
+    def test_ssh(self):
+        """Testing a SSH-backed git repository"""
+        repo_path, username, password = _get_repo_test_info('GIT_SSH')
+        self.tool.check_repository(repo_path, username, password)
+
     def testFilemodeDiff(self):
         """Testing parsing filemode changes Git diff"""
         diff = self._readFixture('git_filemode.diff')
@@ -754,7 +799,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 219)
+        self.assertEqual(len(file.data), 249)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
@@ -769,7 +814,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, 'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 80)
+        self.assertEqual(len(file.data), 124)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
@@ -803,7 +848,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, '0000000')
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
-        self.assertEqual(len(file.data), 84)
+        self.assertEqual(len(file.data), 132)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
@@ -818,7 +863,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(file.newInfo, '86b520c')
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 53)
+        self.assertEqual(len(file.data), 97)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
 
@@ -833,10 +878,10 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[0].newInfo, 'e254ef4')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
-        self.assertEqual(len(files[0].data), 519)
+        self.assertEqual(len(files[0].data), 549)
         self.assertEqual(files[0].data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
-        self.assertEqual(files[0].data.splitlines()[12],
+        self.assertEqual(files[0].data.splitlines()[13],
                          "         if isinstance(value, basestring):")
 
         self.assertEqual(files[1].origFile, 'tests/tests.py')
@@ -845,7 +890,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[1].newInfo, 'e279a06')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
-        self.assertEqual(len(files[1].data), 138)
+        self.assertEqual(len(files[1].data), 182)
         self.assertEqual(files[1].data.splitlines()[0],
                          "diff --git a/tests/tests.py b/tests/tests.py")
         self.assertEqual(files[1].data.splitlines()[-1],
@@ -857,7 +902,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[2].newInfo, '86b520c')
         self.assertTrue(files[2].binary)
         self.assertFalse(files[2].deleted)
-        self.assertEqual(len(files[2].data), 53)
+        self.assertEqual(len(files[2].data), 97)
         self.assertEqual(files[2].data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
 
@@ -867,7 +912,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[3].newInfo, 'e254ef4')
         self.assertFalse(files[3].binary)
         self.assertFalse(files[3].deleted)
-        self.assertEqual(len(files[3].data), 97)
+        self.assertEqual(len(files[3].data), 127)
         self.assertEqual(files[3].data.splitlines()[0],
                          "diff --git a/readme b/readme")
         self.assertEqual(files[3].data.splitlines()[-1],
@@ -879,7 +924,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[4].newInfo, '0000000')
         self.assertFalse(files[4].binary)
         self.assertTrue(files[4].deleted)
-        self.assertEqual(len(files[4].data), 84)
+        self.assertEqual(len(files[4].data), 132)
         self.assertEqual(files[4].data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(files[4].data.splitlines()[-1],
@@ -891,7 +936,7 @@ class GitTests(DjangoTestCase):
         self.assertEqual(files[5].newInfo, 'e248ef4')
         self.assertFalse(files[5].binary)
         self.assertFalse(files[5].deleted)
-        self.assertEqual(len(files[5].data), 101)
+        self.assertEqual(len(files[5].data), 131)
         self.assertEqual(files[5].data.splitlines()[0],
                          "diff --git a/readme2 b/readme2")
         self.assertEqual(files[5].data.splitlines()[-1],

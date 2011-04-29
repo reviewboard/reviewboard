@@ -1,0 +1,79 @@
+================================
+Review Board 1.5.4 Release Notes
+================================
+
+
+**Release date**: February 20, 2011
+
+
+New Features
+============
+
+* Added API support for creating/updating/removing repositories.
+
+  The API now allows for creating repositories, updating existing ones,
+  and removing them. This ability is restricted to administrators.
+
+  The API can return a number of errors during repository verification,
+  based on configuration problems or host access problems (such as bad or
+  unknown SSH keys, or unknown HTTPS certificates). In the cases where it's
+  host-related information tat needs to be verified, the API can respond
+  to the error by repeating the request and sending ``trust_host=``.
+
+  More information on using this new API is available in the
+  `Repository API documentation`_.
+
+.. _`Repository API documentation`:
+   http://www.reviewboard.org/docs/manual/dev/webapi/2.0/resources/repository-list/
+
+* Added API for change number-related updates.
+
+  A review request's information can now be updated based on a server-side
+  changeset (when on repository types such as Perforce). The change number
+  associated with a review request can also be updated. Both abilities were
+  available in the old API, but not the new one.
+
+  To update the review request's information based on a change number,
+  issue an HTTP PUT with ``changenum=<changenum>`` with the existing change
+  number. Specifying a different change number will attempt to update which
+  changeset the review request is referencing and then update the information
+  from that.
+
+
+Bug Fixes
+=========
+
+* Fix validation problems with the Search Index settings in the Administration
+  UI.
+
+  Search Index validation made some faulty assumptions that prevented
+  saving the General Settings page under many cases. This was actually
+  hotfixed in 1.5.3.1, but no overall release announcement was made.
+
+* Comments begining in expanded regions of a diff and ending in collapsed
+  regions should no longer break the diff viewer. (:bug:`1564`)
+
+* Usernames with ``@`` in the name (such as when using e-mail addresses
+  as usernames) are now allowed. (:bug:`1712`)
+
+* IntelliJ-generated SVN diffs should now be parsed properly. (:bug:`1937`)
+
+* The ``update_changenum`` method in the old API no longer returns an
+  HTTP 500 error. (:bug:`1948`)
+
+* When replying to a review, names containing an apostrophe are no longer
+  displayed incorrectly. (:bug:`1980`)
+
+* Using a bug number on a review request without a repository no longer
+  causes an HTTP 500 error. (:bug:`1982`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Robert Munteanu
+
+.. comment: vim: ft=rst et
+

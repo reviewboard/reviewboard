@@ -29,6 +29,16 @@
     <td class="field">{{form.email}}</td>
     <td class="errorbox">{{form.errors.email}}</td>
    </tr>
+   <tr>
+    <td class="label"><label for="id_first_name">{% trans "First name:" %}</label></td>
+    <td class="field">{{form.first_name}}</td>
+    <td class="errorbox">{{form.errors.first_name}}</td>
+   </tr>
+   <tr>
+    <td class="label"><label for="id_last_name">{% trans "Last name:" %}</label></td>
+    <td class="field">{{form.last_name}}</td>
+    <td class="errorbox">{{form.errors.last_name}}</td>
+   </tr>
 {% if siteconfig.settings.auth_registration_show_captcha %}
    <tr>
     <td></td>

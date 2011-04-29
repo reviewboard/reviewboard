@@ -36,6 +36,7 @@ from djblets.webapi.resources import \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.extensions.base import get_extension_manager
@@ -45,23 +46,37 @@ from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
                                        Repository, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        ScreenshotComment, Screenshot
-from reviewboard.scmtools.errors import ChangeNumberInUseError, \
+from reviewboard.scmtools import sshutils
+from reviewboard.scmtools.errors import AuthenticationError, \
+                                        BadHostKeyError, \
+                                        ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         FileNotFoundError, \
-                                        InvalidChangeNumberError
+                                        InvalidChangeNumberError, \
+                                        RepositoryNotFoundError, \
+                                        UnknownHostKeyError, \
+                                        UnverifiedCertificateError
+from reviewboard.scmtools.models import Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import webapi_check_login_required, \
                                           webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
-from reviewboard.webapi.errors import CHANGE_NUMBER_IN_USE, \
+from reviewboard.webapi.errors import BAD_HOST_KEY, \
+                                      CHANGE_NUMBER_IN_USE, \
                                       EMPTY_CHANGESET, \
                                       INVALID_CHANGE_NUMBER, \
                                       INVALID_REPOSITORY, \
                                       INVALID_USER, \
+                                      MISSING_REPOSITORY, \
+                                      MISSING_USER_KEY, \
+                                      REPO_AUTHENTICATION_ERROR, \
                                       REPO_FILE_NOT_FOUND, \
                                       REPO_INFO_ERROR, \
-                                      REPO_NOT_IMPLEMENTED
+                                      REPO_NOT_IMPLEMENTED, \
+                                      SERVER_CONFIG_ERROR, \
+                                      UNVERIFIED_HOST_CERT, \
+                                      UNVERIFIED_HOST_KEY
 
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
@@ -989,6 +1004,149 @@ class FileDiffResource(WebAPIResource):
 filediff_resource = FileDiffResource()
 
 
+class ChangeResource(WebAPIResource):
+    """Provides information on a change made to a public review request.
+
+    A change includes, optionally, text entered by the user describing the
+    change, and also includes a list of fields that were changed on the
+    review request.
+
+    The list of fields changed are in ``fields_changed``. The keys are the
+    names of the fields, and the values are details on that particular
+    change to the field.
+
+    For ``summary``, ``description``, ``testing_done`` and ``branch`` fields,
+    the following detail keys will be available:
+
+      * ``old``: The old value of the field.
+      * ``new``: The new value of the field.
+
+    For ``diff` fields:
+
+      * ``added``: The diff that was added.
+
+    For ``bugs_closed`` fields:
+
+      * ``old``: A list of old bugs.
+      * ``new``: A list of new bugs.
+      * ``removed``: A list of bugs that were removed, if any.
+      * ``added``: A list of bugs that were added, if any.
+
+    For ``screenshots``, ``target_people`` and ``target_groups`` fields:
+
+      * ``old``: A list of old items.
+      * ``new``: A list of new items.
+      * ``removed``: A list of items that were removed, if any.
+      * ``added``: A list of items that were added, if any.
+
+    For ``screenshot_captions`` fields:
+
+      * ``old``: The old caption.
+      * ``new``: The new caption.
+      * ``screenshot``: The screenshot that was updated.
+    """
+    model = ChangeDescription
+    name = 'change'
+    fields = {
+        'id': {
+            'type': int,
+            'description': 'The numeric ID of the change description.',
+        },
+        'fields_changed': {
+            'type': dict,
+            'description': 'The fields that were changed.',
+        },
+        'text': {
+            'type': str,
+            'description': 'The description of the change written by the '
+                           'submitter.'
+        },
+        'timestamp': {
+            'type': str,
+            'description': 'The date and time that the change was made '
+                           '(in YYYY-MM-DD HH:MM:SS format).',
+        },
+    }
+    uri_object_key = 'change_id'
+    model_parent_key = 'review_request'
+    allowed_methods = ('GET',)
+
+    _changed_fields_to_models = {
+        'screenshots': Screenshot,
+        'target_people': User,
+        'target_groups': Group,
+    }
+
+    def serialize_fields_changed_field(self, obj):
+        def get_object_cached(model, pk, obj_cache={}):
+            if model not in obj_cache:
+                obj_cache[model] = {}
+
+            if pk not in obj_cache[model]:
+                obj_cache[model][pk] = model.objects.get(pk=pk)
+
+            return obj_cache[model][pk]
+
+        fields_changed = obj.fields_changed.copy()
+
+        for field, data in fields_changed.iteritems():
+            if field == 'screenshot_captions':
+                fields_changed[field] = [
+                    {
+                        'old': data[pk]['old'][0],
+                        'new': data[pk]['new'][0],
+                        'screenshot': get_object_cached(Screenshot, pk),
+                    }
+                    for pk, values in data.iteritems()
+                ]
+            elif field == 'diff':
+                data['added'] = get_object_cached(DiffSet, data['added'][0][2])
+            elif field == 'bugs_closed':
+                for key in ('new', 'old', 'added', 'removed'):
+                    if key in data:
+                        data[key] = [bug[0] for bug in data[key]]
+            elif field in ('summary', 'description', 'testing_done', 'branch'):
+                if 'old' in data:
+                    data['old'] = data['old'][0]
+
+                if 'new' in data:
+                    data['new'] = data['new'][0]
+            elif field in self._changed_fields_to_models:
+                model = self._changed_fields_to_models[field]
+
+                for key in ('new', 'old', 'added', 'removed'):
+                    if key in data:
+                        data[key] = [
+                            get_object_cached(model, item[2])
+                            for item in data[key]
+                        ]
+            else:
+                # Just ignore everything else. We don't want to have people
+                # depend on some sort of data that we later need to change the
+                # format of.
+                pass
+
+        return fields_changed
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(review_request=review_request_id,
+                                         public=True)
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get_list(self, *args, **kwargs):
+        """Returns a list of changes made on a review request."""
+        pass
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get(self, *args, **kwargs):
+        """Returns the information on a change to a review request."""
+        pass
+
+change_resource = ChangeResource()
+
+
 class DiffResource(WebAPIResource):
     """Provides information on a collection of complete diffs.
 
@@ -1893,7 +2051,7 @@ class RepositoryResource(WebAPIResource):
     uri_object_key = 'repository_id'
     item_child_resources = [repository_info_resource]
 
-    allowed_methods = ('GET',)
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     @webapi_check_login_required
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
@@ -1907,6 +2065,12 @@ class RepositoryResource(WebAPIResource):
 
     def has_access_permissions(self, request, repository, *args, **kwargs):
         return repository.is_accessible_by(request.user)
+
+    def has_modify_permissions(self, request, repository, *args, **kwargs):
+        return repository.is_mutable_by(request.user)
+
+    def has_delete_permissions(self, request, repository, *args, **kwargs):
+        return repository.is_mutable_by(request.user)
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
@@ -1928,6 +2092,355 @@ class RepositoryResource(WebAPIResource):
         information are not provided.
         """
         pass
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(BAD_HOST_KEY, INVALID_FORM_DATA, NOT_LOGGED_IN,
+                            PERMISSION_DENIED, REPO_AUTHENTICATION_ERROR,
+                            SERVER_CONFIG_ERROR, UNVERIFIED_HOST_CERT,
+                            UNVERIFIED_HOST_KEY)
+    @webapi_request_fields(
+        required={
+            'name': {
+                'type': str,
+                'description': 'The human-readable name of the repository.',
+            },
+            'path': {
+                'type': str,
+                'description': 'The path to the repository.',
+            },
+            'tool': {
+                'type': str,
+                'description': 'The ID of the SCMTool to use.',
+            },
+        },
+        optional={
+            'bug_tracker': {
+                'type': str,
+                'description': 'The URL to a bug in the bug tracker for '
+                               'this repository, with ``%s`` in place of the '
+                               'bug ID.',
+            },
+            'encoding': {
+                'type': str,
+                'description': 'The encoding used for files in the '
+                               'repository. This is an advanced setting '
+                               'and should only be used if you absolutely '
+                               'need it.',
+            },
+            'mirror_path': {
+                'type': str,
+                'description': 'An alternate path to the repository.',
+            },
+            'password': {
+                'type': str,
+                'description': 'The password used to access the repository.',
+            },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not review requests on the '
+                               'repository will be publicly accessible '
+                               'by users on the site. The default is true.',
+            },
+            'raw_file_url': {
+                'type': str,
+                'description': "A URL mask used to check out a particular "
+                               "file using HTTP. This is needed for "
+                               "repository types that can't access files "
+                               "natively. Use ``<revision>`` and "
+                               "``<filename>`` in the URL in place of the "
+                               "revision and filename parts of the path.",
+            },
+            'trust_host': {
+                'type': bool,
+                'description': 'Whether or not any unknown host key or '
+                               'certificate should be accepted. The default '
+                               'is false, in which case this will error out '
+                               'if encountering an unknown host key or '
+                               'certificate.',
+            },
+            'username': {
+                'type': str,
+                'description': 'The username used to access the repository.',
+            },
+        },
+    )
+    def create(self, request, name, path, tool, trust_host=False,
+               bug_tracker=None, encoding=None, mirror_path=None,
+               password=None, public=None, raw_file_url=None, username=None,
+               local_site_name=None, *args, **kwargs):
+        """Creates a repository.
+
+        This will create a new repository that can immediately be used for
+        review requests.
+
+        The ``tool`` is a registered SCMTool ID. This must be known beforehand,
+        and can be looked up in the Review Board administration UI.
+
+        Before saving the new repository, the repository will be checked for
+        access. On success, the repository will be created and this will
+        return :http:`201`.
+
+        In the event of an access problem (authentication problems,
+        bad/unknown SSH key, or unknown certificate), an error will be
+        returned and the repository information won't be updated. Pass
+        ``trust_host=1`` to approve bad/unknown SSH keys or certificates.
+        """
+        local_site = _get_local_site(local_site_name)
+
+        if not Repository.objects.can_create(request.user, local_site):
+            return _no_access_error(request.user)
+
+        try:
+            scmtool = Tool.objects.get(name=tool)
+        except Tool.DoesNotExist:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'tool': ['This is not a valid SCMTool'],
+                }
+            }
+
+        error_result = self._check_repository(scmtool.get_scmtool_class(),
+                                              path, username, password,
+                                              trust_host)
+
+        if error_result is not None:
+            return error_result
+
+        if public is None:
+            public = True
+
+        repository = Repository.objects.create(
+            name=name,
+            path=path,
+            mirror_path=mirror_path or '',
+            raw_file_url=raw_file_url or '',
+            username=username or '',
+            password=password or '',
+            tool=scmtool,
+            bug_tracker=bug_tracker or '',
+            encoding=encoding or '',
+            public=public,
+            local_site=local_site)
+
+        return 201, {
+            self.item_result_key: repository,
+        }
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
+                            INVALID_FORM_DATA, SERVER_CONFIG_ERROR,
+                            BAD_HOST_KEY, UNVERIFIED_HOST_KEY,
+                            UNVERIFIED_HOST_CERT, REPO_AUTHENTICATION_ERROR)
+    @webapi_request_fields(
+        optional={
+            'bug_tracker': {
+                'type': str,
+                'description': 'The URL to a bug in the bug tracker for '
+                               'this repository, with ``%s`` in place of the '
+                               'bug ID.',
+            },
+            'encoding': {
+                'type': str,
+                'description': 'The encoding used for files in the '
+                               'repository. This is an advanced setting '
+                               'and should only be used if you absolutely '
+                               'need it.',
+            },
+            'mirror_path': {
+                'type': str,
+                'description': 'An alternate path to the repository.',
+            },
+            'name': {
+                'type': str,
+                'description': 'The human-readable name of the repository.',
+            },
+            'password': {
+                'type': str,
+                'description': 'The password used to access the repository.',
+            },
+            'path': {
+                'type': str,
+                'description': 'The path to the repository.',
+            },
+            'public': {
+                'type': bool,
+                'description': 'Whether or not review requests on the '
+                               'repository will be publicly accessible '
+                               'by users on the site. The default is true.',
+            },
+            'raw_file_url': {
+                'type': str,
+                'description': "A URL mask used to check out a particular "
+                               "file using HTTP. This is needed for "
+                               "repository types that can't access files "
+                               "natively. Use ``<revision>`` and "
+                               "``<filename>`` in the URL in place of the "
+                               "revision and filename parts of the path.",
+            },
+            'trust_host': {
+                'type': bool,
+                'description': 'Whether or not any unknown host key or '
+                               'certificate should be accepted. The default '
+                               'is false, in which case this will error out '
+                               'if encountering an unknown host key or '
+                               'certificate.',
+            },
+            'username': {
+                'type': str,
+                'description': 'The username used to access the repository.',
+            },
+        },
+    )
+    def update(self, request, trust_host=False, *args, **kwargs):
+        """Updates a repository.
+
+        This will update the information on a repository. If the path,
+        username, or password has changed, Review Board will try again to
+        verify access to the repository.
+
+        In the event of an access problem (authentication problems,
+        bad/unknown SSH key, or unknown certificate), an error will be
+        returned and the repository information won't be updated. Pass
+        ``trust_host=1`` to approve bad/unknown SSH keys or certificates.
+        """
+        try:
+            repository = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_modify_permissions(request, repository):
+            return _no_access_error(request.user)
+
+        for field in ('bug_tracker', 'encoding', 'mirror_path', 'name',
+                      'password', 'path', 'public', 'raw_file_url',
+                      'username'):
+            value = kwargs.get(field, None)
+
+            if value is not None:
+                setattr(repository, field, value)
+
+        # Only check the repository if the access information has changed.
+        if 'path' in kwargs or 'username' in kwargs or 'password' in kwargs:
+            error_result = self._check_repository(
+                repository.tool.get_scmtool_class(),
+                repository.path,
+                repository.username,
+                repository.password,
+                trust_host)
+
+            if error_result is not None:
+                return error_result
+
+        repository.save()
+
+        return 200, {
+            self.item_result_key: repository,
+        }
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    def delete(self, request, *args, **kwargs):
+        """Deletes a repository.
+
+        The repository will not actually be deleted from the database, as
+        that would also trigger a deletion of all review requests. Instead,
+        it makes a repository as no longer being visible, which will hide it
+        in the UIs and in the API.
+        """
+        try:
+            repository = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_delete_permissions(request, repository):
+            return _no_access_error(request.user)
+
+        # We don't actually delete the repository. We instead just hide it.
+        # Otherwise, all the review requests are lost. By marking it as not
+        # visible, it'll be removed from the UI and from the list in the API.
+        repository.visible = False
+        repository.save()
+
+        return 204, {}
+
+    def _check_repository(self, scmtool_class, path, username, password,
+                          trust_host):
+        while 1:
+            # Keep doing this until we have an error we don't want
+            # to ignore, or it's successful.
+            try:
+                scmtool_class.check_repository(path, username, password)
+                return None
+            except RepositoryNotFoundError:
+                return MISSING_REPOSITORY
+            except BadHostKeyError, e:
+                if trust_host:
+                    try:
+                        sshutils.replace_host_key(e.hostname,
+                                                  e.raw_expected_key,
+                                                  e.raw_key)
+                    except IOError, e:
+                        return SERVER_CONFIG_ERROR, {
+                            'reason': str(e),
+                        }
+                else:
+                    return BAD_HOST_KEY, {
+                        'hostname': e.hostname,
+                        'expected_key': e.raw_expected_key.get_base64(),
+                        'key': e.raw_key.get_base64(),
+                    }
+            except UnknownHostKeyError, e:
+                if trust_host:
+                    try:
+                        sshutils.add_host_key(e.hostname, e.raw_key)
+                    except IOError, e:
+                        return SERVER_CONFIG_ERROR, {
+                            'reason': str(e),
+                        }
+                else:
+                    return UNVERIFIED_HOST_KEY, {
+                        'hostname': e.hostname,
+                        'key': e.raw_key.get_base64(),
+                    }
+            except UnverifiedCertificateError, e:
+                if trust_host:
+                    try:
+                        scmtool_class.accept_certificate(path)
+                    except IOError, e:
+                        return SERVER_CONFIG_ERROR, {
+                            'reason': str(e),
+                        }
+                else:
+                    return UNVERIFIED_HOST_CERT, {
+                        'certificate': {
+                            'failures': e.certificate.failures,
+                            'fingerprint': e.certificate.fingerprint,
+                            'hostname': e.certificate.hostname,
+                            'issuer': e.certificate.issuer,
+                            'valid': {
+                                'from': e.certificate.valid_from,
+                                'until': e.certificate.valid_until,
+                            },
+                        },
+                    }
+            except AuthenticationError, e:
+                if 'publickey' in e.allowed_types and e.user_key is None:
+                    return MISSING_USER_KEY
+                else:
+                    return REPO_AUTHENTICATION_ERROR, {
+                        'reason': str(e),
+                    }
+            except Exception, e:
+                logging.error('Unknown error in checking repository %s: %s',
+                              path, e, exc_info=1)
+
+                # We should give something better, but I don't have anything.
+                # This will at least give a HTTP 500.
+                raise
+
 
 repository_resource = RepositoryResource()
 
@@ -1969,10 +2482,28 @@ class BaseScreenshotResource(WebAPIResource):
 
     uri_object_key = 'screenshot_id'
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, review_request_id, is_list=False, *args, **kwargs):
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
-        return self.model.objects.filter(review_request=review_request)
+
+        q = Q(review_request=review_request)
+
+        if not is_list:
+            q = q | Q(inactive_review_request=review_request)
+
+        if request.user == review_request.submitter:
+            try:
+                draft = review_request_draft_resource.get_object(
+                    request, review_request_id, *args, **kwargs)
+
+                q = q | Q(drafts=draft)
+
+                if not is_list:
+                    q = q | Q(inactive_drafts=draft)
+            except ObjectDoesNotExist:
+                pass
+
+        return self.model.objects.filter(q)
 
     def serialize_path_field(self, obj):
         return obj.image.name
@@ -2111,8 +2642,9 @@ class BaseScreenshotResource(WebAPIResource):
 
     def get_href(self, obj, request, *args, **kwargs):
         """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.review_request.get(), request, *args, **kwargs)
+        review_request = obj.get_review_request()
+        base = review_request_resource.get_href(review_request, request,
+                                                *args, **kwargs)
         return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
@@ -3902,6 +4434,7 @@ class ReviewRequestResource(WebAPIResource):
     }
     uri_object_key = 'review_request_id'
     item_child_resources = [
+        change_resource,
         diffset_resource,
         review_request_draft_resource,
         review_request_last_update_resource,
@@ -4064,6 +4597,9 @@ class ReviewRequestResource(WebAPIResource):
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)
 
+    def has_modify_permissions(self, request, review_request, *args, **kwargs):
+        return review_request.is_mutable_by(request.user)
+
     def has_delete_permissions(self, request, review_request, *args, **kwargs):
         return request.user.has_perm('reviews.delete_reviewrequest')
 
@@ -4123,10 +4659,11 @@ class ReviewRequestResource(WebAPIResource):
         when that first draft is published.
 
         The only requirement when creating a review request is that a valid
-        repository is passed. This can either be a numeric repository ID, or
-        the path to a repository (matching exactly the registered repository's
-        Path field in the adminstration interface). Failing to pass a valid
-        repository will result in an error.
+        repository is passed. This can be a numeric repository ID, the name
+        of a repository, or the path to a repository (matching exactly the
+        registered repository's Path or Mirror Path fields in the
+        adminstration interface). Failing to pass a valid repository will
+        result in an error.
 
         Clients can create review requests on behalf of another user by setting
         the ``submit_as`` parameter to the username of the desired user. This
@@ -4155,7 +4692,8 @@ class ReviewRequestResource(WebAPIResource):
                 # The repository is not an ID.
                 repository = Repository.objects.get(
                     (Q(path=repository) |
-                     Q(mirror_path=repository)) &
+                     Q(mirror_path=repository) |
+                     Q(name=repository)) &
                     Q(local_site=local_site))
         except Repository.DoesNotExist, e:
             return INVALID_REPOSITORY, {
@@ -4192,14 +4730,32 @@ class ReviewRequestResource(WebAPIResource):
                                'be changed to close or reopen the review '
                                'request',
             },
+            'changenum': {
+                'type': int,
+                'description': 'The optional changenumber to set or update. '
+                               'This can be used to re-associate with a new '
+                               'change number, or to create/update a draft '
+                               'with new information from the current '
+                               'change number. This only works with '
+                               'repositories that support server-side '
+                               'changesets.',
+            },
         },
     )
-    def update(self, request, status=None, *args, **kwargs):
+    def update(self, request, status=None, changenum=None, *args, **kwargs):
         """Updates the status of the review request.
 
         The only supported update to a review request's resource is to change
-        the status, in order to close it as discarded or submitted, or to
-        reopen as pending.
+        the status, the associated server-side, change number, or to update
+        information from the existing change number.
+
+        The status can be set in order to close the review request as
+        discarded or submitted, or to reopen as pending.
+
+        The change number can either be changed to a new number, or the
+        current change number can be passed. In either case, a new draft will
+        be created or an existing one updated to include information from
+        the server based on the change number.
 
         Changes to a review request's fields, such as the summary or the
         list of reviewers, is made on the Review Request Draft resource.
@@ -4211,6 +4767,9 @@ class ReviewRequestResource(WebAPIResource):
                 review_request_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
+        if not self.has_modify_permissions(request, review_request):
+            return _no_access_error(request.user)
 
         if (status is not None and
             review_request.status != string_to_status(status)):
@@ -4225,6 +4784,24 @@ class ReviewRequestResource(WebAPIResource):
                                          "should never be reached." % status)
             except PermissionError:
                 return _no_access_error(request.user)
+
+        if changenum is not None:
+            if changenum != review_request.changenum:
+                review_request.update_changenum(changenum, request.user)
+
+            try:
+                draft = ReviewRequestDraftResource.prepare_draft(
+                    request, review_request)
+            except PermissionDenied:
+                return PERMISSION_DENIED
+
+            try:
+                draft.update_from_changenum(changenum)
+            except InvalidChangeNumberError:
+                return INVALID_CHANGE_NUMBER
+
+            draft.save()
+            review_request.reopen()
 
         return 200, {
             self.item_result_key: review_request,
@@ -4402,6 +4979,83 @@ class ReviewRequestResource(WebAPIResource):
 review_request_resource = ReviewRequestResource()
 
 
+class SearchResource(WebAPIResource, DjbletsUserResource):
+    """
+    Provides information on users, groups and review requests.
+
+    This is the resource for the autocomplete widget for
+    quick search. This resource helps filter for
+    users, groups and review requests.
+    """
+    name = 'search'
+    singleton = True
+
+    @webapi_check_local_site
+    @webapi_check_login_required
+    def get(self, request, local_site_name=None, fullname=None, q=None,
+            displayname=None, id=None, *args, **kwargs):
+        """Returns information on users, groups and review requests.
+
+        This is used by the autocomplete widget for quick search to
+        get information on users, groups and review requests. This
+        function returns users' first name, last name and username,
+        groups' name and display name, and review requests' ID and
+        summary.
+        """
+        search_q = request.GET.get('q', None)
+        local_site = _get_local_site(local_site_name)
+        if local_site:
+            query = local_site.users.filter(is_active=True)
+        else:
+            query = self.model.objects.filter(is_active=True)
+
+        if search_q:
+            q = (Q(username__istartswith=search_q) |
+                 Q(first_name__istartswith=search_q) |
+                 Q(last_name__istartswith=search_q))
+
+            if request.GET.get('fullname', None):
+                q = q | (Q(first_name__istartswith=search_q) |
+                         Q(last_name__istartswith=search_q))
+
+            query = query.filter(q)
+
+        search_q = request.GET.get('q', None)
+        local_site = _get_local_site(local_site_name)
+        query_groups = Group.objects.filter(local_site=local_site)
+
+        if search_q:
+            q = (Q(name__istartswith=search_q) |
+                  Q(display_name__istartswith=search_q))
+
+            if request.GET.get('displayname', None):
+                q = q | Q(display_name__istartswith=search_q)
+
+            query_groups = query_groups.filter(q)
+
+        search_q = request.GET.get('q', None)
+        query_review_requests = ReviewRequest.objects.filter(local_site=local_site)
+
+        if search_q:
+            q = (Q(id__istartswith=search_q) |
+                  Q(summary__icontains=search_q))
+
+            if request.GET.get('id', None):
+                q = q | Q(id__istartswith=search_q)
+
+            query_review_requests = query_review_requests.filter(q)
+
+        return 200, {
+            self.name: {
+                'users': query,
+                'groups': query_groups,
+                'review_requests': query_review_requests,
+            },
+        }
+
+search_resource = SearchResource()
+
+
 class ServerInfoResource(WebAPIResource):
     """Information on the Review Board server.
 
@@ -4435,6 +5089,7 @@ class ServerInfoResource(WebAPIResource):
                     'url': url,
                     'administrators': [{'name': name, 'email': email}
                                        for name, email in settings.ADMINS],
+                    'time_zone': settings.TIME_ZONE,
                 },
             },
         }
@@ -4517,6 +5172,7 @@ class RootResource(DjbletsRootResource):
             repository_resource,
             review_group_resource,
             review_request_resource,
+            search_resource,
             server_info_resource,
             session_resource,
             user_resource,
@@ -4535,6 +5191,7 @@ class RootResource(DjbletsRootResource):
 root_resource = RootResource()
 
 
+register_resource_for_model(ChangeDescription, change_resource)
 register_resource_for_model(
     Comment,
     lambda obj: obj.review.get().is_reply() and

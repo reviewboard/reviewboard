@@ -104,7 +104,7 @@
 	   {% navigation_bar_hooks %}
        {% if siteconfig.settings.search_enable %}
        <li id="searchbar">
-       <input type="text" name="q" {% attr "value" %}{{query}}{% endattr %} />
+       <input type="text" name="q" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
         <input type="submit" value="{% trans "Search" %}" />
        </li>
        {% endif %}
@@ -134,6 +134,10 @@
    </div>
   </div>
   <script type="text/javascript" src="{{MEDIA_URL}}rb/js/datastore.js?{{MEDIA_SERIAL}}"></script>
+  <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc5.min.js"></script>
+  <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
+  <script type="text/javascript" src="{{MEDIA_URL}}rb/js/ui.autocomplete.min.js?{{MEDIA_SERIAL}}"></script>
+  <script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
 {% block scripts-post %}{% endblock %}
 {% template_hook_point "base-scripts-post" %}
  </body>

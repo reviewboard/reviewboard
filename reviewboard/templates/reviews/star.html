@@ -1,9 +1,3 @@
 {% if user.is_authenticated %}
-<img class="star" id="star-{{object.type}}-{{object.id}}" src="{{MEDIA_URL}}rb/images/star_{% if starred %}on{% else %}off{% endif %}.png?{{MEDIA_SERIAL}}" width="16" height="15" border="0" alt="{{alt}}" title="{{alt}}" />
-<script type="text/javascript">
-    $(document).ready(function() {
-        $("#star-{{object.type}}-{{object.id}}").toggleStar(
-            '{{object.type}}', '{{object.id}}', {{starred}});
-    });
-</script>
+<img class="star" src="{{MEDIA_URL}}rb/images/star_{% if starred %}on{% else %}off{% endif %}.png?{{MEDIA_SERIAL}}" width="16" height="15" border="0" alt="{{alt}}" title="{{alt}}" data-starred="{{starred}}" data-object-type="{{object.type}}" data-object-id="{{object.id}}"/>
 {% endif %}

@@ -28,6 +28,9 @@ LANGUAGE_CODE = 'en-us'
 # figure out URLs to stick in e-mails and related pages.
 SITE_ID = 1
 
+# The prefix for e-mail subjects sent to administrators.
+EMAIL_SUBJECT_PREFIX = "[Review Board] "
+
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.
 USE_I18N = False
@@ -101,6 +104,7 @@ INSTALLED_APPS = (
     'djblets.datagrid',
     'djblets.extensions',
     'djblets.feedview',
+    'djblets.gravatars',
     'djblets.log',
     'djblets.siteconfig',
     'djblets.util',
@@ -134,7 +138,7 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30 # 1 month
 # Custom test runner, which uses nose to find tests and execute them.  This
 # gives us a somewhat more comprehensive test execution than django's built-in
 # runner, as well as some special features like a code coverage report.
-TEST_RUNNER = 'reviewboard.test.runner'
+TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 
 # Dependency checker functionality.  Gives our users nice errors when they start
 # out, instead of encountering them later on.  Most of the magic for this
@@ -198,3 +202,5 @@ SESSION_COOKIE_PATH = SITE_ROOT
 
 # The list of directories that will be searched to generate a media serial.
 MEDIA_SERIAL_DIRS = ["admin", "djblets", "rb"]
+
+TEST_PACKAGES = ['reviewboard']

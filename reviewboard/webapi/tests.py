@@ -3,22 +3,41 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.core import mail
+from django.core.files import File
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
                                   INVALID_FORM_DATA, PERMISSION_DENIED
+import paramiko
 
 from reviewboard import initialize
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Group, ReviewRequest, \
                                        ReviewRequestDraft, Review, \
                                        Comment, Screenshot, ScreenshotComment
+from reviewboard.scmtools import sshutils
+from reviewboard.scmtools.errors import AuthenticationError, \
+                                        BadHostKeyError, \
+                                        UnknownHostKeyError, \
+                                        UnverifiedCertificateError
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.errors import INVALID_REPOSITORY
+from reviewboard.webapi.errors import BAD_HOST_KEY, \
+                                      INVALID_REPOSITORY, \
+                                      MISSING_USER_KEY, \
+                                      REPO_AUTHENTICATION_ERROR, \
+                                      UNVERIFIED_HOST_CERT, \
+                                      UNVERIFIED_HOST_KEY
+
+
+# A couple classes need keys to test with, so generate them only once.
+key1 = paramiko.RSAKey.generate(1024)
+key2 = paramiko.RSAKey.generate(1024)
 
 
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
@@ -142,6 +161,32 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     #
     # Some utility functions shared across test suites.
     #
+    def _login_user(self, local_site=False, admin=False):
+        """Creates a user for a test.
+
+        The proper user will be created based on whether a valid LocalSite
+        user is needed, and/or an admin user is needed.
+        """
+        self.client.logout()
+
+        # doc is a member of the default LocalSite.
+        username = 'doc'
+
+        if admin:
+            if local_site:
+                user = User.objects.get(username=username)
+                local_site = LocalSite.objects.get(name=self.local_site_name)
+                local_site.admins.add(user)
+            else:
+                username = 'admin'
+        elif not local_site:
+            # Pick a user that's not part of the default LocalSite.
+            username = 'grumpy'
+
+        self.assertTrue(self.client.login(username=username, password=username))
+
+        return User.objects.get(username=username)
+
     def _postNewReviewRequest(self, local_site_name=None,
                               repository=None):
         """Creates a review request and returns the payload response."""
@@ -301,9 +346,7 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
 
     def test_get_server_info_with_site(self):
         """Testing the GET info/ API with a local site"""
-        self.client.logout()
-        self.client.login(username="doc", password="doc")
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_url(self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('info' in rsp)
@@ -342,9 +385,7 @@ class SessionResourceTests(BaseWebAPITestCase):
 
     def test_get_session_with_site(self):
         """Testing the GET session/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_url(self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue('session' in rsp)
@@ -364,6 +405,24 @@ class SessionResourceTests(BaseWebAPITestCase):
 class RepositoryResourceTests(BaseWebAPITestCase):
     """Testing the RepositoryResource APIs."""
 
+    def setUp(self):
+        super(RepositoryResourceTests, self).setUp()
+
+        # Some tests will temporarily replace some functions, so back them up
+        # so we can restore them.
+        self._old_check_repository = SVNTool.check_repository
+        self._old_accept_certificate = SVNTool.accept_certificate
+        self._old_add_host_key = sshutils.add_host_key
+        self._old_replace_host_key = sshutils.replace_host_key
+
+    def tearDown(self):
+        super(RepositoryResourceTests, self).tearDown()
+
+        SVNTool.check_repository = self._old_check_repository
+        SVNTool.accept_certificate = self._old_accept_certificate
+        sshutils.add_host_key = self._old_add_host_key
+        sshutils.replace_host_key = self._old_replace_host_key
+
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
         rsp = self.apiGet(self.get_list_url())
@@ -373,9 +432,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
     def test_get_repositories_with_site(self):
         """Testing the GET repositories/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_list_url(self.local_site_name))
         self.assertEqual(len(rsp['repositories']),
                          Repository.objects.filter(
@@ -385,6 +442,352 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the GET repositories/ API with a local site and Permission Denied error"""
         self.apiGet(self.get_list_url(self.local_site_name),
                     expected_status=403)
+
+    def test_post_repository(self):
+        """Testing the POST repositories/ API"""
+        self._login_user(admin=True)
+        self._post_repository(False)
+
+    def test_post_repository_with_bad_host_key(self):
+        """Testing the POST repositories/ API with Bad Host Key error"""
+        hostname = 'example.com'
+        key = key1
+        expected_key = key2
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise BadHostKeyError(hostname, key, expected_key)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], BAD_HOST_KEY.code)
+        self.assertTrue('hostname' in rsp)
+        self.assertTrue('expected_key' in rsp)
+        self.assertTrue('key' in rsp)
+        self.assertEqual(rsp['hostname'], hostname)
+        self.assertEqual(rsp['expected_key'], expected_key.get_base64())
+        self.assertEqual(rsp['key'], key.get_base64())
+
+    def test_post_repository_with_bad_host_key_and_trust_host(self):
+        """Testing the POST repositories/ API with Bad Host Key error and trust_host=1"""
+        hostname = 'example.com'
+        key = key1
+        expected_key = key2
+        saw = {'replace_host_key': False}
+
+        def _replace_host_key(_hostname, _expected_key, _key):
+            self.assertEqual(hostname, _hostname)
+            self.assertEqual(expected_key, _expected_key)
+            self.assertEqual(key, _key)
+            saw['replace_host_key'] = True
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            if not saw['replace_host_key']:
+                raise BadHostKeyError(hostname, key, expected_key)
+
+        SVNTool.check_repository = _check_repository
+        sshutils.replace_host_key = _replace_host_key
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={
+            'trust_host': 1,
+        })
+
+        self.assertTrue(saw['replace_host_key'])
+
+    def test_post_repository_with_unknown_host_key(self):
+        """Testing the POST repositories/ API with Unknown Host Key error"""
+        hostname = 'example.com'
+        key = key1
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise UnknownHostKeyError(hostname, key)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_KEY.code)
+        self.assertTrue('hostname' in rsp)
+        self.assertTrue('key' in rsp)
+        self.assertEqual(rsp['hostname'], hostname)
+        self.assertEqual(rsp['key'], key.get_base64())
+
+    def test_post_repository_with_unknown_host_key_and_trust_host(self):
+        """Testing the POST repositories/ API with Unknown Host Key error and trust_host=1"""
+        hostname = 'example.com'
+        key = key1
+        saw = {'add_host_key': False}
+
+        def _add_host_key(_hostname, _key):
+            self.assertEqual(hostname, _hostname)
+            self.assertEqual(key, _key)
+            saw['add_host_key'] = True
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            if not saw['add_host_key']:
+                raise UnknownHostKeyError(hostname, key)
+
+        SVNTool.check_repository = _check_repository
+        sshutils.add_host_key = _add_host_key
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={
+            'trust_host': 1,
+        })
+
+        self.assertTrue(saw['add_host_key'])
+
+    def test_post_repository_with_unknown_cert(self):
+        """Testing the POST repositories/ API with Unknown Certificate error"""
+        class Certificate(object):
+            failures = ['failures']
+            fingerprint = 'fingerprint'
+            hostname = 'example.com'
+            issuer = 'issuer'
+            valid_from = 'valid_from'
+            valid_until = 'valid_until'
+
+        cert = Certificate()
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise UnverifiedCertificateError(cert)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], UNVERIFIED_HOST_CERT.code)
+        self.assertTrue('certificate' in rsp)
+        self.assertEqual(rsp['certificate']['failures'], cert.failures)
+        self.assertEqual(rsp['certificate']['fingerprint'], cert.fingerprint)
+        self.assertEqual(rsp['certificate']['hostname'], cert.hostname)
+        self.assertEqual(rsp['certificate']['issuer'], cert.issuer)
+        self.assertEqual(rsp['certificate']['valid']['from'], cert.valid_from)
+        self.assertEqual(rsp['certificate']['valid']['until'], cert.valid_until)
+
+    def test_post_repository_with_unknown_cert_and_trust_host(self):
+        """Testing the POST repositories/ API with Unknown Certificate error and trust_host=1"""
+        class Certificate(object):
+            failures = ['failures']
+            fingerprint = 'fingerprint'
+            hostname = 'example.com'
+            issuer = 'issuer'
+            valid_from = 'valid_from'
+            valid_until = 'valid_until'
+
+        cert = Certificate()
+        saw = {'accept_certificate': False}
+
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            if not saw['accept_certificate']:
+                raise UnverifiedCertificateError(cert)
+
+        @classmethod
+        def _accept_certificate(cls, path):
+            saw['accept_certificate'] = True
+
+        SVNTool.check_repository = _check_repository
+        SVNTool.accept_certificate = _accept_certificate
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, data={
+            'trust_host': 1,
+        })
+        self.assertTrue(saw['accept_certificate'])
+
+    def test_post_repository_with_missing_user_key(self):
+        """Testing the POST repositories/ API with Missing User Key error"""
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise AuthenticationError(['publickey'], user_key=None)
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], MISSING_USER_KEY.code)
+
+    def test_post_repository_with_authentication_error(self):
+        """Testing the POST repositories/ API with Authentication Error"""
+        @classmethod
+        def _check_repository(cls, path, username=None, password=None):
+            raise AuthenticationError([])
+
+        SVNTool.check_repository = _check_repository
+
+        self._login_user(admin=True)
+        rsp = self._post_repository(False, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], REPO_AUTHENTICATION_ERROR.code)
+        self.assertTrue('reason' in rsp)
+
+    def test_post_repository_with_site(self):
+        """Testing the POST repositories/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._post_repository(True)
+
+    def test_post_repository_full_info(self):
+        """Testing the POST repositories/ API with all available info"""
+        self._login_user(admin=True)
+        self._post_repository(False, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_post_repository_with_no_access(self):
+        """Testing the POST repositories/ API with no access"""
+        self._login_user()
+        self._post_repository(True, expected_status=403)
+
+    def test_post_repository_with_site_no_access(self):
+        """Testing the POST repositories/ API with a local site and no access"""
+        self._login_user(local_site=True)
+        self._post_repository(True, expected_status=403)
+
+    def test_put_repository(self):
+        """Testing the PUT repositories/<id>/ API"""
+        self._login_user(admin=True)
+        self._put_repository(False, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_put_repository_with_site(self):
+        """Testing the PUT repositories/<id>/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._put_repository(True, {
+            'bug_tracker': 'http://bugtracker/%s/',
+            'encoding': 'UTF-8',
+            'mirror_path': 'http://svn.example.com/',
+            'username': 'user',
+            'password': '123',
+            'public': False,
+            'raw_file_url': 'http://example.com/<filename>/<version>',
+        })
+
+    def test_put_repository_with_no_access(self):
+        """Testing the PUT repositories/<id>/ API with no access"""
+        self._login_user()
+        self._put_repository(False, expected_status=403)
+
+    def test_put_repository_with_site_no_access(self):
+        """Testing the PUT repositories/<id>/ API with a local site and no access"""
+        self._login_user(local_site=True)
+        self._put_repository(False, expected_status=403)
+
+    def test_delete_repository(self):
+        """Testing the DELETE repositories/<id>/ API"""
+        self._login_user(admin=True)
+        self._delete_repository(False)
+
+    def test_delete_repository_with_site(self):
+        """Testing the DELETE repositories/<id>/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self._delete_repository(True)
+
+    def test_delete_repository_with_no_access(self):
+        """Testing the DELETE repositories/<id>/ API with no access"""
+        self._login_user()
+        self._delete_repository(False, expected_status=403)
+
+    def test_delete_repository_with_site_no_access(self):
+        """Testing the DELETE repositories/<id>/ API with a local site and no access"""
+        self._login_user(local_site=True)
+        self._delete_repository(True, expected_status=403)
+
+    def _post_repository(self, use_local_site, data={}, expected_status=201):
+        repo_name = 'Test Repository'
+        repo_path = 'file://' + os.path.abspath(
+            os.path.join(os.path.dirname(__file__),
+                         '../scmtools/testdata/svn_repo'))
+
+        local_site_name = self._get_local_site_info(use_local_site)[1]
+
+        rsp = self.apiPost(self.get_list_url(local_site_name), dict({
+            'name': repo_name,
+            'path': repo_path,
+            'tool': 'Subversion',
+        }, **data), expected_status=expected_status)
+
+        if 200 <= expected_status < 300:
+            self._verify_repository_info(rsp, repo_name, repo_path, data)
+
+            self.assertEqual(
+                rsp['repository']['links']['self']['href'],
+                self.base_url + self.get_item_url(rsp['repository']['id'],
+                                                  local_site_name))
+
+        return rsp
+
+    def _put_repository(self, use_local_site, data={}, expected_status=200):
+        repo_name = 'New Test Repository'
+        repo_path = 'file://' + os.path.abspath(
+            os.path.join(os.path.dirname(__file__),
+                         '../scmtools/testdata/svn_repo'))
+
+        local_site, local_site_name = self._get_local_site_info(use_local_site)
+        repo_id = Repository.objects.filter(local_site=local_site,
+                                            tool__name='Subversion')[0].pk
+
+
+        rsp = self.apiPut(self.get_item_url(repo_id, local_site_name), dict({
+            'name': repo_name,
+            'path': repo_path,
+        }, **data), expected_status=expected_status)
+
+        if 200 <= expected_status < 300:
+            self._verify_repository_info(rsp, repo_name, repo_path, data)
+
+    def _delete_repository(self, use_local_site, expected_status=204):
+        local_site, local_site_name = self._get_local_site_info(use_local_site)
+        repo_id = Repository.objects.filter(local_site=local_site,
+                                            tool__name='Subversion')[0].pk
+
+        self.apiDelete(self.get_item_url(repo_id, local_site_name),
+                       expected_status=expected_status)
+
+    def _get_local_site_info(self, use_local_site):
+        if use_local_site:
+            return (LocalSite.objects.get(name=self.local_site_name),
+                    self.local_site_name)
+        else:
+            return None, None
+
+    def _verify_repository_info(self, rsp, repo_name, repo_path, data):
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('repository' in rsp)
+
+        repository = Repository.objects.get(pk=rsp['repository']['id'])
+        self.assertEqual(rsp['repository']['name'], repo_name)
+        self.assertEqual(rsp['repository']['path'], repo_path)
+        self.assertEqual(repository.name, repo_name)
+        self.assertEqual(repository.path, repo_path)
+
+        for key, value in data.iteritems():
+            if hasattr(repository, key):
+                self.assertEqual(getattr(repository, key), value)
 
     def get_list_url(self, local_site_name=None):
         return local_site_reverse('repositories-resource',
@@ -410,18 +813,21 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
 
     def test_get_repository_info_with_site(self):
         """Testing the GET repositories/<id>/info API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
 
-        repository = Repository.objects.get(name='V8 SVN')
-        rsp = self.apiGet(self.get_url(repository, self.local_site_name))
+        rsp = self.apiGet(self.get_url(self.repository, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['info'],
-                         repository.get_scmtool().get_repository_info())
+                         self.repository.get_scmtool().get_repository_info())
 
     def test_get_repository_info_with_site_no_access(self):
         """Testing the GET repositories/<id>/info API with a local site and Permission Denied error"""
-        repository = Repository.objects.get(name='V8 SVN')
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
 
         self.apiGet(self.get_url(self.repository, self.local_site_name),
                     expected_status=403)
@@ -447,9 +853,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_groups_with_site(self):
         """Testing the GET groups/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         groups = Group.objects.accessible(self.user, local_site=local_site)
 
@@ -499,9 +903,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_group_with_site(self):
         """Testing the GET groups/<id>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         group = Group.objects.get(name='sitegroup')
 
         rsp = self.apiGet(self.get_item_url('sitegroup', self.local_site_name))
@@ -543,9 +945,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def test_get_users_with_site(self):
         """Testing the GET users/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         rsp = self.apiGet(self.get_list_url(self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
@@ -571,8 +971,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def test_get_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         username = 'doc'
         user = User.objects.get(username=username)
@@ -587,9 +986,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_item_url('dopey', self.local_site_name),
                           expected_status=404)
 
@@ -634,11 +1031,10 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_request_with_site(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site"""
+        self._login_user(local_site=True)
+
         username = 'doc'
         user = User.objects.get(username=username)
-
-        self.client.logout()
-        self.client.login(username=username, password='doc')
 
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
@@ -651,9 +1047,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_request_with_site_does_not_exist_error(self):
         """Testing the POST users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiPost(self.get_list_url('doc', self.local_site_name),
                            { 'object_id': 10, },
                            expected_status=404)
@@ -755,9 +1149,7 @@ class WatchedReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_watched_review_requests_with_site_does_not_exist(self):
         """Testing the GET users/<username>/watched/review_request/ API with a local site and Does Not Exist error"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiGet(self.get_list_url(self.user.username,
                                              self.local_site_name),
                           expected_status=404)
@@ -803,12 +1195,10 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_post_watched_review_group_with_site(self):
         """Testing the POST users/<username>/watched/review-groups/ API with a local site"""
+        self._login_user(local_site=True)
+
         username = 'doc'
         user = User.objects.get(username=username)
-
-        self.client.logout()
-        self.client.login(username=username, password='doc')
-
         group = Group.objects.get(name='sitegroup',
                                   local_site__name=self.local_site_name)
 
@@ -821,9 +1211,7 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
         """Testing the POST users/<username>/watched/review-groups/ API with a local site and Does Not Exist error"""
         username = 'doc'
 
-        self.client.logout()
-        self.client.login(username=username, password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiPost(self.get_list_url(username, self.local_site_name),
                            { 'object_id': 'devgroup', },
                            expected_status=404)
@@ -952,8 +1340,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequests_with_site(self):
         """Testing the GET review-requests/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
         rsp = self.apiGet(self.get_list_url(self.local_site_name))
@@ -1250,10 +1637,24 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    def test_post_reviewrequests_with_repository_name(self):
+        """Testing the POST review-requests/ API with a repository name"""
+        rsp = self.apiPost(self.get_list_url(), {
+            'repository': self.repository.name,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['review_request']['links']['repository']['href'],
+            self.base_url +
+            RepositoryResourceTests.get_item_url(self.repository.id))
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
     def test_post_reviewrequests_with_site(self):
         """Testing the POST review-requests/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repository = Repository.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -1275,9 +1676,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_post_reviewrequests_with_site_invalid_repository_error(self):
         """Testing the POST review-requests/ API with a local site and Invalid Repository error"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         rsp = self.apiPost(self.get_list_url(self.local_site_name),
                            { 'repository': self.repository.path, },
                            expected_status=400)
@@ -1347,6 +1746,18 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'D')
 
+    def test_put_reviewrequest_status_discarded_with_permission_denied(self):
+        """Testing the PUT review-requests/<id>/?status=discarded API with Permission Denied"""
+        q = ReviewRequest.objects.filter(public=True, status='P')
+        r = q.exclude(submitter=self.user)[0]
+
+        rsp = self.apiPut(self.get_item_url(r.display_id), {
+            'status': 'discarded',
+        }, expected_status=403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def test_put_reviewrequest_status_pending(self):
         """Testing the PUT review-requests/<id>/?status=pending API"""
         r = ReviewRequest.objects.filter(public=True, status='P',
@@ -1379,9 +1790,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_put_reviewrequest_status_submitted_with_site(self):
         """Testing the PUT review-requests/<id>/?status=submitted API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         r = ReviewRequest.objects.filter(public=True, status='P',
                                          submitter__username='doc',
                                          local_site__name=self.local_site_name)[0]
@@ -1416,9 +1825,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
     def test_get_reviewrequest_with_site(self):
         """Testing the GET review-requests/<id>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.public(local_site=local_site)[0]
 
@@ -1548,9 +1955,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
             Permission.objects.get(codename='delete_reviewrequest'))
         user.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         review_request = ReviewRequest.objects.filter(local_site=local_site,
             submitter__username='doc')[0]
@@ -1623,8 +2028,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
                                                 relogin=True,
                                                 review_request=None):
         if relogin:
-            self.client.logout()
-            self.client.login(username='doc', password='doc')
+            self._login_user(local_site=True)
 
         if review_request is None:
             review_request = ReviewRequest.objects.from_user('doc',
@@ -1889,8 +2293,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     def test_post_reviews_with_site(self, public=False):
         """Testing the POST review-requests/<id>/reviews/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         body_top = ""
         body_bottom = "My Body Bottom"
@@ -1987,8 +2390,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
     def test_put_review_with_site(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         body_top = ""
         body_bottom = "My Body Bottom"
@@ -2220,8 +2622,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiGet(self.get_list_url(review, self.local_site_name),
                           expected_status=403)
@@ -2264,8 +2665,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiPost(
             ReviewResourceTests.get_list_url(review_request,
@@ -2371,8 +2771,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_request = review.review_request
         comment = review.comments.all()[0]
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiDelete(
             self.get_item_url(review, comment.id, self.local_site_name),
@@ -2471,8 +2870,7 @@ class DraftReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         screenshot_comment_text = "Test screenshot comment"
         x, y, w, h = 2, 2, 10, 10
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -2569,8 +2967,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply.base_reply_to = review
         reply.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         public_replies = review.public_replies()
 
@@ -2625,8 +3022,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review.public = True
         review.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
                            { 'body_top': 'Test', })
@@ -2710,8 +3106,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         review.public = True
         review.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp, response = self.api_post_with_response(
             self.get_list_url(review, self.local_site_name))
@@ -2804,9 +3199,7 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
         reply.base_reply_to = review
         reply.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
-
+        self._login_user(local_site=True)
         self.apiDelete(self.get_item_url(review, reply.id,
                                          self.local_site_name))
         self.assertEqual(review.replies.count(), 0)
@@ -2897,8 +3290,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         review.user = User.objects.get(username='doc')
         review.save()
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self._postNewDiffComment(review_request, review.id, 'Comment')
         review = Review.objects.get(pk=review.id)
@@ -2924,8 +3316,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         }
 
         if badlogin:
-            self.client.logout()
-            self.client.login(username='grumpy', password='grumpy')
+            self._login_user()
             rsp = self.apiPost(rsp['reply']['links']['diff_comments']['href'],
                                post_data,
                                expected_status=403)
@@ -2985,9 +3376,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
-
+        self._login_user()
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'],
                           { 'text': new_comment_text, },
                           expected_status=403)
@@ -3008,6 +3397,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        review_request.publish(self.user)
 
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
@@ -3053,14 +3443,14 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "My Comment Text"
         x, y, w, h = 10, 10, 20, 20
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        user = self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        review_request.publish(user)
 
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
@@ -3101,6 +3491,208 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         reply_comment = ScreenshotComment.objects.get(
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
+
+
+class ChangeResourceTests(BaseWebAPITestCase):
+    """Testing the ChangeResourceAPIs."""
+
+    def test_get_changes(self):
+        """Testing the GET review-requests/<id>/changes/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertTrue('changes' in rsp['review_request']['links'])
+
+        r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        change1 = ChangeDescription(public=True)
+        change1.record_field_change('summary', 'foo', 'bar')
+        change1.save()
+        r.changedescs.add(change1)
+
+        change2 = ChangeDescription(public=True)
+        change2.record_field_change('description', 'foo', 'bar')
+        change2.save()
+        r.changedescs.add(change2)
+
+        rsp = self.apiGet(rsp['review_request']['links']['changes']['href'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['changes']), 2)
+
+        self.assertEqual(rsp['changes'][0]['id'], change2.pk)
+        self.assertEqual(rsp['changes'][1]['id'], change1.pk)
+
+    def test_get_change(self):
+        """Testing the GET review-requests/<id>/changes/<id>/ API"""
+        def write_fields(obj, index):
+            for field, data in test_data.iteritems():
+                value = data[index]
+
+                if isinstance(value, list) and field not in model_fields:
+                    value = ','.join(value)
+
+                if field == 'diff':
+                    field = 'diffset'
+
+                setattr(obj, field, value)
+
+        changedesc_text = 'Change description text'
+        user1, user2 = User.objects.all()[:2]
+        group1, group2 = Group.objects.all()[:2]
+        diff1, diff2 = DiffSet.objects.all()[:2]
+        old_screenshot_caption = 'old screenshot'
+        new_screenshot_caption = 'new screenshot'
+        screenshot1 = Screenshot.objects.create()
+        screenshot2 = Screenshot.objects.create()
+        screenshot3 = Screenshot.objects.create(caption=old_screenshot_caption)
+
+        for screenshot in [screenshot1, screenshot2, screenshot3]:
+            f = open(self._getTrophyFilename(), 'r')
+            screenshot.image.save('foo.png', File(f), save=True)
+            f.close()
+
+        test_data = {
+            'summary': ('old summary', 'new summary', None, None),
+            'description': ('old description', 'new description', None, None),
+            'testing_done': ('old testing done', 'new testing done',
+                             None, None),
+            'branch': ('old branch', 'new branch', None, None),
+            'bugs_closed': (['1', '2', '3'], ['2', '3', '4'], ['1'], ['4']),
+            'target_people': ([user1], [user2], [user1], [user2]),
+            'target_groups': ([group1], [group2], [group1], [group2]),
+            'screenshots': ([screenshot1, screenshot3],
+                            [screenshot2, screenshot3],
+                            [screenshot1],
+                            [screenshot2]),
+            'diff': (diff1, diff2, None, diff2),
+        }
+        model_fields = ('target_people', 'target_groups', 'screenshots', 'diff')
+
+        rsp = self._postNewReviewRequest()
+        self.assertTrue('changes' in rsp['review_request']['links'])
+
+        # Set the initial data on the review request.
+        r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        write_fields(r, 0)
+        r.publish(self.user)
+
+        # Create some draft data that will end up in the change description.
+        draft = ReviewRequestDraft.create(r)
+        write_fields(draft, 1)
+
+        # Special-case screenshots
+        draft.inactive_screenshots = test_data['screenshots'][2]
+        screenshot3.draft_caption = new_screenshot_caption
+        screenshot3.save()
+
+        draft.changedesc.text = changedesc_text
+        draft.changedesc.save()
+        draft.save()
+        r.publish(self.user)
+
+        # Sanity check the ChangeDescription
+        self.assertEqual(r.changedescs.count(), 1)
+        change = r.changedescs.get()
+        self.assertEqual(change.text, changedesc_text)
+
+        for field, data in test_data.iteritems():
+            old, new, removed, added = data
+            field_data = change.fields_changed[field]
+
+            if field == 'diff':
+                # Diff fields are special. They only have "added".
+                self.assertEqual(len(field_data['added']), 1)
+                self.assertEqual(field_data['added'][0][2], added.pk)
+            elif field in model_fields:
+                self.assertEqual([item[2] for item in field_data['old']],
+                                 [obj.pk for obj in old])
+                self.assertEqual([item[2] for item in field_data['new']],
+                                 [obj.pk for obj in new])
+                self.assertEqual([item[2] for item in field_data['removed']],
+                                 [obj.pk for obj in removed])
+                self.assertEqual([item[2] for item in field_data['added']],
+                                 [obj.pk for obj in added])
+            elif isinstance(old, list):
+                self.assertEqual(field_data['old'],
+                                 [[value] for value in old])
+                self.assertEqual(field_data['new'],
+                                 [[value] for value in new])
+                self.assertEqual(field_data['removed'],
+                                 [[value] for value in removed])
+                self.assertEqual(field_data['added'],
+                                 [[value] for value in added])
+            else:
+                self.assertEqual(field_data['old'], [old])
+                self.assertEqual(field_data['new'], [new])
+                self.assertTrue('removed' not in field_data)
+                self.assertTrue('added' not in field_data)
+
+        self.assertTrue('screenshot_captions' in change.fields_changed)
+        field_data = change.fields_changed['screenshot_captions']
+        screenshot_id = str(screenshot3.pk)
+        self.assertTrue(screenshot_id in field_data)
+        self.assertTrue('old' in field_data[screenshot_id])
+        self.assertTrue('new' in field_data[screenshot_id])
+        self.assertEqual(field_data[screenshot_id]['old'][0],
+                         old_screenshot_caption)
+        self.assertEqual(field_data[screenshot_id]['new'][0],
+                         new_screenshot_caption)
+
+        # Now confirm with the API
+        rsp = self.apiGet(rsp['review_request']['links']['changes']['href'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['changes']), 1)
+
+        self.assertEqual(rsp['changes'][0]['id'], change.pk)
+        rsp = self.apiGet(rsp['changes'][0]['links']['self']['href'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['change']['text'], changedesc_text)
+
+        fields_changed = rsp['change']['fields_changed']
+
+        for field, data in test_data.iteritems():
+            old, new, removed, added = data
+
+            self.assertTrue(field in fields_changed)
+            field_data = fields_changed[field]
+
+            if field == 'diff':
+                self.assertTrue('added' in field_data)
+                self.assertEqual(field_data['added']['id'], added.pk)
+            elif field in model_fields:
+                self.assertTrue('old' in field_data)
+                self.assertTrue('new' in field_data)
+                self.assertTrue('added' in field_data)
+                self.assertTrue('removed' in field_data)
+                self.assertEqual([item['id'] for item in field_data['old']],
+                                 [obj.pk for obj in old])
+                self.assertEqual([item['id'] for item in field_data['new']],
+                                 [obj.pk for obj in new])
+                self.assertEqual([item['id'] for item in field_data['removed']],
+                                 [obj.pk for obj in removed])
+                self.assertEqual([item['id'] for item in field_data['added']],
+                                 [obj.pk for obj in added])
+            else:
+                self.assertTrue('old' in field_data)
+                self.assertTrue('new' in field_data)
+                self.assertEqual(field_data['old'], old)
+                self.assertEqual(field_data['new'], new)
+
+                if isinstance(old, list):
+                    self.assertTrue('added' in field_data)
+                    self.assertTrue('removed' in field_data)
+
+                    self.assertEqual(field_data['added'], added)
+                    self.assertEqual(field_data['removed'], removed)
+
+        self.assertTrue('screenshot_captions' in fields_changed)
+        field_data = fields_changed['screenshot_captions']
+        self.assertEqual(len(field_data), 1)
+        screenshot_data = field_data[0]
+        self.assertTrue('old' in screenshot_data)
+        self.assertTrue('new' in screenshot_data)
+        self.assertTrue('screenshot' in screenshot_data)
+        self.assertEqual(screenshot_data['old'], old_screenshot_caption)
+        self.assertEqual(screenshot_data['new'], new_screenshot_caption)
+        self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)
 
 
 class DiffResourceTests(BaseWebAPITestCase):
@@ -3159,8 +3751,7 @@ class DiffResourceTests(BaseWebAPITestCase):
 
     def test_post_diffs_with_site(self):
         """Testing the POST review-requests/<id>/diffs/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repo = Repository.objects.get(name='Review Board Git')
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
@@ -3197,8 +3788,7 @@ class DiffResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs API with a local site"""
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiGet(self.get_list_url(review_request,
                                             self.local_site_name))
@@ -3229,8 +3819,7 @@ class DiffResourceTests(BaseWebAPITestCase):
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
         diff = review_request.diffset_history.diffsets.latest()
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         rsp = self.apiGet(self.get_item_url(review_request, diff.revision,
                                             self.local_site_name))
@@ -3303,8 +3892,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
 
     def test_post_screenshots_with_site(self):
         """Testing the POST review-requests/<id>/draft/screenshots/ API with a local site"""
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repo = Repository.objects.get(name='Review Board Git')
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
@@ -3408,8 +3996,7 @@ class ScreenshotDraftResourceTests(BaseWebAPITestCase):
         review_request, screenshot_id = self.test_post_screenshots_with_site()
         review_request.publish(User.objects.get(username='doc'))
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiPut(self.get_item_url(review_request, screenshot_id,
                                             self.local_site_name),
@@ -3472,8 +4059,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     def _test_review_request_with_site(self):
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         repo = Repository.objects.get(name='Review Board Git')
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
@@ -3499,8 +4085,7 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
     def test_post_screenshots_with_site_no_access(self):
         """Testing the POST review-requests/<id>/screenshots/ API with a local site and Permission Denied error"""
         screenshots_url = self._test_review_request_with_site()
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         f = open(self._getTrophyFilename(), 'r')
         self.assertNotEqual(f, None)
@@ -3552,8 +4137,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site"""
         diff_comment_text = 'Sample comment.'
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -3582,8 +4166,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site and Permission Denied error"""
         diff_comment_text = 'Sample comment.'
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
@@ -3599,8 +4182,7 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
 
         self._postNewDiffComment(review_request, review_id, diff_comment_text)
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiGet(self.get_list_url(filediff, self.local_site_name),
                           expected_status=403)
@@ -3703,8 +4285,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request.
         repo = Repository.objects.get(name='Review Board Git')
@@ -3751,8 +4332,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request.
         repo = Repository.objects.get(name='Review Board Git')
@@ -3780,8 +4360,7 @@ class ScreenshotCommentResourceTests(BaseWebAPITestCase):
         self._postNewScreenshotComment(review_request, review.id, screenshot,
                                        comment_text, x, y, w, h)
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiGet(comments_url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
@@ -3826,8 +4405,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -3864,8 +4442,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -3887,8 +4464,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiPost(self.get_list_url(review, self.local_site_name),
                            { 'screenshot_id': screenshot.id, },
@@ -3935,8 +4511,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -3977,8 +4552,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
-        self.client.logout()
-        self.client.login(username='doc', password='doc')
+        self._login_user(local_site=True)
 
         # Post the review request
         repo = Repository.objects.get(name='Review Board Git')
@@ -4007,8 +4581,7 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                                              screenshot, comment_text,
                                              x, y, w, h)
 
-        self.client.logout()
-        self.client.login(username='grumpy', password='grumpy')
+        self._login_user()
 
         rsp = self.apiDelete(rsp['screenshot_comment']['links']['self']['href'],
                              expected_status=403)
@@ -4056,1171 +4629,3 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
                 'review_id': review.pk,
                 'comment_id': comment_id,
             })
-
-
-class DeprecatedWebAPITests(TestCase, EmailTestHelper):
-    """Testing the deprecated webapi support."""
-    fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
-                'test_site']
-
-    def setUp(self):
-        initialize()
-
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("mail_send_review_mail", True)
-        siteconfig.save()
-        mail.outbox = []
-
-        svn_repo_path = os.path.join(os.path.dirname(__file__),
-                                     '../scmtools/testdata/svn_repo')
-        self.repository = Repository(name='Subversion SVN',
-                                     path='file://' + svn_repo_path,
-                                     tool=Tool.objects.get(name='Subversion'))
-        self.repository.save()
-
-        self.client.login(username="grumpy", password="grumpy")
-        self.user = User.objects.get(username="grumpy")
-
-    def tearDown(self):
-        self.client.logout()
-
-    def apiGet(self, path, query={}, expected_status=200):
-        print "Getting /api/json/%s/" % path
-        print "Query data: %s" % query
-        response = self.client.get("/api/json/%s/" % path, query)
-        self.assertEqual(response.status_code, expected_status)
-        print "Raw response: %s" % response.content
-        rsp = simplejson.loads(response.content)
-        print "Response: %s" % rsp
-        return rsp
-
-    def apiPost(self, path, query={}, expected_status=200):
-        print "Posting to /api/json/%s/" % path
-        print "Post data: %s" % query
-        response = self.client.post("/api/json/%s/" % path, query)
-        self.assertEqual(response.status_code, expected_status)
-        print "Raw response: %s" % response.content
-        rsp = simplejson.loads(response.content)
-        print "Response: %s" % rsp
-        return rsp
-
-    def testRepositoryList(self):
-        """Testing the deprecated repositories API"""
-        rsp = self.apiGet("repositories")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['repositories']),
-                         Repository.objects.accessible(self.user).count())
-
-    def testUserList(self):
-        """Testing the deprecated users API"""
-        rsp = self.apiGet("users")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['users']), User.objects.count())
-
-    def testUserListQuery(self):
-        """Testing the deprecated users API with custom query"""
-        rsp = self.apiGet("users", {'query': 'gru'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['users']), 1) # grumpy
-
-    def testGroupList(self):
-        """Testing the deprecated groups API"""
-        rsp = self.apiGet("groups")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']),
-                         Group.objects.accessible(self.user).count())
-        self.assertEqual(len(rsp['groups']), 4)
-
-    def testGroupListQuery(self):
-        """Testing the deprecated groups API with custom query"""
-        rsp = self.apiGet("groups", {'query': 'dev'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['groups']), 1) #devgroup
-
-    def testGroupStar(self):
-        """Testing the deprecated groups/star API"""
-        rsp = self.apiGet("groups/devgroup/star")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup", local_site=None) in
-                     self.user.get_profile().starred_groups.all())
-
-    def testGroupStarDoesNotExist(self):
-        """Testing the deprecated groups/star API with Does Not Exist error"""
-        rsp = self.apiGet("groups/invalidgroup/star")
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testGroupUnstar(self):
-        """Testing the deprecated groups/unstar API"""
-        # First, star it.
-        self.testGroupStar()
-
-        rsp = self.apiGet("groups/devgroup/unstar")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(Group.objects.get(name="devgroup", local_site=None) not in
-                     self.user.get_profile().starred_groups.all())
-
-    def testGroupUnstarDoesNotExist(self):
-        """Testing the deprecated groups/unstar API with Does Not Exist error"""
-        rsp = self.apiGet("groups/invalidgroup/unstar")
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewRequestList(self):
-        """Testing the deprecated reviewrequests/all API"""
-        rsp = self.apiGet("reviewrequests/all")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public().count())
-
-    def testReviewRequestListWithStatus(self):
-        """Testing the deprecated reviewrequests/all API with custom status"""
-        rsp = self.apiGet("reviewrequests/all", {'status': 'submitted'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(status='S').count())
-
-        rsp = self.apiGet("reviewrequests/all", {'status': 'discarded'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(status='D').count())
-
-        rsp = self.apiGet("reviewrequests/all", {'status': 'all'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.public(status=None).count())
-
-    def testReviewRequestListCount(self):
-        """Testing the deprecated reviewrequests/all/count API"""
-        rsp = self.apiGet("reviewrequests/all/count")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], ReviewRequest.objects.public().count())
-
-    def testReviewRequestsToGroup(self):
-        """Testing the deprecated reviewrequests/to/group API"""
-        rsp = self.apiGet("reviewrequests/to/group/devgroup")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_group("devgroup",
-                                                        None).count())
-
-    def testReviewRequestsToGroupWithStatus(self):
-        """Testing the deprecated reviewrequests/to/group API with custom status"""
-        rsp = self.apiGet("reviewrequests/to/group/devgroup",
-                          {'status': 'submitted'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", None,
-                                           status='S').count())
-
-        rsp = self.apiGet("reviewrequests/to/group/devgroup",
-                          {'status': 'discarded'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_group("devgroup", None,
-                                           status='D').count())
-
-    def testReviewRequestsToGroupCount(self):
-        """Testing the deprecated reviewrequests/to/group/count API"""
-        rsp = self.apiGet("reviewrequests/to/group/devgroup/count")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_group("devgroup",
-                                                        None).count())
-
-    def testReviewRequestsToUser(self):
-        """Testing the deprecated reviewrequests/to/user API"""
-        rsp = self.apiGet("reviewrequests/to/user/grumpy")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_user("grumpy").count())
-
-    def testReviewRequestsToUserWithStatus(self):
-        """Testing the deprecated reviewrequests/to/user API with custom status"""
-        rsp = self.apiGet("reviewrequests/to/user/grumpy",
-                          {'status': 'submitted'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_user("grumpy", status='S').count())
-
-        rsp = self.apiGet("reviewrequests/to/user/grumpy",
-                          {'status': 'discarded'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_user("grumpy", status='D').count())
-
-    def testReviewRequestsToUserCount(self):
-        """Testing the deprecated reviewrequests/to/user/count API"""
-        rsp = self.apiGet("reviewrequests/to/user/grumpy/count")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_user("grumpy").count())
-
-    def testReviewRequestsToUserDirectly(self):
-        """Testing the deprecated reviewrequests/to/user/directly API"""
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_user_directly("doc").count())
-
-    def testReviewRequestsToUserDirectlyWithStatus(self):
-        """Testing the deprecated reviewrequests/to/user/directly API with custom status"""
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
-                          {'status': 'submitted'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_user_directly("doc", status='S').count())
-
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly",
-                          {'status': 'discarded'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.to_user_directly("doc", status='D').count())
-
-    def testReviewRequestsToUserDirectlyCount(self):
-        """Testing the deprecated reviewrequests/to/user/directly/count API"""
-        rsp = self.apiGet("reviewrequests/to/user/doc/directly/count")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_user_directly("doc").count())
-
-    def testReviewRequestsFromUser(self):
-        """Testing the deprecated reviewrequests/from/user API"""
-        rsp = self.apiGet("reviewrequests/from/user/grumpy")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.from_user("grumpy").count())
-
-    def testReviewRequestsFromUserWithStatus(self):
-        """Testing the deprecated reviewrequests/from/user API with custom status"""
-        rsp = self.apiGet("reviewrequests/from/user/grumpy",
-                          {'status': 'submitted'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.from_user("grumpy", status='S').count())
-
-        rsp = self.apiGet("reviewrequests/from/user/grumpy",
-                          {'status': 'discarded'})
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']),
-            ReviewRequest.objects.from_user("grumpy", status='D').count())
-
-    def testReviewRequestsFromUserCount(self):
-        """Testing the deprecated reviewrequests/from/user/count API"""
-        rsp = self.apiGet("reviewrequests/from/user/grumpy/count")
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.from_user("grumpy").count())
-
-    def testNewReviewRequest(self):
-        """Testing the deprecated reviewrequests/new API"""
-        rsp = self.apiPost("reviewrequests/new", {
-            'repository_path': self.repository.path,
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['repository']['id'],
-                         self.repository.id)
-
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
-        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
-
-    def testNewReviewRequestWithInvalidRepository(self):
-        """Testing the deprecated reviewrequests/new API with Invalid Repository error"""
-        rsp = self.apiPost("reviewrequests/new", {
-            'repository_path': 'gobbledygook',
-        })
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
-
-    def testNewReviewRequestAsUser(self):
-        """Testing the deprecated reviewrequests/new API with submit_as"""
-        self.user.is_superuser = True
-        self.user.save()
-
-        rsp = self.apiPost("reviewrequests/new", {
-            'repository_path': self.repository.path,
-            'submit_as': 'doc',
-        })
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['repository']['id'],
-                         self.repository.id)
-        self.assertEqual(rsp['review_request']['submitter']['username'], 'doc')
-
-        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
-
-    def testNewReviewRequestAsUserPermissionDenied(self):
-        """Testing the deprecated reviewrequests/new API with submit_as and Permission Denied error"""
-        rsp = self.apiPost("reviewrequests/new", {
-            'repository_path': self.repository.path,
-            'submit_as': 'doc',
-        })
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def testReviewRequest(self):
-        """Testing the deprecated reviewrequests/<id> API"""
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiGet("reviewrequests/%s" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-
-    def testReviewRequestPermissionDenied(self):
-        """Testing the deprecated reviewrequests/<id> API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=False).\
-            exclude(submitter=self.user)[0]
-        rsp = self.apiGet("reviewrequests/%s" % review_request.id)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def testReviewRequestByChangenum(self):
-        """Testing the deprecated reviewrequests/repository/changenum API"""
-        review_request = \
-            ReviewRequest.objects.filter(changenum__isnull=False)[0]
-        rsp = self.apiGet("reviewrequests/repository/%s/changenum/%s" %
-                          (review_request.repository.id,
-                           review_request.changenum))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['id'], review_request.id)
-        self.assertEqual(rsp['review_request']['summary'],
-                         review_request.summary)
-        self.assertEqual(rsp['review_request']['changenum'],
-                         review_request.changenum)
-
-    def testReviewRequestStar(self):
-        """Testing the deprecated reviewrequests/star API"""
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiGet("reviewrequests/%s/star" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(review_request in
-                     self.user.get_profile().starred_review_requests.all())
-
-    def testReviewRequestStarDoesNotExist(self):
-        """Testing the deprecated reviewrequests/star API with Does Not Exist error"""
-        rsp = self.apiGet("reviewrequests/999/star")
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewRequestUnstar(self):
-        """Testing the deprecated reviewrequests/unstar API"""
-        # First, star it.
-        self.testReviewRequestStar()
-
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiGet("reviewrequests/%s/unstar" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assert_(review_request not in
-                     self.user.get_profile().starred_review_requests.all())
-
-    def testReviewRequestUnstarWithDoesNotExist(self):
-        """Testing the deprecated reviewrequests/unstar API with Does Not Exist error"""
-        rsp = self.apiGet("reviewrequests/999/unstar")
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewRequestDelete(self):
-        """Testing the deprecated reviewrequests/delete API"""
-        self.user.user_permissions.add(
-            Permission.objects.get(codename='delete_reviewrequest'))
-        self.user.save()
-        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
-
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertRaises(ReviewRequest.DoesNotExist,
-                          ReviewRequest.objects.get, pk=review_request_id)
-
-    def testReviewRequestDeletePermissionDenied(self):
-        """Testing the deprecated reviewrequests/delete API with Permission Denied error"""
-        review_request_id = \
-            ReviewRequest.objects.exclude(submitter=self.user)[0].id
-        rsp = self.apiGet("reviewrequests/%s/delete" % review_request_id)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def testReviewRequestDeleteDoesNotExist(self):
-        """Testing the deprecated reviewrequests/delete API with Does Not Exist error"""
-        self.user.user_permissions.add(
-            Permission.objects.get(codename='delete_reviewrequest'))
-        self.user.save()
-        self.assert_(self.user.has_perm('reviews.delete_reviewrequest'))
-
-        rsp = self.apiGet("reviewrequests/999/delete")
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewRequestDraftSet(self):
-        """Testing the deprecated reviewrequests/draft/set API"""
-        summary = "My Summary"
-        description = "My Description"
-        testing_done = "My Testing Done"
-        branch = "My Branch"
-        bugs = ""
-
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set" % review_request_id, {
-            'summary': summary,
-            'description': description,
-            'testing_done': testing_done,
-            'branch': branch,
-            'bugs_closed': bugs,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['draft']['summary'], summary)
-        self.assertEqual(rsp['draft']['description'], description)
-        self.assertEqual(rsp['draft']['testing_done'], testing_done)
-        self.assertEqual(rsp['draft']['branch'], branch)
-        self.assertEqual(rsp['draft']['bugs_closed'], [])
-
-        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
-        self.assertEqual(draft.summary, summary)
-        self.assertEqual(draft.description, description)
-        self.assertEqual(draft.testing_done, testing_done)
-        self.assertEqual(draft.branch, branch)
-        self.assertEqual(draft.get_bug_list(), [])
-
-    def testReviewRequestDraftSetField(self):
-        """Testing the deprecated reviewrequests/draft/set/<field> API"""
-        bugs_closed = '123,456'
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
-                           review_request_id, {
-            'value': bugs_closed,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['bugs_closed'], bugs_closed.split(","))
-
-    def testReviewRequestDraftSetFieldInvalidName(self):
-        """Testing the deprecated reviewrequests/draft/set/<field> API with invalid name"""
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set/foobar" %
-                           review_request_id, {
-            'value': 'foo',
-        })
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_ATTRIBUTE.code)
-        self.assertEqual(rsp['attribute'], 'foobar')
-
-    def testReviewRequestPublishSendsEmail(self):
-        """Testing the deprecated reviewrequests/publish API"""
-        # Set some data first.
-        self.testReviewRequestDraftSet()
-
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/publish" % review_request.id)
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(mail.outbox), 1)
-
-    def testReviewRequestDraftSetFieldNoPermission(self):
-        """Testing the deprecated reviewrequests/draft/set/<field> API without valid permissions"""
-        bugs_closed = '123,456'
-        review_request_id = ReviewRequest.objects.from_user('admin')[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/set/bugs_closed" %
-                           review_request_id, {
-            'value': bugs_closed,
-        })
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    # draft/save is deprecated. Tests were copied to *DraftPublish*().
-    # This is still here only to make sure we don't break backwards
-    # compatibility.
-    def testReviewRequestDraftSave(self):
-        """Testing the deprecated reviewrequests/draft/save API"""
-        # Set some data first.
-        self.testReviewRequestDraftSet()
-
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
-        self.assertEqual(review_request.summary, "My Summary")
-        self.assertEqual(review_request.description, "My Description")
-        self.assertEqual(review_request.testing_done, "My Testing Done")
-        self.assertEqual(review_request.branch, "My Branch")
-
-    def testReviewRequestDraftSaveDoesNotExist(self):
-        """Testing the deprecated reviewrequests/draft/save API with Does Not Exist error"""
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request_id)
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewRequestDraftPublish(self):
-        """Testing the deprecated reviewrequests/draft/publish API"""
-        # Set some data first.
-        self.testReviewRequestDraftSet()
-
-        review_request_id = \
-            ReviewRequest.objects.from_user(self.user.username)[0].id
-        rsp = self.apiPost("reviewrequests/%s/draft/publish" % review_request_id)
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
-        self.assertEqual(review_request.summary, "My Summary")
-        self.assertEqual(review_request.description, "My Description")
-        self.assertEqual(review_request.testing_done, "My Testing Done")
-        self.assertEqual(review_request.branch, "My Branch")
-
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
-        self.assertValidRecipients(["doc", "grumpy"], [])
-
-
-    def testReviewRequestDraftPublishDoesNotExist(self):
-        """Testing the deprecated reviewrequests/draft/publish API with Does Not Exist error"""
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
-        rsp = self.apiPost("reviewrequests/%s/draft/publish" %
-                           review_request.id)
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewRequestDraftDiscard(self):
-        """Testing the deprecated reviewrequests/draft/discard API"""
-        review_request = ReviewRequest.objects.from_user(self.user.username)[0]
-        summary = review_request.summary
-        description = review_request.description
-
-        # Set some data.
-        self.testReviewRequestDraftSet()
-
-        rsp = self.apiPost("reviewrequests/%s/draft/discard" %
-                           review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertEqual(review_request.summary, summary)
-        self.assertEqual(review_request.description, description)
-
-    def testReviewDraftSave(self):
-        """Testing the deprecated reviewrequests/reviews/draft/save API"""
-        body_top = ""
-        body_bottom = "My Body Bottom"
-        ship_it = True
-
-        # Clear out any reviews on the first review request we find.
-        review_request = ReviewRequest.objects.public()[0]
-        review_request.reviews = []
-        review_request.save()
-
-        self.apiPost("reviewrequests/%s/reviews/draft/save" %
-                     review_request.id, {
-            'shipit': ship_it,
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-        })
-
-        reviews = review_request.reviews.filter(user=self.user)
-        self.assertEqual(len(reviews), 1)
-        review = reviews[0]
-
-        self.assertEqual(review.ship_it, ship_it)
-        self.assertEqual(review.body_top, body_top)
-        self.assertEqual(review.body_bottom, body_bottom)
-        self.assertEqual(review.public, False)
-
-        self.assertEqual(len(mail.outbox), 0)
-
-    def testReviewDraftPublish(self):
-        """Testing the deprecated reviewrequests/reviews/draft/publish API"""
-        body_top = "My Body Top"
-        body_bottom = ""
-        ship_it = True
-
-        # Clear out any reviews on the first review request we find.
-        review_request = ReviewRequest.objects.public()[0]
-        review_request.reviews = []
-        review_request.save()
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/draft/publish" %
-                           review_request.id, {
-            'shipit': ship_it,
-            'body_top': body_top,
-            'body_bottom': body_bottom,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reviews = review_request.reviews.filter(user=self.user)
-        self.assertEqual(len(reviews), 1)
-        review = reviews[0]
-
-        self.assertEqual(review.ship_it, ship_it)
-        self.assertEqual(review.body_top, body_top)
-        self.assertEqual(review.body_bottom, body_bottom)
-        self.assertEqual(review.public, True)
-
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject,
-                         "Re: Review Request: Interdiff Revision Test")
-        self.assertValidRecipients(["admin", "grumpy"], [])
-
-
-    def testReviewDraftDelete(self):
-        """Testing the deprecated reviewrequests/reviews/draft/delete API"""
-        # Set up the draft to delete.
-        self.testReviewDraftSave()
-
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
-                           review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(review_request.reviews.count(), 0)
-
-    def testReviewDraftDeleteDoesNotExist(self):
-        """Testing the deprecated reviewrequests/reviews/draft/delete API with Does Not Exist error"""
-        # Set up the draft to delete
-        self.testReviewDraftPublish()
-
-        review_request = ReviewRequest.objects.public()[0]
-        rsp = self.apiPost("reviewrequests/%s/reviews/draft/delete" %
-                           review_request.id)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
-
-    def testReviewDraftComments(self):
-        """Testing the deprecated reviewrequests/reviews/draft/comments API"""
-        diff_comment_text = "Test diff comment"
-        screenshot_comment_text = "Test screenshot comment"
-        x, y, w, h = 2, 2, 10, 10
-
-        screenshot = self.testNewScreenshot()
-        review_request = screenshot.review_request.get()
-        self.testNewDiff(review_request)
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        self.postNewDiffComment(review_request, diff_comment_text)
-        self.postNewScreenshotComment(review_request, screenshot,
-                                      screenshot_comment_text, x, y, w, h)
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/draft/comments" %
-                          review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(len(rsp['screenshot_comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], diff_comment_text)
-        self.assertEqual(rsp['screenshot_comments'][0]['text'],
-                         screenshot_comment_text)
-
-    def testReviewsList(self):
-        """Testing the deprecated reviewrequests/reviews API"""
-        review_request = Review.objects.all()[0].review_request
-        rsp = self.apiGet("reviewrequests/%s/reviews" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['reviews']), review_request.reviews.count())
-
-    def testReviewsListCount(self):
-        """Testing the deprecated reviewrequests/reviews/count API"""
-        review_request = Review.objects.all()[0].review_request
-        rsp = self.apiGet("reviewrequests/%s/reviews/count" %
-                          review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['reviews'], review_request.reviews.count())
-
-    def testReviewCommentsList(self):
-        """Testing the deprecated reviewrequests/reviews/comments API"""
-        review = Review.objects.filter(comments__pk__gt=0)[0]
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/comments" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), review.comments.count())
-
-    def testReviewCommentsCount(self):
-        """Testing the deprecated reviewrequests/reviews/comments/count API"""
-        review = Review.objects.filter(comments__pk__gt=0)[0]
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/comments/count" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], review.comments.count())
-
-    def testReplyDraftComment(self):
-        """Testing the deprecated reviewrequests/reviews/replies/draft API with comment"""
-        comment_text = "My Comment Text"
-
-        comment = Comment.objects.all()[0]
-        review = comment.review.get()
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'comment',
-            'id': comment.id,
-            'value': comment_text
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_comment = Comment.objects.get(pk=rsp['comment']['id'])
-        self.assertEqual(reply_comment.text, comment_text)
-
-    def testReplyDraftScreenshotComment(self):
-        """Testing the deprecated reviewrequests/reviews/replies/draft API with screenshot_comment"""
-        comment_text = "My Comment Text"
-
-        comment = self.testScreenshotCommentsSet()
-        review = comment.review.get()
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'screenshot_comment',
-            'id': comment.id,
-            'value': comment_text,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply_comment = ScreenshotComment.objects.get(
-            pk=rsp['screenshot_comment']['id'])
-        self.assertEqual(reply_comment.text, comment_text)
-
-    def testReplyDraftBodyTop(self):
-        """Testing the deprecated reviewrequests/reviews/replies/draft API with body_top"""
-        body_top = 'My Body Top'
-
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_top',
-            'value': body_top,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply = Review.objects.get(pk=rsp['reply']['id'])
-        self.assertEqual(reply.body_top, body_top)
-
-    def testReplyDraftBodyBottom(self):
-        """Testing the deprecated reviewrequests/reviews/replies/draft API with body_bottom"""
-        body_bottom = 'My Body Bottom'
-
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_bottom',
-            'value': body_bottom,
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply = Review.objects.get(pk=rsp['reply']['id'])
-        self.assertEqual(reply.body_bottom, body_bottom)
-
-    def testReplyDraftSave(self):
-        """Testing the deprecated reviewrequests/reviews/replies/draft/save API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_top',
-            'value': 'Test',
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-        reply_id = rsp['reply']['id']
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft/save" %
-                           (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-
-        reply = Review.objects.get(pk=reply_id)
-        self.assertEqual(reply.public, True)
-
-        self.assertEqual(len(mail.outbox), 1)
-
-    def testReplyDraftDiscard(self):
-        """Testing the deprecated reviewrequests/reviews/replies/draft/discard API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-
-        rsp = self.apiPost("reviewrequests/%s/reviews/%s/replies/draft" %
-                           (review.review_request.id, review.id), {
-            'type': 'body_top',
-            'value': 'Test',
-        })
-
-        self.assertEqual(rsp['stat'], 'ok')
-        reply_id = rsp['reply']['id']
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/reviews/%s/replies/draft/discard" %
-            (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-
-        self.assertEqual(Review.objects.filter(pk=reply_id).count(), 0)
-
-    def testRepliesList(self):
-        """Testing the deprecated reviewrequests/reviews/replies API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-        self.testReplyDraftSave()
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['replies']), len(review.public_replies()))
-
-        for reply in review.public_replies():
-            self.assertEqual(rsp['replies'][0]['id'], reply.id)
-            self.assertEqual(rsp['replies'][0]['body_top'], reply.body_top)
-            self.assertEqual(rsp['replies'][0]['body_bottom'],
-                             reply.body_bottom)
-
-    def testRepliesListCount(self):
-        """Testing the deprecated reviewrequests/reviews/replies/count API"""
-        review = \
-            Review.objects.filter(base_reply_to__isnull=True, public=True)[0]
-        self.testReplyDraftSave()
-
-        rsp = self.apiGet("reviewrequests/%s/reviews/%s/replies/count" %
-                          (review.review_request.id, review.id))
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['count'], len(review.public_replies()))
-
-    def testNewDiff(self, review_request=None):
-        """Testing the deprecated reviewrequests/diff/new API"""
-
-        if review_request is None:
-            review_request = self.testNewReviewRequest()
-
-        diff_filename = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "scmtools", "testdata", "svn_makefile.diff")
-        f = open(diff_filename, "r")
-        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id, {
-            'path': f,
-            'basedir': "/trunk",
-        })
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        # Return this so it can be used in other tests.
-        return DiffSet.objects.get(pk=rsp['diffset_id'])
-
-    def testNewDiffInvalidFormData(self):
-        """Testing the deprecated reviewrequests/diff/new API with Invalid Form Data"""
-        review_request = self.testNewReviewRequest()
-
-        rsp = self.apiPost("reviewrequests/%s/diff/new" % review_request.id)
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
-        self.assert_('path' in rsp['fields'])
-        self.assert_('basedir' in rsp['fields'])
-
-    def testNewScreenshot(self):
-        """Testing the deprecated reviewrequests/screenshot/new API"""
-        review_request = self.testNewReviewRequest()
-
-        f = open(self.__getTrophyFilename(), "r")
-        self.assert_(f)
-        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
-                           review_request.id, {
-            'path': f,
-        })
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        # Return the screenshot so we can use it in other tests.
-        return Screenshot.objects.get(pk=rsp['screenshot_id'])
-
-    def testNewScreenshotPermissionDenied(self):
-        """Testing the deprecated reviewrequests/screenshot/new API with Permission Denied error"""
-        review_request = ReviewRequest.objects.filter(public=True).\
-            exclude(submitter=self.user)[0]
-
-        f = open(self.__getTrophyFilename(), "r")
-        self.assert_(f)
-        rsp = self.apiPost("reviewrequests/%s/screenshot/new" %
-                           review_request.id, {
-            'caption': 'Trophy',
-            'path': f,
-        })
-        f.close()
-
-        self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
-
-    def postNewDiffComment(self, review_request, comment_text):
-        """Utility function for posting a new diff comment."""
-        diffset = review_request.diffset_history.diffsets.latest()
-        filediff = diffset.files.all()[0]
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10),
-            {
-                'action': 'set',
-                'text': comment_text,
-                'num_lines': 5,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        return rsp
-
-    def testReviewRequestDiffsets(self):
-        """Testing the deprecated reviewrequests/diffsets API"""
-        rsp = self.apiGet("reviewrequests/2/diff")
-
-        self.assertEqual(rsp['diffsets'][0]["id"], 2)
-        self.assertEqual(rsp['diffsets'][0]["name"], 'cleaned_data.diff')
-
-    def testDiffCommentsSet(self):
-        """Testing the deprecated reviewrequests/diff/file/line/comments set API"""
-        comment_text = "This is a test comment."
-
-        review_request = ReviewRequest.objects.public()[0]
-        review_request.reviews = []
-
-        rsp = self.postNewDiffComment(review_request, comment_text)
-
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], comment_text)
-
-    def testDiffCommentsDelete(self):
-        """Testing the deprecated reviewrequests/diff/file/line/comments delete API"""
-        self.testDiffCommentsSet()
-
-        review_request = ReviewRequest.objects.public()[0]
-        diffset = review_request.diffset_history.diffsets.latest()
-        filediff = diffset.files.all()[0]
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10),
-            {
-                'action': 'delete',
-                'num_lines': 5,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
-    def testDiffCommentsList(self):
-        """Testing the deprecated reviewrequests/diff/file/line/comments list API"""
-        self.testDiffCommentsSet()
-
-        review_request = ReviewRequest.objects.public()[0]
-        diffset = review_request.diffset_history.diffsets.latest()
-        filediff = diffset.files.all()[0]
-
-        rsp = self.apiGet(
-            "reviewrequests/%s/diff/%s/file/%s/line/%s/comments" %
-            (review_request.id, diffset.revision, filediff.id, 10))
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comments = Comment.objects.filter(filediff=filediff)
-        self.assertEqual(len(rsp['comments']), comments.count())
-
-        for i in range(0, len(rsp['comments'])):
-            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
-
-
-    def testInterDiffCommentsSet(self):
-        """Testing the deprecated reviewrequests/diff/file/line/comments interdiff set API"""
-        comment_text = "This is a test comment."
-
-        # Create a review request for this test.
-        review_request = self.testNewReviewRequest()
-
-        # Upload the first diff and publish the draft.
-        diffset_id = self.testNewDiff(review_request).id
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        # Upload the second diff and publish the draft.
-        interdiffset_id = self.testNewDiff(review_request).id
-        rsp = self.apiPost("reviewrequests/%s/draft/save" % review_request.id)
-        self.assertEqual(rsp['stat'], 'ok')
-
-        # Reload the diffsets, now that they've been modified.
-        diffset = DiffSet.objects.get(pk=diffset_id)
-        interdiffset = DiffSet.objects.get(pk=interdiffset_id)
-
-        # Get the interdiffs
-        filediff = diffset.files.all()[0]
-        interfilediff = interdiffset.files.all()[0]
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10),
-            {
-                'action': 'set',
-                'text': comment_text,
-                'num_lines': 5,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], comment_text)
-
-        # Return some information for use in other tests.
-        return (review_request, diffset, interdiffset, filediff, interfilediff)
-
-    def testInterDiffCommentsDelete(self):
-        """Testing the deprecated reviewrequests/diff/file/line/comments interdiff delete API"""
-        review_request, diffset, interdiffset, filediff, interfilediff = \
-            self.testInterDiffCommentsSet()
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10),
-            {
-                'action': 'delete',
-                'num_lines': 5,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
-    def testInterDiffCommentsList(self):
-        """Testing the deprecated reviewrequests/diff/file/line/comments interdiff list API"""
-        review_request, diffset, interdiffset, filediff, interfilediff = \
-            self.testInterDiffCommentsSet()
-
-        rsp = self.apiGet(
-            "reviewrequests/%s/diff/%s-%s/file/%s-%s/line/%s/comments" %
-            (review_request.id, diffset.revision, interdiffset.revision,
-             filediff.id, interfilediff.id, 10))
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comments = Comment.objects.filter(filediff=filediff,
-                                          interfilediff=interfilediff)
-        self.assertEqual(len(rsp['comments']), comments.count())
-
-        for i in range(0, len(rsp['comments'])):
-            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
-
-    def postNewScreenshotComment(self, review_request, screenshot,
-                                 comment_text, x, y, w, h):
-        """Utility function for posting a new screenshot comment."""
-        rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, w, h, x, y),
-            {
-                'action': 'set',
-                'text': comment_text,
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        return rsp
-
-    def testScreenshotCommentsSet(self):
-        """Testing the deprecated reviewrequests/s/comments set API"""
-        comment_text = "This is a test comment."
-        x, y, w, h = (2, 2, 10, 10)
-
-        screenshot = self.testNewScreenshot()
-        review_request = screenshot.review_request.get()
-
-        rsp = self.postNewScreenshotComment(review_request, screenshot,
-                                            comment_text, x, y, w, h)
-
-        self.assertEqual(len(rsp['comments']), 1)
-        self.assertEqual(rsp['comments'][0]['text'], comment_text)
-        self.assertEqual(rsp['comments'][0]['x'], x)
-        self.assertEqual(rsp['comments'][0]['y'], y)
-        self.assertEqual(rsp['comments'][0]['w'], w)
-        self.assertEqual(rsp['comments'][0]['h'], h)
-
-        # Return this so it can be used in other tests.
-        return ScreenshotComment.objects.get(pk=rsp['comments'][0]['id'])
-
-    def testScreenshotCommentsDelete(self):
-        """Testing the deprecated reviewrequests/s/comments delete API"""
-        comment = self.testScreenshotCommentsSet()
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, comment.w, comment.h,
-             comment.x, comment.y),
-            {
-                'action': 'delete',
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
-    def testScreenshotCommentsDeleteNonExistant(self):
-        """Testing the deprecated reviewrequests/s/comments delete API with non-existant comment"""
-        comment = self.testScreenshotCommentsSet()
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        rsp = self.apiPost(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, 1, 2, 3, 4),
-            {
-                'action': 'delete',
-            }
-        )
-
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['comments']), 0)
-
-    def testScreenshotCommentsList(self):
-        """Testing the deprecated reviewrequests/s/comments list API"""
-        comment = self.testScreenshotCommentsSet()
-        screenshot = comment.screenshot
-        review_request = screenshot.review_request.get()
-
-        rsp = self.apiGet(
-            "reviewrequests/%s/s/%s/comments/%sx%s+%s+%s" %
-            (review_request.id, screenshot.id, comment.w, comment.h,
-             comment.x, comment.y))
-
-        self.assertEqual(rsp['stat'], 'ok')
-
-        comments = ScreenshotComment.objects.filter(screenshot=screenshot)
-        self.assertEqual(len(rsp['comments']), comments.count())
-
-        for i in range(0, len(rsp['comments'])):
-            self.assertEqual(rsp['comments'][i]['text'], comments[i].text)
-            self.assertEqual(rsp['comments'][i]['x'], comments[i].x)
-            self.assertEqual(rsp['comments'][i]['y'], comments[i].y)
-            self.assertEqual(rsp['comments'][i]['w'], comments[i].w)
-            self.assertEqual(rsp['comments'][i]['h'], comments[i].h)
-
-    def __getTrophyFilename(self):
-        return os.path.join(settings.HTDOCS_ROOT,
-                            "media", "rb", "images", "trophy.png")

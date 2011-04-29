@@ -295,6 +295,8 @@ class RepositoryForm(forms.ModelForm):
         self.certerror = None
         self.userkeyerror = None
 
+        self.public_key = sshutils.get_public_key(sshutils.get_user_key())
+
         self._populate_hosting_service_fields()
         self._populate_bug_tracker_fields()
 

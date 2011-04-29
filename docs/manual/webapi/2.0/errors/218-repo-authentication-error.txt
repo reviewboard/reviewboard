@@ -1,0 +1,38 @@
+.. _webapi2.0-error-218:
+
+=====================================
+218 - Repository Authentication Error
+=====================================
+
++----------------------+-----------------------------------------------------+
+| **API Error Code**   | 218                                                 |
++----------------------+-----------------------------------------------------+
+| **HTTP Status Code** | :http:`403`                                         |
++----------------------+-----------------------------------------------------+
+| **Error Text**       | ``Unable to authenticate with the repository using  |
+|                      | the provided credentials``                          |
++----------------------+-----------------------------------------------------+
+| **Description**      | Review Board attempted to authenticate with a       |
+|                      | repository, but the proper login information wasn't |
+|                      | specified.                                          |
+|                      |                                                     |
+|                      | The specific reason it failed is returned in        |
+|                      | ``reason`` along with the error.                    |
++----------------------+-----------------------------------------------------+
+
+
+Example
+-------
+
+.. code-block:: javascript
+
+   {
+     stat: "fail",
+     err: {
+       code: 218,
+       msg: "Unable to authenticate with the repository using the provided credentials"
+     }
+   }
+
+
+.. comment: vim: ft=rst et ts=3

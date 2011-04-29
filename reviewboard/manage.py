@@ -69,7 +69,10 @@ def check_dependencies():
     try:
         imp.find_module('PIL')
     except ImportError:
-        dependency_error('The Python Imaging Library (PIL) is required.')
+        try:
+            imp.find_module('Image')
+        except ImportError:
+            dependency_error('The Python Imaging Library (PIL) is required.')
 
     # ReCaptcha
     try:

@@ -4,9 +4,10 @@
  <p>
 {% blocktrans %}
   GNU {{binaryname}} must be in your executable search path for the diff viewer
-  to work.
+  to work. The current search path is:
 {% endblocktrans %}
  </p>
+ <p><tt>{{search_path}}</tt></p>
  <p>
 {% ifequal platform "win32" %}
 {%  blocktrans %}

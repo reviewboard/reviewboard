@@ -177,33 +177,27 @@ ClearCase
 ---------
 
 :command:`post-review` provides basic support for posting ClearCase reviews.
-To post the review request, you must pass a list of modified files to
-:command:`post-review`. If you want to post a review of all checked out files
-in your view, you can do this with the following command line in a suitable
-shell::
+If you want to post a review of all currently checked out files in your view
+simply run::
 
-    $ cleartool lsco -cview -me -recurse -short | xargs post-review
-
-On Windows, you'll need to fix the paths to contain forward-slashes::
-
-    $ cleartool lsco -cview -me -recurse -short | sed "s/\\\\/\//g" | xargs post-review
-
-.. note:: Only uncommited code reviews are currently supported.
+     post-review
 
 If you collect changesets, for example, using ClearCase/ClearQuest
-integration, you can pass the changeset using :option:`--revision-range`::
+integration, you can pass the changeset using :option:`--revision-range`.
+Repository will be determined based on your current VOB's uuid or name::
 
-    $ post-review --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
+    $ post-review --revision-range="/vobs/proj/file.c@@/main/0:/vobs/proj/file.c@@/main/1"
 
-To determine the repository type, use :option:`--clearcase-viewtype`::
+Another way for post-commit review is send changes developed on branch by
+:option:`--tracking` option::
 
-    $ post-review --clearcase-view-type="dynamic" --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
+    $ post-review --tracking my_dev_branch
 
-.. note:: Snapshot views are not currently supported.
+.. note:: :command:`post-review` trying match reviewboard's repository based on
+          VOB's UUID. In case of problems Your VOB's name will be used.
+          Remember. You can always overwrite this behavior using
+          :file:`.reviewboardrc `file or passing :option:`--repository-url`.
 
-You can also indicate the repository using :option:`--repository-url`::
-
-    $ post-review --repository-url="/view/vobs" --clearcase-view-type="dynamic" --revision-range="/view/vobs/MYPROJECT/src/file.c@@/main/0:/view/vobs/MYPROJECT/src/file.c@@/main/1"
 
 .. index:: post-commit review
 .. _postingcommittedcode:
@@ -347,38 +341,42 @@ To set the property on a directory, type::
 .reviewboardrc
 ~~~~~~~~~~~~~~
 
-You can set the repository URL in :file:`.reviewboardrc` file in any
-directory. This must be a directory in the user's checkout path to work.
+The :file:`.reviewboardrc` file is a generic place for configuring a
+repository. This must be in a directory in the user's checkout path to work.
+It must parse as a valid Python file, or you'll see an error when using
+:command:`post-review`.
 
-The contents of the file should be::
+
+REPOSITORY
+^^^^^^^^^^
+
+.. versionadded: 0.3.1
+
+Normally, the repository path is automatically determined and passed to
+Review Board, but on more complex setups you may need to tell
+:command:`post-review` and Review Board specifically which repository you
+want to use.
+
+You can use the ``REPOSITORY`` setting to specify the path or the numeric
+ID of the repository to use. For example::
+
+    REPOSITORY = 'https://svn.example.com/'
+
+If using Review Board 1.5.3 or higher, you can also choose to specify the
+repository name. This is the same name as on Review Board's New Review Request
+page. For example::
+
+    REPOSITORY = 'RBTools'
+
+
+REVIEWBOARD_URL
+^^^^^^^^^^^^^^^
+
+To specify the Review Board server to use, you can use the
+``REVIEWBOARD_URL`` setting. This takes the URL to the Review Board server
+as a value. For example::
 
     REVIEWBOARD_URL = "http://reviewboard.example.com"
-
-
-Internal post-review Configuration
-----------------------------------
-
-:command:`post-review` itself can be modified with the path of the
-repository. This is useful in companies where there's only one Review
-Board server and the other methods aren't acceptable.
-
-You can edit :command:`post-review` and look for the line::
-
-    REVIEWBOARD_URL = None
-
-And replace this with the server path, such as::
-
-    REVIEWBOARD_URL = "http://reviewboard.example.com"
-
-There are also other more advanced customization options available for
-specialized cases. See the documentation and variables inside
-:command:`post-review` for more information.
-
-.. warning:: If you customize this file, it may make it harder to upgrade
-             to newer versions of :command:`post-review` in the future.
-             It's advised that you use a custom copy of the script and
-             not one that was installed by a package, or your changes
-             *will* get overridden.
 
 
 Custom User Configuration
@@ -592,6 +590,11 @@ Perforce Options
 .. cmdoption:: --p4-port=<P4_PORT>
 
    Specifies the Perforce server IP address used when generating the diff.
+
+.. cmdoption:: --p4-passwd=<PASSWORD_OR_TICKET>
+
+   Specifies the Perforce Ticket or clear-text password used to authenticate
+   with the repository.
 
 
 Subversion Options

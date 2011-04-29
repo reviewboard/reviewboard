@@ -60,18 +60,28 @@ class HgDiffParser(DiffParser):
     This class is able to extract Mercurial changeset ids, and
     replaces /dev/null with a useful name
     """
+    newChangesetId = None
+    origChangesetId = None
+    isGitDiff = False
 
     def parse_special_header(self, linenum, info):
-        # XXX: does not handle git style diffs
-        if self.lines[linenum].startswith("diff -r"):
+        diffLine = self.lines[linenum].split()
+
+        # git style diffs are supported as long as the node ID and parent ID
+        # are present in the patch header
+        if self.lines[linenum].startswith("# Node ID") and len(diffLine) == 4:
+            self.newChangesetId = diffLine[3]
+        elif self.lines[linenum].startswith("# Parent") and len(diffLine) == 3:
+            self.origChangesetId = diffLine[2]
+        elif self.lines[linenum].startswith("diff -r"):
             # diff between two revisions are in the following form:
             #  "diff -r abcdef123456 -r 123456abcdef filename"
             # diff between a revision and the working copy are like:
             #  "diff -r abcdef123456 filename"
-            diffLine = self.lines[linenum].split()
-
+            self.isGitDiff = False
             try:
-                # hg is file based, so new file always == old file
+                # ordinary hg diffs don't record renames, so
+                # new file always == old file
                 isCommitted = len(diffLine) > 4 and diffLine[3] == '-r'
                 if isCommitted:
                     nameStartIndex = 5
@@ -88,23 +98,71 @@ class HgDiffParser(DiffParser):
                                       "information", linenum)
             linenum += 1;
 
+        elif self.lines[linenum].startswith("diff --git") and \
+            self.origChangesetId and diffLine[2].startswith("a/") and \
+            diffLine[3].startswith("b/"):
+            # diff is in the following form:
+            #  "diff --git a/origfilename b/newfilename"
+            # possibly followed by:
+            #  "{copy|rename} from origfilename"
+            #  "{copy|rename} from newfilename"
+            self.isGitDiff = True
+            info['origInfo'] = info['origChangesetId' ] = self.origChangesetId
+            if not self.newChangesetId:
+                info['newInfo'] = "Uncommitted"
+            else:
+                info['newInfo'] = self.newChangesetId
+            info['origFile'] = diffLine[2][2:]
+            info['newFile'] = diffLine[3][2:]
+            linenum += 1
+
         return linenum
 
     def parse_diff_header(self, linenum, info):
-        if linenum <= len(self.lines) and \
-           self.lines[linenum].startswith("Binary file "):
-            info['binary'] = True
-            linenum += 1
+        if not self.isGitDiff:
+            if linenum <= len(self.lines) and \
+               self.lines[linenum].startswith("Binary file "):
+                info['binary'] = True
+                linenum += 1
 
+            if self._check_file_diff_start(linenum, info):
+                linenum += 2
+
+        else:
+            while linenum < len(self.lines):
+                if self._check_file_diff_start(linenum, info ):
+                    self.isGitDiff = False
+                    linenum += 2
+                    return linenum
+
+                line = self.lines[linenum]
+                if line.startswith("Binary file") or \
+                   line.startswith("GIT binary"):
+                    info['binary'] = True
+                    linenum += 1
+                elif line.startswith("copy") or \
+                   line.startswith("rename") or \
+                   line.startswith("new") or \
+                   line.startswith("old") or \
+                   line.startswith("deleted") or \
+                   line.startswith("index"):
+                    # Not interested, just pass over this one
+                    linenum += 1
+                else:
+                    break
+
+        return linenum
+
+    def _check_file_diff_start(self, linenum, info):
         if linenum + 1 < len(self.lines) and \
            (self.lines[linenum].startswith('--- ') and \
              self.lines[linenum + 1].startswith('+++ ')):
             # check if we're a new file
             if self.lines[linenum].split()[1] == "/dev/null":
                 info['origInfo'] = PRE_CREATION
-            linenum += 2;
-        return linenum
-
+            return True
+        else:
+            return False
 
 class HgWebClient(object):
     FULL_FILE_URL = '%(url)s/%(rawpath)s/%(revision)s/%(quoted_path)s'
