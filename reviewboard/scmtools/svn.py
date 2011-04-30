@@ -256,7 +256,8 @@ class SVNTool(SCMTool):
         return SVNDiffParser(data)
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         """
         Performs checks on a repository to test its validity.
 
@@ -270,7 +271,8 @@ class SVNTool(SCMTool):
         """
         import pysvn
 
-        super(SVNTool, cls).check_repository(path, username, password)
+        super(SVNTool, cls).check_repository(path, username, password,
+                                             local_site_name)
 
         cert_data = {}
 
@@ -330,7 +332,7 @@ class SVNTool(SCMTool):
             raise RepositoryNotFoundError()
 
     @classmethod
-    def accept_certificate(cls, path):
+    def accept_certificate(cls, path, local_site_name=None):
         """Accepts the certificate for the given repository path."""
         import pysvn
 

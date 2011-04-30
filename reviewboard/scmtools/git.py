@@ -96,7 +96,8 @@ class GitTool(SCMTool):
         return GitDiffParser(data)
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         """
         Performs checks on a repository to test its validity.
 
@@ -110,7 +111,8 @@ class GitTool(SCMTool):
         """
         client = GitClient(path)
 
-        super(GitTool, cls).check_repository(client.path, username, password)
+        super(GitTool, cls).check_repository(client.path, username, password,
+                                             local_site_name)
 
         if not client.is_valid_repository():
             raise RepositoryNotFoundError()
