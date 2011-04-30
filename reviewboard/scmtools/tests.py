@@ -240,7 +240,7 @@ class CVSTests(SCMTestCase):
         tool = repo.get_scmtool()
 
         self.assertEqual(tool.repopath, "/cvsroot/test")
-        self.assertEqual(tool.client.repository,
+        self.assertEqual(tool.client.cvsroot,
                          ":pserver:anonymous@example.com:123/cvsroot/test")
 
     def testPathWithoutPort(self):
@@ -252,7 +252,7 @@ class CVSTests(SCMTestCase):
         tool = repo.get_scmtool()
 
         self.assertEqual(tool.repopath, "/cvsroot/test")
-        self.assertEqual(tool.client.repository,
+        self.assertEqual(tool.client.cvsroot,
                          ":pserver:anonymous@example.com:/cvsroot/test")
 
     def testGetFile(self):

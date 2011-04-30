@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import subprocess
 import urllib2
 import urlparse
 
@@ -58,8 +57,15 @@ class GitTool(SCMTool):
     }
 
     def __init__(self, repository):
-        SCMTool.__init__(self, repository)
-        self.client = GitClient(repository.path, repository.raw_file_url)
+        super(GitTool, self).__init__(repository)
+
+        local_site_name = None
+
+        if repository.local_site:
+            local_site_name = repository.local_site.name
+
+        self.client = GitClient(repository.path, repository.raw_file_url,
+                                local_site_name)
 
     def get_file(self, path, revision=HEAD):
         if revision == PRE_CREATION:
@@ -109,7 +115,7 @@ class GitTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
-        client = GitClient(path)
+        client = GitClient(path, local_site_name=local_site_name)
 
         super(GitTool, cls).check_repository(client.path, username, password,
                                              local_site_name)
@@ -280,7 +286,7 @@ class GitClient(object):
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
 
-    def __init__(self, path, raw_file_url=None):
+    def __init__(self, path, raw_file_url=None, local_site_name=None):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
@@ -288,6 +294,7 @@ class GitClient(object):
 
         self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
+        self.local_site_name = local_site_name
         self.git_dir = None
 
         url_parts = urlparse.urlparse(self.path)
@@ -362,12 +369,8 @@ class GitClient(object):
 
     def _run_git(self, args):
         """Runs a git command, returning a subprocess.Popen."""
-        return subprocess.Popen(
-            ['git'] + args,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
+        return SCMTool.popen(['git'] + args,
+                             local_site_name=self.local_site_name)
 
     def _build_raw_url(self, path, revision):
         url = self.raw_file_url
