@@ -9,6 +9,7 @@ try:
 except ImportError:
     pass
 
+from django.conf import settings
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -74,14 +75,16 @@ class SVNTool(SCMTool):
         if self.repopath[-1] == '/':
             self.repopath = self.repopath[:-1]
 
-        SCMTool.__init__(self, repository)
+        super(SVNTool, self).__init__(repository)
 
-        import pysvn
-        self.client = pysvn.Client()
-        if repository.username:
-            self.client.set_default_username(str(repository.username))
-        if repository.password:
-            self.client.set_default_password(str(repository.password))
+        if repository.local_site:
+            local_site_name = repository.local_site.name
+        else:
+            local_site_name = None
+
+        self.config_dir, self.client = \
+            self.build_client(repository.username, repository.password,
+                              local_site_name)
 
         # svnlook uses 'rev 0', while svn diff uses 'revision 0'
         self.revision_re = re.compile("""
@@ -135,11 +138,11 @@ class SVNTool(SCMTool):
             if 'File not found' in stre or 'path not found' in stre:
                 raise FileNotFoundError(path, revision, str(e))
             elif 'callback_ssl_server_trust_prompt required' in stre:
-                home = os.path.expanduser('~')
                 raise SCMError(
                     'HTTPS certificate not accepted.  Please ensure that '
-                    'the proper certificate exists in %s/.subversion/auth '
-                    'for the user that reviewboard is running as.' % home)
+                    'the proper certificate exists in %s '
+                    'for the user that reviewboard is running as.'
+                    % os.path.join(self.config_dir, auth))
             elif 'callback_get_login required' in stre:
                 raise SCMError('Login to the SCM server failed.')
             else:
@@ -280,14 +283,9 @@ class SVNTool(SCMTool):
             cert_data.update(trust_dict)
             return False, 0, False
 
-        client = pysvn.Client()
+        config_dir, client = cls.build_client(username, password,
+                                              local_site_name)
         client.callback_ssl_server_trust_prompt = ssl_server_trust_prompt
-
-        if username:
-            client.set_default_username(str(username))
-
-        if password:
-            client.set_default_password(str(password))
 
         try:
             info = client.info2(path, recurse=False)
@@ -339,27 +337,66 @@ class SVNTool(SCMTool):
         def ssl_server_trust_prompt(trust_dict):
             return True, trust_dict['failures'], True
 
-        dirname = os.path.expanduser('~/.subversion')
-
-        if not os.path.exists(dirname):
-            # Make sure the .ssh directory exists.
-            try:
-                os.mkdir(dirname, 0700)
-            except OSError:
-                raise IOError(_("Unable to create directory %(dirname)s, "
-                                "which is needed for the Subversion "
-                                "configuration. Create this directory and set "
-                                "the web server's user as the the owner.") % {
-                    'dirname': dirname,
-                })
-
-        client = pysvn.Client()
+        client = cls.build_client(local_site_name=local_site_name)[1]
         client.callback_ssl_server_trust_prompt = ssl_server_trust_prompt
 
         try:
             client.info2(path, recurse=False)
         except ClientError:
             pass
+
+    @classmethod
+    def build_client(cls, username=None, password=None, local_site_name=None):
+        config_dir = os.path.join(os.path.expanduser('~'), '.subversion')
+
+        if local_site_name:
+            # LocalSites can have their own Subversion config, used for
+            # per-LocalSite SSH keys.
+            config_dir = cls._prepare_local_site_config_dir(local_site_name)
+        elif not os.path.exists(config_dir):
+            cls._create_subversion_dir(config_dir)
+
+        import pysvn
+        client = pysvn.Client(config_dir)
+
+        if username:
+            client.set_default_username(str(username))
+
+        if password:
+            client.set_default_password(str(password))
+
+        return config_dir, client
+
+    @classmethod
+    def _create_subversion_dir(cls, config_dir):
+        try:
+            os.mkdir(config_dir, 0700)
+        except OSError:
+            raise IOError(_("Unable to create directory %(dirname)s, "
+                            "which is needed for the Subversion "
+                            "configuration. Create this directory and set "
+                            "the web server's user as the the owner.") % {
+                'dirname': config_dir,
+            })
+
+    @classmethod
+    def _prepare_local_site_config_dir(cls, local_site_name):
+        config_dir = os.path.join(os.path.expanduser('~'), '.subversion')
+
+        if not os.path.exists(config_dir):
+            cls._create_subversion_dir(config_dir)
+
+        config_dir = os.path.join(config_dir, local_site_name)
+
+        if not os.path.exists(config_dir):
+            cls._create_subversion_dir(config_dir)
+
+            fp = open(os.path.join(config_dir, 'config'), 'w')
+            fp.write('[tunnels]\n')
+            fp.write('ssh = rbssh --rb-local-site=%s\n' % local_site_name)
+            fp.close()
+
+        return config_dir
 
 
 class SVNDiffParser(DiffParser):
