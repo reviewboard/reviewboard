@@ -1196,7 +1196,6 @@ class Comment(BaseComment):
     two filediffs. It can also have multiple replies.
     """
 
-
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
                                  related_name="comments")
     interfilediff = models.ForeignKey(FileDiff,

@@ -349,9 +349,6 @@ class BaseDiffCommentResource(BaseCommentResource):
         pass
 
 
-base_diff_comment_resource = BaseDiffCommentResource()
-
-
 class FileDiffCommentResource(BaseDiffCommentResource):
     """Provides information on comments made on a particular per-file diff.
 
@@ -518,7 +515,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
-            new_comment.issue_status = ""
+            new_comment.issue_status = None
 
         new_comment.save()
 
@@ -3474,7 +3471,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
-            new_comment.issue_status = ""
+            new_comment.issue_status = None
 
         new_comment.save()
 

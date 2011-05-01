@@ -41,6 +41,62 @@ var gEditorCompleteHandlers = {
 };
 
 
+var gCommentIssueManager = new function() {
+    var callbacks = {};
+    var comments = {};
+
+    this.setCommentState = function(review_id, comment_id,
+                                    comment_type, state) {
+        var comment = getComment(review_id, comment_id, comment_type);
+        requestState(comment, state);
+    }
+    this.registerCallback = function(comment_id, callback) {
+        if (!callbacks[comment_id])
+            callbacks[comment_id] = [];
+        callbacks[comment_id].push(callback);
+    }
+
+    function getComment(review_id, comment_id, comment_type) {
+        if (comments[comment_id])
+            return comments[comment_id];
+
+        var comment = null;
+        if (comment_type == "comment")
+            comment = gReviewRequest
+                .createReview(review_id)
+                .createDiffComment(comment_id, null, null,
+                                   null, null);
+        else if(comment_type == "screenshot_comment")
+            comment = gReviewRequest
+                .createReview(review_id)
+                .createScreenshotComment(comment_id, null, null,
+                                         null, null, null);
+        comments[comment_id] = comment;
+        return comment;
+    }
+
+    function requestState(comment, state) {
+        comment.ready(function() {
+            comment.issue_status = state;
+            comment.save({
+                success: function(rsp) {
+                    notifyCallbacks(comment.id, comment.issue_status);
+                    if (rsp.last_activity_time)
+                        registerForUpdates(rsp.last_activity_time);
+                }
+            });
+        });
+    }
+
+    function notifyCallbacks(comment_id, issue_status) {
+        for (var i = 0; i < callbacks[comment_id].length; i++) {
+            callbacks[comment_id][i](issue_status);
+        }
+    }
+
+}();
+
+
 /*
  * Converts an array of items to a list of hyperlinks.
  *
@@ -488,6 +544,7 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     var issue_drop_button = $(".issue-button.drop", this);
     self.review_id = review_id;
     self.comment_id = comment_id;
+    self.comment_type = comment_type;
     self.issue_status = issue_status;
     self.interactive = interactive;
 
@@ -503,44 +560,22 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
         issue_drop_button.attr("disabled", false);
     }
 
-    function getComment() {
-        if (comment_type == "comment")
-          return gReviewRequest
-                 .createReview(review_id)
-                 .createDiffComment(comment_id, null, null,
-                                    null, null);
-        if (comment_type == "screenshot_comment")
-           return gReviewRequest
-                  .createReview(review_id)
-                  .createScreenshotComment(comment_id, null, null,
-                                           null, null, null);
-    }
-
-    function requestState(state) {
-      disableButtons();
-      var comment = getComment();
-      comment.ready(function() {
-          comment.issue_status = state;
-          comment.save({
-              success: function(rsp) {
-                  enableButtons();
-                  self.enter_state(state);
-                  if (rsp.last_activity_time) {
-                    registerForUpdates(rsp.last_activity_time);
-                  }
-              }
-          });
-      });
+    function enterState(state) {
+        disableButtons();
+        gCommentIssueManager.setCommentState(self.review_id, self.comment_id,
+                                             self.comment_type, state);
     }
 
     issue_reopen_button.click(function() {
-        requestState(OPEN);
+        enterState(OPEN);
     });
+
     issue_resolve_button.click(function() {
-        requestState(RESOLVED);
+        enterState(RESOLVED);
     });
+
     issue_drop_button.click(function() {
-        requestState(DROPPED);
+        enterState(DROPPED);
     });
 
     self.enter_state = function(state) {
@@ -548,6 +583,7 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
         self.state.enter();
         if(self.interactive) {
             self.state.showButtons();
+            enableButtons();
         }
     }
 
@@ -605,6 +641,9 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     self.STATES[DROPPED] = dropped_state;
 
     self.enter_state(self.issue_status);
+    
+    gCommentIssueManager
+        .registerCallback(self.comment_id, self.enter_state);
 
     return self;
 }
@@ -616,7 +655,7 @@ $.fn.issueButtons = function() {
         .addClass('issue-state')
         .appendTo(self);
 
-    var buttons = $('<div/>')
+    var buttons = $('<div class="buttons"/>')
         .addClass('buttons')
         .appendTo(issue_indicator);
 
