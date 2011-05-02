@@ -67,8 +67,54 @@ class SCMTestCase(DjangoTestCase):
         if filename:
             self.assertNotEqual(tool.get_file(filename, HEAD), None)
 
+    def _test_ssh_with_site(self, repo_path, filename=None):
+        """Utility function to test SSH access with a LocalSite."""
+        self._check_can_test_ssh()
 
+        # Get the user's .ssh key, for use in the tests
+        user_key = sshutils.get_user_key()
+        self.assertNotEqual(user_key, None)
 
+        # Switch to a new SSH directory.
+        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
+        sshdir = os.path.join(self.tempdir, '.ssh')
+        self._set_home(self.tempdir)
+
+        self.assertEqual(sshdir, sshutils.get_ssh_dir())
+        self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_rsa')))
+        self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_dsa')))
+        self.assertEqual(sshutils.get_user_key(), None)
+
+        tool_class = self.repository.tool
+
+        # Make sure we aren't using the old SSH key. We want auth errors.
+        repo = Repository(name='SSH Test', path=repo_path, tool=tool_class)
+        tool = repo.get_scmtool()
+        self.assertRaises(sshutils.AuthenticationError,
+                          lambda: tool.check_repository(repo_path))
+
+        if filename:
+            self.assertRaises(SCMError,
+                              lambda: tool.get_file(filename, HEAD));
+
+        for local_site_name in ('site-1',):
+            local_site = LocalSite(name=local_site_name)
+            local_site.save()
+
+            repo = Repository(name='SSH Test', path=repo_path, tool=tool_class,
+                              local_site=local_site)
+            tool = repo.get_scmtool()
+
+            self.assertEqual(sshutils.get_ssh_dir(local_site_name),
+                             os.path.join(sshdir, local_site_name))
+            sshutils.import_user_key(user_key, local_site_name)
+            self.assertEqual(sshutils.get_user_key(local_site_name), user_key)
+
+            # Make sure we can verify the repository and access files.
+            tool.check_repository(repo_path, local_site_name=local_site_name)
+
+            if filename:
+                self.assertNotEqual(tool.get_file(filename, HEAD), None)
 
 
 class CoreTests(DjangoTestCase):
@@ -205,6 +251,10 @@ class BZRTests(SCMTestCase):
     def test_ssh(self):
         """Testing a SSH-backed bzr repository"""
         self._test_ssh(self.bzr_ssh_path, 'README')
+
+    def test_ssh_with_site(self):
+        """Testing a SSH-backed bzr repository with a LocalSite"""
+        self._test_ssh_with_site(self.bzr_ssh_path, 'README')
 
     def test_sftp(self):
         """Testing a SFTP-backed bzr repository"""
@@ -382,6 +432,10 @@ class CVSTests(SCMTestCase):
         """Testing a SSH-backed CVS repository"""
         self._test_ssh(self.cvs_ssh_path, 'CVSROOT/modules')
 
+    def test_ssh_with_site(self):
+        """Testing a SSH-backed CVS repository with a LocalSite"""
+        self._test_ssh_with_site(self.cvs_ssh_path, 'CVSROOT/modules')
+
 
 class SubversionTests(SCMTestCase):
     """Unit tests for subversion."""
@@ -406,6 +460,11 @@ class SubversionTests(SCMTestCase):
     def test_ssh(self):
         """Testing a SSH-backed Subversion repository"""
         self._test_ssh(self.svn_ssh_path, 'trunk/doc/misc-docs/Makefile')
+
+    def test_ssh_with_site(self):
+        """Testing a SSH-backed Subversion repository with a LocalSite"""
+        self._test_ssh_with_site(self.svn_ssh_path,
+                                 'trunk/doc/misc-docs/Makefile')
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -911,6 +970,10 @@ class GitTests(SCMTestCase):
     def test_ssh(self):
         """Testing a SSH-backed git repository"""
         self._test_ssh(self.git_ssh_path)
+
+    def test_ssh_with_site(self):
+        """Testing a SSH-backed git repository with a LocalSite"""
+        self._test_ssh_with_site(self.git_ssh_path)
 
     def testFilemodeDiff(self):
         """Testing parsing filemode changes Git diff"""
