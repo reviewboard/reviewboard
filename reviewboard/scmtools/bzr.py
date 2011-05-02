@@ -1,11 +1,14 @@
 import calendar
 from datetime import datetime, timedelta
+import re
 import time
 import urlparse
 
 try:
     from bzrlib import bzrdir, revisionspec
     from bzrlib.errors import BzrError, NotBranchError
+    from bzrlib.transport import register_lazy_transport
+    from bzrlib.transport.remote import RemoteSSHTransport
     from bzrlib.transport.ssh import SubprocessVendor, register_ssh_vendor, \
                                      register_default_ssh_vendor
     has_bzrlib = True
@@ -28,6 +31,10 @@ if has_bzrlib:
         """SSH vendor class that uses rbssh"""
         executable_path = 'rbssh'
 
+        def __init__(self, local_site_name=None, *args, **kwargs):
+            super(RBSSHVendor, self).__init__(*args, **kwargs)
+            self.local_site_name = local_site_name
+
         def _get_vendor_specific_argv(self, username, host, port,
                                       subsystem=None, command=None):
             args = [self.executable_path]
@@ -38,6 +45,9 @@ if has_bzrlib:
             if username is not None:
                 args.extend(['-l', username])
 
+            if self.local_site_name:
+                args.extend(['--rb-local-site', self.local_site_name])
+
             if subsystem is not None:
                 args.extend(['-s', host, subsystem])
             else:
@@ -45,10 +55,33 @@ if has_bzrlib:
 
             return args
 
+    class RBRemoteSSHTransport(RemoteSSHTransport):
+        LOCAL_SITE_PARAM_RE = \
+            re.compile('\?rb-local-site-name=([A-Za-z0-9\-_.]+)')
+
+        def __init__(self, base, *args, **kwargs):
+            m = self.LOCAL_SITE_PARAM_RE.search(base)
+
+            if m:
+                self.local_site_name = m.group(1)
+                base = base.replace(m.group(0), '')
+            else:
+                self.local_site_name = None
+
+            super(RBRemoteSSHTransport, self).__init__(base, *args, **kwargs)
+
+        def _build_medium(self):
+            client_medium, auth = \
+                super(RBRemoteSSHTransport, self)._build_medium()
+            client_medium._vendor = RBSSHVendor(self.local_site_name)
+            return client_medium, auth
+
     vendor = RBSSHVendor()
     register_ssh_vendor("rbssh", vendor)
     register_default_ssh_vendor(vendor)
     sshutils.register_rbssh('BZR_SSH')
+    register_lazy_transport('bzr+ssh://', 'reviewboard.scmtools.bzr',
+                            'RBRemoteSSHTransport')
 
 # BZRTool: An interface to Bazaar SCM Tool (http://bazaar-vcs.org/)
 
@@ -122,6 +155,10 @@ class BZRTool(SCMTool):
         if final_path.startswith("/"):
             final_path = "file://%s" % final_path
 
+        if self.repository.local_site and sshutils.is_ssh_uri(final_path):
+            final_path += '?rb-local-site-name=%s' % \
+                          self.repository.local_site.name
+
         return final_path
 
     def _revspec_from_revision(self, revision):
@@ -174,6 +211,9 @@ class BZRTool(SCMTool):
         """
         super(BZRTool, cls).check_repository(path, username, password,
                                              local_site_name)
+
+        if local_site_name and sshutils.is_ssh_uri(path):
+            path += '?rb-local-site-name=%s' % local_site_name
 
         try:
             tree, branch, relpath = \
