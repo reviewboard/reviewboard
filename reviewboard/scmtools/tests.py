@@ -27,17 +27,48 @@ from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 
 
-def _get_repo_test_info(repo_key):
-    prefix = 'TEST_REPO_%s' % repo_key
-    repo_path = getattr(settings, '%s_PATH' % prefix, None)
+class SCMTestCase(DjangoTestCase):
+    _can_test_ssh = None
 
-    if not repo_path:
-        raise nose.SkipTest('settings.%s_PATH is not defined' % prefix)
+    def setUp(self):
+        self.old_home = os.getenv('HOME')
+        self.tempdir = None
+        self.tool = None
+        os.environ['RBSSH_ALLOW_AGENT'] = '0'
 
-    username = getattr(settings, '%s_USER' % prefix, None)
-    password = getattr(settings, '%s_PASS' % prefix, None)
+    def tearDown(self):
+        self._set_home(self.old_home)
 
-    return repo_path, username, password
+        if self.tempdir:
+            shutil.rmtree(self.tempdir)
+
+    def _set_home(self, homedir):
+        os.environ['HOME'] = homedir
+
+    def _check_can_test_ssh(self):
+        if SCMTestCase._can_test_ssh is None:
+            SCMTestCase._can_test_ssh = \
+                sshutils.is_key_authorized(sshutils.get_user_key())
+
+        if not SCMTestCase._can_test_ssh:
+            raise nose.SkipTest(
+                "Cannot perform SSH access tests. The local user's SSH "
+                "public key must be in the %s file and SSH must be enabled."
+                % os.path.join(sshutils.get_ssh_dir(), 'authorized_keys'))
+
+    def _test_ssh(self, repo_path, filename=None):
+        self._check_can_test_ssh()
+
+        repo = Repository(name='SSH Test', path=repo_path,
+                          tool=self.repository.tool)
+        tool = repo.get_scmtool()
+        tool.check_repository(repo_path)
+
+        if filename:
+            self.assertNotEqual(tool.get_file(filename, HEAD), None)
+
+
+
 
 
 class CoreTests(DjangoTestCase):
@@ -56,15 +87,12 @@ class CoreTests(DjangoTestCase):
         self.assert_(len(cs.files) == 0)
 
 
-class SSHUtilsTests(DjangoTestCase):
+class SSHUtilsTests(SCMTestCase):
     """Unit tests for sshutils."""
     def setUp(self):
-        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
-        self.old_home = os.environ.get('HOME', None)
+        super(SSHUtilsTests, self).setUp()
 
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-        self._set_home(self.old_home)
+        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
 
     def test_get_ssh_dir_with_dot_ssh(self):
         """Testing sshutils.get_ssh_dir with ~/.ssh"""
@@ -151,33 +179,49 @@ class SSHUtilsTests(DjangoTestCase):
         """Testing sshutils.replace_host_key with localsite"""
         self.test_replace_host_key('site-1')
 
-    def _set_home(self, homedir):
-        os.environ['HOME'] = homedir
-        os.putenv('HOME', homedir)
 
-
-class BZRTests(DjangoTestCase):
+class BZRTests(SCMTestCase):
     """Unit tests for bzr."""
     fixtures = ['test_scmtools.json']
 
+    def setUp(self):
+        super(BZRTests, self).setUp()
+
+        self.bzr_repo_path = os.path.join(os.path.dirname(__file__),
+                                          'testdata', 'bzr_repo')
+        self.bzr_ssh_path = 'bzr+ssh://localhost/%s' % \
+                            self.bzr_repo_path.replace('\\', '/')
+        self.bzr_sftp_path = 'sftp://localhost/%s' % \
+                             self.bzr_repo_path.replace('\\', '/')
+        self.repository = Repository(name='Bazaar',
+                                     path='file://' + self.bzr_repo_path,
+                                     tool=Tool.objects.get(name='Bazaar'))
+
+        try:
+            self.tool = self.repository.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest('bzrlib is not installed')
+
     def test_ssh(self):
         """Testing a SSH-backed bzr repository"""
-        repo_path, username, password = _get_repo_test_info('BZR_SSH')
-        BZRTool.check_repository(repo_path, username, password)
+        self._test_ssh(self.bzr_ssh_path, 'README')
 
     def test_sftp(self):
         """Testing a SFTP-backed bzr repository"""
-        repo_path, username, password = _get_repo_test_info('BZR_SFTP')
-        BZRTool.check_repository(repo_path, username, password)
+        self._test_ssh(self.bzr_sftp_path, 'README')
 
 
-class CVSTests(DjangoTestCase):
+class CVSTests(SCMTestCase):
     """Unit tests for CVS."""
     fixtures = ['test_scmtools.json']
 
     def setUp(self):
+        super(CVSTests, self).setUp()
+
         self.cvs_repo_path = os.path.join(os.path.dirname(__file__),
                                           'testdata/cvs_repo')
+        self.cvs_ssh_path = ':ext:localhost:%s' % \
+                            self.cvs_repo_path.replace('\\', '/')
         self.repository = Repository(name='CVS',
                                      path=self.cvs_repo_path,
                                      tool=Tool.objects.get(name='CVS'))
@@ -336,19 +380,22 @@ class CVSTests(DjangoTestCase):
 
     def test_ssh(self):
         """Testing a SSH-backed CVS repository"""
-        repo_path, username, password = _get_repo_test_info('CVS_SSH')
-        self.tool.check_repository(repo_path, username, password)
+        self._test_ssh(self.cvs_ssh_path, 'CVSROOT/modules')
 
 
-class SubversionTests(DjangoTestCase):
+class SubversionTests(SCMTestCase):
     """Unit tests for subversion."""
     fixtures = ['test_scmtools.json']
 
     def setUp(self):
-        svn_repo_path = os.path.join(os.path.dirname(__file__),
-                                     'testdata/svn_repo')
+        super(SubversionTests, self).setUp()
+
+        self.svn_repo_path = os.path.join(os.path.dirname(__file__),
+                                          'testdata/svn_repo')
+        self.svn_ssh_path = 'svn+ssh://localhost/%s' % \
+                            self.svn_repo_path.replace('\\', '/')
         self.repository = Repository(name='Subversion SVN',
-                                     path='file://' + svn_repo_path,
+                                     path='file://' + self.svn_repo_path,
                                      tool=Tool.objects.get(name='Subversion'))
 
         try:
@@ -358,8 +405,7 @@ class SubversionTests(DjangoTestCase):
 
     def test_ssh(self):
         """Testing a SSH-backed Subversion repository"""
-        repo_path, username, password = _get_repo_test_info('SVN_SSH')
-        self.tool.check_repository(repo_path, username, password)
+        self._test_ssh(self.svn_ssh_path, 'trunk/doc/misc-docs/Makefile')
 
     def testGetFile(self):
         """Testing SVNTool.get_file"""
@@ -476,7 +522,7 @@ class SubversionTests(DjangoTestCase):
         patch(diff, file, filename)
 
 
-class PerforceTests(DjangoTestCase):
+class PerforceTests(SCMTestCase):
     """Unit tests for perforce.
 
        This uses the open server at public.perforce.com to test various
@@ -486,6 +532,8 @@ class PerforceTests(DjangoTestCase):
     fixtures = ['test_scmtools.json']
 
     def setUp(self):
+        super(PerforceTests, self).setUp()
+
         self.repository = Repository(name='Perforce.com',
                                      path='public.perforce.com:1666',
                                      tool=Tool.objects.get(name='Perforce'))
@@ -610,11 +658,13 @@ class PerforceTests(DjangoTestCase):
         self.assertEqual(files[1].data, diff2_text)
 
 
-class VMWareTests(DjangoTestCase):
+class VMWareTests(SCMTestCase):
     """Tests for VMware specific code"""
     fixtures = ['vmware.json', 'test_scmtools.json']
 
     def setUp(self):
+        super(VMWareTests, self).setUp()
+
         self.repository = Repository(name='VMware Test',
                                      path='perforce.eng.vmware.com:1666',
                                      tool=Tool.objects.get(name='VMware Perforce'))
@@ -691,11 +741,13 @@ class VMWareTests(DjangoTestCase):
 #        self.assertEqual(changeset.branch, 'bfg-main')
 
 
-class MercurialTests(DjangoTestCase):
+class MercurialTests(SCMTestCase):
     """Unit tests for mercurial."""
     fixtures = ['hg.json', 'test_scmtools.json']
 
     def setUp(self):
+        super(MercurialTests, self).setUp()
+
         hg_repo_path = os.path.join(os.path.dirname(__file__),
                                     'testdata/hg_repo.bundle')
         self.repository = Repository(name='Test HG',
@@ -816,22 +868,26 @@ class MercurialTests(DjangoTestCase):
                          ['diff_path', 'parent_diff_path'])
 
 
-class GitTests(DjangoTestCase):
+class GitTests(SCMTestCase):
     """Unit tests for Git."""
     fixtures = ['test_scmtools.json']
 
     def setUp(self):
+        super(GitTests, self).setUp()
+
         tool = Tool.objects.get(name='Git')
 
-        local_repo_path = os.path.join(os.path.dirname(__file__),
-                                       'testdata', 'git_repo')
+        self.local_repo_path = os.path.join(os.path.dirname(__file__),
+                                           'testdata', 'git_repo')
+        self.git_ssh_path = 'localhost:%s' % \
+                            self.local_repo_path.replace('\\', '/')
         remote_repo_path = 'git@github.com:reviewboard/reviewboard.git'
         remote_repo_raw_url = 'http://github.com/api/v2/yaml/blob/show/' \
                               'reviewboard/reviewboard/<revision>'
 
 
         self.repository = Repository(name='Git test repo',
-                                     path=local_repo_path,
+                                     path=self.local_repo_path,
                                      tool=tool)
         self.remote_repository = Repository(name='Remote Git test repo',
                                             path=remote_repo_path,
@@ -846,7 +902,7 @@ class GitTests(DjangoTestCase):
 
     def _readFixture(self, filename):
         return open( \
-            os.path.join(os.path.dirname(__file__), 'testdata/%s' % filename), \
+            os.path.join(os.path.dirname(__file__), 'testdata', filename), \
             'r').read()
 
     def _getFileInDiff(self, diff, filenum=0):
@@ -854,8 +910,7 @@ class GitTests(DjangoTestCase):
 
     def test_ssh(self):
         """Testing a SSH-backed git repository"""
-        repo_path, username, password = _get_repo_test_info('GIT_SSH')
-        self.tool.check_repository(repo_path, username, password)
+        self._test_ssh(self.git_ssh_path)
 
     def testFilemodeDiff(self):
         """Testing parsing filemode changes Git diff"""

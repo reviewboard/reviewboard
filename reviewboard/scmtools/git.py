@@ -429,7 +429,7 @@ class GitClient(object):
             if not path.startswith('/'):
                 path = '/' + path
 
-            return 'ssh://%s%s%s' % (m.group('username'),
+            return 'ssh://%s%s%s' % (m.group('username') or '',
                                      m.group('hostname'),
                                      path)
 

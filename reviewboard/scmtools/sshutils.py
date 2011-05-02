@@ -139,6 +139,32 @@ def get_public_key(key):
     return public_key
 
 
+def is_key_authorized(key):
+    """Returns whether or not a public key is currently authorized."""
+    authorized = False
+    public_key = key.get_base64()
+
+    try:
+        filename = os.path.join(get_ssh_dir(), 'authorized_keys')
+        fp = open(filename, 'r')
+
+        for line in fp.xreadlines():
+            try:
+                authorized_key = line.split()[1]
+            except ValueError:
+                continue
+
+            if authorized_key == public_key:
+                authorized = True
+                break
+
+        fp.close()
+    except IOError, e:
+        pass
+
+    return authorized
+
+
 def ensure_ssh_dir(local_site_name=None):
     """Ensures the existance of the .ssh directory.
 

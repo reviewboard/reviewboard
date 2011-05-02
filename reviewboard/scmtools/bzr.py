@@ -13,7 +13,7 @@ except ImportError:
     has_bzrlib = False
 
 from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.core import SCMTool, PRE_CREATION
+from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import RepositoryNotFoundError, SCMError
 
 
@@ -130,8 +130,9 @@ class BZRTool(SCMTool):
         In addition to the standard date format from "bzr diff", this
         function supports the revid: syntax provided by the bzr diff-revid plugin.
         """
-
-        if revision.startswith('revid:'):
+        if revision == HEAD:
+            revspec = 'last:1'
+        elif revision.startswith('revid:'):
             revspec = revision
         else:
             revspec = 'date:' + str(self._revision_timestamp_to_local(revision))
