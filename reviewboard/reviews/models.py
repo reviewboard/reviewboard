@@ -1273,7 +1273,6 @@ class ScreenshotComment(BaseComment):
     """
     A comment on a screenshot.
     """
-
     screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
                                    related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,

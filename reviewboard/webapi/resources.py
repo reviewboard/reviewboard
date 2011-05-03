@@ -218,9 +218,11 @@ class BaseCommentResource(WebAPIResource):
         }
 
     def should_update_issue_status(self, comment, **kwargs):
-        return comment.issue_opened and \
-            BaseComment.issue_string_to_status(kwargs.get('issue_status')) \
-                != comment.issue_status
+        return comment.review.get().public and (comment.issue_opened or \
+            kwargs.get('issue_opened')) and \
+            BaseComment \
+            .issue_string_to_status(kwargs.get('issue_status', None)) \
+            != comment.issue_status
 
     def serialize_issue_status_field(self, obj):
         return BaseComment.issue_status_to_string(obj.issue_status)
@@ -515,7 +517,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
-            new_comment.issue_status = None
+            new_comment.issue_status = ""
 
         new_comment.save()
 
@@ -3306,10 +3308,6 @@ class BaseScreenshotCommentResource(BaseCommentResource):
             'description': 'The height of the comment region on the '
                            'screenshot.',
         },
-        'issue_opened': {
-            'type': bool,
-            'description': 'Whether or not the comment opens an issue.',
-        },
     }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
@@ -3429,11 +3427,13 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': str,
                 'description': 'The comment text.',
             },
+        },
+        optional = {
             'issue_opened': {
                 'type': bool,
                 'description': 'Whether or not the comment opens an issue.',
             },
-        },
+        }
     )
     def create(self, request, screenshot_id, x, y, w, h, text, issue_opened,
                *args, **kwargs):
@@ -3471,7 +3471,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
-            new_comment.issue_status = None
+            new_comment.issue_status = ""
 
         new_comment.save()
 

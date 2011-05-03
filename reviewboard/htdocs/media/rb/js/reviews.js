@@ -41,21 +41,43 @@ var gEditorCompleteHandlers = {
 };
 
 
+/* gCommentIssueManager takes care of setting the state of a particular
+ * comment issue, and also takes care of notifying callbacks whenever
+ * the state is successfully changed.
+ */
 var gCommentIssueManager = new function() {
     var callbacks = {};
     var comments = {};
 
+    /* setCommentState - set the state of comment issue
+     * @param review_id the id for the review that the comment belongs to
+     * @param comment_id the id of the comment with the issue
+     * @param comment_type the type of comment, either "comment" or
+     *                     "screenshot_comment"
+     * @param state the state to set the comment issue to - either
+     *              "open", "resolved", or "dropped"
+     */
     this.setCommentState = function(review_id, comment_id,
                                     comment_type, state) {
         var comment = getComment(review_id, comment_id, comment_type);
         requestState(comment, state);
     }
+
+    /* registerCallback - allows clients to register callbacks to be
+     * notified when a particular comment state is updated.
+     * @param comment_id the id of the comment to be notified about
+     * @param callback a function of the form:
+     *                 function(issue_state) {}
+     */
     this.registerCallback = function(comment_id, callback) {
         if (!callbacks[comment_id])
             callbacks[comment_id] = [];
         callbacks[comment_id].push(callback);
     }
 
+    // A helper function to either generate the appropriate
+    // comment object based on comment_type, or to grab the
+    // comment from a cache if it's been generated before.
     function getComment(review_id, comment_id, comment_type) {
         if (comments[comment_id])
             return comments[comment_id];
@@ -75,12 +97,17 @@ var gCommentIssueManager = new function() {
         return comment;
     }
 
+    // Helper function to set the state of a comment
     function requestState(comment, state) {
         comment.ready(function() {
             comment.issue_status = state;
             comment.save({
                 success: function(rsp) {
                     notifyCallbacks(comment.id, comment.issue_status);
+                    // We don't want the current user to receive the
+                    // notification that the review request has been
+                    // updated, since they themselves updated the
+                    // issue status.
                     if (rsp.last_activity_time)
                         registerForUpdates(rsp.last_activity_time);
                 }
@@ -88,12 +115,13 @@ var gCommentIssueManager = new function() {
         });
     }
 
+    // Helper function that notifies all callbacks registered for
+    // a particular comment
     function notifyCallbacks(comment_id, issue_status) {
         for (var i = 0; i < callbacks[comment_id].length; i++) {
             callbacks[comment_id][i](issue_status);
         }
     }
-
 }();
 
 
@@ -532,6 +560,17 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 };
 
 
+/* Handles a comment issue in either the review details page, or the
+ * inline comment viewer.
+ * @param review_id the id of the review that the comment belongs to
+ * @param comment_id the id of the comment with the issue
+ * @param comment_type dictates the type of comment - either
+ *                     "comment" or "screenshot_comment"
+ * @param issue_status the initial status of the comment - either
+ *                     "open", "resolved" or "dropped"
+ * @param interactive true if the user should be shown buttons to
+ *                    manipulate the comment issue - otherwise false.
+ */
 $.fn.commentIssue = function(review_id, comment_id, comment_type,
                              issue_status, interactive) {
     var self = this;
@@ -640,8 +679,10 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     self.STATES[RESOLVED] = resolved_state;
     self.STATES[DROPPED] = dropped_state;
 
+    // Set the comment to the initial state
     self.enter_state(self.issue_status);
-    
+
+    // Register to watch updates on the comment issue state 
     gCommentIssueManager
         .registerCallback(self.comment_id, self.enter_state);
 
@@ -649,6 +690,9 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 }
 
 
+/* Wraps an inline comment so that it can be used by
+ * commentIssue.
+ */
 $.fn.issueButtons = function() {
     var self = this;
     var issue_indicator = $('<div/>')
@@ -659,17 +703,18 @@ $.fn.issueButtons = function() {
         .addClass('buttons')
         .appendTo(issue_indicator);
 
-    var fixed_button = $('<input type="button" class="issue-button resolve"/>')
-        .attr("value", "Fixed")
-        .appendTo(buttons);
+    var resolve_string = "Fixed";
+    var drop_string = "Drop";
+    var reopen_string = "Re-open";
 
-    var drop_button = $('<input type="button" class="issue-button drop"/>')
-        .attr("value", "Drop")
-        .appendTo(buttons);
+    var button_string = '<input type="button" class="issue-button resolve"'
+                      + 'value="' + resolve_string + '"/>'
+                      + '<input type="button" class="issue-button drop"'
+                      + 'value="' + drop_string + '"/>'
+                      + '<input type="button" class="issue-button reopen"'
+                      + 'value="' + reopen_string + '"/>';
 
-    var reopen_button = $('<input type="button" class="issue-button reopen"/>')
-        .attr("value", "Reopen")
-        .appendTo(buttons);
+    buttons.append(button_string);
 
     return this;
 }

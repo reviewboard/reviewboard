@@ -66,7 +66,8 @@ $.extend(RB.DiffComment.prototype, {
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
-                    data.issue_status = self.issue_status;
+                    if (self.review.public)
+                        data.issue_status = self.issue_status;
                 } else {
                     data.filediff_id = self.filediff.id;
                     url = self.review.links.diff_comments.href;
@@ -653,6 +654,7 @@ RB.Review = function(review_request, id) {
     this.body_bottom = null;
     this.url = null;
     this.loaded = false;
+    this.public = null;
 
     return this;
 }
@@ -802,6 +804,7 @@ $.extend(RB.Review.prototype, {
         this.links = rsp.review.links;
         this.url = rsp.review.links.self.href;
         this.loaded = true;
+        this.public = rsp.review.public;
     },
 
     _apiCall: function(options) {
@@ -1268,7 +1271,8 @@ $.extend(RB.ScreenshotComment.prototype, {
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
-                    data.issue_status = self.issue_status;
+                    if (self.review.public)
+                        data.issue_status = self.issue_status;
                 } else {
                     data.screenshot_id = self.screenshot_id;
                     url = self.review.links.screenshot_comments.href;
