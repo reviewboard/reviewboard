@@ -314,6 +314,7 @@
 
 .box .collapse-button {
   background: url('../images/collapse.png') no-repeat;
+  cursor: pointer;
   float: left;
   height: 15px;
   padding-right: 5px;

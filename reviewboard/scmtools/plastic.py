@@ -143,7 +143,8 @@ class PlasticTool(SCMTool):
             raise RepositoryNotFoundError()
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         m = cls.REP_RE.match(path)
 
         if not m:

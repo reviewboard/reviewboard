@@ -2198,7 +2198,7 @@ class RepositoryResource(WebAPIResource):
 
         error_result = self._check_repository(scmtool.get_scmtool_class(),
                                               path, username, password,
-                                              trust_host)
+                                              local_site, trust_host)
 
         if error_result is not None:
             return error_result
@@ -2324,6 +2324,7 @@ class RepositoryResource(WebAPIResource):
                 repository.path,
                 repository.username,
                 repository.password,
+                repository.local_site,
                 trust_host)
 
             if error_result is not None:
@@ -2363,12 +2364,18 @@ class RepositoryResource(WebAPIResource):
         return 204, {}
 
     def _check_repository(self, scmtool_class, path, username, password,
-                          trust_host):
+                          local_site, trust_host):
+        if local_site:
+            local_site_name = local_site.name
+        else:
+            local_site_name = None
+
         while 1:
             # Keep doing this until we have an error we don't want
             # to ignore, or it's successful.
             try:
-                scmtool_class.check_repository(path, username, password)
+                scmtool_class.check_repository(path, username, password,
+                                               local_site_name)
                 return None
             except RepositoryNotFoundError:
                 return MISSING_REPOSITORY
@@ -2377,7 +2384,8 @@ class RepositoryResource(WebAPIResource):
                     try:
                         sshutils.replace_host_key(e.hostname,
                                                   e.raw_expected_key,
-                                                  e.raw_key)
+                                                  e.raw_key,
+                                                  local_site_name)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2391,7 +2399,8 @@ class RepositoryResource(WebAPIResource):
             except UnknownHostKeyError, e:
                 if trust_host:
                     try:
-                        sshutils.add_host_key(e.hostname, e.raw_key)
+                        sshutils.add_host_key(e.hostname, e.raw_key,
+                                              local_site_name)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2404,7 +2413,7 @@ class RepositoryResource(WebAPIResource):
             except UnverifiedCertificateError, e:
                 if trust_host:
                     try:
-                        scmtool_class.accept_certificate(path)
+                        scmtool_class.accept_certificate(path, local_site_name)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),

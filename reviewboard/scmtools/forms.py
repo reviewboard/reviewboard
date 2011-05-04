@@ -295,7 +295,15 @@ class RepositoryForm(forms.ModelForm):
         self.certerror = None
         self.userkeyerror = None
 
-        self.public_key = sshutils.get_public_key(sshutils.get_user_key())
+        local_site_name = None
+
+        if self.instance and self.instance.local_site:
+            local_site_name = self.instance.local_site.name
+        elif self.fields['local_site'].initial:
+            local_site_name = self.fields['local_site'].initial.name
+
+        self.public_key = \
+            sshutils.get_public_key(sshutils.get_user_key(local_site_name))
 
         self._populate_hosting_service_fields()
         self._populate_bug_tracker_fields()
@@ -593,11 +601,21 @@ class RepositoryForm(forms.ModelForm):
         username = self.cleaned_data['username']
         password = self.cleaned_data['password']
 
+        local_site_name = None
+
+        if self.cleaned_data['local_site']:
+            try:
+                local_site = self.cleaned_data['local_site']
+                local_site_name = local_site.name
+            except LocalSite.DoesNotExist, e:
+                raise forms.ValidationError(e)
+
         while 1:
             # Keep doing this until we have an error we don't want
             # to ignore, or it's successful.
             try:
-                scmtool_class.check_repository(path, username, password)
+                scmtool_class.check_repository(path, username, password,
+                                               local_site_name)
 
                 # Success.
                 break
@@ -606,7 +624,8 @@ class RepositoryForm(forms.ModelForm):
                     try:
                         sshutils.replace_host_key(e.hostname,
                                                   e.raw_expected_key,
-                                                  e.raw_key)
+                                                  e.raw_key,
+                                                  local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -615,7 +634,8 @@ class RepositoryForm(forms.ModelForm):
             except UnknownHostKeyError, e:
                 if self.cleaned_data['trust_host']:
                     try:
-                        sshutils.add_host_key(e.hostname, e.raw_key)
+                        sshutils.add_host_key(e.hostname, e.raw_key,
+                                              local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -624,7 +644,7 @@ class RepositoryForm(forms.ModelForm):
             except UnverifiedCertificateError, e:
                 if self.cleaned_data['trust_host']:
                     try:
-                        scmtool_class.accept_certificate(path)
+                        scmtool_class.accept_certificate(path, local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
