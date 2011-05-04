@@ -158,7 +158,8 @@ class BZRTool(SCMTool):
         return datetime.fromtimestamp(calendar.timegm(timestamp.timetuple()))
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         """
         Performs checks on a repository to test its validity.
 
@@ -170,7 +171,8 @@ class BZRTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
-        super(BZRTool, cls).check_repository(path, username, password)
+        super(BZRTool, cls).check_repository(path, username, password,
+                                             local_site_name)
 
         try:
             tree, branch, relpath = \

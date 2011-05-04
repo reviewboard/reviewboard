@@ -469,7 +469,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         expected_key = key2
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise BadHostKeyError(hostname, key, expected_key)
 
         SVNTool.check_repository = _check_repository
@@ -492,14 +492,14 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         expected_key = key2
         saw = {'replace_host_key': False}
 
-        def _replace_host_key(_hostname, _expected_key, _key):
+        def _replace_host_key(_hostname, _expected_key, _key, local_site_name):
             self.assertEqual(hostname, _hostname)
             self.assertEqual(expected_key, _expected_key)
             self.assertEqual(key, _key)
             saw['replace_host_key'] = True
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             if not saw['replace_host_key']:
                 raise BadHostKeyError(hostname, key, expected_key)
 
@@ -519,7 +519,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         key = key1
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise UnknownHostKeyError(hostname, key)
 
         SVNTool.check_repository = _check_repository
@@ -539,13 +539,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         key = key1
         saw = {'add_host_key': False}
 
-        def _add_host_key(_hostname, _key):
+        def _add_host_key(_hostname, _key, local_site_name):
             self.assertEqual(hostname, _hostname)
             self.assertEqual(key, _key)
             saw['add_host_key'] = True
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             if not saw['add_host_key']:
                 raise UnknownHostKeyError(hostname, key)
 
@@ -572,7 +572,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         cert = Certificate()
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise UnverifiedCertificateError(cert)
 
         SVNTool.check_repository = _check_repository
@@ -603,12 +603,12 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         saw = {'accept_certificate': False}
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             if not saw['accept_certificate']:
                 raise UnverifiedCertificateError(cert)
 
         @classmethod
-        def _accept_certificate(cls, path):
+        def _accept_certificate(cls, path, local_site_name=None):
             saw['accept_certificate'] = True
 
         SVNTool.check_repository = _check_repository
@@ -623,7 +623,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def test_post_repository_with_missing_user_key(self):
         """Testing the POST repositories/ API with Missing User Key error"""
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise AuthenticationError(['publickey'], user_key=None)
 
         SVNTool.check_repository = _check_repository
@@ -636,7 +636,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def test_post_repository_with_authentication_error(self):
         """Testing the POST repositories/ API with Authentication Error"""
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise AuthenticationError([])
 
         SVNTool.check_repository = _check_repository
