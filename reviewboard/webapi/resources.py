@@ -512,7 +512,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                                  text=text,
                                  first_line=first_line,
                                  num_lines=num_lines,
-                                 issue_opened=issue_opened)
+                                 issue_opened=bool(issue_opened))
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -3435,15 +3435,14 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             },
         }
     )
-    def create(self, request, screenshot_id, x, y, w, h, text, issue_opened,
-               *args, **kwargs):
+    def create(self, request, screenshot_id, x, y, w, h, text,
+               issue_opened=False, *args, **kwargs):
         """Creates a screenshot comment on a review.
 
         This will create a new comment on a screenshot as part of a review.
         The comment contains text and dimensions for the area being commented
         on.
         """
-
         try:
             review_request = \
                 review_request_resource.get_object(request, *args, **kwargs)
@@ -3466,7 +3465,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
 
         new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
-                                 text=text, issue_opened=issue_opened)
+                                 text=text, issue_opened=bool(issue_opened))
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -3529,7 +3528,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             screenshot_comment = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
-
         # Determine whether or not we're updating the issue status.
         # If so, delegate to the base_comment_resource.
         if base_comment_resource.should_update_issue_status(screenshot_comment,
