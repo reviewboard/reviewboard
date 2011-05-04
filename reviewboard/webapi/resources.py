@@ -38,10 +38,10 @@ from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
-from reviewboard.reviews.models import BaseComment, Comment, DiffSet, FileDiff, Group, \
-                                       Repository, ReviewRequest, \
-                                       ReviewRequestDraft, Review, \
-                                       ScreenshotComment, Screenshot
+from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
+                                       FileDiff, Group, Repository, \
+                                       ReviewRequest, ReviewRequestDraft, \
+                                       Review, ScreenshotComment, Screenshot
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, \
@@ -173,8 +173,11 @@ class WebAPIResource(DjbletsWebAPIResource):
 
 
 class BaseCommentResource(WebAPIResource):
+    """Base class for comment resources.
 
-    fields ={
+    Provides common fields and functionality for all comment resources.
+    """
+    fields = {
         'issue_opened': {
             'type': bool,
             'description': 'Whether or not a comment opens an issue.',
@@ -184,7 +187,12 @@ class BaseCommentResource(WebAPIResource):
             'description': 'The status of an issue.',
         },
     }
+
     def update_issue_status(self, request, comment_resource, *args, **kwargs):
+        """Updates the issue status for a comment.
+
+        Handles all of the logic for updating an issue status.
+        """
         try:
             review_request = review_request_resource.get_object(request, *args,
                                                                 **kwargs)
@@ -202,7 +210,7 @@ class BaseCommentResource(WebAPIResource):
         # We can only update the status of an issue if an issue has been
         # opened
         if not comment.issue_opened:
-           raise PermissionDenied
+            raise PermissionDenied
 
         # We can only update the status of the issue
         issue_status = \
@@ -218,6 +226,12 @@ class BaseCommentResource(WebAPIResource):
         }
 
     def should_update_issue_status(self, comment, **kwargs):
+        """ Returns true if the comment should have its issue status updated.
+
+        Determines if a comment should have its issue status updated based
+        on the current state of the comment, the review, and the arguments
+        passed in the request.
+        """
         return comment.review.get().public and (comment.issue_opened or \
             kwargs.get('issue_opened')) and \
             BaseComment \
@@ -569,9 +583,10 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         # Determine whether or not we're updating the issue status.
         # If so, delegate to the base_comment_resource.
-        if base_comment_resource.should_update_issue_status(diff_comment, **kwargs):
-            return base_comment_resource.update_issue_status(request, self, *args,
-                                                     **kwargs)
+        if base_comment_resource.should_update_issue_status(diff_comment,
+                                                            **kwargs):
+            return base_comment_resource.update_issue_status(request, self,
+                                                             *args, **kwargs)
 
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
@@ -3463,7 +3478,6 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 }
             }
 
-
         new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
                                  text=text, issue_opened=bool(issue_opened))
 
@@ -3528,12 +3542,13 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             screenshot_comment = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
+
         # Determine whether or not we're updating the issue status.
         # If so, delegate to the base_comment_resource.
         if base_comment_resource.should_update_issue_status(screenshot_comment,
-                                                       **kwargs):
-            return base_comment_resource.update_issue_status(request, self, *args,
-                                                        **kwargs)
+                                                            **kwargs):
+            return base_comment_resource.update_issue_status(request, self,
+                                                             *args, **kwargs)
 
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)

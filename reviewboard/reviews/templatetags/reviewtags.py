@@ -11,8 +11,8 @@ from djblets.util.templatetags.djblets_utils import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import BaseComment, Comment, Group, ReviewRequest, \
-                                       ScreenshotComment
+from reviewboard.reviews.models import BaseComment, Comment, Group, \
+                                       ReviewRequest, ScreenshotComment
 
 
 register = template.Library()
@@ -141,7 +141,8 @@ def commentcounts(context, filediff, interfilediff=None):
                 'review_id': review.id,
                 'review_request_id': review.review_request.id,
                 'issue_opened': comment.issue_opened,
-                'issue_status': BaseComment.issue_status_to_string(comment.issue_status),
+                'issue_status': BaseComment
+                                .issue_status_to_string(comment.issue_status),
             })
 
     comments_array = []

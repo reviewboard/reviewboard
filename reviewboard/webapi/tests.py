@@ -2816,6 +2816,7 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         self._postNewDiffComment(review_request, review_id, diff_comment_text,
                                  issue_opened=True)
+
         review = Review.objects.get(pk=review_id)
 
         rsp = self.apiGet(self.get_list_url(review))
@@ -2845,8 +2846,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_id = rsp['review']['id']
         review = Review.objects.get(pk=review_id)
 
-        rsp = self._postNewDiffComment(review_request, review_id, diff_comment_text,
-                                       issue_opened=True)
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       diff_comment_text, issue_opened=True)
         comment_id = rsp['diff_comment']['id']
 
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
@@ -2875,8 +2876,8 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         review_id = rsp['review']['id']
         review = Review.objects.get(pk=review_id)
 
-        rsp = self._postNewDiffComment(review_request, review_id, diff_comment_text,
-                                       issue_opened=True)
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       diff_comment_text, issue_opened=True)
         comment_id = rsp['diff_comment']['id']
 
         # First, let's ensure that the user that has created the comment
@@ -4766,8 +4767,8 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review_id = rsp['review']['id']
 
         rsp = self._postNewScreenshotComment(review_request, review_id,
-                                             screenshot, comment_text, x, y, w, h,
-                                             issue_opened=True)
+                                             screenshot, comment_text, x,
+                                             y, w, h, issue_opened=True)
 
         review = Review.objects.get(pk=review_id)
 
@@ -4800,8 +4801,8 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review = Review.objects.get(pk=review_id)
 
         rsp = self._postNewScreenshotComment(review_request, review_id,
-                                             screenshot, comment_text, x, y, w, h,
-                                             issue_opened=True)
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
 
         comment_id = rsp['screenshot_comment']['id']
 
@@ -4833,8 +4834,9 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review = Review.objects.get(pk=review_id)
 
         rsp = self._postNewScreenshotComment(review_request, review_id,
-                                             screenshot, comment_text, x, y, w, h,
-                                             issue_opened=True)
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
         comment_id = rsp['screenshot_comment']['id']
 
         # First, let's ensure that the user that has created the comment
