@@ -552,7 +552,7 @@ def render_star(user, obj):
                         takes_context=True)
 def comment_issue(context, review_request, comment, comment_type):
     """
-    TODO: Document
+    Renders the code responsible for handling comment issue statuses.
     """
 
     issue_status = BaseComment.issue_status_to_string(comment.issue_status)

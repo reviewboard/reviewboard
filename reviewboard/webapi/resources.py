@@ -517,7 +517,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
-            new_comment.issue_status = ""
+            new_comment.issue_status = None
 
         new_comment.save()
 
@@ -3470,7 +3470,7 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
         else:
-            new_comment.issue_status = ""
+            new_comment.issue_status = None
 
         new_comment.save()
 
