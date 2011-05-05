@@ -52,7 +52,7 @@ $.extend(RB.DiffComment.prototype, {
 
         self.ready(function() {
             self.review.ensureCreated(function() {
-                var type;
+                var type = "POST";
                 var url;
                 var data = {
                     text: self.text,
@@ -68,7 +68,7 @@ $.extend(RB.DiffComment.prototype, {
                     url = self.review.links.diff_comments.href;
 
                     if (self.interfilediff) {
-                        data.interfilediff_id = self.interfilediff_id;
+                        data.interfilediff_id = self.interfilediff.id;
                     }
                 }
 
