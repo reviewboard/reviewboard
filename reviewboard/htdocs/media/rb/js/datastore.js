@@ -154,7 +154,7 @@ $.extend(RB.DiffComment.prototype, {
         this.id = rsp.diff_comment.id;
         this.text = rsp.diff_comment.text;
         this.beginLineNum = rsp.diff_comment.first_line;
-        this.endLineNum = rsp.diff_comment.num_lines + this.beginLineNum;
+        this.endLineNum = rsp.diff_comment.num_lines + this.beginLineNum - 1;
         this.links = rsp.diff_comment.links;
         this.url = rsp.diff_comment.links.self.href;
         this.loaded = true;
