@@ -409,12 +409,6 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.filediff.diffset.history.review_request, request,
-            *args, **kwargs)
-
 filediff_comment_resource = FileDiffCommentResource()
 
 
@@ -803,12 +797,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         the second revision in the range using ``?interdiff-revision=``.
         """
         pass
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_reply_resource.get_href(
-            obj.review.get(), request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 review_reply_diff_comment_resource = ReviewReplyDiffCommentResource()
 
@@ -2593,7 +2581,8 @@ class BaseScreenshotResource(WebAPIResource):
 
     uri_object_key = 'screenshot_id'
 
-    def get_queryset(self, request, review_request_id, is_list=False, *args, **kwargs):
+    def get_queryset(self, request, review_request_id, is_list=False,
+                     *args, **kwargs):
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
 
@@ -2624,6 +2613,9 @@ class BaseScreenshotResource(WebAPIResource):
 
     def serialize_thumbnail_url_field(self, obj):
         return obj.get_thumbnail_url()
+
+    def get_parent_object(self, obj):
+        return obj.get_review_request()
 
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
@@ -2750,13 +2742,6 @@ class BaseScreenshotResource(WebAPIResource):
         draft.save()
 
         return 204, {}
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        review_request = obj.get_review_request()
-        base = review_request_resource.get_href(review_request, request,
-                                                *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
 class DraftScreenshotResource(BaseScreenshotResource):
@@ -2948,7 +2933,9 @@ class ReviewRequestDraftResource(WebAPIResource):
         return ReviewRequestDraft.create(review_request)
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id)
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
+        return self.model.objects.filter(review_request=review_request)
 
     def serialize_bugs_closed_field(self, obj):
         return obj.get_bug_list()
@@ -3365,12 +3352,6 @@ class BaseScreenshotCommentResource(BaseCommentResource):
         position of the comment for use as an overlay on the screenshot.
         """
         pass
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_resource.get_href(
-            obj.review.all()[0], request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
 class ScreenshotCommentResource(BaseScreenshotCommentResource):
@@ -3828,12 +3809,6 @@ class BaseReviewResource(WebAPIResource):
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return not review.public and review.user == request.user
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.review_request, request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
@@ -4255,12 +4230,6 @@ class ReviewReplyResource(BaseReviewResource):
             self.item_result_key: reply,
         }
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_resource.get_href(obj.base_reply_to, request,
-                                        *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
 review_reply_resource = ReviewReplyResource()
 
 
@@ -4578,6 +4547,7 @@ class ReviewRequestResource(WebAPIResource):
         },
     }
     uri_object_key = 'review_request_id'
+    model_object_key = 'display_id'
     item_child_resources = [
         change_resource,
         diffset_resource,
