@@ -77,7 +77,13 @@
      <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
       <span class="filename">
-       <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image.name|basename}}{% endif %}</a>
+       <a href="{{comment.screenshot.get_absolute_url}}">{% spaceless %}
+{% if draft and comment.screenshot.draft_caption %}
+{{comment.screenshot.draft_caption}}
+{% else %}
+{{comment.screenshot.caption|default_if_none:comment.screenshot.image.name|basename}}
+{% endif %}
+{% endspaceless %}</a>
       </span>
       {{comment.image|safe}}
      </div>
