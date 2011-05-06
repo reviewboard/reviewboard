@@ -47,8 +47,10 @@ class SCMTestCase(DjangoTestCase):
 
     def _check_can_test_ssh(self):
         if SCMTestCase._can_test_ssh is None:
-            SCMTestCase._can_test_ssh = \
-                sshutils.is_key_authorized(sshutils.get_user_key())
+            key = sshutils.get_user_key()
+
+            SCMTestCase._can_test_ssh = (key is not None and
+                                         sshutils.is_key_authorized(key))
 
         if not SCMTestCase._can_test_ssh:
             raise nose.SkipTest(
