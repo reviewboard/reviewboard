@@ -1144,13 +1144,58 @@ class ReviewRequestDraft(models.Model):
         ordering = ['-last_updated']
 
 
-class Comment(models.Model):
+class BaseComment(models.Model):
+    OPEN           = "O"
+    RESOLVED       = "R"
+    DROPPED        = "D"
+
+    ISSUE_STATUSES = (
+        (OPEN,      _('Open')),
+        (RESOLVED,  _('Resolved')),
+        (DROPPED,   _('Dropped')),
+    )
+    issue_opened = models.BooleanField(_("issue opened"), default=False)
+    issue_status = models.CharField(_("issue status"),
+                                    max_length=1,
+                                    choices=ISSUE_STATUSES,
+                                    blank=True,
+                                    null=True,
+                                    db_index=True)
+
+    @staticmethod
+    def issue_status_to_string(status):
+        if status == "O":
+            return "open"
+        elif status == "R":
+            return "resolved"
+        elif status == "D":
+            return "dropped"
+        else:
+            return ""
+
+    @staticmethod
+    def issue_string_to_status(status):
+        if status == "open":
+            return "O"
+        elif status == "resolved":
+            return "R"
+        elif status == "dropped":
+            return "D"
+        else:
+            raise Exception("Invalid issue status '%s'" % status)
+
+    class Meta:
+        abstract = True
+
+
+class Comment(BaseComment):
     """
     A comment made on a diff.
 
     A comment can belong to a single filediff or to an interdiff between
     two filediffs. It can also have multiple replies.
     """
+
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
                                  related_name="comments")
     interfilediff = models.ForeignKey(FileDiff,
@@ -1224,7 +1269,7 @@ class Comment(models.Model):
         ordering = ['timestamp']
 
 
-class ScreenshotComment(models.Model):
+class ScreenshotComment(BaseComment):
     """
     A comment on a screenshot.
     """

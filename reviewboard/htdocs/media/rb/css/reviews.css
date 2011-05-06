@@ -887,6 +887,34 @@
   background-color: #F6F6F6;
 }
 
+.issue-state {
+  font-size: 90%;
+  font-weight: bold;
+  padding-bottom: 5px;
+  padding-left: 25px;
+  padding-top: 5px;
+}
+
+.issue-state.dropped {
+  background: url('../images/cancel_grey.png') #E5E5E5 no-repeat 5px 50%;
+}
+
+.issue-state.open {
+  background: url('../images/warning.png') #FFFF7C no-repeat 5px 50%;
+  border: 2px solid #FF0000;
+}
+
+.issue-state.resolved {
+  background: url('../images/tick.png') #FAFAFA no-repeat 5px 50%;
+}
+
+.issue-button {
+  border: 1px outset black;
+  font-size: 90%;
+  font-weight: bold;
+  margin-left: 5px;
+}
+
 
 /****************************************************************************
  * Banners

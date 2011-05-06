@@ -230,7 +230,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def _postNewDiffComment(self, review_request, review_id, comment_text,
                             filediff_id=None, interfilediff_id=None,
-                            first_line=10, num_lines=5):
+                            first_line=10, num_lines=5, issue_opened=None,
+                            issue_status=None):
         """Creates a diff comment and returns the payload response."""
         if filediff_id is None:
             diffset = review_request.diffset_history.diffsets.latest()
@@ -247,6 +248,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         if interfilediff_id is not None:
             data['interfilediff_id'] = interfilediff_id
 
+        if issue_opened is not None:
+            data['issue_opened'] = issue_opened
+
+        if issue_status is not None:
+            data['issue_status'] = issue_status
+
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -262,7 +269,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return rsp
 
     def _postNewScreenshotComment(self, review_request, review_id, screenshot,
-                                  comment_text, x, y, w, h):
+                                  comment_text, x, y, w, h, issue_opened=None,
+                                  issue_status=None):
         """Creates a screenshot comment and returns the payload response."""
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -277,6 +285,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             'w': w,
             'h': h,
         }
+
+        if issue_opened is not None:
+            post_data['issue_opened'] = issue_opened
+
+        if issue_status is not None:
+            post_data['issue_status'] = issue_status
 
         review = Review.objects.get(pk=review_id)
         rsp = self.apiPost(
@@ -2779,6 +2793,126 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def test_post_diff_comments_with_issue(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/ API with an issue"""
+        diff_comment_text = "Test diff comment with an opened issue"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+
+        self._postNewDiffComment(review_request, review_id, diff_comment_text,
+                                 issue_opened=True)
+
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self.apiGet(self.get_list_url(review))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+        self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
+
+    def test_update_diff_comment_with_issue(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id> API with an issue"""
+        diff_comment_text = "Test diff comment with an opened issue"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       diff_comment_text, issue_opened=True)
+        comment_id = rsp['diff_comment']['id']
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_opened': False,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertFalse(rsp['diff_comment']['issue_opened'])
+
+    def test_update_diff_comment_issue_status(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id> API with an issue"""
+        diff_comment_text = "Test diff comment with an opened issue"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       diff_comment_text, issue_opened=True)
+        comment_id = rsp['diff_comment']['id']
+
+        # First, let's ensure that the user that has created the comment
+        # cannot alter the issue_status while the review is unpublished.
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        # The issue_status should still be "open"
+        self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
+
+        # Next, let's publish the review, and try altering the issue_status.
+        # This should be allowed, since the review request was made by the
+        # current user.
+        review.public = True
+        review.save()
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
+
+        # Finally, let's make sure that this user cannot alter the issue_status
+        # on a diff-comment for a review request that they didn't make.
+        review_request.submitter = User.objects.get(username='doc')
+        review_request.save()
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'dropped',
+        }, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def _common_post_interdiff_comments(self, comment_text):
         # Post the review request
         rsp = self._postNewReviewRequest()
@@ -4609,6 +4743,135 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review = Review.objects.get(pk=rsp['review']['id'])
 
         self.apiDelete(self.get_item_url(review, 123), expected_status=404)
+
+    def test_post_screenshot_comment_with_issue(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with an issue"""
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text, x,
+                                             y, w, h, issue_opened=True)
+
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self.apiGet(self.get_list_url(review))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('screenshot_comments' in rsp)
+        self.assertEqual(len(rsp['screenshot_comments']), 1)
+        self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
+        self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
+
+    def test_update_screenshot_comment_with_issue(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with an issue"""
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
+        comment_id = rsp['screenshot_comment']['id']
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_opened': False,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertFalse(rsp['screenshot_comment']['issue_opened'])
+
+    def test_update_screenshot_comment_issue_status(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with an issue"""
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
+        comment_id = rsp['screenshot_comment']['id']
+
+        # First, let's ensure that the user that has created the comment
+        # cannot alter the issue_status while the review is unpublished.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # The issue_status should still be "open"
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
+
+        # Next, let's publish the review, and try altering the issue_status.
+        # This should be allowed, since the review request was made by the
+        # current user.
+        review.public = True
+        review.save()
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
+
+        # Finally, let's make sure that this user cannot alter the issue_status
+        # on a screenshot-comment for a review request that they didn't make.
+        review_request.submitter = User.objects.get(username='doc')
+        review_request.save()
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'dropped',
+        }, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @classmethod
     def get_list_url(cls, review, local_site_name=None):
