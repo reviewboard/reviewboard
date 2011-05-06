@@ -901,7 +901,7 @@
 
 .issue-state.open {
   background: url('../images/warning.png') #FFFF7C no-repeat 5px 50%;
-  border: 2px solid #FF0000;
+  border: 1px solid #ff7500;
 }
 
 .issue-state.resolved {
