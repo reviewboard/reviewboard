@@ -95,12 +95,12 @@
        <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
        <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
        <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
-       {% if siteconfig.settings.search_enable %}
        <li id="searchbar">
        <input type="text" name="q" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
+       {% if siteconfig.settings.search_enable %}
         <input type="submit" value="{% trans "Search" %}" />
-       </li>
        {% endif %}
+       </li>
       </ul>
      </div>
      {% if siteconfig.settings.search_enable %}</form>{% endif %}
