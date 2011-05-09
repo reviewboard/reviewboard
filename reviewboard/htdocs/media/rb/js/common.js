@@ -338,7 +338,7 @@ $.fn.user_infobox = function() {
     var infobox = $("#user-infobox");
 
     if (infobox.length == 0) {
-        infobox = $("<div id='user-infobox'/>'");
+        infobox = $("<div id='user-infobox'/>'").hide();
         $(document.body).append(infobox);
     }
 
