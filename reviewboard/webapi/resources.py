@@ -3805,6 +3805,9 @@ class ScreenshotResource(BaseScreenshotResource):
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
+    def get_parent_object(self, obj):
+        return obj.get_review_request()
+
     @augment_method_from(BaseScreenshotResource)
     def get_list(self, *args, **kwargs):
         """Returns a list of screenshots on the review request.

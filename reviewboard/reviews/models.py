@@ -171,14 +171,14 @@ class Screenshot(models.Model):
         })
 
     def save(self, **kwargs):
+        super(Screenshot, self).save()
+
         try:
             draft = self.drafts.get()
             draft.timestamp = datetime.now()
             draft.save()
         except ReviewRequestDraft.DoesNotExist:
             pass
-
-        super(Screenshot, self).save()
 
 
 class ReviewRequest(models.Model):
