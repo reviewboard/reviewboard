@@ -4,6 +4,7 @@
 # developers with release permissions.
 #
 
+import hashlib
 import os
 import shutil
 import sys
@@ -61,6 +62,23 @@ def build_targets():
                        (PACKAGE_NAME, __version__))
 
 
+def build_checksums():
+    sha_filename = 'dist/%s-%s.sha256sum' % (PACKAGE_NAME, __version__)
+    out_f = open(sha_filename, 'w')
+
+    for filename in built_files:
+        m = hashlib.sha256()
+
+        in_f = open(filename, 'r')
+        m.update(in_f.read())
+        in_f.close()
+
+        out_f.write('%s  %s\n' % (m.hexdigest(), os.path.basename(filename)))
+
+    out_f.close()
+    built_files.append(sha_filename)
+
+
 def upload_files():
     execute("scp %s %s" % (" ".join(built_files), RELEASES_URL))
 
@@ -87,6 +105,7 @@ def main():
     git_dir = clone_git_tree(cur_dir)
 
     build_targets()
+    build_checksums()
     upload_files()
 
     os.chdir(cur_dir)
