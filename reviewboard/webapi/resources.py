@@ -2614,9 +2614,6 @@ class BaseScreenshotResource(WebAPIResource):
     def serialize_thumbnail_url_field(self, obj):
         return obj.get_thumbnail_url()
 
-    def get_parent_object(self, obj):
-        return obj.get_review_request()
-
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
                             INVALID_FORM_DATA)
@@ -4297,6 +4294,9 @@ class ScreenshotResource(BaseScreenshotResource):
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_parent_object(self, obj):
+        return obj.get_review_request()
 
     @augment_method_from(BaseScreenshotResource)
     def get_list(self, *args, **kwargs):
