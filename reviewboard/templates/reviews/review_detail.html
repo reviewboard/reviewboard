@@ -23,10 +23,6 @@
 {% endblock %}
 
 {% block scripts-post %}
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc5.min.js"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/ui.autocomplete.min.js?{{MEDIA_SERIAL}}"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
@@ -77,7 +73,7 @@
  <div class="header">
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="collapse-button"></div>
-  <div class="reviewer"><a href="{% url user entry.review.user %}">{{entry.review.user|user_displayname}}</a></div>
+  <div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
   <div class="posted_time">{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
  </div>
  <div class="body">
@@ -90,13 +86,24 @@
      <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
       <span class="filename">
-       <a href="{{comment.screenshot.get_absolute_url}}">{% if comment.screenshot.caption %}{{comment.screenshot.caption}}{% else %}{{comment.screenshot.image.name|basename}}{% endif %}</a>
+       <a href="{{comment.screenshot.get_absolute_url}}">{% spaceless %}
+{% if draft and comment.screenshot.draft_caption %}
+{{comment.screenshot.draft_caption}}
+{% else %}
+{{comment.screenshot.caption|default_if_none:comment.screenshot.image.name|basename}}
+{% endif %}
+{% endspaceless %}</a>
       </span>
       {{comment.image|safe}}
      </div>
     </dt>
     <dd>
      <pre>{{comment.text|escape}}</pre>
+{% if comment.issue_opened %}
+     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+       {% comment_issue review_request_details comment "screenshot_comment" %}
+     </div>
+{% endif %}
      {% reply_section entry.review comment "screenshot_comment" "rc" %}
     </dd>
 {% endfor %}
@@ -130,6 +137,11 @@
     </dt>
     <dd>
      <pre class="reviewtext">{{comment.text|escape}}</pre>
+{% if comment.issue_opened %}
+     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+       {% comment_issue review_request_details comment "comment" %}
+     </div>
+{% endif %}
      {% reply_section entry.review comment "comment" "rc" %}
     </dd>
     <script type="text/javascript">

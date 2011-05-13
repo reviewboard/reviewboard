@@ -2,11 +2,6 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
 
-from reviewboard.reviews.feeds import RssReviewsFeed, AtomReviewsFeed, \
-                                      RssSubmitterReviewsFeed, \
-                                      AtomSubmitterReviewsFeed, \
-                                      RssGroupReviewsFeed, \
-                                      AtomGroupReviewsFeed
 from reviewboard.webapi.resources import root_resource
 from reviewboard import initialize
 
@@ -25,33 +20,12 @@ urlpatterns = patterns('',
 
 # Add static media if running in DEBUG mode
 if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
-    from django import VERSION
-
-    static_args = {
-        'show_indexes': True,
-        'document_root': settings.MEDIA_ROOT,
-    }
-
-    if (VERSION[0] > 1 or (VERSION[0] == 1 and VERSION[1] >= 3)):
-        static_args['insecure'] = True
-
     urlpatterns += patterns('django.views.static',
-        (r'^media/(?P<path>.*)$', 'serve', static_args)
+        (r'^media/(?P<path>.*)$', 'serve', {
+            'show_indexes': True,
+            'document_root': settings.MEDIA_ROOT,
+        })
     )
-
-rss_feeds = {
-    'r': RssReviewsFeed,
-    'users': RssSubmitterReviewsFeed,
-    'groups': RssGroupReviewsFeed,
-}
-
-
-atom_feeds = {
-    'r': AtomReviewsFeed,
-    'users': AtomSubmitterReviewsFeed,
-    'groups': AtomGroupReviewsFeed,
-}
-
 
 localsite_urlpatterns = patterns('',
     url(r'^$', 'django.views.generic.simple.redirect_to',
@@ -97,11 +71,6 @@ urlpatterns += localsite_urlpatterns
 
 # django.contrib
 urlpatterns += patterns('django.contrib',
-   # Feeds
-    url(r'^feeds/rss/(?P<url>.*)/$', 'syndication.views.feed',
-        {'feed_dict': rss_feeds}, name="rss-feed"),
-    url(r'^feeds/atom/(?P<url>.*)/$', 'syndication.views.feed',
-        {'feed_dict': atom_feeds}, name="atom-feed"),
     url(r'^account/logout/$', 'auth.views.logout',
         {'next_page': settings.LOGIN_URL}, name="logout")
 )

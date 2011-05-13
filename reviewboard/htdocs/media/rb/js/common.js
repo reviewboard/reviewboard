@@ -192,46 +192,193 @@ $.fn.formDlg = function(options) {
 
 /*
  * Toggles whether an object is starred. Right now, we support
- * "reviewrequests" and "groups" types.
+ * "reviewrequests" and "groups" types. Loads parameters from
+ * data attributes on the element. Attaches via 'live' so it applies
+ * to future stars matching the current jQuery selector.
  *
- * @param {string} type      The type used for constructing the path.
- * @param {string} objid     The object ID to star/unstar.
- * @param {bool}   default_  The default value.
+ * @param {string} object-type  The type used for constructing the path.
+ * @param {string} object-id    The object ID to star/unstar.
+ * @param {bool}   starred      The default value.
  */
-$.fn.toggleStar = function(type, objid, default_) {
-    return this.each(function() {
+$.fn.toggleStar = function() {
+    // Constants
+    var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
+    var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
+
+    return this.live('click', function() {
         var self = $(this);
 
-        // Constants
-        var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
-        var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
+        var obj = self.data("rb.obj");
 
-        var obj;
-        var on = default_;
+        if (!obj) {
+            var type = self.attr("data-object-type");
+            var objid = self.attr("data-object-id");
 
-        self.click(function() {
-            on = !on;
-
-            if (!obj) {
-                if (type == "reviewrequests") {
-                    obj = new RB.ReviewRequest(objid);
-                } else if (type == "groups") {
-                    obj = new RB.ReviewGroup(objid);
-                } else {
-                    self.remove();
-                    return;
-                }
+            if (type == "reviewrequests") {
+                obj = new RB.ReviewRequest(objid);
+            } else if (type == "groups") {
+                obj = new RB.ReviewGroup(objid);
+            } else {
+                self.remove();
+                return;
             }
+        }
 
-            obj.setStarred(on);
-            self.attr("src", (on ? STAR_ON_IMG : STAR_OFF_IMG));
+        var on = (parseInt(self.attr("data-starred")) == 1) ? 0 : 1;
+        obj.setStarred(on);
+        self.data("rb.obj", obj);
 
-            var alt_title = on ? "Starred" : "Click to star";
-            self.attr("alt", alt_title);
-            self.attr("title", alt_title);
+        var alt_title = on ? "Starred" : "Click to star";
+        self.attr({
+            src: (on ? STAR_ON_IMG : STAR_OFF_IMG),
+            'data-starred': on,
+            alt: alt_title,
+            title: alt_title
         });
     });
 };
+
+/*
+ * The wrapper function of autocomplete for the search field.
+ * Currently, quick search searches for users, groups, and review
+ * requests through the usage of search resource.
+ */
+$.fn.searchAutoComplete = function() {
+    $("#search_field")
+        .autocomplete({
+            formatItem: function(data) {
+                var s;
+
+                if (data.username) {
+                    //For the format of users
+                    s = data.username;
+                    s += " <span>(" + data.fullname + ")</span>";
+                }
+
+
+                else if (data.name) {
+                    //For the format of groups
+                    s = data.name;
+                    s += " <span>(" + data.display_name + ")</span>";
+                }
+
+
+                else if (data.summary) {
+                    //For the format of review requests
+                    if(data.summary.length < 28)
+                        s = data.summary;
+                    else
+                        s = (data.summary).substring(0, 28);
+                    s += " <span>(" + data.id + ")</span>";
+                }
+
+                return s;
+            },
+            matchCase: false,
+            multiple: true,
+            clickToURL: true,
+            selectFirst: false,
+            width: 240,
+            parse: function(data) {
+                var jsonData = JSON.parse(data);
+                var jsonDataSearch = jsonData.search;
+                var parsed = [];
+
+                var objects = ["users", "groups", "review_requests"];
+
+                var values = ["username", "name", "summary"];
+
+                var items;
+
+                for (var j = 0; j < objects.length; j++) {
+                    items = jsonDataSearch[objects[j]];
+
+                    for (var i = 0; i < items.length; i++) {
+                        var value = items[i];
+
+                        if (j != 2) {
+                            parsed.push({
+                                data: value,
+                                value: value[values[j]],
+                                result: value[values[j]]
+                            });
+                        }
+
+                        else if (value.public) {
+                            // Only show review requests that are public
+                            value.url = SITE_ROOT + "r/" + value.id;
+                            parsed.push({
+                                data: value,
+                                value: value[values[j]],
+                                result: value[values[j]]
+                            });
+                        }
+
+                    }
+                }
+
+                return parsed;
+            },
+            url: SITE_ROOT + "api/" + "search/"
+        })
+};
+
+var gUserInfoBoxCache = {};
+
+/*
+ * Displays a infobox when hovering over a user.
+ *
+ * The infobox is displayed after a 1 second delay.
+ */
+$.fn.user_infobox = function() {
+    var POPUP_DELAY_MS = 1000;
+    var OFFSET_LEFT = -20;
+    var OFFSET_TOP = -30;
+
+    var infobox = $("#user-infobox");
+
+    if (infobox.length == 0) {
+        infobox = $("<div id='user-infobox'/>'").hide();
+        $(document.body).append(infobox);
+    }
+
+    return this.each(function() {
+        var self = $(this);
+        var timeout = null;
+        var url = self.attr('href') + 'infobox/';
+
+        self.hover(
+            function() {
+                timeout = setTimeout(function() {
+                    if (!gUserInfoBoxCache[url]) {
+                        infobox
+                            .empty()
+                            .addClass("loading")
+                            .load(url,
+                                  function(responseText, textStatus) {
+                                      gUserInfoBoxCache[url] = responseText;
+                                      infobox.removeClass("loading");
+                                  });
+                    } else {
+                        infobox.html(gUserInfoBoxCache[url]);
+                    }
+
+                    var offset = self.offset();
+
+                    infobox
+                        .move(offset.left + OFFSET_LEFT,
+                              offset.top - infobox.height() + OFFSET_TOP,
+                              "absolute")
+                        .show();
+                }, POPUP_DELAY_MS);
+            },
+            function() {
+                clearTimeout(timeout);
+                infobox.hide();
+            });
+    });
+}
+
 
 $(document).ready(function() {
     $('<div id="activity-indicator" />')
@@ -239,25 +386,14 @@ $(document).ready(function() {
         .hide()
         .appendTo("body");
 
-    $('#submitter, .reviewer a').hover(
-        function() {
-            var infobox = $(this).find(".user-infobox");
+    var searchGroupsEl = $("#search_field");
 
-            if (infobox.length > 0) {
-                infobox.show();
-            } else {
-                infobox = $(this).append(
-                   $("<div class='user-infobox loading'/>")
-                       .load($(this).attr('href') + "infobox/",
-                             function(responseText, textStatus) {
-                                 infobox.removeClass("loading");
-                             }));
-            }
-        },
-        function() {
-            $(this).find(".user-infobox").hide();
-        }
-    );
+    if (searchGroupsEl.length > 0) {
+        searchGroupsEl.searchAutoComplete();
+    }
+
+    $('.user').user_infobox();
+    $('.star').toggleStar();
 });
 
 // vim: set et:sw=4:

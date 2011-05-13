@@ -1,4 +1,6 @@
 import logging
+import os
+import subprocess
 import urlparse
 
 import reviewboard.diffviewer.parser as diffparser
@@ -101,7 +103,27 @@ class SCMTool(object):
         return filename
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def popen(cls, command, local_site_name=None):
+        """Launches an application, capturing output.
+
+        This wraps subprocess.Popen to provide some common parameters and
+        to pass environment variables that may be needed by rbssh, if
+        indirectly invoked.
+        """
+        env = os.environ.copy()
+
+        if local_site_name:
+            env['RB_LOCAL_SITE'] = local_site_name
+
+        return subprocess.Popen(command,
+                                env=env,
+                                stderr=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                close_fds=(os.name != 'nt'))
+
+    @classmethod
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         """
         Performs checks on a repository to test its validity.
 
@@ -118,7 +140,7 @@ class SCMTool(object):
             logging.debug(
                 "%s: Attempting ssh connection with host: %s, username: %s" % \
                 (cls.__name__, hostname, username))
-            sshutils.check_host(hostname, username, password)
+            sshutils.check_host(hostname, username, password, local_site_name)
 
     @classmethod
     def get_auth_from_uri(cls, path, username):
@@ -142,6 +164,6 @@ class SCMTool(object):
             return username, hostname
 
     @classmethod
-    def accept_certificate(cls, path):
+    def accept_certificate(cls, path, local_site_name=None):
         """Accepts the certificate for the given repository path."""
         raise NotImplemented

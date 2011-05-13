@@ -31,14 +31,99 @@ var gEditorCompleteHandlers = {
         );
     },
     'target_people': function(data) {
-        return urlizeList(data,
-            function(item) { return item.url; },
-            function(item) { return item.username; }
-        );
+        return $(urlizeList(data,
+                            function(item) { return item.url; },
+                            function(item) { return item.username; }))
+            .addClass("user")
+            .user_infobox();
     },
     'description': linkifyText,
     'testing_done': linkifyText
 };
+
+
+/* gCommentIssueManager takes care of setting the state of a particular
+ * comment issue, and also takes care of notifying callbacks whenever
+ * the state is successfully changed.
+ */
+var gCommentIssueManager = new function() {
+    var callbacks = {};
+    var comments = {};
+
+    /* setCommentState - set the state of comment issue
+     * @param review_id the id for the review that the comment belongs to
+     * @param comment_id the id of the comment with the issue
+     * @param comment_type the type of comment, either "comment" or
+     *                     "screenshot_comment"
+     * @param state the state to set the comment issue to - either
+     *              "open", "resolved", or "dropped"
+     */
+    this.setCommentState = function(review_id, comment_id,
+                                    comment_type, state) {
+        var comment = getComment(review_id, comment_id, comment_type);
+        requestState(comment, state);
+    }
+
+    /* registerCallback - allows clients to register callbacks to be
+     * notified when a particular comment state is updated.
+     * @param comment_id the id of the comment to be notified about
+     * @param callback a function of the form:
+     *                 function(issue_state) {}
+     */
+    this.registerCallback = function(comment_id, callback) {
+        if (!callbacks[comment_id])
+            callbacks[comment_id] = [];
+        callbacks[comment_id].push(callback);
+    }
+
+    // A helper function to either generate the appropriate
+    // comment object based on comment_type, or to grab the
+    // comment from a cache if it's been generated before.
+    function getComment(review_id, comment_id, comment_type) {
+        if (comments[comment_id])
+            return comments[comment_id];
+
+        var comment = null;
+        if (comment_type == "comment")
+            comment = gReviewRequest
+                .createReview(review_id)
+                .createDiffComment(comment_id, null, null,
+                                   null, null);
+        else if(comment_type == "screenshot_comment")
+            comment = gReviewRequest
+                .createReview(review_id)
+                .createScreenshotComment(comment_id, null, null,
+                                         null, null, null);
+        comments[comment_id] = comment;
+        return comment;
+    }
+
+    // Helper function to set the state of a comment
+    function requestState(comment, state) {
+        comment.ready(function() {
+            comment.issue_status = state;
+            comment.save({
+                success: function(rsp) {
+                    notifyCallbacks(comment.id, comment.issue_status);
+                    // We don't want the current user to receive the
+                    // notification that the review request has been
+                    // updated, since they themselves updated the
+                    // issue status.
+                    if (rsp.last_activity_time)
+                        registerForUpdates(rsp.last_activity_time);
+                }
+            });
+        });
+    }
+
+    // Helper function that notifies all callbacks registered for
+    // a particular comment
+    function notifyCallbacks(comment_id, issue_status) {
+        for (var i = 0; i < callbacks[comment_id].length; i++) {
+            callbacks[comment_id][i](issue_status);
+        }
+    }
+}();
 
 
 /*
@@ -47,15 +132,17 @@ var gEditorCompleteHandlers = {
  * By default, this will use the item as the URL and as the hyperlink text.
  * By overriding urlFunc and textFunc, the URL and text can be customized.
  *
- * @param {array}    list     The list of items.
- * @param {function} urlFunc  A function to return the URL for an item in
- *                            the list.
- * @param {function} textFunc A function to return the text for an item in
- *                            the list.
+ * @param {array}    list            The list of items.
+ * @param {function} urlFunc         A function to return the URL for an item
+ *                                   in the list.
+ * @param {function} textFunc        A function to return the text for an item
+ *                                   in the list.
+ * @param {function} postProcessFunc Post-process generated elements in the
+                                     list.
  *
  * @return A string containing the HTML markup for the list of hyperlinks.
  */
-function urlizeList(list, urlFunc, textFunc) {
+function urlizeList(list, urlFunc, textFunc, postProcessFunc) {
     var str = "";
 
     for (var i = 0; i < list.length; i++) {
@@ -473,36 +560,272 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
      */
     function showReplyDraftBanner(review_id) {
         if (bannersEl.children().length == 0) {
-            bannersEl.append($("<div/>")
-                .addClass("banner")
-                .append("<h1>This reply is a draft</h1>")
-                .append(" Be sure to publish when finished.")
-                .append($('<input type="button"/>')
-                    .val("Publish")
-                    .click(function() {
-                        review_reply.publish({
-                            buttons: bannerButtonsEl,
-                            success: function() {
-                                window.location = gReviewRequestPath;
-                            }
-                        });
-                    })
-                )
-                .append($('<input type="button"/>')
-                    .val("Discard")
-                    .click(function() {
-                        review_reply.discard({
-                            buttons: bannerButtonsEl,
-                            success: function() {
-                                window.location = gReviewRequestPath;
-                            }
-                        });
-                    })
-                )
-            );
+            bannersEl.append($.replyDraftBanner(review_reply,
+                                                bannerButtonsEl));
         }
     }
 };
+
+
+/* Handles a comment issue in either the review details page, or the
+ * inline comment viewer.
+ * @param review_id the id of the review that the comment belongs to
+ * @param comment_id the id of the comment with the issue
+ * @param comment_type dictates the type of comment - either
+ *                     "comment" or "screenshot_comment"
+ * @param issue_status the initial status of the comment - either
+ *                     "open", "resolved" or "dropped"
+ * @param interactive true if the user should be shown buttons to
+ *                    manipulate the comment issue - otherwise false.
+ */
+$.fn.commentIssue = function(review_id, comment_id, comment_type,
+                             issue_status, interactive) {
+    var self = this;
+    var OPEN = 'open';
+    var RESOLVED = 'resolved';
+    var DROPPED = 'dropped';
+
+    var issue_reopen_button = $(".issue-button.reopen", this);
+    var issue_resolve_button = $(".issue-button.resolve", this);
+    var issue_drop_button = $(".issue-button.drop", this);
+    self.review_id = review_id;
+    self.comment_id = comment_id;
+    self.comment_type = comment_type;
+    self.issue_status = issue_status;
+    self.interactive = interactive;
+
+    function disableButtons() {
+        issue_reopen_button.attr("disabled", true);
+        issue_resolve_button.attr("disabled", true);
+        issue_drop_button.attr("disabled", true);
+    }
+
+    function enableButtons() {
+        issue_reopen_button.attr("disabled", false);
+        issue_resolve_button.attr("disabled", false);
+        issue_drop_button.attr("disabled", false);
+    }
+
+    function enterState(state) {
+        disableButtons();
+        gCommentIssueManager.setCommentState(self.review_id, self.comment_id,
+                                             self.comment_type, state);
+    }
+
+    issue_reopen_button.click(function() {
+        enterState(OPEN);
+    });
+
+    issue_resolve_button.click(function() {
+        enterState(RESOLVED);
+    });
+
+    issue_drop_button.click(function() {
+        enterState(DROPPED);
+    });
+
+    self.enter_state = function(state) {
+        self.state = self.STATES[state];
+        self.state.enter();
+        if(self.interactive) {
+            self.state.showButtons();
+            enableButtons();
+        }
+    }
+
+    var open_state = {
+        enter: function() {
+            $(".issue-button.reopen", self).hide();
+            $(".issue-state", self)
+                .removeClass("dropped")
+                .removeClass("resolved")
+                .addClass("open");
+            $(".issue-message", self)
+                .text("An issue was opened.");
+        },
+        showButtons: function() {
+            $(".issue-button.drop", self).show();
+            $(".issue-button.resolve", self).show();
+        }
+    }
+
+    var resolved_state = {
+        enter: function() {
+            $(".issue-button.resolve", self).hide();
+            $(".issue-button.drop", self).hide();
+            $(".issue-state", self)
+                .removeClass("dropped")
+                .removeClass("open")
+                .addClass("resolved");
+            $(".issue-message", self)
+                .text("The issue has been resolved.");
+        },
+        showButtons: function() {
+            $(".issue-button.reopen", self).show();
+        }
+    }
+
+    var dropped_state = {
+        enter: function() {
+            $(".issue-button.resolve", self).hide();
+            $(".issue-button.drop", self).hide();
+            $(".issue-state", self)
+                .removeClass("open")
+                .removeClass("resolved")
+                .addClass("dropped");
+            $(".issue-message", self)
+                .text("The issue has been dropped.");
+        },
+        showButtons: function() {
+            $(".issue-button.reopen", self).show();
+        }
+    }
+
+    self.STATES = {};
+    self.STATES[OPEN] = open_state;
+    self.STATES[RESOLVED] = resolved_state;
+    self.STATES[DROPPED] = dropped_state;
+
+    // Set the comment to the initial state
+    self.enter_state(self.issue_status);
+
+    // Register to watch updates on the comment issue state 
+    gCommentIssueManager
+        .registerCallback(self.comment_id, self.enter_state);
+
+    return self;
+}
+
+
+/* Wraps an inline comment so that it can be used by
+ * commentIssue.
+ */
+$.fn.issueButtons = function() {
+    var self = this;
+    var issue_indicator = $('<div/>')
+        .addClass('issue-state')
+        .appendTo(self);
+
+    var buttons = $('<div class="buttons"/>')
+        .addClass('buttons')
+        .appendTo(issue_indicator);
+
+    var resolve_string = "Fixed";
+    var drop_string = "Drop";
+    var reopen_string = "Re-open";
+
+    var button_string = '<input type="button" class="issue-button resolve"'
+                      + 'value="' + resolve_string + '"/>'
+                      + '<input type="button" class="issue-button drop"'
+                      + 'value="' + drop_string + '"/>'
+                      + '<input type="button" class="issue-button reopen"'
+                      + 'value="' + reopen_string + '"/>';
+
+    buttons.append(button_string);
+
+    return this;
+}
+
+
+/*
+ * Creates a floating reply banner. The banner will stay in view while the
+ * parent review is visible on screen.
+ */
+$.replyDraftBanner = function(review_reply, bannerButtonsEl) {
+    var banner = $("<div/>")
+        .addClass("banner")
+        .append("<h1>This reply is a draft</h1>")
+        .append(" Be sure to publish when finished.")
+        .append($('<input type="button"/>')
+            .val("Publish")
+            .click(function() {
+                review_reply.publish({
+                    buttons: bannerButtonsEl,
+                    success: function() {
+                        window.location = gReviewRequestPath;
+                    }
+                });
+            })
+        )
+        .append($('<input type="button"/>')
+            .val("Discard")
+            .click(function() {
+                review_reply.discard({
+                    buttons: bannerButtonsEl,
+                    success: function() {
+                        window.location = gReviewRequestPath;
+                    }
+                });
+            })
+        )
+        .floatReplyDraftBanner();
+
+    return banner;
+}
+
+/*
+ * Floats a reply draft banner. This ensures it's always visible on screen
+ * when the review is visible.
+ */
+$.fn.floatReplyDraftBanner = function() {
+    return $(this).each(function() {
+        var self = $(this);
+        var floatSpacer = null;
+        var container = null;
+
+        $(window).scroll(updateFloatPosition);
+        $(window).resize(updateSize);
+        updateFloatPosition();
+
+        function updateSize() {
+            if (floatSpacer != null) {
+                floatSpacer.height(self.height() +
+                                   self.getExtents("bpm", "tb"));
+                self.width(floatSpacer.parent().width() -
+                           self.getExtents("bpm", "lr"));
+            }
+        }
+
+        function updateFloatPosition() {
+            if (self.parent().length == 0) {
+                return;
+            }
+
+            if (floatSpacer == null) {
+                floatSpacer = self.wrap($("<div/>")).parent();
+                updateSize();
+            }
+
+            if (container == null) {
+                container = self.closest('.review');
+            }
+
+            var containerTop = container.offset().top;
+            var windowTop = $(window).scrollTop();
+            var topOffset = floatSpacer.offset().top - windowTop;
+            var outerHeight = self.outerHeight();
+
+            if (!container.hasClass("collapsed") &&
+                topOffset < 0 &&
+                containerTop < windowTop &&
+                windowTop < (containerTop + container.outerHeight() -
+                             outerHeight)) {
+                console.log(floatSpacer.parent().innerWidth());
+                self.css({
+                    top: 0,
+                    position: "fixed"
+                });
+
+                updateSize();
+            } else {
+                self.css({
+                    top: null,
+                    position: null
+                });
+            }
+        }
+    });
+}
 
 
 /*
@@ -512,6 +835,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
  * @return {jQuery} This jQuery.
  */
 $.fn.commentDlg = function() {
+    var DIALOG_TOTAL_HEIGHT = 250;
     var SLIDE_DISTANCE = 10;
     var COMMENTS_BOX_WIDTH = 280;
     var FORM_BOX_WIDTH = 380;
@@ -531,6 +855,13 @@ $.fn.commentDlg = function() {
     var actionField  = $("#comment_action", draftForm);
     var buttons      = $(".buttons", draftForm);
     var statusField  = $(".status", draftForm);
+    var issueOptions = $("#comment-issue-options", draftForm);
+
+    var issueField = $("#comment_issue", draftForm)
+        .click(function() {
+            saveButton.attr("disabled", textField.val() == "");
+            self.make_dirty();
+        });
     var cancelButton = $("#comment_cancel", draftForm)
         .click(function() {
             comment.deleteIfEmpty();
@@ -544,6 +875,7 @@ $.fn.commentDlg = function() {
     var saveButton = $("#comment_save", this)
         .click(function() {
             comment.setText(textField.val());
+            comment.issue_opened = issueField.attr('checked') ? 1 : 0;
             comment.save();
             self.close();
         });
@@ -577,10 +909,7 @@ $.fn.commentDlg = function() {
             saveButton.attr("disabled", textField.val() == "");
 
             if (dirty && !oldDirty) {
-                statusField.html("This comment has unsaved changes.");
-                self.handleResize();
-
-                oldDirty = dirty;
+                self.make_dirty();
             }
 
             e.stopPropagation();
@@ -684,6 +1013,19 @@ $.fn.commentDlg = function() {
     };
 
     /*
+     * Marks the comment dialog as "dirty".
+     *
+     * @return {jQuery} This jQuery.
+     */
+    this.make_dirty = function() {
+        statusField.html("This comment has unsaved changes.");
+        self.handleResize();
+
+        oldDirty = dirty;
+        return this;
+    }
+
+    /*
      * Opens the comment dialog and focuses the text field.
      *
      * @return {jQuery} This jQuery.
@@ -719,6 +1061,7 @@ $.fn.commentDlg = function() {
     this.close = function() {
         if (self.is(":visible")) {
             textField.val("");
+            issueField.attr("checked", false)
             self.animate({
                 top: "-=" + SLIDE_DISTANCE + "px",
                 opacity: 0
@@ -762,12 +1105,22 @@ $.fn.commentDlg = function() {
                 var header = $("<h2/>").appendTo(item).html(this.user.name);
                 var actions = $('<span class="actions"/>')
                     .appendTo(header);
+
                 $('<a href="' + this.url + '">View</a>').appendTo(actions);
                 $('<a href="' + gReviewRequestPath +
                   '?reply_id=' + this.comment_id +
                   '&reply_type=' + replyType + '">Reply</a>')
                     .appendTo(actions);
                 $("<pre/>").appendTo(item).text(this.text);
+
+                if (this.issue_opened) {
+                    var interactive = window['gEditable'];
+                    var issue = $('<div/>')
+                        .issueButtons()
+                        .commentIssue(this.review_id, this.comment_id,
+                                      replyType, this.issue_status, interactive)
+                        .appendTo(item);
+                }
 
                 item.appendTo(commentsList);
 
@@ -793,7 +1146,7 @@ $.fn.commentDlg = function() {
 
         self
             .width(width)
-            .height(250);
+            .height(DIALOG_TOTAL_HEIGHT);
 
         return this;
     }
@@ -815,6 +1168,7 @@ $.fn.commentDlg = function() {
 
         comment.ready(function() {
             textField.val(comment.text);
+            issueField.attr('checked', comment.issue_opened)
             dirty = false;
 
             /* Set the initial button states */
@@ -866,6 +1220,7 @@ $.fn.commentDlg = function() {
             .height(draftForm.height() - textFieldPos.top -
                     buttons.outerHeight(true) -
                     statusField.height() -
+                    issueOptions.height() -
                     textField.getExtents("bmp", "b"));
 
         return this;

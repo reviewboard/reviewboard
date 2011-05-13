@@ -12,8 +12,8 @@ from djblets.util.templatetags.djblets_utils import humanize_list
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.filemanager.models import UploadedFile
-from reviewboard.reviews.models import Comment, Group, ReviewRequest, \
-                                       ScreenshotComment, UploadedFileComment
+from reviewboard.reviews.models import BaseComment, Comment, Group, \
+                                       ReviewRequest, ScreenshotComment
 
 
 register = template.Library()
@@ -97,17 +97,18 @@ def commentcounts(context, filediff, interfilediff=None):
     Each entry in the array has a dictionary containing the following keys:
 
       =========== ==================================================
-      Key         Description
+      Key                Description
       =========== ==================================================
-      comment_id  The ID of the comment
-      text        The text of the comment
-      line        The first line number
-      num_lines   The number of lines this comment spans
-      user        A dictionary containing "username" and "name" keys
-                  for the user
-      url         The URL to the comment
-      localdraft  True if this is the current user's draft comment
-      =========== ==================================================
+      comment_id         The ID of the comment
+      text               The text of the comment
+      line               The first line number
+      num_lines          The number of lines this comment spans
+      user               A dictionary containing "username" and "name" keys
+                         for the user
+      url                The URL to the comment
+      localdraft         True if this is the current user's draft comment
+      review_id          The ID of the review this comment is associated with
+      ==============================================================
     """
     comment_dict = {}
     user = context.get('user', None)
@@ -138,6 +139,11 @@ def commentcounts(context, filediff, interfilediff=None):
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and \
                               not review.public,
+                'review_id': review.id,
+                'review_request_id': review.review_request.id,
+                'issue_opened': comment.issue_opened,
+                'issue_status': BaseComment
+                                .issue_status_to_string(comment.issue_status),
             })
 
     comments_array = []
@@ -163,16 +169,19 @@ def screenshotcommentcounts(context, screenshot):
 
     Each entry in the array has a dictionary containing the following keys:
 
-      =========== ==================================================
-      Key         Description
-      =========== ==================================================
-      text        The text of the comment
-      localdraft  True if this is the current user's draft comment
-      x           The X location of the comment's region
-      y           The Y location of the comment's region
-      w           The width of the comment's region
-      h           The height of the comment's region
-      =========== ==================================================
+      ================== ====================================================
+      Key                Description
+      ================== ====================================================
+      text               The text of the comment
+      localdraft         True if this is the current user's draft comment
+      x                  The X location of the comment's region
+      y                  The Y location of the comment's region
+      w                  The width of the comment's region
+      h                  The height of the comment's region
+      review_id          The ID of the review this comment is associated with
+      review_request_id  The ID of the review request this comment is
+                         associated with
+      ================== ====================================================
     """
     comments = {}
     user = context.get('user', None)
@@ -185,7 +194,7 @@ def screenshotcommentcounts(context, screenshot):
                                         comment.x, comment.y)
 
             comments.setdefault(position, []).append({
-                'id': comment.id,
+                'comment_id': comment.id,
                 'text': comment.text,
                 'user': {
                     'username': review.user.username,
@@ -198,6 +207,12 @@ def screenshotcommentcounts(context, screenshot):
                 'y' : comment.y,
                 'w' : comment.w,
                 'h' : comment.h,
+                'review_id': review.id,
+                'review_request_id': review.review_request.id,
+                'issue_opened': comment.issue_opened,
+                'issue_status': BaseComment
+                                .issue_status_to_string(comment
+                                                        .issue_status),
             })
 
     return simplejson.dumps(comments)
@@ -291,6 +306,8 @@ def reply_section(context, review, comment, context_type, context_id):
     is responsible for invoking :tag:`reply_list` and as such passes these
     variables through. It does not make use of them itself.
     """
+    issue_status = ""
+
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
@@ -533,3 +550,27 @@ def render_star(user, obj):
         'user': user,
         'MEDIA_URL': settings.MEDIA_URL,
     })
+
+
+@register.inclusion_tag('reviews/comment_issue.html',
+                        takes_context=True)
+def comment_issue(context, review_request, comment, comment_type):
+    """
+    Renders the code responsible for handling comment issue statuses.
+    """
+
+    issue_status = BaseComment.issue_status_to_string(comment.issue_status)
+    user = context.get('user', None)
+    interactive = 'false'
+
+    if user and user.is_authenticated() and \
+        user == review_request.submitter:
+        interactive = 'true'
+
+    return {
+        'comment': comment,
+        'comment_type': comment_type,
+        'issue_status': issue_status,
+        'review': comment.review.get(),
+        'interactive': interactive,
+    }

@@ -349,8 +349,8 @@ def get_original_file(filediff):
         file = filediff.source_file
         revision = filediff.source_revision
 
-        key = "%s:%s:%s" % (filediff.diffset.repository.path, urlquote(file),
-                            revision)
+        key = "%s:%s:%s" % (urlquote(filediff.diffset.repository.path),
+                            urlquote(file), urlquote(revision))
 
         # We wrap the result of get_file in a list and then return the first
         # element after getting the result from the cache. This prevents the
@@ -467,14 +467,17 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         if not possible_functions:
             raise StopIteration
 
-        if is_modified_file:
-            last_index = last_header_index[1]
-            i1 = lines[start][4]
-            i2 = lines[end - 1][4]
-        else:
-            last_index = last_header_index[0]
-            i1 = lines[start][1]
-            i2 = lines[end - 1][1]
+        try:
+            if is_modified_file:
+                last_index = last_header_index[1]
+                i1 = lines[start][4]
+                i2 = lines[end - 1][4]
+            else:
+                last_index = last_header_index[0]
+                i1 = lines[start][1]
+                i2 = lines[end - 1][1]
+        except IndexError:
+            raise StopIteration
 
         for i in xrange(last_index, len(possible_functions)):
             linenum, line = possible_functions[i]
@@ -598,7 +601,7 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             #       once instead of twice.
             markup_a = apply_pygments(old or '', source_file)
             markup_b = apply_pygments(new or '', dest_file)
-        except ValueError:
+        except:
             pass
 
     if not markup_a:
@@ -1026,9 +1029,13 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             basepath = ""
             basename = filediff.source_file
 
+        tool = filediff.diffset.repository.get_scmtool()
+        depot_filename = tool.normalize_path_for_display(filediff.source_file)
+        dest_filename = tool.normalize_path_for_display(filediff.dest_file)
+
         file = {
-            'depot_filename': filediff.source_file,
-            'dest_filename': filediff.dest_file or filediff.source_file,
+            'depot_filename': depot_filename,
+            'dest_filename': dest_filename or depot_filename,
             'basename': basename,
             'basepath': basepath,
             'revision': source_revision,

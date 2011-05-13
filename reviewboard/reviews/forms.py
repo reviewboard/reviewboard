@@ -171,15 +171,16 @@ class NewReviewRequestForm(forms.Form):
         if changenum:
             try:
                 changeset = repository.get_scmtool().get_changeset(changenum)
-            except NotImplementedError:
-                # This scmtool doesn't have changesets
-                pass
-            except SCMError, e:
-                self.errors['changenum'] = forms.util.ErrorList([str(e)])
-                raise ChangeSetError()
             except ChangeSetError, e:
                 self.errors['changenum'] = forms.util.ErrorList([str(e)])
                 raise e
+            except NotImplementedError:
+                # This scmtool doesn't have changesets
+                self.errors['changenum'] = forms.util.ErrorList(['Changesets are not supported.'])
+                raise ChangeSetError()
+            except SCMError, e:
+                self.errors['changenum'] = forms.util.ErrorList([str(e)])
+                raise ChangeSetError()
 
             if not changeset:
                 self.errors['changenum'] = forms.util.ErrorList([
@@ -198,7 +199,8 @@ class NewReviewRequestForm(forms.Form):
         except ChangeNumberInUseError:
             # The user is updating an existing review request, rather than
             # creating a new one.
-            review_request = ReviewRequest.objects.get(changenum=changenum)
+            review_request = ReviewRequest.objects.get(changenum=changenum,
+                                                       repository=repository)
             review_request.update_from_changenum(changenum)
 
             if review_request.status == 'D':
@@ -314,8 +316,6 @@ class UploadScreenshotForm(forms.Form):
         screenshot = Screenshot(caption=self.cleaned_data['caption'],
                                 draft_caption=self.cleaned_data['caption'])
         screenshot.image.save(file.name, file, save=True)
-
-        review_request.screenshots.add(screenshot)
 
         draft = ReviewRequestDraft.create(review_request)
         draft.screenshots.add(screenshot)

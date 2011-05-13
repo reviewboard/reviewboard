@@ -74,6 +74,7 @@ resources are children of others.
 
           * :ref:`webapi2.0-screenshot-comment-list-resource`
 
+  * :ref:`webapi2.0-search-resource`
   * :ref:`webapi2.0-server-info-resource`
   * :ref:`webapi2.0-session-resource`
   * :ref:`webapi2.0-user-list-resource`

@@ -33,16 +33,17 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.filemanager.forms import UploadFileForm
 from reviewboard.filemanager.models import UploadedFile
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
-from reviewboard.reviews.models import Comment, DiffSet, FileDiff, Group, \
-                                       Repository, ReviewRequest, \
-                                       ReviewRequestDraft, Review, \
-                                       ScreenshotComment, Screenshot, \
+from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
+                                       FileDiff, Group, Repository, \
+                                       ReviewRequest, ReviewRequestDraft, \
+                                       Review, ScreenshotComment, Screenshot, \
                                        UploadedFileComment
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
@@ -174,14 +175,87 @@ class WebAPIResource(DjbletsWebAPIResource):
                                kwargs=href_kwargs))
 
 
-class BaseDiffCommentResource(WebAPIResource):
+class BaseCommentResource(WebAPIResource):
+    """Base class for comment resources.
+
+    Provides common fields and functionality for all comment resources.
+    """
+    fields = {
+        'issue_opened': {
+            'type': bool,
+            'description': 'Whether or not a comment opens an issue.',
+        },
+        'issue_status': {
+            'type': ('dropped', 'open', 'resolved'),
+            'description': 'The status of an issue.',
+        },
+    }
+
+    def update_issue_status(self, request, comment_resource, *args, **kwargs):
+        """Updates the issue status for a comment.
+
+        Handles all of the logic for updating an issue status.
+        """
+        try:
+            review_request = review_request_resource.get_object(request, *args,
+                                                                **kwargs)
+            review = review_resource.get_object(request, *args, **kwargs)
+            comment = comment_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        # We want to ensure that the user that is trying to modify the state
+        # of an issue is the user who created the review request.
+        if not review_request_resource.has_modify_permissions(request,
+                                                              review_request):
+            return _no_access_error(request.user)
+
+        # We can only update the status of an issue if an issue has been
+        # opened
+        if not comment.issue_opened:
+            raise PermissionDenied
+
+        # We can only update the status of the issue
+        issue_status = \
+            BaseComment.issue_string_to_status(kwargs.get('issue_status'))
+        comment.issue_status = issue_status
+        comment.save()
+
+        last_activity_time, updated_object = review_request.get_last_activity()
+
+        return 200, {
+            comment_resource.item_result_key: comment,
+            'last_activity_time': last_activity_time,
+        }
+
+    def should_update_issue_status(self, comment, **kwargs):
+        """ Returns true if the comment should have its issue status updated.
+
+        Determines if a comment should have its issue status updated based
+        on the current state of the comment, the review, and the arguments
+        passed in the request.
+        """
+        return comment.review.get().public and (comment.issue_opened or \
+            kwargs.get('issue_opened')) and \
+            BaseComment \
+            .issue_string_to_status(kwargs.get('issue_status', None)) \
+            != comment.issue_status
+
+    def serialize_issue_status_field(self, obj):
+        return BaseComment.issue_status_to_string(obj.issue_status)
+
+
+base_comment_resource = BaseCommentResource()
+
+
+class BaseDiffCommentResource(BaseCommentResource):
     """Base class for diff comment resources.
 
     Provides common fields and functionality for all diff comment resources.
     """
     model = Comment
     name = 'diff_comment'
-    fields = {
+    fields = dict({
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
@@ -222,7 +296,7 @@ class BaseDiffCommentResource(WebAPIResource):
             'type': 'reviewboard.webapi.resources.UserResource',
             'description': 'The user who made the comment.',
         },
-    }
+    }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
 
@@ -338,12 +412,6 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         """
         pass
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.filediff.diffset.history.review_request, request,
-            *args, **kwargs)
-
 filediff_comment_resource = FileDiffCommentResource()
 
 
@@ -396,10 +464,15 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'description': 'The ID of the second file diff in the '
                                'interdiff the comment is on.',
             },
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether the comment opens an issue.',
+            },
         },
     )
     def create(self, request, first_line, num_lines, text,
-               filediff_id, interfilediff_id=None, *args, **kwargs):
+               filediff_id, issue_opened=False, interfilediff_id=None, *args,
+               **kwargs):
         """Creates a new diff comment.
 
         This will create a new diff comment on this review. The review
@@ -449,7 +522,14 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                                  interfilediff=interfilediff,
                                  text=text,
                                  first_line=first_line,
-                                 num_lines=num_lines)
+                                 num_lines=num_lines,
+                                 issue_opened=bool(issue_opened))
+
+        if issue_opened:
+            new_comment.issue_status = BaseComment.OPEN
+        else:
+            new_comment.issue_status = None
+
         new_comment.save()
 
         review.comments.add(new_comment)
@@ -476,6 +556,14 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                 'type': str,
                 'description': 'The comment text.',
             },
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether or not the comment opens an issue.',
+            },
+            'issue_status': {
+                'type': ('dropped', 'open', 'resolved'),
+                'description': 'The status of an open issue.',
+            }
         },
     )
     def update(self, request, *args, **kwargs):
@@ -490,10 +578,23 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        # Determine whether or not we're updating the issue status.
+        # If so, delegate to the base_comment_resource.
+        if base_comment_resource.should_update_issue_status(diff_comment,
+                                                            **kwargs):
+            return base_comment_resource.update_issue_status(request, self,
+                                                             *args, **kwargs)
+
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        for field in ('text', 'first_line', 'num_lines'):
+        # If we've updated the comment from having no issue opened,
+        # to having an issue opened, we need to set the issue status
+        # to OPEN.
+        if not diff_comment.issue_opened and kwargs.get('issue_opened', False):
+            diff_comment.issue_status = BaseComment.OPEN
+
+        for field in ('text', 'first_line', 'num_lines', 'issue_opened'):
             value = kwargs.get(field, None)
 
             if value is not None:
@@ -699,12 +800,6 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
         the second revision in the range using ``?interdiff-revision=``.
         """
         pass
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_reply_resource.get_href(
-            obj.review.get(), request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 review_reply_diff_comment_resource = ReviewReplyDiffCommentResource()
 
@@ -1000,6 +1095,149 @@ class FileDiffResource(WebAPIResource):
         return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 filediff_resource = FileDiffResource()
+
+
+class ChangeResource(WebAPIResource):
+    """Provides information on a change made to a public review request.
+
+    A change includes, optionally, text entered by the user describing the
+    change, and also includes a list of fields that were changed on the
+    review request.
+
+    The list of fields changed are in ``fields_changed``. The keys are the
+    names of the fields, and the values are details on that particular
+    change to the field.
+
+    For ``summary``, ``description``, ``testing_done`` and ``branch`` fields,
+    the following detail keys will be available:
+
+      * ``old``: The old value of the field.
+      * ``new``: The new value of the field.
+
+    For ``diff` fields:
+
+      * ``added``: The diff that was added.
+
+    For ``bugs_closed`` fields:
+
+      * ``old``: A list of old bugs.
+      * ``new``: A list of new bugs.
+      * ``removed``: A list of bugs that were removed, if any.
+      * ``added``: A list of bugs that were added, if any.
+
+    For ``screenshots``, ``target_people`` and ``target_groups`` fields:
+
+      * ``old``: A list of old items.
+      * ``new``: A list of new items.
+      * ``removed``: A list of items that were removed, if any.
+      * ``added``: A list of items that were added, if any.
+
+    For ``screenshot_captions`` fields:
+
+      * ``old``: The old caption.
+      * ``new``: The new caption.
+      * ``screenshot``: The screenshot that was updated.
+    """
+    model = ChangeDescription
+    name = 'change'
+    fields = {
+        'id': {
+            'type': int,
+            'description': 'The numeric ID of the change description.',
+        },
+        'fields_changed': {
+            'type': dict,
+            'description': 'The fields that were changed.',
+        },
+        'text': {
+            'type': str,
+            'description': 'The description of the change written by the '
+                           'submitter.'
+        },
+        'timestamp': {
+            'type': str,
+            'description': 'The date and time that the change was made '
+                           '(in YYYY-MM-DD HH:MM:SS format).',
+        },
+    }
+    uri_object_key = 'change_id'
+    model_parent_key = 'review_request'
+    allowed_methods = ('GET',)
+
+    _changed_fields_to_models = {
+        'screenshots': Screenshot,
+        'target_people': User,
+        'target_groups': Group,
+    }
+
+    def serialize_fields_changed_field(self, obj):
+        def get_object_cached(model, pk, obj_cache={}):
+            if model not in obj_cache:
+                obj_cache[model] = {}
+
+            if pk not in obj_cache[model]:
+                obj_cache[model][pk] = model.objects.get(pk=pk)
+
+            return obj_cache[model][pk]
+
+        fields_changed = obj.fields_changed.copy()
+
+        for field, data in fields_changed.iteritems():
+            if field == 'screenshot_captions':
+                fields_changed[field] = [
+                    {
+                        'old': data[pk]['old'][0],
+                        'new': data[pk]['new'][0],
+                        'screenshot': get_object_cached(Screenshot, pk),
+                    }
+                    for pk, values in data.iteritems()
+                ]
+            elif field == 'diff':
+                data['added'] = get_object_cached(DiffSet, data['added'][0][2])
+            elif field == 'bugs_closed':
+                for key in ('new', 'old', 'added', 'removed'):
+                    if key in data:
+                        data[key] = [bug[0] for bug in data[key]]
+            elif field in ('summary', 'description', 'testing_done', 'branch'):
+                if 'old' in data:
+                    data['old'] = data['old'][0]
+
+                if 'new' in data:
+                    data['new'] = data['new'][0]
+            elif field in self._changed_fields_to_models:
+                model = self._changed_fields_to_models[field]
+
+                for key in ('new', 'old', 'added', 'removed'):
+                    if key in data:
+                        data[key] = [
+                            get_object_cached(model, item[2])
+                            for item in data[key]
+                        ]
+            else:
+                # Just ignore everything else. We don't want to have people
+                # depend on some sort of data that we later need to change the
+                # format of.
+                pass
+
+        return fields_changed
+
+    def get_queryset(self, request, review_request_id, *args, **kwargs):
+        return self.model.objects.filter(review_request=review_request_id,
+                                         public=True)
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get_list(self, *args, **kwargs):
+        """Returns a list of changes made on a review request."""
+        pass
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get(self, *args, **kwargs):
+        """Returns the information on a change to a review request."""
+        pass
+
+change_resource = ChangeResource()
 
 
 class DiffResource(WebAPIResource):
@@ -2059,7 +2297,7 @@ class RepositoryResource(WebAPIResource):
 
         error_result = self._check_repository(scmtool.get_scmtool_class(),
                                               path, username, password,
-                                              trust_host)
+                                              local_site, trust_host)
 
         if error_result is not None:
             return error_result
@@ -2185,6 +2423,7 @@ class RepositoryResource(WebAPIResource):
                 repository.path,
                 repository.username,
                 repository.password,
+                repository.local_site,
                 trust_host)
 
             if error_result is not None:
@@ -2224,12 +2463,18 @@ class RepositoryResource(WebAPIResource):
         return 204, {}
 
     def _check_repository(self, scmtool_class, path, username, password,
-                          trust_host):
+                          local_site, trust_host):
+        if local_site:
+            local_site_name = local_site.name
+        else:
+            local_site_name = None
+
         while 1:
             # Keep doing this until we have an error we don't want
             # to ignore, or it's successful.
             try:
-                scmtool_class.check_repository(path, username, password)
+                scmtool_class.check_repository(path, username, password,
+                                               local_site_name)
                 return None
             except RepositoryNotFoundError:
                 return MISSING_REPOSITORY
@@ -2238,7 +2483,8 @@ class RepositoryResource(WebAPIResource):
                     try:
                         sshutils.replace_host_key(e.hostname,
                                                   e.raw_expected_key,
-                                                  e.raw_key)
+                                                  e.raw_key,
+                                                  local_site_name)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2252,7 +2498,8 @@ class RepositoryResource(WebAPIResource):
             except UnknownHostKeyError, e:
                 if trust_host:
                     try:
-                        sshutils.add_host_key(e.hostname, e.raw_key)
+                        sshutils.add_host_key(e.hostname, e.raw_key,
+                                              local_site_name)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2265,7 +2512,7 @@ class RepositoryResource(WebAPIResource):
             except UnverifiedCertificateError, e:
                 if trust_host:
                     try:
-                        scmtool_class.accept_certificate(path)
+                        scmtool_class.accept_certificate(path, local_site_name)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2339,10 +2586,29 @@ class BaseScreenshotResource(WebAPIResource):
 
     uri_object_key = 'screenshot_id'
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
+    def get_queryset(self, request, review_request_id, is_list=False,
+                     *args, **kwargs):
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
-        return self.model.objects.filter(review_request=review_request)
+
+        q = Q(review_request=review_request)
+
+        if not is_list:
+            q = q | Q(inactive_review_request=review_request)
+
+        if request.user == review_request.submitter:
+            try:
+                draft = review_request_draft_resource.get_object(
+                    request, review_request_id, *args, **kwargs)
+
+                q = q | Q(drafts=draft)
+
+                if not is_list:
+                    q = q | Q(inactive_drafts=draft)
+            except ObjectDoesNotExist:
+                pass
+
+        return self.model.objects.filter(q)
 
     def serialize_path_field(self, obj):
         return obj.image.name
@@ -2481,12 +2747,6 @@ class BaseScreenshotResource(WebAPIResource):
         draft.save()
 
         return 204, {}
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.review_request.get(), request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
 class DraftScreenshotResource(BaseScreenshotResource):
@@ -2916,12 +3176,14 @@ class ReviewRequestDraftResource(WebAPIResource):
     def prepare_draft(self, request, review_request):
         """Creates a draft, if the user has permission to."""
         if not review_request.is_mutable_by(request.user):
-            raise PermissionDenied
+           raise PermissionDenied
 
         return ReviewRequestDraft.create(review_request)
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id)
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
+        return self.model.objects.filter(review_request=review_request)
 
     def serialize_bugs_closed_field(self, obj):
         return obj.get_bug_list()
@@ -3253,11 +3515,12 @@ class ReviewRequestDraftResource(WebAPIResource):
 review_request_draft_resource = ReviewRequestDraftResource()
 
 
-class BaseScreenshotCommentResource(WebAPIResource):
+class BaseScreenshotCommentResource(BaseCommentResource):
     """A base resource for screenshot comments."""
     model = ScreenshotComment
     name = 'screenshot_comment'
-    fields = {
+
+    fields = dict({
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
@@ -3304,7 +3567,7 @@ class BaseScreenshotCommentResource(WebAPIResource):
             'description': 'The height of the comment region on the '
                            'screenshot.',
         },
-    }
+    }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
 
@@ -3337,12 +3600,6 @@ class BaseScreenshotCommentResource(WebAPIResource):
         position of the comment for use as an overlay on the screenshot.
         """
         pass
-
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_resource.get_href(
-            obj.review.all()[0], request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
 class ScreenshotCommentResource(BaseScreenshotCommentResource):
@@ -3424,9 +3681,15 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'description': 'The comment text.',
             },
         },
+        optional = {
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether or not the comment opens an issue.',
+            },
+        }
     )
     def create(self, request, screenshot_id, x, y, w, h, text,
-               *args, **kwargs):
+               issue_opened=False, *args, **kwargs):
         """Creates a screenshot comment on a review.
 
         This will create a new comment on a screenshot as part of a review.
@@ -3454,7 +3717,13 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
             }
 
         new_comment = self.model(screenshot=screenshot, x=x, y=y, w=w, h=h,
-                                 text=text)
+                                 text=text, issue_opened=bool(issue_opened))
+
+        if issue_opened:
+            new_comment.issue_status = BaseComment.OPEN
+        else:
+            new_comment.issue_status = None
+
         new_comment.save()
 
         review.screenshot_comments.add(new_comment)
@@ -3489,6 +3758,14 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 'type': str,
                 'description': 'The comment text.',
             },
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether or not the comment opens an issue.',
+            },
+            'issue_status': {
+                'type': ('dropped', 'open', 'resolved'),
+                'description': 'The status of an open issue.',
+            },
         },
     )
     def update(self, request, *args, **kwargs):
@@ -3504,12 +3781,25 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        # Determine whether or not we're updating the issue status.
+        # If so, delegate to the base_comment_resource.
+        if base_comment_resource.should_update_issue_status(screenshot_comment,
+                                                            **kwargs):
+            return base_comment_resource.update_issue_status(request, self,
+                                                             *args, **kwargs)
+
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        for field in ('x', 'y', 'w', 'h', 'text'):
-            value = kwargs.get(field, None)
+        # If we've changed the screenshot comment from having no issue
+        # opened, to having an issue opened, we should update the issue
+        # status to be OPEN
+        if not screenshot_comment.issue_opened \
+            and kwargs.get('issue_opened', False):
+            screenshot_comment.issue_status = BaseComment.OPEN
 
+        for field in ('x', 'y', 'w', 'h', 'text', 'issue_opened'):
+            value = kwargs.get(field, None)
             if value is not None:
                 setattr(screenshot_comment, field, value)
 
@@ -4155,12 +4445,6 @@ class BaseReviewResource(WebAPIResource):
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return not review.public and review.user == request.user
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.review_request, request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
@@ -4585,12 +4869,6 @@ class ReviewReplyResource(BaseReviewResource):
             self.item_result_key: reply,
         }
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_resource.get_href(obj.base_reply_to, request,
-                                        *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
 review_reply_resource = ReviewReplyResource()
 
 
@@ -4660,6 +4938,9 @@ class ScreenshotResource(BaseScreenshotResource):
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_parent_object(self, obj):
+        return obj.get_review_request()
 
     @augment_method_from(BaseScreenshotResource)
     def get_list(self, *args, **kwargs):
@@ -4991,7 +5272,9 @@ class ReviewRequestResource(WebAPIResource):
         },
     }
     uri_object_key = 'review_request_id'
+    model_object_key = 'display_id'
     item_child_resources = [
+        change_resource,
         diffset_resource,
         review_request_draft_resource,
         review_request_last_update_resource,
@@ -5537,6 +5820,83 @@ class ReviewRequestResource(WebAPIResource):
 review_request_resource = ReviewRequestResource()
 
 
+class SearchResource(WebAPIResource, DjbletsUserResource):
+    """
+    Provides information on users, groups and review requests.
+
+    This is the resource for the autocomplete widget for
+    quick search. This resource helps filter for
+    users, groups and review requests.
+    """
+    name = 'search'
+    singleton = True
+
+    @webapi_check_local_site
+    @webapi_check_login_required
+    def get(self, request, local_site_name=None, fullname=None, q=None,
+            displayname=None, id=None, *args, **kwargs):
+        """Returns information on users, groups and review requests.
+
+        This is used by the autocomplete widget for quick search to
+        get information on users, groups and review requests. This
+        function returns users' first name, last name and username,
+        groups' name and display name, and review requests' ID and
+        summary.
+        """
+        search_q = request.GET.get('q', None)
+        local_site = _get_local_site(local_site_name)
+        if local_site:
+            query = local_site.users.filter(is_active=True)
+        else:
+            query = self.model.objects.filter(is_active=True)
+
+        if search_q:
+            q = (Q(username__istartswith=search_q) |
+                 Q(first_name__istartswith=search_q) |
+                 Q(last_name__istartswith=search_q))
+
+            if request.GET.get('fullname', None):
+                q = q | (Q(first_name__istartswith=search_q) |
+                         Q(last_name__istartswith=search_q))
+
+            query = query.filter(q)
+
+        search_q = request.GET.get('q', None)
+        local_site = _get_local_site(local_site_name)
+        query_groups = Group.objects.filter(local_site=local_site)
+
+        if search_q:
+            q = (Q(name__istartswith=search_q) |
+                  Q(display_name__istartswith=search_q))
+
+            if request.GET.get('displayname', None):
+                q = q | Q(display_name__istartswith=search_q)
+
+            query_groups = query_groups.filter(q)
+
+        search_q = request.GET.get('q', None)
+        query_review_requests = ReviewRequest.objects.filter(local_site=local_site)
+
+        if search_q:
+            q = (Q(id__istartswith=search_q) |
+                  Q(summary__icontains=search_q))
+
+            if request.GET.get('id', None):
+                q = q | Q(id__istartswith=search_q)
+
+            query_review_requests = query_review_requests.filter(q)
+
+        return 200, {
+            self.name: {
+                'users': query,
+                'groups': query_groups,
+                'review_requests': query_review_requests,
+            },
+        }
+
+search_resource = SearchResource()
+
+
 class ServerInfoResource(WebAPIResource):
     """Information on the Review Board server.
 
@@ -5570,6 +5930,7 @@ class ServerInfoResource(WebAPIResource):
                     'url': url,
                     'administrators': [{'name': name, 'email': email}
                                        for name, email in settings.ADMINS],
+                    'time_zone': settings.TIME_ZONE,
                 },
             },
         }
@@ -5648,6 +6009,7 @@ class RootResource(DjbletsRootResource):
             repository_resource,
             review_group_resource,
             review_request_resource,
+            search_resource,
             server_info_resource,
             session_resource,
             user_resource,
@@ -5666,6 +6028,7 @@ class RootResource(DjbletsRootResource):
 root_resource = RootResource()
 
 
+register_resource_for_model(ChangeDescription, change_resource)
 register_resource_for_model(
     Comment,
     lambda obj: obj.review.get().is_reply() and

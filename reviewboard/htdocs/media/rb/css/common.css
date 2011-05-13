@@ -55,6 +55,9 @@ ul.errorlist li {
   vertical-align: text-bottom;
 }
 
+textarea {
+  resize: none;
+}
 
 /****************************************************************************
  * Banners
@@ -64,6 +67,7 @@ ul.errorlist li {
   border: 1px #4e9a06 solid;
   margin-bottom: 10px;
   padding: 8px 10px;
+  z-index: 999;
 }
 
 .banner h1 {
@@ -481,16 +485,67 @@ form table td.label {
 
 
 /****************************************************************************
+ * Auto-complete widget
+ ****************************************************************************/
+
+/* Content container wrapper */
+
+.ui-autocomplete-results
+{
+  background: #ffffff;
+  border: 1px solid #808080;
+  overflow: hidden;
+  position: absolute;
+  width: 100%;
+  z-index: 9050;
+}
+
+/* Footer */
+.ui-autocomplete-footer {
+  background: #ECECEC;
+  border-top: 1px #C0C0C0 solid;
+  padding: 3px 6px;
+}
+
+/* Results list */
+.ui-autocomplete-results ul {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Result item */
+.ui-autocomplete-results li {
+  cursor: pointer;
+  margin: 0;
+  padding: 3px 6px;
+  position: relative;
+  white-space: nowrap;
+}
+
+.ui-autocomplete-results li span {
+  margin-left: 6px;
+  position: absolute;
+  right: 6px;
+}
+
+/* Highlighted result item */
+.ui-autocomplete-results .ui-autocomplete-over
+{
+  background: #71a5db;
+  color: #FFF;
+}
+
+
+/****************************************************************************
  * User page hover
  ****************************************************************************/
 
-.user-infobox {
+#user-infobox {
   background: #F9F9F9;
   border: 1px black solid;
-  bottom: 2em;
   display: block;
   height: 12em;
-  left: -2em;
   padding: 1em;
   position: absolute;
   width: 30em;
@@ -503,44 +558,45 @@ form table td.label {
   box-shadow: 0px 0px 4px #000;
 }
 
-.user-infobox.loading {
+#user-infobox.loading {
   background-image: url("../images/spinner.gif");
   background-position: 1em 1em;
   background-repeat: no-repeat;
 }
 
-.user-infobox .infobox-pic {
+#user-infobox .infobox-pic {
   float: left;
   width: 85px;
   margin-right: 1em;
 }
 
-.user-infobox .infobox-text {
+#user-infobox .infobox-text {
   color: black;
   float: left;
 }
 
-.user-infobox p {
+#user-infobox p {
   font-size: 1.2em;
   margin: 0.5em 0;
   padding: 0;
 }
 
-.user-infobox h2 {
+#user-infobox h2 {
   font-size: 1.4em;
   margin: 0 0 0.5em 0;
   padding: 0;
+  text-decoration: none;
 }
 
-.user-infobox .logged-in {
+#user-infobox .logged-in {
   margin-top: 2em;
 }
 
-.user-infobox .logged-in, .user-infobox .joined {
+#user-infobox .logged-in, .user-infobox .joined {
   font-size: 0.8em;
 }
 
-.user-infobox #infobox-text h2 {
+#user-infobox #infobox-text h2 {
   margin-top: 0;
   padding-top: 0;
 }

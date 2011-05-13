@@ -16,7 +16,7 @@ If a patch is posted there, we will ask that it be resubmitted to our
 Review Board server.
 
 Before submitting patches, please make sure the code adheres to the
-:ref:`Coding Standards`.
+:ref:`coding-standards`.
 
 We also strongly encourage contributors to submit unit tests along with
 their code.

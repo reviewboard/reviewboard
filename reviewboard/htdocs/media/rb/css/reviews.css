@@ -314,6 +314,7 @@
 
 .box .collapse-button {
   background: url('../images/collapse.png') no-repeat;
+  cursor: pointer;
   float: left;
   height: 15px;
   padding-right: 5px;
@@ -905,6 +906,34 @@
   background-color: #F6F6F6;
 }
 
+.issue-state {
+  font-size: 90%;
+  font-weight: bold;
+  padding-bottom: 5px;
+  padding-left: 25px;
+  padding-top: 5px;
+}
+
+.issue-state.dropped {
+  background: url('../images/cancel_grey.png') #E5E5E5 no-repeat 5px 50%;
+}
+
+.issue-state.open {
+  background: url('../images/warning.png') #FFFF7C no-repeat 5px 50%;
+  border: 1px solid #ff7500;
+}
+
+.issue-state.resolved {
+  background: url('../images/tick.png') #FAFAFA no-repeat 5px 50%;
+}
+
+.issue-button {
+  border: 1px outset black;
+  font-size: 90%;
+  font-weight: bold;
+  margin-left: 5px;
+}
+
 
 /****************************************************************************
  * Banners
@@ -992,65 +1021,6 @@
   -moz-border-radius: 8px;
   -webkit-border-radius: 8px;
   border-radius: 8px;
-}
-
-
-/****************************************************************************
- * Auto-complete widget
- ****************************************************************************/
-/* Content container wrapper */
-.ui-autocomplete-results
-{
-  background: #ffffff;
-  border: 1px solid #808080;
-  overflow: hidden;
-  position: absolute;
-  width: 100%;
-  z-index: 9050;
-}
-
-/* Footer */
-.ui-autocomplete-footer {
-  background: #ECECEC;
-  border-top: 1px #C0C0C0 solid;
-  padding: 3px 6px;
-}
-
-/* Results list */
-.ui-autocomplete-results ul {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
-
-/* Result item */
-.ui-autocomplete-results li {
-  cursor: pointer;
-  margin: 0;
-  padding: 3px 6px;
-  position: relative;
-  white-space: nowrap;
-}
-
-.ui-autocomplete-results li span {
-  margin-left: 6px;
-  position: absolute;
-  right: 6px;
-}
-
-/* Pre-highlighted result item */
-/*
-.ui-autocomplete-results .ui-autocomplete-over
-{
-  background: #9cc2eb;
-}
-*/
-
-/* Highlighted result item */
-.ui-autocomplete-results .ui-autocomplete-over
-{
-  background: #71a5db;
-  color: #FFF;
 }
 
 /* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */

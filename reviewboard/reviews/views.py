@@ -1057,6 +1057,11 @@ def search(request,
         # FIXME: I'm not super thrilled with this
         return HttpResponseRedirect(reverse("root"))
 
+    if query.isdigit():
+        query_review_request = get_object_or_none(ReviewRequest, pk=query)
+        if query_review_request:
+            return HttpResponseRedirect(query_review_request.get_absolute_url())
+
     import lucene
     lv = [int(x) for x in lucene.VERSION.split('.')]
     lucene_is_2x = lv[0] == 2 and lv[1] < 9

@@ -31,12 +31,12 @@
 {% endcomment %}
 
     <script type="text/javascript">
+        var comment = gReviewRequest.createReview().createScreenshotComment(
+            {{comment.id}}, {{comment.screenshot.id}},
+            {{comment.x}}, {{comment.y}}, {{comment.w}}, {{comment.h}});
+        comment.ready(function() {});
         var editor = $("#screenshot-comment-{{comment.id}}")
-            .reviewFormCommentEditor(
-                new RB.ScreenshotComment({{comment.screenshot.id}},
-                                         {{comment.x}}, {{comment.y}},
-                                         {{comment.w}}, {{comment.h}},
-                                         "{{comment.text|escapejs}}"));
+            .reviewFormCommentEditor(comment);
         $("#edit-screenshot-comment-{{comment.id").click(function() {
             editor.inlineEditor("startEdit");
         });
@@ -83,22 +83,25 @@
 {% endcomment %}
 
     <script type="text/javascript">
-        var editor = $("#diff-comment-{{comment.id}}").reviewFormCommentEditor(
-            new RB.DiffComment(
-                {
-                    'id': {{comment.filediff.id}},
-                    'revision': {{comment.filediff.diffset.revision}}
-                },
+        var comment = gReviewRequest.createReview().createDiffComment(
+            {{comment.id}},
+            {
+                'id': {{comment.filediff.id}},
+                'revision': {{comment.filediff.diffset.revision}}
+            },
 {% if comment.interfilediff %}
-                {
-                    'id': {{comment.interfilediff.id}},
-                    'revision': {{comment.interfilediff.diffset.revision}}
-                },
+            {
+                'id': {{comment.interfilediff.id}},
+                'revision': {{comment.interfilediff.diffset.revision}}
+            },
 {% else %}
-                null,
+            null,
 {% endif %}
-                {{comment.first_line}}, {{comment.last_line}},
-                "{{comment.text|escapejs}}"));
+            {{comment.first_line}}, {{comment.last_line}});
+        comment.ready(function() {});
+
+        var editor = $("#diff-comment-{{comment.id}}")
+            .reviewFormCommentEditor(comment);
         $("#edit-diff-comment-{{comment.id}}").click(function() {
             editor.inlineEditor("startEdit");
         });

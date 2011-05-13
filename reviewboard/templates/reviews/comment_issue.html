@@ -1,0 +1,14 @@
+<div class="issue-state">
+  <span class="issue-message"></span>
+  <input type="button" value="Fixed" class="issue-button resolve" style="display:none;"/>
+  <input type="button" value="Drop" class="issue-button drop" style="display:none;"/>
+  <input type="button" value="Re-open" class="issue-button reopen" style="display:none;"/>
+</div>
+<script language="javascript">
+  $(document).ready(function() {
+    $("#comment-{{comment.id}}-issue")
+        .commentIssue({{review.id}}, {{comment.id}}, "{{comment_type}}", "{{issue_status}}",
+                      {{interactive}});
+  });
+</script>
+

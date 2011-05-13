@@ -121,6 +121,7 @@ defaults.update({
     'diffviewer_syntax_highlighting_threshold': 0,
     'diffviewer_show_trailing_whitespace': True,
     'mail_send_review_mail':               False,
+    'mail_send_new_user_mail':             False,
     'search_enable':                       False,
     'site_domain_method':                  'http',
 
@@ -256,4 +257,7 @@ def load_site_config():
     settings.AWS_ACCESS_KEY_ID = str(siteconfig.get('aws_access_key_id'))
     settings.AWS_SECRET_ACCESS_KEY = str(siteconfig.get('aws_secret_access_key'))
     settings.AWS_STORAGE_BUCKET_NAME = str(siteconfig.get('aws_s3_bucket_name'))
-    settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
+    try:
+        settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
+    except ValueError:
+        settings.AWS_CALLING_FORMAT = 0

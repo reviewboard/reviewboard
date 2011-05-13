@@ -1,0 +1,75 @@
+{% load djblets_utils %}
+{% load i18n %}
+
+<div class="confirmation" id="ssh-public-key-popup">
+ <p><label class="required">{% trans "SSH Public Key:" %}</label></p>
+ <textarea cols="65" rows="11" readonly="readonly" class="public-key">{{form.public_key}}</textarea>
+</div>
+
+{%  with form.hostkeyerror as hostkeyerror %}
+{%  with form.certerror as certerror %}
+{%  with form.certerror.certificate as certificate %}
+{%   if hostkeyerror or certerror %}
+<div class="confirmation">
+
+{%   if hostkeyerror %}
+ {{hostkeyerror|paragraphs}}
+{%    if hostkeyerror.key %}
+ <p>RSA key fingerprint is {{hostkeyerror.key}}.</p>
+{%    endif %}
+{%    if hostkeyerror.expected_key %}
+ <p>Expected fingerprint is {{hostkeyerror.expected_key}}.</p>
+{%    endif %}
+
+{%   else %}{% if certerror %}
+
+ {{certerror|paragraphs}}
+{%    if certificate.failures %}
+ <p>{% trans "There were errors validating this certificate:" %}</p>
+ <ul>
+{%     for failure in certificate.failures %}
+  <li>{{failure}}</li>
+{%     endfor %}
+ </ul>
+{%    endif %}
+ <div class="cert-info">
+  <h3>{% trans "Certificate information:" %}</h3>
+  <p><label>{% trans "Hostname:" %}</label> {{certificate.hostname}}</p>
+  <p><label>{% trans "Valid:" %}</label>
+{% blocktrans with certificate.valid_from as valid_from and certificate.valid_until as valid_until %}
+   from {{valid_from}} until {{valid_until}}
+{% endblocktrans %}
+  </p>
+  <p><label>{% trans "Issuer:" %}</label> {{certificate.issuer}}</p>
+  <p><label>{% trans "Fingerprint:" %}</label> {{certificate.fingerprint}}</p>
+ </div>
+{%   endif %}{% endif %}
+
+ <p>{% blocktrans %}
+  Do you trust this host, or do you want to go back and edit the
+  repository information?
+ {% endblocktrans %}</p>
+ <div class="form-row">
+  <input type="submit" name="trust_host" value="{% trans "I trust this host" %}" />
+  <input type="submit" name="reedit_repository" value="{% trans "Re-edit repository" %}" />
+ </div>
+</div>
+{%   endif %}
+{%  endwith %}
+{%  endwith %}
+{%  endwith %}
+
+{%  with form.userkeyerror as userkeyerror %}
+{%   if userkeyerror %}
+<div class="confirmation">
+{{userkeyerror|paragraphs}}
+
+{% url settings-ssh as ssh_settings_url %}
+<p>{% blocktrans %}
+ Review Board doesn't have a public key to send to the server. You can
+ <a href="{{ssh_settings_url}}" target="ssh_settings">create one</a>, add it to the server,
+ and then try again.
+{% endblocktrans %}</p>
+</div>
+{%   endif %}
+{%  endwith %}

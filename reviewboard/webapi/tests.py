@@ -3,6 +3,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.core import mail
+from django.core.files import File
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
@@ -11,6 +12,7 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
 import paramiko
 
 from reviewboard import initialize
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Group, ReviewRequest, \
@@ -183,6 +185,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         self.assertTrue(self.client.login(username=username, password=username))
 
+        return User.objects.get(username=username)
+
     def _postNewReviewRequest(self, local_site_name=None,
                               repository=None):
         """Creates a review request and returns the payload response."""
@@ -226,7 +230,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def _postNewDiffComment(self, review_request, review_id, comment_text,
                             filediff_id=None, interfilediff_id=None,
-                            first_line=10, num_lines=5):
+                            first_line=10, num_lines=5, issue_opened=None,
+                            issue_status=None):
         """Creates a diff comment and returns the payload response."""
         if filediff_id is None:
             diffset = review_request.diffset_history.diffsets.latest()
@@ -243,6 +248,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         if interfilediff_id is not None:
             data['interfilediff_id'] = interfilediff_id
 
+        if issue_opened is not None:
+            data['issue_opened'] = issue_opened
+
+        if issue_status is not None:
+            data['issue_status'] = issue_status
+
         if review_request.local_site:
             local_site_name = review_request.local_site.name
         else:
@@ -258,7 +269,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return rsp
 
     def _postNewScreenshotComment(self, review_request, review_id, screenshot,
-                                  comment_text, x, y, w, h):
+                                  comment_text, x, y, w, h, issue_opened=None,
+                                  issue_status=None):
         """Creates a screenshot comment and returns the payload response."""
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -273,6 +285,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             'w': w,
             'h': h,
         }
+
+        if issue_opened is not None:
+            post_data['issue_opened'] = issue_opened
+
+        if issue_status is not None:
+            post_data['issue_status'] = issue_status
 
         review = Review.objects.get(pk=review_id)
         rsp = self.apiPost(
@@ -451,7 +469,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         expected_key = key2
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise BadHostKeyError(hostname, key, expected_key)
 
         SVNTool.check_repository = _check_repository
@@ -474,14 +492,14 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         expected_key = key2
         saw = {'replace_host_key': False}
 
-        def _replace_host_key(_hostname, _expected_key, _key):
+        def _replace_host_key(_hostname, _expected_key, _key, local_site_name):
             self.assertEqual(hostname, _hostname)
             self.assertEqual(expected_key, _expected_key)
             self.assertEqual(key, _key)
             saw['replace_host_key'] = True
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             if not saw['replace_host_key']:
                 raise BadHostKeyError(hostname, key, expected_key)
 
@@ -501,7 +519,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         key = key1
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise UnknownHostKeyError(hostname, key)
 
         SVNTool.check_repository = _check_repository
@@ -521,13 +539,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         key = key1
         saw = {'add_host_key': False}
 
-        def _add_host_key(_hostname, _key):
+        def _add_host_key(_hostname, _key, local_site_name):
             self.assertEqual(hostname, _hostname)
             self.assertEqual(key, _key)
             saw['add_host_key'] = True
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             if not saw['add_host_key']:
                 raise UnknownHostKeyError(hostname, key)
 
@@ -554,7 +572,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         cert = Certificate()
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise UnverifiedCertificateError(cert)
 
         SVNTool.check_repository = _check_repository
@@ -585,12 +603,12 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         saw = {'accept_certificate': False}
 
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             if not saw['accept_certificate']:
                 raise UnverifiedCertificateError(cert)
 
         @classmethod
-        def _accept_certificate(cls, path):
+        def _accept_certificate(cls, path, local_site_name=None):
             saw['accept_certificate'] = True
 
         SVNTool.check_repository = _check_repository
@@ -605,7 +623,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def test_post_repository_with_missing_user_key(self):
         """Testing the POST repositories/ API with Missing User Key error"""
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise AuthenticationError(['publickey'], user_key=None)
 
         SVNTool.check_repository = _check_repository
@@ -618,7 +636,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
     def test_post_repository_with_authentication_error(self):
         """Testing the POST repositories/ API with Authentication Error"""
         @classmethod
-        def _check_repository(cls, path, username=None, password=None):
+        def _check_repository(cls, *args, **kwargs):
             raise AuthenticationError([])
 
         SVNTool.check_repository = _check_repository
@@ -810,15 +828,20 @@ class RepositoryInfoResourceTests(BaseWebAPITestCase):
     def test_get_repository_info_with_site(self):
         """Testing the GET repositories/<id>/info API with a local site"""
         self._login_user(local_site=True)
-        repository = Repository.objects.get(name='V8 SVN')
-        rsp = self.apiGet(self.get_url(repository, self.local_site_name))
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
+
+        rsp = self.apiGet(self.get_url(self.repository, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['info'],
-                         repository.get_scmtool().get_repository_info())
+                         self.repository.get_scmtool().get_repository_info())
 
     def test_get_repository_info_with_site_no_access(self):
         """Testing the GET repositories/<id>/info API with a local site and Permission Denied error"""
-        repository = Repository.objects.get(name='V8 SVN')
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
 
         self.apiGet(self.get_url(self.repository, self.local_site_name),
                     expected_status=403)
@@ -2770,6 +2793,126 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def test_post_diff_comments_with_issue(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/ API with an issue"""
+        diff_comment_text = "Test diff comment with an opened issue"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+
+        self._postNewDiffComment(review_request, review_id, diff_comment_text,
+                                 issue_opened=True)
+
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self.apiGet(self.get_list_url(review))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('diff_comments' in rsp)
+        self.assertEqual(len(rsp['diff_comments']), 1)
+        self.assertEqual(rsp['diff_comments'][0]['text'], diff_comment_text)
+        self.assertTrue(rsp['diff_comments'][0]['issue_opened'])
+
+    def test_update_diff_comment_with_issue(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id> API with an issue"""
+        diff_comment_text = "Test diff comment with an opened issue"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       diff_comment_text, issue_opened=True)
+        comment_id = rsp['diff_comment']['id']
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_opened': False,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertFalse(rsp['diff_comment']['issue_opened'])
+
+    def test_update_diff_comment_issue_status(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/diff-comments/<id> API with an issue"""
+        diff_comment_text = "Test diff comment with an opened issue"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the diff.
+        rsp = self._postNewDiff(review_request)
+        DiffSet.objects.get(pk=rsp['diff']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewDiffComment(review_request, review_id,
+                                       diff_comment_text, issue_opened=True)
+        comment_id = rsp['diff_comment']['id']
+
+        # First, let's ensure that the user that has created the comment
+        # cannot alter the issue_status while the review is unpublished.
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        # The issue_status should still be "open"
+        self.assertEqual(rsp['diff_comment']['issue_status'], 'open')
+
+        # Next, let's publish the review, and try altering the issue_status.
+        # This should be allowed, since the review request was made by the
+        # current user.
+        review.public = True
+        review.save()
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['diff_comment']['issue_status'], 'resolved')
+
+        # Finally, let's make sure that this user cannot alter the issue_status
+        # on a diff-comment for a review request that they didn't make.
+        review_request.submitter = User.objects.get(username='doc')
+        review_request.save()
+
+        rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
+            'issue_status': 'dropped',
+        }, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
     def _common_post_interdiff_comments(self, comment_text):
         # Post the review request
         rsp = self._postNewReviewRequest()
@@ -3388,6 +3531,7 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        review_request.publish(self.user)
 
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
@@ -3433,13 +3577,14 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         comment_text = "My Comment Text"
         x, y, w, h = 10, 10, 20, 20
 
-        self._login_user(local_site=True)
+        user = self._login_user(local_site=True)
 
         review_request = ReviewRequest.objects.filter(
             local_site__name=self.local_site_name)[0]
 
         rsp = self._postNewScreenshot(review_request)
         screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+        review_request.publish(user)
 
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
@@ -3480,6 +3625,208 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         reply_comment = ScreenshotComment.objects.get(
             pk=rsp['screenshot_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
+
+
+class ChangeResourceTests(BaseWebAPITestCase):
+    """Testing the ChangeResourceAPIs."""
+
+    def test_get_changes(self):
+        """Testing the GET review-requests/<id>/changes/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertTrue('changes' in rsp['review_request']['links'])
+
+        r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        change1 = ChangeDescription(public=True)
+        change1.record_field_change('summary', 'foo', 'bar')
+        change1.save()
+        r.changedescs.add(change1)
+
+        change2 = ChangeDescription(public=True)
+        change2.record_field_change('description', 'foo', 'bar')
+        change2.save()
+        r.changedescs.add(change2)
+
+        rsp = self.apiGet(rsp['review_request']['links']['changes']['href'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['changes']), 2)
+
+        self.assertEqual(rsp['changes'][0]['id'], change2.pk)
+        self.assertEqual(rsp['changes'][1]['id'], change1.pk)
+
+    def test_get_change(self):
+        """Testing the GET review-requests/<id>/changes/<id>/ API"""
+        def write_fields(obj, index):
+            for field, data in test_data.iteritems():
+                value = data[index]
+
+                if isinstance(value, list) and field not in model_fields:
+                    value = ','.join(value)
+
+                if field == 'diff':
+                    field = 'diffset'
+
+                setattr(obj, field, value)
+
+        changedesc_text = 'Change description text'
+        user1, user2 = User.objects.all()[:2]
+        group1, group2 = Group.objects.all()[:2]
+        diff1, diff2 = DiffSet.objects.all()[:2]
+        old_screenshot_caption = 'old screenshot'
+        new_screenshot_caption = 'new screenshot'
+        screenshot1 = Screenshot.objects.create()
+        screenshot2 = Screenshot.objects.create()
+        screenshot3 = Screenshot.objects.create(caption=old_screenshot_caption)
+
+        for screenshot in [screenshot1, screenshot2, screenshot3]:
+            f = open(self._getTrophyFilename(), 'r')
+            screenshot.image.save('foo.png', File(f), save=True)
+            f.close()
+
+        test_data = {
+            'summary': ('old summary', 'new summary', None, None),
+            'description': ('old description', 'new description', None, None),
+            'testing_done': ('old testing done', 'new testing done',
+                             None, None),
+            'branch': ('old branch', 'new branch', None, None),
+            'bugs_closed': (['1', '2', '3'], ['2', '3', '4'], ['1'], ['4']),
+            'target_people': ([user1], [user2], [user1], [user2]),
+            'target_groups': ([group1], [group2], [group1], [group2]),
+            'screenshots': ([screenshot1, screenshot3],
+                            [screenshot2, screenshot3],
+                            [screenshot1],
+                            [screenshot2]),
+            'diff': (diff1, diff2, None, diff2),
+        }
+        model_fields = ('target_people', 'target_groups', 'screenshots', 'diff')
+
+        rsp = self._postNewReviewRequest()
+        self.assertTrue('changes' in rsp['review_request']['links'])
+
+        # Set the initial data on the review request.
+        r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        write_fields(r, 0)
+        r.publish(self.user)
+
+        # Create some draft data that will end up in the change description.
+        draft = ReviewRequestDraft.create(r)
+        write_fields(draft, 1)
+
+        # Special-case screenshots
+        draft.inactive_screenshots = test_data['screenshots'][2]
+        screenshot3.draft_caption = new_screenshot_caption
+        screenshot3.save()
+
+        draft.changedesc.text = changedesc_text
+        draft.changedesc.save()
+        draft.save()
+        r.publish(self.user)
+
+        # Sanity check the ChangeDescription
+        self.assertEqual(r.changedescs.count(), 1)
+        change = r.changedescs.get()
+        self.assertEqual(change.text, changedesc_text)
+
+        for field, data in test_data.iteritems():
+            old, new, removed, added = data
+            field_data = change.fields_changed[field]
+
+            if field == 'diff':
+                # Diff fields are special. They only have "added".
+                self.assertEqual(len(field_data['added']), 1)
+                self.assertEqual(field_data['added'][0][2], added.pk)
+            elif field in model_fields:
+                self.assertEqual([item[2] for item in field_data['old']],
+                                 [obj.pk for obj in old])
+                self.assertEqual([item[2] for item in field_data['new']],
+                                 [obj.pk for obj in new])
+                self.assertEqual([item[2] for item in field_data['removed']],
+                                 [obj.pk for obj in removed])
+                self.assertEqual([item[2] for item in field_data['added']],
+                                 [obj.pk for obj in added])
+            elif isinstance(old, list):
+                self.assertEqual(field_data['old'],
+                                 [[value] for value in old])
+                self.assertEqual(field_data['new'],
+                                 [[value] for value in new])
+                self.assertEqual(field_data['removed'],
+                                 [[value] for value in removed])
+                self.assertEqual(field_data['added'],
+                                 [[value] for value in added])
+            else:
+                self.assertEqual(field_data['old'], [old])
+                self.assertEqual(field_data['new'], [new])
+                self.assertTrue('removed' not in field_data)
+                self.assertTrue('added' not in field_data)
+
+        self.assertTrue('screenshot_captions' in change.fields_changed)
+        field_data = change.fields_changed['screenshot_captions']
+        screenshot_id = str(screenshot3.pk)
+        self.assertTrue(screenshot_id in field_data)
+        self.assertTrue('old' in field_data[screenshot_id])
+        self.assertTrue('new' in field_data[screenshot_id])
+        self.assertEqual(field_data[screenshot_id]['old'][0],
+                         old_screenshot_caption)
+        self.assertEqual(field_data[screenshot_id]['new'][0],
+                         new_screenshot_caption)
+
+        # Now confirm with the API
+        rsp = self.apiGet(rsp['review_request']['links']['changes']['href'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['changes']), 1)
+
+        self.assertEqual(rsp['changes'][0]['id'], change.pk)
+        rsp = self.apiGet(rsp['changes'][0]['links']['self']['href'])
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['change']['text'], changedesc_text)
+
+        fields_changed = rsp['change']['fields_changed']
+
+        for field, data in test_data.iteritems():
+            old, new, removed, added = data
+
+            self.assertTrue(field in fields_changed)
+            field_data = fields_changed[field]
+
+            if field == 'diff':
+                self.assertTrue('added' in field_data)
+                self.assertEqual(field_data['added']['id'], added.pk)
+            elif field in model_fields:
+                self.assertTrue('old' in field_data)
+                self.assertTrue('new' in field_data)
+                self.assertTrue('added' in field_data)
+                self.assertTrue('removed' in field_data)
+                self.assertEqual([item['id'] for item in field_data['old']],
+                                 [obj.pk for obj in old])
+                self.assertEqual([item['id'] for item in field_data['new']],
+                                 [obj.pk for obj in new])
+                self.assertEqual([item['id'] for item in field_data['removed']],
+                                 [obj.pk for obj in removed])
+                self.assertEqual([item['id'] for item in field_data['added']],
+                                 [obj.pk for obj in added])
+            else:
+                self.assertTrue('old' in field_data)
+                self.assertTrue('new' in field_data)
+                self.assertEqual(field_data['old'], old)
+                self.assertEqual(field_data['new'], new)
+
+                if isinstance(old, list):
+                    self.assertTrue('added' in field_data)
+                    self.assertTrue('removed' in field_data)
+
+                    self.assertEqual(field_data['added'], added)
+                    self.assertEqual(field_data['removed'], removed)
+
+        self.assertTrue('screenshot_captions' in fields_changed)
+        field_data = fields_changed['screenshot_captions']
+        self.assertEqual(len(field_data), 1)
+        screenshot_data = field_data[0]
+        self.assertTrue('old' in screenshot_data)
+        self.assertTrue('new' in screenshot_data)
+        self.assertTrue('screenshot' in screenshot_data)
+        self.assertEqual(screenshot_data['old'], old_screenshot_caption)
+        self.assertEqual(screenshot_data['new'], new_screenshot_caption)
+        self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)
 
 
 class DiffResourceTests(BaseWebAPITestCase):
@@ -4396,6 +4743,135 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         review = Review.objects.get(pk=rsp['review']['id'])
 
         self.apiDelete(self.get_item_url(review, 123), expected_status=404)
+
+    def test_post_screenshot_comment_with_issue(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with an issue"""
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text, x,
+                                             y, w, h, issue_opened=True)
+
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self.apiGet(self.get_list_url(review))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('screenshot_comments' in rsp)
+        self.assertEqual(len(rsp['screenshot_comments']), 1)
+        self.assertEqual(rsp['screenshot_comments'][0]['text'], comment_text)
+        self.assertTrue(rsp['screenshot_comments'][0]['issue_opened'])
+
+    def test_update_screenshot_comment_with_issue(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with an issue"""
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
+        comment_id = rsp['screenshot_comment']['id']
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_opened': False,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertFalse(rsp['screenshot_comment']['issue_opened'])
+
+    def test_update_screenshot_comment_issue_status(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id> API with an issue"""
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
+        comment_id = rsp['screenshot_comment']['id']
+
+        # First, let's ensure that the user that has created the comment
+        # cannot alter the issue_status while the review is unpublished.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # The issue_status should still be "open"
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
+
+        # Next, let's publish the review, and try altering the issue_status.
+        # This should be allowed, since the review request was made by the
+        # current user.
+        review.public = True
+        review.save()
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
+
+        # Finally, let's make sure that this user cannot alter the issue_status
+        # on a screenshot-comment for a review request that they didn't make.
+        review_request.submitter = User.objects.get(username='doc')
+        review_request.save()
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'dropped',
+        }, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @classmethod
     def get_list_url(cls, review, local_site_name=None):
