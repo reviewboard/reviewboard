@@ -309,13 +309,13 @@ class ReviewRequest(models.Model):
         related_name="inactive_review_request",
         blank=True)
 
-    files = models.ManyToManyField(
+    file_attachments = models.ManyToManyField(
         FileAttachment,
         related_name="review_request",
         verbose_name=_("file attachments"),
         blank=True)
-    inactive_files = models.ManyToManyField(FileAttachment,
-        verbose_name=_("inactive files"),
+    inactive_file_attachments = models.ManyToManyField(FileAttachment,
+        verbose_name=_("inactive file attachments"),
         help_text=_("A list of file attachments that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
@@ -874,11 +874,12 @@ class ReviewRequestDraft(models.Model):
         related_name="inactive_drafts",
         blank=True)
 
-    files = models.ManyToManyField(FileAttachment,
-                                   related_name="drafts",
-                                   verbose_name=_("file attachments"),
-                                   blank=True)
-    inactive_files = models.ManyToManyField(
+    file_attachments = models.ManyToManyField(
+        FileAttachment,
+        related_name="drafts",
+        verbose_name=_("file attachments"),
+        blank=True)
+    inactive_file_attachments = models.ManyToManyField(
         FileAttachment,
         verbose_name=_("inactive files"),
         related_name="inactive_drafts",
@@ -954,15 +955,15 @@ class ReviewRequestDraft(models.Model):
                 screenshot.save()
                 draft.inactive_screenshots.add(screenshot)
 
-            for file in review_request.files.all():
-                file.draft_caption = file.caption
-                file.save()
-                draft.files.add(file)
+            for attachment in review_request.file_attachments.all():
+                attachment.draft_caption = attachment.caption
+                attachment.save()
+                draft.file_attachments.add(attachment)
 
-            for file in review_request.inactive_files.all():
-                file.draft_caption = file.caption
-                file.save()
-                draft.inactive_files.add(file)
+            for attachment in review_request.inactive_file_attachments.all():
+                attachment.draft_caption = attachment.caption
+                attachment.save()
+                draft.inactive_file_attachments.add(attachment)
 
             draft.save();
 
@@ -1139,10 +1140,10 @@ class ReviewRequestDraft(models.Model):
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
-        files = self.files.all()
+        files = self.file_attachments.all()
         caption_changes = {}
 
-        for f in review_request.files.all():
+        for f in review_request.file_attachments.all():
             if f in files and f.caption != f.draft_caption:
                 caption_changes[f.id] = {
                     'old': (f.caption,),
@@ -1156,13 +1157,13 @@ class ReviewRequestDraft(models.Model):
             self.changedesc.fields_changed['file_captions'] = \
                 caption_changes
 
-        update_list(review_request.files, self.files,
+        update_list(review_request.file_attachments, self.file_attachments,
                     'files', name_field="caption")
 
         # There's no change notification required for this field.
-        review_request.inactive_files.clear()
-        map(review_request.inactive_files.add,
-            self.inactive_files.all())
+        review_request.inactive_file_attachments.clear()
+        map(review_request.inactive_file_attachments.add,
+            self.inactive_file_attachments.all())
 
         if self.diffset:
             if self.changedesc:
@@ -1408,8 +1409,9 @@ class ScreenshotComment(BaseComment):
 
 class FileAttachmentComment(models.Model):
     """A comment on a file attachment."""
-    file = models.ForeignKey(FileAttachment, verbose_name=_('file_attachment'),
-                             related_name="comments")
+    file_attachment = models.ForeignKey(FileAttachment,
+                                        verbose_name=_('file_attachment'),
+                                        related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
                                  verbose_name=_("reply to"))
@@ -1435,7 +1437,8 @@ class FileAttachmentComment(models.Model):
         Generates the file referenced by this
         comment and returns the HTML markup embedding it.
         """
-        return '<a href="%s" alt="%s" />' % (self.file.file, escape(self.text))
+        return '<a href="%s" alt="%s" />' % (self.file_attachment.file,
+                                             escape(self.text))
 
     def get_review_url(self):
         return "%s#fcomment%d" % \
@@ -1509,7 +1512,7 @@ class Review(models.Model):
         verbose_name=_("screenshot comments"),
         related_name="review",
         blank=True)
-    file_comments = models.ManyToManyField(
+    file_attachment_comments = models.ManyToManyField(
         FileAttachmentComment,
         verbose_name=_("file attachment comments"),
         related_name="review",
@@ -1599,7 +1602,7 @@ class Review(models.Model):
             comment.timetamp = self.timestamp
             comment.save()
 
-        for comment in self.file_comments.all():
+        for comment in self.file_attachment_comments.all():
             comment.timetamp = self.timestamp
             comment.save()
 
@@ -1630,7 +1633,7 @@ class Review(models.Model):
         for comment in self.screenshot_comments.all():
             comment.delete()
 
-        for comment in self.file_comments.all():
+        for comment in self.file_attachment_comments.all():
             comment.delete()
 
         super(Review, self).delete()

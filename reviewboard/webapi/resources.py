@@ -2869,7 +2869,7 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
     }
 
-    uri_object_key = 'file_id'
+    uri_object_key = 'file_attachment_id'
 
     def get_queryset(self, request, review_request_id, *args, **kwargs):
         return self.model.objects.filter(review_request=review_request_id)
@@ -2995,8 +2995,8 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
     These are files that will be shown once the pending review request
     draft is published.
     """
-    name = 'draft_files'
-    uri_name = 'files'
+    name = 'draft_file_attachment'
+    uri_name = 'file-attachments'
     model_parent_key = 'drafts'
     allowed_methods = ('GET', 'DELETE', 'POST', 'PUT',)
 
@@ -3006,7 +3006,7 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
                 request, review_request_id, *args, **kwargs)
 
             inactive_ids = \
-                draft.inactive_files.values_list('pk', flat=True)
+                draft.inactive_file_attachments.values_list('pk', flat=True)
 
             q = Q(review_request=review_request_id) | Q(drafts=draft)
             query = self.model.objects.filter(q)
@@ -3989,16 +3989,16 @@ review_reply_screenshot_comment_resource = \
     ReviewReplyScreenshotCommentResource()
 
 
-class BaseFileCommentResource(WebAPIResource):
+class BaseFileAttachmentCommentResource(WebAPIResource):
     """A base resource for file comments."""
     model = FileAttachmentComment
-    name = 'file_comment'
+    name = 'file_attachment_comment'
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
         },
-        'file': {
+        'file_attachment': {
             'type': 'reviewboard.webapi.resources.FileAttachmentResource',
             'description': 'The file the comment was made on.',
         },
@@ -4029,7 +4029,7 @@ class BaseFileCommentResource(WebAPIResource):
         review_request = \
             review_request_resource.get_object(request, *args, **kwargs)
         return self.model.objects.filter(
-            file__review_request=review_request,
+            file_attachment__review_request=review_request,
             review__isnull=False)
 
     def serialize_public_field(self, obj):
@@ -4058,7 +4058,7 @@ class BaseFileCommentResource(WebAPIResource):
         return '%s%s/%s/' % (base, self.uri_name, obj.id)
 
 
-class FileCommentResource(BaseFileCommentResource):
+class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     """Provides information on filess comments made on a review request.
 
     The list of comments cannot be modified from this resource. It's meant
@@ -4068,15 +4068,15 @@ class FileCommentResource(BaseFileCommentResource):
     model_parent_key = 'file_attachment'
     uri_object_key = None
 
-    def get_queryset(self, request, review_request_id, file_id,
+    def get_queryset(self, request, review_request_id, file_attachment_id,
                      *args, **kwargs):
-        q = super(FileCommentResource, self).get_queryset(
+        q = super(FileAttachmentCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        q = q.filter(file=file_id)
+        q = q.filter(file_attachment=file_attachment_id)
         return q
 
     @webapi_check_local_site
-    @augment_method_from(BaseFileCommentResource)
+    @augment_method_from(BaseFileAttachmentCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of screenshot comments on a file.
 
@@ -4085,10 +4085,10 @@ class FileCommentResource(BaseFileCommentResource):
         """
         pass
 
-file_comment_resource = FileCommentResource()
+file_comment_resource = FileAttachmentCommentResource()
 
 
-class ReviewFileCommentResource(BaseFileCommentResource):
+class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     """Provides information on file comments made on a review.
 
     If the review is a draft, then comments can be added, deleted, or
@@ -4100,7 +4100,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
 
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
-        q = super(ReviewFileCommentResource, self).get_queryset(
+        q = super(ReviewFileAttachmentCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         return q.filter(review=review_id)
 
@@ -4114,9 +4114,10 @@ class ReviewFileCommentResource(BaseFileCommentResource):
                             PERMISSION_DENIED, NOT_LOGGED_IN)
     @webapi_request_fields(
         required = {
-            'file_id': {
+            'file_attachment_id': {
                 'type': int,
-                'description': 'The ID of the file being commented on.',
+                'description': 'The ID of the file attachment being '
+                               'commented on.',
             },
             'text': {
                 'type': str,
@@ -4124,7 +4125,8 @@ class ReviewFileCommentResource(BaseFileCommentResource):
             },
         },
     )
-    def create(self, request, file_id=None, text=None, *args, **kwargs):
+    def create(self, request, file_attachment_id=None, text=None,
+               *args, **kwargs):
         """Creates a file comment on a review.
 
         This will create a new comment on a file as part of a review.
@@ -4142,19 +4144,21 @@ class ReviewFileCommentResource(BaseFileCommentResource):
             return _no_access_error(request.user)
 
         try:
-            file = FileAttachment.objects.get(pk=file_id,
-                                              review_request=review_request)
+            file_attachment = \
+                FileAttachment.objects.get(pk=file_attachment_id,
+                                           review_request=review_request)
         except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'file_id': ['This is not a valid file ID'],
+                    'file_attachment_id': ['This is not a valid file '
+                                           'attachment ID'],
                 }
             }
 
-        new_comment = self.model(file=file, text=text)
+        new_comment = self.model(file_attachment=file_attachment, text=text)
         new_comment.save()
 
-        review.file_comments.add(new_comment)
+        review.file_attachment_comments.add(new_comment)
         review.save()
 
         return 201, {
@@ -4200,7 +4204,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
             self.item_result_key: file_comment,
         }
 
-    @augment_method_from(BaseFileCommentResource)
+    @augment_method_from(BaseFileAttachmentCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes the comment.
 
@@ -4213,15 +4217,15 @@ class ReviewFileCommentResource(BaseFileCommentResource):
         """
         pass
 
-    @augment_method_from(BaseFileCommentResource)
+    @augment_method_from(BaseFileAttachmentCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of file comments made on a review."""
         pass
 
-review_file_comment_resource = ReviewFileCommentResource()
+review_file_comment_resource = ReviewFileAttachmentCommentResource()
 
 
-class ReviewReplyFileCommentResource(BaseFileCommentResource):
+class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     """Provides information on replies to file comments made on a
     review reply.
 
@@ -4233,14 +4237,14 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
     model_parent_key = 'review'
     fields = dict({
         'reply_to': {
-            'type': ReviewFileCommentResource,
+            'type': ReviewFileAttachmentCommentResource,
             'description': 'The comment being replied to.',
         },
-    }, **BaseFileCommentResource.fields)
+    }, **BaseFileAttachmentCommentResource.fields)
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
-        q = super(ReviewReplyFileCommentResource, self).get_queryset(
+        q = super(ReviewReplyFileAttachmentCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
         q = q.filter(review=reply_id, review__base_reply_to=review_id)
         return q
@@ -4339,7 +4343,7 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
             self.item_result_key: file_comment,
         }
 
-    @augment_method_from(BaseFileCommentResource)
+    @augment_method_from(BaseFileAttachmentCommentResource)
     def delete(self, *args, **kwargs):
         """Deletes a file comment from a draft reply.
 
@@ -4352,7 +4356,7 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
         """
         pass
 
-    @augment_method_from(BaseFileCommentResource)
+    @augment_method_from(BaseFileAttachmentCommentResource)
     def get(self, *args, **kwargs):
         """Returns information on a reply to a file comment.
 
@@ -4361,14 +4365,14 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
         """
         pass
 
-    @augment_method_from(BaseFileCommentResource)
+    @augment_method_from(BaseFileAttachmentCommentResource)
     def get_list(self, *args, **kwargs):
         """Returns the list of replies to file comments made on a review reply.
         """
         pass
 
 review_reply_file_comment_resource = \
-    ReviewReplyFileCommentResource()
+    ReviewReplyFileAttachmentCommentResource()
 
 
 class BaseReviewResource(WebAPIResource):

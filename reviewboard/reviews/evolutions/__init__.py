@@ -10,5 +10,5 @@ SEQUENCE = [
     'group_visible',
     'default_reviewer_local_site',
     'add_issues_to_comments',
-    'filemanager',
+    'file_attachments',
 ]
