@@ -1,7 +1,6 @@
 import logging
 import os
 
-from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
@@ -445,7 +444,6 @@ class ViewTests(TestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
         local_site = None
-        site_profile = profile.site_profiles.get(local_site=local_site)
 
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
@@ -906,7 +904,7 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
         self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
 
-        draft = ReviewRequestDraft.create(self.review_request)
+        ReviewRequestDraft.create(self.review_request)
         self.review_request.publish(self.user)
 
         self._reload_objects()
@@ -1310,7 +1308,7 @@ class PolicyTests(TestCase):
 
     def test_review_request_with_private_repository(self):
         """Testing no access to a review request with a private repository"""
-        group = Group.objects.create(name='test-group', invite_only=True)
+        Group.objects.create(name='test-group', invite_only=True)
 
         review_request = self._get_review_request()
         review_request.save()
@@ -1323,7 +1321,7 @@ class PolicyTests(TestCase):
 
     def test_review_request_with_private_repository_allowed_by_user(self):
         """Testing access to a review request with a private repository with user added"""
-        group = Group.objects.create(name='test-group', invite_only=True)
+        Group.objects.create(name='test-group', invite_only=True)
 
         review_request = self._get_review_request()
         review_request.save()

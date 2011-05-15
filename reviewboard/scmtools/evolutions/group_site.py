@@ -1,5 +1,5 @@
-from django_evolution.mutations import *
-from django.db import models
+from django_evolution.mutations import ChangeField
+
 
 MUTATIONS = [
     ChangeField('Repository', 'path', initial=None, unique=False),

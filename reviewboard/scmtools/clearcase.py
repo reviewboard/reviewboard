@@ -1,10 +1,7 @@
-import logging
 import os
 import re
 import subprocess
 import sys
-
-from datetime import datetime
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION

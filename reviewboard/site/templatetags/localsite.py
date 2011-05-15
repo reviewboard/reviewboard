@@ -36,7 +36,7 @@ class LocalSiteURLNode(template.Node):
 
             try:
                 return self.url_node.render(context)
-            except NoReverseMatch, e:
+            except NoReverseMatch:
                 # We'll try it again without those arguments.
                 pass
 

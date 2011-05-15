@@ -173,8 +173,7 @@ def register_release():
     print 'Posting release to reviewboard.org'
     f = urllib2.urlopen(urllib2.Request(url=RELEASES_API_URL, data=content,
                                         headers=headers))
-
-    result = f.read()
+    f.read()
 
 
 def main():

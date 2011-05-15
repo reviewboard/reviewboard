@@ -4,7 +4,6 @@ import re
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
-from djblets.util.misc import get_object_or_none
 
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
@@ -15,7 +14,6 @@ from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.models import LocalSite
 from reviewboard.site.validation import validate_review_groups, validate_users
 
 

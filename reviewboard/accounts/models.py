@@ -2,7 +2,6 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
@@ -97,8 +96,6 @@ class Profile(models.Model):
 
         if (review_request.public and
             review_request.status == ReviewRequest.PENDING_REVIEW):
-            q = self.starred_review_requests.filter(pk=review_request.pk)
-
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,

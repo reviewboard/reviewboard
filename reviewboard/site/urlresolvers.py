@@ -28,7 +28,7 @@ def local_site_reverse(viewname, request=None, local_site_name=None,
             try:
                 return reverse(viewname, args=new_args, kwargs=new_kwargs,
                                *func_args, **func_kwargs)
-            except NoReverseMatch, e:
+            except NoReverseMatch:
                 # We'll try it again without those arguments.
                 pass
 

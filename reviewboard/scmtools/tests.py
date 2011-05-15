@@ -5,7 +5,6 @@ import paramiko
 import shutil
 import tempfile
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 try:
@@ -18,7 +17,6 @@ from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.bzr import BZRTool
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
 from reviewboard.scmtools.forms import RepositoryForm

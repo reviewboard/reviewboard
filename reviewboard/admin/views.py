@@ -77,8 +77,6 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
     else:
         form = SSHSettingsForm()
 
-    public_key = ''
-
     if key:
         fingerprint = sshutils.humanize_key(key)
     else:

@@ -358,7 +358,7 @@ class Site(object):
             import settings_local
 
             return hasattr(settings_local, 'DATABASE_ENGINE')
-        except ImportError, e:
+        except ImportError:
             sys.stderr.write("Unable to import settings_local. "
                              "Cannot determine if upgrade is needed.\n")
             return False
@@ -388,7 +388,7 @@ class Site(object):
                     if key != 'ENGINE':
                         database_info[key] = getattr(settings_local,
                                                      'DATABASE_%s' % key, '')
-        except ImportError, e:
+        except ImportError:
             sys.stderr.write("Unable to import settings_local for upgrade.\n")
             return
 

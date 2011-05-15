@@ -3,8 +3,8 @@ import re
 from datetime import datetime
 
 from django.contrib.auth.models import User
-from django.db import connection, models, transaction
-from django.db.models import F, Q, permalink
+from django.db import models
+from django.db.models import Q
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
@@ -1054,8 +1054,6 @@ class ReviewRequestDraft(models.Model):
         and is there to prevent duplicate notifications when being called by
         ReviewRequest.publish.
         """
-        from reviewboard.accounts.models import LocalSiteProfile
-
         if not review_request:
             review_request = self.review_request
 

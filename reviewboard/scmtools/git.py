@@ -237,13 +237,9 @@ class GitDiffParser(DiffParser):
                 and next_diff_start.startswith("diff --git"))
 
     def _is_new_file(self, linenum):
-        line = self.lines[linenum]
-
         return self.lines[linenum].startswith("new file mode")
 
     def _is_deleted_file(self, linenum):
-        line = self.lines[linenum]
-
         return self.lines[linenum].startswith("deleted file mode")
 
     def _is_mode_change(self, linenum):

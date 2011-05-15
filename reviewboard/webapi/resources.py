@@ -16,8 +16,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
                               set_last_modified
-from djblets.webapi.core import WebAPIResponseError, \
-                                WebAPIResponseFormError, \
+from djblets.webapi.core import WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
                                 WebAPIResponse
 from djblets.webapi.decorators import webapi_login_required, \
@@ -199,7 +198,6 @@ class BaseCommentResource(WebAPIResource):
         try:
             review_request = review_request_resource.get_object(request, *args,
                                                                 **kwargs)
-            review = review_resource.get_object(request, *args, **kwargs)
             comment = comment_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST

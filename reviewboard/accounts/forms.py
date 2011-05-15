@@ -32,11 +32,9 @@ class PreferencesForm(forms.Form):
 
         super(forms.Form, self).__init__(*args, **kwargs)
 
-        siteconfig = SiteConfiguration.objects.get_current()
         auth_backends = get_auth_backends()
-
-
         choices = []
+
         for g in Group.objects.accessible(user=user).order_by('display_name'):
             choices.append((g.id, g.display_name))
 

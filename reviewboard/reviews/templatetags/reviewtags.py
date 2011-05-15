@@ -307,13 +307,12 @@ def reply_section(context, review, comment, context_type, context_id):
     is responsible for invoking :tag:`reply_list` and as such passes these
     variables through. It does not make use of them itself.
     """
-    issue_status = ""
-
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
         elif type(comment) is UploadedFileComment:
             context_id += 'f'
+
         context_id += str(comment.id)
 
     return {
@@ -369,7 +368,7 @@ def dashboard_entry(context, level, text, view, group_name=None):
         'starred': starred,
         'selected': context.get('view', None) == view and \
                     (not group_name or
-                     context.get('group', None) == group._ame),
+                     context.get('group', None) == group_name),
         'local_site_name': context.get('local_site_name'),
     }
 
