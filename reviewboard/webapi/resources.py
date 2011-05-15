@@ -2905,8 +2905,8 @@ class BaseUploadedFileResource(WebAPIResource):
     def create(self, request, *args, **kwargs):
         """Creates a new file from an uploaded file.
 
-        This accepts any standard file format (including images) and associates
-        it with a draft of a review request.
+        This accepts any file type and associates it with a draft of a
+        review request.
 
         It is expected that the client will send the data as part of a
         :mimetype:`multipart/form-data` mimetype. The file's name
@@ -2914,9 +2914,9 @@ class BaseUploadedFileResource(WebAPIResource):
         may look like::
 
             -- SoMe BoUnDaRy
-            Content-Disposition: form-data; name=path; filename="foo.txt"
+            Content-Disposition: form-data; name=path; filename="foo.zip"
 
-            <PNG content here>
+            <Content here>
             -- SoMe BoUnDaRy --
         """
         try:
@@ -2967,8 +2967,7 @@ class BaseUploadedFileResource(WebAPIResource):
         try:
             review_request = \
                 review_request_resource.get_object(request, *args, **kwargs)
-            file = uploaded_file_resource.get_object(request, *args,
-                                                        **kwargs)
+            file = uploaded_file_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -4048,9 +4047,7 @@ class BaseFileCommentResource(WebAPIResource):
         """Returns information on the comment.
 
         This contains the comment text, time the comment was made,
-        and the location of the comment region on the screenshot, amongst
-        other information. It can be used to reconstruct the exact
-        position of the comment for use as an overlay on the screenshot.
+        and the file the comment was made on, amongst other information.
         """
         pass
 
@@ -4065,7 +4062,7 @@ class FileCommentResource(BaseFileCommentResource):
     """Provides information on filess comments made on a review request.
 
     The list of comments cannot be modified from this resource. It's meant
-    purely as a way to see existing comments that were made on a diff. These
+    purely as a way to see existing comments that were made on a file. These
     comments will span all public reviews.
     """
     model_parent_key = 'uploaded_file'
@@ -4113,7 +4110,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,  
+    @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
                             PERMISSION_DENIED, NOT_LOGGED_IN)
     @webapi_request_fields(
         required = {
@@ -4288,8 +4285,7 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
         except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'reply_to_id': ['This is not a valid file '
-                                    'comment ID'],
+                    'reply_to_id': ['This is not a valid file comment ID'],
                 }
             }
 
@@ -4367,8 +4363,7 @@ class ReviewReplyFileCommentResource(BaseFileCommentResource):
 
     @augment_method_from(BaseFileCommentResource)
     def get_list(self, *args, **kwargs):
-        """Returns the list of replies to file comments made on a
-        review reply.
+        """Returns the list of replies to file comments made on a review reply.
         """
         pass
 
@@ -5021,34 +5016,34 @@ class UploadedFileResource(BaseUploadedFileResource):
 
     @augment_method_from(BaseUploadedFileResource)
     def get_list(self, *args, **kwargs):
-        """Returns a list of screenshots on the review request.
+        """Returns a list of file attachments on the review request.
 
-        Each screenshot in this list is an uploaded screenshot that is
+        Each screenshot in this list is an uploaded file attachment that is
         shown on the review request.
         """
         pass
 
     @augment_method_from(BaseUploadedFileResource)
     def create(self, request, *args, **kwargs):
-        """Creates a new screenshot from an uploaded file.
+        """Creates a new file attachment from an uploaded file.
 
-        This accepts any standard image format (PNG, GIF, JPEG) and associates
-        it with a draft of a review request.
+        This accepts any file type and associates it with a draft of a
+        review request.
 
-        Creating a new screenshot will automatically create a new review
-        request draft, if one doesn't already exist. This screenshot will
+        Creating a new file attachment will automatically create a new review
+        request draft, if one doesn't already exist. This attachment will
         be part of that draft, and will be shown on the review request
         when it's next published.
 
         It is expected that the client will send the data as part of a
-        :mimetype:`multipart/form-data` mimetype. The screenshot's name
+        :mimetype:`multipart/form-data` mimetype. The file's name
         and content should be stored in the ``path`` field. A typical request
         may look like::
 
             -- SoMe BoUnDaRy
-            Content-Disposition: form-data; name=path; filename="foo.png"
+            Content-Disposition: form-data; name=path; filename="foo.zip"
 
-            <PNG content here>
+            <Content here>
             -- SoMe BoUnDaRy --
         """
         pass
@@ -5070,17 +5065,17 @@ class UploadedFileResource(BaseUploadedFileResource):
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
-        """Deletes the screenshot.
+        """Deletes the file attachment
 
-        This will remove the screenshot from the draft review request.
+        This will remove the file attachment from the draft review request.
         This cannot be undone.
 
-        Deleting a screenshot will automatically create a new review request
-        draft, if one doesn't already exist. The screenshot won't be actually
-        removed until the review request draft is published.
+        Deleting a file attachment will automatically create a new review
+        request draft, if one doesn't already exist. The attachment won't
+        be actually removed until the review request draft is published.
 
-        This can be used to remove old screenshots that were previously
-        shown, as well as newly added screenshots that were part of the
+        This can be used to remove old file attachments that were previously
+        shown, as well as newly added file attachments that were part of the
         draft.
 
         Instead of a payload response on success, this will return :http:`204`.

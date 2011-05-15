@@ -68,7 +68,7 @@ def _render_permission_denied(
     return response
 
 
-def find_review_request(request, review_request_id, local_site_name):
+def _find_review_request(request, review_request_id, local_site_name):
     """
     Find a review request based on an ID and optional LocalSite name.
 
@@ -276,7 +276,7 @@ def review_detail(request,
     # local_site configured to have its own review request ID namespace
     # starting from 1.
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -451,7 +451,7 @@ def review_draft_inline_form(request,
                              template_name,
                              local_site_name=None):
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -674,7 +674,7 @@ def diff(request,
     providing the user's current review of the diff if it exists.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -733,7 +733,7 @@ def raw_diff(request,
     given review request.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -774,7 +774,7 @@ def comment_diff_fragments(
     # While we don't actually need the review request, we still want to do this
     # lookup in order to get the permissions checking.
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -827,7 +827,7 @@ def diff_fragment(request,
     diff.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -863,7 +863,7 @@ def preview_review_request_email(
     This is mainly used for debugging.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -902,7 +902,7 @@ def preview_review_email(request, review_request_id, review_id, format,
     This is mainly used for debugging.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -955,7 +955,7 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     This is mainly used for debugging.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -1006,7 +1006,7 @@ def view_screenshot(request,
     Displays a screenshot, along with any comments that were made on it.
     """
     review_request, response = \
-        find_review_request(request, review_request_id, local_site_name)
+        _find_review_request(request, review_request_id, local_site_name)
 
     if not review_request:
         return response

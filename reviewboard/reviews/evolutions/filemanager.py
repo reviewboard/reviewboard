@@ -1,6 +1,6 @@
+from django_evolution.mutations import AddField
 from django.db import models
 
-from django_evolution.mutations import AddField
 
 MUTATIONS = [
     AddField('ReviewRequest', 'files', models.ManyToManyField, related_model='filemanager.UploadedFile'),

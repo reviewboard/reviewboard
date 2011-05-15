@@ -503,8 +503,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                                                             context_id);
                         obj.setText(value);
                     } else if (context_type == "file_comment") {
-                        obj = new RB.UploadedFileCommentReply(review_reply, null,
-                                                            context_id);
+                        obj = new RB.UploadedFileCommentReply(
+                            review_reply, null, context_id);
                         obj.setText(value);
                     } else {
                         /* Shouldn't be reached. */
@@ -1561,9 +1561,9 @@ $.fileDisplay = function(uploadedFile) {
         .appendTo(container);
 
     if (uploadedFile) {
-        var captionArea = $("<label>"+uploadedFile.title+"</label>")
+        var captionArea = $("<label>" + uploadedFile.title + "</label>")
             .attr({
-                "for": "uploaded_file_"+uploadedFile.id+"_caption"
+                "for": "uploaded_file_" + uploadedFile.id + "_caption"
             });
 
         body.append(captionArea);
@@ -1573,13 +1573,11 @@ $.fileDisplay = function(uploadedFile) {
                 .attr({
                     href: '#',
                     id: uploadedFile.id
-                })
-            )
+                }))
             .append($("<a>Download File</a>")
                 .attr({
-                    href: uploadedFile.url,
-                })
-            )
+                    href: uploadedFile.url
+                }))
             .append($("<a/>")
                 .attr("href", uploadedFile.file_url + "delete/")
                 .append($("<img/>")
@@ -1587,24 +1585,21 @@ $.fileDisplay = function(uploadedFile) {
                         src: MEDIA_URL + "rb/images/delete.png?" +
                              MEDIA_SERIAL,
                         alt: "Delete File"
-                    })
-                )
-            );
+                    })));
 
         body.append($("<pre>")
-                .addClass("editable")
-                .addClass("file-editable")
-                .attr({
-                    id: "uploaded_file_"+uploadedFile.id+"_caption"
-                })
-                .append(uploadedFile.caption)
-        );
+            .addClass("editable")
+            .addClass("file-editable")
+            .attr({
+                id: "uploaded_file_" + uploadedFile.id + "_caption"
+            })
+            .append(uploadedFile.caption));
 
         container.find(".editable").reviewRequestFieldEditor()
     } else {
-        body.addClass("loading");
-
-        body.append("&nbsp;");
+        body
+            .addClass("loading");
+            .append("&nbsp;");
     }
 
     var thumbnails = $("#file-list");

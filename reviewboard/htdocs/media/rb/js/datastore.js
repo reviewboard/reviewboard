@@ -1049,7 +1049,6 @@ RB.UploadedFile = function(review_request, id) {
     return this;
 }
 
-
 $.extend(RB.UploadedFile.prototype, {
     setFile: function(file) {
         this.uploaded_file = file;
@@ -1102,7 +1101,7 @@ $.extend(RB.UploadedFile.prototype, {
             } else if (this.file) {
                 this._saveFile(options);
             } else {
-                options.error("No data has been set for this screenshot. " +
+                options.error("No data has been set for this file. " +
                               "This is a script error. Please report it.");
             }
         }
@@ -1313,7 +1312,7 @@ $.extend(RB.UploadedFileCommentReply.prototype, {
     },
 
     deleteIfEmpty: function() {
-        if (this.text = "") {
+        if (this.text == "") {
             this.deleteComment();
         }
     },
@@ -1345,7 +1344,7 @@ $.extend(RB.UploadedFileCommentReply.prototype, {
                     }
 
                     on_done.apply(this, arguments);
-                },
+                }
             });
         });
     },
@@ -1431,7 +1430,7 @@ $.extend(RB.Screenshot.prototype, {
         }
     },
 
-    deleteFile: function() {
+    deleteScreenshot: function() {
         var self = this;
 
         self.ready(function() {
@@ -1606,8 +1605,10 @@ $.extend(RB.ScreenshotComment.prototype, {
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
-                    if (self.review.public)
+
+                    if (self.review.public) {
                         data.issue_status = self.issue_status;
+                    }
                 } else {
                     data.screenshot_id = self.screenshot_id;
                     url = self.review.links.screenshot_comments.href;
@@ -1761,7 +1762,7 @@ $.extend(RB.FileComment.prototype, {
                 var type;
                 var url;
                 var data = {
-                    text: self.text,
+                    text: self.text
                 };
 
                 if (self.loaded) {
@@ -1809,11 +1810,9 @@ $.extend(RB.FileComment.prototype, {
     },
 
     deleteIfEmpty: function() {
-        if (this.text != "") {
-            return;
+        if (this.text == "") {
+            this.deleteComment();
         }
-
-        this.deleteComment();
     },
 
     _deleteAndDestruct: function() {
@@ -1821,31 +1820,30 @@ $.extend(RB.FileComment.prototype, {
     },
 
     _load: function(on_done) {
-            var self = this;
+        var self = this;
 
-            if (!self.id) {
-                    on_done.apply(this, arguments);
-                    return;
+        if (!self.id) {
+            on_done.apply(this, arguments);
+            return;
+        }
+
+        self.review.ready(function() {
+            if (!self.review.loaded) {
+                on_done.apply(this, arguments);
+                return;
             }
-
-            self.review.ready(function() {
-                    if (!self.review.loaded) {
-                    on_done.apply(this, arguments);
-                    return;
-             }
 
             rbApiCall({
                 type: "GET",
                 url: self.review.links.uploaded_file_comments.href +
-                        self.id + "/",
+                     self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
                     }
 
                     on_done.apply(this, arguments);
-
-                },
+                }
             });
         });
     },

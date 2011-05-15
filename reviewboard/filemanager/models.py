@@ -31,4 +31,3 @@ class UploadedFile(models.Model):
 
     def get_absolute_url(self):
         return self.file.url
-

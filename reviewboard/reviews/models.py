@@ -1435,11 +1435,10 @@ class UploadedFileComment(models.Model):
         Generates the file referenced by this
         comment and returns the HTML markup embedding it.
         """
-        return '<a href="%s" alt="%s" />' % \
-            (self.file.file, escape(self.text))
+        return '<a href="%s" alt="%s" />' % (self.file.file, escape(self.text))
 
     def get_review_url(self):
-        return "%s#scomment%d" % \
+        return "%s#fcomment%d" % \
             (self.review.get().review_request.get_absolute_url(), self.id)
 
     def save(self, **kwargs):
@@ -1458,6 +1457,7 @@ class UploadedFileComment(models.Model):
 
     class Meta:
         ordering = ['timestamp']
+
 
 class Review(models.Model):
     """
