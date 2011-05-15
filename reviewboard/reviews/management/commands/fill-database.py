@@ -4,7 +4,6 @@ import string
 import sys
 from optparse import make_option
 
-from django import forms
 from django import db
 from django.contrib.auth.models import User
 from django.core.management.base import (
@@ -13,7 +12,7 @@ from django.db import transaction
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.forms import UploadDiffForm
-from reviewboard.diffviewer.models import FileDiff, DiffSet, DiffSetHistory
+from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import ReviewRequest, Review, Comment
 from reviewboard.scmtools.models import Repository, Tool
 

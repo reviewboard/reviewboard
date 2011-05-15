@@ -1,9 +1,3 @@
-from urllib import quote
-
-from django.contrib.auth import REDIRECT_FIELD_NAME
-from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
-
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator

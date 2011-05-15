@@ -9,7 +9,6 @@ try:
 except ImportError:
     pass
 
-from django.conf import settings
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
@@ -142,7 +141,7 @@ class SVNTool(SCMTool):
                     'HTTPS certificate not accepted.  Please ensure that '
                     'the proper certificate exists in %s '
                     'for the user that reviewboard is running as.'
-                    % os.path.join(self.config_dir, auth))
+                    % os.path.join(self.config_dir, 'auth'))
             elif 'callback_get_login required' in stre:
                 raise SCMError('Login to the SCM server failed.')
             else:
@@ -272,8 +271,6 @@ class SVNTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
-        import pysvn
-
         super(SVNTool, cls).check_repository(path, username, password,
                                              local_site_name)
 
@@ -332,8 +329,6 @@ class SVNTool(SCMTool):
     @classmethod
     def accept_certificate(cls, path, local_site_name=None):
         """Accepts the certificate for the given repository path."""
-        import pysvn
-
         def ssl_server_trust_prompt(trust_dict):
             return True, trust_dict['failures'], True
 

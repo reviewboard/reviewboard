@@ -32,7 +32,6 @@ import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm

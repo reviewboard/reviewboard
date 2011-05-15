@@ -2,17 +2,15 @@ import logging
 import os
 import re
 import subprocess
-import tempfile
 from tempfile import mkstemp
 
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, ChangeSet, \
                                       HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError, \
-                                        FileNotFoundError, \
+from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
                                         RepositoryNotFoundError
-from reviewboard.diffviewer.parser import DiffParser, DiffParserError
+from reviewboard.diffviewer.parser import DiffParser
 
 
 class PlasticTool(SCMTool):
@@ -68,7 +66,7 @@ class PlasticTool(SCMTool):
 
                 if not m:
                     logging.debug('Plastic: bad re %s failed to match %s' %
-                                  (CS_RE, line))
+                                  (self.CS_RE, line))
                     raise SCMError("Error looking up changeset")
 
                 if m.group("csid") != str(changesetid):

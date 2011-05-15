@@ -7,8 +7,8 @@ from django.core.files import File
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_ATTRIBUTE, \
-                                  INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
+                                  PERMISSION_DENIED
 import paramiko
 
 from reviewboard import initialize
@@ -507,7 +507,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         sshutils.replace_host_key = _replace_host_key
 
         self._login_user(admin=True)
-        rsp = self._post_repository(False, data={
+        self._post_repository(False, data={
             'trust_host': 1,
         })
 
@@ -553,7 +553,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         sshutils.add_host_key = _add_host_key
 
         self._login_user(admin=True)
-        rsp = self._post_repository(False, data={
+        self._post_repository(False, data={
             'trust_host': 1,
         })
 
@@ -615,7 +615,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         SVNTool.accept_certificate = _accept_certificate
 
         self._login_user(admin=True)
-        rsp = self._post_repository(False, data={
+        self._post_repository(False, data={
             'trust_host': 1,
         })
         self.assertTrue(saw['accept_certificate'])
@@ -1001,8 +1001,8 @@ class UserResourceTests(BaseWebAPITestCase):
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
         self._login_user(local_site=True)
-        rsp = self.apiGet(self.get_item_url('dopey', self.local_site_name),
-                          expected_status=404)
+        self.apiGet(self.get_item_url('dopey', self.local_site_name),
+                    expected_status=404)
 
     def test_get_user_with_site_no_access(self):
         """Testing the GET users/<username>/ API with a local site and Permission Denied error."""
@@ -1315,13 +1315,8 @@ class WatchedReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_watched_review_groups_with_site_no_access(self):
         """Testing the GET users/<username>/watched/review-groups/ API with a local site and Permission Denied error"""
-        watched_url = \
-            local_site_reverse('watched-review-groups-resource',
-                               local_site_name=self.local_site_name,
-                               kwargs={ 'username': self.user.username })
-
         rsp = self.apiGet(self.get_list_url(self.user.username,
-                                             self.local_site_name),
+                                            self.local_site_name),
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -2622,8 +2617,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API with a local site"""
         review_id = self.test_post_diff_comments_with_site()
         review = Review.objects.get(pk=review_id)
-        review_request = ReviewRequest.objects.filter(
-            local_site__name=self.local_site_name)[0]
 
         rsp = self.apiGet(self.get_list_url(review, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
@@ -2633,8 +2626,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/ API with a local site and Permission Denied error"""
         review_id = self.test_post_diff_comments_with_site()
         review = Review.objects.get(pk=review_id)
-        review_request = ReviewRequest.objects.filter(
-            local_site__name=self.local_site_name)[0]
 
         self._login_user()
 
@@ -2721,7 +2712,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp, review_request_id, review_id, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
         review = Review.objects.get(pk=review_id)
 
         rsp = self.apiGet(self.get_list_url(review))
@@ -2737,7 +2727,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         rsp, review_request_id, review_id, interdiff_revision = \
             self._common_post_interdiff_comments(comment_text)
 
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
         review = Review.objects.get(pk=review_id)
 
         rsp = self.apiGet(self.get_list_url(review), {
@@ -2757,7 +2746,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiDelete(rsp['diff_comment']['links']['self']['href'])
 
-        review_request = ReviewRequest.objects.get(pk=review_request_id)
         review = Review.objects.get(pk=review_id)
 
         rsp = self.apiGet(self.get_list_url(review))
@@ -2769,7 +2757,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API with a local site"""
         review_id = self.test_post_diff_comments_with_site()
         review = Review.objects.get(pk=review_id)
-        review_request = review.review_request
         comment = review.comments.all()[0]
         comment_count = review.comments.count()
 
@@ -2782,7 +2769,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/reviews/<id>/diff-comments/<id>/ API with a local site and Permission Denied error"""
         review_id = self.test_post_diff_comments_with_site()
         review = Review.objects.get(pk=review_id)
-        review_request = review.review_request
         comment = review.comments.all()[0]
 
         self._login_user()
@@ -2844,11 +2830,9 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
         review_id = rsp['review']['id']
-        review = Review.objects.get(pk=review_id)
 
         rsp = self._postNewDiffComment(review_request, review_id,
                                        diff_comment_text, issue_opened=True)
-        comment_id = rsp['diff_comment']['id']
 
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'], {
             'issue_opened': False,
@@ -2878,7 +2862,6 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self._postNewDiffComment(review_request, review_id,
                                        diff_comment_text, issue_opened=True)
-        comment_id = rsp['diff_comment']['id']
 
         # First, let's ensure that the user that has created the comment
         # cannot alter the issue_status while the review is unpublished.
@@ -3508,8 +3491,6 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self.test_post_reply_with_diff_comment_and_local_site()
 
-        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
-
         self._login_user()
         rsp = self.apiPut(rsp['diff_comment']['links']['self']['href'],
                           { 'text': new_comment_text, },
@@ -3892,9 +3873,6 @@ class DiffResourceTests(BaseWebAPITestCase):
                                          repository=repo)
 
         self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_id=rsp['review_request']['id'],
-            local_site__name=self.local_site_name)
 
         diff_filename = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
@@ -4199,9 +4177,6 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
                                          repository=repo)
         self.assertEqual(rsp['stat'], 'ok')
-        review_request = ReviewRequest.objects.get(
-            local_site__name=self.local_site_name,
-            local_id=rsp['review_request']['id'])
 
         return rsp['review_request']['links']['screenshots']['href']
 
@@ -4573,7 +4548,6 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
     def test_post_screenshot_comments_with_site_no_access(self):
         """Testing the POST review-requests/<id>/reviews/<id>/screenshot-comments/ API with a local site and Permission Denied error"""
-        comment_text = 'This is a test comment.'
         x, y, w, h = (2, 2, 10, 10)
 
         self._login_user(local_site=True)
@@ -4708,9 +4682,6 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         rsp = self._postNewReview(review_request)
         review = Review.objects.get(pk=rsp['review']['id'])
 
-        screenshot_comments_url = \
-            rsp['review']['links']['screenshot_comments']['href']
-
         rsp = self._postNewScreenshotComment(review_request, review.id,
                                              screenshot, comment_text,
                                              x, y, w, h)
@@ -4798,13 +4769,11 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
         review_id = rsp['review']['id']
-        review = Review.objects.get(pk=review_id)
+        Review.objects.get(pk=review_id)
 
         rsp = self._postNewScreenshotComment(review_request, review_id,
                                              screenshot, comment_text,
                                              x, y, w, h, issue_opened=True)
-
-        comment_id = rsp['screenshot_comment']['id']
 
         rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
             'issue_opened': False,
@@ -4836,8 +4805,6 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         rsp = self._postNewScreenshotComment(review_request, review_id,
                                              screenshot, comment_text,
                                              x, y, w, h, issue_opened=True)
-
-        comment_id = rsp['screenshot_comment']['id']
 
         # First, let's ensure that the user that has created the comment
         # cannot alter the issue_status while the review is unpublished.

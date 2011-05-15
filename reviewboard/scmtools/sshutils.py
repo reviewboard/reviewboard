@@ -159,7 +159,7 @@ def is_key_authorized(key):
                 break
 
         fp.close()
-    except IOError, e:
+    except IOError:
         pass
 
     return authorized
@@ -183,13 +183,13 @@ def ensure_ssh_dir(local_site_name=None):
         if not os.path.exists(parent):
             try:
                 os.mkdir(parent, 0700)
-            except OSError, e:
+            except OSError:
                 raise MakeSSHDirError(parent)
 
     if not os.path.exists(sshdir):
         try:
             os.mkdir(sshdir, 0700)
-        except OSError, e:
+        except OSError:
             raise MakeSSHDirError(sshdir)
 
     return sshdir
@@ -248,7 +248,7 @@ def import_user_key(keyfile, local_site_name=None):
                 key = cls.from_private_key(keyfile)
             elif isinstance(keyfile, cls):
                 key = keyfile
-        except paramiko.SSHException, e:
+        except paramiko.SSHException:
             # We don't have more detailed info than this, but most
             # likely, it's not a valid key. Skip to the next.
             continue

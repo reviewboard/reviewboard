@@ -8,8 +8,7 @@ from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-                        HttpResponseNotModified, HttpResponseServerError, \
-                        HttpResponseForbidden
+                        HttpResponseNotModified, HttpResponseServerError
 from django.shortcuts import get_object_or_404, get_list_or_404, \
                              render_to_response
 from django.template.context import RequestContext
@@ -46,8 +45,8 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import Comment, ReviewRequest, \
-                                       ReviewRequestDraft, Review, Group, \
-                                       Screenshot, ScreenshotComment
+                                       Review, Group, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite

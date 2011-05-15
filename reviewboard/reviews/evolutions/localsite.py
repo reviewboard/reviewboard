@@ -1,4 +1,4 @@
-from django_evolution.mutations import *
+from django_evolution.mutations import AddField, ChangeField
 from django.db import models
 
 MUTATIONS = [

@@ -33,10 +33,7 @@ import getpass
 import logging
 import os
 import select
-import socket
 import sys
-import tempfile
-import time
 from optparse import OptionParser
 
 import paramiko
@@ -105,7 +102,7 @@ class PlatformHandler(object):
             logging.debug('!! stdin empty\n')
             return False
 
-        result = channel.send(buf)
+        channel.send(buf)
 
         return True
 
@@ -276,7 +273,6 @@ def main():
 
     attempts = 0
     password = None
-    success = False
 
     key = sshutils.get_user_key(options.local_site_name)
 
