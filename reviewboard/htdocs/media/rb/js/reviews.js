@@ -503,7 +503,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                                                             context_id);
                         obj.setText(value);
                     } else if (context_type == "file_comment") {
-                        obj = new RB.UploadedFileCommentReply(
+                        obj = new RB.FileAttachmentCommentReply(
                             review_reply, null, context_id);
                         obj.setText(value);
                     } else {
@@ -1382,7 +1382,7 @@ $.reviewForm = function(review) {
 /*
  * Adds inline editing capabilities to a comment in the review form.
  *
- * @param {object} comment  A RB.DiffComment, RB.UploadedFileComment
+ * @param {object} comment  A RB.DiffComment, RB.FileAttachmentComment
  *                          or RB.ScreenshotComment instance
  *                          to store the text on and save.
  */
@@ -1544,26 +1544,26 @@ $.newScreenshotThumbnail = function(screenshot) {
 };
 
 /*
- * Adds a file to the uploaded files list.
+ * Adds a file to the file attachments list.
  *
- * If an UploadedFile object is given, then this will display the
+ * If an FileAttachment object is given, then this will display the
  * file data. Otherwise, this will display a placeholder.
  *
- * @param {object} uploadedFile  The optional file to display.
+ * @param {object} fileAttachment  The optional file to display.
  *
  * @return {jQuery} The root file-list div.
  */
-$.fileDisplay = function(uploadedFile) {
+$.fileDisplay = function(fileAttachment) {
     var container = $("<div/>")
         .addClass("file-container");
 
     var body = $("<dd/>")
         .appendTo(container);
 
-    if (uploadedFile) {
-        var captionArea = $("<label>" + uploadedFile.title + "</label>")
+    if (fileAttachment) {
+        var captionArea = $("<label>" + fileAttachment.title + "</label>")
             .attr({
-                "for": "uploaded_file_" + uploadedFile.id + "_caption"
+                "for": "file_attachment_" + fileAttachment.id + "_caption"
             });
 
         body.append(captionArea);
@@ -1572,14 +1572,14 @@ $.fileDisplay = function(uploadedFile) {
                 .addClass("file-review")
                 .attr({
                     href: '#',
-                    id: uploadedFile.id
+                    id: fileAttachment.id
                 }))
             .append($("<a>Download File</a>")
                 .attr({
-                    href: uploadedFile.url
+                    href: fileAttachment.url
                 }))
             .append($("<a/>")
-                .attr("href", uploadedFile.file_url + "delete/")
+                .attr("href", fileAttachment.file_url + "delete/")
                 .append($("<img/>")
                     .attr({
                         src: MEDIA_URL + "rb/images/delete.png?" +
@@ -1591,9 +1591,9 @@ $.fileDisplay = function(uploadedFile) {
             .addClass("editable")
             .addClass("file-editable")
             .attr({
-                id: "uploaded_file_" + uploadedFile.id + "_caption"
+                id: "file_attachment_" + fileAttachment.id + "_caption"
             })
-            .append(uploadedFile.caption));
+            .append(fileAttachment.caption));
 
         container.find(".editable").reviewRequestFieldEditor()
     } else {
@@ -1919,12 +1919,12 @@ function initScreenshotDnD() {
             .css("opacity", 0)
             .fadeTo(1000, 1);
 
-        var uploadedFile = gReviewRequest.createUploadedFile();
-        uploadedFile.setFile(file);
-        uploadedFile.save({
+        var fileAttachment = gReviewRequest.createFileAttachment();
+        fileAttachment.setFile(file);
+        fileAttachment.save({
             buttons: gDraftBannerButtons,
-            success: function(rsp, uploadedFile) {
-                thumb.replaceWith($.fileDisplay(uploadedFile));
+            success: function(rsp, fileAttachment) {
+                thumb.replaceWith($.fileDisplay(fileAttachment));
                 gDraftBanner.show();
             },
             error: function(rsp, msg) {

@@ -13,7 +13,7 @@ from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import BaseComment, Comment, Group, \
                                        ReviewRequest, ScreenshotComment, \
-                                       UploadedFileComment
+                                       FileAttachmentComment
 
 
 register = template.Library()
@@ -309,7 +309,7 @@ def reply_section(context, review, comment, context_type, context_id):
     if comment != "":
         if type(comment) is ScreenshotComment:
             context_id += 's'
-        elif type(comment) is UploadedFileComment:
+        elif type(comment) is FileAttachmentComment:
             context_id += 'f'
 
         context_id += str(comment.id)

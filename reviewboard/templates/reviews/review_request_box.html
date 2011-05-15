@@ -94,7 +94,7 @@
   {% for file in review_request_details.files.all %}
    <div class="file-container">
    <dd>
-    <label for="uploaded_file_{{file.id}}_caption">{{file.get_title}}
+    <label for="file_attachment_{{file.id}}_caption">{{file.get_title}}
      <a href="#" id="{{file.id}}" class="file-review" >{% trans "Review File" %}</a>
      <a href="{{file.get_path}}">{% trans "Download File" %}</a>
      {% ifuserorperm review_request.submitter "reviews.delete_file" %}
@@ -103,7 +103,7 @@
       </a>
      {% endifuserorperm %}
     </label>
-    <pre id="uploaded_file_{{file.id}}_caption" class="editable file-editable">
+    <pre id="file_attachment_{{file.id}}_caption" class="editable file-editable">
      {% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}
     </pre>
    </dd>

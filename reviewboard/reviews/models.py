@@ -16,7 +16,7 @@ from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-from reviewboard.filemanager.models import UploadedFile
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.signals import review_request_published, \
                                         review_request_reopened, \
                                         review_request_closed, \
@@ -310,13 +310,13 @@ class ReviewRequest(models.Model):
         blank=True)
 
     files = models.ManyToManyField(
-        UploadedFile,
+        FileAttachment,
         related_name="review_request",
-        verbose_name=_("uploaded files"),
+        verbose_name=_("file attachments"),
         blank=True)
-    inactive_files = models.ManyToManyField(UploadedFile,
+    inactive_files = models.ManyToManyField(FileAttachment,
         verbose_name=_("inactive files"),
-        help_text=_("A list of uploaded files that used to be but are no "
+        help_text=_("A list of file attachments that used to be but are no "
                     "longer associated with this review request."),
         related_name="inactive_review_request",
         blank=True)
@@ -874,12 +874,12 @@ class ReviewRequestDraft(models.Model):
         related_name="inactive_drafts",
         blank=True)
 
-    files = models.ManyToManyField(UploadedFile,
+    files = models.ManyToManyField(FileAttachment,
                                    related_name="drafts",
-                                   verbose_name=_("uploaded files"),
+                                   verbose_name=_("file attachments"),
                                    blank=True)
     inactive_files = models.ManyToManyField(
-        UploadedFile,
+        FileAttachment,
         verbose_name=_("inactive files"),
         related_name="inactive_drafts",
         blank=True)
@@ -1406,10 +1406,10 @@ class ScreenshotComment(BaseComment):
         ordering = ['timestamp']
 
 
-class UploadedFileComment(models.Model):
-    """A comment on an uploaded file."""
-    file = models.ForeignKey(UploadedFile, verbose_name=_('uploaded_file'),
-                                   related_name="comments")
+class FileAttachmentComment(models.Model):
+    """A comment on a file attachment."""
+    file = models.ForeignKey(FileAttachment, verbose_name=_('file_attachment'),
+                             related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
                                  verbose_name=_("reply to"))
@@ -1442,7 +1442,7 @@ class UploadedFileComment(models.Model):
             (self.review.get().review_request.get_absolute_url(), self.id)
 
     def save(self, **kwargs):
-        super(UploadedFileComment, self).save()
+        super(FileAttachmentComment, self).save()
 
         try:
             # Update the review timestamp.
@@ -1510,8 +1510,8 @@ class Review(models.Model):
         related_name="review",
         blank=True)
     file_comments = models.ManyToManyField(
-        UploadedFileComment,
-        verbose_name=_("uploaded file comments"),
+        FileAttachmentComment,
+        verbose_name=_("file attachment comments"),
         related_name="review",
         blank=True)
 

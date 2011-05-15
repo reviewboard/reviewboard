@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
-from reviewboard.filemanager.models import UploadedFile
-from reviewboard.reviews.models import UploadedFileComment
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.models import FileAttachmentComment
 
 
-class UploadedFileAdmin(admin.ModelAdmin):
+class FileAttachmentAdmin(admin.ModelAdmin):
     list_display = ('file', 'caption', 'review_request_id')
     list_display_links = ('file', 'caption')
     search_fields = ('caption',)
@@ -15,7 +15,7 @@ class UploadedFileAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-class UploadedFileCommentAdmin(admin.ModelAdmin):
+class FileAttachmentCommentAdmin(admin.ModelAdmin):
     list_display = ('text', 'file', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ('caption', 'file')
@@ -26,5 +26,5 @@ class UploadedFileCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
-admin.site.register(UploadedFile, UploadedFileAdmin)
-admin.site.register(UploadedFileComment, UploadedFileCommentAdmin)
+admin.site.register(FileAttachment, FileAttachmentAdmin)
+admin.site.register(FileAttachmentComment, FileAttachmentCommentAdmin)

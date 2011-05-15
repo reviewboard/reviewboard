@@ -45,13 +45,13 @@
       $("<div/>").formDlg({
         title: "{% trans "Upload File" %}",
         confirmLabel: "{% trans "Upload" %}",
-        dataStoreObject: gReviewRequest.createUploadedFile(),
+        dataStoreObject: gReviewRequest.createFileAttachment(),
         width: "50em",
         upload: true,
-        fields: {% form_dialog_fields upload_file_form %},
+        fields: {% form_dialog_fields file_attachment_form %},
         success: function(rsp) {
             if (!$("#file-list").length == 0) {
-                $.fileDisplay(rsp.uploaded_file);
+                $.fileDisplay(rsp.file_attachment);
             }
 
             gDraftBanner.show();

@@ -2,8 +2,8 @@ from datetime import datetime
 
 from django import forms
 
-from reviewboard.filemanager.models import UploadedFile
-from reviewboard.reviews.models import ReviewRequestDraft, UploadedFileComment
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.models import ReviewRequestDraft, FileAttachmentComment
 
 
 class UploadFileForm(forms.Form):
@@ -15,16 +15,16 @@ class UploadFileForm(forms.Form):
     path = forms.FileField(required=True)
 
     def create(self, file, review_request):
-        uploaded_file = UploadedFile(caption=self.cleaned_data['caption'])
-        uploaded_file.file.save(file.name, file, save=True)
+        file_attachment = FileAttachment(caption=self.cleaned_data['caption'])
+        file_attachment.file.save(file.name, file, save=True)
 
-        review_request.files.add(uploaded_file)
+        review_request.files.add(file_attachment)
 
         draft = ReviewRequestDraft.create(review_request)
-        draft.files.add(uploaded_file)
+        draft.files.add(file_attachment)
         draft.save()
 
-        return uploaded_file
+        return file_attachment
 
 
 class CommentFileForm(forms.Form):
@@ -33,8 +33,8 @@ class CommentFileForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': '8','cols': '70'}))
 
     def create(self, file, review_request):
-        comment = UploadedFileComment(text=self.cleaned_data['review'],
-                                      file=file)
+        comment = FileAttachmentComment(text=self.cleaned_data['review'],
+                                        file=file)
 
         comment.timestamp = datetime.now()
         comment.save(save=True)

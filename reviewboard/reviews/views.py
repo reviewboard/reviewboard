@@ -35,7 +35,7 @@ from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
-from reviewboard.filemanager.forms import UploadFileForm, CommentFileForm
+from reviewboard.attachments.forms import UploadFileForm, CommentFileForm
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -115,7 +115,7 @@ def _make_review_request_context(review_request, extra_context):
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'upload_screenshot_form': UploadScreenshotForm(),
-        'upload_file_form': UploadFileForm(),
+        'file_attachment_form': UploadFileForm(),
         'comment_file_form': CommentFileForm(),
         'scmtool': scmtool,
     }, **extra_context)

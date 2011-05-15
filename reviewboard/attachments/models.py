@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
-class UploadedFile(models.Model):
+class FileAttachment(models.Model):
     """A file associated with a review request.
 
     Like diffs, a file can have comments associated with it.

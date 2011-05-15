@@ -454,8 +454,8 @@ $.extend(RB.ReviewRequest.prototype, {
         return new RB.Screenshot(this, screenshot_id);
     },
 
-    createUploadedFile: function(file_id) {
-        return new RB.UploadedFile(this, file_id);
+    createFileAttachment: function(file_id) {
+        return new RB.FileAttachment(this, file_id);
     },
 
     createFileComment: function(file_id) {
@@ -1037,7 +1037,7 @@ $.extend(RB.ReviewReply.prototype, {
 });
 
 
-RB.UploadedFile = function(review_request, id) {
+RB.FileAttachment = function(review_request, id) {
     this.review_request = review_request;
     this.id = id;
     this.caption = null;
@@ -1049,9 +1049,9 @@ RB.UploadedFile = function(review_request, id) {
     return this;
 }
 
-$.extend(RB.UploadedFile.prototype, {
+$.extend(RB.FileAttachment.prototype, {
     setFile: function(file) {
-        this.uploaded_file = file;
+        this.file_attachment = file;
     },
 
     setForm: function(form) {
@@ -1107,7 +1107,7 @@ $.extend(RB.UploadedFile.prototype, {
         }
     },
 
-    deleteUploadedFile: function() {
+    deleteFileAttachment: function() {
         var self = this;
 
         self.ready(function() {
@@ -1135,7 +1135,7 @@ $.extend(RB.UploadedFile.prototype, {
         self.review_request.ready(function() {
             rbApiCall({
                 type: "GET",
-                url: self.review_request.links.uploaded_files.href + self.id + "/",
+                url: self.review_request.links.file_attachments.href + self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
@@ -1148,11 +1148,11 @@ $.extend(RB.UploadedFile.prototype, {
     },
 
     _loadDataFromResponse: function(rsp) {
-        this.id = rsp.uploaded_file.id;
-        this.caption = rsp.uploaded_file.caption;
-        this.thumbnail_url = rsp.uploaded_file.thumbnail_url;
-        this.path = rsp.uploaded_file.path;
-        this.url = rsp.uploaded_file.links.self.href;
+        this.id = rsp.file_attachment.id;
+        this.caption = rsp.file_attachment.caption;
+        this.thumbnail_url = rsp.file_attachment.thumbnail_url;
+        this.path = rsp.file_attachment.path;
+        this.url = rsp.file_attachment.links.self.href;
         this.loaded = true;
     },
 
@@ -1196,13 +1196,13 @@ $.extend(RB.UploadedFile.prototype, {
         var self = this;
         self.review_request.ready(function() {
             rbApiCall($.extend(options, {
-                url: self.review_request.links.uploaded_files.href,
+                url: self.review_request.links.file_attachments.href,
                 success: function(rsp) {
                     if (rsp.stat == "ok") {
                         self._loadDataFromResponse(rsp);
 
                         if ($.isFunction(onSuccess)) {
-                            onSuccess(rsp, rsp.uploaded_file);
+                            onSuccess(rsp, rsp.file_attachment);
                         }
                     } else if ($.isFunction(onError)) {
                         onError(rsp, rsp.err.msg);
@@ -1218,7 +1218,7 @@ $.extend(RB.UploadedFile.prototype, {
 });
 
 
-RB.UploadedFileCommentReply = function(reply, id, reply_to_id) {
+RB.FileAttachmentCommentReply = function(reply, id, reply_to_id) {
     this.id = id;
     this.reply = reply;
     this.text = "";
@@ -1229,7 +1229,7 @@ RB.UploadedFileCommentReply = function(reply, id, reply_to_id) {
     return this;
 }
 
-$.extend(RB.UploadedFileCommentReply.prototype, {
+$.extend(RB.FileAttachmentCommentReply.prototype, {
     ready: function(on_ready) {
         if (this.loaded) {
             on_ready.apply(this, arguments);
@@ -1835,7 +1835,7 @@ $.extend(RB.FileComment.prototype, {
 
             rbApiCall({
                 type: "GET",
-                url: self.review.links.uploaded_file_comments.href +
+                url: self.review.links.file_attachment_comments.href +
                      self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {

@@ -35,15 +35,15 @@ from reviewboard.accounts.models import Profile
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
-from reviewboard.filemanager.forms import UploadFileForm
-from reviewboard.filemanager.models import UploadedFile
+from reviewboard.attachments.forms import UploadFileForm
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
                                        FileDiff, Group, Repository, \
                                        ReviewRequest, ReviewRequestDraft, \
                                        Review, ScreenshotComment, Screenshot, \
-                                       UploadedFileComment
+                                       FileAttachmentComment
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, \
@@ -2838,10 +2838,10 @@ class DraftScreenshotResource(BaseScreenshotResource):
 draft_screenshot_resource = DraftScreenshotResource()
 
 
-class BaseUploadedFileResource(WebAPIResource):
-    """A base resource representing uploaded files."""
-    model = UploadedFile
-    name = 'uploaded_file'
+class BaseFileAttachmentResource(WebAPIResource):
+    """A base resource representing file attachments."""
+    model = FileAttachment
+    name = 'file_attachment'
     fields = {
         'id': {
             'type': int,
@@ -2903,7 +2903,7 @@ class BaseUploadedFileResource(WebAPIResource):
         },
     )
     def create(self, request, *args, **kwargs):
-        """Creates a new file from an uploaded file.
+        """Creates a new file from a file attachment.
 
         This accepts any file type and associates it with a draft of a
         review request.
@@ -2967,7 +2967,7 @@ class BaseUploadedFileResource(WebAPIResource):
         try:
             review_request = \
                 review_request_resource.get_object(request, *args, **kwargs)
-            file = uploaded_file_resource.get_object(request, *args, **kwargs)
+            file = file_attachment_resource.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
@@ -2988,8 +2988,8 @@ class BaseUploadedFileResource(WebAPIResource):
         }
 
 
-class DraftUploadedFileResource(BaseUploadedFileResource):
-    """Provides information on new uploaded files being added to a draft of
+class DraftFileAttachmentResource(BaseFileAttachmentResource):
+    """Provides information on new file attachments being added to a draft of
     a review request.
 
     These are files that will be shown once the pending review request
@@ -3028,9 +3028,9 @@ class DraftUploadedFileResource(BaseUploadedFileResource):
     @webapi_login_required
     @augment_method_from(WebAPIResource)
     def delete(self, *args, **kwargs):
-        """Deletes the file from the draft.
+        """Deletes the file attachment from the draft.
 
-        This will remove the screenshot from the draft review request.
+        This will remove the file attachment from the draft review request.
         This cannot be undone.
 
         This can be used to remove old files that were previously
@@ -3047,9 +3047,9 @@ class DraftUploadedFileResource(BaseUploadedFileResource):
     def get_list(self, *args, **kwargs):
         """Returns a list of draft files.
 
-        Each screenshot in this list is an uploaded screenshot that will
-        be shown in the final review request. These may include newly
-        uploaded files or files that were already part of the
+        Each file attachment in this list is an uploaded file attachment that
+        will be shown in the final review request. These may include newly
+        file attachments or files that were already part of the
         existing review request. In the latter case, existing files
         are shown so that their captions can be added.
         """
@@ -3076,7 +3076,7 @@ class DraftUploadedFileResource(BaseUploadedFileResource):
                                         request=request, *args, **kwargs),
             })
 
-draft_uploaded_file_resource = DraftUploadedFileResource()
+draft_file_attachment_resource = DraftFileAttachmentResource()
 
 
 class ReviewRequestDraftResource(WebAPIResource):
@@ -3166,7 +3166,7 @@ class ReviewRequestDraftResource(WebAPIResource):
 
     item_child_resources = [
         draft_screenshot_resource,
-        draft_uploaded_file_resource
+        draft_file_attachment_resource
     ]
 
     @classmethod
@@ -3991,7 +3991,7 @@ review_reply_screenshot_comment_resource = \
 
 class BaseFileCommentResource(WebAPIResource):
     """A base resource for file comments."""
-    model = UploadedFileComment
+    model = FileAttachmentComment
     name = 'file_comment'
     fields = {
         'id': {
@@ -3999,7 +3999,7 @@ class BaseFileCommentResource(WebAPIResource):
             'description': 'The numeric ID of the comment.',
         },
         'file': {
-            'type': 'reviewboard.webapi.resources.UploadedFileResource',
+            'type': 'reviewboard.webapi.resources.FileAttachmentResource',
             'description': 'The file the comment was made on.',
         },
         'text': {
@@ -4065,7 +4065,7 @@ class FileCommentResource(BaseFileCommentResource):
     purely as a way to see existing comments that were made on a file. These
     comments will span all public reviews.
     """
-    model_parent_key = 'uploaded_file'
+    model_parent_key = 'file_attachment'
     uri_object_key = None
 
     def get_queryset(self, request, review_request_id, file_id,
@@ -4142,7 +4142,7 @@ class ReviewFileCommentResource(BaseFileCommentResource):
             return _no_access_error(request.user)
 
         try:
-            file = UploadedFile.objects.get(pk=file_id,
+            file = FileAttachment.objects.get(pk=file_id,
                                               review_request=review_request)
         except ObjectDoesNotExist:
             return INVALID_FORM_DATA, {
@@ -5004,7 +5004,7 @@ class ScreenshotResource(BaseScreenshotResource):
 screenshot_resource = ScreenshotResource()
 
 
-class UploadedFileResource(BaseUploadedFileResource):
+class FileAttachmentResource(BaseFileAttachmentResource):
     """A resource representing a screenshot on a review request."""
     model_parent_key = 'review_request'
 
@@ -5014,18 +5014,18 @@ class UploadedFileResource(BaseUploadedFileResource):
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
-    @augment_method_from(BaseUploadedFileResource)
+    @augment_method_from(BaseFileAttachmentResource)
     def get_list(self, *args, **kwargs):
         """Returns a list of file attachments on the review request.
 
-        Each screenshot in this list is an uploaded file attachment that is
+        Each screenshot in this list is a file attachment attachment that is
         shown on the review request.
         """
         pass
 
-    @augment_method_from(BaseUploadedFileResource)
+    @augment_method_from(BaseFileAttachmentResource)
     def create(self, request, *args, **kwargs):
-        """Creates a new file attachment from an uploaded file.
+        """Creates a new file attachment from a file attachment.
 
         This accepts any file type and associates it with a draft of a
         review request.
@@ -5048,7 +5048,7 @@ class UploadedFileResource(BaseUploadedFileResource):
         """
         pass
 
-    @augment_method_from(BaseUploadedFileResource)
+    @augment_method_from(BaseFileAttachmentResource)
     def update(self, request, caption=None, *args, **kwargs):
         """Updates the screenshot's data.
 
@@ -5082,7 +5082,7 @@ class UploadedFileResource(BaseUploadedFileResource):
         """
         pass
 
-uploaded_file_resource = UploadedFileResource()
+file_attachment_resource = FileAttachmentResource()
 
 
 class ReviewRequestLastUpdateResource(WebAPIResource):
@@ -5273,7 +5273,7 @@ class ReviewRequestResource(WebAPIResource):
         review_request_last_update_resource,
         review_resource,
         screenshot_resource,
-        uploaded_file_resource
+        file_attachment_resource
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -6037,14 +6037,14 @@ register_resource_for_model(
 register_resource_for_model(ReviewRequest, review_request_resource)
 register_resource_for_model(ReviewRequestDraft, review_request_draft_resource)
 register_resource_for_model(Screenshot, screenshot_resource)
-register_resource_for_model(UploadedFile, uploaded_file_resource)
+register_resource_for_model(FileAttachment, file_attachment_resource)
 register_resource_for_model(
     ScreenshotComment,
     lambda obj: obj.review.get().is_reply() and
                 review_reply_screenshot_comment_resource or
                 review_screenshot_comment_resource)
 register_resource_for_model(
-    UploadedFileComment,
+    FileAttachmentComment,
     lambda obj: obj.review.get().is_reply() and
                 review_reply_file_comment_resource or
                 review_file_comment_resource)

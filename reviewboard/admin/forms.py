@@ -548,7 +548,7 @@ class StorageSettingsForm(SiteSettingsForm):
             #('couchdb',    _('CouchDB')),
         ),
         help_text=_('Storage method and location for uploaded files, such as '
-                    'screenshots.'),
+                    'screenshots and file attachments.'),
         required=True)
 
     aws_access_key_id = forms.CharField(
