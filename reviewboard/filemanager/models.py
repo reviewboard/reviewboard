@@ -39,6 +39,7 @@ class UploadedFile(models.Model):
     file = models.FileField(_("file"),
                               upload_to=os.path.join('uploaded', 'files',
                                                      '%Y', '%m', '%d'))
+    mimetype = models.CharField(_('mimetype'), max_length=256, blank=True)
 
     def get_path(self):
         """Returns the file path for downloading purposes."""
