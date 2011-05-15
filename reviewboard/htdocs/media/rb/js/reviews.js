@@ -502,6 +502,10 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                         obj = new RB.ScreenshotCommentReply(review_reply, null,
                                                             context_id);
                         obj.setText(value);
+                    } else if (context_type == "file_comment") {
+                        obj = new RB.FileAttachmentCommentReply(
+                            review_reply, null, context_id);
+                        obj.setText(value);
                     } else {
                         /* Shouldn't be reached. */
                         return;
@@ -1378,7 +1382,8 @@ $.reviewForm = function(review) {
 /*
  * Adds inline editing capabilities to a comment in the review form.
  *
- * @param {object} comment  A RB.DiffComment or RB.ScreenshotComment instance
+ * @param {object} comment  A RB.DiffComment, RB.FileAttachmentComment
+ *                          or RB.ScreenshotComment instance
  *                          to store the text on and save.
  */
 $.fn.reviewFormCommentEditor = function(comment) {
@@ -1538,6 +1543,69 @@ $.newScreenshotThumbnail = function(screenshot) {
     return container.insertBefore(thumbnails.find("br"));
 };
 
+/*
+ * Adds a file to the file attachments list.
+ *
+ * If an FileAttachment object is given, then this will display the
+ * file data. Otherwise, this will display a placeholder.
+ *
+ * @param {object} fileAttachment  The optional file to display.
+ *
+ * @return {jQuery} The root file-list div.
+ */
+$.fileDisplay = function(fileAttachment) {
+    var container = $("<div/>")
+        .addClass("file-container");
+
+    var body = $("<dd/>")
+        .appendTo(container);
+
+    if (fileAttachment) {
+        var captionArea = $("<label>" + fileAttachment.title + "</label>")
+            .attr({
+                "for": "file_attachment_" + fileAttachment.id + "_caption"
+            });
+
+        body.append(captionArea);
+        captionArea
+            .append($("<a>Review File</a>")
+                .addClass("file-review")
+                .attr({
+                    href: '#',
+                    id: fileAttachment.id
+                }))
+            .append($("<a>Download File</a>")
+                .attr({
+                    href: fileAttachment.url
+                }))
+            .append($("<a/>")
+                .attr("href", fileAttachment.file_url + "delete/")
+                .append($("<img/>")
+                    .attr({
+                        src: MEDIA_URL + "rb/images/delete.png?" +
+                             MEDIA_SERIAL,
+                        alt: "Delete File"
+                    })));
+
+        body.append($("<pre>")
+            .addClass("editable")
+            .addClass("file-editable")
+            .attr({
+                id: "file_attachment_" + fileAttachment.id + "_caption"
+            })
+            .append(fileAttachment.caption));
+
+        container.find(".editable").reviewRequestFieldEditor()
+    } else {
+        body
+            .addClass("loading");
+            .append("&nbsp;");
+    }
+
+    var thumbnails = $("#file-list");
+    $(thumbnails.parent()[0]).show();
+    return container.insertBefore(thumbnails.find("br"));
+};
 
 /*
  * Registers for updates to the review request. This will cause a pop-up
@@ -1837,6 +1905,26 @@ function initScreenshotDnD() {
             buttons: gDraftBannerButtons,
             success: function(rsp, screenshot) {
                 thumb.replaceWith($.newScreenshotThumbnail(screenshot));
+                gDraftBanner.show();
+            },
+            error: function(rsp, msg) {
+                thumb.remove();
+            }
+        });
+    }
+
+    function uploadFile(file) {
+        /* Create a temporary file listing. */
+        var thumb = $.fileDisplay()
+            .css("opacity", 0)
+            .fadeTo(1000, 1);
+
+        var fileAttachment = gReviewRequest.createFileAttachment();
+        fileAttachment.setFile(file);
+        fileAttachment.save({
+            buttons: gDraftBannerButtons,
+            success: function(rsp, fileAttachment) {
+                thumb.replaceWith($.fileDisplay(fileAttachment));
                 gDraftBanner.show();
             },
             error: function(rsp, msg) {
