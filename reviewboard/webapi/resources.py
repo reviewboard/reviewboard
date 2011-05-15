@@ -2871,8 +2871,29 @@ class BaseFileAttachmentResource(WebAPIResource):
 
     uri_object_key = 'file_attachment_id'
 
-    def get_queryset(self, request, review_request_id, *args, **kwargs):
-        return self.model.objects.filter(review_request=review_request_id)
+    def get_queryset(self, request, review_request_id, is_list=False,
+                     *args, **kwargs):
+        review_request = review_request_resource.get_object(
+            request, review_request_id, *args, **kwargs)
+
+        q = Q(review_request=review_request)
+
+        if not is_list:
+            q = q | Q(inactive_review_request=review_request)
+
+        if request.user == review_request.submitter:
+            try:
+                draft = review_request_draft_resource.get_object(
+                    request, review_request_id, *args, **kwargs)
+
+                q = q | Q(drafts=draft)
+
+                if not is_list:
+                    q = q | Q(inactive_drafts=draft)
+            except ObjectDoesNotExist:
+                pass
+
+        return self.model.objects.filter(q)
 
     def serialize_title_field(self, obj):
         return obj.get_title()
@@ -4051,12 +4072,6 @@ class BaseFileAttachmentCommentResource(WebAPIResource):
         """
         pass
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_resource.get_href(
-            obj.review.all()[0], request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
 
 class FileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     """Provides information on filess comments made on a review request.
@@ -5017,6 +5032,9 @@ class FileAttachmentResource(BaseFileAttachmentResource):
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    def get_parent_object(self, obj):
+        return obj.get_review_request()
 
     @augment_method_from(BaseFileAttachmentResource)
     def get_list(self, *args, **kwargs):

@@ -29,5 +29,20 @@ class FileAttachment(models.Model):
     def __unicode__(self):
         return self.caption
 
+    def get_review_request(self):
+        try:
+            return self.review_request.all()[0]
+        except IndexError:
+            try:
+                return self.inactive_review_request.all()[0]
+            except IndexError:
+                # Maybe it's on a draft.
+                try:
+                    draft = self.drafts.get()
+                except ReviewRequestDraft.DoesNotExist:
+                    draft = self.inactive_drafts.get()
+
+                return draft.review_request
+
     def get_absolute_url(self):
         return self.file.url

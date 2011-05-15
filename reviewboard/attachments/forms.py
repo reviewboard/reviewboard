@@ -18,8 +18,6 @@ class UploadFileForm(forms.Form):
         file_attachment = FileAttachment(caption=self.cleaned_data['caption'])
         file_attachment.file.save(file.name, file, save=True)
 
-        review_request.file_attachments.add(file_attachment)
-
         draft = ReviewRequestDraft.create(review_request)
         draft.file_attachments.add(file_attachment)
         draft.save()
@@ -38,7 +36,6 @@ class CommentFileForm(forms.Form):
 
         comment.timestamp = datetime.now()
         comment.save(save=True)
-        review_request.files.add(file)
 
         draft = ReviewRequestDraft.create(review_request)
         draft.file_attachment_comments.add(comment)
