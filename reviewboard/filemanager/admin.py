@@ -2,11 +2,7 @@ from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.filemanager.models import UploadedFile
-from reviewboard.reviews.forms import DefaultReviewerForm
-from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
-                                       Review, ReviewRequest, \
-                                       ReviewRequestDraft, Screenshot, \
-                                       ScreenshotComment, UploadedFileComment
+from reviewboard.reviews.models import UploadedFileComment
 
 
 class UploadedFileAdmin(admin.ModelAdmin):

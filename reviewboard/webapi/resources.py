@@ -4030,7 +4030,7 @@ class BaseFileCommentResource(WebAPIResource):
         review_request = \
             review_request_resource.get_object(request, *args, **kwargs)
         return self.model.objects.filter(
-            file__review_request=review_request_id,
+            file__review_request=review_request,
             review__isnull=False)
 
     def serialize_public_field(self, obj):

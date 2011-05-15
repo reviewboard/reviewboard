@@ -1,30 +1,7 @@
 import os
-import re
-from datetime import datetime
 
-from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
-from django.db import connection, models, transaction
-from django.db.models import F, Q, permalink
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
+from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-from djblets.util.db import ConcurrencyManager
-from djblets.util.decorators import root_url
-from djblets.util.fields import CounterField, ModificationTimestampField
-from djblets.util.misc import get_object_or_none
-from djblets.util.templatetags.djblets_images import crop_image, thumbnail
-
-from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-from reviewboard.reviews.errors import PermissionError
-from reviewboard.reviews.signals import review_request_published, \
-                                        reply_published, review_published
-from reviewboard.scmtools.errors import EmptyChangeSetError, \
-                                        InvalidChangeNumberError
-from reviewboard.scmtools.models import Repository
-from reviewboard.site.models import LocalSite
 
 
 class UploadedFile(models.Model):
