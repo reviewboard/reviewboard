@@ -12,12 +12,14 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
 import paramiko
 
 from reviewboard import initialize
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.notifications.tests import EmailTestHelper
-from reviewboard.reviews.models import Group, ReviewRequest, \
-                                       ReviewRequestDraft, Review, \
-                                       Comment, Screenshot, ScreenshotComment
+from reviewboard.reviews.models import FileAttachmentComment, Group, \
+                                       ReviewRequest, ReviewRequestDraft, \
+                                       Review, Comment, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, \
@@ -319,6 +321,61 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         rsp = self.apiPost(
             ScreenshotResourceTests.get_list_url(review_request,
                                                  local_site_name),
+            post_data)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def _postNewFileAttachmentComment(self, review_request, review_id,
+                                      file_attachment, comment_text,
+                                      issue_opened=None,
+                                      issue_status=None):
+        """Creates a file attachment comment and returns the payload response."""
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+        else:
+            local_site_name = None
+
+        post_data = {
+            'file_attachment_id': file_attachment.id,
+            'text': comment_text,
+        }
+
+        if issue_opened is not None:
+            post_data['issue_opened'] = issue_opened
+
+        if issue_status is not None:
+            post_data['issue_status'] = issue_status
+
+        review = Review.objects.get(pk=review_id)
+        rsp = self.apiPost(
+            DraftReviewFileAttachmentCommentResourceTests.get_list_url(
+                review, local_site_name),
+            post_data)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp
+
+    def _postNewFileAttachment(self, review_request):
+        """Creates a file_attachment and returns the payload response."""
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+        else:
+            local_site_name = None
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+
+        post_data = {
+            'path': f,
+        }
+
+        rsp = self.apiPost(
+            FileAttachmentResourceTests.get_list_url(review_request,
+                                                     local_site_name),
             post_data)
         f.close()
 
@@ -4853,6 +4910,481 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
     def get_item_url(cls, review, comment_id, local_site_name=None):
         return local_site_reverse(
             'screenshot-comment-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': review.review_request.display_id,
+                'review_id': review.pk,
+                'comment_id': comment_id,
+            })
+
+
+class FileAttachmentResourceTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentResource APIs."""
+    def test_post_file_attachments(self):
+        """Testing the POST review-requests/<id>/file-attachments/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        file_attachments_url = \
+            rsp['review_request']['links']['file_attachments']['href']
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(file_attachments_url, {
+            'path': f,
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_post_file_attachments_with_permission_denied_error(self):
+        """Testing the POST review-requests/<id>/file-attachments/ API with Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost(self.get_list_url(review_request), {
+            'caption': 'Trophy',
+            'path': f,
+        }, expected_status=403)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def _test_review_request_with_site(self):
+        self._login_user(local_site=True)
+
+        repo = Repository.objects.get(name='Review Board Git')
+        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
+                                         repository=repo)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        return rsp['review_request']['links']['file_attachments']['href']
+
+    def test_post_file_attachments_with_site(self):
+        """Testing the POST review-requests/<id>/file-attachments/ API with a local site"""
+        file_attachments_url = self._test_review_request_with_site()
+
+        f = open(self._getTrophyFilename(), 'r')
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(file_attachments_url, { 'path': f, })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_post_file_attachments_with_site_no_access(self):
+        """Testing the POST review-requests/<id>/file-attachments/ API with a local site and Permission Denied error"""
+        file_attachments_url = self._test_review_request_with_site()
+        self._login_user()
+
+        f = open(self._getTrophyFilename(), 'r')
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(file_attachments_url,
+                           { 'path': f, },
+                           expected_status=403)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @classmethod
+    def get_list_url(cls, review_request, local_site_name=None):
+        return local_site_reverse(
+            'file-attachments-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': review_request.display_id,
+            })
+
+
+class FileAttachmentDraftResourceTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentDraftResource APIs."""
+    def test_post_file_attachments(self):
+        """Testing the POST review-requests/<id>/draft/file-attachments/ API"""
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        file_attachments_url = \
+            rsp['review_request']['links']['file_attachments']['href']
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(file_attachments_url, {
+            'path': f,
+        })
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_post_file_attachments_with_permission_denied_error(self):
+        """Testing the POST review-requests/<id>/draft/file-attachments/ API with Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(public=True,
+            local_site=None).exclude(submitter=self.user)[0]
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost(self.get_list_url(review_request), {
+            'caption': 'Trophy',
+            'path': f,
+        }, expected_status=403)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_post_file_attachments_with_site(self):
+        """Testing the POST review-requests/<id>/draft/file-attachments/ API with a local site"""
+        self._login_user(local_site=True)
+
+        repo = Repository.objects.get(name='Review Board Git')
+        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
+                                         repository=repo)
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = ReviewRequest.objects.get(
+            local_site__name=self.local_site_name,
+            local_id=rsp['review_request']['id'])
+
+        f = open(self._getTrophyFilename(), 'r')
+        self.assertNotEqual(f, None)
+
+        post_data = {
+            'path': f,
+            'caption': 'Trophy',
+        }
+
+        rsp = self.apiPost(self.get_list_url(review_request,
+                                             self.local_site_name),
+                           post_data)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['draft_file_attachment']['caption'], 'Trophy')
+
+        draft = review_request.get_draft(User.objects.get(username='doc'))
+        self.assertNotEqual(draft, None)
+
+        return review_request, rsp['draft_file_attachment']['id']
+
+    def test_post_file_attachments_with_site_no_access(self):
+        """Testing the POST review-requests/<id>/draft/file-attachments/ API with a local site and Permission Denied error"""
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+
+        f = open(self._getTrophyFilename(), 'r')
+        self.assertNotEqual(f, None)
+        rsp = self.apiPost(self.get_list_url(review_request,
+                                             self.local_site_name),
+                           { 'path': f, },
+                           expected_status=403)
+        f.close()
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_put_file_attachment(self):
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/ API"""
+        draft_caption = 'The new caption'
+
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        f = open(self._getTrophyFilename(), "r")
+        self.assert_(f)
+        rsp = self.apiPost(self.get_list_url(review_request), {
+            'caption': 'Trophy',
+            'path': f,
+        })
+        f.close()
+        review_request.publish(self.user)
+
+        file_attachment = FileAttachment.objects.get(pk=rsp['draft_file_attachment']['id'])
+
+        # Now modify the caption.
+        rsp = self.apiPut(self.get_item_url(review_request,
+                                            file_attachment.id), {
+            'caption': draft_caption,
+        })
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = review_request.get_draft(self.user)
+        self.assertNotEqual(draft, None)
+
+        file_attachment = FileAttachment.objects.get(pk=file_attachment.id)
+        self.assertEqual(file_attachment.draft_caption, draft_caption)
+
+    def test_put_file_attachment_with_site(self):
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/ API with a local site"""
+        draft_caption = 'The new caption'
+        user = User.objects.get(username='doc')
+
+        review_request, file_attachment_id = \
+            self.test_post_file_attachments_with_site()
+        review_request.publish(user)
+
+        rsp = self.apiPut(self.get_item_url(review_request, file_attachment_id,
+                                            self.local_site_name),
+                          { 'caption': draft_caption, })
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = review_request.get_draft(user)
+        self.assertNotEqual(draft, None)
+
+        file_attachment = FileAttachment.objects.get(pk=file_attachment_id)
+        self.assertEqual(file_attachment.draft_caption, draft_caption)
+
+    def test_put_file_attachment_with_site_no_access(self):
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/ API with a local site and Permission Denied error"""
+        review_request, file_attachment_id = \
+            self.test_post_file_attachments_with_site()
+        review_request.publish(User.objects.get(username='doc'))
+
+        self._login_user()
+
+        rsp = self.apiPut(self.get_item_url(review_request, file_attachment_id,
+                                            self.local_site_name),
+                          { 'caption': 'test', },
+                          expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def get_list_url(self, review_request, local_site_name=None):
+        return local_site_reverse(
+            'draft-file-attachments-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': review_request.display_id,
+            })
+
+    def get_item_url(self, review_request, file_attachment_id,
+                     local_site_name=None):
+        return local_site_reverse(
+            'draft-file-attachment-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': review_request.display_id,
+                'file_attachment_id': file_attachment_id,
+            })
+
+
+class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
+    """Testing the FileAttachmentCommentResource APIs."""
+    def test_get_file_attachment_comments(self):
+        """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API"""
+        comment_text = "This is a test comment."
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment = FileAttachment.objects.get(
+            pk=rsp['file_attachment']['id'])
+        self.assertTrue('links' in rsp['file_attachment'])
+        self.assertTrue('file_attachment_comments' in
+                        rsp['file_attachment']['links'])
+        comments_url = \
+            rsp['file_attachment']['links']['file_attachment_comments']['href']
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        # Post the review.
+        rsp = self._postNewReview(review_request)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        self._postNewFileAttachmentComment(review_request, review.id,
+                                           file_attachment, comment_text)
+
+        rsp = self.apiGet(comments_url)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comments = FileAttachmentComment.objects.filter(
+            file_attachment=file_attachment)
+        rsp_comments = rsp['file_attachment_comments']
+        self.assertEqual(len(rsp_comments), comments.count())
+
+        for i in range(0, len(comments)):
+            self.assertEqual(rsp_comments[i]['text'], comments[i].text)
+
+    def test_get_file_attachment_comments_with_site(self):
+        """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API with a local site"""
+        comment_text = 'This is a test comment.'
+
+        self._login_user(local_site=True)
+
+        # Post the review request.
+        repo = Repository.objects.get(name='Review Board Git')
+        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
+                                         repository=repo)
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = ReviewRequest.objects.get(
+            local_site__name=self.local_site_name,
+            local_id=rsp['review_request']['id'])
+
+        # Post the file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment = FileAttachment.objects.get(
+            pk=rsp['file_attachment']['id'])
+        self.assertTrue('links' in rsp['file_attachment'])
+        self.assertTrue('file_attachment_comments' in
+                        rsp['file_attachment']['links'])
+        comments_url = \
+            rsp['file_attachment']['links']['file_attachment_comments']['href']
+
+        # Make these public.
+        review_request.publish(User.objects.get(username='doc'))
+
+        # Post the review.
+        rsp = self._postNewReview(review_request)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        self._postNewFileAttachmentComment(review_request, review.id,
+                                           file_attachment, comment_text)
+
+        rsp = self.apiGet(comments_url)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comments = FileAttachmentComment.objects.filter(
+            file_attachment=file_attachment)
+        rsp_comments = rsp['file_attachment_comments']
+        self.assertEqual(len(rsp_comments), comments.count())
+
+        for i in range(0, len(comments)):
+            self.assertEqual(rsp_comments[i]['text'], comments[i].text)
+
+    def test_get_file_attachment_comments_with_site_no_access(self):
+        """Testing the GET review-requests/<id>/file-attachments/<id>/comments/ API with a local site and Permission Denied error"""
+        comment_text = 'This is a test comment.'
+
+        self._login_user(local_site=True)
+
+        # Post the review request.
+        repo = Repository.objects.get(name='Review Board Git')
+        rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
+                                         repository=repo)
+        self.assertEqual(rsp['stat'], 'ok')
+        review_request = ReviewRequest.objects.get(
+            local_site__name=self.local_site_name,
+            local_id=rsp['review_request']['id'])
+
+        # Post the file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment = FileAttachment.objects.get(
+            pk=rsp['file_attachment']['id'])
+        self.assertTrue('links' in rsp['file_attachment'])
+        self.assertTrue('file_attachment_comments' in
+                        rsp['file_attachment']['links'])
+        comments_url = \
+            rsp['file_attachment']['links']['file_attachment_comments']['href']
+
+        # Make these public.
+        review_request.publish(User.objects.get(username='doc'))
+
+        # Post the review.
+        rsp = self._postNewReview(review_request)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        self._postNewFileAttachmentComment(review_request, review.id,
+                                           file_attachment, comment_text)
+
+        self._login_user()
+
+        rsp = self.apiGet(comments_url, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+
+class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewFileAttachmentCommentResource APIs."""
+    def test_get_review_file_attachment_comments(self):
+        """Testing the GET review-requests/<id>/reviews/draft/file_attachment-comments/ API"""
+        file_attachment_comment_text = "Test file attachment comment"
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment = \
+            FileAttachment.objects.get(pk=rsp['file_attachment']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        self._postNewFileAttachmentComment(review_request, review_id,
+                                           file_attachment,
+                                           file_attachment_comment_text)
+
+        rsp = self.apiGet(self.get_list_url(review))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('file_attachment_comments' in rsp)
+        self.assertEqual(len(rsp['file_attachment_comments']), 1)
+        self.assertEqual(rsp['file_attachment_comments'][0]['text'],
+                         file_attachment_comment_text)
+
+    def test_get_review_file_attachment_comments_with_site(self):
+        """Testing the GET review-requests/<id>/reviews/draft/file_attachment-comments/ APIs with a local site"""
+        file_attachment_comment_text = "Test file_attachment comment"
+
+        self._login_user(local_site=True)
+
+        review_request = ReviewRequest.objects.filter(
+            local_site__name=self.local_site_name)[0]
+
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment = \
+            FileAttachment.objects.get(pk=rsp['file_attachment']['id'])
+        review_request.publish(User.objects.get(username='doc'))
+
+        rsp = self.apiPost(
+            ReviewResourceTests.get_list_url(review_request,
+                                             self.local_site_name))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        self._postNewFileAttachmentComment(review_request, review_id,
+                                           file_attachment,
+                                           file_attachment_comment_text)
+
+        rsp = self.apiGet(self.get_list_url(review, self.local_site_name))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('file_attachment_comments' in rsp)
+        self.assertEqual(len(rsp['file_attachment_comments']), 1)
+        self.assertEqual(rsp['file_attachment_comments'][0]['text'],
+                         file_attachment_comment_text)
+
+    @classmethod
+    def get_list_url(self, review, local_site_name=None):
+        return local_site_reverse(
+            'file-attachment-comments-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': review.review_request.display_id,
+                'review_id': review.pk,
+            })
+
+    def get_item_url(self, review, comment_id, local_site_name=None):
+        return local_site_reverse(
+            'file-attachment-comment-resource',
             local_site_name=local_site_name,
             kwargs={
                 'review_request_id': review.review_request.display_id,
