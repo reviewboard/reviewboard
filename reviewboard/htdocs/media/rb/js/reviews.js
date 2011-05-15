@@ -1562,7 +1562,6 @@ $.fileDisplay = function(uploadedFile) {
         .appendTo(container);
 
     if (uploadedFile) {
-        
         var captionArea = $("<label>"+uploadedFile.title+"</label>")
             .attr({
                 "for": "uploaded_file_"+uploadedFile.id+"_caption"

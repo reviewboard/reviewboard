@@ -454,8 +454,8 @@ $.extend(RB.ReviewRequest.prototype, {
         return new RB.Screenshot(this, screenshot_id);
     },
 
-    createUploadedFile: function() {
-        return new RB.UploadedFile(this);
+    createUploadedFile: function(file_id) {
+        return new RB.UploadedFile(this, file_id);
     },
 
     createFileComment: function(file_id) {
@@ -1075,6 +1075,7 @@ $.extend(RB.UploadedFile.prototype, {
 
         if (this.id) {
             var data = {};
+
             if (this.caption != null) {
                 data.caption = this.caption;
             }
@@ -1135,7 +1136,7 @@ $.extend(RB.UploadedFile.prototype, {
         self.review_request.ready(function() {
             rbApiCall({
                 type: "GET",
-                url: self.review_request.links.file.href + self.id + "/",
+                url: self.review_request.links.uploaded_files.href + self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);

@@ -2987,7 +2987,7 @@ class BaseUploadedFileResource(WebAPIResource):
         file.save()
 
         return 200, {
-            self.item_result_key: screenshot,
+            self.item_result_key: file,
         }
 
 
