@@ -806,7 +806,6 @@ $.fn.floatReplyDraftBanner = function() {
                 containerTop < windowTop &&
                 windowTop < (containerTop + container.outerHeight() -
                              outerHeight)) {
-                console.log(floatSpacer.parent().innerWidth());
                 self.css({
                     top: 0,
                     position: "fixed"
