@@ -8,7 +8,7 @@ from reviewboard.reviews.models import FileAttachmentComment
 class FileAttachmentAdmin(admin.ModelAdmin):
     list_display = ('file', 'caption', 'mimetype',
                     'review_request_id')
-    list_display_links = ('file_attachment', 'caption')
+    list_display_links = ('file', 'caption')
     search_fields = ('caption', 'mimetype')
 
     def review_request_id(self, obj):
