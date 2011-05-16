@@ -20,7 +20,7 @@ class FileAttachmentCommentAdmin(admin.ModelAdmin):
     list_display = ('text', 'file_attachment', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
     search_fields = ('caption', 'file_attachment')
-    raw_id_fields = ('file', 'reply_to')
+    raw_id_fields = ('file_attachment', 'reply_to')
 
     def review_request_id(self, obj):
         return obj.review.get().review_request.id
