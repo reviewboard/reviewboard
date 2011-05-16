@@ -6,9 +6,10 @@ from reviewboard.reviews.models import FileAttachmentComment
 
 
 class FileAttachmentAdmin(admin.ModelAdmin):
-    list_display = ('file', 'caption', 'review_request_id')
-    list_display_links = ('file', 'caption')
-    search_fields = ('caption',)
+    list_display = ('file', 'caption', 'mimetype',
+                    'review_request_id')
+    list_display_links = ('file_attachment', 'caption')
+    search_fields = ('caption', 'mimetype')
 
     def review_request_id(self, obj):
         return obj.review_request.get().id
@@ -16,9 +17,9 @@ class FileAttachmentAdmin(admin.ModelAdmin):
 
 
 class FileAttachmentCommentAdmin(admin.ModelAdmin):
-    list_display = ('text', 'file', 'review_request_id', 'timestamp')
+    list_display = ('text', 'file_attachment', 'review_request_id', 'timestamp')
     list_filter = ('timestamp',)
-    search_fields = ('caption', 'file')
+    search_fields = ('caption', 'file_attachment')
     raw_id_fields = ('file', 'reply_to')
 
     def review_request_id(self, obj):

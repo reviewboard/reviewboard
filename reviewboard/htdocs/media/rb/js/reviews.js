@@ -1598,7 +1598,7 @@ $.fileDisplay = function(fileAttachment) {
         container.find(".editable").reviewRequestFieldEditor()
     } else {
         body
-            .addClass("loading");
+            .addClass("loading")
             .append("&nbsp;");
     }
 
