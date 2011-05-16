@@ -1407,7 +1407,7 @@ class ScreenshotComment(BaseComment):
         ordering = ['timestamp']
 
 
-class FileAttachmentComment(models.Model):
+class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
     file_attachment = models.ForeignKey(FileAttachment,
                                         verbose_name=_('file_attachment'),
