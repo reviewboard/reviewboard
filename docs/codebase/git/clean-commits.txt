@@ -45,6 +45,27 @@ pushed to any other repository, you can make this happen using the tricks
 in this guide.
 
 
+Tools
+=====
+
+gitk and gitx
+-------------
+
+The best way to keep tabs on your repository is to use a graphical
+Git repository viewer. Git comes with :command:`gitk`, which should be
+invoked from within your checkout like::
+
+    $ gitk --all &
+
+This will show you your current branch in bold, and the entire history
+of commits. It's a bit hard to read at first, with merges happening,
+but it's better than working in your tree blind.
+
+gitx_ is another alternative, if you use MacOS X.
+
+.. _gitx: http://gitx.frim.nl/
+
+
 Branches
 ========
 
@@ -108,6 +129,18 @@ Another trick is to organize your branch names through ``/``-separated
 * ``file-attachment/webapi``
 * ``file-attachment/ui-redesign``
 * ``search/webapi``
+
+
+One Branch Per Review Request
+-----------------------------
+
+A review request is typically tied to a branch. When running
+:command:`post-review`, a review request will be generated from ``master``
+to the HEAD of your branch.
+
+If you're doing work based on code sitting in a branch that is up for
+review, you should create a new branch for that block of work, rather than
+reusing the existing branch.
 
 
 Working with Commits
@@ -248,6 +281,44 @@ depending on what your repository ships.
 
    It's best to look at your branch in :command:`gitk` before deciding whether
    it's safe to do an interactive rebase.
+
+
+Merging and Rebasing
+--------------------
+
+Git has two ways of staying up-to-date with other branches: merging, and
+rebasing.
+
+A merge takes a set of changes from the source branch and moves them into
+your current branch, as a special commit. This commit generally includes
+a commit message such as "Merge branch 'master' into foo". It works like::
+
+    $ git checkout my-branch
+    $ git merge master
+
+A rebase takes your current branch and rebuilds it on top of the source
+branch, effectively rewriting history (like the interactive rebase above).
+It works like::
+
+    $ git checkout my-branch
+    $ git rebase master
+
+The advantage of a rebase over a merge is that you won't get those extra
+merge commits in your branch, cluttering things up. In general, if you have
+a new branch with a few commits, you may want to do a rebase.
+
+However, there are a couple reasons you would want a merge over a rebase.
+A rebase will break things if the commits were already pushed, so you can
+only rebase unpushed commits. Also, it can be harder to resolve conflicts if
+your branch is old and a lot has changed in the branch you're rebasing onto.
+
+One strategy is to use rebasing until you do your initial push. After that,
+you will want to always merge.
+
+Don't merge too often though. If you merge frequently, you'll just clutter
+your branch with merge lines. It's best to merge either when you're dependent
+on a change that just went in, or you're about to post your branch for
+review.
 
 
 Remote Repositories
