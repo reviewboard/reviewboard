@@ -37,6 +37,15 @@ Contributor Guides
 .. `Creating SCMTools`
 
 
+Git Guides
+==========
+
+.. toctree::
+   :maxdepth: 1
+
+   git/clean-commits
+
+
 Related Resources
 =================
 
