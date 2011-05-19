@@ -454,12 +454,8 @@ $.extend(RB.ReviewRequest.prototype, {
         return new RB.Screenshot(this, screenshot_id);
     },
 
-    createFileAttachment: function(file_id) {
-        return new RB.FileAttachment(this, file_id);
-    },
-
-    createFileComment: function(file_id) {
-        return new RB.FileComment(this, file_id);
+    createFileAttachment: function(file_attachment_id) {
+        return new RB.FileAttachment(this, file_attachment_id);
     },
 
     /*
@@ -679,8 +675,8 @@ $.extend(RB.Review.prototype, {
                                         width, height);
     },
 
-    createFileComment: function(id, file_id) {
-        return new RB.FileComment(this, id, file_id);
+    createFileAttachmentComment: function(id, file_attachment_id) {
+        return new RB.FileAttachmentComment(this, id, file_attachment_id);
     },
 
     createReply: function() {
@@ -1268,7 +1264,7 @@ $.extend(RB.FileAttachmentCommentReply.prototype, {
                     url = self.url;
                 } else {
                     data.reply_to_id = self.reply_to_id;
-                    url = self.reply.links.file_comments.href;
+                    url = self.reply.links.file_attachment_comments.href;
                 }
 
                 rbApiCall({
@@ -1337,7 +1333,7 @@ $.extend(RB.FileAttachmentCommentReply.prototype, {
 
             rbApiCall({
                 type: "GET",
-                url: self.reply.links.file_comments.href + self.id + "/",
+                url: self.reply.links.file_attachment_comments.href + self.id + "/",
                 success: function(rsp, status) {
                     if (status != 404) {
                         self._loadDataFromResponse(rsp);
@@ -1350,10 +1346,10 @@ $.extend(RB.FileAttachmentCommentReply.prototype, {
     },
 
     _loadDataFromResponse: function(rsp) {
-        this.id = rsp.file_comment.id;
-        this.text = rsp.file_comment.text;
-        this.links = rsp.file_comment.links;
-        this.url = rsp.file_comment.links.self.href;
+        this.id = rsp.file_attachment_comment.id;
+        this.text = rsp.file_attachment_comment.text;
+        this.links = rsp.file_attachment_comment.links;
+        this.url = rsp.file_attachment_comment.links.self.href;
         this.loaded = true;
     }
 });
@@ -1707,17 +1703,17 @@ $.extend(RB.ScreenshotComment.prototype, {
 });
 
 
-RB.FileComment = function(review, file_id, id) {
+RB.FileAttachmentComment = function(review, id, file_attachment_id) {
     this.id = id;
     this.review = review;
-    this.file_id = file_id;
+    this.file_attachment_id = file_attachment_id;
     this.text = "";
     this.loaded = false;
     this.url = null;
     return this;
 }
 
-$.extend(RB.FileComment.prototype, {
+$.extend(RB.FileAttachmentComment.prototype, {
     ready: function(on_ready) {
         if (this.loaded) {
             on_ready.apply(this, arguments);
@@ -1769,8 +1765,8 @@ $.extend(RB.FileComment.prototype, {
                     type = "PUT";
                     url = self.url;
                 } else {
-                    data.file_id = self.file_id;
-                    url = self.review.links.file_comments.href;
+                    data.file_attachment_id = self.file_attachment_id;
+                    url = self.review.links.file_attachment_comments.href;
                 }
 
                 rbApiCall({
@@ -1804,7 +1800,7 @@ $.extend(RB.FileComment.prototype, {
                     }
                 });
             } else {
-                this._deleteAndDestruct();
+                self._deleteAndDestruct();
             }
         });
     },
@@ -1849,11 +1845,11 @@ $.extend(RB.FileComment.prototype, {
     },
 
     _loadDataFromResponse: function(rsp) {
-            this.id = rsp.file_comment.id;
-            this.text = rsp.file_comment.text;
-            this.links = rsp.file_comment.links;
-            this.url = rsp.file_comment.links.self.href;
-            this.loaded = true;
+        this.id = rsp.file_attachment_comment.id;
+        this.text = rsp.file_attachment_comment.text;
+        this.links = rsp.file_attachment_comment.links;
+        this.url = rsp.file_attachment_comment.links.self.href;
+        this.loaded = true;
     }
 });
 

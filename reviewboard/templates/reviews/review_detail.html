@@ -81,8 +81,9 @@
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
    {% reply_section entry.review "" "body_top" "rcbt" %}
-{% if entry.review.comments.all or entry.review.screenshot_comments.all %}
+{% if entry.review.comments.all or entry.review.screenshot_comments.all or entry.review.file_attachment_comments.all %}
    <dl class="diff-comments">
+
 {% for comment in entry.review.screenshot_comments.all %}
     <dt>
      <a name="scomment{{comment.id}}"></a>
@@ -109,6 +110,37 @@
      {% reply_section entry.review comment "screenshot_comment" "rc" %}
     </dd>
 {% endfor %}
+
+{% for comment in entry.review.file_attachment_comments.all %}
+    <dt>
+     <a name="fcomment{{comment.id}}"></a>
+     <div class="file-attachment">
+      <a href="{{comment.file_attachment.get_absolute_url}}">{% spaceless %}
+       <img src="{{comment.file_attachment.icon_url}}" />
+        <span class="filename">{{comment.file_attachment.filename}}</span>
+	  </a>
+{% if draft and comment.file_attachment.draft_caption %}
+      <p class="caption">{{comment.file_attachment.draft_caption}}</p>
+{% else %}
+{%  if comment.file_attachment.caption %}
+      <p class="caption">{{comment.file_attachment.caption}}</p>
+{%  endif %}
+{% endif %}
+{% endspaceless %}</a>
+      </span>
+     </div>
+    </dt>
+    <dd>
+     <pre>{{comment.text|escape}}</pre>
+{% if comment.issue_opened %}
+     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+       {% comment_issue review_request_details comment "file_attachment_comment" %}
+     </div>
+{% endif %}
+     {% reply_section entry.review comment "file_attachment_comment" "rc" %}
+    </dd>
+{% endfor %}
+
 {% for comment in entry.review.ordered_comments %}
     <dt>
      <a name="comment{{comment.id}}"></a>

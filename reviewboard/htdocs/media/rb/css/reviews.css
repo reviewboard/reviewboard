@@ -396,6 +396,35 @@
   text-decoration: underline;
 }
 
+.review .diff-comments .file-attachment {
+  background: #F0F0F0;
+  border: 1px #C0C0C0 solid;
+  font-size: 120%;
+  padding: 5px;
+  white-space: nowrap;
+}
+
+.review .diff-comments .file-attachment a {
+  text-decoration: none;
+}
+
+.review .diff-comments .file-attachment .caption {
+  color: black;
+  margin: 5px 0 0 32px;
+}
+
+.review .diff-comments .file-attachment .filename {
+  color: black;
+  font-weight: bold;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.review .diff-comments .file-attachment img {
+  padding-right: 10px;
+  vertical-align: middle;
+}
+
 .review .diff-comments .screenshot {
   background: #F0F0F0;
   border: 1px #C0C0C0 solid;

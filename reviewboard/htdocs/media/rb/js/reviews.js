@@ -1,3 +1,4 @@
+
 // State variables
 var gCommentDlg = null;
 var gPublishing = false;
@@ -6,6 +7,7 @@ var gPendingDiffFragments = {};
 var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
+var gFileAttachmentComments = {};
 var gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
                                           gReviewRequestSitePrefix,
                                           gReviewRequestPath);
@@ -1554,19 +1556,22 @@ $.fn.fileAttachment = function() {
     return $(this).each(function() {
         var self = $(this);
 
-        var file_id = self.attr("data-file-id");
-        var file = gReviewRequest.createFileAttachment(file_id);
+        var fileID = self.attr("data-file-id");
+        var fileAttachment = gReviewRequest.createFileAttachment(fileID);
+        var draftComment = null;
+        var comments = [];
+        var commentsProcessed = false;
 
         self.find("a.edit")
             .inlineEditor({
-                cls: "file-" + file_id + "-editor",
+                cls: "file-" + fileID + "-editor",
                 editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
                 showButtons: false
             })
             .bind("complete", function(e, value) {
-                file.ready(function() {
-                    file.caption = value;
-                    file.save({
+                fileAttachment.ready(function() {
+                    fileAttachment.caption = value;
+                    fileAttachment.save({
                         buttons: gDraftBannerButtons,
                         success: function(rsp) {
                             gDraftBanner.show();
@@ -1575,16 +1580,82 @@ $.fn.fileAttachment = function() {
                 });
             });
 
+        var addCommentButton =
+            self.find('.file-add-comment a')
+                .click(function() {
+                    showCommentDlg();
+                    return false;
+                });
+
         self.find("a.delete")
             .click(function() {
-                file.ready(function() {
-                    file.deleteFileAttachment()
+                fileAttachment.ready(function() {
+                    fileAttachment.deleteFileAttachment()
                     self.empty();
                     gDraftBanner.show();
                 });
 
                 return false;
             });
+
+        function showCommentDlg() {
+            gCommentDlg
+                .one("close", function() {
+                    processComments();
+                    createDraftComment();
+
+                    gCommentDlg
+                        .setDraftComment(draftComment)
+                        .setCommentsList(comments, "file_attachment_comment")
+                        .positionToSide(addCommentButton, {
+                            side: 'b',
+                            fitOnScreen: true
+                        });
+                    gCommentDlg.open();
+                })
+                .close();
+        }
+
+        function processComments() {
+            if (commentsProcessed) {
+                return;
+            }
+
+            var attachmentComments = gFileAttachmentComments[fileID];
+
+            if (attachmentComments && attachmentComments.length > 0) {
+                for (var i in attachmentComments) {
+                    var comment = attachmentComments[i];
+
+                    if (comment.localdraft) {
+                        createDraftComment(comment.comment_id, comment.text);
+                    } else {
+                        comments.push(comment);
+                    }
+                }
+            }
+
+            commentsProcessed = true;
+        }
+
+        function createDraftComment(commentID, text) {
+            if (draftComment != null) {
+                return;
+            }
+
+            var self = this;
+            var review = gReviewRequest.createReview();
+            draftComment = review.createFileAttachmentComment(commentID,
+                                                              fileID);
+
+            if (text) {
+                draftComment.text = text;
+            }
+
+            $.event.add(draftComment, "saved", function() {
+                showReviewBanner();
+            });
+        }
     });
 }
 
@@ -1642,6 +1713,14 @@ $.newFileAttachment = function(fileAttachment) {
     $(attachments.parent()[0]).show();
     return container.insertBefore(attachments.find("br"));
 };
+
+
+/*
+ * Sets the list of file attachment comments.
+ */
+function setFileAttachmentComments(comments) {
+    gFileAttachmentComments = comments;
+}
 
 
 /*

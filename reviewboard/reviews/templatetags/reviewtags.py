@@ -220,6 +220,37 @@ def screenshotcommentcounts(context, screenshot):
 
 @register.tag
 @basictag(takes_context=True)
+def file_attachment_comments(context, file_attachment):
+    """Returns a JSON array of current comments for a file attachment."""
+    comments = []
+    user = context.get('user', None)
+
+    for comment in file_attachment.comments.all():
+        review = get_object_or_none(comment.review)
+
+        if review and (review.public or review.user == user):
+            comments.append({
+                'comment_id': comment.id,
+                'text': comment.text,
+                'user': {
+                    'username': review.user.username,
+                    'name': review.user.get_full_name() or review.user.username,
+                },
+                'url': comment.get_review_url(),
+                'localdraft': review.user == user and not review.public,
+                'review_id': review.id,
+                'review_request_id': review.review_request.id,
+                'issue_opened': comment.issue_opened,
+                'issue_status': BaseComment
+                                .issue_status_to_string(comment
+                                                        .issue_status),
+            })
+
+    return simplejson.dumps(comments)
+
+
+@register.tag
+@basictag(takes_context=True)
 def reply_list(context, review, comment, context_type, context_id):
     """
     Renders a list of comments of a specified type.
@@ -229,7 +260,8 @@ def reply_list(context, review, comment, context_type, context_id):
     be rendered using the template :template:`reviews/review_reply.html`.
 
     If ``context_type`` is ``"comment"``, ``"screenshot_comment"``
-    or ``"file_comment"``, the generated list of replies are to ``comment``.
+    or ``"file_attachment_comment"``, the generated list of replies are to
+    ``comment``.
 
     If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
     the generated list of replies are to ``review``. Depending on the
@@ -271,7 +303,8 @@ def reply_list(context, review, comment, context_type, context_id):
 
     s = ""
 
-    if context_type in ('comment', 'screenshot_comment', 'file_comment'):
+    if context_type in ('comment', 'screenshot_comment',
+                        'file_attachment_comment'):
         for reply_comment in comment.public_replies(user):
             s += generate_reply_html(reply_comment.review.get(),
                                      reply_comment.timestamp,

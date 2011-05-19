@@ -5,7 +5,7 @@ from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.models import Comment, DefaultReviewer, Group, \
                                        Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot, \
-                                       ScreenshotComment
+                                       ScreenshotComment, FileAttachmentComment
 
 
 class CommentAdmin(admin.ModelAdmin):
@@ -71,7 +71,7 @@ class ReviewAdmin(admin.ModelAdmin):
     raw_id_fields = ('review_request', 'user', 'base_reply_to',
                      'body_top_reply_to', 'body_bottom_reply_to',
                      'comments', 'screenshot_comments',
-                     'reviewed_diffset')
+                     'file_attachment_comments', 'reviewed_diffset')
     fieldsets = (
         (_('General Information'), {
             'fields': ('user', 'review_request', 'public', 'ship_it',
@@ -82,7 +82,8 @@ class ReviewAdmin(admin.ModelAdmin):
                        'body_top_reply_to',
                        'body_bottom_reply_to',
                        'comments',
-                       'screenshot_comments'),
+                       'screenshot_comments',
+                       'file_attachment_comments'),
             'classes': ('collapse',)
         }),
         (_('State'), {
@@ -216,6 +217,17 @@ class ScreenshotCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
+class FileAttachmentCommentAdmin(admin.ModelAdmin):
+    list_display = ('text', 'file_attachment', 'review_request_id', 'timestamp')
+    list_filter = ('timestamp',)
+    search_fields = ['caption']
+    raw_id_fields = ('file_attachment', 'reply_to')
+
+    def review_request_id(self, obj):
+        return obj.review.get().review_request.id
+    review_request_id.short_description = _('Review request ID')
+
+
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(DefaultReviewer, DefaultReviewerAdmin)
 admin.site.register(Group, GroupAdmin)
@@ -224,3 +236,4 @@ admin.site.register(ReviewRequest, ReviewRequestAdmin)
 admin.site.register(ReviewRequestDraft, ReviewRequestDraftAdmin)
 admin.site.register(Screenshot, ScreenshotAdmin)
 admin.site.register(ScreenshotComment, ScreenshotCommentAdmin)
+admin.site.register(FileAttachmentComment, FileAttachmentCommentAdmin)

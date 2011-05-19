@@ -89,7 +89,7 @@
   </div>
  </div>
 <div class="content clearfix"{% ifequal review_request_details.file_attachments.count 0 %} style="display: none;"{% endifequal %}>
-<label for="file-list">{% trans "Uploaded Files" %}:</label>
+<label for="file-list">{% trans "File Attachments" %}:</label>
  <div id="file-list">
 {% for file in review_request_details.file_attachments.all %}
    <div class="file-container" data-file-id="{{file.id}}">
@@ -112,7 +112,17 @@
      </div>
     </div>
    </div>
-   {% endfor %}
+{% endfor %}
   <br clear="both" />
  </div>
 </div>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+    setFileAttachmentComments({
+{% for file_attachment in review_request_details.file_attachments.all %}
+        {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
+{% endfor %}
+    });
+  });
+</script>
