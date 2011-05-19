@@ -2851,21 +2851,19 @@ class BaseFileAttachmentResource(WebAPIResource):
             'type': str,
             'description': "The file's descriptive caption.",
         },
-        'title': {
+        'filename': {
             'type': str,
-            'description': "The path of the file, relative to the media "
-                           "directory configured on the Review Board server.",
+            'description': "The name of the file.",
         },
         'url': {
             'type': str,
             'description': "The URL of the file, for downloading purposes."
-                           "an absolute URL (for example, if it is just a "
-                           "path), then it's relative to the Review Board "
-                           "server's URL.",
+                           "If this is not an absolute URL, then it's "
+                           "relative t othe Review Board server's URL.",
         },
-        'file_url': {
+        'icon_url': {
             'type': str,
-            'description': "The URL of the file object.",
+            'description': 'The URL to a 24x24 icon representing this file.'
         },
     }
 
@@ -2895,13 +2893,7 @@ class BaseFileAttachmentResource(WebAPIResource):
 
         return self.model.objects.filter(q)
 
-    def serialize_title_field(self, obj):
-        return obj.get_title()
-
     def serialize_url_field(self, obj):
-        return obj.get_path()
-
-    def serialize_file_url_field(self, obj):
         return obj.get_absolute_url()
 
     @webapi_check_local_site

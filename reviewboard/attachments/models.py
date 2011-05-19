@@ -21,15 +21,13 @@ class FileAttachment(models.Model):
                                                      '%Y', '%m', '%d'))
     mimetype = models.CharField(_('mimetype'), max_length=256, blank=True)
 
-    def get_path(self):
-        """Returns the file path for downloading purposes."""
-        return self.file.url
-
-    def get_title(self):
-        """Returns the file title for display purposes"""
+    @property
+    def filename(self):
+        """Returns the filename for display purposes."""
         return os.path.basename(self.file.name)
 
-    def get_icon_url(self):
+    @property
+    def icon_url(self):
         """Returns the icon URL for this file."""
         if self.mimetype in MIMETYPE_ICON_ALIASES:
             name = MIMETYPE_ICON_ALIASES[self.mimetype]
