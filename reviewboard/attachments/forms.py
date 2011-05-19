@@ -15,8 +15,11 @@ class UploadFileForm(forms.Form):
     path = forms.FileField(required=True)
 
     def create(self, file, review_request):
-        file_attachment = FileAttachment(caption=self.cleaned_data['caption'])
-        file_attachment.mimetype = file.content_type
+        caption = self.cleaned_data['caption']
+
+        file_attachment = FileAttachment(caption=caption,
+                                         draft_caption=caption,
+                                         mimetype=file.content_type)
         file_attachment.file.save(file.name, file, save=True)
 
         draft = ReviewRequestDraft.create(review_request)

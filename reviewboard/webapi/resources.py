@@ -3008,6 +3008,30 @@ class BaseFileAttachmentResource(WebAPIResource):
             self.item_result_key: file,
         }
 
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    def delete(self, request, *args, **kwargs):
+        try:
+            review_request = \
+                review_request_resource.get_object(request, *args, **kwargs)
+            file_attachment = \
+                file_attachment_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        try:
+            draft = review_request_draft_resource.prepare_draft(request,
+                                                                review_request)
+        except PermissionDenied:
+            return _no_access_error(request.user)
+
+        draft.file_attachments.remove(file_attachment)
+        draft.inactive_file_attachments.add(file_attachment)
+        draft.save()
+
+        return 204, {}
+
 
 class DraftFileAttachmentResource(BaseFileAttachmentResource):
     """Provides information on new file attachments being added to a draft of
@@ -3041,13 +3065,13 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @augment_method_from(WebAPIResource)
+    @augment_method_from(BaseFileAttachmentResource)
     def get(self, *args, **kwargs):
         pass
 
     @webapi_check_local_site
     @webapi_login_required
-    @augment_method_from(WebAPIResource)
+    @augment_method_from(BaseFileAttachmentResource)
     def delete(self, *args, **kwargs):
         """Deletes the file attachment from the draft.
 
@@ -4207,7 +4231,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        for field in ('text'):
+        for field in ('text',):
             value = kwargs.get(field, None)
 
             if value is not None:
@@ -5085,7 +5109,7 @@ class FileAttachmentResource(BaseFileAttachmentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @augment_method_from(WebAPIResource)
+    @augment_method_from(BaseFileAttachmentResource)
     def delete(self, *args, **kwargs):
         """Deletes the file attachment
 
