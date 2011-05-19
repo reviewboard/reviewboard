@@ -1,7 +1,10 @@
 import os
 
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
+from reviewboard.attachments.mimetypes import MIMETYPE_ICON_ALIASES
 
 
 class FileAttachment(models.Model):
@@ -25,6 +28,28 @@ class FileAttachment(models.Model):
     def get_title(self):
         """Returns the file title for display purposes"""
         return os.path.basename(self.file.name)
+
+    def get_icon_url(self):
+        """Returns the icon URL for this file."""
+        if self.mimetype in MIMETYPE_ICON_ALIASES:
+            name = MIMETYPE_ICON_ALIASES[self.mimetype]
+        else:
+            category = self.mimetype.split('/')[0]
+            name = self.mimetype.replace('/', '-')
+
+            mimetypes_dir = os.path.join(settings.MEDIA_ROOT, 'rb', 'images',
+                                         'mimetypes')
+
+            if not os.path.exists(os.path.join(mimetypes_dir, name + '.png')):
+                name = category + '-x-generic'
+
+                if not os.path.exists(os.path.join(mimetypes_dir,
+                                                   name + '.png')):
+                    # We'll just use this as our fallback.
+                    name = 'text-x-generic'
+
+        return '%srb/images/mimetypes/%s.png?%s' % \
+            (settings.MEDIA_URL, name, settings.MEDIA_SERIAL)
 
     def __unicode__(self):
         return self.caption
