@@ -1544,6 +1544,51 @@ $.newScreenshotThumbnail = function(screenshot) {
     return container.insertBefore(thumbnails.find("br"));
 };
 
+
+/*
+ * Handles interaction and events with a file attachment.
+
+ * @return {jQuery} The provided file attachment container.
+ */
+$.fn.fileAttachment = function() {
+    return $(this).each(function() {
+        var self = $(this);
+
+        var file_id = self.attr("data-file-id");
+        var file = gReviewRequest.createFileAttachment(file_id);
+
+        self.find("a.edit")
+            .inlineEditor({
+                cls: "file-" + file_id + "-editor",
+                editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                showButtons: false
+            })
+            .bind("complete", function(e, value) {
+                file.ready(function() {
+                    file.caption = value;
+                    file.save({
+                        buttons: gDraftBannerButtons,
+                        success: function(rsp) {
+                            gDraftBanner.show();
+                        }
+                    });
+                });
+            });
+
+        self.find("a.delete")
+            .click(function() {
+                file.ready(function() {
+                    file.deleteFileAttachment()
+                    self.empty();
+                    gDraftBanner.show();
+                });
+
+                return false;
+            });
+    });
+}
+
+
 /*
  * Adds a file to the file attachments list.
  *
@@ -1552,61 +1597,52 @@ $.newScreenshotThumbnail = function(screenshot) {
  *
  * @param {object} fileAttachment  The optional file to display.
  *
- * @return {jQuery} The root file-list div.
+ * @return {jQuery} The root file attachment div.
  */
-$.fileDisplay = function(fileAttachment) {
-    var container = $("<div/>")
-        .addClass("file-container");
+$.newFileAttachment = function(fileAttachment) {
+    var container = $('<div/>')
+        .addClass('file-container')
+        .attr('data-file-id', fileAttachment.id)
+        .append($('<div/>')
+            .addClass('file')
+            .append($('<ul/>')
+                .addClass('actions')
+                .append($('<li/>')
+                    .addClass('file-add-comment')
+                    .append($('<a/>')
+                        .attr('href', '#')
+                        .text('Add Comment'))))
+            .append($('<div/>')
+                .addClass('file-header')
+                .append($('<img/>')
+                    .attr('src', fileAttachment.icon_url))
+                .append(' ')
+                .append($('<a/>')
+                    .attr('href', fileAttachment.url)
+                    .text(fileAttachment.filename))
+                .append(' ')
+                .append($('<a/>')
+                    .addClass('delete')
+                    .attr('href', '#')
+                    .append($('<img/>')
+                        .attr({
+                            src: MEDIA_URL + 'rb/images/delete.png?' +
+                                 MEDIA_SERIAL,
+                            alt: 'Delete File'
+                        }))))
+            .append($('<div/>')
+                .addClass('file-caption')
+                .append($('<a/>')
+                    .addClass('edit')
+                    .attr('href', fileAttachment.url)
+                    .text(fileAttachment.caption))))
+        .fileAttachment();
 
-    var body = $("<dd/>")
-        .appendTo(container);
-
-    if (fileAttachment) {
-        var captionArea = $("<label>" + fileAttachment.title + "</label>")
-            .attr({
-                "for": "file_attachment_" + fileAttachment.id + "_caption"
-            });
-
-        body.append(captionArea);
-        captionArea
-            .append($("<a>Review File</a>")
-                .addClass("file-review")
-                .attr({
-                    href: '#',
-                    id: fileAttachment.id
-                }))
-            .append($("<a>Download File</a>")
-                .attr({
-                    href: fileAttachment.url
-                }))
-            .append($("<a/>")
-                .attr("href", fileAttachment.file_url + "delete/")
-                .append($("<img/>")
-                    .attr({
-                        src: MEDIA_URL + "rb/images/delete.png?" +
-                             MEDIA_SERIAL,
-                        alt: "Delete File"
-                    })));
-
-        body.append($("<pre>")
-            .addClass("editable")
-            .addClass("file-editable")
-            .attr({
-                id: "file_attachment_" + fileAttachment.id + "_caption"
-            })
-            .append(fileAttachment.caption));
-
-        container.find(".editable").reviewRequestFieldEditor()
-    } else {
-        body
-            .addClass("loading")
-            .append("&nbsp;");
-    }
-
-    var thumbnails = $("#file-list");
-    $(thumbnails.parent()[0]).show();
-    return container.insertBefore(thumbnails.find("br"));
+    var attachments = $("#file-list");
+    $(attachments.parent()[0]).show();
+    return container.insertBefore(attachments.find("br"));
 };
+
 
 /*
  * Registers for updates to the review request. This will cause a pop-up
@@ -1916,7 +1952,7 @@ function initScreenshotDnD() {
 
     function uploadFile(file) {
         /* Create a temporary file listing. */
-        var thumb = $.fileDisplay()
+        var thumb = $.newFileAttachment()
             .css("opacity", 0)
             .fadeTo(1000, 1);
 
@@ -1925,7 +1961,7 @@ function initScreenshotDnD() {
         fileAttachment.save({
             buttons: gDraftBannerButtons,
             success: function(rsp, fileAttachment) {
-                thumb.replaceWith($.fileDisplay(fileAttachment));
+                thumb.replaceWith($.newFileAttachment(fileAttachment));
                 gDraftBanner.show();
             },
             error: function(rsp, msg) {
@@ -2122,6 +2158,7 @@ $(document).ready(function() {
         if (window["gEditable"]) {
             $(".editable").reviewRequestFieldEditor();
             $(".screenshot-container").screenshotThumbnail();
+            $(".file-container").fileAttachment();
 
             var targetGroupsEl = $("#target_groups");
             var targetPeopleEl = $("#target_people");

@@ -33,7 +33,7 @@
 
 {% box "review-request" %}
 
-<ul id="actions">
+<ul class="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
 {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>

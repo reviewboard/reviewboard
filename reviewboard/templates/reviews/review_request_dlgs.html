@@ -51,7 +51,7 @@
         fields: {% form_dialog_fields file_attachment_form %},
         success: function(rsp) {
             if (!$("#file-list").length == 0) {
-                $.fileDisplay(rsp.file_attachment);
+                $.newFileAttachment(rsp.file_attachment);
             }
 
             gDraftBanner.show();
