@@ -209,11 +209,7 @@ jQuery.fn.screenshotCommentBox = function(regions) {
         .prependTo(selectionArea)
         .hide();
 
-    var commentDetail = $("#comment-detail")
-        .commentDlg()
-        .bind("close", function() { activeCommentBlock = null; })
-        .css("z-index", 999);
-    commentDetail.appendTo("body");
+    gCommentDlg.bind("close", function() { activeCommentBlock = null; });
 
     /*
      * Register events on the selection area for handling new comment
@@ -236,7 +232,7 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                     .show();
 
                 if (activeSelection.is(":hidden")) {
-                    commentDetail.hide();
+                    gCommentDlg.hide();
                 }
 
                 return false;
@@ -309,7 +305,7 @@ jQuery.fn.screenshotCommentBox = function(regions) {
         },
         function() {
             if (activeSelection.is(":hidden") &&
-                commentDetail.is(":hidden")) {
+                gCommentDlg.is(":hidden")) {
                 selectionArea.hide();
             }
         }
@@ -379,12 +375,12 @@ jQuery.fn.screenshotCommentBox = function(regions) {
      * @param {CommentBlock} commentBlock  The comment block to show.
      */
     function showCommentDlg(commentBlock) {
-        commentDetail
+        gCommentDlg
             .one("close", function() {
                 commentBlock._createDraftComment();
                 activeCommentBlock = commentBlock;
 
-                commentDetail
+                gCommentDlg
                     .setDraftComment(commentBlock.draftComment)
                     .setCommentsList(commentBlock.comments,
                                      "screenshot_comment")
@@ -392,9 +388,9 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                         side: 'b',
                         fitOnScreen: true
                     });
-                commentDetail.open();
+                gCommentDlg.open();
             })
-            .close()
+            .close();
     }
 
     return this;

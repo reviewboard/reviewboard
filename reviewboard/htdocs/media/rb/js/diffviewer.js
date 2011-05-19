@@ -82,7 +82,6 @@ var gSelectedAnchor = INVALID;
 var gFileAnchorToId = {};
 var gInterdiffFileAnchorToId = {};
 var gAnchors = $();
-var gCommentDlg = null;
 var gHiddenComments = {};
 var gDiffHighlightBorder = null;
 var gStartAtAnchor = null;
@@ -271,13 +270,6 @@ $.extend(DiffCommentBlock.prototype, {
      */
     showCommentDlg: function() {
         var self = this;
-
-        if (gCommentDlg == null) {
-            gCommentDlg = $("#comment-detail")
-                .commentDlg()
-                .css("z-index", 999);
-            gCommentDlg.appendTo("body");
-        }
 
         gCommentDlg
             .one("close", function() {

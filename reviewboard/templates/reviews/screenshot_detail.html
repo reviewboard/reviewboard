@@ -20,6 +20,14 @@
 <script language="javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
 <script language="javascript" src="{{MEDIA_URL}}rb/js/screenshots.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
+
+<script language="javascript">
+  $(document).ready(function() {
+	  $("#screenshot-display").screenshotCommentBox(
+		{% screenshotcommentcounts screenshot %});
+	});
+</script>
+
 {% endblock %}
 
 {% block content %}
@@ -48,15 +56,6 @@
 <div id="screenshot-display">
  <img src="{{screenshot.image.url}}" alt="{{screenshot.caption}}" />
 </div>
-
-{% include "reviews/comments_dlg.html" %}
-
-<script language="javascript">
-  $(document).ready(function() {
-	  $("#screenshot-display").screenshotCommentBox(
-		{% screenshotcommentcounts screenshot %});
-	});
-</script>
 
 {% include "reviews/screenshotindex.html" %}
 

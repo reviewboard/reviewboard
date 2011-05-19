@@ -1,4 +1,5 @@
 // State variables
+var gCommentDlg = null;
 var gPublishing = false;
 var gPendingSaveCount = 0;
 var gPendingDiffFragments = {};
@@ -2111,6 +2112,11 @@ $(document).ready(function() {
         $(".collapsed").removeClass("collapsed");
         return false;
     });
+
+    gCommentDlg = $("#comment-detail")
+        .commentDlg()
+        .css("z-index", 999);
+    gCommentDlg.appendTo("body");
 
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
