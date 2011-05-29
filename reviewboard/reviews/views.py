@@ -29,7 +29,7 @@ from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
-from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
@@ -297,8 +297,8 @@ def review_detail(request,
             visited.timestamp = datetime.now()
             visited.save()
 
-        starred = review_request in \
-                  request.user.get_profile().starred_review_requests.all()
+        profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+        starred = review_request in profile.starred_review_requests.all()
 
         # Unlike review above, this covers replies as well.
         try:
