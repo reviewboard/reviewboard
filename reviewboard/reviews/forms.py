@@ -175,10 +175,10 @@ class NewReviewRequestForm(forms.Form):
             except NotImplementedError:
                 # This scmtool doesn't have changesets
                 self.errors['changenum'] = forms.util.ErrorList(['Changesets are not supported.'])
-                raise ChangeSetError()
+                raise ChangeSetError(None)
             except SCMError, e:
                 self.errors['changenum'] = forms.util.ErrorList([str(e)])
-                raise ChangeSetError()
+                raise ChangeSetError(None)
 
             if not changeset:
                 self.errors['changenum'] = forms.util.ErrorList([
