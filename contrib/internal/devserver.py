@@ -67,7 +67,7 @@ def main():
         os.system("python ./setup.py egg_info")
 
     # And now just boot up the server
-    os.system('python ./reviewboard/manage.py runserver 0.0.0.0:%s'
+    os.system(sys.executable + ' ./reviewboard/manage.py runserver 0.0.0.0:%s'
               % server_port)
 
 if __name__ == "__main__":
