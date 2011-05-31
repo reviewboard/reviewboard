@@ -28,8 +28,16 @@ pre {
   font-size: 10pt;
 }
 
-span.draftlabel {
+span.label-draft {
+  color: #b7a93e;
+}
+
+span.label-submitted {
   color: #008000;
+}
+
+span.label-discarded {
+  color: #fe5757;
 }
 
 td.help {

@@ -261,21 +261,21 @@ class SummaryColumn(Column):
         if review_request.submitter_id == self.datagrid.request.user.id:
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
-                return self.__labeled_summary(_('Draft'), summary)
+                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
 
             if (not review_request.public and
                 review_request.status == ReviewRequest.PENDING_REVIEW):
-                return self.__labeled_summary(_('Draft'), summary)
+                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            return self.__labeled_summary(_('Submitted'), summary)
+            return self.__labeled_summary(_('Submitted'), summary, 'label-submitted')
         elif review_request.status == ReviewRequest.DISCARDED:
-            return self.__labeled_summary(_('Discarded'), summary)
+            return self.__labeled_summary(_('Discarded'), summary, 'label-discarded')
 
         return summary
 
-    def __labeled_summary(self, label, summary):
-        return u'<span class="draftlabel">[%s]</span> %s' % (label, summary)
+    def __labeled_summary(self, label, summary, label_class):
+        return u'<span class="%s">[%s]</span> %s' % (label_class, label, summary)
 
 
 class SubmitterColumn(Column):
