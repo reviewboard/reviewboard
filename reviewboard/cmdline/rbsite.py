@@ -1037,11 +1037,10 @@ class GtkUI(UIToolkit):
         """
         Prompts the user for an item amongst a list of choices.
         """
-        valid_choices = {}
 
-        def on_toggled(radio_button):
+        def on_toggled(radio_button, data):
             if radio_button.get_active():
-                setattr(save_obj, save_var, valid_choices[radio_button])
+                setattr(save_obj, save_var, data)
 
         hbox = gtk.HBox(False, 0)
         hbox.show()
@@ -1063,6 +1062,7 @@ class GtkUI(UIToolkit):
         label.set_use_markup(True)
 
         buttons = []
+        first_enabled = 0
 
         for choice in choices:
             description = ''
@@ -1075,21 +1075,27 @@ class GtkUI(UIToolkit):
             else:
                 text, description, enabled = choice
 
+            if not (enabled or first_enabled):
+                first_enabled += 1
+
             radio_button = gtk.RadioButton(label='%s %s' % (text, description),
                                            use_underline=False)
             radio_button.show()
             vbox.pack_start(radio_button, False, True, 0)
             buttons.append(radio_button)
             radio_button.set_sensitive(enabled)
-            radio_button.connect('toggled', on_toggled)
+            radio_button.connect('toggled', on_toggled, text)
 
-            valid_choices[radio_button] = text
+        # Set the first enabled button chosen if there is any
+        if first_enabled >= len(buttons):
+            raise RuntimeWarning('There is no valid choice')
 
-            if buttons[0] != radio_button:
-                radio_button.set_group(buttons[0])
+        # Force 'toggled' signal to set default value
+        buttons[first_enabled].toggled()
 
-        # Force this to save.
-        on_toggled(buttons[0])
+        for button in buttons:
+            if button != buttons[first_enabled]:
+                button.set_group(buttons[first_enabled])
 
     def text(self, page, text):
         """
