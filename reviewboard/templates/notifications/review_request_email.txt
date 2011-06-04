@@ -18,10 +18,16 @@ Changes
 {{change_text}}
 {% endif %}
 
-Summary{% if changes %}{% if changes.summary or changes.description %} (updated){% endif %}{% endif %}
+{% if changes %}{% if changes.summary %}Summary (updated)
+-----------------
+
+{{review_request.summary}}
+{% endif %}{% endif %}
+
+Description{% if changes %}{% if changes.description %} (updated){% endif %}{% endif %}
 -------
 
-{{ review_request.description }}
+{{review_request.description}}
 
 {% ifnotequal review_request.bugs_closed "" %}
 This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_request.get_bug_list|humanize_list }}.{% ifnotequal review_request.repository.bug_tracker "" %}{% for bug in review_request.get_bug_list %}
