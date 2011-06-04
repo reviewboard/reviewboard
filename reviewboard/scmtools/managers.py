@@ -1,4 +1,47 @@
 from django.db.models import Manager, Q
+from django.db.models.query import QuerySet
+
+
+_TOOL_CACHE = {}
+
+
+class ToolQuerySet(QuerySet):
+    def get(self, *args, **kwargs):
+        pk = kwargs.get('id__exact', None)
+
+        if pk is None:
+            return super(ToolQuerySet, self).get(*args, **kwargs)
+
+        if not _TOOL_CACHE:
+            # Precompute the cache to reduce lookups.
+            for tool in self.model.objects.all():
+                _TOOL_CACHE[tool.pk] = tool
+
+        if pk not in _TOOL_CACHE:
+            # We'll try to look up the Tool anyway, since it may have been
+            # added since. This will also ensure the proper exception is
+            # raised if not found.
+            _TOOL_CACHE[pk] = super(ToolQuerySet, self).get(*args, **kwargs)
+
+        return _TOOL_CACHE[pk]
+
+
+class ToolManager(Manager):
+    """Manages Tool models.
+
+    Any get() operations performed (directly or indirectly through a
+    ForeignKey) will go through a cache to attempt to minimize Tool
+    lookups.
+
+    The Tool cache is never cleared, but as Tool objects should never
+    be modified by hand (they're registered when doing an rb-site upgrade,
+    and then the server process must be reloaded), this shouldn't be a
+    problem.
+    """
+    use_for_related_fields = True
+
+    def get_query_set(self):
+        return ToolQuerySet(self.model, using=self.db)
 
 
 class RepositoryManager(Manager):

@@ -136,8 +136,10 @@ class NewReviewRequestForm(forms.Form):
                               '%s (ID %d): %s' % (repo.name, repo.id, e),
                               exc_info=1)
 
-        self.fields['repository'].queryset = \
-            Repository.objects.filter(pk__in=self.field_mapping.keys())
+        queryset = Repository.objects.filter(pk__in=self.field_mapping.keys())
+        queryset = queryset.only('name')
+
+        self.fields['repository'].queryset = queryset
 
         # If we have any repository entries we can show, then we should
         # show the first one.
