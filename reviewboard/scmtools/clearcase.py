@@ -157,7 +157,7 @@ class ClearCaseTool(SCMTool):
         revision_str contains only modification's timestamp.
         """
 
-        if extended_path.endswith('0'):
+        if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
             revision = PRE_CREATION
         elif (extended_path.endswith('CHECKEDOUT')
             or not '@@' in extended_path):
