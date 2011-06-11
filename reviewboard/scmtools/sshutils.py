@@ -153,6 +153,8 @@ def is_key_authorized(key):
                 authorized_key = line.split()[1]
             except ValueError:
                 continue
+            except IndexError:
+                continue
 
             if authorized_key == public_key:
                 authorized = True
