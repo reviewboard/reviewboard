@@ -911,7 +911,8 @@
             "collapsed_diffs": true, 
             "starred_review_requests": [], 
             "sort_review_request_columns": "-last_updated", 
-            "syntax_highlighting": true
+            "syntax_highlighting": true,
+            "is_private": true
         }
     }, 
     {
@@ -933,7 +934,8 @@
             "collapsed_diffs": true, 
             "starred_review_requests": [], 
             "sort_review_request_columns": "", 
-            "syntax_highlighting": true
+            "syntax_highlighting": true,
+            "is_private": false
         }
     }, 
     {
@@ -955,7 +957,8 @@
             "collapsed_diffs": true, 
             "starred_review_requests": [], 
             "sort_review_request_columns": "", 
-            "syntax_highlighting": true
+            "syntax_highlighting": true,
+            "is_private": false
         }
     }, 
     {

@@ -1055,6 +1055,21 @@ class UserResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['user']['id'], user.id)
         self.assertEqual(rsp['user']['email'], user.email)
 
+    def test_get_user_with_site_and_profile_private(self):
+        """Testing the GET users/<username>/ API with a local site and private profile"""
+        self._login_user(local_site=True)
+
+        username = 'admin'
+        user = User.objects.get(username=username)
+
+        rsp = self.apiGet(self.get_item_url(username, self.local_site_name))
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['user']['username'], user.username)
+        self.assertEqual(rsp['user']['first_name'], "")
+        self.assertEqual(rsp['user']['last_name'], "")
+        self.assertEqual(rsp['user']['id'], "")
+        self.assertEqual(rsp['user']['email'], "")
+
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
         self._login_user(local_site=True)

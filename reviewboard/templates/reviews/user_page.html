@@ -28,6 +28,7 @@
     <tr>
       <td><h2>{{viewing_user}}</h2></td>
     </tr>
+{% if show_profile %}
     <tr>
       <td><p><label>{% trans "Name:" %}</label></p> {{viewing_user.first_name}} {{viewing_user.last_name}}</td>
     </tr>
@@ -48,6 +49,7 @@
         {% endfor %}
       </td>
     </tr>
+{% endif %}
   </tbody>
  </table>
  <div id="dashboard-main" class="clearfix">

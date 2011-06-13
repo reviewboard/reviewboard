@@ -10,9 +10,11 @@
  </div>
  <div class="infobox-text">
   <h2 class="nickname">{{user}}</h2>
+{% if show_profile %}
   <p class="fn">{{user.first_name}} {{user.last_name}}</p>
   <p class="email">{{user.email}}</p>
   <p class="logged-in">Last logged in {{user.last_login|date:"F jS, Y"}}</p>
   <p class="joined">Joined {{user.date_joined|date:"F jS, Y"}}</p>
+{% endif %}
  </div>
 </div>

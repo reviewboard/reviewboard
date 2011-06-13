@@ -21,6 +21,8 @@ class PreferencesForm(forms.Form):
                                        required=False)
     syntax_highlighting = forms.BooleanField(required=False,
         label=_("Enable syntax highlighting in the diff viewer"))
+    profile_private = forms.BooleanField(required=False,
+        label=_("Keep your user profile private"))
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
     email = forms.EmailField()
@@ -73,6 +75,7 @@ class PreferencesForm(forms.Form):
         profile = user.get_profile()
         profile.first_time_setup_done = True
         profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
+        profile.is_private = self.cleaned_data['profile_private']
         profile.save()
 
     def clean_password2(self):

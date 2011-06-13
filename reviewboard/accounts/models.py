@@ -58,6 +58,10 @@ class Profile(models.Model):
         verbose_name=_("syntax highlighting"),
         help_text=_("Indicates whether the user wishes to see "
                     "syntax highlighting in the diffs."))
+    is_private = models.BooleanField(default=False,
+        verbose_name=_("profile private"),
+        help_text=_("Indicates whether the user wishes to keep his/her profile "
+                    "private."))
 
     # Indicate whether submitted review requests should appear in the
     # review request lists (excluding the dashboard).

@@ -5,7 +5,7 @@ import urllib
 import dateutil.parser
 from django.conf import settings
 from django.contrib import auth
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
@@ -1809,7 +1809,14 @@ watched_resource = WatchedResource()
 
 
 class UserResource(WebAPIResource, DjbletsUserResource):
-    """Provides information on registered users."""
+    """
+    Provides information on registered users.
+
+    The fields: email, first_name, fullname, id, and last_name will
+    be replaced by an empty string when anonymous access or the user profile
+    is private. However, the staff users can still access full profile info
+    regardless of private profile.
+    """
     item_child_resources = [
         watched_resource,
     ]
@@ -1833,6 +1840,32 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             query = query.filter(q)
 
         return query
+
+    def serialize_object(self, obj, request = None, *args, **kwargs):
+        data = DjbletsWebAPIResource.serialize_object(self, obj,
+                                            request = request, *args, **kwargs)
+
+        if request and isinstance(obj, User):
+            # Hide user info from anonymous users and non-staff users (if
+            # his/her profile is private).
+            request_user = request.user
+            user = obj
+            try:
+                if (request_user.is_anonymous() or
+                    (user.get_profile().is_private and not request_user.is_staff
+                     and request_user != user)):
+                    data['email'] = ""
+                    data['first_name'] = ""
+                    data['last_name'] = ""
+                    data['fullname'] = ""
+                    data['id'] = ""
+            except SiteProfileNotAvailable:
+                pass
+            except Profile.DoesNotExist, e:
+                # This should only occur in unit test.
+                logging.warning("Profile does not exist: %s" % e)
+
+        return data
 
     @webapi_check_local_site
     @webapi_request_fields(
