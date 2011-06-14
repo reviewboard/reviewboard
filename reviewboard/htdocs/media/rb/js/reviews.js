@@ -1654,12 +1654,30 @@ $.newFileAttachment = function(fileAttachment) {
  *                                undefined for all types.
  */
 function registerForUpdates(lastTimestamp, type) {
+    function updateFavIcon(url) {
+        var head = $("head");
+        head.find("link[rel=icon]").remove();
+        head.append($("<link/>")
+            .attr({
+                href: url,
+                rel: "icon",
+                type: "image/png"
+            }));
+    }
+
     var bubble = $("#updates-bubble");
     var summaryEl;
     var userEl;
 
+    var faviconEl = $("head").find("link[rel=icon]");
+    var faviconURL = faviconEl.attr("href");
+    var faviconNotifyURL = MEDIA_URL + "rb/images/favicon_notify.png?" +
+                           MEDIA_SERIAL;
+
     $.event.add(gReviewRequest, "updated", function(evt, info) {
         if (bubble.length == 0) {
+            updateFavIcon(faviconNotifyURL);
+
             bubble = $('<div id="updates-bubble"/>');
             summaryEl = $('<span/>')
                 .appendTo(bubble);
@@ -1679,6 +1697,7 @@ function registerForUpdates(lastTimestamp, type) {
                         .append($('<a href="#">Ignore</a>')
                             .click(function() {
                                 bubble.fadeOut();
+                                updateFavIcon(faviconURL);
                                 return false;
                             }))
                 )
