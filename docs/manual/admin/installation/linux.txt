@@ -3,6 +3,23 @@ Installing on Linux
 ===================
 
 
+.. note::
+
+   We recommend installing on a modern Ubuntu or Fedora distribution, as
+   both are pretty well supported.
+
+   You can run Review Board inside a Linux virtual machine running on top
+   of `VMware ESXi`_ or `VMware Server`_.
+
+   Alternatively, we can host your Review Board server at RBCommons_ for
+   a monthly fee.
+
+.. _`VMware ESXi`:
+   http://www.vmware.com/products/vsphere-hypervisor/overview.html
+.. _`VMware Server`: http://www.vmware.com/products/server/overview.html
+.. _RBCommons: http://www.rbcommons.com/
+
+
 Before You Begin
 ================
 
