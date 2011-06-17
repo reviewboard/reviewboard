@@ -44,7 +44,7 @@ class RepositoryForm(forms.ModelForm):
         ('github', {
             'label': _('GitHub'),
             'fields': ['hosting_project_name', 'hosting_owner'],
-            'hidden_fields': ['raw_file_url'],
+            'hidden_fields': ['raw_file_url','username', 'password'],
             'tools': {
                 'Git': {
                     'path': 'git://github.com/%(hosting_owner)s/'
@@ -61,7 +61,7 @@ class RepositoryForm(forms.ModelForm):
         ('github-private', {
             'label': _('GitHub (Private)'),
             'fields': ['hosting_project_name', 'hosting_owner', 'api_token'],
-            'hidden_fields': ['raw_file_url'],
+            'hidden_fields': ['raw_file_url', 'username', 'password'],
             'tools': {
                 'Git': {
                     'path': 'git@github.com:%(hosting_owner)s/'
@@ -72,6 +72,25 @@ class RepositoryForm(forms.ModelForm):
                                     '%(hosting_project_name)s/'
                                     '<revision>'
                                     '?login=%(hosting_owner)s'
+                                    '&token=%(api_token)s'
+                },
+            },
+        }),
+        ('github-private-org', {
+            'label': _('GitHub (Private Organization)'),
+            'fields': ['hosting_project_name', 'hosting_owner', 'api_token',
+                       'username'],
+            'hidden_fields': ['raw_file_url', 'password'],
+            'tools': {
+                'Git': {
+                    'path': 'git@github.com:%(hosting_owner)s/'
+                            '%(hosting_project_name)s.git',
+                    'mirror_path': '',
+                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
+                                    '%(hosting_owner)s/'
+                                    '%(hosting_project_name)s/'
+                                    '<revision>'
+                                    '?login=%(username)s'
                                     '&token=%(api_token)s'
                 },
             },
