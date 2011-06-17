@@ -1525,7 +1525,7 @@ class InstallCommand(Command):
                        is_visible_func=lambda: site.web_server_type == "apache")
 
         ui.text(page, "Based on our experiences, we recommend using "
-                      "modpython with Review Board.")
+                      "wsgi with Review Board.")
 
         ui.prompt_choice(page, "Python Loader",
                          [
