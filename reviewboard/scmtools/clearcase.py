@@ -86,6 +86,16 @@ class ClearCaseTool(SCMTool):
         information about branch, version or even repository path
         so we return unextended path relative to repopath (view)
         """
+
+        # There is no relpath function in Python 2.4
+        # lets count relative path using manualy
+        if not hasattr(cpath, 'relpath'):
+            repo = self.repopath
+            if repo[-1] != os.sep:
+                repo += os.sep
+            path = self.unextend_path(filename)[1]
+            return path[path.find(repo) + len(repo):]
+
         return cpath.relpath(
             self.unextend_path(filename)[1], self.repopath
         )
