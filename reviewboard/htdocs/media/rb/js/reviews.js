@@ -2012,7 +2012,7 @@ $(document).ready(function() {
         }, 400);
     }
 
-    $("#actions > li:has(ul.menu)")
+    $(".actions > li:has(ul.menu)")
         .hover(showMenu, hideMenu)
         .toggle(showMenu, hideMenu);
 
