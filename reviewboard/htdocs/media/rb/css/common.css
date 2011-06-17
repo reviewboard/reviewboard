@@ -29,11 +29,11 @@ pre {
 }
 
 span.label-draft {
-  color: #b7a93e;
+  color: #008000;
 }
 
 span.label-submitted {
-  color: #008000;
+  color: #b7a93e;
 }
 
 span.label-discarded {
