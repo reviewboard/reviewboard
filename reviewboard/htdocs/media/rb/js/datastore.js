@@ -150,7 +150,7 @@ $.extend(RB.DiffComment.prototype, {
                     }
 
                     on_done.apply(this, arguments);
-                },
+                }
             });
         });
     },
@@ -297,7 +297,7 @@ $.extend(RB.DiffCommentReply.prototype, {
                     }
 
                     on_done.apply(this, arguments);
-                },
+                }
             });
         });
     },
@@ -769,7 +769,7 @@ $.extend(RB.Review.prototype, {
 
     publish: function(options) {
         this.save($.extend(true, {
-            public: true,
+            public: true
         }, options));
     },
 
@@ -957,7 +957,7 @@ $.extend(RB.ReviewReply.prototype, {
         this.save($.extend(true, {
             public: true,
             errorText: "Saving the reply draft has " +
-                       "failed due to a server error:",
+                       "failed due to a server error:"
         }, options));
     },
 
@@ -970,7 +970,7 @@ $.extend(RB.ReviewReply.prototype, {
                     url: self.url,
                     type: "DELETE",
                     errorText: "Discarding the reply draft " +
-                               "has failed due to a server error:",
+                               "has failed due to a server error:"
                 }));
             } else if ($.isFunction(options.success)) {
                 options.success();
@@ -1599,7 +1599,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                     y: self.y,
                     w: self.width,
                     h: self.height,
-                    issue_opened: self.issue_opened,
+                    issue_opened: self.issue_opened
                 };
 
                 if (self.loaded) {
@@ -1686,7 +1686,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                     }
 
                     on_done.apply(this, arguments);
-                },
+                }
             });
         });
     },
@@ -1986,7 +1986,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
                     }
 
                     on_done.apply(this, arguments);
-                },
+                }
             });
         });
     },

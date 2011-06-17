@@ -428,7 +428,7 @@ $.extend($.ui.autocomplete, {
         },
         scroll: true,
         scrollHeight: 180,
-        clickToURL: false, //clicking on the suggestion will go to the URL
+        clickToURL: false //clicking on the suggestion will go to the URL
     }
 });
 
