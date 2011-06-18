@@ -243,6 +243,8 @@ $.fn.toggleStar = function() {
  * Currently, quick search searches for users, groups, and review
  * requests through the usage of search resource.
  */
+var SUMMARY_TRIM_LEN = 28;
+
 $.fn.searchAutoComplete = function() {
     $("#search_field")
         .autocomplete({
@@ -250,25 +252,21 @@ $.fn.searchAutoComplete = function() {
                 var s;
 
                 if (data.username) {
-                    //For the format of users
+                    // For the format of users
                     s = data.username;
                     s += " <span>(" + data.fullname + ")</span>";
-                }
-
-
-                else if (data.name) {
-                    //For the format of groups
+                } else if (data.name) {
+                    // For the format of groups
                     s = data.name;
                     s += " <span>(" + data.display_name + ")</span>";
-                }
-
-
-                else if (data.summary) {
-                    //For the format of review requests
-                    if(data.summary.length < 28)
+                } else if (data.summary) {
+                    // For the format of review requests
+                    if (data.summary.length < SUMMARY_TRIM_LEN) {
                         s = data.summary;
-                    else
-                        s = (data.summary).substring(0, 28);
+                    } else {
+                        s = data.summary.substring(0, SUMMARY_TRIM_LEN);
+                    }
+
                     s += " <span>(" + data.id + ")</span>";
                 }
 
@@ -283,11 +281,8 @@ $.fn.searchAutoComplete = function() {
                 var jsonData = JSON.parse(data);
                 var jsonDataSearch = jsonData.search;
                 var parsed = [];
-
                 var objects = ["users", "groups", "review_requests"];
-
                 var values = ["username", "name", "summary"];
-
                 var items;
 
                 for (var j = 0; j < objects.length; j++) {
@@ -302,9 +297,7 @@ $.fn.searchAutoComplete = function() {
                                 value: value[values[j]],
                                 result: value[values[j]]
                             });
-                        }
-
-                        else if (value.public) {
+                        } else if (value.public) {
                             // Only show review requests that are public
                             value.url = SITE_ROOT + "r/" + value.id;
                             parsed.push({
@@ -313,7 +306,6 @@ $.fn.searchAutoComplete = function() {
                                 result: value[values[j]]
                             });
                         }
-
                     }
                 }
 

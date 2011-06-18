@@ -732,10 +732,17 @@ $.ui.autocomplete.select = function (options, input, select, config) {
         },
         show: function() {
             var offset = $(input).offset();
+            var inputWidth = $(input).width();
+            var width = typeof options.width == "string" || options.width > 0
+                        ? options.width : inputWidth;
+            var scrollWidth = $(window).width();
+
             element.css({
-                width: typeof options.width == "string" || options.width > 0 ? options.width : $(input).width(),
+                width: width,
                 top: offset.top + input.offsetHeight,
-                left: offset.left
+                left: (width + offset.left > scrollWidth
+                       ? offset.left + inputWidth - width
+                       : offset.left)
             }).show();
 
             if(options.scroll) {
