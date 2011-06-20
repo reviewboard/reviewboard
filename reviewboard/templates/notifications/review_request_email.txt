@@ -60,6 +60,6 @@ Screenshots{% if changes and changes.screenshots %} (updated){% endif %}
 
 Thanks,
 
-{% ifnotequal review_request.submitter.first_name "" %}{{review_request.submitter.first_name}}{% else %}{{review_request.submitter.username}}{% endifnotequal %}
+{{ review_request.submitter|user_displayname }}
 {% endcondense %}
 {% endautoescape %}
