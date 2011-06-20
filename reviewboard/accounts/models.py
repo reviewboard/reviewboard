@@ -198,3 +198,18 @@ class LocalSiteProfile(models.Model):
 
     def __unicode__(self):
         return '%s (%s)' % (self.user.username, self.local_site)
+
+
+def _is_user_profile_visible(self, user=None):
+    """Returns whether or not a user's profile is viewable by a given user.
+
+    A profile is viewable if it's not marked as private, or the viewing
+    user owns the profile, or the user is a staff member.
+    """
+    try:
+        return ((user and (user == self or user.is_staff)) or
+                not self.get_profile().is_private)
+    except Profile.DoesNotExist:
+        return True
+
+User.is_profile_visible = _is_user_profile_visible

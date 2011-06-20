@@ -912,7 +912,7 @@
             "starred_review_requests": [], 
             "sort_review_request_columns": "-last_updated", 
             "syntax_highlighting": true,
-            "is_private": true
+            "is_private": false
         }
     }, 
     {

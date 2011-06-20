@@ -1031,6 +1031,7 @@ class UserResourceTests(BaseWebAPITestCase):
         """Testing the GET users/<username>/ API"""
         username = 'doc'
         user = User.objects.get(username=username)
+        self.assertFalse(user.get_profile().is_private)
 
         rsp = self.apiGet(self.get_item_url(username))
         self.assertEqual(rsp['stat'], 'ok')
@@ -1046,6 +1047,7 @@ class UserResourceTests(BaseWebAPITestCase):
 
         username = 'doc'
         user = User.objects.get(username=username)
+        self.assertFalse(user.get_profile().is_private)
 
         rsp = self.apiGet(self.get_item_url(username, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
@@ -1062,13 +1064,16 @@ class UserResourceTests(BaseWebAPITestCase):
         username = 'admin'
         user = User.objects.get(username=username)
 
+        profile = user.get_profile()
+        profile.is_private = True
+        profile.save()
+
         rsp = self.apiGet(self.get_item_url(username, self.local_site_name))
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['user']['username'], user.username)
-        self.assertEqual(rsp['user']['first_name'], "")
-        self.assertEqual(rsp['user']['last_name'], "")
-        self.assertEqual(rsp['user']['id'], "")
-        self.assertEqual(rsp['user']['email'], "")
+        self.assertFalse('first_name' in rsp['user'])
+        self.assertFalse('last_name' in rsp['user'])
+        self.assertFalse('email' in rsp['user'])
 
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""

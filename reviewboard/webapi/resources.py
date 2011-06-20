@@ -1812,10 +1812,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     """
     Provides information on registered users.
 
-    The fields: email, first_name, fullname, id, and last_name will
-    be replaced by an empty string when anonymous access or the user profile
-    is private. However, the staff users can still access full profile info
-    regardless of private profile.
+    If a user's profile is private, the fields ``email``, ``first_name``,
+    ``last_name``, and ``fullname`` will be omitted for non-staff users.
     """
     item_child_resources = [
         watched_resource,
@@ -1841,29 +1839,17 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         return query
 
-    def serialize_object(self, obj, request = None, *args, **kwargs):
-        data = DjbletsWebAPIResource.serialize_object(self, obj,
-                                            request = request, *args, **kwargs)
+    def serialize_object(self, obj, request=None, *args, **kwargs):
+        data = super(UserResource, self).serialize_object(
+            obj, request=request, *args, **kwargs)
 
-        if request and isinstance(obj, User):
+        if request:
             # Hide user info from anonymous users and non-staff users (if
             # his/her profile is private).
-            request_user = request.user
-            user = obj
-            try:
-                if (request_user.is_anonymous() or
-                    (user.get_profile().is_private and not request_user.is_staff
-                     and request_user != user)):
-                    data['email'] = ""
-                    data['first_name'] = ""
-                    data['last_name'] = ""
-                    data['fullname'] = ""
-                    data['id'] = ""
-            except SiteProfileNotAvailable:
-                pass
-            except Profile.DoesNotExist, e:
-                # This should only occur in unit test.
-                logging.warning("Profile does not exist: %s" % e)
+            if not obj.is_profile_visible(request.user):
+                for field in ('email', 'first_name', 'last_name',
+                              'fullname'):
+                    del data[field]
 
         return data
 

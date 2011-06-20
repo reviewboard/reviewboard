@@ -656,20 +656,8 @@ def submitter(request,
         _("%s's review requests") % username,
         local_site=local_site)
 
-    # Hide user info from anonymous users and non-staff users (if his/her
-    # profile is private).
-    request_user = request.user
-    show_profile = True
-    try:
-        if (request_user.is_anonymous() or
-            (user.get_profile().is_private and not request_user.is_staff
-             and user != request_user)):
-            show_profile = False
-    except SiteProfileNotAvailable:
-        pass
-
     return datagrid.render_to_response(template_name, extra_context={
-        'show_profile': show_profile,
+        'show_profile': user.is_profile_visible(request.user),
         'viewing_user': user,
     })
 
@@ -1141,17 +1129,7 @@ def user_infobox(request, username,
         if not local_site.is_accessible_by(request.user):
             return _render_permission_denied(request)
 
-    # Hide user info from anonymous users and non-staff users (if his/her
-    # profile is private).
-    request_user = request.user
-    show_profile = True
-    try:
-        if (request_user.is_anonymous() or
-            (user.get_profile().is_private and not request_user.is_staff
-             and user != request_user)):
-            show_profile = False
-    except SiteProfileNotAvailable:
-        pass
+    show_profile = user.is_profile_visible(request.user)
 
     etag = ':'.join([user.first_name, user.last_name, user.email,
                      str(user.last_login), str(settings.AJAX_SERIAL),
