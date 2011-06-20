@@ -168,9 +168,8 @@ class EmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email.subject,
-                         settings.EMAIL_SUBJECT_PREFIX +
                          "New Review Board user registration for NewUser")
-        self.assertEqual(email.to[0], admin_email_addr)
+        self.assertEqual(email.to[0][1], admin_email_addr)
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)

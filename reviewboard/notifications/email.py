@@ -369,12 +369,12 @@ def mail_new_user(user):
     html_message = render_to_string('notifications/new_user_email.html',
                                     context)
 
+    message = SpiffyEmailMessage(subject.strip(), text_message, html_message,
+                                 settings.SERVER_EMAIL, settings.SERVER_EMAIL,
+                                 [a for a in settings.ADMINS], None, None)
     try:
-        mail_admins(subject.strip(), text_message, html_message=html_message)
+        message.send()
     except Exception, e:
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
-                      subject.strip(),
-                      from_email,
-                      e,
-                      exc_info=1)
+                      subject.strip(), from_email, e, exc_info=1)
