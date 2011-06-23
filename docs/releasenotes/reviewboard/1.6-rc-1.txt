@@ -136,6 +136,12 @@ Bug Fixes
   e-mail the administrator.
 
 
+Internal Changes
+================
+
+* Review Board now depends on Django 1.3.
+
+
 Contributors
 ============
 
