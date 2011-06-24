@@ -52,6 +52,7 @@ class GitTool(SCMTool):
     """
     name = "Git"
     supports_raw_file_urls = True
+    supports_authentication = True
     dependencies = {
         'executables': ['git']
     }
@@ -65,6 +66,7 @@ class GitTool(SCMTool):
             local_site_name = repository.local_site.name
 
         self.client = GitClient(repository.path, repository.raw_file_url,
+                                repository.username, repository.password,
                                 local_site_name)
 
     def get_file(self, path, revision=HEAD):
@@ -282,7 +284,8 @@ class GitClient(object):
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
 
-    def __init__(self, path, raw_file_url=None, local_site_name=None):
+    def __init__(self, path, raw_file_url=None, username=None, password=None,
+                 local_site_name=None):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
@@ -290,6 +293,8 @@ class GitClient(object):
 
         self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
+        self.username = username
+        self.password = password
         self.local_site_name = local_site_name
         self.git_dir = None
 
@@ -324,6 +329,15 @@ class GitClient(object):
 
         return True
 
+    def _get_file(self, url):
+        host = urlparse.urlparse(url)[1]
+        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        passman.add_password(None, host, self.username, self.password)
+        auth_handler = urllib2.HTTPBasicAuthHandler(passman)
+        opener = urllib2.build_opener(auth_handler)
+        f = opener.open(url)
+        return f.read()
+
     def get_file(self, path, revision):
         if self.raw_file_url:
             self.validate_sha1_format(path, revision)
@@ -331,7 +345,7 @@ class GitClient(object):
             # First, try to grab the file remotely.
             try:
                 url = self._build_raw_url(path, revision)
-                return urllib2.urlopen(url).read()
+                return self._get_file(url)
             except Exception, e:
                 logging.error("Git: Error fetching file from %s: %s" % (url, e))
                 raise SCMError("Error fetching file from %s: %s" % (url, e))
@@ -345,7 +359,7 @@ class GitClient(object):
             # First, try to grab the file remotely.
             try:
                 url = self._build_raw_url(path, revision)
-                return urllib2.urlopen(url).geturl()
+                return self._get_file(url)
             except urllib2.HTTPError, e:
                 if e.code != 404:
                     logging.error("Git: HTTP error code %d when fetching "
