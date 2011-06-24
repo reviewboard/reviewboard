@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User, Permission
 from django.core import mail
 from django.core.files import File
+from django.db.models import Q
 from django.test import TestCase
 from django.utils import simplejson
 from djblets.siteconfig.models import SiteConfiguration
@@ -1627,6 +1628,31 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
+
+    def test_get_reviewrequests_with_ship_it_0(self):
+        """Testing the GET review-requests/?ship-it=0 API"""
+        rsp = self.apiGet(self.get_list_url(), {
+            'ship-it': 0,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertNotEqual(len(rsp['review_requests']), 0)
+
+        q = ReviewRequest.objects.public(user=self.user, status='P')
+        q = q.exclude(Q(reviews__ship_it=True))
+        self.assertEqual(len(rsp['review_requests']), q.count())
+
+    def test_get_reviewrequests_with_ship_it_1(self):
+        """Testing the GET review-requests/?ship-it=1 API"""
+        rsp = self.apiGet(self.get_list_url(), {
+            'ship-it': 1,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertNotEqual(len(rsp['review_requests']), 0)
+
+        q = ReviewRequest.objects.public(user=self.user,
+                                         status='P',
+                                         extra_query=Q(reviews__ship_it=True))
+        self.assertEqual(len(rsp['review_requests']), q.count())
 
     def test_get_reviewrequests_with_time_added_from(self):
         """Testing the GET review-requests/?time-added-from= API"""

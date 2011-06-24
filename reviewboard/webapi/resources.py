@@ -5385,6 +5385,11 @@ class ReviewRequestResource(WebAPIResource):
           * ``repository``
               - The ID of the repository that the review requests must be on.
 
+          * ``ship-it``
+              - The review request must have at least one review with Ship It
+                set, if this is 1. Otherwise, if 0, it must not have any marked
+                Ship It.
+
           * ``status``
               - The status of the review requests. This can be ``pending``,
                 ``submitted`` or ``discarded``.
@@ -5424,6 +5429,7 @@ class ReviewRequestResource(WebAPIResource):
 
         if is_list:
             q = Q()
+            exclude_q = Q()
 
             if 'to-groups' in request.GET:
                 for group_name in request.GET.get('to-groups').split(','):
@@ -5454,6 +5460,14 @@ class ReviewRequestResource(WebAPIResource):
             if 'changenum' in request.GET:
                 q = q & Q(changenum=int(request.GET.get('changenum')))
 
+            if 'ship-it' in request.GET:
+                ship_it = request.GET.get('ship-it')
+
+                if ship_it in ('1', 'true', 'True'):
+                    q = q & Q(reviews__ship_it=True)
+                elif ship_it in ('0', 'false', 'False'):
+                    exclude_q = exclude_q & Q(reviews__ship_it=True)
+
             if 'time-added-from' in request.GET:
                 date = self._parse_date(request.GET['time-added-from'])
 
@@ -5480,9 +5494,15 @@ class ReviewRequestResource(WebAPIResource):
 
             status = string_to_status(request.GET.get('status', 'pending'))
 
-            return self.model.objects.public(user=request.user, status=status,
-                                             local_site=local_site,
-                                             extra_query=q)
+            queryset = self.model.objects.public(user=request.user,
+                                                 status=status,
+                                                 local_site=local_site,
+                                                 extra_query=q)
+
+            if exclude_q:
+                queryset = queryset.exclude(exclude_q)
+
+            return queryset
         else:
             return self.model.objects.filter(local_site=local_site)
 
@@ -5765,7 +5785,14 @@ class ReviewRequestResource(WebAPIResource):
             'repository': {
                 'type': int,
                 'description': 'The ID of the repository that the review '
-                                'requests must be on.',
+                               'requests must be on.',
+            },
+            'ship-it': {
+                'type': bool,
+                'description': 'The review request must have at least one '
+                               'review with Ship It set, if this is 1. '
+                               'Otherwise, if 0, it must not have any marked '
+                               'Ship It.',
             },
             'status': {
                 'type': ('all', 'discarded', 'pending', 'submitted'),
