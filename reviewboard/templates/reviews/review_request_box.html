@@ -88,7 +88,7 @@
    <br clear="both" />
   </div>
  </div>
-<div class="content clearfix"{% ifequal review_request_details.files.count 0 %} style="display: none;"{% endifequal %}>
+<div class="content clearfix"{% ifequal review_request_details.file_attachments.count 0 %} style="display: none;"{% endifequal %}>
 <label for="file-list">{% trans "Uploaded Files" %}:</label>
  <div id="file-list">
 {% for file in review_request_details.file_attachments.all %}
