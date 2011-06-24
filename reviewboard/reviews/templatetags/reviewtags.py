@@ -394,7 +394,12 @@ def bug_url(bug_id, review_request):
     if (review_request.repository and
         review_request.repository.bug_tracker and
         '%s' in review_request.repository.bug_tracker):
-        return review_request.repository.bug_tracker % bug_id
+        try:
+            return review_request.repository.bug_tracker % bug_id
+        except TypeError:
+            logging.error("Error creating bug URL. The bug tracker URL '%s' "
+                          "is likely invalid." %
+                          review_request.repository.bug_tracker)
 
     return None
 
