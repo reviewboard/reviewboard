@@ -48,10 +48,12 @@
 {% include "reviews/review_request_box.html" %}
 
 <ul class="controls">
+{% if entries %}
  <li>
   <img width="14" height="14" border="0" alt="" src="/media/rb/images/expand.png">
   <a href="#" id="expand-all">{% trans "Expand All" %}</a>
  </li>
+{% endif %}
 </ul>
 
 </div>
