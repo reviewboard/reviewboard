@@ -1672,42 +1672,59 @@ $.fn.fileAttachment = function() {
  */
 $.newFileAttachment = function(fileAttachment) {
     var container = $('<div/>')
-        .addClass('file-container')
-        .attr('data-file-id', fileAttachment.id)
-        .append($('<div/>')
-            .addClass('file')
-            .append($('<ul/>')
-                .addClass('actions')
-                .append($('<li/>')
-                    .addClass('file-add-comment')
-                    .append($('<a/>')
-                        .attr('href', '#')
-                        .text('Add Comment'))))
-            .append($('<div/>')
-                .addClass('file-header')
+        .addClass('file-container');
+
+    var body = $('<div/>')
+        .addClass('file')
+        .appendTo(container);
+
+    var actions = $('<ul/>')
+        .addClass('actions')
+        .appendTo(body);
+
+    var fileHeader = $('<div/>')
+        .addClass('file-header')
+        .appendTo(body);
+
+    var fileCaption = $('<div/>')
+        .addClass('file-caption')
+        .append($('<a/>')
+            .addClass('edit'))
+        .appendTo(body);
+
+    if (fileAttachment) {
+        container.attr('data-file-id', fileAttachment.id);
+
+        actions.append($('<li/>')
+            .addClass('file-add-comment')
+            .append($('<a/>')
+                .attr('href', '#')
+                .text('Add Comment')));
+
+        fileHeader
+            .append($('<img/>')
+                .attr('src', fileAttachment.icon_url))
+            .append(' ')
+            .append($('<a/>')
+                .attr('href', fileAttachment.url)
+                .text(fileAttachment.filename))
+            .append(' ')
+            .append($('<a/>')
+                .addClass('delete')
+                .attr('href', '#')
                 .append($('<img/>')
-                    .attr('src', fileAttachment.icon_url))
-                .append(' ')
-                .append($('<a/>')
-                    .attr('href', fileAttachment.url)
-                    .text(fileAttachment.filename))
-                .append(' ')
-                .append($('<a/>')
-                    .addClass('delete')
-                    .attr('href', '#')
-                    .append($('<img/>')
-                        .attr({
-                            src: MEDIA_URL + 'rb/images/delete.png?' +
-                                 MEDIA_SERIAL,
-                            alt: 'Delete File'
-                        }))))
-            .append($('<div/>')
-                .addClass('file-caption')
-                .append($('<a/>')
-                    .addClass('edit')
-                    .attr('href', fileAttachment.url)
-                    .text(fileAttachment.caption))))
-        .fileAttachment();
+                    .attr({
+                        src: MEDIA_URL + 'rb/images/delete.png?' +
+                             MEDIA_SERIAL,
+                        alt: 'Delete File'
+                    })));
+
+        fileCaption.find('a')
+            .attr('href', fileAttachment.url)
+            .text(fileAttachment.caption);
+    }
+
+    container.fileAttachment();
 
     var attachments = $("#file-list");
     $(attachments.parent()[0]).show();
@@ -1899,90 +1916,104 @@ function loadDiffFragments(queue_name, container_prefix) {
 function initScreenshotDnD() {
     var thumbnails = $("#screenshot-thumbnails");
     var dropIndicator = null;
-    var thumbnailsContainer = $(thumbnails.parent()[0]);
-    var thumbnailsContainerVisible = thumbnailsContainer.is(":visible");
+    var dragEnterState = 0;
+    var screenshotDropBox;
+    var fileDropBox;
+    var middleBox;
 
-    thumbnails
+    $(document.body)
         .bind("dragenter", function(event) {
-            var dt = event.originalEvent.dataTransfer;
-            dt.dropEffect = "copy";
             event.preventDefault();
+            handleDragEnter(event);
             return false;
-        })
-        .bind("dragover", function(event) {
-            return false;
-        })
-        .bind("dragexit", function(event) {
-            var dt = event.originalEvent.dataTransfer;
-
-            if (dt) {
-                dt.dropEffect = "none";
-            }
-
-            handleDragExit(event);
-            return false;
-        })
-        .bind("drop", handleDrop);
-
-    var reviewRequestContainer =
-        $(".review-request")
-            .bind("dragenter", handleDragEnter)
-            .bind("dragexit", handleDragExit);
+        });
 
     function handleDragEnter(event) {
         if (!dropIndicator) {
-            dropIndicator = $("<h1/>")
-                .css("border", "1px black solid")
+            var height = $(window).height();
+
+            dropIndicator = $("<div/>")
                 .addClass("drop-indicator")
-                .html("Drop screenshots here to upload")
-                .appendTo(thumbnails);
-
-            thumbnails.addClass("dragover");
-
-            thumbnailsContainer
-                .addClass("sliding")
-                .slideDown("normal", function() {
-                    thumbnailsContainer.removeClass("sliding");
-                    thumbnails.scrollIntoView();
+                .appendTo(document.body)
+                .width($(window).width())
+                .height(height)
+                .bind("dragenter", function(event) {
+                    dragEnterState++;
+                    return false;
+                })
+                .bind("dragleave", function(event) {
+                    handleDragExit(event);
+                    return false;
                 });
-        }
 
-        return true;
+            screenshotDropBox = $("<div/>")
+                .addClass("dropbox")
+                .appendTo(dropIndicator)
+                .bind('drop', function(event) {
+                    return handleDrop(event, "screenshot");
+                });
+            var screenshotText = $("<h1/>")
+                .text("Drop Screenshot")
+                .appendTo(screenshotDropBox);
+
+            middleBox = $("<h2/>")
+                .text("or")
+                .appendTo(dropIndicator);
+
+            fileDropBox = $("<div/>")
+                .addClass("dropbox")
+                .appendTo(dropIndicator)
+                .bind('drop', function(event) {
+                    return handleDrop(event, "file");
+                });
+            var fileText = $("<h1/>")
+                .text("Drop File Attachment")
+                .appendTo(fileDropBox);
+
+            var dropBoxHeight = (height - middleBox.height()) / 2;
+            $([screenshotDropBox[0], fileDropBox[0]])
+                .height(dropBoxHeight)
+                .bind("dragenter", function() {
+                    dragEnterState++;
+                    return false;
+                })
+                .bind("dragover", function() {
+                    var dt = event.originalEvent.dataTransfer;
+
+                    if (dt) {
+                        dt.dropEffect = "copy";
+                    }
+
+                    $(this).addClass("hover");
+                    return false;
+                })
+                .bind("dragleave", function(event) {
+                    var dt = event.originalEvent.dataTransfer;
+
+                    if (dt) {
+                        dt.dropEffect = "none";
+                    }
+
+                    $(this).removeClass("hover");
+                    handleDragExit(event);
+                    return false;
+                });
+
+            screenshotText.css("margin-top", -screenshotText.height() / 2);
+            fileText.css("margin-top", -fileText.height() / 2);
+        }
     }
 
     function handleDragExit(event) {
-        if (event != null) {
-            var offset = reviewRequestContainer.offset();
-            var width = reviewRequestContainer.width();
-            var height = reviewRequestContainer.height();
+        dragEnterState--;
 
-            if (event.pageX >= offset.left &&
-                event.pageX < offset.left + width &&
-                event.pageY >= offset.top &&
-                event.pageY < offset.top + height) {
-                return true;
-            }
-        }
-
-        thumbnails.removeClass("dragover");
-
-        if (!thumbnailsContainerVisible) {
-            thumbnailsContainer
-                .addClass("sliding")
-                .slideUp("normal", function() {
-                    thumbnailsContainer.removeClass("sliding");
-                });
-        }
-
-        if (dropIndicator != null) {
+        if (dragEnterState == 0 && dropIndicator != null) {
             dropIndicator.remove();
             dropIndicator = null;
         }
-
-        return true;
     }
 
-    function handleDrop(event) {
+    function handleDrop(event, type) {
         /* Do these early in case we hit some error. */
         event.stopPropagation();
         event.preventDefault();
@@ -1995,36 +2026,47 @@ function initScreenshotDnD() {
             return;
         }
 
-        var foundImages = false;
+        if (type == "screenshot") {
+            var foundImages = false;
 
-        for (var i = 0; i < files.length; i++) {
-            var file = files[i];
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
 
-            if (file.type == "image/jpeg" ||
-                file.type == "image/pjpeg" ||
-                file.type == "image/png" ||
-                file.type == "image/bmp" ||
-                file.type == "image/gif" ||
-                file.type == "image/svg+xml") {
+                if (file.type == "image/jpeg" ||
+                    file.type == "image/pjpeg" ||
+                    file.type == "image/png" ||
+                    file.type == "image/bmp" ||
+                    file.type == "image/gif" ||
+                    file.type == "image/svg+xml") {
 
-                foundImages = true;
+                    foundImages = true;
 
-                uploadScreenshot(file);
-            }
-        }
-
-        if (foundImages) {
-            thumbnailsContainerVisible = true;
-            handleDragExit(null);
-        } else {
-            if (dropIndicator) {
-                dropIndicator.html("None of the dropped files were valid " +
-                                   "images");
+                    uploadScreenshot(file);
+                }
             }
 
-            setTimeout(function() {
+            if (foundImages) {
                 handleDragExit(null);
-            }, 1500);
+            } else {
+                if (dropIndicator) {
+                    screenshotDropBox.empty();
+                    fileDropBox.empty();
+                    middleBox.html("None of the dropped files were valid " +
+                                   "images");
+                }
+
+                setTimeout(function() {
+                    /* Make sure we will definitely clear the box. */
+                    dragEnterState = 1;
+                    handleDragExit(null);
+                }, 1500);
+            }
+        } else if (type == "file") {
+            for (var i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
+            }
+
+            handleDragExit(null);
         }
     }
 

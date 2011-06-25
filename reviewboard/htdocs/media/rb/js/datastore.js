@@ -1047,7 +1047,7 @@ RB.FileAttachment = function(review_request, id) {
 
 $.extend(RB.FileAttachment.prototype, {
     setFile: function(file) {
-        this.file_attachment = file;
+        this.file = file;
     },
 
     setForm: function(form) {
@@ -1160,32 +1160,7 @@ $.extend(RB.FileAttachment.prototype, {
     },
 
     _saveFile: function(options) {
-        var boundary = "-----multipartformboundary" + new Date().getTime();
-        var blob = "";
-        blob += "--" + boundary + "\r\n";
-        blob += 'Content-Disposition: form-data; name="path"; ' +
-                'filename="' + this.file.name + '"\r\n';
-        blob += 'Content-Type: application/octet-stream\r\n';
-        blob += '\r\n';
-        blob += this.file.getAsBinary();
-        blob += '\r\n';
-        blob += "--" + boundary + "--\r\n";
-        blob += '\r\n';
-
-        this._saveApiCall(options.success, options.error, {
-            buttons: options.buttons,
-            data: blob,
-            processData: false,
-            contentType: "multipart/form-data; boundary=" + boundary,
-            xhr: function() {
-                var xhr = $.ajaxSettings.xhr()
-                xhr.send = function(data) {
-                    xhr.sendAsBinary(blob);
-                };
-
-                return xhr;
-            }
-        });
+        sendFileBlob(this.file, this._saveApiCall, this, options);
     },
 
     _saveApiCall: function(onSuccess, onError, options) {
@@ -1483,32 +1458,7 @@ $.extend(RB.Screenshot.prototype, {
     },
 
     _saveFile: function(options) {
-        var boundary = "-----multipartformboundary" + new Date().getTime();
-        var blob = "";
-        blob += "--" + boundary + "\r\n";
-        blob += 'Content-Disposition: form-data; name="path"; ' +
-                'filename="' + this.file.name + '"\r\n';
-        blob += 'Content-Type: application/octet-stream\r\n';
-        blob += '\r\n';
-        blob += this.file.getAsBinary();
-        blob += '\r\n';
-        blob += "--" + boundary + "--\r\n";
-        blob += '\r\n';
-
-        this._saveApiCall(options.success, options.error, {
-            buttons: options.buttons,
-            data: blob,
-            processData: false,
-            contentType: "multipart/form-data; boundary=" + boundary,
-            xhr: function() {
-                var xhr = $.ajaxSettings.xhr()
-                xhr.send = function(data) {
-                    xhr.sendAsBinary(blob);
-                };
-
-                return xhr;
-            }
-        });
+        sendFileBlob(this.file, this._saveApiCall, this, options);
     },
 
     _saveApiCall: function(onSuccess, onError, options) {
@@ -2173,6 +2123,55 @@ function rbApiCall(options) {
     } else {
         doCall();
     }
+}
+
+
+function sendFileBlob(file, save_func, obj, options) {
+    var reader = new FileReader();
+
+    reader.onloadend = function() {
+        var boundary = "-----multipartformboundary" + new Date().getTime();
+        var blob = "";
+        blob += "--" + boundary + "\r\n";
+        blob += 'Content-Disposition: form-data; name="path"; ' +
+                'filename="' + file.name + '"\r\n';
+        blob += 'Content-Type: application/octet-stream\r\n';
+        blob += '\r\n';
+        blob += reader.result;
+        blob += '\r\n';
+        blob += "--" + boundary + "--\r\n";
+        blob += '\r\n';
+
+        save_func.call(obj, options.success, options.error, {
+            buttons: options.buttons,
+            data: blob,
+            processData: false,
+            contentType: "multipart/form-data; boundary=" + boundary,
+            xhr: function() {
+                var xhr = $.ajaxSettings.xhr();
+
+                xhr.send = function(data) {
+                    xhr.sendAsBinary(data);
+                };
+
+                return xhr;
+            }
+        });
+    };
+
+    reader.readAsBinaryString(file);
+}
+
+
+if (!XMLHttpRequest.prototype.sendAsBinary) {
+    XMLHttpRequest.prototype.sendAsBinary = function(datastr) {
+        var data = new Uint8Array(
+            Array.prototype.map.call(datastr, function(x) {
+                return x.charCodeAt(0) & 0xFF;
+            }));
+
+        XMLHttpRequest.prototype.send.call(this, data.buffer);
+    };
 }
 
 
