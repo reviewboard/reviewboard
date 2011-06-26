@@ -273,16 +273,14 @@ Subversion
 ----------
 
 Subversion_ can be installed from Cygwin_ or by downloading the latest
-installer from the `Subversion downloads`_ page. Make sure Windows is
-selected, and then choose the ``CollabNet Subversion Command-Line Client``.
+installer from the `Subversion downloads`_ page.
 
 You will then need to install PySVN_ from the `PySVN downloads`_ page.
 
 
 .. _Subversion: http://subversion.apache.org/
 .. _PySVN: http://pysvn.tigris.org/
-.. _`Subversion downloads`:
-   http://www.open.collab.net/downloads/subversion/
+.. _`Subversion downloads`: http://www.sliksvn.com/en/download
 .. _`PySVN downloads`:
    http://pysvn.tigris.org/servlets/ProjectDocumentList?folderID=1768
 
