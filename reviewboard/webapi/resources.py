@@ -5421,9 +5421,10 @@ class ReviewRequestResource(WebAPIResource):
             * ``2010-06-27T16:26:30-08:00``
         """
         local_site = _get_local_site(local_site_name)
-        q = Q()
 
         if is_list:
+            q = Q()
+
             if 'to-groups' in request.GET:
                 for group_name in request.GET.get('to-groups').split(','):
                     q = q & self.model.objects.get_to_group_query(group_name,
@@ -5824,7 +5825,7 @@ class ReviewRequestResource(WebAPIResource):
         pass
 
     def get_object(self, request, review_request_id, local_site_name=None,
-                   *args, **kwargs):
+                   is_list=True, *args, **kwargs):
         """Returns an object, given captured parameters from a URL.
 
         This is an override of the djblets WebAPIResource get_object, which
