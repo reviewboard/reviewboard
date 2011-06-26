@@ -1,0 +1,20 @@
+{% load i18n %}
+<h1 class="title">{% trans "A database error occurred" %}</h1>
+<div class="main">
+ <p>
+{% blocktrans %}
+  There was an error in accessing data from the database. This could be
+  a configuration error, or a problem communicating with the database.
+  If this was previously working, please be sure that your database is
+  running and is not locked.
+{% endblocktrans %}
+ </p>
+ <p>
+{% blocktrans %}
+  The error is as follows:
+{% endblocktrans %}
+ </p>
+ <pre>
+    {{error}}
+</pre>
+</div>
