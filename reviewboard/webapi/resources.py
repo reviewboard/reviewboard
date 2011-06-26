@@ -9,13 +9,14 @@ from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, \
+                        HttpResponseNotModified
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
-                              set_last_modified
+                              set_last_modified, http_date
 from djblets.webapi.core import WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
                                 WebAPIResponse
@@ -189,6 +190,7 @@ class BaseCommentResource(WebAPIResource):
             'description': 'The status of an issue.',
         },
     }
+    last_modified_field = 'timestamp'
 
     def update_issue_status(self, request, comment_resource, *args, **kwargs):
         """Updates the issue status for a comment.
@@ -852,6 +854,9 @@ class FileDiffResource(WebAPIResource):
         DIFF_DATA_MIMETYPE_XML,
     ]
 
+    def get_last_modified(self, request, obj, *args, **kwargs):
+        return obj.diffset.timestamp
+
     def get_queryset(self, request, review_request_id, diff_revision,
                      *args, **kwargs):
         return self.model.objects.filter(
@@ -1160,6 +1165,7 @@ class ChangeResource(WebAPIResource):
     }
     uri_object_key = 'change_id'
     model_parent_key = 'review_request'
+    last_modified_field = 'timestamp'
     allowed_methods = ('GET',)
 
     _changed_fields_to_models = {
@@ -1278,6 +1284,7 @@ class DiffResource(WebAPIResource):
     uri_object_key = 'diff_revision'
     model_object_key = 'revision'
     model_parent_key = 'history'
+    last_modified_field = 'timestamp'
 
     allowed_mimetypes = [
         'application/json',
@@ -1819,6 +1826,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         watched_resource,
     ]
 
+    hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
+
+    def get_etag(self, request, obj, *args, **kwargs):
+        if obj.is_profile_visible(request.user):
+            return self.generate_etag(obj, self.fields.iterkeys())
+        else:
+            return self.generate_etag(obj, [
+                field
+                for field in self.fields.iterkeys()
+                if field not in self.hidden_fields
+            ])
+
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
 
@@ -1847,8 +1866,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             # Hide user info from anonymous users and non-staff users (if
             # his/her profile is private).
             if not obj.is_profile_visible(request.user):
-                for field in ('email', 'first_name', 'last_name',
-                              'fullname'):
+                for field in self.hidden_fields:
                     del data[field]
 
         return data
@@ -2006,6 +2024,7 @@ class ReviewGroupResource(WebAPIResource):
     uri_object_key = 'group_name'
     uri_object_key_regex = '[A-Za-z0-9_-]+'
     model_object_key = 'name'
+    autogenerate_etags = True
 
     allowed_methods = ('GET',)
 
@@ -2162,6 +2181,7 @@ class RepositoryResource(WebAPIResource):
     }
     uri_object_key = 'repository_id'
     item_child_resources = [repository_info_resource]
+    autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -2602,6 +2622,7 @@ class BaseScreenshotResource(WebAPIResource):
     }
 
     uri_object_key = 'screenshot_id'
+    autogenerate_etags = True
 
     def get_queryset(self, request, review_request_id, is_list=False,
                      *args, **kwargs):
@@ -2887,6 +2908,7 @@ class BaseFileAttachmentResource(WebAPIResource):
     }
 
     uri_object_key = 'file_attachment_id'
+    autogenerate_etags = True
 
     def get_queryset(self, request, review_request_id, is_list=False,
                      *args, **kwargs):
@@ -3155,6 +3177,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     name = 'draft'
     singleton = True
     model_parent_key = 'review_request'
+    last_modified_field = 'last_updated'
     fields = {
         'id': {
             'type': int,
@@ -4079,6 +4102,7 @@ class BaseFileAttachmentCommentResource(WebAPIResource):
     }
 
     uri_object_key = 'comment_id'
+    last_modified_field = 'timestamp'
     allowed_methods = ('GET',)
 
     def get_queryset(self, request, *args, **kwargs):
@@ -4464,6 +4488,7 @@ class BaseReviewResource(WebAPIResource):
             'description': 'The user who wrote the review.',
         },
     }
+    last_modified_field = 'timestamp'
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -5203,6 +5228,10 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
             return _no_access_error(request.user)
 
         timestamp, updated_object = review_request.get_last_activity()
+
+        if get_modified_since(request, timestamp):
+            return HttpResponseNotModified()
+
         user = None
         summary = None
         update_type = None
@@ -5235,6 +5264,8 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
                 'summary': summary,
                 'type': update_type,
             }
+        }, {
+            'Last-Modified': http_date(timestamp)
         }
 
 review_request_last_update_resource = ReviewRequestLastUpdateResource()
@@ -5323,6 +5354,7 @@ class ReviewRequestResource(WebAPIResource):
     }
     uri_object_key = 'review_request_id'
     model_object_key = 'display_id'
+    last_modified_field = 'last_updated'
     item_child_resources = [
         change_resource,
         diffset_resource,

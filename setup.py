@@ -101,7 +101,7 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           'Django>=1.3',
           'django_evolution>=0.6.4',
-          'Djblets>=0.6.8',
+          'Djblets>=0.6.9alpha0.dev-20110629',
           'Pygments>=1.4',
           'flup',
           'paramiko',

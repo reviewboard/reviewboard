@@ -88,7 +88,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return response
 
     def apiGet(self, path, query={}, follow_redirects=False,
-               expected_status=200, expected_redirects=[]):
+               expected_status=200, expected_redirects=[],
+               expected_headers=[]):
         path = self._normalize_path(path)
 
         print 'GETing %s' % path
@@ -99,6 +100,9 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
                                          expected_redirects)
 
         print "Raw response: %s" % response.content
+
+        for header in expected_headers:
+            self.assertTrue(header in response)
 
         rsp = simplejson.loads(response.content)
         print "Response: %s" % rsp
@@ -144,6 +148,38 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         self.assertEqual(response.status_code, expected_status)
 
         return self._get_result(response, expected_status)
+
+    def assertHttpOK(self, response, check_last_modified=False,
+                     check_etag=False):
+        self.assertEquals(response.status_code, 200)
+
+        if check_last_modified:
+            self.assertTrue('Last-Modified' in response)
+
+        if check_etag:
+            self.assertTrue('ETag' in response)
+
+    def assertHttpNotModified(self, response):
+        self.assertEquals(response.status_code, 304)
+        self.assertEquals(response.content, '')
+
+    def _testHttpCaching(self, url, check_etags=False,
+                         check_last_modified=False):
+        response = self.client.get(url)
+        self.assertHttpOK(response, check_etag=check_etags,
+                          check_last_modified=check_last_modified)
+
+        headers = {}
+
+        if check_etags:
+            headers['If-None-Match'] = response['ETag']
+
+        if check_last_modified:
+            headers['HTTP_IF_MODIFIED_SINCE'] = response['Last-Modified']
+
+        response = self.client.get(url, **headers)
+
+        self.assertHttpNotModified(response)
 
     def _normalize_path(self, path):
         if path.startswith(self.base_url):
@@ -955,6 +991,11 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['group']['display_name'], group.display_name)
         self.assertEqual(rsp['group']['invite_only'], False)
 
+    def test_get_group_public_not_modified(self):
+        """Testing the GET groups/<id>/ API with Not Modified response"""
+        self._testHttpCaching(self.get_item_url('test-group'),
+                              check_etags=True)
+
     def test_get_group_invite_only(self):
         """Testing the GET groups/<id>/ API with invite-only"""
         group = Group.objects.create(name='test-group', invite_only=True)
@@ -1041,6 +1082,11 @@ class UserResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['user']['last_name'], user.last_name)
         self.assertEqual(rsp['user']['id'], user.id)
         self.assertEqual(rsp['user']['email'], user.email)
+
+    def test_get_user_not_modified(self):
+        """Testing the GET users/<username>/ API with Not Modified response"""
+        self._testHttpCaching(self.get_item_url('doc'),
+                              check_etags=True)
 
     def test_get_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
@@ -1734,6 +1780,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
                          public_review_requests.filter(
                              last_updated__lt=r.last_updated).count())
 
+    def test_get_reviewrequest_not_modified(self):
+        """Testing the GET review-requests/<id>/ API with Not Modified response"""
+        review_request = ReviewRequest.objects.public()[0]
+
+        self._testHttpCaching(self.get_item_url(review_request.id),
+                              check_last_modified=True)
+
     def test_post_reviewrequests(self):
         """Testing the POST review-requests/ API"""
         rsp = self.apiPost(self.get_list_url(), {
@@ -2365,6 +2418,13 @@ class ReviewResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'], review_request.reviews.count())
 
+    def test_get_review_not_modified(self):
+        """Testing the GET review-requests/<id>/reviews/<id>/ API with Not Modified response"""
+        review = Review.objects.all()[0]
+        self._testHttpCaching(
+            self.get_item_url(review.review_request, review.id),
+            check_last_modified=True)
+
     def test_post_reviews(self):
         """Testing the POST review-requests/<id>/reviews/ API"""
         body_top = ""
@@ -2736,6 +2796,13 @@ class ReviewCommentResourceTests(BaseWebAPITestCase):
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_diff_comment_not_modified(self):
+        """Testing the GET review-requests/<id>/reviews/<id>/diff-comments/<id>/ API with Not Modified response"""
+        comment = Comment.objects.all()[0]
+        self._testHttpCaching(
+            self.get_item_url(comment.review.get(), comment.id),
+            check_last_modified=True)
 
     def test_post_diff_comments(self):
         """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/ API"""
@@ -3217,6 +3284,13 @@ class ReviewReplyResourceTests(BaseWebAPITestCase):
                           expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_reply_not_modified(self):
+        """Testing the GET review-requests/<id>/reviews/<id>/ with Not Modified response"""
+        reply = \
+            Review.objects.filter(base_reply_to__isnull=False, public=True)[0]
+        self._testHttpCaching(self.get_item_url(reply.base_reply_to, reply.id),
+                              check_last_modified=True)
 
     def test_post_replies(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/ API"""
@@ -3912,6 +3986,26 @@ class ChangeResourceTests(BaseWebAPITestCase):
         self.assertEqual(screenshot_data['new'], new_screenshot_caption)
         self.assertEqual(screenshot_data['screenshot']['id'], screenshot3.pk)
 
+    def test_get_change_not_modified(self):
+        """Testing the GET review-requests/<id>/changes/<id>/ API with Not Modified response"""
+        review_request = ReviewRequest.objects.public()[0]
+
+        changedesc = ChangeDescription(public=True)
+        changedesc.save()
+        review_request.changedescs.add(changedesc)
+
+        self._testHttpCaching(self.get_item_url(changedesc),
+                              check_last_modified=True)
+
+    def get_item_url(self, changedesc, local_site_name=None):
+        return local_site_reverse(
+            'change-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'review_request_id': changedesc.review_request.get().display_id,
+                'change_id': changedesc.id,
+            })
+
 
 class DiffResourceTests(BaseWebAPITestCase):
     """Testing the DiffResource APIs."""
@@ -4041,6 +4135,12 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['id'], diff.id)
         self.assertEqual(rsp['diff']['name'], diff.name)
+
+    def test_get_diff_not_modified(self):
+        """Testing the GET review-requests/<id>/diffs/<revision>/ API with Not Modified response"""
+        review_request = ReviewRequest.objects.get(pk=2)
+        self._testHttpCaching(self.get_item_url(review_request, 1),
+                              check_last_modified=True)
 
     def test_get_diff_with_site_no_access(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/ API with a local site and Permission Denied error"""
@@ -4966,11 +5066,20 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
 
 class FileAttachmentResourceTests(BaseWebAPITestCase):
     """Testing the FileAttachmentResource APIs."""
+    def test_get_file_attachment_not_modified(self):
+        """Testing the GET review-requests/<id>/file-attachments/<id>/ API with Not Modified response"""
+        self.test_post_file_attachments()
+
+        file_attachment = FileAttachment.objects.all()[0]
+        self._testHttpCaching(self.get_item_url(file_attachment),
+                              check_etags=True)
+
     def test_post_file_attachments(self):
         """Testing the POST review-requests/<id>/file-attachments/ API"""
         rsp = self._postNewReviewRequest()
         self.assertEqual(rsp['stat'], 'ok')
-        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
         file_attachments_url = \
             rsp['review_request']['links']['file_attachments']['href']
@@ -4983,6 +5092,8 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
+
+        review_request.publish(review_request.submitter)
 
     def test_post_file_attachments_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/file-attachments/ API with Permission Denied error"""
@@ -5043,6 +5154,16 @@ class FileAttachmentResourceTests(BaseWebAPITestCase):
             local_site_name=local_site_name,
             kwargs={
                 'review_request_id': review_request.display_id,
+            })
+
+    def get_item_url(self, file_attachment, local_site_name=None):
+        return local_site_reverse(
+            'file-attachment-resource',
+            local_site_name=local_site_name,
+            kwargs={
+                'file_attachment_id': file_attachment.id,
+                'review_request_id':
+                    file_attachment.review_request.get().display_id,
             })
 
 
