@@ -28,6 +28,7 @@
 #
 
 
+import getpass
 import imp
 import os
 import sys
@@ -51,6 +52,8 @@ def check_updates_required():
     global _install_fine
 
     if not _updates_required and not _install_fine:
+        site_dir = os.path.dirname(settings.HTDOCS_ROOT)
+
         # Check if the site has moved and the old media directory no longer
         # exists.
         if not os.path.exists(settings.MEDIA_ROOT):
@@ -74,6 +77,22 @@ def check_updates_required():
             _updates_required.append((
                 "admin/manual-updates/media-upload-dir.html", {
                     'MEDIA_ROOT': settings.MEDIA_ROOT
+                }
+            ))
+
+
+        # Check if the data directory (should be $HOME) is writable by us.
+        data_dir = os.environ.get('HOME', '')
+
+        if (not data_dir or
+            not os.path.isdir(data_dir) or
+            not os.access(data_dir, os.W_OK)):
+            _updates_required.append((
+                'admin/manual-updates/data-dir.html', {
+                    'data_dir': data_dir,
+                    'writable': os.access(data_dir, os.W_OK),
+                    'server_user': getpass.getuser(),
+                    'expected_data_dir': os.path.join(site_dir, 'data'),
                 }
             ))
 
