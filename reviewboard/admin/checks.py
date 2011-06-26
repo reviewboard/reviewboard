@@ -36,6 +36,9 @@ import sys
 from django.conf import settings
 from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
+from djblets.siteconfig.models import SiteConfiguration
+
+from reviewboard import get_version_string
 
 
 _updates_required = []
@@ -53,6 +56,25 @@ def check_updates_required():
 
     if not _updates_required and not _install_fine:
         site_dir = os.path.dirname(settings.HTDOCS_ROOT)
+        devel_install = (os.path.exists(os.path.join(settings.LOCAL_ROOT,
+                                                     'manage.py')))
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        # Check if the version running matches the last stored version.
+        # Only do this for non-debug installs, as it's really annoying on
+        # a developer install.:
+        cur_version = get_version_string()
+
+        if siteconfig.version != cur_version:
+            _updates_required.append((
+                'admin/manual-updates/version-mismatch.html', {
+                    'current_version': cur_version,
+                    'stored_version': siteconfig.version,
+                    'site_dir': site_dir,
+                    'devel_install': devel_install,
+                }
+            ))
 
         # Check if the site has moved and the old media directory no longer
         # exists.
@@ -60,9 +82,6 @@ def check_updates_required():
             new_media_root = os.path.join(settings.HTDOCS_ROOT, "media")
 
             if os.path.exists(new_media_root):
-                from djblets.siteconfig.models import SiteConfiguration
-
-                siteconfig = SiteConfiguration.objects.get_current()
                 siteconfig.set("site_media_root", new_media_root)
                 settings.MEDIA_ROOT = new_media_root
 
