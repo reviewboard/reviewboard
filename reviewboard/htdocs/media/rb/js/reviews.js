@@ -204,7 +204,7 @@ function linkifyText(text) {
              * See bug 1069.
              */
             var extra = "";
-            var parts = url.match(/^(.*)(&[a-z]+;)$/);
+            var parts = url.match(/^(.*)(&[a-z]+;|\))$/);
 
             if (parts != null) {
                 /* We caught an entity. Set it free. */
