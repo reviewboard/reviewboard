@@ -170,7 +170,7 @@ class SVNTool(SCMTool):
 
         # Get any aliased keywords
         keywords = [keyword
-                    for name in keyword_str.split(" ")
+                    for name in re.split("\W+",keyword_str)
                     for keyword in self.keywords.get(name, [])]
 
         return re.sub(r"\$(%s):(:?)([^\$\n\r]+)\$" % '|'.join(keywords),
@@ -246,6 +246,8 @@ class SVNTool(SCMTool):
     def __normalize_path(self, path):
         if path.startswith(self.repopath):
             return path
+        elif path[0:2] == '//':
+            return self.repopath + path[1:]
         elif path[0] == '/':
             return self.repopath + path
         else:
