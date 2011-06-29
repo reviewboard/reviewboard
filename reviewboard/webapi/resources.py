@@ -16,6 +16,7 @@ from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
+                              get_modified_since, \
                               set_last_modified, http_date
 from djblets.webapi.core import WebAPIResponseFormError, \
                                 WebAPIResponsePaginated, \
