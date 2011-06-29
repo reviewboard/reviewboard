@@ -102,7 +102,7 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
                           comments) {
     var self = this;
 
-    var table = beginRow.parents("table:first")
+    var table = beginRow.parents("table:first");
     var fileid = table[0].id;
 
     this.filediff = gFileAnchorToId[fileid];
@@ -147,7 +147,7 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
 
     this.anchor = $("<a/>")
         .attr("name",
-              "file" + this.filediff['id'] + "line" + this.beginLineNum)
+              "file" + this.filediff.id + "line" + this.beginLineNum)
         .addClass("comment-anchor")
         .appendTo(this.el);
 
