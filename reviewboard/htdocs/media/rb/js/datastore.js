@@ -15,7 +15,7 @@ RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
     this.url = null;
 
     return this;
-}
+};
 
 $.extend(RB.DiffComment.prototype, {
     ready: function(on_ready) {
@@ -66,8 +66,9 @@ $.extend(RB.DiffComment.prototype, {
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
-                    if (self.review.public)
+                    if (self.review.public) {
                         data.issue_status = self.issue_status;
+                    }
                 } else {
                     data.filediff_id = self.filediff.id;
                     url = self.review.links.diff_comments.href;
@@ -178,7 +179,7 @@ RB.DiffCommentReply = function(reply, id, reply_to_id) {
     this.url = null;
 
     return this;
-}
+};
 
 $.extend(RB.DiffCommentReply.prototype, {
     ready: function(on_ready) {
@@ -318,7 +319,7 @@ RB.Diff = function(review_request, revision, interdiff_revision) {
     this.interdiff_revision = interdiff_revision;
 
     return this;
-}
+};
 
 $.extend(RB.Diff.prototype, {
     getDiffFragment: function(review_base_url, fileid, filediff_id, revision,
@@ -421,7 +422,7 @@ RB.ReviewRequest = function(id, prefix, path) {
     this.loaded = false;
 
     return this;
-}
+};
 
 $.extend(RB.ReviewRequest, {
     /* Constants */
@@ -507,7 +508,7 @@ $.extend(RB.ReviewRequest.prototype, {
 
         if (starred) {
             apiType = "POST";
-            data['object_id'] = this.id;
+            data.object_id = this.id;
         } else {
             apiType = "DELETE";
             path += this.id + "/";
@@ -661,7 +662,7 @@ RB.Review = function(review_request, id) {
     this.public = null;
 
     return this;
-}
+};
 
 $.extend(RB.Review.prototype, {
     createDiffComment: function(id, filediff, interfilediff, beginLineNum,
@@ -840,7 +841,7 @@ RB.ReviewGroup = function(id) {
     this.id = id;
 
     return this;
-}
+};
 
 $.extend(RB.ReviewGroup.prototype, {
     setStarred: function(starred) {
@@ -850,7 +851,7 @@ $.extend(RB.ReviewGroup.prototype, {
 
         if (starred) {
             apiType = "POST";
-            data['object_id'] = this.id;
+            data.object_id = this.id;
         } else {
             apiType = "DELETE";
             path += this.id + "/";
@@ -875,7 +876,7 @@ RB.ReviewReply = function(review, id) {
     this.loaded = false;
 
     return this;
-}
+};
 
 $.extend(RB.ReviewReply.prototype, {
     ready: function(on_done) {
@@ -1017,7 +1018,7 @@ $.extend(RB.ReviewReply.prototype, {
                     }
 
                     on_done.apply(this, arguments);
-                },
+                }
             });
         });
     },
@@ -1043,7 +1044,7 @@ RB.FileAttachment = function(review_request, id) {
     this.loaded = false;
 
     return this;
-}
+};
 
 $.extend(RB.FileAttachment.prototype, {
     setFile: function(file) {
@@ -1198,7 +1199,7 @@ RB.FileAttachmentCommentReply = function(reply, id, reply_to_id) {
     this.url = null;
 
     return this;
-}
+};
 
 $.extend(RB.FileAttachmentCommentReply.prototype, {
     ready: function(on_ready) {
@@ -1340,7 +1341,7 @@ RB.Screenshot = function(review_request, id) {
     this.loaded = false;
 
     return this;
-}
+};
 
 $.extend(RB.Screenshot.prototype, {
     setFile: function(file) {
@@ -1504,7 +1505,7 @@ RB.ScreenshotComment = function(review, id, screenshot_id, x, y, width,
     this.url = null;
 
     return this;
-}
+};
 
 $.extend(RB.ScreenshotComment.prototype, {
     ready: function(on_ready) {
@@ -1661,7 +1662,7 @@ RB.FileAttachmentComment = function(review, id, file_attachment_id) {
     this.loaded = false;
     this.url = null;
     return this;
-}
+};
 
 $.extend(RB.FileAttachmentComment.prototype, {
     ready: function(on_ready) {
@@ -1813,7 +1814,7 @@ RB.ScreenshotCommentReply = function(reply, id, reply_to_id) {
     this.url = null;
 
     return this;
-}
+};
 
 $.extend(RB.ScreenshotCommentReply.prototype, {
     ready: function(on_ready) {
