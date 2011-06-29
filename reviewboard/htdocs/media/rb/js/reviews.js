@@ -1,6 +1,7 @@
 
 // State variables
 var gCommentDlg = null;
+var gEditCount = 0;
 var gPublishing = false;
 var gPendingSaveCount = 0;
 var gPendingDiffFragments = {};
@@ -505,7 +506,12 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                     notifyUnchangedCompletion: true,
                     multiline: true
                 })
+                .bind("beginEdit", function() {
+                    gEditCount++;
+                })
                 .bind("complete", function(e, value) {
+                    gEditCount--;
+
                     self.html(linkifyText(self.text()));
 
                     if (context_type == "body_top" ||
@@ -538,6 +544,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                     });
                 })
                 .bind("cancel", function(e) {
+                    gEditCount--;
                     removeCommentFormIfEmpty(self);
                 });
         });
@@ -863,7 +870,6 @@ $.fn.commentDlg = function() {
     var textFieldWidthDiff = 0;
     var textFieldHeightDiff = 0;
     var dirty = false;
-    var oldDirty = false;
 
     /* Page elements */
     var draftForm    = $("#draft-form", this);
@@ -877,7 +883,7 @@ $.fn.commentDlg = function() {
     var issueField = $("#comment_issue", draftForm)
         .click(function() {
             saveButton.attr("disabled", textField.val() == "");
-            self.make_dirty();
+            self.setDirty(true);
         });
     var cancelButton = $("#comment_cancel", draftForm)
         .click(function() {
@@ -921,13 +927,9 @@ $.fn.commentDlg = function() {
             }
         })
         .keyup(function(e) {
-            dirty = dirty || comment.text != textField.val();
+            self.setDirty(dirty || comment.text != textField.val());
 
             saveButton.attr("disabled", textField.val() == "");
-
-            if (dirty && !oldDirty) {
-                self.make_dirty();
-            }
 
             e.stopPropagation();
         });
@@ -1011,36 +1013,27 @@ $.fn.commentDlg = function() {
     }
 
     /*
-     * Warn the user if they try to navigate away with unsaved comments.
-     *
-     * @param {event} evt The beforeunload event.
-     *
-     * @return {string} The dialog message (needed for IE).
-     */
-    window.onbeforeunload = function(evt) {
-        if (dirty && self.is(":visible")) {
-            if (!evt) {
-                evt = window.event;
-            }
-
-            evt.returnValue = "You have unsaved changes that will be " +
-                              "lost if you navigate away from this page.";
-            return evt.returnValue;
-        }
-    };
-
-    /*
-     * Marks the comment dialog as "dirty".
+     * Sets the dirty state of the comment dialog.
      *
      * @return {jQuery} This jQuery.
      */
-    this.make_dirty = function() {
-        statusField.html("This comment has unsaved changes.");
-        self.handleResize();
+    this.setDirty = function(newDirty) {
+        if (newDirty != dirty) {
+            dirty = newDirty;
 
-        oldDirty = dirty;
+            if (dirty) {
+                gEditCount++;
+                statusField.html("This comment has unsaved changes.");
+            } else {
+                gEditCount--;
+                statusField.empty();
+            }
+
+            self.handleResize();
+        }
+
         return this;
-    }
+    };
 
     /*
      * Opens the comment dialog and focuses the text field.
@@ -1060,12 +1053,10 @@ $.fn.commentDlg = function() {
                 opacity: 1
             }, 350, "swing", function() {
                 self.scrollIntoView();
-            });
+            })
+            .setDirty(false);
 
         textField.focus();
-
-        oldDirty = false;
-        dirty = false;
 
         return this;
     }
@@ -1079,14 +1070,17 @@ $.fn.commentDlg = function() {
         if (self.is(":visible")) {
             textField.val("");
             issueField.attr("checked", false)
-            self.animate({
-                top: "-=" + SLIDE_DISTANCE + "px",
-                opacity: 0
-            }, 350, "swing", function() {
-                self.hide();
-                self.comment = null;
-                self.trigger("close");
-            });
+
+            self
+                .setDirty(false)
+                .animate({
+                    top: "-=" + SLIDE_DISTANCE + "px",
+                    opacity: 0
+                }, 350, "swing", function() {
+                    self.hide();
+                    self.comment = null;
+                    self.trigger("close");
+                });
         } else {
             self.trigger("close");
         }
@@ -1186,7 +1180,8 @@ $.fn.commentDlg = function() {
         comment.ready(function() {
             textField.val(comment.text);
             issueField.attr('checked', comment.issue_opened)
-            dirty = false;
+
+            self.setDirty(false);
 
             /* Set the initial button states */
             deleteButton.setVisible(comment.loaded);
@@ -1279,6 +1274,8 @@ $.reviewForm = function(review) {
      * @param {string} formHTML  The HTML content for the form.
      */
     function createForm(formHTML) {
+        gEditCount++;
+
         dlg = $("<div/>")
             .attr("id", "review-form")
             .appendTo("body") // Needed for scripts embedded in the HTML
@@ -1297,12 +1294,16 @@ $.reviewForm = function(review) {
                     $('<input type="button"/>')
                         .val("Discard Review")
                         .click(function(e) {
+                            gEditCount--;
                             review.deleteReview({
                                 buttons: buttons
                             });
                         }),
                     $('<input type="button"/>')
-                        .val("Cancel"),
+                        .val("Cancel")
+                        .click(function() {
+                            gEditCount--;
+                        }),
                     $('<input type="button"/>')
                         .val("Save")
                         .click(function() {
@@ -1329,6 +1330,12 @@ $.reviewForm = function(review) {
                     notifyUnchangedCompletion: true,
                     showButtons: false,
                     showEditIcon: false
+                })
+                .bind("beginEdit", function() {
+                    gEditCount++;
+                })
+                .bind("cancel complete", function() {
+                    gEditCount--;
                 });
         }
 
@@ -1370,6 +1377,8 @@ $.reviewForm = function(review) {
                 buttons: buttons,
                 success: $.funcQueue("reviewForm").next
             };
+
+            gEditCount--;
 
             if (publish) {
                 review.publish(options);
@@ -1417,7 +1426,14 @@ $.fn.reviewFormCommentEditor = function(comment) {
             showEditIcon: false,
             useEditIconOnly: false
         })
+        .bind("beginEdit", function() {
+            gEditCount++;
+        })
+        .bind("cancel", function() {
+            gEditCount--;
+        })
         .bind("complete", function(e, value) {
+            gEditCount--;
             comment.text = value;
             comment.save({
                 success: function() {
@@ -1442,7 +1458,14 @@ $.fn.reviewRequestFieldEditor = function() {
                 startOpen: this.id == "changedescription",
                 useEditIconOnly: $(this).hasClass("comma-editable")
             })
+            .bind("beginEdit", function() {
+                gEditCount++;
+            })
+            .bind("cancel", function() {
+                gEditCount--;
+            })
             .bind("complete", function(e, value) {
+                gEditCount--;
                 setDraftField(this.id, value);
             });
     });
@@ -1468,7 +1491,14 @@ $.fn.screenshotThumbnail = function() {
                 editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
                 showButtons: false
             })
+            .bind("beginEdit", function() {
+                gEditCount++;
+            })
+            .bind("cancel", function() {
+                gEditCount--;
+            })
             .bind("complete", function(e, value) {
+                gEditCount--;
                 screenshot.ready(function() {
                     screenshot.caption = value;
                     screenshot.save({
@@ -1583,7 +1613,14 @@ $.fn.fileAttachment = function() {
                 editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
                 showButtons: false
             })
+            .bind("beginEdit", function() {
+                gEditCount++;
+            })
+            .bind("cancel", function() {
+                gEditCount--;
+            })
             .bind("complete", function(e, value) {
+                gEditCount--;
                 fileAttachment.ready(function() {
                     fileAttachment.caption = value;
                     fileAttachment.save({
@@ -2321,6 +2358,12 @@ $(document).ready(function() {
             if (targetGroupsEl.length > 0) {
                 targetGroupsEl
                     .inlineEditor("field")
+                    .bind("beginEdit", function() {
+                        gEditCount++;
+                    })
+                    .bind("cancel complete", function() {
+                        gEditCount--;
+                    })
                     .reviewsAutoComplete({
                         fieldName: "groups",
                         nameKey: "name",
@@ -2334,6 +2377,12 @@ $(document).ready(function() {
             if (targetPeopleEl.length > 0) {
                 targetPeopleEl
                     .inlineEditor("field")
+                    .bind("beginEdit", function() {
+                        gEditCount++;
+                    })
+                    .bind("cancel complete", function() {
+                        gEditCount--;
+                    })
                     .reviewsAutoComplete({
                         fieldName: "users",
                         nameKey: "username",
@@ -2343,6 +2392,24 @@ $(document).ready(function() {
                         }
                     });
             }
+
+            /*
+             * Warn the user if they try to navigate away with unsaved comments.
+             *
+             * @param {event} evt The beforeunload event.
+             *
+             * @return {string} The dialog message (needed for IE).
+             */
+            window.onbeforeunload = function(evt) {
+                if (gEditCount > 0) {
+                    evt = evt || window.event;
+
+                    evt.returnValue = "You have unsaved changes that will " +
+                                      " be lost if you navigate away from " +
+                                      "this page.";
+                    return evt.returnValue;
+                }
+            };
 
             initScreenshotDnD();
         }

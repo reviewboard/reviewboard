@@ -146,8 +146,7 @@ function DiffCommentBlock(beginRow, endRow, beginLineNum, endLineNum,
     }
 
     this.anchor = $("<a/>")
-        .attr("name",
-              "file" + this.filediff.id + "line" + this.beginLineNum)
+        .attr("name", "file" + this.filediff.id + "line" + this.beginLineNum)
         .addClass("comment-anchor")
         .appendTo(this.el);
 
