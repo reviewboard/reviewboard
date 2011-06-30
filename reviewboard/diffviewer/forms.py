@@ -100,6 +100,7 @@ class UploadDiffForm(forms.Form):
                 parent_file = parent_files[f.origFile]
                 parent_content = parent_file.data
                 source_rev = parent_file.origInfo
+                diff_rev = f.origInfo
             else:
                 parent_content = ""
 
@@ -109,6 +110,7 @@ class UploadDiffForm(forms.Form):
                     source_rev = parent_changeset_id
                 else:
                     source_rev = f.origInfo
+                diff_rev = source_rev
 
             dest_file = os.path.join(basedir, f.newFile).replace("\\", "/")
 
@@ -121,6 +123,7 @@ class UploadDiffForm(forms.Form):
                                 source_file=f.origFile,
                                 dest_file=dest_file,
                                 source_revision=smart_unicode(source_rev),
+                                diff_revision=smart_unicode(diff_rev),
                                 dest_detail=f.newInfo,
                                 diff=f.data,
                                 parent_diff=parent_content,
