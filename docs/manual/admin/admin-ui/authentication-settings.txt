@@ -6,6 +6,7 @@ Authentication Settings
 
 * :ref:`auth-general-settings`
 * :ref:`basic-authentication-settings`
+* :ref:`active-directory-authentication-settings`
 * :ref:`ldap-authentication-settings`
 * :ref:`nis-authentication-settings`
 * :ref:`custom-authentication-settings`
@@ -89,7 +90,44 @@ This is available if `Authentication Method`_ is set to
 .. _reCAPTCHA: http://www.google.com/recaptcha
 
 
-.. _ldap-authentication-settings:
+.. _active-directory-authentication-settings:
+
+Active Directory Authentication Settings
+========================================
+
+This is available if `Authentication Method`_ is set to ``Active Directory``.
+
+* **Domain name:**
+    The Active Directory Domain to authenticate against.
+    For example: ``MYDOMAIN``
+
+    This setting is required.
+
+* **Use TLS for authentication:**
+    If checked, then TLS will be used for all authentication requests. This
+    option is more secure, but must be enabled on the AD server.
+
+* **Find DC from DNS:**
+    If checked, find the Domain Controller from DNS.
+
+* **Domain controller:**
+    Enter the name or IP address of the Domain Controller of not using DNS lookup.
+
+* **OU name:**
+    Optionally restrict users to specified OU.
+
+* **Group name:**
+    Optionally restrict users to a specified group.
+
+* **Custom search root:**
+    Optionally specify a custom search root, overriding the built-in computed
+    search root. If set, "OU name" is ignored.
+
+* **Recursion Depth:**
+    Depth to recurse when checking group membership. Set to 0 to turn off,
+    -1 for unlimited.
+
+.. _nis-authentication-settings:
 
 LDAP Authentication Settings
 ============================
