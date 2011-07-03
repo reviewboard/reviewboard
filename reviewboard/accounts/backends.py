@@ -181,6 +181,7 @@ class LDAPBackend(AuthBackend):
         try:
             import ldap
             ldapo = ldap.initialize(settings.LDAP_URI)
+            ldapo.set_option(ldap.OPT_REFERRALS, 0)
             ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
             if settings.LDAP_TLS:
                 ldapo.start_tls_s()
@@ -237,6 +238,7 @@ class LDAPBackend(AuthBackend):
             try:
                 import ldap
                 ldapo = ldap.initialize(settings.LDAP_URI)
+                ldapo.set_option(ldap.OPT_REFERRALS, 0)
                 ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
                 if settings.LDAP_TLS:
                     ldapo.start_tls_s()
