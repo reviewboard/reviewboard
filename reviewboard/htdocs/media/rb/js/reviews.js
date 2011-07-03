@@ -652,7 +652,7 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     self.enter_state = function(state) {
         self.state = self.STATES[state];
         self.state.enter();
-        if(self.interactive) {
+        if (self.interactive) {
             self.state.showButtons();
             enableButtons();
         }
@@ -714,7 +714,7 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     // Set the comment to the initial state
     self.enter_state(self.issue_status);
 
-    // Register to watch updates on the comment issue state 
+    // Register to watch updates on the comment issue state
     gCommentIssueManager
         .registerCallback(self.comment_id, self.enter_state);
 
@@ -722,14 +722,30 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 }
 
 
-/* Wraps an inline comment so that it can be used by
- * commentIssue.
+
+/*
+ * Wraps an inline comment so that they can display issue
+ * information.
  */
-$.fn.issueButtons = function() {
-    var self = this;
+$.fn.issueIndicator = function() {
     var issue_indicator = $('<div/>')
         .addClass('issue-state')
-        .appendTo(self);
+        .appendTo(this);
+
+    var message = $('<span/>')
+        .addClass('issue-message')
+        .appendTo(issue_indicator);
+
+    return this;
+}
+
+
+/*
+ * Wraps an inline comment so that it displays buttons
+ * for setting the state of a comment issue.
+ */
+$.fn.issueButtons = function() {
+    var issue_indicator = $(".issue-state", this);
 
     var buttons = $('<div class="buttons"/>')
         .addClass('buttons')
@@ -1127,10 +1143,24 @@ $.fn.commentDlg = function() {
                 if (this.issue_opened) {
                     var interactive = window['gEditable'];
                     var issue = $('<div/>')
-                        .issueButtons()
+                        .issueIndicator();
+
+                    if (interactive) {
+                        issue.issueButtons();
+                    }
+
+                    issue
                         .commentIssue(this.review_id, this.comment_id,
                                       replyType, this.issue_status, interactive)
                         .appendTo(item);
+
+                    var self = this;
+
+                    gCommentIssueManager.registerCallback(this.comment_id,
+                        function(issue_status) {
+                            self.issue_status = issue_status;
+                        }
+                    );
                 }
 
                 item.appendTo(commentsList);
