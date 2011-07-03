@@ -24,6 +24,8 @@ class RepositoryAdmin(admin.ModelAdmin):
                 'api_token',
                 'username',
                 'password',
+                'project_slug',
+                'repository_name',
             ),
             'classes': ('wide',),
         }),

@@ -95,6 +95,21 @@ class RepositoryForm(forms.ModelForm):
                 },
             },
         }),
+        ('gitorious', {
+            'label': _('Gitorious'),
+            'fields': ['project_slug', 'repository_name'],
+            'hidden_fields': ['raw_file_url','username', 'password'],
+            'tools': {
+                'Git': {
+                    'path': 'git://gitorious.org/%(project_slug)s/'
+                            '%(repository_name)s.git',
+                    'mirror_path': 'http://git.gitorious.org/%(project_slug)s/'
+                                   '%(repository_name)s.git',
+                    'raw_file_url': 'http://git.gitorious.org/%(project_slug)s/'
+                                    '%(repository_name)s/blobs/raw/<revision>'
+                },
+            },
+        }),
         ('googlecode', {
             'label': _('Google Code'),
             'fields': ['hosting_project_name'],
@@ -217,7 +232,7 @@ class RepositoryForm(forms.ModelForm):
 
     HOSTING_FIELDS = [
         "path", "mirror_path", "hosting_owner", "hosting_project_name",
-        "api_token",
+        "api_token", "project_slug", "repository_name",
     ]
 
     BUG_TRACKER_FIELDS = [
@@ -253,6 +268,18 @@ class RepositoryForm(forms.ModelForm):
 
     hosting_project_name = forms.CharField(
         label=_("Project name"),
+        max_length=256,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
+    project_slug = forms.CharField(
+        label=_("Project slug"),
+        max_length=256,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
+    repository_name = forms.CharField(
+        label=_("Repository name"),
         max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
