@@ -563,13 +563,19 @@ $.extend(RB.ReviewRequest.prototype, {
             return;
         }
 
+        data = {
+            status: statusType
+        };
+
+        if (options.description !== undefined) {
+            data.description = options.description;
+        }
+
         self.ready(function() {
             self._apiCall({
                 type: "PUT",
                 path: "/",
-                data: {
-                    status: statusType
-                },
+                data: data,
                 buttons: options.buttons
             });
         });

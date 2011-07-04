@@ -1475,6 +1475,29 @@ $.fn.reviewFormCommentEditor = function(comment) {
 
 
 /*
+ * Adds inline editing capabilities to close description for a review request
+ * which have been submitted or discarded.
+ *
+ * @param {int} type  1: RB.ReviewRequest.CLOSE_DISCARDED
+ *                    2: RB.ReviewRequest.CLOSE_SUBMITTED
+ */
+$.fn.reviewCloseCommentEditor = function(type) {
+    return this
+        .inlineEditor({
+            editIconPath: MEDIA_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+            multiline: true,
+            startOpen: false
+        })
+        .bind("complete", function(e, value) {
+            gReviewRequest.close({
+                type: type,
+                description: value
+            });
+        });
+}
+
+
+/*
  * Adds inline editing capabilities to a field for a review request.
  */
 $.fn.reviewRequestFieldEditor = function() {
@@ -2253,12 +2276,22 @@ $(document).ready(function() {
     $("#link-review-request-close-submitted").click(function() {
         /*
          * This is a non-destructive event, so don't confirm unless there's
-         * a draft. (TODO)
+         * a draft.
          */
-        gReviewRequest.close({
-            type: RB.ReviewRequest.CLOSE_SUBMITTED,
-            buttons: gDraftBannerButtons
-        });
+        var submit = true;
+        if ($("#draft-banner").is(":visible")) {
+            submit = confirm("You have an unpublished draft. If you close " +
+                             "this review request, the draft will be " +
+                             "discarded. Are you sure you want to close " +
+                             "the review request?");
+        }
+
+        if (submit) {
+            gReviewRequest.close({
+                type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                buttons: gDraftBannerButtons
+            });
+        }
 
         return false;
     });
@@ -2375,6 +2408,9 @@ $(document).ready(function() {
         .commentDlg()
         .css("z-index", 999);
     gCommentDlg.appendTo("body");
+
+    $("#submitted-banner #changedescription").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_SUBMITTED);
+    $("#discard-banner #changedescription").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_DISCARDED);
 
     if (gUserAuthenticated) {
         if (window["gEditable"]) {

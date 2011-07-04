@@ -1904,12 +1904,20 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPut(self.get_item_url(r.display_id), {
             'status': 'discarded',
+            'description': 'comment',
         })
 
         self.assertEqual(rsp['stat'], 'ok')
 
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'D')
+
+        c = r.changedescs.latest('timestamp')
+        self.assertEqual(c.text, 'comment')
+
+        fc_status = c.fields_changed['status']
+        self.assertEqual(fc_status['old'][0], 'P')
+        self.assertEqual(fc_status['new'][0], 'D')
 
     def test_put_reviewrequest_status_discarded_with_permission_denied(self):
         """Testing the PUT review-requests/<id>/?status=discarded API with Permission Denied"""
@@ -1946,12 +1954,20 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPut(self.get_item_url(r.display_id), {
             'status': 'submitted',
+            'description': 'comment',
         })
 
         self.assertEqual(rsp['stat'], 'ok')
 
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'S')
+
+        c = r.changedescs.latest('timestamp')
+        self.assertEqual(c.text, 'comment')
+
+        fc_status = c.fields_changed['status']
+        self.assertEqual(fc_status['old'][0], 'P')
+        self.assertEqual(fc_status['new'][0], 'S')
 
     def test_put_reviewrequest_status_submitted_with_site(self):
         """Testing the PUT review-requests/<id>/?status=submitted API with a local site"""
@@ -1962,11 +1978,19 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         rsp = self.apiPut(self.get_item_url(r.display_id,
                                             self.local_site_name),
-                          { 'status': 'submitted' })
+                          { 'status': 'submitted',
+                            'description': 'comment'})
         self.assertEqual(rsp['stat'], 'ok')
 
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.status, 'S')
+
+        c = r.changedescs.latest('timestamp')
+        self.assertEqual(c.text, 'comment')
+
+        fc_status = c.fields_changed['status']
+        self.assertEqual(fc_status['old'][0], 'P')
+        self.assertEqual(fc_status['new'][0], 'S')
 
     def test_put_reviewrequest_status_submitted_with_site_no_access(self):
         """Testing the PUT review-requests/<id>/?status=submitted API with a local site and Permission Denied error"""

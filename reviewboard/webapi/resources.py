@@ -1203,7 +1203,8 @@ class ChangeResource(WebAPIResource):
                 for key in ('new', 'old', 'added', 'removed'):
                     if key in data:
                         data[key] = [bug[0] for bug in data[key]]
-            elif field in ('summary', 'description', 'testing_done', 'branch'):
+            elif field in ('summary', 'description', 'testing_done', 'branch',
+                           'status'):
                 if 'old' in data:
                     data['old'] = data['old'][0]
 
@@ -5685,9 +5686,16 @@ class ReviewRequestResource(WebAPIResource):
                                'repositories that support server-side '
                                'changesets.',
             },
+            'description': {
+                'type': str,
+                'description': 'The description of the update. Should only be '
+                               'used if the review request have been submitted '
+                               'or discarded.',
+            },
         },
     )
-    def update(self, request, status=None, changenum=None, *args, **kwargs):
+    def update(self, request, status=None, changenum=None, description=None,
+               *args, **kwargs):
         """Updates the status of the review request.
 
         The only supported update to a review request's resource is to change
@@ -5717,11 +5725,12 @@ class ReviewRequestResource(WebAPIResource):
             return _no_access_error(request.user)
 
         if (status is not None and
-            review_request.status != string_to_status(status)):
+            (review_request.status != string_to_status(status) or
+             review_request.status != ReviewRequest.PENDING_REVIEW)):
             try:
                 if status in self._close_type_map:
                     review_request.close(self._close_type_map[status],
-                                         request.user)
+                                         request.user, description)
                 elif status == 'pending':
                     review_request.reopen(request.user)
                 else:

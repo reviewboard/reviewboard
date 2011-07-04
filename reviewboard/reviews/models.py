@@ -649,7 +649,7 @@ class ReviewRequest(models.Model):
     def can_publish(self):
         return not self.public or get_object_or_none(self.draft) is not None
 
-    def close(self, type, user=None):
+    def close(self, type, user=None, description=None):
         """
         Closes the review request. The type must be one of
         SUBMITTED or DISCARDED.
@@ -661,12 +661,27 @@ class ReviewRequest(models.Model):
         if type not in [self.SUBMITTED, self.DISCARDED]:
             raise AttributeError("%s is not a valid close type" % type)
 
-        self.status = type
-        self.save(update_counts=True)
+        if self.status != type:
+            changedesc = ChangeDescription(public=True, text=description or "")
+            changedesc.record_field_change('status', self.status, type)
+            changedesc.save()
 
-        review_request_closed.send(sender=self.__class__, user=user,
-                                   review_request=self,
-                                   type=type)
+            self.changedescs.add(changedesc)
+            self.status = type
+            self.save(update_counts=True)
+
+            review_request_closed.send(sender=self.__class__, user=user,
+                                       review_request=self,
+                                       type=type)
+        else:
+            # Update submission description.
+            changedesc = self.changedescs.filter(public=True).latest()
+            changedesc.timestamp = datetime.now()
+            changedesc.text = description or ""
+            changedesc.save()
+
+            # Needed to renew last-update.
+            self.save()
 
         try:
             draft = self.draft.get()
@@ -684,8 +699,21 @@ class ReviewRequest(models.Model):
             raise PermissionError
 
         if self.status != self.PENDING_REVIEW:
+            changedesc = ChangeDescription()
+            changedesc.record_field_change('status', self.status,
+                                           self.PENDING_REVIEW)
+
             if self.status == self.DISCARDED:
+                # A draft is needed if reopening a discarded review request.
                 self.public = False
+                changedesc.save()
+                draft = ReviewRequestDraft.create(self)
+                draft.changedesc = changedesc
+                draft.save()
+            else:
+                changedesc.public = True
+                changedesc.save()
+                self.changedescs.add(changedesc)
 
             self.status = self.PENDING_REVIEW
             self.save(update_counts=True)

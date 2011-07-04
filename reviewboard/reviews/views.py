@@ -51,6 +51,7 @@ from reviewboard.reviews.models import Comment, ReviewRequest, \
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
+from reviewboard.webapi.encoder import status_to_string
 
 
 #####
@@ -330,9 +331,10 @@ def review_detail(request,
         return HttpResponseNotModified()
 
     changedescs = review_request.changedescs.filter(public=True)
+    latest_changedesc = None
 
     try:
-        latest_changedesc = changedescs.latest('timestamp')
+        latest_changedesc = changedescs.latest()
         latest_timestamp = latest_changedesc.timestamp
     except ChangeDescription.DoesNotExist:
         latest_timestamp = None
@@ -397,6 +399,15 @@ def review_detail(request,
 
                     if 'new' in info:
                         info['new'][0] = mark_safe(info['new'][0])
+
+                # Make status human readable.
+                if name == 'status':
+                    if 'old' in info:
+                        info['old'][0] = status_to_string(info['old'][0])
+
+                    if 'new' in info:
+                        info['new'][0] = status_to_string(info['new'][0])
+
             elif name == "screenshot_captions":
                 change_type = 'screenshot_captions'
             elif name == "file_captions":
@@ -437,6 +448,7 @@ def review_detail(request,
             'last_activity_time': last_activity_time,
             'review': review,
             'request': request,
+            'latest_changedesc': latest_changedesc,
             'PRE_CREATION': PRE_CREATION,
         })))
     set_etag(response, etag)

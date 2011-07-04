@@ -7,6 +7,8 @@
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
+ <p><label for="changedescription">{% trans "Describe your submission (optional):" %}</label></p>
+ <pre id="changedescription">{% if latest_changedesc %}{{latest_changedesc.text}}{% endif %}</pre>
 {% endifuserorperm %}
 </div>
 {% else %}
@@ -16,6 +18,10 @@
 {% ifequal request.user review_request.submitter %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
+{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
+ <p><label for="changedescription">{% trans "Describe your reason of discarding (optional):" %}</label></p>
+ <pre id="changedescription">{% if latest_changedesc %}{{latest_changedesc.text}}{% endif %}</pre>
+{% endifuserorperm %}
 {% endifequal %}
 </div>
 {%  else %}
