@@ -28,8 +28,14 @@ class FileDiff(models.Model):
 
     source_file = models.CharField(_("source file"), max_length=1024)
     dest_file = models.CharField(_("destination file"), max_length=1024)
-    source_revision = models.CharField(_("source file revision"),
-                                       max_length=512)
+    source_revision = models.CharField(
+        _("source file revision"),
+        max_length=512,
+        help_text=_("The revision fetched from the repository to generate the "
+                    "side-by-side diff. This need not be the revision of the diff "
+                    "itself if a parent diff is provided."))
+    diff_revision = models.CharField(_("revision the diff is based upon"),
+                                       max_length=512, blank=True)
     dest_detail = models.CharField(_("destination file details"),
                                    max_length=512)
     diff = Base64Field(_("diff"), db_column="diff_base64")

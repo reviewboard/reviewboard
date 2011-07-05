@@ -830,8 +830,16 @@ class FileDiffResource(WebAPIResource):
         },
         'source_revision': {
             'type': str,
-            'description': 'The revision of the file being modified. This '
-                           'is a valid revision in the repository.',
+            'description': 'The revision fetched from the repository to generate '
+                           'the side-by-side diff. This is a valid revision in '
+                           'the repository. It need not be the revision of the '
+                           'diff itself if a parent diff is provided.',
+        },
+        'diff_revision': {
+            'type': str,
+            'description': 'The revision of the file being modified. This need '
+                           'not be a valid revision in the repository if a parent '
+                           'diff is provided.',
         },
         'dest_detail': {
             'type': str,
