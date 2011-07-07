@@ -718,7 +718,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the POST repositories/ API with Missing User Key error"""
         @classmethod
         def _check_repository(cls, *args, **kwargs):
-            raise AuthenticationError(['publickey'], user_key=None)
+            raise AuthenticationError(allowed_types=['publickey'],
+                                      user_key=None)
 
         SVNTool.check_repository = _check_repository
 
@@ -731,7 +732,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         """Testing the POST repositories/ API with Authentication Error"""
         @classmethod
         def _check_repository(cls, *args, **kwargs):
-            raise AuthenticationError([])
+            raise AuthenticationError
 
         SVNTool.check_repository = _check_repository
 

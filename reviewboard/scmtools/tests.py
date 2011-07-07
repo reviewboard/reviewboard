@@ -1,3 +1,4 @@
+import hashlib
 import imp
 import os
 import nose
@@ -18,7 +19,9 @@ from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
-from reviewboard.scmtools.errors import SCMError, FileNotFoundError
+from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
+                                        RepositoryNotFoundError, \
+                                        AuthenticationError
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
@@ -614,7 +617,8 @@ class PerforceTests(SCMTestCase):
             else:
                 raise
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(hash(desc.description), -7425743081915501647)
+        self.assertEqual(hashlib.md5(desc.description).hexdigest(),
+                         'b7eff0ca252347cc9b09714d07397e64')
 
         expected_files = [
             '//public/perforce/api/python/P4Client/P4Clientmodule.cc',
@@ -627,7 +631,28 @@ class PerforceTests(SCMTestCase):
         for file, expected in map(None, desc.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(hash(desc.summary), 4980424973015496725)
+        self.assertEqual(hashlib.md5(desc.summary).hexdigest(),
+                         '99a335676b0e5821ffb2f7469d4d7019')
+
+    def testChangesetBroken(self):
+        """Testing PerforceTool.get_changeset error conditions"""
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          username='samwise',
+                          password='bogus')
+        tool = repo.get_scmtool()
+        self.assertRaises(AuthenticationError,
+                          lambda: tool.get_changeset(157))
+
+        repo = Repository(name='localhost:1',
+                          path='localhost:1',
+                          tool=Tool.objects.get(name='Perforce'))
+
+        tool = repo.get_scmtool()
+        self.assertRaises(RepositoryNotFoundError,
+                          lambda: tool.get_changeset(1))
+
 
     def testGetFile(self):
         """Testing PerforceTool.get_file"""
@@ -643,7 +668,8 @@ class PerforceTests(SCMTestCase):
                     'Connection to public.perforce.com failed.  No internet?')
             else:
                 raise
-        self.assertEqual(hash(file), -6079245147730624701)
+        self.assertEqual(hashlib.md5(file).hexdigest(),
+                         '227bdd87b052fcad9369e65c7bf23fd0')
 
     def testEmptyDiff(self):
         """Testing Perforce empty diff parsing"""

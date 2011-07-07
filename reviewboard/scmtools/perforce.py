@@ -2,14 +2,16 @@ import re
 import subprocess
 
 try:
-    from P4 import P4Error
+    from P4 import P4Exception
 except ImportError:
     pass
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.core import SCMTool, ChangeSet, \
                                       HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError
+from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError, \
+                                        AuthenticationError, \
+                                        RepositoryNotFoundError
 
 
 class PerforceTool(SCMTool):
@@ -37,9 +39,9 @@ class PerforceTool(SCMTool):
     def __del__(self):
         try:
             self._disconnect()
-        except P4Error:
+        except P4Exception:
             # Exceptions in __del__ get ignored but spew warnings.  If there's
-            # no internet connection, we'll get a P4Error from disconnect().
+            # no internet connection, we'll get a P4Exception from disconnect().
             # This is totally safe to ignore.
             pass
 
@@ -54,6 +56,43 @@ class PerforceTool(SCMTool):
         except AttributeError:
             pass
 
+    @staticmethod
+    def _convert_p4exception_to_scmexception(e):
+        error = str(e)
+        if 'Perforce password' in error or 'Password must be set' in error:
+            raise AuthenticationError(msg=error)
+        elif 'check $P4PORT' in error:
+            raise RepositoryNotFoundError
+        else:
+            raise SCMError(error)
+
+    @classmethod
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
+        """
+        Performs checks on a repository to test its validity.
+
+        This should check if a repository exists and can be connected to.
+
+        The result is returned as an exception. The exception may contain extra
+        information, such as a human-readable description of the problem. If the
+        repository is valid and can be connected to, no exception will be
+        thrown.
+        """
+        super(PerforceTool, cls).check_repository(path, username, password,
+                                                  local_site_name)
+        import P4
+        p4 = P4.P4()
+        p4.port = str(path)
+        p4.user = str(username)
+        p4.password = str(password)
+        p4.exception_level = 1
+        try:
+            p4.connect()
+            p4.run_describe('-s', '1')
+        except P4Exception, e:
+            cls._convert_p4exception_to_scmexception(e)
+
     def get_pending_changesets(self, userid):
         self._connect()
         return map(self.get_changeset,
@@ -61,9 +100,13 @@ class PerforceTool(SCMTool):
                        self.p4.run_changes('-s', 'pending', '-u', userid)])
 
     def get_changeset(self, changesetid):
-        self._connect()
-        changeset = self.p4.run_describe('-s', str(changesetid))
-        self._disconnect()
+        try:
+            self._connect()
+            changeset = self.p4.run_describe('-s', str(changesetid))
+        except P4Exception, e:
+            self.__class__._convert_p4exception_to_scmexception(e)
+        finally:
+            self._disconnect()
 
         if changeset:
             return self.parse_change_desc(changeset[0], changesetid)
@@ -95,9 +138,10 @@ class PerforceTool(SCMTool):
 
         if failure:
             error = errdata.splitlines()
-            # The command-line output is the same as the contents of a P4Error
-            # except they're prefixed with a line that says "Perforce client
-            # error:", and the lines of the error are indented with tabs.
+            # The command-line output is the same as the contents of a
+            # P4Exception except they're prefixed with a line that says
+            # "Perforce client error:", and the lines of the error are
+            # indented with tabs.
             if error[0].startswith("Perforce client error:"):
                 error = error[1:]
 

@@ -375,10 +375,10 @@ def check_host(hostname, username=None, password=None, local_site_name=None):
         else:
             key = None
 
-        raise AuthenticationError(allowed_types, key)
+        raise AuthenticationError(allowed_types=allowed_types, user_key=key)
     except paramiko.SSHException, e:
         if str(e) == 'No authentication methods available':
-            raise AuthenticationError([])
+            raise AuthenticationError
         else:
             raise SCMError(unicode(e))
 

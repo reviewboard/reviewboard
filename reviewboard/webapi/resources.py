@@ -53,6 +53,7 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         EmptyChangeSetError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError, \
+                                        SCMError, \
                                         RepositoryNotFoundError, \
                                         UnknownHostKeyError, \
                                         UnverifiedCertificateError
@@ -5570,7 +5571,9 @@ class ReviewRequestResource(WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, INVALID_USER,
                             INVALID_REPOSITORY, CHANGE_NUMBER_IN_USE,
-                            INVALID_CHANGE_NUMBER, EMPTY_CHANGESET)
+                            INVALID_CHANGE_NUMBER, EMPTY_CHANGESET,
+                            REPO_AUTHENTICATION_ERROR, REPO_INFO_ERROR,
+                            MISSING_REPOSITORY)
     @webapi_request_fields(
         required={
             'repository': {
@@ -5664,6 +5667,12 @@ class ReviewRequestResource(WebAPIResource):
             return 201, {
                 self.item_result_key: review_request
             }
+        except AuthenticationError:
+            return REPO_AUTHENTICATION_ERROR
+        except RepositoryNotFoundError:
+            return MISSING_REPOSITORY
+        except SCMError:
+            return REPO_INFO_ERROR
         except ChangeNumberInUseError, e:
             return CHANGE_NUMBER_IN_USE, {
                 'review_request': e.review_request
