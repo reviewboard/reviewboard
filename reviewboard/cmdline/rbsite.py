@@ -1644,6 +1644,9 @@ class UpgradeCommand(Command):
             site.sync_database()
             site.migrate_database()
 
+            print "Resetting in-database caches."
+            site.run_manage_command("fixreviewcounts")
+
         print "Upgrade complete."
 
         if not data_dir_exists:

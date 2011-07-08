@@ -88,4 +88,19 @@ To open a Python command shell, run::
     $ rb-site manage /path/to/site shell
 
 
+Resetting Review Request Counters
+---------------------------------
+
+The counters in the Dashboard along the left-hand side, indicating the
+number of review requests, can potentially be incorrect if changes were
+made manually to the database or if there was an error while attempting to
+save information to the database.
+
+You can fix these counters by running::
+
+    $ rb-site manage /path/to/site fixreviewcounts
+
+This is done automatically when upgrading a site.
+
+
 .. comment: vim: ft=rst et tw=75
