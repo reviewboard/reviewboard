@@ -6,6 +6,6 @@ MUTATIONS = [
     SQLMutation('populate_diff_revision', ["""
     UPDATE diffviewer_filediff
        SET diff_revision = source_revision
-     WHERE diff_revision == ''
+     WHERE diff_revision = ''
     """])
 ]
