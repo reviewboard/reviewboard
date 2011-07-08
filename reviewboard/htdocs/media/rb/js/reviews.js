@@ -2471,7 +2471,7 @@ $(document).ready(function() {
                     evt = evt || window.event;
 
                     evt.returnValue = "You have unsaved changes that will " +
-                                      " be lost if you navigate away from " +
+                                      "be lost if you navigate away from " +
                                       "this page.";
                     return evt.returnValue;
                 }
