@@ -439,6 +439,14 @@ def review_detail(request,
 
     entries.sort(key=lambda item: item['timestamp'])
 
+    close_description = ''
+
+    if latest_changedesc and 'status' in latest_changedesc.fields_changed:
+        status = latest_changedesc.fields_changed['status']['new'][0]
+
+        if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
+            close_description = latest_changedesc.text
+
     response = render_to_response(
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
@@ -449,6 +457,7 @@ def review_detail(request,
             'review': review,
             'request': request,
             'latest_changedesc': latest_changedesc,
+            'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
         })))
     set_etag(response, etag)
