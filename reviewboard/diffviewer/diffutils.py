@@ -1013,7 +1013,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             else:
                 dest_revision = "Diff Revision %s" % interdiffset.revision
         else:
-            source_revision = get_revision_str(filediff.diff_revision)
+            source_revision = get_revision_str(filediff.source_revision)
 
             if newfile:
                 dest_revision = NEW_FILE_STR

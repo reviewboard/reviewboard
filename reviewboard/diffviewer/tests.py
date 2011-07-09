@@ -2,15 +2,13 @@ import os
 import unittest
 
 from django.test import TestCase
-from django.core.files.uploadedfile import SimpleUploadedFile
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.models import Repository
 
 
 class MyersDifferTest(TestCase):
@@ -429,53 +427,3 @@ class DbTests(TestCase):
 
         filediff = FileDiff.objects.get(pk=filediff.id)
         self.assertEquals(filediff.source_file, long_filename)
-
-
-class RevisionIDTests(TestCase):
-    """Unit tests for revision ids stored along with diffs"""
-    fixtures = ['hg.json', 'test_scmtools.json']
-
-    def setUp(self):
-        hg_repo_path = os.path.join(os.path.dirname(__file__),
-                                    'testdata/mercurial_repo.bundle')
-        self.repository = Repository.objects.create(
-            name='Test HG',
-            path=hg_repo_path,
-            tool=Tool.objects.get(name='Mercurial'))
-        try:
-            tool = self.repository.get_scmtool()
-        except ImportError:
-            raise nose.SkipTest('Hg is not installed')
-        self.diff_path = os.path.join(os.path.dirname(__file__),
-                                      'testdata/diffs/mercurial')
-
-    def testDiffRevisionID(self):
-        """Testing that the revision of a diff is reflected in FileDiff"""
-
-        f = open(os.path.join(self.diff_path, 'base-diff'), 'r')
-        base_diff = SimpleUploadedFile(f.name, f.read())
-        f.close()
-
-        diffform = UploadDiffForm(self.repository)
-        diffset = diffform.create(base_diff)
-        file_diff = diffset.files.order_by('id')[0]
-        self.assertEquals(file_diff.source_revision, 'a05b17e6cd25')
-        self.assertEquals(file_diff.diff_revision, 'a05b17e6cd25')
-
-    def testParentDiffRevisionID(self):
-        """Testing that the revision of a diff with parent is reflected in FileDiff"""
-
-        f = open(os.path.join(self.diff_path, 'parent-diff'), 'r')
-        parent_diff = SimpleUploadedFile(f.name, f.read())
-        f.close()
-        f = open(os.path.join(self.diff_path, 'modified-base-diff'), 'r')
-        base_diff = SimpleUploadedFile(f.name, f.read())
-        f.close()
-
-        diffform = UploadDiffForm(self.repository)
-        diffset = diffform.create(base_diff, parent_diff)
-        file_diff = diffset.files.order_by('id')[0]
-        print dir(file_diff)
-        print file_diff.diff
-        self.assertEquals(file_diff.source_revision, 'a05b17e6cd25')
-        self.assertEquals(file_diff.diff_revision, '555d6977066b')
