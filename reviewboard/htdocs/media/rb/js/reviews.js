@@ -1614,9 +1614,10 @@ $.newScreenshotThumbnail = function(screenshot) {
             .append($("<a/>")
                 .addClass("screenshot-editable edit")
                 .attr({
-                    href: screenshot.image_url,
+                    href: "#",
                     id: "screenshot_" + screenshot.id + "_caption"
                 })
+                .text(screenshot.caption)
             )
             .append($("<a/>")
                 .addClass("delete")
