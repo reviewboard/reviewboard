@@ -608,7 +608,7 @@ form table td.label {
   margin-top: 2em;
 }
 
-#user-infobox .logged-in, .user-infobox .joined {
+#user-infobox .logged-in, #user-infobox .joined {
   font-size: 0.8em;
 }
 

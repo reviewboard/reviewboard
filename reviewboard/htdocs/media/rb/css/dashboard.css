@@ -72,3 +72,23 @@
   color: #575012;
   font-weight: bold;
 }
+
+#dashboard-navbar a.email,
+#dashboard-navbar a.group {
+  text-decoration: underline;
+  color: #0000C0;
+}
+
+#dashboard-navbar .nickname {
+  font-size: 1.4em;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+#dashboard-navbar .fn, #dashboard-navbar .email {
+  font-size: 1.2em;
+}
+
+#dashboard-navbar .logged-in {
+  padding-top: 1.5em;
+}

@@ -12,7 +12,9 @@
   <h2 class="nickname">{{user}}</h2>
 {% if show_profile %}
   <p class="fn">{{user.first_name}} {{user.last_name}}</p>
+{% if request.user.is_authenticated %}
   <p class="email">{{user.email}}</p>
+{% endif %}
   <p class="logged-in">Last logged in {{user.last_login|date:"F jS, Y"}}</p>
   <p class="joined">Joined {{user.date_joined|date:"F jS, Y"}}</p>
 {% endif %}
