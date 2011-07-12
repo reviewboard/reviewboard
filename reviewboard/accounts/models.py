@@ -110,28 +110,32 @@ class Profile(models.Model):
 
             site_profile.increment_starred_public_request_count()
 
+        self.save()
+
     def unstar_review_request(self, review_request):
         """Marks a review request as unstarred.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
         """
-        site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-            user=self.user,
-            local_site=review_request.local_site,
-            profile=self.user.get_profile())
+        q = self.starred_review_requests.filter(pk=review_request.pk)
 
-        if is_new:
-            site_profile.save()
-
-        site_profile.decrement_starred_public_request_count()
+        if q.count() > 0:
+            self.starred_review_requests.remove(review_request)
 
         if (review_request.public and
             review_request.status == ReviewRequest.PENDING_REVIEW):
-            q = self.starred_review_requests.filter(pk=review_request.pk)
+            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
+                user=self.user,
+                local_site=review_request.local_site,
+                profile=self.user.get_profile())
 
-            if q.count() > 0:
-                self.starred_review_requests.remove(review_request)
+            if is_new:
+                site_profile.save()
+
+            site_profile.decrement_starred_public_request_count()
+
+        self.save()
 
     def star_review_group(self, review_group):
         """Marks a review group as starred.
