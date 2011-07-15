@@ -312,32 +312,12 @@ jQuery.fn.screenshotCommentBox = function(regions) {
     );
 
     /*
-     * Register a resize event to reposition the selection area on page
-     * resize, so that comments are in the right locations.
+     * Reposition the selection area on page resize or loaded, so that
+     * comments are in the right locations.
      */
     $(window)
-        .resize(function() {
-            var offset = image.position();
-
-            /*
-             * The margin: 0 auto means that position.left() will return
-             * the left-most part of the entire block, rather than the actual
-             * position of the image on Chrome. Every other browser returns 0
-             * for this margin, as we'd expect. So, just play it safe and
-             * offset by the margin-left. (Bug #1050)
-             */
-            offset.left += image.getExtents("m", "l");
-
-            if ($.browser.msie && $.browser.version == 6) {
-                offset.left -= self.getExtents("mp", "l");
-            }
-
-            selectionArea
-                .width(image.width())
-                .height(image.height())
-                .css("left", offset.left);
-        })
-        .triggerHandler("resize");
+        .resize(adjustPos)
+        .load(adjustPos);
 
     /* Add all existing comment regions to the page. */
     for (region in regions) {
@@ -391,6 +371,31 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                 gCommentDlg.open();
             })
             .close();
+    }
+
+    /*
+     * Reposition the selection area to the right locations.
+     */
+    function adjustPos() {
+        var offset = image.position();
+
+        /*
+         * The margin: 0 auto means that position.left() will return
+         * the left-most part of the entire block, rather than the actual
+         * position of the image on Chrome. Every other browser returns 0
+         * for this margin, as we'd expect. So, just play it safe and
+         * offset by the margin-left. (Bug #1050)
+         */
+        offset.left += image.getExtents("m", "l");
+
+        if ($.browser.msie && $.browser.version == 6) {
+            offset.left -= self.getExtents("mp", "l");
+        }
+
+        selectionArea
+            .width(image.width())
+            .height(image.height())
+            .css("left", offset.left);
     }
 
     return this;
