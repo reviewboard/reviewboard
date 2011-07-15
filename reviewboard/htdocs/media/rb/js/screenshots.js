@@ -255,8 +255,8 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                  */
                 if (width > 5 && height > 5) {
                     if (!activeCommentBlock) {
-                        showCommentDlg(addCommentBlock(offset.left,
-                                                       offset.top,
+                        showCommentDlg(addCommentBlock(Math.floor(offset.left),
+                                                       Math.floor(offset.top),
                                                        width, height));
                     } else {
                         // TODO: Reposition the old block. */
