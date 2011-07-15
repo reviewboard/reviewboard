@@ -1025,20 +1025,19 @@
 }
 
 .issue-state {
-  font-size: 90%;
+  font-size: 95%;
   font-weight: bold;
-  padding-bottom: 5px;
-  padding-left: 25px;
-  padding-top: 5px;
+  padding: 0.3em 0.4em 0.3em 2.5em;
 }
 
 .issue-state.dropped {
-  background: url('../images/cancel_grey.png') #E5E5E5 no-repeat 5px 50%;
+  background: url('../images/closed_issue.png') #EAEAEA no-repeat 5px 50%;
+  border: 1px solid #D0D0D0;
 }
 
 .issue-state.open {
-  background: url('../images/warning.png') #FFFF7C no-repeat 5px 50%;
-  border: 1px solid #ff7500;
+  background: url('../images/open_issue.png') #fff47c no-repeat 5px 50%;
+  border: 1px solid #a89c00;
 }
 
 .issue-state.resolved {
@@ -1046,9 +1045,6 @@
 }
 
 .issue-button {
-  border: 1px outset black;
-  font-size: 90%;
-  font-weight: bold;
   margin-left: 5px;
 }
 
