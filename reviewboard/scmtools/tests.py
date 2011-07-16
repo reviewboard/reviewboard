@@ -3,11 +3,15 @@ import imp
 import os
 import nose
 import paramiko
+import random
 import shutil
+import socket
+import subprocess
 import tempfile
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
+from djblets.util.filesystem import is_exe_in_path
 try:
     imp.find_module("P4")
     from P4 import P4Error
@@ -25,6 +29,7 @@ from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
 from reviewboard.site.models import LocalSite
 
 
@@ -653,7 +658,6 @@ class PerforceTests(SCMTestCase):
         self.assertRaises(RepositoryNotFoundError,
                           lambda: tool.get_changeset(1))
 
-
     def testGetFile(self):
         """Testing PerforceTool.get_file"""
 
@@ -741,6 +745,88 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
         self.assertEqual(files[1].data, diff2_text)
+
+
+class PerforceStunnelTests(SCMTestCase):
+    """
+    Unit tests for perforce running through stunnel.
+
+    Out of the box, Perforce doesn't support any kind of encryption on its
+    connections. The recommended setup in this case is to run an stunnel server
+    on the perforce server which bounces SSL connections to the normal p4 port.
+    One can then start an stunnel on their client machine and connect via a
+    localhost: P4PORT.
+
+    For these tests, we set up an stunnel server which will accept secure
+    connections and proxy (insecurely) to the public perforce server. We can
+    then tell the Perforce SCMTool to connect securely to localhost.
+    """
+    fixtures = ['test_scmtools.json']
+
+    def setUp(self):
+        super(PerforceStunnelTests, self).setUp()
+
+        if not is_exe_in_path('stunnel'):
+            raise nose.SkipTest('stunnel is not installed')
+
+        cert = os.path.join(os.path.dirname(__file__),
+                            'testdata', 'stunnel.pem')
+        self.proxy = STunnelProxy(STUNNEL_SERVER, 'public.perforce.com:1666')
+        self.proxy.start_server(cert)
+
+        # Find an available port to listen on
+        path = 'stunnel:localhost:%d' % self.proxy.port
+
+        self.repository = Repository(name='Perforce.com - secure',
+                                     path=path,
+                                     tool=Tool.objects.get(name='Perforce'))
+        try:
+            self.tool = self.repository.get_scmtool()
+            self.tool.use_stunnel = True
+        except ImportError:
+            raise nose.SkipTest('perforce/p4python is not installed')
+
+
+    def tearDown(self):
+        self.proxy.shutdown()
+
+    def testChangeset(self):
+        """Testing PerforceTool.get_changeset with stunnel"""
+        desc = self.tool.get_changeset(157)
+
+        self.assertEqual(desc.changenum, 157)
+        self.assertEqual(hashlib.md5(desc.description).hexdigest(),
+                         'b7eff0ca252347cc9b09714d07397e64')
+
+        expected_files = [
+            '//public/perforce/api/python/P4Client/P4Clientmodule.cc',
+            '//public/perforce/api/python/P4Client/p4.py',
+            '//public/perforce/api/python/P4Client/review.py',
+            '//public/perforce/python/P4Client/P4Clientmodule.cc',
+            '//public/perforce/python/P4Client/p4.py',
+            '//public/perforce/python/P4Client/review.py',
+        ]
+        for file, expected in map(None, desc.files, expected_files):
+            self.assertEqual(file, expected)
+
+        self.assertEqual(hashlib.md5(desc.summary).hexdigest(),
+                         '99a335676b0e5821ffb2f7469d4d7019')
+
+    def testGetFile(self):
+        """Testing PerforceTool.get_file with stunnel"""
+        file = self.tool.get_file('//depot/foo', PRE_CREATION)
+        self.assertEqual(file, '')
+
+        try:
+            file = self.tool.get_file('//public/perforce/api/python/P4Client/p4.py', 1)
+        except Exception, e:
+            if str(e).startswith('Connect to server failed'):
+                raise nose.SkipTest(
+                    'Connection to public.perforce.com failed.  No internet?')
+            else:
+                raise
+        self.assertEqual(hashlib.md5(file).hexdigest(),
+                         '227bdd87b052fcad9369e65c7bf23fd0')
 
 
 class VMWareTests(SCMTestCase):
