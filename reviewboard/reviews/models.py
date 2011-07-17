@@ -1281,8 +1281,26 @@ class BaseComment(models.Model):
         else:
             raise Exception("Invalid issue status '%s'" % status)
 
+    def save(self, **kwargs):
+        self.timestamp = datetime.now()
+
+        super(BaseComment, self).save()
+
+        try:
+            # Update the review timestamp, but only if it's a draft.
+            # Otherwise, resolving an issue will change the timestamp of
+            # the review.
+            review = self.review.get()
+
+            if not review.public:
+                review.timestamp = self.timestamp
+                review.save()
+        except Review.DoesNotExist:
+            pass
+
     class Meta:
         abstract = True
+        ordering = ['timestamp']
 
 
 class Comment(BaseComment):
@@ -1342,17 +1360,6 @@ class Comment(BaseComment):
         return "%s#comment%d" % \
             (self.review.get().review_request.get_absolute_url(), self.id)
 
-    def save(self, **kwargs):
-        super(Comment, self).save()
-
-        try:
-            # Update the review timestamp.
-            review = self.review.get()
-            review.timestamp = datetime.now()
-            review.save()
-        except Review.DoesNotExist:
-            pass
-
     def __unicode__(self):
         return self.text
 
@@ -1361,9 +1368,6 @@ class Comment(BaseComment):
             return self.text[0:57] + "..."
         else:
             return self.text
-
-    class Meta:
-        ordering = ['timestamp']
 
 
 class ScreenshotComment(BaseComment):
@@ -1417,22 +1421,8 @@ class ScreenshotComment(BaseComment):
         return "%s#scomment%d" % \
             (self.review.get().review_request.get_absolute_url(), self.id)
 
-    def save(self, **kwargs):
-        super(ScreenshotComment, self).save()
-
-        try:
-            # Update the review timestamp.
-            review = self.review.get()
-            review.timestamp = datetime.now()
-            review.save()
-        except Review.DoesNotExist:
-            pass
-
     def __unicode__(self):
         return self.text
-
-    class Meta:
-        ordering = ['timestamp']
 
 
 class FileAttachmentComment(BaseComment):
@@ -1472,22 +1462,8 @@ class FileAttachmentComment(BaseComment):
         return "%s#fcomment%d" % \
             (self.review.get().review_request.get_absolute_url(), self.id)
 
-    def save(self, **kwargs):
-        super(FileAttachmentComment, self).save()
-
-        try:
-            # Update the review timestamp.
-            review = self.review.get()
-            review.timestamp = datetime.now()
-            review.save()
-        except Review.DoesNotExist:
-            pass
-
     def __unicode__(self):
         return self.text
-
-    class Meta:
-        ordering = ['timestamp']
 
 
 class Review(models.Model):
