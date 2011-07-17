@@ -2469,12 +2469,21 @@ $(document).ready(function() {
              */
             window.onbeforeunload = function(evt) {
                 if (gEditCount > 0) {
+                    /*
+                     * On IE, the text must be set in evt.returnValue.
+                     *
+                     * On Firefox, it must be returned as a string.
+                     *
+                     * On Chrome, it must be returned as a string, but you
+                     * can't set it on evt.returnValue (it just ignores it).
+                     */
+                    var msg = "You have unsaved changes that will " +
+                              "be lost if you navigate away from " +
+                              "this page.";
                     evt = evt || window.event;
 
-                    evt.returnValue = "You have unsaved changes that will " +
-                                      "be lost if you navigate away from " +
-                                      "this page.";
-                    return evt.returnValue;
+                    evt.returnValue = msg;
+                    return msg;
                 }
             };
 
