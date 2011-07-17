@@ -985,7 +985,7 @@ $.extend(RB.ReviewReply.prototype, {
         var self = this;
 
         self.ready(function() {
-            if (self.body_top || self.body_bottom) {
+            if (!this.id || self.body_top || self.body_bottom) {
                 return;
             }
 
