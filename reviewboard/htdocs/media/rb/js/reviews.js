@@ -886,6 +886,7 @@ $.fn.commentDlg = function() {
     var textFieldWidthDiff = 0;
     var textFieldHeightDiff = 0;
     var dirty = false;
+    var ignoreKeyUp = false;
 
     /* Page elements */
     var draftForm    = $("#draft-form", this);
@@ -929,25 +930,33 @@ $.fn.commentDlg = function() {
                 case $.ui.keyCode.ENTER:
                     /* Enter */
                     if (e.ctrlKey) {
+                        ignoreKeyUp = true;
                         saveButton.click();
                     }
                     break;
 
                 case $.ui.keyCode.ESCAPE:
                     /* Escape */
+                    ignoreKeyUp = true;
                     cancelButton.click();
                     break;
 
                 default:
-                    return;
+                    ignoreKeyUp = false;
+                    break;
             }
         })
         .keyup(function(e) {
-            self.setDirty(dirty || comment.text != textField.val());
-
-            saveButton.attr("disabled", textField.val() == "");
-
-            e.stopPropagation();
+            /*
+             * We check if we want to ignore this event. The state from
+             * some shortcuts (control-enter) may not be settled, and we may
+             * end up setting this to dirty, causing page leave confirmations.
+             */
+            if (!ignoreKeyUp) {
+                self.setDirty(dirty || comment.text != textField.val());
+                saveButton.attr("disabled", textField.val() == "");
+                e.stopPropagation();
+            }
         });
 
     this
@@ -1045,7 +1054,9 @@ $.fn.commentDlg = function() {
                 statusField.empty();
             }
 
-            self.handleResize();
+            if (this.is(":visible")) {
+                this.handleResize();
+            }
         }
 
         return this;
