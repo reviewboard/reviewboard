@@ -2410,8 +2410,8 @@ $(document).ready(function() {
         .css("z-index", 999);
     gCommentDlg.appendTo("body");
 
-    $("#submitted-banner #changedescription").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_SUBMITTED);
-    $("#discard-banner #changedescription").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_DISCARDED);
+    $("#submitted-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_SUBMITTED);
+    $("#discard-banner #changedescription.editable").reviewCloseCommentEditor(RB.ReviewRequest.CLOSE_DISCARDED);
 
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
