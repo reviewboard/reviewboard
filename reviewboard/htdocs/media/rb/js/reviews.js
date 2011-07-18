@@ -2024,19 +2024,18 @@ function loadDiffFragments(queue_name, container_prefix) {
 
 
 /*
- * Initializes screenshot drag-and-drop support.
+ * Initializes drag-and-drop support.
  *
- * This makes it possible to drag screenshots from a file manager
- * and drop them into Review Board. This requires browser support for the
- * HTML 5 file drag-and-drop.
+ * This makes it possible to drag screenshots and other files from a file
+ * manager and drop them into Review Board. This requires browser support
+ * for HTML 5 file drag-and-drop.
  */
-function initScreenshotDnD() {
-    var thumbnails = $("#screenshot-thumbnails");
+function initDnD() {
     var dropIndicator = null;
-    var dragEnterState = 0;
     var screenshotDropBox;
     var fileDropBox;
     var middleBox;
+    var removeDropIndicatorHandle = null;
 
     $(document.body)
         .bind("dragenter", function(event) {
@@ -2054,12 +2053,12 @@ function initScreenshotDnD() {
                 .appendTo(document.body)
                 .width($(window).width())
                 .height(height)
-                .bind("dragenter", function(event) {
-                    dragEnterState++;
+                .bind("dragenter", function() {
+                    stopDropIndicatorRemoval();
                     return false;
                 })
-                .bind("dragleave", function(event) {
-                    handleDragExit(event);
+                .bind("dragleave", function() {
+                    handleDragExit();
                     return false;
                 });
 
@@ -2091,7 +2090,7 @@ function initScreenshotDnD() {
             $([screenshotDropBox[0], fileDropBox[0]])
                 .height(dropBoxHeight)
                 .bind("dragenter", function() {
-                    dragEnterState++;
+                    stopDropIndicatorRemoval();
                     return false;
                 })
                 .bind("dragover", function() {
@@ -2112,7 +2111,9 @@ function initScreenshotDnD() {
                     }
 
                     $(this).removeClass("hover");
-                    handleDragExit(event);
+
+                    handleDragExit();
+
                     return false;
                 });
 
@@ -2121,12 +2122,27 @@ function initScreenshotDnD() {
         }
     }
 
-    function handleDragExit(event) {
-        dragEnterState--;
+    function stopDropIndicatorRemoval() {
+        if (removeDropIndicatorHandle) {
+            window.clearInterval(removeDropIndicatorHandle);
+            removeDropIndicatorHandle = null;
+        }
+    }
 
-        if (dragEnterState == 0 && dropIndicator != null) {
+    function handleDragExit(closeImmediately) {
+        if (dropIndicator == null) {
+            return;
+        }
+
+        stopDropIndicatorRemoval();
+
+        if (closeImmediately) {
             dropIndicator.remove();
             dropIndicator = null;
+        } else {
+            removeDropIndicatorHandle = window.setInterval(function() {
+                handleDragExit(true);
+            }, 500);
         }
     }
 
@@ -2163,7 +2179,7 @@ function initScreenshotDnD() {
             }
 
             if (foundImages) {
-                handleDragExit(null);
+                handleDragExit();
             } else {
                 if (dropIndicator) {
                     screenshotDropBox.empty();
@@ -2173,9 +2189,7 @@ function initScreenshotDnD() {
                 }
 
                 setTimeout(function() {
-                    /* Make sure we will definitely clear the box. */
-                    dragEnterState = 1;
-                    handleDragExit(null);
+                    handleDragExit(true);
                 }, 1500);
             }
         } else if (type == "file") {
@@ -2183,7 +2197,7 @@ function initScreenshotDnD() {
                 uploadFile(files[i]);
             }
 
-            handleDragExit(null);
+            handleDragExit(true);
         }
     }
 
@@ -2498,7 +2512,7 @@ $(document).ready(function() {
                 }
             };
 
-            initScreenshotDnD();
+            initDnD();
         }
     }
 
