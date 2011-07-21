@@ -171,9 +171,19 @@ def register_release():
     }
 
     print 'Posting release to reviewboard.org'
-    f = urllib2.urlopen(urllib2.Request(url=RELEASES_API_URL, data=content,
-                                        headers=headers))
-    f.read()
+    try:
+        f = urllib2.urlopen(urllib2.Request(url=RELEASES_API_URL, data=content,
+                                            headers=headers))
+        f.read()
+    except urllib2.HTTPError, e:
+        print "Error uploading. Got HTTP code %d:" % e.code
+        print e.read()
+    except urllib2.URLError, e:
+        try:
+            print "Error uploading. Got URL error:" % e.code
+            print e.read()
+        except AttributeError:
+            pass
 
 
 def main():
