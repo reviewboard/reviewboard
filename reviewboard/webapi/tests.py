@@ -3587,8 +3587,9 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         self.assertNotEqual(rsp['reply'], None)
         self.assertTrue('links' in rsp['reply'])
         self.assertTrue('diff_comments' in rsp['reply']['links'])
+        diff_comments_url = rsp['reply']['links']['diff_comments']['href']
 
-        rsp = self.apiPost(rsp['reply']['links']['diff_comments']['href'], {
+        rsp = self.apiPost(diff_comments_url, {
             'reply_to_id': comment.id,
             'text': comment_text,
         })
@@ -3597,7 +3598,7 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(reply_comment.text, comment_text)
 
-        return rsp
+        return rsp, comment, diff_comments_url
 
     def test_post_reply_with_diff_comment_and_local_site(self, badlogin=False):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site"""
@@ -3657,12 +3658,29 @@ class ReviewReplyDiffCommentResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API with a local site and Permission Denied error"""
         self.test_post_reply_with_diff_comment_and_local_site(True)
 
+    def test_post_reply_with_diff_comment_http_303(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API and 303 See Other"""
+        comment_text = "My New Comment Text"
+
+        rsp, comment, comments_url = self.test_post_reply_with_diff_comment()
+
+        # Now do it again.
+        rsp = self.apiPost(comments_url, {
+            'reply_to_id': comment.pk,
+            'text': comment_text
+        }, expected_status=303)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
+        self.assertEqual(reply_comment.text, comment_text)
+
     def test_put_reply_with_diff_comment(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API"""
         new_comment_text = 'My new comment text'
 
         # First, create a comment that we can update.
-        rsp = self.test_post_reply_with_diff_comment()
+        rsp = self.test_post_reply_with_diff_comment()[0]
 
         reply_comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
 
@@ -3757,6 +3775,8 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         self.assertEqual(reply_comment.text, comment_text)
         self.assertEqual(reply_comment.reply_to, comment)
 
+        return rsp, comment, screenshot_comments_url
+
     def test_post_reply_with_screenshot_comment_and_local_site(self):
         """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API with a local site"""
         comment_text = "My Comment Text"
@@ -3805,6 +3825,26 @@ class ReviewReplyScreenshotCommentResourceTests(BaseWebAPITestCase):
         }
 
         rsp = self.apiPost(screenshot_comments_url, post_data)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = ScreenshotComment.objects.get(
+            pk=rsp['screenshot_comment']['id'])
+        self.assertEqual(reply_comment.text, comment_text)
+
+    def test_post_reply_with_screenshot_comment_http_303(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API"""
+        comment_text = "My Comment Text"
+
+
+        rsp, comment, comments_url = \
+            self.test_post_reply_with_screenshot_comment()
+
+        # Now do it again.
+        rsp = self.apiPost(comments_url, {
+            'reply_to_id': comment.pk,
+            'text': comment_text
+        }, expected_status=303)
+
         self.assertEqual(rsp['stat'], 'ok')
 
         reply_comment = ScreenshotComment.objects.get(
@@ -5585,3 +5625,74 @@ class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):
                 'review_id': review.pk,
                 'comment_id': comment_id,
             })
+
+
+class ReviewReplyFileAttachmentCommentResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewReplyFileAttachmentCommentResource APIs."""
+    def test_post_reply_with_file_attachment_comment(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API"""
+        comment_text = "My Comment Text"
+
+        comment = FileAttachmentComment.objects.all()[0]
+        review = comment.review.get()
+
+        # Create the reply
+        rsp = self.apiPost(ReviewReplyResourceTests.get_list_url(review))
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertTrue('reply' in rsp)
+        self.assertNotEqual(rsp['reply'], None)
+        self.assertTrue('links' in rsp['reply'])
+        self.assertTrue('diff_comments' in rsp['reply']['links'])
+        comments_url = rsp['reply']['links']['file_attachment_comments']['href']
+
+        rsp = self.apiPost(comments_url, {
+            'reply_to_id': comment.id,
+            'text': comment_text,
+        })
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+        self.assertEqual(reply_comment.text, comment_text)
+
+        return rsp, comment, comments_url
+
+    def test_post_reply_with_file_attachment_comment_http_303(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API and 303 See Other"""
+        comment_text = "My New Comment Text"
+
+        rsp, comment, comments_url = \
+            self.test_post_reply_with_file_attachment_comment()
+
+        # Now do it again.
+        rsp = self.apiPost(comments_url, {
+            'reply_to_id': comment.pk,
+            'text': comment_text
+        }, expected_status=303)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+        self.assertEqual(reply_comment.text, comment_text)
+
+    def test_put_reply_with_file_attachment_comment(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/replies/<id>/file-attachment-comments/ API"""
+        new_comment_text = 'My new comment text'
+
+        # First, create a comment that we can update.
+        rsp = self.test_post_reply_with_file_attachment_comment()[0]
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+
+        rsp = self.apiPut(
+            rsp['file_attachment_comment']['links']['self']['href'], {
+                'text': new_comment_text,
+            })
+        self.assertEqual(rsp['stat'], 'ok')
+
+        reply_comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+        self.assertEqual(reply_comment.text, new_comment_text)

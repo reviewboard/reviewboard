@@ -707,20 +707,39 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
                 }
             }
 
-        new_comment = self.model(filediff=comment.filediff,
-                                 interfilediff=comment.interfilediff,
-                                 reply_to=comment,
-                                 text=text,
-                                 first_line=comment.first_line,
-                                 num_lines=comment.num_lines)
+        q = self.get_queryset(request, *args, **kwargs)
+        q = q.filter(Q(reply_to=comment) & Q(review=reply))
+
+        try:
+            new_comment = q.get()
+
+            # This already exists. Go ahead and update, but we're going to
+            # redirect the user to the right place.
+            is_new = False
+        except self.model.DoesNotExist:
+            new_comment = self.model(filediff=comment.filediff,
+                                     interfilediff=comment.interfilediff,
+                                     reply_to=comment,
+                                     first_line=comment.first_line,
+                                     num_lines=comment.num_lines)
+            is_new = True
+
+        new_comment.text = text
         new_comment.save()
 
-        reply.comments.add(new_comment)
-        reply.save()
-
-        return 201, {
+        data = {
             self.item_result_key: new_comment,
         }
+
+        if is_new:
+            reply.comments.add(new_comment)
+            reply.save()
+
+            return 201, data
+        else:
+            return 303, data, {
+                'Location': self.get_href(new_comment, request, *args, **kwargs)
+            }
 
     @webapi_check_local_site
     @webapi_login_required
@@ -3980,21 +3999,40 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
                 }
             }
 
-        new_comment = self.model(screenshot=comment.screenshot,
-                                 reply_to=comment,
-                                 x=comment.x,
-                                 y=comment.y,
-                                 w=comment.w,
-                                 h=comment.h,
-                                 text=text)
+        q = self.get_queryset(request, *args, **kwargs)
+        q = q.filter(Q(reply_to=comment) & Q(review=reply))
+
+        try:
+            new_comment = q.get()
+
+            # This already exists. Go ahead and update, but we're going to
+            # redirect the user to the right place.
+            is_new = False
+        except self.model.DoesNotExist:
+            new_comment = self.model(screenshot=comment.screenshot,
+                                     reply_to=comment,
+                                     x=comment.x,
+                                     y=comment.y,
+                                     w=comment.w,
+                                     h=comment.h)
+            is_new = True
+
+        new_comment.text = text
         new_comment.save()
 
-        reply.screenshot_comments.add(new_comment)
-        reply.save()
-
-        return 201, {
+        data = {
             self.item_result_key: new_comment,
         }
+
+        if is_new:
+            reply.screenshot_comments.add(new_comment)
+            reply.save()
+
+            return 201, data
+        else:
+            return 303, data, {
+                'Location': self.get_href(new_comment, request, *args, **kwargs)
+            }
 
     @webapi_check_local_site
     @webapi_login_required
@@ -4370,16 +4408,36 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
                 }
             }
 
-        new_comment = self.model(file=comment.file,
-                                 text=text)
+        q = self.get_queryset(request, *args, **kwargs)
+        q = q.filter(Q(reply_to=comment) & Q(review=reply))
+
+        try:
+            new_comment = q.get()
+
+            # This already exists. Go ahead and update, but we're going to
+            # redirect the user to the right place.
+            is_new = False
+        except self.model.DoesNotExist:
+            new_comment = self.model(file_attachment=comment.file_attachment,
+                                     reply_to=comment)
+            is_new = True
+
+        new_comment.text = text
         new_comment.save()
 
-        reply.file_comments.add(new_comment)
-        reply.save()
-
-        return 201, {
+        data = {
             self.item_result_key: new_comment,
         }
+
+        if is_new:
+            reply.file_attachment_comments.add(new_comment)
+            reply.save()
+
+            return 201, data
+        else:
+            return 303, data, {
+                'Location': self.get_href(new_comment, request, *args, **kwargs)
+            }
 
     @webapi_check_local_site
     @webapi_login_required

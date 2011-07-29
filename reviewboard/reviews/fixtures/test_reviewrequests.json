@@ -1,6 +1,16 @@
 [
     {
         "pk": 1, 
+        "model": "attachments.fileattachment", 
+        "fields": {
+            "mimetype": "image/png", 
+            "caption": "Test", 
+            "file": "uploaded/files/2011/07/29/x.png", 
+            "draft_caption": "Test"
+        }
+    }, 
+    {
+        "pk": 1, 
         "model": "diffviewer.filediff", 
         "fields": {
             "status": "", 
@@ -954,6 +964,7 @@
             "description": "Add support for deleted file indication on Git and Perforce.\r\n\r\n\r\nIn 1.5, the diff viewer and CVS gained support for marking a file as\r\ndeleted and showing it specially. The Git and Perforce support has been\r\nupdated to flag this as well.", 
             "repository": 3, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": 1, 
             "target_groups": [
                 5
@@ -962,7 +973,8 @@
             "changenum": null, 
             "local_id": 1, 
             "submitter": 2, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
@@ -988,20 +1000,22 @@
             "description": "This is a test designed for interdiffs.", 
             "repository": 1, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [], 
             "summary": "Interdiff Revision Test", 
             "changenum": null, 
             "local_id": null, 
             "submitter": 1, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
         "pk": 4, 
         "model": "reviews.reviewrequest", 
         "fields": {
-            "changedescs": [], 
+            "changedescs": [],
             "last_updated": "2007-06-24 01:11:24", 
             "target_people": [
                 2
@@ -1019,14 +1033,18 @@
             "shipit_count": 0, 
             "description": "Test description.", 
             "repository": 1, 
-            "last_review_timestamp": null, 
+            "last_review_timestamp": "2011-07-29 01:02:27", 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [], 
             "summary": "Made e-mail improvements", 
             "changenum": 1234, 
             "local_id": null, 
             "submitter": 4, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": [
+                1
+            ]
         }
     }, 
     {
@@ -1053,13 +1071,15 @@
             "description": "", 
             "repository": 1, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [], 
             "summary": "Improved login form", 
             "changenum": null, 
             "local_id": null, 
             "submitter": 2, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
@@ -1083,6 +1103,7 @@
             "description": "Foo", 
             "repository": 1, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [
                 3
@@ -1091,7 +1112,8 @@
             "changenum": null, 
             "local_id": null, 
             "submitter": 3, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
@@ -1115,6 +1137,7 @@
             "description": "Be compatible with cleaned_data changes in Django.", 
             "repository": 1, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [
                 1
@@ -1123,7 +1146,8 @@
             "changenum": null, 
             "local_id": null, 
             "submitter": 3, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
@@ -1147,6 +1171,7 @@
             "description": "", 
             "repository": 1, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [
                 1
@@ -1155,7 +1180,8 @@
             "changenum": null, 
             "local_id": null, 
             "submitter": 2, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
@@ -1182,6 +1208,7 @@
             "description": "Added some user permissions checking for JSON API functions.", 
             "repository": 1, 
             "last_review_timestamp": null, 
+            "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [
                 4
@@ -1190,19 +1217,22 @@
             "changenum": null, 
             "local_id": null, 
             "submitter": 1, 
-            "time_emailed": null
+            "time_emailed": null, 
+            "file_attachments": []
         }
     }, 
     {
         "pk": 1, 
         "model": "reviews.comment", 
         "fields": {
+            "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 9, 
             "timestamp": "2007-06-24 00:21:45", 
             "text": "Sample comment.", 
             "reply_to": null, 
             "first_line": 333, 
+            "issue_status": null, 
             "filediff": 11
         }
     }, 
@@ -1210,12 +1240,14 @@
         "pk": 2, 
         "model": "reviews.comment", 
         "fields": {
+            "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 9, 
             "timestamp": "2007-06-24 00:22:48", 
             "text": "Generic reply", 
             "reply_to": 1, 
             "first_line": 333, 
+            "issue_status": null, 
             "filediff": 11
         }
     }, 
@@ -1223,12 +1255,14 @@
         "pk": 3, 
         "model": "reviews.comment", 
         "fields": {
+            "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 1, 
             "timestamp": "2007-06-24 00:23:43", 
             "text": "Sample comment 1", 
             "reply_to": null, 
             "first_line": 433, 
+            "issue_status": null, 
             "filediff": 14
         }
     }, 
@@ -1236,13 +1270,27 @@
         "pk": 4, 
         "model": "reviews.comment", 
         "fields": {
+            "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 1, 
             "timestamp": "2007-06-24 00:24:28", 
             "text": "Sample comment 2", 
             "reply_to": null, 
             "first_line": 449, 
+            "issue_status": null, 
             "filediff": 14
+        }
+    }, 
+    {
+        "pk": 1, 
+        "model": "reviews.fileattachmentcomment", 
+        "fields": {
+            "issue_opened": false, 
+            "timestamp": "2011-07-29 01:02:27", 
+            "text": "This is a test.", 
+            "reply_to": null, 
+            "file_attachment": 1, 
+            "issue_status": null
         }
     }, 
     {
@@ -1251,6 +1299,7 @@
         "fields": {
             "body_top": "Looks fine.", 
             "ship_it": true, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:16:41", 
             "base_reply_to": null, 
             "email_message_id": "", 
@@ -1272,6 +1321,7 @@
         "fields": {
             "body_top": "Test", 
             "ship_it": false, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:21:45", 
             "base_reply_to": null, 
             "email_message_id": "", 
@@ -1295,6 +1345,7 @@
         "fields": {
             "body_top": "", 
             "ship_it": false, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:22:48", 
             "base_reply_to": 2, 
             "email_message_id": "", 
@@ -1318,6 +1369,7 @@
         "fields": {
             "body_top": "", 
             "ship_it": false, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:23:43", 
             "base_reply_to": null, 
             "email_message_id": "", 
@@ -1342,6 +1394,7 @@
         "fields": {
             "body_top": "Grumpy body", 
             "ship_it": false, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:25:33", 
             "base_reply_to": null, 
             "email_message_id": "", 
@@ -1363,6 +1416,7 @@
         "fields": {
             "body_top": "Dopey reply", 
             "ship_it": false, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:25:52", 
             "base_reply_to": 5, 
             "email_message_id": "", 
@@ -1384,6 +1438,7 @@
         "fields": {
             "body_top": "Grumpy reply", 
             "ship_it": false, 
+            "file_attachment_comments": [], 
             "timestamp": "2007-06-24 00:26:03", 
             "base_reply_to": 5, 
             "email_message_id": "", 
@@ -1397,6 +1452,30 @@
             "review_request": 3, 
             "public": true, 
             "reviewed_diffset": 3
+        }
+    }, 
+    {
+        "pk": 8, 
+        "model": "reviews.review", 
+        "fields": {
+            "body_top": "", 
+            "ship_it": false, 
+            "file_attachment_comments": [
+                1
+            ], 
+            "timestamp": "2011-07-29 01:02:27", 
+            "base_reply_to": null, 
+            "email_message_id": null, 
+            "comments": [], 
+            "body_bottom_reply_to": null, 
+            "screenshot_comments": [], 
+            "user": 4, 
+            "body_bottom": "", 
+            "time_emailed": null, 
+            "body_top_reply_to": null, 
+            "review_request": 4, 
+            "public": true, 
+            "reviewed_diffset": null
         }
     }
 ]
