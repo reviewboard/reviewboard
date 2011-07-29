@@ -1874,7 +1874,7 @@ function registerForUpdates(lastTimestamp, type) {
             .attr({
                 href: url,
                 rel: "icon",
-                type: "image/x-icon"
+                type: "image/png"
             }));
     }
 
@@ -1884,7 +1884,7 @@ function registerForUpdates(lastTimestamp, type) {
 
     var faviconEl = $("head").find("link[rel=icon]");
     var faviconURL = faviconEl.attr("href");
-    var faviconNotifyURL = MEDIA_URL + "rb/images/favicon_notify.ico?" +
+    var faviconNotifyURL = MEDIA_URL + "rb/images/favicon_notify.png?" +
                            MEDIA_SERIAL;
 
     $.event.add(gReviewRequest, "updated", function(evt, info) {
