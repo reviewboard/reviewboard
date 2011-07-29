@@ -146,14 +146,20 @@ class PerforceClient(object):
 
     def _run_worker(self, worker):
         result = None
+
+        # TODO: Move to using with: when we require a minimum of Python 2.5.
+        #       We should make it auto-disconnect.
         try:
             self._connect()
             result = worker()
-        except P4Exception, e:
-            self._convert_p4exception_to_scmexception(e)
-            raise e
-        finally:
             self._disconnect()
+        except P4Exception, e:
+            self._disconnect()
+            self._convert_p4exception_to_scmexception(e)
+        except:
+            self._disconnect();
+            raise
+
         return result
 
     def _get_changeset(self, changesetid):
