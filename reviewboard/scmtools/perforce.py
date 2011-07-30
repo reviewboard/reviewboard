@@ -194,7 +194,7 @@ class PerforceClient(object):
         if self.p4.user:
             args.extend(['-u', self.p4.user])
         if self.p4.password:
-            args.extend(['-p', self.p4.password])
+            args.extend(['-P', self.p4.password])
         args.extend(['print', '-q', depot_path])
 
         p = subprocess.Popen(args, stdout=subprocess.PIPE,
