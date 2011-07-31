@@ -627,22 +627,23 @@ class ReviewRequest(models.Model):
         if self.status == self.PENDING_REVIEW:
             site_profile.decrement_pending_outgoing_request_count()
 
-        people = self.target_people.all()
-        groups = self.target_groups.all()
+        if self.public:
+            people = self.target_people.all()
+            groups = self.target_groups.all()
 
-        Group.incoming_request_count.decrement(groups)
-        LocalSiteProfile.direct_incoming_request_count.decrement(
-            LocalSiteProfile.objects.filter(user__in=people,
-                                            local_site=local_site))
-        LocalSiteProfile.total_incoming_request_count.decrement(
-            LocalSiteProfile.objects.filter(
-                Q(local_site=local_site) &
-                Q(Q(user__review_groups__in=groups) |
-                  Q(user__in=people))))
-        LocalSiteProfile.starred_public_request_count.decrement(
-            LocalSiteProfile.objects.filter(
-                profile__starred_review_requests=self,
-                local_site=local_site))
+            Group.incoming_request_count.decrement(groups)
+            LocalSiteProfile.direct_incoming_request_count.decrement(
+                LocalSiteProfile.objects.filter(user__in=people,
+                                                local_site=local_site))
+            LocalSiteProfile.total_incoming_request_count.decrement(
+                LocalSiteProfile.objects.filter(
+                    Q(local_site=local_site) &
+                    Q(Q(user__review_groups__in=groups) |
+                      Q(user__in=people))))
+            LocalSiteProfile.starred_public_request_count.decrement(
+                LocalSiteProfile.objects.filter(
+                    profile__starred_review_requests=self,
+                    local_site=local_site))
 
         super(ReviewRequest, self).delete(**kwargs)
 
@@ -800,11 +801,13 @@ class ReviewRequest(models.Model):
             # count for the user.
             site_profile.increment_total_outgoing_request_count()
             old_status = None
+            old_public = False
         else:
             # We need to see if the status has changed, so that means
             # finding out what's in the database.
             r = ReviewRequest.objects.get(pk=self.id)
             old_status = r.status
+            old_public = r.public
 
         if self.status == self.PENDING_REVIEW:
             if old_status != self.status:
@@ -831,22 +834,23 @@ class ReviewRequest(models.Model):
             if old_status != self.status:
                 site_profile.decrement_pending_outgoing_request_count()
 
-            groups = self.target_groups.all()
-            people = self.target_people.all()
+            if old_public:
+                groups = self.target_groups.all()
+                people = self.target_people.all()
 
-            Group.incoming_request_count.decrement(groups)
-            LocalSiteProfile.direct_incoming_request_count.decrement(
-                LocalSiteProfile.objects.filter(user__in=people,
-                                                local_site=local_site))
-            LocalSiteProfile.total_incoming_request_count.decrement(
-                LocalSiteProfile.objects.filter(
-                    Q(local_site=local_site) &
-                    Q(Q(user__review_groups__in=groups) |
-                      Q(user__in=people))))
-            LocalSiteProfile.starred_public_request_count.decrement(
-                LocalSiteProfile.objects.filter(
-                    profile__starred_review_requests=self,
-                    local_site=local_site))
+                Group.incoming_request_count.decrement(groups)
+                LocalSiteProfile.direct_incoming_request_count.decrement(
+                    LocalSiteProfile.objects.filter(user__in=people,
+                                                    local_site=local_site))
+                LocalSiteProfile.total_incoming_request_count.decrement(
+                    LocalSiteProfile.objects.filter(
+                        Q(local_site=local_site) &
+                        Q(Q(user__review_groups__in=groups) |
+                          Q(user__in=people))))
+                LocalSiteProfile.starred_public_request_count.decrement(
+                    LocalSiteProfile.objects.filter(
+                        profile__starred_review_requests=self,
+                        local_site=local_site))
 
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
