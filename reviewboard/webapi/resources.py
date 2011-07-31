@@ -5721,8 +5721,6 @@ class ReviewRequestResource(WebAPIResource):
             return REPO_AUTHENTICATION_ERROR
         except RepositoryNotFoundError:
             return MISSING_REPOSITORY
-        except SCMError:
-            return REPO_INFO_ERROR
         except ChangeNumberInUseError, e:
             return CHANGE_NUMBER_IN_USE, {
                 'review_request': e.review_request
@@ -5731,6 +5729,10 @@ class ReviewRequestResource(WebAPIResource):
             return INVALID_CHANGE_NUMBER
         except EmptyChangeSetError:
             return EMPTY_CHANGESET
+        except SCMError, e:
+            logging.error("Got unexpected SCMError when creating repository: %s"
+                          % e, exc_info=1)
+            return REPO_INFO_ERROR
 
     @webapi_check_local_site
     @webapi_login_required
