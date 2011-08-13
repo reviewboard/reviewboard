@@ -54,6 +54,13 @@ def run_python(cmdline, *args, **kwargs):
     return execute([sys.executable] + cmdline, *args, **kwargs)
 
 
+def clean_pyc():
+    for root, dirs, files in os.walk(os.getcwd()):
+        for filename in files:
+            if filename.endswith('.pyc'):
+                os.unlink(os.path.join(root, filename))
+
+
 def parse_options(args):
     global options
 
@@ -110,6 +117,7 @@ def main():
 
     for branch in branches:
         execute(['git', 'checkout', branch])
+        clean_pyc()
         run_python(['./reviewboard/manage.py', 'syncdb', '--noinput'])
         run_python(['./reviewboard/manage.py', 'evolve', '--execute',
                     '--noinput'])
