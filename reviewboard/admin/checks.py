@@ -123,11 +123,19 @@ def check_updates_required():
         if (not data_dir or
             not os.path.isdir(data_dir) or
             not os.access(data_dir, os.W_OK)):
+            try:
+                username = getpass.getuser()
+            except ImportError:
+                # This will happen if running on Windows (which doesn't have
+                # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
+                # %USERNAME% are all undefined.
+                username = "<server username>"
+
             _updates_required.append((
                 'admin/manual-updates/data-dir.html', {
                     'data_dir': data_dir,
                     'writable': os.access(data_dir, os.W_OK),
-                    'server_user': getpass.getuser(),
+                    'server_user': username,
                     'expected_data_dir': os.path.join(site_dir, 'data'),
                 }
             ))
