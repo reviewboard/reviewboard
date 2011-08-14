@@ -9,6 +9,11 @@ import socket
 import subprocess
 import tempfile
 
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
+
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 from djblets.util.filesystem import is_exe_in_path
@@ -622,7 +627,7 @@ class PerforceTests(SCMTestCase):
             else:
                 raise
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(hashlib.md5(desc.description).hexdigest(),
+        self.assertEqual(md5(desc.description).hexdigest(),
                          'b7eff0ca252347cc9b09714d07397e64')
 
         expected_files = [
@@ -636,7 +641,7 @@ class PerforceTests(SCMTestCase):
         for file, expected in map(None, desc.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(hashlib.md5(desc.summary).hexdigest(),
+        self.assertEqual(md5(desc.summary).hexdigest(),
                          '99a335676b0e5821ffb2f7469d4d7019')
 
     def testChangesetBroken(self):
@@ -672,7 +677,7 @@ class PerforceTests(SCMTestCase):
                     'Connection to public.perforce.com failed.  No internet?')
             else:
                 raise
-        self.assertEqual(hashlib.md5(file).hexdigest(),
+        self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
     def testEmptyDiff(self):
@@ -795,7 +800,7 @@ class PerforceStunnelTests(SCMTestCase):
         desc = self.tool.get_changeset(157)
 
         self.assertEqual(desc.changenum, 157)
-        self.assertEqual(hashlib.md5(desc.description).hexdigest(),
+        self.assertEqual(md5(desc.description).hexdigest(),
                          'b7eff0ca252347cc9b09714d07397e64')
 
         expected_files = [
@@ -809,7 +814,7 @@ class PerforceStunnelTests(SCMTestCase):
         for file, expected in map(None, desc.files, expected_files):
             self.assertEqual(file, expected)
 
-        self.assertEqual(hashlib.md5(desc.summary).hexdigest(),
+        self.assertEqual(md5(desc.summary).hexdigest(),
                          '99a335676b0e5821ffb2f7469d4d7019')
 
     def testGetFile(self):
@@ -825,7 +830,7 @@ class PerforceStunnelTests(SCMTestCase):
                     'Connection to public.perforce.com failed.  No internet?')
             else:
                 raise
-        self.assertEqual(hashlib.md5(file).hexdigest(),
+        self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
 
