@@ -174,7 +174,15 @@ class HgClient(object):
             hg_ui = ui.ui()
             hg_ui.setconfig('ui', 'interactive', 'off')
 
-        hg_ui.setconfig('ui', 'ssh', 'rbssh')
+        # Check whether ssh is configured for mercurial. Assume that any
+        # configured ssh is set up correctly for this repository.
+        hg_ssh = hg_ui.config('ui', 'ssh')
+
+        if not hg_ssh:
+            logging.debug('Using rbssh for mercurial')
+            hg_ui.setconfig('ui', 'ssh', 'rbssh')
+        else:
+            logging.debug('Found configured ssh for mercurial: %s' % hg_ssh)
 
         self.repo = hg.repository(hg_ui, path=repoPath)
 
