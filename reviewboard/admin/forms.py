@@ -88,6 +88,13 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '50'}))
 
+    cache_backend = forms.CharField(
+        label=_("Cache Backend"),
+        help_text=_("The path to the cache backend."
+                    "Example: 'memcached://127.0.0.1:11211/'"),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '50'}))
+
     def load(self):
         # First set some sane defaults.
         domain_method = self.siteconfig.get("site_domain_method")
@@ -160,7 +167,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'fields':  ('server', 'site_media_url',
                             'site_admin_name',
                             'site_admin_email',
-                            'locale_timezone'),
+                            'locale_timezone',
+                            'cache_backend'),
             },
             {
                 'classes': ('wide',),
