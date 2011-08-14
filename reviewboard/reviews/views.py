@@ -1159,10 +1159,10 @@ def user_infobox(request, username,
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
-    response = render_to_response(template_name, {
+    response = render_to_response(template_name, RequestContext(request, {
         'show_profile': show_profile,
         'user': user,
-    })
+    }))
     set_etag(response, etag)
 
     return response
