@@ -38,6 +38,35 @@ class RepositoryForm(forms.ModelForm):
                 },
             },
         }),
+        ('fedorahosted', {
+            'label': _('Fedora Hosted'),
+            'fields': ['hosting_project_name'],
+            'hidden_fields': ['raw_file_url', 'username', 'password'],
+            'tools': {
+                'Git': {
+                    'path': 'git://git.fedorahosted.org/git/'
+                            '%(hosting_project_name)s.git',
+                    'mirror_path': 'git://git.fedorahosted.org/git/'
+                                    '%(hosting_project_name)s.git',
+                    'raw_file_url': 'http://git.fedorahosted.org/git/?p='
+                                    '%(hosting_project_name)s.git;'
+                                    'a=blob_plain;'
+                                    'f=<filename>;h=<revision>'
+                },
+                'Mercurial': {
+                    'path': 'http://hg.fedorahosted.org/hg/'
+                            '%(hosting_project_name)s/',
+                    'mirror_path': 'https://hg.fedorahosted.org/hg/'
+                                   '%(hosting_project_name)s/'
+                },
+                'Subversion': {
+                    'path': 'http://svn.fedorahosted.org/svn/'
+                            '%(hosting_project_name)s/',
+                    'mirror_path': 'https://svn.fedorahosted.org/svn/'
+                                   '%(hosting_project_name)s/',
+                },
+            },
+        }),
         ('github', {
             'label': _('GitHub'),
             'fields': ['hosting_project_name', 'hosting_owner'],
@@ -152,6 +181,12 @@ class RepositoryForm(forms.ModelForm):
             'label': 'Bugzilla',
             'fields': ['bug_tracker_base_url'],
             'format': '%(bug_tracker_base_url)s/show_bug.cgi?id=%%s',
+        }),
+        ('fedorahosted', {
+            'label': 'Fedora Hosted',
+            'fields': ['bug_tracker_project_name'],
+            'format': 'https://fedorahosted.org/%(bug_tracker_project_name)s'
+                      '/ticket/%%s',
         }),
         ('github', {
             'label': 'GitHub',
