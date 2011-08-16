@@ -1,4 +1,3 @@
-import hashlib
 import imp
 import os
 import nose
@@ -8,7 +7,6 @@ import shutil
 import socket
 import subprocess
 import tempfile
-
 try:
     from hashlib import md5
 except ImportError:
