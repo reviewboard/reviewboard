@@ -122,8 +122,11 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     from_email = get_email_address_for_user(user)
 
-    recipients = set([from_email])
+    recipients = set()
     to_field = set()
+
+    if from_email:
+        recipients.add(from_email)
 
     if review_request.submitter.is_active:
         recipients.add(get_email_address_for_user(review_request.submitter))
