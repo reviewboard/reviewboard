@@ -1,0 +1,174 @@
+{% load i18n %}
+
+<div id="placeholder-stats" style="width: 420px; height: 250px;"></div>
+  <input type="hidden" value="" id="data-activity-start" />
+  <input type="hidden" value="" id="data-activity-end" />
+
+<script>
+$(function () {
+    var datasets, options;
+    var choiceContainer = $("#stats-large");
+
+    // helper for returning the weekends in a period
+    function weekendAreas(axes) {
+        var markings = [];
+        var d = new Date(axes.xaxis.min);
+        // go to the first Saturday
+        d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 1) % 7))
+        d.setUTCSeconds(0);
+        d.setUTCMinutes(0);
+        d.setUTCHours(0);
+        var i = d.getTime();
+        do {
+            // when we don't set yaxis, the rectangle automatically
+            // extends to infinity upwards and downwards
+            markings.push({ xaxis: {from: i, to: i + 2 * 24 * 60 * 60 * 1000}});
+            i += 7 * 24 * 60 * 60 * 1000;
+        } while (i < axes.xaxis.max);
+
+        return markings;
+    }
+
+
+     function showTooltip(x, y, contents) {
+           $('<div id="tooltip">' + contents + '</div>').css({
+               position: 'absolute',
+               display: 'none',
+               top: y + 5,
+               left: x + 5,
+               border: '1px solid #fdd',
+               padding: '2px',
+               'background-color': '#fee',
+               opacity: 0.80
+           }).appendTo("body").fadeIn(200);
+       }
+
+
+    var previousPoint = null;
+    $("#placeholder-stats").bind("plothover", function (event, pos, item) {
+        $("#x").text(pos.x.toFixed(2));
+        $("#y").text(pos.y);
+
+        if (item) {
+            if (previousPoint != item.dataIndex) {
+                previousPoint = item.dataIndex;
+
+                $("#tooltip").remove();
+                var itemDate = new Date(item.datapoint[0]).toLocaleDateString()
+                var x = itemDate,
+                    y = item.datapoint[1];
+
+                showTooltip(item.pageX, item.pageY,
+                            item.series.label + " on " + x + ": " + y);
+            }
+        }
+        else {
+            $("#tooltip").remove();
+            previousPoint = null;
+        }
+
+    });
+
+ function getActivityData(direction) {
+
+  var input_range_start = $("#data-activity-start").val(),
+          input_range_end = $("#data-activity-end").val();
+
+  $.getJSON("widget-activity/?range_start=" + input_range_start + "&range_end=" + input_range_end + "&direction=" + direction, function(data) {
+
+        var start_array = new Array();
+        start_array = (data.range.range_start).split('-');
+        var end_array = new Array();
+        end_array = (data.range.range_end).split('-');
+        min_date = new Date(start_array[0], start_array[1] - 1, start_array[2]).getTime();
+        max_date = new Date(end_array[0], end_array[1] - 1, end_array[2]).getTime();
+
+        d = data.activity_data.change_descriptions;
+        d2 = data.activity_data.comments
+        d3 = data.activity_data.review_requests
+        d4 = data.activity_data.reviews
+
+         $("#data-activity-start").val(data.range.range_start),
+         $("#data-activity-end").val(data.range.range_end);
+
+        options = {
+         xaxis: { mode: "time", tickLength: 1,  min: (new Date(min_date)).getTime(),   max: (new Date(max_date)).getTime()},
+         yaxis : { min: 0 , tickDecimals: 0},
+         grid: { markings: weekendAreas, hoverable: true },
+         series: { points: { show: true, radius: 3 },   lines: { show: true }},
+         legend: { position: 'nw' }
+        };
+
+         datasets = {
+          "set-descriptions": {
+           label: "Change Descriptions",  data: d,  bars: { show: true }, lines: {show: false}
+          },
+          "set-comments": {
+           label: "Comments",  data: d2 ,  bars: { show: true }, lines: {show: false}
+          },
+          "set-reviews": {
+           label: "Review Requests",  data: d3,  bars: { show: true }, lines: {show: false}
+          },
+          "set-requests": {
+           label: "Reviews ",  data: d4,  bars: { show: true }, lines: {show: false}
+          }
+         }
+
+         // hard-code color indices to prevent them from shifting as
+         // datasets are turned on/off
+         var i = 0;
+         $.each(datasets, function(key, val) {
+          val.color = i;
+          ++i;
+         });
+
+         plot_data = []
+         choiceContainer.find(".btn-s-checked").each(function () {
+              var key = $(this).attr("id");
+              if (key && datasets[key])
+                  plot_data.push(datasets[key]);
+        });
+        if (plot_data.length > 0)
+            $.plot($("#placeholder-stats"), plot_data, options);
+
+  });
+ }
+     $("#placeholder-stats").parent().append('<span class="legend-btn">Legend</span>');
+    $("#set-next").click(function () {
+      getActivityData("next");
+      $(".legend-btn").hide();
+      return false
+    });
+
+    $("#set-prev").click(function () {
+      getActivityData("prev");
+      $(".legend-btn").hide();
+      return false
+    });
+
+    $("#placeholder-stats .legend").live("click",function() {
+      $(this).hide();
+      $(this).parent().parent().find(".legend-btn").show();
+      return false
+    });
+
+     $(".legend-btn").live("click",function() {
+      $(this).hide();
+      $(this).parent().find(".legend").show();
+      return false
+    });
+
+     getActivityData("none");
+
+     choiceContainer.find(".btn-s").click( function() {
+       if ($(this).hasClass('btn-s-checked')) {
+        $(this).removeClass('btn-s-checked');
+       } else {
+        $(this).addClass('btn-s-checked');
+       }
+      getActivityData("same");
+      return false;
+     });
+
+});
+</script>

@@ -1,0 +1,40 @@
+{% load i18n %}
+{% if widget_data.total > 1 %}
+<script type="text/javascript">
+
+    $(function () {
+        // prepare data for the user chart, this data is used to generated the legend and labels
+        var data = [
+            { label: "Active  ({{widget_data.now}})",  data: {{widget_data.now}}},
+            { label: "7 days ago ({{widget_data.seven_days}})",  data: {{widget_data.seven_days}}},
+            { label: "30 days ago ({{widget_data.thirty_days}})",  data: {{widget_data.thirty_days}}},
+            { label: "60 days ago ({{widget_data.sixty_days}})",  data: {{widget_data.sixty_days}}},
+            { label: "90 days ago ({{widget_data.ninety_days}})",  data: {{widget_data.ninety_days}}}
+        ];
+        // flot.js plotting function to generate a user chart below
+        $.plot($("#user-chart"), data,
+        {
+            series: {
+                pie: {
+                    show: true,
+                    label: {
+                        show: true,
+                        radius: 1,
+                        formatter: function(label, series){
+                            return '<div>' + Math.round(series.percent) + '%</div>';
+                        },
+                        background: { opacity: 0.8 }
+                    }
+                }
+            }
+        });
+    });
+</script>
+
+ <div id="user-chart" style="width: 450px; height: 160px;"></div>
+  <div id="user-count">
+ {% trans "Total Users" %}: <strong>{{widget_data.total}}</strong>
+  </div>
+{% else %}
+ <p class="no-result">{% trans "You're the only one who logged in so far..." %}<br/><a href="db/auth/user/add/">{% trans "Add Users +" %}</a></p>
+{% endif %}

@@ -1,0 +1,7 @@
+<div id="rbinfo">
+ <a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" alt="" border="0" /></a>
+ <h1 id="title">
+  <a href="{% url root %}">Review Board</a>
+  <span class="version">{{version}}{% if section_title %} - <strong>{{section_title}}</strong>{% endif %}</span>
+ </h1>
+</div>

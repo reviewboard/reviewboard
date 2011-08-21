@@ -1,0 +1,17 @@
+{% load i18n %}
+{% if widget_data %}
+<table style="width: 100%;">
+{% for group in widget_data %}
+    <tr>
+        <th><a href="db/reviews/group/{{group.id}}">{{group.display_name}}</a></th>
+        <td>{{group.users.count}}</td>
+    </tr>
+{% endfor %}
+</table>
+{% else %}
+<p class="no-result">
+    {% trans "No Groups Available." %}
+    <br/>
+    <a href="db/reviews/group/add/"> Add +</a>
+</p>
+{% endif %}

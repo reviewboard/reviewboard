@@ -79,13 +79,7 @@
      <li>- <a href="http://www.reviewboard.org/bugs/new/">{% trans "Report bug" %}</a></li>
     </ul>
     <br />
-    <div id="rbinfo">
-     <a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" alt="" border="0" /></a>
-     <h1 id="title">
-	  <a href="{% url root %}">Review Board</a>
-	  <span class="version">{{version}}</span>
-	 </h1>
-    </div>
+   {% include "base/branding.html" %}
    </div>
    <div id="page-container">
 {% template_hook_point "base-before-navbar" %}

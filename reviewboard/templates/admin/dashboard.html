@@ -2,109 +2,54 @@
 {% load adminmedia %}
 {% load i18n %}
 {% load log %}
+{% load rbadmintags %}
 
 {% block coltype %}colM{% endblock %}
 {% block bodyclass %}dashboard{% endblock %}
 {% block breadcrumbs %}{% endblock %}
 
 {% block extrahead %}
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.3.2.min.js"></script>
+<!--[if IE]><script src="{{MEDIA_URL}}rb/js/flot/excanvas.min.js?{{MEDIA_SERIAL}}"></script><![endif]-->
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.3.2.min.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/flot/jquery.flot.min.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/flot/jquery.flot.pie.min.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/flot/jquery.flot.selection.min.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.masonry.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{{MEDIA_URL}}rb/js/admin.js?{{MEDIA_SERIAL}}"></script>
+
 {% endblock %}
 
-{% block content %}
-<div class="colMS">
- <div id="content-main">
-  {# "Manage" section #}
-  <div class="module manage">
-   <table summary="{% trans "Common management operations." %}">
-    <caption>{% trans "Manage" %}</caption>
-    <tbody>
-     <tr>
-      <th scope="row"><a href="db/auth/user/">{% trans "Users" %}</a>
-        <span class="count">({{user_count}})</span></th>
-      <td><a class="addlink" href="db/auth/user/add/">{% trans "Add" %}</a></td>
-     </tr>
-     <tr>
-      <th scope="row"><a href="db/reviews/group/">{% trans "Review groups" %}</a>
-        <span class="count">({{reviewgroup_count}})</span></th>
-      <td><a class="addlink" href="db/reviews/group/add/">{% trans "Add" %}</a></td>
-     </tr>
-     <tr>
-      <th scope="row"><a href="db/reviews/defaultreviewer/">{% trans "Default reviewers" %}</a>
-        <span class="count">({{defaultreviewer_count}})</span></th>
-      <td><a class="addlink" href="db/reviews/defaultreviewer/add/">{% trans "Add" %}</a></td>
-     </tr>
-     <tr>
-      <th scope="row"><a href="db/scmtools/repository/">{% trans "Repositories" %}</a>
-        <span class="count">({{repository_count}})</span></th>
-      <td><a class="addlink" href="db/scmtools/repository/add/">{% trans "Add" %}</a></td>
-     </tr>
-    </tbody>
-   </table>
-  </div>
- </div> {# content-main #}
-
- <div id="content-related">
-  {# "Server Info" section #}
-  <div class="module serverinfo">
-   <table summary="{% trans "Server information." %}">
-    <caption>{% trans "Server Information" %}</caption>
-    <tbody>
-     <tr>
-      <th>{% trans "Review Board version" %}</th>
-      <td>{{version}}</td>
-     </tr>
-     <tr>
-      <th colspan="2"><a href="cache/">{% trans "Server Cache" %}</a></th>
-     </tr>
-{% if settings.LOGGING_ENABLED and settings.LOGGING_DIRECTORY %}
-     <tr>
-      <th colspan="2"><a href="{% url server-log %}">{% trans "Server Log" %}</a></th>
-     </tr>
-{% endif %}
-    </tbody>
-   </table>
-  </div>
- </div> {# content-related #}
-</div> {# colMS #}
-
-<br class="clear" />
-<div class="colM">
- {# "News" section #}
- <div class="module news">
-  <table summary="{% trans "Latest Review Board news updates." %}">
-   <caption>{% trans "News" %}
-	<span class="actions">
-     <a href="http://www.reviewboard.org/news/">View All News</a>
-	 |
-     <a href="." id="reload-news">{% trans "Reload" %}</a>
-     |
-     <a href="feed/news/rss/">
-      <img src="{{MEDIA_URL}}rb/images/rss.png?{{MEDIA_SERIAL}}" width="14" height="14" />
-      RSS
-     </a>
-    </span>
-   </caption>
-   <tbody>
-    <tr>
-     <td id="news-content">
-	  <img src="{{MEDIA_URL}}rb/images/spinner.gif?{{MEDIA_SERIAL}}"
-	       class="loading-indicator" width="16" height="16" border="0" alt="" />
-	  {% trans "Loading..." %}
-	 </td>
-    </tr>
-   </tbody>
-  </table>
+{% block pretitle %}
+ <div id="admin-actions" class="clear">
+  {% admin_actions %}
  </div>
-</div>
-<script language="javascript">
-    $(document).ready(function() {
-        $("a#reload-news").click(function(evt){
-            $("#news-content").load("feed/news/?reload=1");
-            evt.preventDefault();
-        });
+{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<div id="admin-dashboard">
 
-        $("#news-content").load("feed/news/");
-    });
-</script>
+ <div id="dashboard-view">
+     <!-- Widgets -->
+     <div id="admin-widgets">
+        {% admin_widget "stats-large" _("Review Board Activity") %}
+        {% admin_widget "repositories" _("Repositories") %}
+        {% admin_widget "user-activity" _("User Activity") %}
+     </div><!-- Admin Large Widgets End -->
+
+     <div class="admin-extras">
+         {% admin_widget "request-statuses" _("Request Statuses") %}
+         {% admin_widget "recent-actions" _("Recent Actions") %}
+         {% admin_widget "review-groups" _("Review Groups") "rb/images/admin/set-auth.png" %}
+         {% if has_cache_stats %}
+             {% admin_widget "server-cache" _("Server Cache") "rb/images/admin/set-storage.png" %}
+         {% endif %}
+         {% admin_widget "news" _("Review Board News") "rb/images/rss.png" %}
+         {% admin_widget "stats" _("Database Stats") %}
+
+     </div><!-- Admin Extras End -->
+
+     <!-- Widgets End -->
+    </div>
+ </div>
+<br class="clear" />
 {% endblock %}

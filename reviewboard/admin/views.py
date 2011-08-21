@@ -2,21 +2,22 @@ import logging
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth.models import User
+from django.contrib.sites.models import Site
 from django.core.cache import cache
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
+from django.utils import simplejson
 from django.utils.translation import ugettext as _
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
-from reviewboard.reviews.models import Group, DefaultReviewer
-from reviewboard.scmtools.models import Repository
 from reviewboard.scmtools import sshutils
+from reviewboard.admin.widgets import dynamicActivityData
 
 
 @staff_member_required
@@ -26,12 +27,8 @@ def dashboard(request, template_name="admin/dashboard.html"):
     useful administration tasks.
     """
     return render_to_response(template_name, RequestContext(request, {
-        'user_count': User.objects.count(),
-        'reviewgroup_count': Group.objects.count(),
-        'defaultreviewer_count': DefaultReviewer.objects.count(),
-        'repository_count': Repository.objects.accessible(request.user).count(),
+        'title': _("Admin Dashboard"),
         'has_cache_stats': get_has_cache_stats(),
-        'title': _("Dashboard"),
         'root_path': settings.SITE_ROOT + "admin/db/"
     }))
 
@@ -104,3 +101,33 @@ def manual_updates_required(request,
                                      RequestContext(request, extra_context))
                     for (template_name, extra_context) in updates],
     }))
+
+def widget_toggle(request):
+    """
+    Controls the state of widgets - collapsed or expanded.
+    Saves the state into site settings
+    """
+    if request.GET.get('widget') and request.GET.get('collapse'):
+        state = request.GET.get('collapse', '')
+        widget = request.GET.get('widget', '')
+        siteconfig = SiteConfiguration.objects.get(site=Site.objects.get_current())
+        widgetSets = siteconfig.get("widget_settings")
+
+        if not widgetSets:
+            widgetSets = {}
+
+        widgetSets[widget] = state
+        siteconfig.set("widget_settings", widgetSets)
+        siteconfig.save()
+
+    return HttpResponse("")
+
+def widget_activity(request):
+    """
+    Receives an AJAX request, sends the data to the widget controller and
+    returns JSON data
+    """
+    activity_data = dynamicActivityData(request)
+
+    return HttpResponse(simplejson.dumps(
+        activity_data), mimetype="application/json")

@@ -28,7 +28,7 @@
 from django.conf.urls.defaults import include, patterns, url
 from django.contrib import admin
 
-from reviewboard.admin import forms
+from reviewboard.admin import forms, signals
 
 
 NEWS_FEED = "http://www.reviewboard.org/news/feed/"
@@ -65,6 +65,8 @@ urlpatterns = patterns('reviewboard.admin.views',
     (r'^$', 'dashboard'),
     (r'^cache/$', 'cache_stats'),
     (r'^settings/', include(settings_urlpatterns)),
+    (r'^widget-toggle/', 'widget_toggle'),
+    (r'^widget-activity/','widget_activity')
 )
 
 urlpatterns += patterns('',

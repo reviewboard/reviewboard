@@ -20,7 +20,7 @@
 {%    if model.perms.change %}
      <th scope="row"><a href="{{model.admin_url}}">{{model.name}}</a></th>
 {%    else %}
-     <th scope="row"{{model.name}}</th>
+     <th scope="row">{{model.name}}</th>
 {%    endif %}
 
 {%    if model.perms.add %}

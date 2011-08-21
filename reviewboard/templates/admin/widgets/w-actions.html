@@ -1,0 +1,114 @@
+{% load adminmedia %}
+{% load i18n %}
+{% load log %}
+{% load rbadmintags %}
+
+{% if show_sidebar %}
+<div class="admin-widget admin-sidebar">
+  <h1 class="widget-heading">{% trans "System Settings" %}</h1>
+  <div class="widget-content widget-sys-settings">
+     <ul>
+      {% admin_subnav "settings-general" _("General") %}
+      {% admin_subnav "settings-authentication" _("Authentication") %}
+      {% admin_subnav "settings-email" _("E-Mail") %}
+      {% admin_subnav "settings-diffs" _("Diff Viewer") %}
+      {% admin_subnav "settings-logging" _("Logging") %}
+      {% admin_subnav "settings-ssh" _("SSH")  %}
+      {% admin_subnav "settings-storage" _("File Storage") %}
+     </ul>
+  </div>
+</div>
+
+<div class="admin-widget admin-sidebar">
+  <h1 class="widget-heading">{% trans "Manage" %}</h1>
+  <div class="widget-content widget-manage action-box">
+  <table summary="{% trans "Common management operations." %}">
+   <tbody>
+    <tr>
+     <th scope="row"><a href="/admin/db/auth/user/">{% trans "Users" %}</a></th>
+     <td class="td-count">{{count_users}}</td>
+     <td width="40" class="td-right"><a class="addlink" href="/admin/db/auth/user/add/">{% trans "Add" %}</a></td>
+    </tr>
+    <tr>
+      <th scope="row"><a href="/admin/db/reviews/group/">{% trans "Review Groups" %}</a></th>
+      <td class="td-count">{{count_review_groups}}</td>
+      <td class="td-right"><a class="addlink" href="/admin/db/reviews/group/add/">{% trans "Add" %}</a></td>
+    </tr>
+    <tr>
+      <th scope="row"><a href="/admin/db/reviews/defaultreviewer/">{% trans "Default Reviewers" %}</a></th>
+      <td class="td-count">{{count_default_reviewers}}</td>
+      <td class="td-right"><a class="addlink" href="/admin/db/reviews/defaultreviewer/add/">{% trans "Add" %}</a></td>
+    </tr>
+    <tr>
+       <th scope="row"><a href="/admin/db/scmtools/repository/">{% trans "Repositories" %}</a></th>
+       <td class="td-count">{{count_repository}}</td>
+       <td class="td-right"><a class="addlink" href="/admin/db/scmtools/repository/add/">{% trans "Add" %}</a></td>
+    </tr>
+   </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="admin-widget admin-sidebar">
+    <h1 class="widget-heading">{% trans "System Information" %}</h1>
+    <div class="widget-content admin-box widget-system-info action-box">
+    <ul>
+     <li><a href="/admin/cache/">{% trans "Server Cache" %}
+      {% if has_cache_stats %}
+          <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+       {% else %}
+           <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+      {% endif %}</a></li>
+
+     <li><a href="/admin/settings/authentication/">{% trans "Public Read-only Access" %}
+      {% if site_configs.read_only %}
+           <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+      {% else %}<img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/></a>{% endif %}</li>
+
+     <li><a href="/admin/settings/diffs/">{% trans "Syntax Highlighting" %}
+     {% if site_configs.syntax_highlighting %}
+         <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+     {% else %}
+     <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+     {% endif %}</a></li>
+
+      <li><a href="{% url server-log %}">{% trans "Server Log" %}
+      {% if site_configs.logging_enabled and site_configs.logging_directory %}
+          <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+      {% else %}
+           <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+      {% endif %}</a></li>
+
+      <li><a href="/admin/settings/logging/">{% trans "Log Profiling" %}
+      {% if site_configs.logging_allow_profiling %}
+           <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+      {% else %}
+           <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+      {% endif %}</a></li>
+
+      <li><a href="/admin/settings/email/">{% trans "Review Emails" %}
+       {% if site_configs.mail_send_review_mail %}
+           <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+       {% else %}
+            <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+       {% endif %}</a></li>
+
+      <li><a href="/admin/settings/email/">{% trans "Email TLS Authentication" %}
+      {% if site_configs.mail_use_tls %}
+          <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+      {% else %}
+           <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+      {% endif %}</a></li>
+
+      <li><a href="/admin/settings/general/">{% trans "Indexed Search" %}
+      {% if site_configs.search_enable %}
+          <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+      {% else %}
+          <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+      {% endif %}</a></li>
+
+     <li class="admin-version">{% trans "Version" %} - {{ version }}</li>
+    </ul>
+    </div>
+</div>
+{% endif %}

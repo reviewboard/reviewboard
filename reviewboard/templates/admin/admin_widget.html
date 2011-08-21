@@ -1,0 +1,17 @@
+<div class="admin-widget {{widget_size}} {% if widget_state == "1" %}widget-hidden{% endif %}" id="{{widget_name}}">
+    <h1 class="widget-heading">
+        {% if widget_icon %}
+        <img src="{{MEDIA_URL}}{{ widget_icon}}?{{MEDIA_SERIAL}}" alt="{{widget_title}}" width="14" height="14"/>
+        {% endif %}
+     {{widget_title}}<span class="btn-state"></span></h1>
+    <div class="widget-content">
+         {% include widget_content %}
+    </div>
+    {% if widget_actions %}
+        <div class="widget-actions">
+         {%  for action in widget_actions %}
+             <a href="{{action.0}}" class="{{action.2}}" id="{{action.3}}">{{action.1}}</a>
+         {%  endfor %}
+        </div>
+    {% endif %}
+</div>

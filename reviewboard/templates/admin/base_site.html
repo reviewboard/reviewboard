@@ -1,31 +1,44 @@
 {% extends "admin/base.html" %}
 {% load i18n %}
-
+{% load rbadmintags %}
 {% block title %}{{title}} | {% trans "Review Board administration" %}{% endblock %}
 
 {% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin.css?{{MEDIA_SERIAL}}" />
 <link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin-dashboard.css?{{MEDIA_SERIAL}}" />
 {% endblock %}
 
 {% block branding %}
-<a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" alt="" border="0" /></a>
-<h1 id="site-name">{% trans "Review Board administration" %}</h1>
+{% include "base/branding.html" with section_title=_("Administration") %}
 {% endblock %}
 
 {% block breadcrumbs %}
-<div class="breadcrumbs"><a href="{{SITE_ROOT}}admin/">{% trans "Home" %}</a> {% if title %} &rsaquo; {{ title|escape }}{% endif %}</div>
+{% endblock %}
+
+{% block pretitle %}
+ {% if user.is_authenticated %}
+    <div id="admin-actions" class="clear">
+        {% admin_actions %}
+    </div>
+ {% endif %}
 {% endblock %}
 
 {% block nav-global %}
 {%  if user.is_authenticated %}
-<ul id="admin-nav">
- <li><a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Dashboard" %}</a></li>
- <li><a href="{% url reviewboard.admin.views.dashboard %}db/">{% trans "Database" %}</a></li>
- <li><a href="{% url site-settings %}">{% trans "Settings" %}</a></li>
- <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
-</ul>
-
+<div id="navbar-outer">
+ <div id="navbar">
+  <ul>
+   <li><a href="{% url reviewboard.admin.views.dashboard %}" class="nav-first">{% trans "Dashboard" %}</a></li>
+   <li><a href="{% url reviewboard.admin.views.dashboard %}db/">{% trans "Database" %}</a></li>
+   <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
+  </ul>
+  <div id="back-to-rb">
+   <a href="{% url root %}">{% trans "Back to Review Board" %}</a>
+  </div>
+ </div>
+</div>
 {%   block subnavbar %}{% endblock %}
 {%  endif %}
 {% endblock %}

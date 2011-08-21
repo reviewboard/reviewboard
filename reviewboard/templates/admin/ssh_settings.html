@@ -2,12 +2,16 @@
 {% load djblets_utils i18n %}
 
 {% block content %}
-<p>
-{% blocktrans %}
- The SSH key configured here will be used for communication with any
- SSH-backend repositories.
-{% endblocktrans %}
-</p>
+<div class="module aligned">
+ <div class="form-row">
+  <p>
+  {% blocktrans %}
+   The SSH key configured here will be used for communication with any
+   SSH-backend repositories.
+  {% endblocktrans %}
+  </p>
+ </div>
+</div>
 {% if key %}
 <div class="module aligned">
  <div class="form-row">
@@ -28,35 +32,39 @@
  </div>
 </div>
 {% else %}
-<h3>{% trans "Generate an SSH Key" %}</h3>
-<p>
-{% blocktrans %}
- You can generate a brand new RSA key specific to this installation of
- Review Board.
-{% endblocktrans %}
-</p>
-<p>
-{% blocktrans %}
- Note that generating a key may take some time. Don't click more than once.
-{% endblocktrans %}
-</p>
-<form method="POST" action=".">
- {{form.generate_key}}
- <input type="submit" value="{% trans "Generate Key" %}" />
-</form>
+<div class="module aligned">
+ <div class="form-row">
+  <h3>{% trans "Generate an SSH Key" %}</h3>
+  <p>
+  {% blocktrans %}
+   You can generate a brand new RSA key specific to this installation of
+   Review Board.
+  {% endblocktrans %}
+  </p>
+  <p>
+  {% blocktrans %}
+   Note that generating a key may take some time. Don't click more than once.
+  {% endblocktrans %}
+  </p>
+  <form method="POST" action=".">
+   {{form.generate_key}}
+   <input type="submit" value="{% trans "Generate Key" %}" />
+  </form>
 
-<h3>{% trans "Upload an SSH Key" %}</h3>
-<p>
-{% blocktrans %}
- If you already have an SSH key (<tt>id_dsa</tt> or <tt>id_rsa</tt> file)
- you want to use, you can upload it. Note that this key will be readable
- by the web server, so provide one you feel safe using.
-{% endblocktrans %}
-</p>
-<form method="POST" action="." enctype="multipart/form-data">
- {{form.keyfile.errors}}
- {{form.keyfile}}<br />
- <input type="submit" value="{% trans "Upload Key" %}" />
-</form>
+  <h3>{% trans "Upload an SSH Key" %}</h3>
+  <p>
+  {% blocktrans %}
+   If you already have an SSH key (<tt>id_dsa</tt> or <tt>id_rsa</tt> file)
+   you want to use, you can upload it. Note that this key will be readable
+   by the web server, so provide one you feel safe using.
+  {% endblocktrans %}
+  </p>
+  <form method="POST" action="." enctype="multipart/form-data">
+   {{form.keyfile.errors}}
+   {{form.keyfile}}<br />
+   <input type="submit" value="{% trans "Upload Key" %}" />
+  </form>
+ </div>
+</div>
 {% endif %}
 {% endblock %}

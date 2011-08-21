@@ -1,1 +1,2 @@
-<li><a href="{{url}}" {% if current %}class="active"{% endif %}>{{name}}</a></li>
+<li><a href="{{url}}" {% if current %}class="active"{% endif %}>
+{% if icon %}<img src="{{MEDIA_URL}}{{icon}}?{{MEDIA_SERIAL}}" alt="{{name}}" />{% endif %}{{name}}</a></li>

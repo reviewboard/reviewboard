@@ -5,90 +5,26 @@ h3 {
 }
 
 .dashboard .module table th {
-    width: 100%;
+  width: 100%;
 }
 
 .dashboard .module table td {
-    white-space: nowrap;
+  white-space: nowrap;
 }
 
 .dashboard .module table td a {
-    display: block;
-    padding-right: .6em;
+  display: block;
+  padding-right: .6em;
 }
 
 /* RECENT ACTIONS MODULE */
 
 .module ul.actionlist {
-    margin-left: 0;
+  margin-left: 0;
 }
 
 ul.actionlist li {
-    list-style-type: none;
-}
-
-#logo {
-  padding: 0.5em;
-  position: relative;
-  display: inline;
-  vertical-align: middle;
-}
-
-#branding h1 {
-  padding-top: 0.5em;
-  padding-bottom: 0.5em;
-  display: inline;
-  vertical-align: middle;
-}
-
-#admin-nav, #admin-subnav {
-  background-color: #557ab1;
-  float: left;
-  list-style: none;
-  margin: 0;
-  padding: 0 10px 0 5.5em;
-  width: 100%;
-}
-
-#admin-nav li,
-#admin-subnav li {
-  display: block;
-  float: left;
-  line-height: normal;
-  margin: 0 10px 0 0;
-  padding: 0;
-}
-
-#admin-nav li a,
-#admin-subnav li a {
-  display: block;
-  float: left;
-  font-size: 110%;
-  padding: 4px 8px;
-}
-
-#admin-subnav li a {
-  border-top: 3px solid #333333;
-}
-
-#admin-nav li a:hover,
-#admin-subnav li a:hover {
-  background-color: #2f5183;
-  text-decoration: none;
-}
-
-#admin-nav li a.active,
-#admin-subnav li a.active {
-  color: black;
-  background: white url(../images/subnav-bg.png) repeat-x scroll 0 -6px;
-}
-
-div.breadcrumbs {
-  border-top-width: 0px;
-}
-
-#admin-subnav {
-  background-color: #333333;
+  list-style-type: none;
 }
 
 .module.manage .count {
@@ -133,9 +69,10 @@ div.breadcrumbs {
   display: inline;
 }
 
+
 /***************************************************************************
- * Change form
- ***************************************************************************/
+* Change form
+***************************************************************************/
 #ssh-public-key-popup {
   display: none;
 }
@@ -212,47 +149,244 @@ div.breadcrumbs {
   font-family: monospace;
 }
 
+#content-main form {
+  clear: both;
+}
+
+form #result_list th {
+  text-align: left;
+}
 
 /***************************************************************************
- * Django Admin overrides
- ***************************************************************************/
+* Django Admin overrides
+***************************************************************************/
 table thead th.ascending a {
   background: transparent url("../../djblets/images/datagrid/sort_asc_primary.png") no-repeat right 0.4em;
 }
 
 thead th, tfoot td {
   background: transparent url("../../djblets/images/datagrid/header_bg.png") repeat-x;
-  padding: 5px;
   border-bottom: 1px solid #999999;
   border-right: 1px solid #CCCCCC;
   border-top: 1px solid #999999;
   border-left: 0 !important;
+  padding: 5px;
+}
+
+.module table tr {
+  border-bottom: 1px solid #F5F5F5;
 }
 
 thead th a:link, thead th a:visited {
   color: black;
 }
 
+#logo {
+  display: inline;
+  padding: 0;
+  position: relative;
+  vertical-align: middle;
+}
+
+#branding {
+  font-family: Verdana, Arial, Helvetica, Sans-Serif;
+  margin: 40px 0 10px 0;
+}
+
+#branding h1 {
+  display: inline;
+  padding: 0.4em 0.7em 0.5em 0;
+  vertical-align: middle;
+}
+
+#branding h1 a, #branding a:link, #branding a:visited {
+  color: #000000;
+  font-size: 24pt;
+  text-decoration: none;
+}
+
+#user-tools {
+  border-bottom: 1px solid #DDDDDD;
+  color: #000000;
+  margin: 0;
+  padding: 5px 15px 5px 0;
+  width: 100%;
+}
+
+#navbar-outer {
+  margin: 0 9px;
+  width: auto;
+}
+
+#navbar ul, #navbar {
+  background: url("../images/admin/yellow_bg_small.png") repeat-x #F9F2C9;
+  overflow: hidden;
+  padding: 0;
+}
+
+#navbar ul {
+  float: left;
+  margin: 0;
+  padding: 0;
+}
+
+#navbar li {
+  display: inline;
+  height: auto;
+  margin: 0;
+}
+
+#navbar ul a {
+  display: block;
+  float: left;
+  margin: 0 10px 0 9px;
+  padding: 9px;
+}
+
+#navbar a.nav-first {
+  margin-left: 0;
+}
+
+#navbar a:link,
+#navbar a:visited {
+  color: #3B3B3B;
+}
+
+#navbar a.nav-active:visited,
+#navbar a.nav-active:link {
+  background: #5988BB;
+  color: #FFF;
+}
+
+#header #user-tools a {
+  color: #0000EE;
+}
+
+#title .version {
+  color: #808080;
+  font-size: 12pt;
+  font-weight: normal;
+  padding-left: 5px;
+}
+
+#admin-nav li,
+#admin-subnav li {
+  display: block;
+  float: left;
+  line-height: normal;
+  margin: 0 10px 0 0;
+  padding: 0;
+}
+
+#admin-nav li a,
+#admin-subnav li a {
+  display: block;
+  float: left;
+  font-size: 110%;
+  padding: 4px 8px;
+}
+
+#admin-subnav li a {
+  padding-top: 7px;
+  border-bottom: 3px solid #5988BB;
+}
+
+#admin-nav li a:hover,
+#admin-subnav li a:hover {
+  border-bottom: 3px solid #2f5183;
+  text-decoration: none;
+}
+
+#admin-nav li a.active,
+#admin-subnav li a.active {
+  border-bottom: 3px solid #2f5183;
+}
+
+div.breadcrumbs {
+  background: none;
+  border: none;
+  border-bottom: 1px solid #F5F5F5;
+  margin: 0 10px;
+  padding: 5px 10px;
+}
+
+#admin-subnav-outer {
+  background-color: #5988BB;
+  border: 1px solid #E0E0E0;
+  border-top: none;
+  margin: -2px 9px 0 9px;
+  overflow: hidden;
+}
+
+#admin-subnav {
+  border: 1px solid #3465A4;
+  border-top: none;
+  margin: 0;
+  overflow: hidden;
+  padding: 0 5px;
+}
+
+#searchbar {
+  position: relative;
+  margin: 0;
+}
+
+#header {
+  background-color: #FFFFFF;
+  color: #5988bb;
+}
+
+#content {
+  margin: 10px;
+}
+
+#content h1 {
+  border-bottom: 1px solid #728EAC;
+  color: #000000;
+  font-size: 11px;
+  font-weight: 400;
+  margin: 0 0 10px 0;
+  padding: 5px 10px 5px 5px;
+  text-transform: uppercase;
+}
+
 #branding h1 {
   color: #EEEEEE;
 }
 
+#content.colM, .flex {
+ margin-left: 255px !important;
+}
+
 .dashboard .colMS {
   margin-right: 25em !important;
+  margin-left: 250px !important;
 }
 
 .dashboard #content-related {
-  margin-right: -25em;
-  width: 24em;
+  margin-right: -24em;
+  width: 23em;
 }
 
 #content-related .module h2 {
   background: #5988bb;
-  color: white;
+  color: #FFF;
 }
 
-#header {
-  background-color: #2f5183;
+#back-to-rb {
+  background: url("../images/title_box_top_bg.png") repeat #C6DCF3;
+  border-left: 1px solid #89867F;
+  float: right;
+  height: 22px;
+  padding: 10px 10px 0 10px;
+  text-align: center;
+  width: 190px;
+}
+
+#back-to-rb a:visited,
+#back-to-rb a:link {
+  color: #3B3B3B;
+  display: block;
 }
 
 #log-entries pre {
@@ -261,7 +395,7 @@ thead th a:link, thead th a:visited {
 }
 
 #log-entries td {
-  color: black;
+ color: black;
 }
 
 #log-entries .level-debug.row1 {
@@ -306,10 +440,20 @@ thead th a:link, thead th a:visited {
 
 .dashboard #content {
   width: auto;
+  margin: 9px;
 }
 
-.module h2, .module caption {
-  background: #5988bb;
+.module {
+  overflow: hidden;
+}
+
+.module h2, .module caption, #content-related .module h2 {
+  background: url("../images/title_box_top_bg.png") repeat-x scroll left top #A2BEDC;
+  border-bottom: 1px solid #728EAC;
+  color: #000;
+  font-size: 120%;
+  margin: 0;
+  padding: 5px 10px 5px 5px;
 }
 
 .module {
@@ -324,10 +468,46 @@ td, th {
   border-bottom: 0;
 }
 
+.login #container {
+  width: 30em !important;
+}
+
+.login #title span {
+  display: block;
+}
+
+.object-tools {
+  margin: 0 0 10px 0;
+}
+
+ul.messagelist {
+  margin: 12px;
+  padding: 5px 0;
+}
+
+.popup #content.colM, .popup .flex, .login #content.colM {
+  margin-left: 20px !important;
+}
+
+.login #rbinfo {
+  text-align: center;
+  padding-left: 0;
+}
+
+#recent-actions-module ul {
+  padding: 0;
+}
+
+#recent-actions-module li {
+  background-position: 15px 15px;
+  border-bottom: 1px solid #F5F5F5;
+  padding: 5px 20px 5px 40px;
+}
+
 /* Override the way links and wrapping work in modules. */
 .module.news table td {
-  white-space: normal !important;
   padding: 0;
+  white-space: normal !important;
 }
 
 .module.news table td a {
@@ -336,8 +516,7 @@ td, th {
 }
 
 .module.news .entry-title {
-  padding-top: 0.4em;
-  padding-bottom: 0.8em;
+  padding: 0.4em 0 0.8em 0;
 }
 
 .module.news .entry-content {

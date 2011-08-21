@@ -1,0 +1,39 @@
+{% load i18n %}
+{% if widget_data.pending %}
+<div id="requests-percentages" style="width: 190px; height: 140px;"></div>
+<div id="requests-labels"></div>
+<script type="text/javascript">
+    $(function () {
+        // Review Request percentage by status data
+        var data = [
+            { label: "Pending ({{widget_data.pending}})",  data: {{widget_data.pending}}},
+            { label: "Draft ({{widget_data.draft}})",  data: {{widget_data.draft}}},
+            { label: "Submit ({{widget_data.submit}})",  data: {{widget_data.submit}}}
+        ];
+        // Pie chart plotting function
+        $.plot($("#requests-percentages"), data,
+                {
+                    series: {
+                        pie: {
+                            show: true,
+                            radius: 0.8,
+                            label: {
+                                show: true,
+                                radius: 1,
+                                formatter: function(label, series) {
+                                    return '<div class="request-percentage-label">'  + Math.round(series.percent) + '%</div>';
+                                },
+                                background: { opacity: 0.8 }
+                            }
+                        }
+                    },
+                    legend: {
+                        container: $("#requests-labels"),
+                        show: true
+                    }
+                });
+    });
+</script>
+{% else %}
+<p class="no-result">{% trans "No Data Available" %}</p>
+{% endif %}

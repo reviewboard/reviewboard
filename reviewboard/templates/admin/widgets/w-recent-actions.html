@@ -1,0 +1,24 @@
+{% load i18n %}
+{% load log %}
+
+{% get_admin_log 5 as admin_log for_user user %}
+{% if not admin_log %}
+  <p class="no-result">{% trans "None available" %}</p>
+{% else %}
+  <ul class="actionlist">
+{%  for entry in admin_log %}
+   <li class="
+   {% if entry.is_addition %}addlink{% endif %}
+   {% if entry.is_change %}changelink{% endif %}
+   {% if entry.is_deletion %}deletelink{% endif %}">
+   {% if not entry.is_deletion %}
+   <a href="db/{{ entry.get_admin_url }}">
+   {% endif %}{{ entry.object_repr|escape }}
+   {% if not entry.is_deletion %}</a>{% endif %}
+     <span class="mini quiet">
+      {% filter capfirst %}{% trans entry.content_type.name %}{% endfilter %}
+     </span>
+   </li>
+{%  endfor %}
+  </ul>
+{% endif %}

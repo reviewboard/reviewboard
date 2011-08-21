@@ -3,13 +3,9 @@
 {% load i18n %}
 {% load rbadmintags %}
 {% block subnavbar %}
-<ul id="admin-subnav">
- {% admin_subnav "settings-general" _("General") %}
- {% admin_subnav "settings-authentication" _("Authentication") %}
- {% admin_subnav "settings-email" _("E-Mail") %}
- {% admin_subnav "settings-diffs" _("Diff Viewer") %}
- {% admin_subnav "settings-logging" _("Logging") %}
- {% admin_subnav "settings-ssh" _("SSH") %}
- {% admin_subnav "settings-storage" _("File Storage") %}
-</ul>
+{% endblock %}
+{% block pretitle %}
+ <div id="admin-actions" class="clear">
+      {% admin_actions %}
+  </div>
 {% endblock %}

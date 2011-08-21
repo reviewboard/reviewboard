@@ -1,0 +1,29 @@
+{% load i18n %}
+{% if widget_data %}
+<table class="widget-large-table">
+    <thead>
+    <tr>
+        <th>{% trans "Name" %}</th>
+        <th>{% trans "Tool" %}</th>
+        <th style="width:45px;" class="td-center">{% trans "Visible" %}</th>
+    </tr>
+    </thead>
+    {% if widget_data %}
+        {% for repository in widget_data %}
+            <tr>
+                <td><a href="db/scmtools/repository/{{repository.id}}">{{ repository.name }}</a></td>
+                <td>{{ repository.tool }}</td>
+                <td class="td-center">{% if repository.visible %}
+                    <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_URL}}" alt="Visible"
+                         title="Visible"/>{% else %}
+                    <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_URL}}" alt="Invisible"
+                         title="Invisible" />
+                         {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+    {% endif %}
+</table>
+{% else %}
+<p class="no-result">{% trans "No Repositories available." %}<br/><a href="db/scmtools/repository/add/">{% trans "Add +" %}</a></p>
+{% endif %}
