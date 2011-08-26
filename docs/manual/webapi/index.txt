@@ -26,14 +26,11 @@ REST API 1.0 (deprecated)
 =========================
 
 This version of the API was first used in Review Board 1.0. It exists
-in 1.5 but is feature-frozen and is will be removed in a future release.
+in 1.5 but has been removed in 1.6. All programs should be updated to
+use the new API.
 
-.. toctree::
-   :maxdepth: 1
-
-   1.0/overview
-   1.0/authenticating
-   1.0/reference/index
+Documentation for the old API is `still available
+<http://www.reviewboard.org/docs/manual/1.5/webapi/1.0/>`_.
 
 
 .. comment: Some hidden toctrees for building the structure properly.
@@ -42,7 +39,6 @@ in 1.5 but is feature-frozen and is will be removed in a future release.
    :hidden:
 
    2.0/index
-   1.0/index
 
 
 .. comment: vim: ft=rst et ts=3
