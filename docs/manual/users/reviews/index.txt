@@ -1,13 +1,16 @@
-=========================
-Reviewing Review Requests
-=========================
+===============
+Reviewing Files
+===============
 
 .. toctree::
    :maxdepth: 2
 
    reviewing-diffs
    reviewing-screenshots
+   draft-banner
    editing-reviews
+   publishing
+   approving-changes
    replying
 
 
