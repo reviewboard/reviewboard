@@ -1135,32 +1135,33 @@ class ChangeResource(WebAPIResource):
     For ``summary``, ``description``, ``testing_done`` and ``branch`` fields,
     the following detail keys will be available:
 
-      * ``old``: The old value of the field.
-      * ``new``: The new value of the field.
+    * ``old``: The old value of the field.
+    * ``new``: The new value of the field.
 
-    For ``diff` fields:
+    For ``diff`` fields:
 
-      * ``added``: The diff that was added.
+    * ``added``: The diff that was added.
 
     For ``bugs_closed`` fields:
 
-      * ``old``: A list of old bugs.
-      * ``new``: A list of new bugs.
-      * ``removed``: A list of bugs that were removed, if any.
-      * ``added``: A list of bugs that were added, if any.
+    * ``old``: A list of old bugs.
+    * ``new``: A list of new bugs.
+    * ``removed``: A list of bugs that were removed, if any.
+    * ``added``: A list of bugs that were added, if any.
 
-    For ``screenshots``, ``target_people`` and ``target_groups`` fields:
+    For ``file_attachments``, ``screenshots``, ``target_people`` and
+    ``target_groups`` fields:
 
-      * ``old``: A list of old items.
-      * ``new``: A list of new items.
-      * ``removed``: A list of items that were removed, if any.
-      * ``added``: A list of items that were added, if any.
+    * ``old``: A list of old items.
+    * ``new``: A list of new items.
+    * ``removed``: A list of items that were removed, if any.
+    * ``added``: A list of items that were added, if any.
 
     For ``screenshot_captions`` fields:
 
-      * ``old``: The old caption.
-      * ``new``: The new caption.
-      * ``screenshot``: The screenshot that was updated.
+    * ``old``: The old caption.
+    * ``new``: The new caption.
+    * ``screenshot``: The screenshot that was updated.
     """
     model = ChangeDescription
     name = 'change'

@@ -73,6 +73,7 @@ class WebApiDocsDirective(Directive):
         int: 'Integer',
         str: 'String',
         bool: 'Boolean',
+        dict: 'Dictionary',
         file: 'Uploaded File',
     }
 
