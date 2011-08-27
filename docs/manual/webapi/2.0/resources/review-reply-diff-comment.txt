@@ -1,5 +1,4 @@
 .. webapi-resource::
-   :classname: reviewboard.webapi.resources.FileAttachmentResource
-   :is-list:
+   :classname: reviewboard.webapi.resources.ReviewReplyDiffCommentResource
 
 .. comment: vim: ft=rst et ts=3
