@@ -1,14 +1,16 @@
+.. _full-text-search:
+
 ================
 Full-Text Search
 ================
 
-Overview
-========
-
 If your Review Board server has full-text search enabled, you will be able to
-search through all public review requests using the search bar on any page.
+search through all public review requests using the search field on any page.
 This will match text in the review request, the files modified, and other
 fields using our query syntax.
+
+Logical operators, such as AND, OR, and NOT, can be used to narrow down your
+search. Individual fields on review requests can also be searched.
 
 
 Query Syntax
@@ -91,6 +93,8 @@ Lists of files in the diffs are also indexed. The contents of the diffs are
 not.
 
 Reviews are not indexed.
+
+:term:`Private review requests` are not indexed.
 
 
 .. comment: vim: ft=rst et ts=3
