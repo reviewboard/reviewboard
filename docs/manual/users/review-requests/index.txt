@@ -1,12 +1,15 @@
-========================
-Managing Review Requests
-========================
+============================
+Working with Review Requests
+============================
 
 .. toctree::
    :maxdepth: 2
 
    creating
-   updating
+   fields
+   uploading-diffs
+   uploading-screenshots
+   publishing
    closing
 
 
