@@ -1,0 +1,11 @@
+=========
+Searching
+=========
+
+.. toctree::
+   :maxdepth: 2
+
+   full-text-search
+
+
+.. comment: vim: ft=rst et ts=3

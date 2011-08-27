@@ -1,18 +1,14 @@
-.. _searching:
-
-=========
-Searching
-=========
+================
+Full-Text Search
+================
 
 Overview
 ========
 
-Depending on your Review Board server setup, you may have the ability to
-search through review requests. If enabled, you should see a search bar on the
-right of the navigation banner.
-
-The search functionality allows you to search for text matching part of the
-review request, files modified, and other information.
+If your Review Board server has full-text search enabled, you will be able to
+search through all public review requests using the search bar on any page.
+This will match text in the review request, the files modified, and other
+fields using our query syntax.
 
 
 Query Syntax
@@ -21,7 +17,7 @@ Query Syntax
 There are a variety of ways to combine terms in the search field. By default,
 the search results will be an "OR" of any words entered in the box. This means
 searching for ``window javascript`` will give pages that have either of those
-words in them.
+terms in them.
 
 In order to narrow down your results, there are a few useful operators you can
 use.
@@ -85,12 +81,16 @@ These fields can be combined like any other terms. Searches like
 requests.
 
 
-What Gets Indexed
-=================
+What's Indexed
+==============
 
-At the moment, this indexes the full text of review requests, and file lists
-in diffs. The reviews added by others are not yet part of this, but should be
-coming soon.
+The full text of review requests, including the summary, description, and
+testing, is indexed.
+
+Lists of files in the diffs are also indexed. The contents of the diffs are
+not.
+
+Reviews are not indexed.
 
 
 .. comment: vim: ft=rst et ts=3
