@@ -46,8 +46,8 @@ assigned to you.
 Outgoing Reviews
 ----------------
 
-This view shows all review requests that you have filed that are open or still
-a draft.
+This view shows all review requests that you have filed that are open or are
+still drafts.
 
 
 Incoming Reviews
