@@ -10,8 +10,8 @@ Administration Guide
    installation/index
    upgrading/index
    optimizing/index
-   sites/index
-   admin-ui/index
    configuration/index
+   admin-ui/index
+   sites/index
 
 .. comment: vim: ft=rst et
