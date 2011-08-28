@@ -6,7 +6,6 @@ Site Maintenance
    :maxdepth: 2
 
    rb-site
-   upgrading-sites
    enabling-search
    management-commands
 

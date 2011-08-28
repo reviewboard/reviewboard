@@ -8,6 +8,7 @@ Administration Guide
    :maxdepth: 2
 
    installation/index
+   upgrading/index
    sites/index
    admin-ui/index
    management/index

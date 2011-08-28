@@ -7,7 +7,6 @@ Installation
 
    linux
    windows
-   upgrading
    development-releases
    creating-sites
 
