@@ -1,3 +1,4 @@
+=====================
 Uploading Screenshots
 =====================
 
@@ -12,16 +13,19 @@ There are two ways to upload a review request:
 
    .. image:: add-screenshot-dialog.png
 
-2. Drag the image from your file manager into the review request. While
-   dragging, a :guilabel:`Screenshots` section will appear (if there isn't
-   one already) with a :guilabel:`Drop screenshots here to upload` box.
-   If you drop the file there, it will upload. You can upload multiple
-   screenshots at once this way.
+2. Drag the image from your file manager into the review request.
+
+   When dragging over the browser window, a black overlay will appear,
+   showing you where to drop the screenshot to upload it. You also have
+   the option of :ref:`uploading a file attachment <uploading-files>`.
+
+   When you drop the file, the overlay will disappear and the file will
+   upload.
+
+   You can drag and upload multiple screenshots at a time.
 
    Note that this requires a modern HTML5-capable browser, such as
-   Google Chrome or Firefox 3.6.
-
-   .. image:: drag-drop-screenshots.png
+   Google Chrome or Firefox 3.6+.
 
 
 .. comment: vim: ft=rst et ts=3
