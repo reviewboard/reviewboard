@@ -9,7 +9,7 @@ Authentication Settings
 * :ref:`active-directory-authentication-settings`
 * :ref:`ldap-authentication-settings`
 * :ref:`nis-authentication-settings`
-* :ref:`custom-authentication-settings`
+* :ref:`legacy-authentication-settings`
 
 
 .. _auth-general-settings:
@@ -53,7 +53,7 @@ The following settings can be configured:
     * LDAP
     * NIS
     * X.509 Public Key
-    * Custom
+    * Legacy Authentication Module
 
 
 .. _basic-authentication-settings:
@@ -190,12 +190,17 @@ This is available if `Authentication Method`_ is set to ``NIS``.
     This setting is required.
 
 
-.. _custom-authentication-settings:
+.. _legacy-authentication-settings:
 
-Custom Authentication Settings
-==============================
+Legacy Authentication Module Settings
+=====================================
 
-This is available if `Authentication Method`_ is set to ``Custom``.
+.. versionchanged:: 1.6
+   This authentication module used to be named "Custom."
+
+
+This is available if `Authentication Method`_ is set to
+``Legacy Authentication Module``.
 
 * **Backends:**
     A comma-separated list of custom Django authentication backend classes.
