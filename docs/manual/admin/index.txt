@@ -11,6 +11,6 @@ Administration Guide
    upgrading/index
    sites/index
    admin-ui/index
-   management/index
+   configuration/index
 
 .. comment: vim: ft=rst et

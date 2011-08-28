@@ -16,10 +16,14 @@ A repository can be linked up with a supported hosting service. This provides
 a fast and easy way to configure a repository without having to figure out
 specific paths. See :ref:`hosting-services` for more information.
 
+
+Managing Repositories
+=====================
+
 .. _adding-repositories:
 
 Adding Repositories
-===================
+-------------------
 
 In order for Review Board to talk to a source code repository, it must first
 know how to access it.
@@ -38,7 +42,7 @@ A form will appear with fields split into the following sections:
 
 
 General Information
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 * **Name** (required)
     This is the human-readable name of the repository that users will see.
@@ -54,7 +58,7 @@ General Information
 
 
 Repository Hosting
-------------------
+~~~~~~~~~~~~~~~~~~
 
 This is a complete list of fields that can be shown in this section. Not all
 of them will actually be shown at once. The fields will depend on the
@@ -160,7 +164,7 @@ selected `Hosting service`_ and `Repository type`_.
 
 
 Bug Tracker
------------
+~~~~~~~~~~~
 
 In most projects, there's a bug tracker associated with the repository
 or project, and review requests will often reference bugs.
@@ -192,7 +196,7 @@ associated with the repository if this field is provided.
 
 
 Advanced
---------
+~~~~~~~~
 
 * **Encoding** (optional)
     In some cases there's confusion as to the proper encoding to expect from
@@ -206,7 +210,7 @@ When done, click :guilabel:`Save` to create the repository entry.
 .. _editing-repositories:
 
 Editing Repositories
-====================
+--------------------
 
 In the event that you need to change the information on a repository (for
 example, if the repository path or the bug tracker URL has changed), you can
@@ -221,7 +225,7 @@ When done, click :guilabel:`Save` to save your changes.
 
 
 Deleting Repositories
-=====================
+---------------------
 
 To delete a repository, follow the instructions in
 :ref:`editing-repositories` to find the repository you want to get rid of.

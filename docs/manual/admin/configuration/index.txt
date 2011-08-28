@@ -1,10 +1,11 @@
-==========
-Management
-==========
+=============
+Configuration
+=============
 
 .. toctree::
    :maxdepth: 2
 
+   settings
    default-reviewers
    permission-groups
    repositories

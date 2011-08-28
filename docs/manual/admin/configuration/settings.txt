@@ -1,8 +1,8 @@
 .. _settings:
 
-========
-Settings
-========
+=============
+Site Settings
+=============
 
 Review Board sites can be configured through the Settings portion of the
 :ref:`Administration UI <administration-ui>`. You'll generally need to make
