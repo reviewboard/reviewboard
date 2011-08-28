@@ -1,15 +1,13 @@
-.. _enablingsearch:
-
 ===============
-Enabling Search
+Search Indexing
 ===============
 
-To enable search, first make sure you've installed PyLucene as per the
-installation guide.
+To enable full-text search indexing, first make sure you've installed
+PyLucene as per the installation guide.
 
 You can enable search indexing by going into hte :ref:`general-settings`
 page and toggling :guilabel:`Enable search`. The
-:guilabel:`Search index file` field should be filled out to specify the
+:guilabel:`Search index file` field must be filled out to specify the
 desired directory where the search index will be stored. Usually this will
 be a directory under your site directory.
 
@@ -32,11 +30,11 @@ this, type the following as the user who owns the cronjob::
 
     $ rb-site manage /path/to/site index -- --full
 
-For more information on generating search indexes, see the section on
-:ref:`search-indexing`.
+For more information on generating search indexes, see the section on the
+:ref:`search-indexing` management command.
 
 Users should now be able to use the search box located on any page. See the
-documentation on :ref:`Searching` to see what types of things you can
+documentation on :ref:`full-text-search` to see what types of things you can
 search for.
 
 .. comment: vim: ft=rst et tw=75
