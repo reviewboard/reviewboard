@@ -63,17 +63,8 @@ selected `Hosting service`_ and `Repository type`_.
 .. _`Hosting service`:
 
 * **Hosting service** (required)
-    The source code hosting service this repository will use, if any. This
-    will be one of the following:
-
-    * :guilabel:`Bitbucket` - The Bitbucket_ Mercurial hosting service.
-    * :guilabel:`GitHub` - A public account at GitHub_.
-    * :guilabel:`GitHub (Private)` - A private account at GitHub_.
-    * :guilabel:`Google Code` - An open source Subversion or Mercurial
-      project at `Google Code`_.
-    * :guilabel:`SourceForge` - An open source project on SourceForge_.
-    * :guilabel:`Custom` - A custom-hosted repository. This should be used
-      if one of the above isn't appropriate.
+    The source code hosting service this repository will use, if any.
+    Review Board provides a list of supported hosting services.
 
     See :ref:`hosting-services` for more information.
 
