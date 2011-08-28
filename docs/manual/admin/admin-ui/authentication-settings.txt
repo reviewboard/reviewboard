@@ -127,7 +127,7 @@ This is available if `Authentication Method`_ is set to ``Active Directory``.
     Depth to recurse when checking group membership. Set to 0 to turn off,
     -1 for unlimited.
 
-.. _nis-authentication-settings:
+.. _ldap-authentication-settings:
 
 LDAP Authentication Settings
 ============================
