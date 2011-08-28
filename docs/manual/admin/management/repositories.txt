@@ -299,15 +299,16 @@ ClearCase
 Review Board works with local ClearCase dynamic views, by utilizing
 version-extended paths to access specific file revisions.
 
-The `Path field`_ should point to the particular VOB, which
-starting by drive letter on Windows, or a mount point on Unix.
+The `Path field`_ should point to the particular VOB, which must be an
+absolute path starting with a drive letter on Windows or a mount point on
+Unix/Linux.
 
 The `Username and Password fields`_ should be blank.
 
-.. note:: While posting reviews VOBs are matched by UUID. If UUID doesn't match
-          :command:`post-review` use VOB's name as repository name. Because of
-          this it is always a good idea to name repositories in ReviewBoard by
-          VOB's names.
+.. note:: When uploading new diffs, Review Board wlil compare the VOBs by UUID.
+          If the UUID doesn't match, :command:`post-review` will use the VOB's
+          name as the repository name. Because of this, it is a good idea to
+          name the repositories in Review Board to match the VOB names.
 
 
 CVS
