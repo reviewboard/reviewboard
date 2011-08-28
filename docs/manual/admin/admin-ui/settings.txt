@@ -22,6 +22,7 @@ pages, which consists of:
    email-settings
    diffviewer-settings
    logging-settings
+   ssh-settings
    file-storage-settings
 
 
