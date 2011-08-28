@@ -1,3 +1,5 @@
+.. _uploading-screenshots:
+
 =====================
 Uploading Screenshots
 =====================
@@ -6,14 +8,14 @@ Screenshots or other images can be added to a review request. These can
 be helpful in seeing how the change affects the presentation of a program,
 or they can be used for reviewing mockups.
 
-There are two ways to upload a review request:
+There are two ways to upload a screenshot:
 
 1. Click :guilabel:`Add Screenshot` on the action bar, browse for the
-   file to upload, and optionally enter a caption for the image.
+   file to upload, and optionally enter a caption for the screenshot.
 
    .. image:: add-screenshot-dialog.png
 
-2. Drag the image from your file manager into the review request.
+2. Drag the screenshot from your file manager into the review request.
 
    When dragging over the browser window, a black overlay will appear,
    showing you where to drop the screenshot to upload it. You also have

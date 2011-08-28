@@ -8,6 +8,7 @@ Working with Review Requests
    creating
    fields
    uploading-diffs
+   uploading-files
    uploading-screenshots
    publishing
    closing
