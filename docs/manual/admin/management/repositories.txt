@@ -258,10 +258,12 @@ By changing the `Hosting service`_ field, the list of repository types
 (Subversion, Git, etc.) will be limited to the list that the hosting
 service supports. The list of fields you need to fill out will also change.
 
-As of Review Board 1.5, the following hosting services are supported:
+As of Review Board 1.6, the following hosting services are supported:
 
 * Bitbucket_
-* GitHub_ (public and private repositories)
+* `Fedora Hosted`_
+* GitHub_ (public and private repositories and organizations)
+* Gitorious_
 * `Google Code`_
 * SourceForge_
 
@@ -278,7 +280,9 @@ you're using and display it. This will depend on what values were entered
 for the `Path field`_ and `Mirror Path field`_.
 
 .. _Bitbucket: http://bitbucket.org/
+.. _`Fedora Hosted`: http://fedorahosted.org/
 .. _GitHub: http://github.com/
+.. _Gitorious: http://gitorious.org/
 .. _`Google Code`: http://code.google.com/hosting/
 .. _SourceForge: http://sourceforge.net/
 
