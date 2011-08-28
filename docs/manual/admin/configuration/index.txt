@@ -6,6 +6,7 @@ Configuration
    :maxdepth: 2
 
    settings
+   email
    default-reviewers
    permission-groups
    repositories
@@ -14,4 +15,3 @@ Configuration
 
 
 .. comment: vim: ft=rst et
-
