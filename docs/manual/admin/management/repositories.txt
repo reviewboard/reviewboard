@@ -440,6 +440,33 @@ Note that Review Board will only ever use this user for read-only operations.
 It will never write to the repository.
 
 
+Using Perforce with stunnel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. versionadded:: 1.6
+
+Perforce can be configured to operate with a secure stunnel setup. This is
+particularly important if the server running Review Board needs to talk to
+the Perforce server over the Internet or an otherwise easily accessible
+network.
+
+To set up an stunnel connection, see Perforce's guide on
+`Using Stunnel with Perforce`_.
+
+.. _`Using Stunnel with Perforce`:
+   http://kb.perforce.com/article/1018/using-stunnel-with-perforce
+
+Once that is set up, you can configure your repository settings so that
+Review Board can access the repository. To do this, just prefix your
+repository path with ``stunnel:``. For example::
+
+    stunnel:perforce.example.com:1666
+
+Review Board will automatically set up a local tunnel client as necessary.
+It will bind this to a port between 30000 and 60000 on localhost, and proxy
+all requests through it.
+
+
 Subversion
 ----------
 
