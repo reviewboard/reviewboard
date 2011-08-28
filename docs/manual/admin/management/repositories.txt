@@ -287,6 +287,25 @@ for the `Path field`_ and `Mirror Path field`_.
 .. _SourceForge: http://sourceforge.net/
 
 
+SSH-Backed Repositories
+=======================
+
+Many types of repository setups can only be accessed through a working
+SSH connection. This requires a public/private key setup, where the
+repository to be accessible by a Review Board server providing a pre-approved
+SSH key.
+
+Review Board can generate an SSH key to be used with repositories. An existing
+SSH key can also be uploaded. Once a key is stored in Review Board, the
+accompanying public key can be assigned to the server.
+
+See the :ref:`ssh-settings` documentation on how to configure an SSH key.
+
+Configuring the SSH key access on the repository or on the server hosting
+the repository is not covered here. There are plenty of resources on
+granting access via SSH keys.
+
+
 .. _determining-repository-information:
 
 Determining Repository Information
