@@ -12,6 +12,20 @@ E-Mail Settings
 
     See :ref:`e-mail-and-review-groups` for more information.
 
+* **Send e-mails when new users register an account:**
+    If enabled, e-mails will be sent to the administrator every time a new
+    user signs up to the site. This is useful for open source projects that
+    are interested in new user signups.
+
+* **Sender e-mail address:**
+    The e-mail address all e-mails are sent from. The ``Sender`` e-mail header
+    will be used to make e-mails appear to come from the user causing the
+    e-mail to be sent. By using the ``Sender`` header for this instead of
+    ``From``, there's less risk that e-mail clients will consider the e-mails
+    to be malicious or spam. This may require a proper :term:`DKIM` setup.
+
+    This defaults to ``noreply@<servername>``.
+
 * **Mail Server:**
     The SMTP mail server used for outgoing e-mails.
     This defaults to ``localhost``.
