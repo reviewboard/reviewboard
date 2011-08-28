@@ -83,8 +83,9 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=False)
 
     search_index_file = forms.CharField(
-        label=_("Search index file"),
-        help_text=_("The file that search index data should be stored in."),
+        label=_("Search index directory"),
+        help_text=_("The directory that search index data should be stored "
+                    "in."),
         required=False,
         widget=forms.TextInput(attrs={'size': '50'}))
 
