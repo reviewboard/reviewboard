@@ -1,8 +1,8 @@
 .. _permission-groups:
 
-==========================
-Managing Permission Groups
-==========================
+=================
+Permission Groups
+=================
 
 When managing :ref:`users <users>`, it's sometimes useful to give certain
 groups of users special abilities in Review Board. For example, giving a

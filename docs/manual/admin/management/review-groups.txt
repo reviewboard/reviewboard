@@ -1,8 +1,8 @@
 .. _review-groups:
 
-======================
-Managing Review Groups
-======================
+=============
+Review Groups
+=============
 
 Review requests are usually posted to one or more review groups, which users
 can subscribe to. Every review group has an ID name, a human-readable display

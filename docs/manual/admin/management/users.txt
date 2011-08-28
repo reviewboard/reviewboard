@@ -1,8 +1,8 @@
 .. _users:
 
-==============
-Managing Users
-==============
+=====
+Users
+=====
 
 Users. Without them, nobody would use Review Board.
 

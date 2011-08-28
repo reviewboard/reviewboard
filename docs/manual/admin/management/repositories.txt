@@ -1,8 +1,8 @@
 .. _repositories:
 
-=====================
-Managing Repositories
-=====================
+============
+Repositories
+============
 
 Review Board supports talking to multiple source code repositories of various
 types. A single Review Board server can be configured with nearly an unlimited

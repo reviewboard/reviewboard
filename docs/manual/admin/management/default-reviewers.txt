@@ -1,9 +1,9 @@
 .. _managing-default-reviewers:
 .. _default-reviewers:
 
-==========================
-Managing Default Reviewers
-==========================
+=================
+Default Reviewers
+=================
 
 The Default Reviewers list provides a way to automatically add certain users
 or groups to the reviewer lists on new review requests, depending on the paths
