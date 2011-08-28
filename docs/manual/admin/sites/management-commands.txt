@@ -1,8 +1,8 @@
 .. _management-commands:
 
-===================
-Management Commands
-===================
+============================
+Advanced Management Commands
+============================
 
 :command:`rb-site` provides a ``manage`` command for certain management tasks.
 The format for the commands is always::
