@@ -27,22 +27,24 @@ creating a new review request or reviewing some code.
 
 E-mails appear to be sent from the users, rather than from Review Board
 itself. It accomplishes this by putting the user's name and e-mail address
-in the ``Sender`` field in the e-mail, and the configured
-:ref:`sender e-mail address <sender-email-address>` in the ``From`` field.
-That address can be customized in the :ref:`email-settings`.
+in the :mailheader:`Sender` field in the e-mail, and the configured
+:ref:`sender e-mail address <sender-email-address>` in the
+:mailheader:`From` field. That address can be customized in the
+:ref:`email-settings`.
 
-By using these two fields instead of just faking the ``From`` address,
-we can avoid e-mails appearing to be spam or otherwise malicious. Many
-modern e-mail clients warn if the ``From`` address appears to be suspicious.
+By using these two fields instead of just faking the :mailheader:`From`
+address, we can avoid e-mails appearing to be spam or otherwise malicious.
+Many modern e-mail clients warn if the :mailheader:`From` address appears to
+be suspicious.
 
 
 Sender Verification through DKIM
 ================================
 
-Using the ``From`` and ``Sender`` fields may not be enough. To properly
-configure Review Board to send e-mail, you may need a sufficient
-:term:`DKIM` setup. DKIM allows the receiver to verify that the e-mail
-was actually sent from the server it appears to be sent from.
+Using the :mailheader:`From` and :mailheader:`Sender` fields may not be
+enough. To properly configure Review Board to send e-mail, you may need a
+sufficient :term:`DKIM` setup. DKIM allows the receiver to verify that the
+e-mail was actually sent from the server it appears to be sent from.
 
 DKIM support may need to be configured on your mail server software.
 Configuring DKIM is beyond the scope of this documentation, as it may

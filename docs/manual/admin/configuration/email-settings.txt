@@ -20,11 +20,12 @@ E-Mail Settings
 .. _sender-email-address:
 
 * **Sender e-mail address:**
-    The e-mail address all e-mails are sent from. The ``Sender`` e-mail header
-    will be used to make e-mails appear to come from the user causing the
-    e-mail to be sent. By using the ``Sender`` header for this instead of
-    ``From``, there's less risk that e-mail clients will consider the e-mails
-    to be malicious or spam. This may require a proper :term:`DKIM` setup.
+    The e-mail address all e-mails are sent from. The :mailheader:`Sender`
+    e-mail header will be used to make e-mails appear to come from the user
+    causing the e-mail to be sent. By using the :mailheader:`Sender` header
+    for this instead of :mailheader:`From`, there's less risk that e-mail
+    clients will consider the e-mails to be malicious or spam. This may
+    require a proper :term:`DKIM` setup.
 
     This defaults to ``noreply@<servername>``.
 
