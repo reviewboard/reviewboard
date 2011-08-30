@@ -11,8 +11,11 @@ test data, audio, or anything else. These files can be downloaded by
 other people. This is especially helpful for files that are part of a change
 but can't be represented in diffs.
 
+.. image:: file-attachment.png
+
 Comments can be made on file attachments by clicking :guilabel:`Add Comment`.
-These comments apply to file attachments as a whole.
+These comments apply to file attachments as a whole. See
+:ref:`reviewing-file-attachments` for more information.
 
 There are two ways to upload a file attachment:
 

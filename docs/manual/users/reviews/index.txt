@@ -6,6 +6,7 @@ Reviewing Files
    :maxdepth: 2
 
    reviewing-diffs
+   reviewing-files
    reviewing-screenshots
    draft-banner
    editing-reviews
