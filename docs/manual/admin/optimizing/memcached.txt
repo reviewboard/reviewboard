@@ -1,3 +1,5 @@
+.. _optimizing-memcached:
+
 ====================
 Optimizing Memcached
 ====================

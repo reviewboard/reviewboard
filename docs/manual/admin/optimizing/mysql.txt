@@ -1,0 +1,43 @@
+================
+Optimizing MySQL
+================
+
+MySQL has a few options for tuning performance that can greatly speed up
+Review Board's queries.
+
+
+Query Caching
+=============
+
+Query caching allows MySQL to store the results of previous queries so that
+they can be returned quickly the next time the query is performed. This can
+be very beneficial on many pages, paricularly review requests and the
+dashboard.
+
+The amount of memory available for query caching can be configured. It's
+good to give a minimum of 20MB, but larger query caches will allow more
+data to be stored.
+
+To enable query caching, first open the MySQL config file. On Linux, this is
+located at :file:`/etc/my.cnf`. On Windows, this may be named :file:`my.ini`.
+
+All cache settings are in the ``[mysqld]`` section of the file.
+
+``query_cache_type`` needs to be set to 1 to enable caching.
+
+``query_cache_size`` is the size of the cache. This can be in bytes, or you
+can use a ``M`` suffix to specify the amount of megabytes.
+
+``query_cache_limit`` is the maximum size of an individually cached query.
+Queries over this size won't go into the cache. This is also in bytes, or
+megabytes with the ``M`` suffix. 1MB is a safe bet.
+
+To enable query caching with 64MB, set::
+
+    [mysqld]
+    query_cache_type = 1
+    query_cache_size = 64M
+    query_cache_limit = 1M
+
+
+.. comment: vim: ft=rst et
