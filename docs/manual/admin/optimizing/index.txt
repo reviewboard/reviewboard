@@ -1,6 +1,6 @@
-==========
-Optimizing
-==========
+============
+Optimization
+============
 
 .. toctree::
    :maxdepth: 2
