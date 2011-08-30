@@ -9,7 +9,7 @@ Administration Guide
 
    installation/index
    upgrading/index
-   optimizing/index
+   optimization/index
    configuration/index
    admin-ui/index
    sites/index
