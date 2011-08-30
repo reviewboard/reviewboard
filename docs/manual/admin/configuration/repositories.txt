@@ -38,6 +38,7 @@ A form will appear with fields split into the following sections:
 * `General Information`_
 * `Repository Hosting`_
 * `Bug Tracker`_
+* `Access Control`_
 * `Advanced`_
 
 
@@ -193,6 +194,39 @@ associated with the repository if this field is provided.
 
     If you don't use a bug tracker with projects in this repository, this
     field can be left blank.
+
+
+Access Control
+~~~~~~~~~~~~~~
+
+.. versionadded:: 1.6
+
+Repository access can be limited to certain users and review groups.
+See :ref:`access-control` for more information on how this works.
+
+.. _repository-publicly-accessible:
+
+* **Publicly accessible**
+    If checked, all users will be able to access review requests and files
+    on this repository. Otherwise, they'll only be accessible to users
+    or groups that are granted access below.
+
+    By default, this is checked.
+
+* **Users with access** (optional)
+    If the repository is not publicly accessible, only users listed here
+    will have access to the repository and review requests on it.
+
+    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac) to
+    select more than one.
+
+* **Review groups with access** (optional)
+    If the repository is not publicly accessible, only users on the
+    invite-only review groups listed here will have access to the repository
+    and review requests on it.
+
+    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac) to
+    select more than one.
 
 
 Advanced
