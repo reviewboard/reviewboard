@@ -1,3 +1,4 @@
+import errno
 import imp
 import os
 import nose
@@ -73,7 +74,18 @@ class SCMTestCase(DjangoTestCase):
         repo = Repository(name='SSH Test', path=repo_path,
                           tool=self.repository.tool)
         tool = repo.get_scmtool()
-        tool.check_repository(repo_path)
+
+        try:
+            tool.check_repository(repo_path)
+        except socket.error, e:
+            if e.errno == errno.ECONNREFUSED:
+                # This box likely isn't set up for this test.
+                SCMTestCase._can_test_ssh = False
+                raise nose.SkipTest(
+                    "Cannot perform SSH access tests. No local SSH service is "
+                    "running.")
+            else:
+                raise
 
         if filename:
             self.assertNotEqual(tool.get_file(filename, HEAD), None)
