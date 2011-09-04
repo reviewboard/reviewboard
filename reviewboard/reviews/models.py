@@ -447,7 +447,7 @@ class ReviewRequest(models.Model):
 
     def get_display_id(self):
         """Gets the ID which should be exposed to the user."""
-        if self.local_site:
+        if self.local_site_id:
             return self.local_id
         else:
             return self.id

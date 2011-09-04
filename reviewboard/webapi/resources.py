@@ -5985,7 +5985,7 @@ class ReviewRequestResource(WebAPIResource):
         This is an override of WebAPIResource.get_href which will use the
         local_id instead of the pk.
         """
-        if obj.local_site:
+        if obj.local_site_id:
             local_site_name = obj.local_site.name
         else:
             local_site_name = None

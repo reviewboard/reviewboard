@@ -29,7 +29,50 @@ class EmailTestHelper(object):
                     u"group %s was not found in the recipient list" % address)
 
 
-class EmailTests(TestCase, EmailTestHelper):
+class UserEmailTests(TestCase, EmailTestHelper):
+    def setUp(self):
+        initialize()
+
+        mail.outbox = []
+        self.sender = 'noreply@example.com'
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("mail_send_new_user_mail", True)
+        siteconfig.save()
+        load_site_config()
+
+    def test_new_user_email(self):
+        """
+        Testing sending an e-mail after a new user has successfully registered.
+        """
+        # Clear the outbox.
+        mail.outbox = []
+
+        new_user_info = {
+            'username': 'NewUser',
+            'password1': 'password',
+            'password2': 'password',
+            'email': 'newuser@example.com',
+            'first_name': 'New',
+            'last_name': 'User'
+            }
+
+        # Registration request have to be sent twice since djblets need to
+        # validate cookies on the second request.
+        self.client.get('/account/register/', new_user_info)
+        self.client.post('/account/register/', new_user_info)
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        admin_email_addr = siteconfig.get('site_admin_email')
+        email = mail.outbox[0]
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email.subject,
+                         "New Review Board user registration for NewUser")
+        self.assertEqual(email.to[0][1], admin_email_addr)
+
+
+class ReviewRequestEmailTests(TestCase, EmailTestHelper):
     """Tests the e-mail support."""
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools',
                 'test_site']
@@ -42,7 +85,6 @@ class EmailTests(TestCase, EmailTestHelper):
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
-        siteconfig.set("mail_send_new_user_mail", True)
         siteconfig.set("mail_default_from", self.sender)
         siteconfig.save()
         load_site_config()
@@ -140,36 +182,6 @@ class EmailTests(TestCase, EmailTestHelper):
         message = mail.outbox[0].message()
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
-
-    def test_new_user_email(self):
-        """
-        Testing sending an e-mail after a new user has successfully registered.
-        """
-        # Clear the outbox.
-        mail.outbox = []
-
-        new_user_info = {
-            'username': 'NewUser',
-            'password1': 'password',
-            'password2': 'password',
-            'email': 'newuser@example.com',
-            'first_name': 'New',
-            'last_name': 'User'
-            }
-
-        # Registration request have to be sent twice since djblets need to
-        # validate cookies on the second request.
-        self.client.get('/account/register/', new_user_info)
-        self.client.post('/account/register/', new_user_info)
-
-        siteconfig = SiteConfiguration.objects.get_current()
-        admin_email_addr = siteconfig.get('site_admin_email')
-        email = mail.outbox[0]
-
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(email.subject,
-                         "New Review Board user registration for NewUser")
-        self.assertEqual(email.to[0][1], admin_email_addr)
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
