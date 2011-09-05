@@ -137,15 +137,17 @@ at some point included by your main Apache configuration file.
 Once you've installed the configuration file, restart Apache and then
 try going to your site.
 
-.. note:: Some Apache installations (such as the default installs on Debian
-          and Ubuntu) by default define a global virtual host that shares
-          :file:`/var/www` as the document root. This may lead to problems
-          with your install. If you access your site and see nothing but
-          a directory listing, then you're affected by this problem.
+.. note::
 
-          The solution is to remove the "default" site from your
-          :file:`/etc/apache2/sites-enabled` directory. This may be
-          called something like :file:`default` or :file:`000-default`.
+    Some Apache installations (such as the default installs on Debian
+    and Ubuntu) by default define a global virtual host that shares
+    :file:`/var/www` as the document root. This may lead to problems
+    with your install. If you access your site and see nothing but
+    a directory listing, then you're affected by this problem.
+
+    The solution is to remove the "default" site from your
+    :file:`/etc/apache2/sites-enabled` directory. This may be
+    called something like :file:`default` or :file:`000-default`.
 
 
 lighttpd

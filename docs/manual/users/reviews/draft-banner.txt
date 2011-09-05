@@ -15,8 +15,9 @@ The banner has the following buttons:
 * :guilabel:`Publish Review`
 * :guilabel:`Discard`
 
-Clicking :guilabel:`Edit Review` will display the :ref:`review dialog`,
-allowing you to make changes to your review.
+Clicking :guilabel:`Edit Review` will display the
+:ref:`review dialog <review-dialog>`, allowing you to make changes to your
+review.
 
 Clicking :guilabel:`Publish Review` will immediately
 :ref:`publish your review <publishing-reviews>`.

@@ -1,3 +1,5 @@
+.. _access-control:
+
 ==============
 Access Control
 ==============

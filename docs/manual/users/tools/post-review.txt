@@ -193,14 +193,16 @@ Another way for post-commit review is send changes developed on branch by
 
     $ post-review --tracking my_dev_branch
 
-.. note:: :command:`post-review` trying match reviewboard's repository based on
-          VOB's UUID. In case of problems Your VOB's name will be used.
-          Remember. You can always overwrite this behavior using
-          :file:`.reviewboardrc `file or passing :option:`--repository-url`.
+.. note::
+
+   :command:`post-review` trying match reviewboard's repository based on
+   VOB's UUID. In case of problems Your VOB's name will be used.
+   Remember. You can always overwrite this behavior using
+   :file:`.reviewboardrc `file or passing :option:`--repository-url`.
 
 
 .. index:: post-commit review
-.. _postingcommittedcode:
+.. _posting-committed-code:
 
 Posting Committed Code
 ======================
@@ -229,7 +231,7 @@ In order to update an existing review request, you can use the
 :option:`-r` parameter, as shown above.
 
 
-.. _postingexistingdiffs:
+.. _posting-existing-diffs:
 
 Posting Existing Diffs
 ======================
@@ -449,7 +451,7 @@ Server Options
    permissions must be used in order for this parameter to work.
 
    This is useful when used in a repository's post-commit script to update
-   a review request. See :ref:`Automating post-review` for usage information.
+   a review request. See :ref:`automating-post-review` for usage information.
 
 .. cmdoption:: --username=<USERNAME>
 
@@ -478,7 +480,7 @@ Review Request Options
 .. cmdoption:: --revision-range=<REVISION_RANGE>
 
    Specifies a revision or a range of revisions used to generate the diff.
-   See :ref:`Posting Committed Code` for usage information.
+   See :ref:`posting-committed-code` for usage information.
 
 
 Field Defaults Options
@@ -506,7 +508,7 @@ Field Defaults Options
 
    Specifies an existing diff file to upload, instead of generating a new
    diff. The special value of ``-`` allows the diff to be piped into
-   STDIN. See :ref:`Posting Existing Diffs` for usage information.
+   STDIN. See :ref:`posting-existing-diffs` for usage information.
 
 .. cmdoption:: --summary=<SUMMARY>
 
