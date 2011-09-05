@@ -929,7 +929,7 @@ $.fn.commentDlg = function() {
         .keypress(function(e) {
             e.stopPropagation();
 
-            switch (e.keyCode) {
+            switch (e.which) {
                 case 10:
                 case $.ui.keyCode.ENTER:
                     /* Enter */
@@ -943,6 +943,16 @@ $.fn.commentDlg = function() {
                     /* Escape */
                     ignoreKeyUp = true;
                     cancelButton.click();
+                    break;
+
+                case 73:
+                case 105:
+                    /* I */
+                    if (e.altKey) {
+                      issueField.click();
+                      ignoreKeyUp = true;
+                    }
+
                     break;
 
                 default:

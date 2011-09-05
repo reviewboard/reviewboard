@@ -30,6 +30,10 @@ This checkbox is available when :ref:`reviewing diffs <reviewing-diffs>`,
 :ref:`screenshots <reviewing-screenshots>`, and
 :ref:`file attachments <reviewing-file-attachments>`.
 
+By default, :guilabel:`Open an issue` is checked for new comments.
+
+The checkbox can also be toggled by pressing :kbd:`Alt-I`.
+
 
 Responding to Issues
 ====================
