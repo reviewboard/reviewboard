@@ -1,6 +1,6 @@
-===============
-Reviewing Files
-===============
+=========
+Reviewing
+=========
 
 .. toctree::
    :maxdepth: 2
