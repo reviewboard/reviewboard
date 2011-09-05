@@ -20,6 +20,9 @@ get when :doc:`reviewing diffs <reviewing-diffs>` or
 
 .. image:: comment-box.png
 
+The file attachment comment dialog supports issue tracking. See the section on
+:ref:`issue-tracking` for more information.
+
 As of Review Board 1.6.0, there's no visual indication of an existing comment
 on the file attachment. However, you can see your comment and edit it by
 clicking :guilabel:`Add Comment` again.

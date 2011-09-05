@@ -8,6 +8,7 @@ Reviewing
    reviewing-diffs
    reviewing-files
    reviewing-screenshots
+   issue-tracking
    draft-banner
    editing-reviews
    publishing

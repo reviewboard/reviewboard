@@ -1,3 +1,5 @@
+.. _reviewing-diffs:
+
 ===============
 Reviewing Diffs
 ===============
@@ -42,6 +44,9 @@ number down the column until you've selected all the lines needed for your
 comment.
 
 .. image:: comment-box.png
+
+The diff comment dialog supports issue tracking. See the section on
+:ref:`issue-tracking` for more information.
 
 After saving a comment, a green comment flag will appear next to the first
 line in your selection, indicating that you have an unpublished comment. Click
