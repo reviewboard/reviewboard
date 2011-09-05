@@ -1,47 +1,17 @@
-.. _webapi2.0-error-204:
+.. webapi-error::
+   :instance: reviewboard.webapi.errors.CHANGE_NUMBER_IN_USE
+   :example-data:
+       {"review_request": {}}
 
-==========================
-204 - Change Number In Use
-==========================
+   The change number used to create a new review request wasn't valid, because
+   another review request already exists with that change number. You will
+   only see this with repositories that support server-side changesets, such
+   as Perforce.
 
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 204                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`409`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``The change number specified has already been      |
-|                      | used``                                              |
-+----------------------+-----------------------------------------------------+
-| **Description**      | The change number used to create a new review       |
-|                      | request wasn't valid, because another review        |
-|                      | request already exists with that change number. You |
-|                      | will only see this with repositories that support   |
-|                      | server-side changesets, such as Perforce.           |
-|                      |                                                     |
-|                      | Usually, the correct thing to do is to instead      |
-|                      | modify the other review request.                    |
-|                      |                                                     |
-|                      | The resource information for the review request     |
-|                      | that's associated with the change number will be    |
-|                      | returned in the ``review_request`` key.             |
-+----------------------+-----------------------------------------------------+
+   Usually, the correct thing to do is to instead modify the other review
+   request.
 
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 204,
-       msg: "The change number specified has already been used"
-     },
-     review_request: {
-        ...
-     }
-   }
-
+   The resource information for the review request that's associated with the
+   change number will be returned in the ``review_request`` key.
 
 .. comment: vim: ft=rst et ts=3

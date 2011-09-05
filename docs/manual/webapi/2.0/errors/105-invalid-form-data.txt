@@ -1,43 +1,18 @@
-.. _webapi2.0-error-105:
+.. webapi-error::
+   :instance: djblets.webapi.errors.INVALID_FORM_DATA
+   :example-data:
+      {
+          "fields": {
+              "myint": [
+                  "`abc` is not an integer"
+              ]
+          }
+      }
 
-=======================
-105 - Invalid Form Data
-=======================
+   The data sent in the request (usually when using HTTP PUT or POST) had
+   errors. One or more fields failed to validate correctly.
 
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 105                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`400`                                         |
-+----------------------+-----------------------------------------------------+
-| **HTTP Headers**     | ``WWW-Authenticate``                                |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``One or more fields had errors``                   |
-+----------------------+-----------------------------------------------------+
-| **Description**      | The data sent in the request (usually when using    |
-|                      | HTTP PUT or POST) had errors. One or more fields    |
-|                      | failed to validate correctly.                       |
-|                      |                                                     |
-|                      | This comes with a ``fields`` key containing a       |
-|                      | mapping of field names to lists of error texts.     |
-+----------------------+-----------------------------------------------------+
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 105,
-       msg: "One or more fields had errors"
-     },
-     fields: {
-       myint: [
-         "'abc' is not an integer"
-       ]
-     }
-   }
-
+   This comes with a ``fields`` key containing a mapping of field names to
+   lists of error texts.
 
 .. comment: vim: ft=rst et ts=3
