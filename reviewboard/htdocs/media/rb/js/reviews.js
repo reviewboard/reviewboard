@@ -2039,9 +2039,7 @@ function initDnD() {
 
     $(document.body)
         .bind("dragenter", function(event) {
-            event.preventDefault();
             handleDragEnter(event);
-            return false;
         });
 
     function handleDragEnter(event) {
@@ -2053,11 +2051,36 @@ function initDnD() {
                 .appendTo(document.body)
                 .width($(window).width())
                 .height(height)
-                .bind("dragenter", function() {
-                    stopDropIndicatorRemoval();
+                .bind("dragleave", function(event) {
+                    /*
+                     * This should check whether we've exited the drop
+                     * indicator properly. It'll prevent problems when
+                     * transitioning between elements within the indicator.
+                     *
+                     * Note that while this should work cross-browser,
+                     * Firefox 4+ appears broken in that it doesn't send us
+                     * dropleave events on exiting the window.
+                     *
+                     * Also note that it doesn't appear that we need to check
+                     * the Y coordinate. X should be 0 in most cases when
+                     * leaving, except when dragging over the right scrollbar
+                     * in Chrome, when it'll be >= the container width.
+                     */
+                    if (event.pageX <= 0 ||
+                        event.pageX >= dropIndicator.width()) {
+                        handleDragExit();
+                    }
+
                     return false;
                 })
-                .bind("dragleave", function() {
+                .mouseenter(function() {
+                    /*
+                     * If we get a mouse enter, then the user has moved
+                     * the mouse over the drop indicator without there
+                     * being any drag-and-drop going on. This is likely due
+                     * to the broken Firefox 4+ behavior where dragleave
+                     * events when leaving windows aren't firing.
+                     */
                     handleDragExit();
                     return false;
                 });
@@ -2089,10 +2112,6 @@ function initDnD() {
             var dropBoxHeight = (height - middleBox.height()) / 2;
             $([screenshotDropBox[0], fileDropBox[0]])
                 .height(dropBoxHeight)
-                .bind("dragenter", function() {
-                    stopDropIndicatorRemoval();
-                    return false;
-                })
                 .bind("dragover", function() {
                     var dt = event.originalEvent.dataTransfer;
 
@@ -2111,21 +2130,10 @@ function initDnD() {
                     }
 
                     $(this).removeClass("hover");
-
-                    handleDragExit();
-
-                    return false;
                 });
 
             screenshotText.css("margin-top", -screenshotText.height() / 2);
             fileText.css("margin-top", -fileText.height() / 2);
-        }
-    }
-
-    function stopDropIndicatorRemoval() {
-        if (removeDropIndicatorHandle) {
-            window.clearInterval(removeDropIndicatorHandle);
-            removeDropIndicatorHandle = null;
         }
     }
 
@@ -2134,15 +2142,20 @@ function initDnD() {
             return;
         }
 
-        stopDropIndicatorRemoval();
+        if (removeDropIndicatorHandle) {
+            window.clearInterval(removeDropIndicatorHandle);
+            removeDropIndicatorHandle = null;
+        }
 
         if (closeImmediately) {
-            dropIndicator.remove();
-            dropIndicator = null;
+            dropIndicator.fadeOut(function() {
+                dropIndicator.remove();
+                dropIndicator = null;
+            });
         } else {
             removeDropIndicatorHandle = window.setInterval(function() {
                 handleDragExit(true);
-            }, 500);
+            }, 1000);
         }
     }
 
