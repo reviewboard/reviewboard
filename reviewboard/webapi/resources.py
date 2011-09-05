@@ -4110,11 +4110,11 @@ review_reply_screenshot_comment_resource = \
     ReviewReplyScreenshotCommentResource()
 
 
-class BaseFileAttachmentCommentResource(WebAPIResource):
+class BaseFileAttachmentCommentResource(BaseCommentResource):
     """A base resource for file comments."""
     model = FileAttachmentComment
     name = 'file_attachment_comment'
-    fields = {
+    fields = dict({
         'id': {
             'type': int,
             'description': 'The numeric ID of the comment.',
@@ -4141,10 +4141,9 @@ class BaseFileAttachmentCommentResource(WebAPIResource):
             'type': 'reviewboard.webapi.resources.UserResource',
             'description': 'The user who made the comment.',
         },
-    }
+    }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
-    last_modified_field = 'timestamp'
     allowed_methods = ('GET',)
 
     def get_queryset(self, request, *args, **kwargs):
@@ -4240,9 +4239,15 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'description': 'The comment text.',
             },
         },
+        optional = {
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether the comment opens an issue.',
+            },
+        },
     )
     def create(self, request, file_attachment_id=None, text=None,
-               *args, **kwargs):
+               issue_opened=False, *args, **kwargs):
         """Creates a file comment on a review.
 
         This will create a new comment on a file as part of a review.
@@ -4271,7 +4276,15 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 }
             }
 
-        new_comment = self.model(file_attachment=file_attachment, text=text)
+        new_comment = self.model(file_attachment=file_attachment,
+                                 text=text,
+                                 issue_opened=bool(issue_opened))
+
+        if issue_opened:
+            new_comment.issue_status = BaseComment.OPEN
+        else:
+            new_comment.issue_status = None
+
         new_comment.save()
 
         review.file_attachment_comments.add(new_comment)
@@ -4290,6 +4303,14 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'type': str,
                 'description': 'The comment text.',
             },
+            'issue_opened': {
+                'type': bool,
+                'description': 'Whether or not the comment opens an issue.',
+            },
+            'issue_status': {
+                'type': ('dropped', 'open', 'resolved'),
+                'description': 'The status of an open issue.',
+            }
         },
     )
     def update(self, request, *args, **kwargs):
@@ -4305,10 +4326,23 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
+        # Determine whether or not we're updating the issue status.
+        # If so, delegate to the base_comment_resource.
+        if base_comment_resource.should_update_issue_status(file_comment,
+                                                            **kwargs):
+            return base_comment_resource.update_issue_status(request, self,
+                                                             *args, **kwargs)
+
         if not review_resource.has_modify_permissions(request, review):
             return _no_access_error(request.user)
 
-        for field in ('text',):
+        # If we've updated the comment from having no issue opened,
+        # to having an issue opened, we need to set the issue status
+        # to OPEN.
+        if not file_comment.issue_opened and kwargs.get('issue_opened', False):
+            file_comment.issue_status = BaseComment.OPEN
+
+        for field in ('text', 'issue_opened'):
             value = kwargs.get(field, None)
 
             if value is not None:

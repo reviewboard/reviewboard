@@ -1666,6 +1666,8 @@ RB.FileAttachmentComment = function(review, id, file_attachment_id) {
     this.file_attachment_id = file_attachment_id;
     this.text = "";
     this.loaded = false;
+    this.issue_opened = false;
+    this.issue_status = "";
     this.url = null;
     return this;
 };
@@ -1715,12 +1717,17 @@ $.extend(RB.FileAttachmentComment.prototype, {
                 var type;
                 var url;
                 var data = {
-                    text: self.text
+                    text: self.text,
+                    issue_opened: self.issue_opened
                 };
 
                 if (self.loaded) {
                     type = "PUT";
                     url = self.url;
+
+                    if (self.review.public) {
+                        data.issue_status = self.issue_status;
+                    }
                 } else {
                     data.file_attachment_id = self.file_attachment_id;
                     url = self.review.links.file_attachment_comments.href;
@@ -1733,7 +1740,10 @@ $.extend(RB.FileAttachmentComment.prototype, {
                     success: function(rsp) {
                         self._loadDataFromResponse(rsp);
                         $.event.trigger("saved", null, self);
-                        options.success();
+
+                        if ($.isFunction(options.success)) {
+                            options.success(rsp);
+                        }
                     }
                 });
             });
@@ -1806,6 +1816,8 @@ $.extend(RB.FileAttachmentComment.prototype, {
         this.text = rsp.file_attachment_comment.text;
         this.links = rsp.file_attachment_comment.links;
         this.url = rsp.file_attachment_comment.links.self.href;
+        this.issue_opened = rsp.file_attachment_comment.issue_opened;
+        this.issue_status = rsp.file_attachment_comment.issue_status;
         this.loaded = true;
     }
 });

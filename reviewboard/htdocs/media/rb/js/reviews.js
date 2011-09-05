@@ -105,6 +105,10 @@ var gCommentIssueManager = new function() {
             comment = gReviewRequest
                 .createReview(review_id)
                 .createScreenshotComment(comment_id);
+        } else if (comment_type == "file_attachment_comment") {
+            comment = gReviewRequest
+                .createReview(review_id)
+                .createFileAttachmentComment(comment_id);
         }
 
         comments[comment_id] = comment;
