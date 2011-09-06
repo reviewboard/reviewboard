@@ -16,6 +16,8 @@ require a Ship It to close a review request.
 Once a review has been marked Ship It and published, it cannot be undone.
 
 
+.. _quick-ship-it:
+
 Quick Ship-It
 -------------
 

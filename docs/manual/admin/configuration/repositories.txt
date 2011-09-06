@@ -492,6 +492,8 @@ Note that Review Board will only ever use this user for read-only operations.
 It will never write to the repository.
 
 
+.. _perforce-stunnel:
+
 Using Perforce with stunnel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

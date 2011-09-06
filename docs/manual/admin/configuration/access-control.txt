@@ -11,6 +11,8 @@ repositories, and join groups. This can be useful in large organizations
 or companies where not everyone has access to every project.
 
 
+.. _invite-only-review-groups:
+
 Invite-only Review Groups
 =========================
 
@@ -27,6 +29,8 @@ To set a group to be invite-only, toggle the
 users who need access to the group.
 
 
+.. _hidden-review-groups:
+
 Hidden Review Groups
 ====================
 
@@ -37,6 +41,8 @@ in operation.
 Marking a group as invisible doesn't change who can use it or how it affects
 access, but it does hide it from all lists of groups.
 
+
+.. _private-repositories:
 
 Private Repositories
 ====================
