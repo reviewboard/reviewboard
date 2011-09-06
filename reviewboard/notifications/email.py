@@ -374,7 +374,9 @@ def mail_new_user(user):
 
     message = SpiffyEmailMessage(subject.strip(), text_message, html_message,
                                  settings.SERVER_EMAIL, settings.SERVER_EMAIL,
-                                 [a for a in settings.ADMINS], None, None)
+                                 [build_email_address(*a)
+                                  for a in settings.ADMINS], None, None)
+
     try:
         message.send()
     except Exception, e:
