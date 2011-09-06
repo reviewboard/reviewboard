@@ -79,6 +79,22 @@ class ClearCaseTool(SCMTool):
 
         return (revision, unextended_path)
 
+    @classmethod
+    def relpath(cls, path, start):
+        """Wrapper for os.path.relpath for Python 2.4.
+
+        Python 2.4 doesn't have the os.path.relpath function, so this
+        approximates it well enough for our needs.
+        """
+        if not hasattr(cpath, 'relpath'):
+            if start[-1] != os.sep:
+                start += os.sep
+
+            return path[len(start):]
+
+        return cpath.relpath(path, start)
+
+
     def normalize_path_for_display(self, filename):
         """Return display friendly path without revision informations.
 
@@ -86,19 +102,7 @@ class ClearCaseTool(SCMTool):
         information about branch, version or even repository path
         so we return unextended path relative to repopath (view)
         """
-
-        # There is no relpath function in Python 2.4
-        # lets count relative path using manualy
-        if not hasattr(cpath, 'relpath'):
-            repo = self.repopath
-            if repo[-1] != os.sep:
-                repo += os.sep
-            path = self.unextend_path(filename)[1]
-            return path[path.find(repo) + len(repo):]
-
-        return cpath.relpath(
-            self.unextend_path(filename)[1], self.repopath
-        )
+        return self.relpath(self.unextend_path(filename)[1], self.repopath)
 
     def get_repository_info(self):
         vobstag = self._get_vobs_tag(self.repopath)
@@ -249,7 +253,7 @@ class ClearCaseDiffParser(DiffParser):
         if drive:
             res = os.path.join(drive, res)
 
-        return os.path.relpath(res, self.repopath)
+        return ClearCaseTool.relpath(res, self.repopath)
 
 class ClearCaseClient(object):
     def __init__(self, path):
