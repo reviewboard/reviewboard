@@ -1161,7 +1161,7 @@ def user_infobox(request, username,
 
     response = render_to_response(template_name, RequestContext(request, {
         'show_profile': show_profile,
-        'user': user,
+        'requested_user': user,
     }))
     set_etag(response, etag)
 

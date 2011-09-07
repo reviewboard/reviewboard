@@ -63,13 +63,17 @@ class UserEmailTests(TestCase, EmailTestHelper):
         self.client.post('/account/register/', new_user_info)
 
         siteconfig = SiteConfiguration.objects.get_current()
+        admin_name = siteconfig.get('site_admin_name')
         admin_email_addr = siteconfig.get('site_admin_email')
         email = mail.outbox[0]
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email.subject,
                          "New Review Board user registration for NewUser")
-        self.assertEqual(email.to[0][1], admin_email_addr)
+
+        self.assertEqual(email.from_email, settings.SERVER_EMAIL)
+        self.assertEqual(email.to[0], build_email_address(admin_name,
+                                                          admin_email_addr))
 
 
 class ReviewRequestEmailTests(TestCase, EmailTestHelper):
