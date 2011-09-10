@@ -891,9 +891,34 @@ class CounterTests(TestCase):
         self.profile.star_review_request(self.review_request)
 
         self.site_profile = self.profile.site_profiles.get(local_site=None)
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
 
         self.group = Group.objects.create(name='test-group')
         self.group.users.add(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+    def test_new_site_profile(self):
+        """Testing counters on a new LocalSiteProfile"""
+        self.site_profile.delete()
+        self.site_profile = \
+            LocalSiteProfile.objects.create(user=self.user,
+                                            profile=self.profile)
+        self.assertEqual(self.site_profile.total_outgoing_request_count, None)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, None)
+        self.assertEqual(self.site_profile.starred_public_request_count, None)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
 
     def test_outgoing_requests(self):
         """Testing counters with creating outgoing review requests"""

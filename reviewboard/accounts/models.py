@@ -194,7 +194,7 @@ class LocalSiteProfile(models.Model):
         initializer=lambda p: \
             p.pk and
             (p.profile.starred_review_requests.public(
-                p.user, local_site=p.local_site).count() or 0))
+                None, local_site=p.local_site).count() or 0))
 
     class Meta:
         unique_together = (('user', 'local_site'),
