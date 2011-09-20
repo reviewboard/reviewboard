@@ -68,7 +68,6 @@ localsite_urlpatterns = patterns('',
 # Main includes
 urlpatterns += patterns('',
     (r'^account/', include('reviewboard.accounts.urls')),
-    (r'^reports/', include('reviewboard.reports.urls')),
 
     (r'^s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/',
      include(localsite_urlpatterns)),
