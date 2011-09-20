@@ -13,6 +13,8 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.extensions.base import RegisteredExtension
+from djblets.extensions.resources import ExtensionResource as \
+                                         DjbletsExtensionResource
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
@@ -29,7 +31,6 @@ from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
 from djblets.webapi.resources import \
     WebAPIResource as DjbletsWebAPIResource, \
     UserResource as DjbletsUserResource, \
-    ExtensionResource as DjbletsExtensionResource, \
     RootResource as DjbletsRootResource, \
     register_resource_for_model, \
     get_resource_for_object
