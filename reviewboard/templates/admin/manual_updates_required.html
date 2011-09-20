@@ -3,22 +3,21 @@
 {% load djblets_deco %}
 
 {% block title %}{% trans "Manual server updates required" %}{% endblock %}
-{% block headerbar %}{% endblock %}
+{% block navbar %}<br />{% endblock %}
 
 {% block content %}
+<div id="manual-updates">
 {% box "important" %}
  <h1>{% trans "Manual server updates required" %}</h1>
  <p>
 {% blocktrans %}
-  A recent change requires manual updates to be made on this server. After
+  A recent upgrade requires manual updates to be made on this server. After
   these changes are made, you should restart your server.
 {% endblocktrans %}
  </p>
  <p>
 {% blocktrans %}
-  To keep track of future updates, please visit the
-  <a href="http://code.google.com/p/reviewboard/wiki/RequiredServerUpdates">Required
-  Server Updates</a> page, or subscribe to the
+  If you have any questions or problems, please contact us on our
   <a href="http://groups.google.com/group/reviewboard">mailing list</a>.
 {% endblocktrans %}
  </p>
@@ -28,5 +27,6 @@
 {{update}}
 {% endbox %}
 {% endfor %}
+</div>
 
 {% endblock %}

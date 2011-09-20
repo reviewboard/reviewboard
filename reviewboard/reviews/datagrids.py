@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Q, Count
 from django.http import Http404
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
@@ -8,7 +7,7 @@ from djblets.datagrid.grids import Column, DateTimeColumn, \
                                    DateTimeSinceColumn, DataGrid
 from djblets.util.templatetags.djblets_utils import ageid
 
-from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -262,21 +261,21 @@ class SummaryColumn(Column):
         if review_request.submitter_id == self.datagrid.request.user.id:
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
-                return self.__labeled_summary(_('Draft'), summary)
+                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
 
             if (not review_request.public and
                 review_request.status == ReviewRequest.PENDING_REVIEW):
-                return self.__labeled_summary(_('Draft'), summary)
+                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            return self.__labeled_summary(_('Submitted'), summary)
+            return self.__labeled_summary(_('Submitted'), summary, 'label-submitted')
         elif review_request.status == ReviewRequest.DISCARDED:
-            return self.__labeled_summary(_('Discarded'), summary)
+            return self.__labeled_summary(_('Discarded'), summary, 'label-discarded')
 
         return summary
 
-    def __labeled_summary(self, label, summary):
-        return u'<span class="draftlabel">[%s]</span> %s' % (label, summary)
+    def __labeled_summary(self, label, summary, label_class):
+        return u'<span class="%s">[%s]</span> %s' % (label_class, label, summary)
 
 
 class SubmitterColumn(Column):
@@ -311,6 +310,31 @@ class PendingCountColumn(Column):
     def render_data(self, obj):
         return str(getattr(obj, self.field_name).filter(public=True,
                                                         status='P').count())
+
+class PeopleColumn(Column):
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, *args, **kwargs)
+        self.label = _("People")
+        self.detailed_label = _("Target People")
+        self.sortable = False
+        self.shrink = False
+
+    def render_data(self, review_request):
+        people = review_request.target_people.all()
+        return reduce(lambda a,d: a+d.username+' ', people, '')
+
+
+class GroupsColumn(Column):
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, *args, **kwargs)
+        self.label = _("Groups")
+        self.detailed_label = _("Target Groups")
+        self.sortable = False
+        self.shrink = False
+
+    def render_data(self, review_request):
+        groups = review_request.target_groups.all()
+        return reduce(lambda a,d: a+d.name+' ', groups, '')
 
 
 class GroupMemberCountColumn(Column):
@@ -409,6 +433,9 @@ class ReviewRequestDataGrid(DataGrid):
         css_class=lambda r: ageid(r.last_updated))
 
     review_count = ReviewCountColumn()
+
+    target_groups = GroupsColumn()
+    target_people = PeopleColumn()
 
     review_id = Column(_("Review ID"), field_name="id", db_field="id",
                        shrink=True, sortable=True, link=True)

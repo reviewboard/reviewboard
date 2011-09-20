@@ -1,39 +1,16 @@
-.. _webapi2.0-error-207:
+.. webapi-error::
+   :title: Repository File Not Found
+   :instance: reviewboard.webapi.errors.REPO_FILE_NOT_FOUND
+   :example-data:
+       {
+           "file": "/src/foobar.c",
+           "revision": 42
+       }
 
-===============================
-207 - Repository File Not Found
-===============================
+   A file specified in a request that should have been in the repository was
+   not found there. This could be a problem with the path or the revision.
 
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 207                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`400`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``The file was not found in the repository``        |
-+----------------------+-----------------------------------------------------+
-| **Description**      | A file specified in a request that should have been |
-|                      | in the repository was not found there. This could   |
-|                      | be a problem with the path or the revision.         |
-|                      |                                                     |
-|                      | This will provide ``file`` and ``revision`` keys    |
-|                      | containing the file path and revision that failed.  |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 207,
-       msg: "The file was not found in the repository"
-     },
-     file: "/src/foobar.c",
-     revision: 42
-   }
-
+   This will provide ``file`` and ``revision`` keys containing the file path
+   and revision that failed.
 
 .. comment: vim: ft=rst et ts=3

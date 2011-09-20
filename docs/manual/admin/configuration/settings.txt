@@ -1,0 +1,29 @@
+.. _settings:
+
+=============
+Site Settings
+=============
+
+Review Board sites can be configured through the Settings portion of the
+:ref:`Administration UI <administration-ui>`. You'll generally need to make
+some changes in here before others use the site.
+
+Clicking on :guilabel:`Settings` anywhere in the
+:ref:`Administration UI <administration-ui>` will take you to the
+:ref:`general-settings` page. The navigation bar below the main administration
+navigation bar contains links for jumping to the other available settings
+pages, which consists of:
+
+.. toctree::
+   :maxdepth: 1
+
+   general-settings
+   authentication-settings
+   email-settings
+   diffviewer-settings
+   logging-settings
+   ssh-settings
+   file-storage-settings
+
+
+.. comment: vim: ft=rst et

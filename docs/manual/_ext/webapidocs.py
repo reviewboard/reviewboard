@@ -13,6 +13,7 @@ except ImportError:
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
+from djblets.webapi.core import WebAPIResponseError
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -21,6 +22,16 @@ from reviewboard.webapi.resources import root_resource, FileDiffResource
 from sphinx import addnodes
 from sphinx.util import docname_join
 from sphinx.util.compat import Directive
+
+
+# Mapping of mimetypes to language names for syntax highlighting.
+MIMETYPE_LANGUAGE_MAPPING = {
+    'application/json': 'javascript',
+    'application/xml': 'xml',
+    'text/x-patch': 'diff',
+    FileDiffResource.DIFF_DATA_MIMETYPE_JSON: 'javascript',
+    FileDiffResource.DIFF_DATA_MIMETYPE_XML: 'xml',
+}
 
 
 # Build the list of parents.
@@ -32,6 +43,15 @@ class ResourceNotFound(Exception):
         self.error_node = [
             directive.state_machine.reporter.error(
                 'Unable to import the web API resource class "%s"' % classname,
+                line=directive.lineno)
+        ]
+
+
+class ErrorNotFound(Exception):
+    def __init__(self, directive, classname):
+        self.error_node = [
+            directive.state_machine.reporter.error(
+                'Unable to import the web API error class "%s"' % classname,
                 line=directive.lineno)
         ]
 
@@ -56,7 +76,7 @@ class DummyRequest(HttpRequest):
         return location
 
 
-class WebApiDocsDirective(Directive):
+class ResourceDirective(Directive):
     has_content = True
     required_arguments = 0
     option_spec = {
@@ -73,16 +93,8 @@ class WebApiDocsDirective(Directive):
         int: 'Integer',
         str: 'String',
         bool: 'Boolean',
+        dict: 'Dictionary',
         file: 'Uploaded File',
-    }
-
-    # Mapping of mimetypes to language names for syntax highlighting.
-    mimetype_language_mapping = {
-        'application/json': 'javascript',
-        'application/xml': 'xml',
-        'text/x-patch': 'diff',
-        FileDiffResource.DIFF_DATA_MIMETYPE_JSON: 'javascript',
-        FileDiffResource.DIFF_DATA_MIMETYPE_XML: 'xml',
     }
 
     def run(self):
@@ -150,7 +162,9 @@ class WebApiDocsDirective(Directive):
                 allowed_mimetypes = resource.allowed_item_mimetypes
 
             for mimetype in allowed_mimetypes:
-                example_node = self.build_example(resource, mimetype)
+                example_node = build_example(
+                    self.fetch_resource_data(resource, mimetype),
+                    mimetype)
 
                 if example_node:
                     example_section = nodes.section(ids=['example_' + mimetype])
@@ -170,7 +184,7 @@ class WebApiDocsDirective(Directive):
 
         table = nodes.table()
 
-        tgroup = nodes.tgroup(cols=1)
+        tgroup = nodes.tgroup(cols=2)
         table += tgroup
 
         tgroup += nodes.colspec(colwidth=30)
@@ -185,18 +199,18 @@ class WebApiDocsDirective(Directive):
         else:
             resource_name = resource.name
 
-        self.append_detail_row(tbody, "Name", nodes.literal(text=resource_name))
+        append_detail_row(tbody, "Name", nodes.literal(text=resource_name))
 
         # URI
         uri_template = get_resource_uri_template(resource, not is_list)
-        self.append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
+        append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
 
         # URI Parameters
-        #self.append_detail_row(tbody, "URI Parameters", '')
+        #append_detail_row(tbody, "URI Parameters", '')
 
         # Description
-        self.append_detail_row(tbody, "Description",
-                               parse_text(self, inspect.getdoc(resource)))
+        append_detail_row(tbody, "Description",
+                          parse_text(self, inspect.getdoc(resource)))
 
         # HTTP Methods
         allowed_http_methods = self.get_http_methods(resource, is_list)
@@ -221,7 +235,7 @@ class WebApiDocsDirective(Directive):
             paragraph += nodes.inline(text=" - ")
             paragraph += parse_text(self, doc_summary, nodes.inline)
 
-        self.append_detail_row(tbody, "HTTP Methods", bullet_list)
+        append_detail_row(tbody, "HTTP Methods", bullet_list)
 
         # Parent Resource
         if is_list or resource.uri_object_key is None:
@@ -237,7 +251,7 @@ class WebApiDocsDirective(Directive):
         else:
             paragraph = 'None.'
 
-        self.append_detail_row(tbody, "Parent Resource", paragraph)
+        append_detail_row(tbody, "Parent Resource", paragraph)
 
         # Child Resources
         if is_list:
@@ -272,7 +286,7 @@ class WebApiDocsDirective(Directive):
         else:
             tocnode = nodes.paragraph(text="None")
 
-        self.append_detail_row(tbody, "Child Resources", tocnode)
+        append_detail_row(tbody, "Child Resources", tocnode)
 
         # Anonymous Access
         if is_list:
@@ -287,7 +301,7 @@ class WebApiDocsDirective(Directive):
         else:
             anonymous_access = 'Yes'
 
-        self.append_detail_row(tbody, "Anonymous Access", anonymous_access)
+        append_detail_row(tbody, "Anonymous Access", anonymous_access)
 
         return table
 
@@ -331,7 +345,7 @@ class WebApiDocsDirective(Directive):
 
         thead = nodes.thead()
         tgroup += thead
-        self.append_row(thead, ['Field', 'Type', 'Description'])
+        append_row(thead, ['Field', 'Type', 'Description'])
 
         tbody = nodes.tbody()
         tgroup += tbody
@@ -352,10 +366,10 @@ class WebApiDocsDirective(Directive):
                 type_node = nodes.inline()
                 type_node += get_type_name(info['type'])
 
-                self.append_row(tbody,
-                                [name_node,
-                                 type_node,
-                                 parse_text(self, info['description'])])
+                append_row(tbody,
+                           [name_node,
+                            type_node,
+                            parse_text(self, info['description'])])
         else:
             for field in sorted(fields):
                 name = field
@@ -366,7 +380,7 @@ class WebApiDocsDirective(Directive):
                     else:
                         name += " (optional)"
 
-                self.append_row(tbody, [name, "", ""])
+                append_row(tbody, [name, "", ""])
 
         return table
 
@@ -384,7 +398,7 @@ class WebApiDocsDirective(Directive):
 
         thead = nodes.thead()
         tgroup += thead
-        self.append_row(thead, ['Name', 'Method', 'Resource'])
+        append_row(thead, ['Name', 'Method', 'Resource'])
 
         tbody = nodes.tbody()
         tgroup += tbody
@@ -425,10 +439,10 @@ class WebApiDocsDirective(Directive):
             paragraph = nodes.paragraph()
             paragraph += get_ref_to_resource(child, is_child_link)
 
-            self.append_row(tbody,
-                            [nodes.strong(text=linkname),
-                             info['method'],
-                             paragraph])
+            append_row(tbody,
+                       [nodes.strong(text=linkname),
+                        info['method'],
+                        paragraph])
 
         return table
 
@@ -480,44 +494,18 @@ class WebApiDocsDirective(Directive):
 
         return returned_nodes
 
-    def build_example(self, resource, mimetype):
-        data = self.fetch_resource_data(resource, mimetype)
-
-        if not data:
-            return None
-
-        language = self.mimetype_language_mapping.get(mimetype, None)
-
-        if language == 'javascript':
-            code = json.dumps(json.loads(data), sort_keys=True, indent=2)
-        else:
-            code = data
-
-        return nodes.literal_block(code, code, language=language)
-
     def fetch_resource_data(self, resource, mimetype):
-        is_list = 'is-list' in self.options
         kwargs = {}
-
         request = DummyRequest()
         request.path = create_fake_resource_path(request, resource, kwargs,
-                                                 not is_list)
-        request.META['HTTP_ACCEPT'] = mimetype
+                                                 'is-list' not in self.options)
 
-        result = unicode(resource(request, **kwargs))
-
-        headers, data = result.split('\n\n', 2)
-
-        return data
+        return fetch_response_data(resource, mimetype, request, **kwargs)
 
     def get_resource_class(self, classname):
-        i = classname.rfind('.')
-        module, attr = classname[:i], classname[i + 1:]
-
         try:
-            mod = __import__(module, {}, {}, [attr])
-            return getattr(mod, attr)
-        except (ImportError, AttributeError):
+            return get_from_module(classname)
+        except ImportError:
             raise ResourceNotFound(self, classname)
 
     def get_http_method_func(self, resource, http_method):
@@ -549,34 +537,135 @@ class WebApiDocsDirective(Directive):
         return sorted(
             set(resource.allowed_methods).intersection(possible_http_methods))
 
-    def append_row(self, tbody, cells):
-        row = nodes.row()
-        tbody += row
 
-        for cell in cells:
-            entry = nodes.entry()
-            row += entry
+class ErrorDirective(Directive):
+    has_content = True
+    final_argument_whitespace = True
+    has_content = True
+    option_spec = {
+        'instance': directives.unchanged_required,
+        'example-data': directives.unchanged,
+        'title': directives.unchanged,
+    }
 
-            if isinstance(cell, basestring):
-                node = nodes.paragraph(text=cell)
+    MIMETYPES = [
+        'application/json',
+        'application/xml',
+    ]
+
+    def run(self):
+        try:
+            error_obj = self.get_error_object(self.options['instance'])
+        except ErrorNotFound, e:
+            return e.error_node
+
+        # Add the class's file and this extension to the dependencies.
+        self.state.document.settings.env.note_dependency(__file__)
+        self.state.document.settings.env.note_dependency(
+            sys.modules[error_obj.__module__].__file__)
+
+        docname = 'webapi2.0-error-%s' % error_obj.code
+        error_title = self.get_error_title(error_obj)
+
+        targetnode = nodes.target('', '', ids=[docname], names=[docname])
+        self.state.document.note_explicit_target(targetnode)
+        main_section = nodes.section(ids=[docname])
+
+        # Details section
+        main_section += nodes.title(text=error_title)
+        main_section += self.build_details_table(error_obj)
+
+        # Example section
+        examples_section = nodes.section(ids=['examples'])
+        examples_section += nodes.title(text='Examples')
+        extra_params = {}
+
+        if 'example-data' in self.options:
+            extra_params = json.loads(self.options['example-data'])
+
+        has_examples = False
+
+        for mimetype in self.MIMETYPES:
+            example_node = build_example(
+                fetch_response_data(WebAPIResponseError, mimetype,
+                                    err=error_obj,
+                                    extra_params=extra_params),
+                mimetype)
+
+            if example_node:
+                example_section = nodes.section(ids=['example_' + mimetype])
+                examples_section += example_section
+
+                example_section += nodes.title(text=mimetype)
+                example_section += example_node
+                has_examples = True
+
+        if has_examples:
+            main_section += examples_section
+
+        return [targetnode, main_section]
+
+    def build_details_table(self, error_obj):
+        table = nodes.table()
+
+        tgroup = nodes.tgroup(cols=2)
+        table += tgroup
+
+        tgroup += nodes.colspec(colwidth=20)
+        tgroup += nodes.colspec(colwidth=80)
+
+        tbody = nodes.tbody()
+        tgroup += tbody
+
+        # API Error Code
+        append_detail_row(tbody, 'API Error Code',
+                          nodes.literal(text=error_obj.code))
+
+        # HTTP Status Code
+        ref = parse_text(self, ':http:`%s`' % error_obj.http_status)
+        append_detail_row(tbody, 'HTTP Status Code', ref)
+
+        # Error Text
+        append_detail_row(tbody, 'Error Text',
+                          nodes.literal(text=error_obj.msg))
+
+        if error_obj.headers:
+            # HTTP Headers
+            if len(error_obj.headers) == 1:
+                content = nodes.literal(text=error_obj.headers.keys()[0])
             else:
-                node = cell
+                content = nodes.bullet_list()
 
-            entry += node
+                for header in error_obj.headers.iterkeys():
+                    item = nodes.list_item()
+                    content += item
 
-    def append_detail_row(self, tbody, header_text, detail):
-        header_node = nodes.strong(text=header_text)
+                    literal = nodes.literal(text=header)
+                    item += literal
 
-        if isinstance(detail, basestring):
-            detail_node = [nodes.paragraph(text=text)
-                           for text in detail.split('\n\n')]
+            append_detail_row(tbody, 'HTTP Headers', content)
+
+
+        # Description
+        append_detail_row(tbody, 'Description',
+                          parse_text(self, '\n'.join(self.content)))
+
+        return table
+
+    def get_error_title(self, error_obj):
+        if 'title' in self.options:
+            title = self.options['title']
         else:
-            detail_node = detail
+            name = self.options['instance'].split('.')[-1]
+            title = name.replace('_', ' ').title()
 
-        self.append_row(tbody, [
-            header_node,
-            detail_node
-        ])
+        return '%s - %s' % (error_obj.code, title)
+
+    def get_error_object(self, name):
+        try:
+            return get_from_module(name)
+        except ImportError:
+            raise ErrorNotFound(self, name)
 
 
 def parse_text(directive, text, node_type=nodes.paragraph):
@@ -589,6 +678,45 @@ def parse_text(directive, text, node_type=nodes.paragraph):
     node = node_type(rawsource=text)
     directive.state.nested_parse(vl, 0, node)
     return node
+
+
+def get_from_module(name):
+    i = name.rfind('.')
+    module, attr = name[:i], name[i + 1:]
+
+    try:
+        mod = __import__(module, {}, {}, [attr])
+        return getattr(mod, attr)
+    except (ImportError, AttributeError):
+        raise ImportError
+
+
+def append_row(tbody, cells):
+    row = nodes.row()
+    tbody += row
+
+    for cell in cells:
+        entry = nodes.entry()
+        row += entry
+
+        if isinstance(cell, basestring):
+            node = nodes.paragraph(text=cell)
+        else:
+            node = cell
+
+        entry += node
+
+
+def append_detail_row(tbody, header_text, detail):
+    header_node = nodes.strong(text=header_text)
+
+    if isinstance(detail, basestring):
+        detail_node = [nodes.paragraph(text=text)
+                       for text in detail.split('\n\n')]
+    else:
+        detail_node = detail
+
+    append_row(tbody, [header_node, detail_node])
 
 
 FIRST_CAP_RE = re.compile(r'(.)([A-Z][a-z]+)')
@@ -698,7 +826,33 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
     return path
 
 
+def build_example(data, mimetype):
+    if not data:
+        return None
+
+    language = MIMETYPE_LANGUAGE_MAPPING.get(mimetype, None)
+
+    if language == 'javascript':
+        code = json.dumps(json.loads(data), sort_keys=True, indent=2)
+    else:
+        code = data
+
+    return nodes.literal_block(code, code, language=language)
+
+
+def fetch_response_data(response_class, mimetype, request=None, **kwargs):
+    if not request:
+        request = DummyRequest()
+
+    request.META['HTTP_ACCEPT'] = mimetype
+
+    result = unicode(response_class(request, **kwargs))
+    headers, data = result.split('\n\n', 2)
+    return data
+
+
 def setup(app):
-    app.add_directive('webapi-resource', WebApiDocsDirective)
+    app.add_directive('webapi-resource', ResourceDirective)
+    app.add_directive('webapi-error', ErrorDirective)
     app.add_crossref_type('webapi2.0', 'webapi2.0', 'single: %s',
                           nodes.emphasis)

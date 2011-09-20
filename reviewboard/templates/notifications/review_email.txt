@@ -23,7 +23,7 @@ Screenshot: {{ comment.screenshot.caption }}
 {% endfor %}{% if review.body_bottom %}
 {{ review.body_bottom }}
 {% endif %}
-- {% ifnotequal review.user.first_name "" %}{{review.user.first_name}}{% else %}{{review.user.username}}{% endifnotequal %}
+- {{review.user|user_displayname}}
 
 
 On {{review_request.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:

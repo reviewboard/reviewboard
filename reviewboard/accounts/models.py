@@ -2,7 +2,6 @@ from datetime import datetime
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.util.db import ConcurrencyManager
@@ -59,6 +58,10 @@ class Profile(models.Model):
         verbose_name=_("syntax highlighting"),
         help_text=_("Indicates whether the user wishes to see "
                     "syntax highlighting in the diffs."))
+    is_private = models.BooleanField(default=False,
+        verbose_name=_("profile private"),
+        help_text=_("Indicates whether the user wishes to keep his/her profile "
+                    "private."))
 
     # Indicate whether submitted review requests should appear in the
     # review request lists (excluding the dashboard).
@@ -97,8 +100,6 @@ class Profile(models.Model):
 
         if (review_request.public and
             review_request.status == ReviewRequest.PENDING_REVIEW):
-            q = self.starred_review_requests.filter(pk=review_request.pk)
-
             site_profile, is_new = LocalSiteProfile.objects.get_or_create(
                 user=self.user,
                 local_site=review_request.local_site,
@@ -109,28 +110,32 @@ class Profile(models.Model):
 
             site_profile.increment_starred_public_request_count()
 
+        self.save()
+
     def unstar_review_request(self, review_request):
         """Marks a review request as unstarred.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
         """
-        site_profile, is_new = LocalSiteProfile.objects.get_or_create(
-            user=self.user,
-            local_site=review_request.local_site,
-            profile=self.user.get_profile())
+        q = self.starred_review_requests.filter(pk=review_request.pk)
 
-        if is_new:
-            site_profile.save()
-
-        site_profile.decrement_starred_public_request_count()
+        if q.count() > 0:
+            self.starred_review_requests.remove(review_request)
 
         if (review_request.public and
             review_request.status == ReviewRequest.PENDING_REVIEW):
-            q = self.starred_review_requests.filter(pk=review_request.pk)
+            site_profile, is_new = LocalSiteProfile.objects.get_or_create(
+                user=self.user,
+                local_site=review_request.local_site,
+                profile=self.user.get_profile())
 
-            if q.count() > 0:
-                self.starred_review_requests.remove(review_request)
+            if is_new:
+                site_profile.save()
+
+            site_profile.decrement_starred_public_request_count()
+
+        self.save()
 
     def star_review_group(self, review_group):
         """Marks a review group as starred.
@@ -189,7 +194,7 @@ class LocalSiteProfile(models.Model):
         initializer=lambda p: \
             p.pk and
             (p.profile.starred_review_requests.public(
-                p.user, local_site=p.local_site).count() or 0))
+                None, local_site=p.local_site).count() or 0))
 
     class Meta:
         unique_together = (('user', 'local_site'),
@@ -197,3 +202,18 @@ class LocalSiteProfile(models.Model):
 
     def __unicode__(self):
         return '%s (%s)' % (self.user.username, self.local_site)
+
+
+def _is_user_profile_visible(self, user=None):
+    """Returns whether or not a user's profile is viewable by a given user.
+
+    A profile is viewable if it's not marked as private, or the viewing
+    user owns the profile, or the user is a staff member.
+    """
+    try:
+        return ((user and (user == self or user.is_staff)) or
+                not self.get_profile().is_private)
+    except Profile.DoesNotExist:
+        return True
+
+User.is_profile_visible = _is_user_profile_visible

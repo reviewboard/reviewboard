@@ -1,38 +1,9 @@
-.. _webapi2.0-error-103:
+.. webapi-error::
+   :instance: djblets.webapi.errors.NOT_LOGGED_IN
 
-===================
-103 - Not Logged In
-===================
+   The resource requires that your client is logged in, and you're not logged
+   in yet. This is sent along with ``WWW-Authenticate`` HTTP headers.
 
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 103                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`401`                                         |
-+----------------------+-----------------------------------------------------+
-| **HTTP Headers**     | ``WWW-Authenticate``                                |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``You are not logged in``                           |
-+----------------------+-----------------------------------------------------+
-| **Description**      | The resource requires that your client is logged    |
-|                      | in, and you're not logged in yet. This is sent      |
-|                      | along with ``WWW-Authenticate`` HTTP headers.       |
-|                      |                                                     |
-|                      | See :ref:`2.0-authenticating` for more information. |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 103,
-       msg: "You are not logged in"
-     }
-   }
-
+   See :ref:`2.0-authenticating` for more information.
 
 .. comment: vim: ft=rst et ts=3

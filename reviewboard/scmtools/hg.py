@@ -26,7 +26,7 @@ class HgTool(SCMTool):
                                       repository.username,
                                       repository.password)
         else:
-            self.client = HgClient(repository.path)
+            self.client = HgClient(repository.path, repository.local_site)
 
         self.uses_atomic_revisions = True
         self.diff_uses_changeset_ids = True
@@ -219,8 +219,7 @@ class HgWebClient(object):
 
 
 class HgClient(object):
-
-    def __init__(self, repoPath):
+    def __init__(self, repoPath, local_site):
         from mercurial import hg, ui
         from mercurial.__version__ import version
 
@@ -232,7 +231,16 @@ class HgClient(object):
             hg_ui = ui.ui()
             hg_ui.setconfig('ui', 'interactive', 'off')
 
-        hg_ui.setconfig('ui', 'ssh', 'rbssh')
+        # Check whether ssh is configured for mercurial. Assume that any
+        # configured ssh is set up correctly for this repository.
+        hg_ssh = hg_ui.config('ui', 'ssh')
+
+        if not hg_ssh:
+            logging.debug('Using rbssh for mercurial')
+            hg_ui.setconfig('ui', 'ssh', 'rbssh --rb-local-site=%s'
+                            % local_site)
+        else:
+            logging.debug('Found configured ssh for mercurial: %s' % hg_ssh)
 
         self.repo = hg.repository(hg_ui, path=repoPath)
 

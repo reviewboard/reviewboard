@@ -1,36 +1,8 @@
-.. _webapi2.0-error-101:
+.. webapi-error::
+   :instance: djblets.webapi.errors.PERMISSION_DENIED
 
-=======================
-101 - Permission Denied
-=======================
-
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 101                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`403`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``You don't have permission for this``              |
-+----------------------+-----------------------------------------------------+
-| **Description**      | Your client doesn't have permission to access this  |
-|                      | resource or to perform the operation. Usually this  |
-|                      | means the user your client is logged in as just     |
-|                      | doesn't own the resource or doesn't have the access |
-|                      | rights needed.                                      |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 101,
-       msg: "You don't have permission for this``
-     }
-   }
-
+   Your client doesn't have permission to access this resource or to perform
+   the operation. Usually this means the user your client is logged in as just
+   doesn't own the resource or doesn't have the access rights needed.
 
 .. comment: vim: ft=rst et ts=3

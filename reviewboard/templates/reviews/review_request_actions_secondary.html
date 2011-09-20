@@ -18,6 +18,7 @@
 {% endifuserorperm %}
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
  <li><a id="upload-screenshot-link" href="#">{% trans "Add Screenshot" %}</a></li>
+ <li><a id="upload-file-link" href="#">{% trans "Add File" %}</a></li>
 {% if upload_diff_form %}
  <li><a id="upload-diff-link" href="#">{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}{% trans "Update Diff" %}{% else %}{% trans "Upload Diff" %}{% endif %}</a></li>
 {% endif %}

@@ -4,7 +4,6 @@ import re
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext as _
-from djblets.util.misc import get_object_or_none
 
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
@@ -15,7 +14,6 @@ from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         InvalidChangeNumberError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.models import LocalSite
 from reviewboard.site.validation import validate_review_groups, validate_users
 
 
@@ -138,8 +136,10 @@ class NewReviewRequestForm(forms.Form):
                               '%s (ID %d): %s' % (repo.name, repo.id, e),
                               exc_info=1)
 
-        self.fields['repository'].queryset = \
-            Repository.objects.filter(pk__in=self.field_mapping.keys())
+        queryset = Repository.objects.filter(pk__in=self.field_mapping.keys())
+        queryset = queryset.only('name')
+
+        self.fields['repository'].queryset = queryset
 
         # If we have any repository entries we can show, then we should
         # show the first one.
@@ -177,10 +177,10 @@ class NewReviewRequestForm(forms.Form):
             except NotImplementedError:
                 # This scmtool doesn't have changesets
                 self.errors['changenum'] = forms.util.ErrorList(['Changesets are not supported.'])
-                raise ChangeSetError()
+                raise ChangeSetError(None)
             except SCMError, e:
                 self.errors['changenum'] = forms.util.ErrorList([str(e)])
-                raise ChangeSetError()
+                raise ChangeSetError(None)
 
             if not changeset:
                 self.errors['changenum'] = forms.util.ErrorList([

@@ -208,7 +208,7 @@
   font-size: 130%;
 }
 
-.review-request #actions {
+.actions {
   border-right: 1px #000000 solid;
   float: right;
   list-style: none;
@@ -217,7 +217,7 @@
   white-space: nowrap;
 }
 
-.review-request #actions a {
+.actions a {
   color: black;
   cursor: pointer;
   display: block;
@@ -225,49 +225,49 @@
   text-decoration: none;
 }
 
-.review-request #actions img {
+.actions img {
   vertical-align: middle;
 }
 
-.review-request #actions li {
+.actions li {
   background: #dfb16a url("../images/review_request_action_bg.png") repeat-x top left;
   border: 1px black solid;
   border-right: 0;
   float: left;
 }
 
-.review-request #actions li:hover {
+.actions li:hover {
   background-color: #e8c896;
   background-image: url("../images/review_request_action_bg_hover.png");
 }
 
-.review-request #actions li:active {
+.actions li:active {
   background-color: #e8c894;
   background-image: url("../images/review_request_action_bg_clicked.png");
 }
 
-.review-request #actions>li:first-child {
+.actions>li:first-child {
   -moz-border-radius: 0 0 0 8px;
   -webkit-border-radius: 0 0 0 8px;
   border-radius: 0 0 0 8px;
 }
 
-.review-request #actions li.primary {
+.actions li.primary {
   background-color: #e7c591;
   background-image: url("../images/review_request_action_primary_bg.png");
 }
 
-.review-request #actions li.primary:hover {
+.actions li.primary:hover {
   background-color: #eed6b1;
   background-image: url("../images/review_request_action_primary_bg_hover.png");
 }
 
-.review-request #actions li.primary:active {
+.actions li.primary:active {
   background-color: #eed6af;
   background-image: url("../images/review_request_action_primary_bg_clicked.png");
 }
 
-.review-request #actions ul.menu {
+.actions ul.menu {
   background: #dfb16a url("../images/review_request_action_bg.png") repeat-x top left;
   border: 1px black solid;
   list-style: none;
@@ -276,7 +276,7 @@
   position: absolute;
 }
 
-.review-request #actions ul.menu li {
+.actions ul.menu li {
   background: none;
   border: 0;
   float: none;
@@ -284,7 +284,7 @@
   padding: 0;
 }
 
-.review-request #actions ul.menu li a {
+.actions ul.menu li a {
   color: black;
   display: block;
   margin: 0;
@@ -292,7 +292,7 @@
   text-decoration: none;
 }
 
-.review-request #actions ul.menu a:hover {
+.actions ul.menu a:hover {
   background-color: #c79343;
 }
 
@@ -394,6 +394,35 @@
   color: black;
   font-weight: bold;
   text-decoration: underline;
+}
+
+.review .diff-comments .file-attachment {
+  background: #F0F0F0;
+  border: 1px #C0C0C0 solid;
+  font-size: 120%;
+  padding: 5px;
+  white-space: nowrap;
+}
+
+.review .diff-comments .file-attachment a {
+  text-decoration: none;
+}
+
+.review .diff-comments .file-attachment .caption {
+  color: black;
+  margin: 5px 0 0 32px;
+}
+
+.review .diff-comments .file-attachment .filename {
+  color: black;
+  font-weight: bold;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.review .diff-comments .file-attachment img {
+  padding-right: 10px;
+  vertical-align: middle;
 }
 
 .review .diff-comments .screenshot {
@@ -608,7 +637,6 @@
 }
 
 
-
 /****************************************************************************
  * Review Form
  ****************************************************************************/
@@ -644,6 +672,60 @@
 
 #review-form-comments {
   background: none;
+}
+
+
+/****************************************************************************
+ * Uploaded files
+ ****************************************************************************/
+.file-container .file {
+  background-color: #F6F6F6;
+  border: 1px black solid;
+  display: block;
+  float: left;
+  height: 6em;
+  position: relative;
+  margin: 0 2em 2em 0;
+  -moz-border-radius: 0 0 8px 8px;
+  -webkit-border-radius: 0 0 8px 8px;
+  border-radius: 0 0 8px 8px;
+}
+
+.file-container .file .file-header {
+  background: white;
+  padding: 0.5em 10em 0.5em 0.5em;
+  line-height: 2.5em;
+  -width: 30em;
+  white-space: nowrap;
+}
+
+.file-container .file .file-header img {
+  vertical-align: middle;
+}
+
+.file-container .file .file-header a {
+  color: blue;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.file-container .file .file-caption {
+  border-top: 1px #CCCCCC solid;
+  line-height: 2.5em;
+  padding: 0 0.5em;
+  text-align: center;
+  -moz-border-radius: 0 0 7px 7px;
+  -webkit-border-radius: 0 0 7px 7px;
+  border-radius: 0 0 7px 7px;
+}
+
+.file-container .file .file-caption a {
+  color: black;
+  text-decoration: none;
+}
+
+.file-container .file .file-caption img {
+  vertical-align: middle;
 }
 
 
@@ -772,7 +854,62 @@
   margin: 0;
 }
 
-#screenshot-thumbnails h1.drop-indicator {
+.drop-indicator {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  opacity: 0.8;
+  text-align: center;
+  vertical-align: middle;
+  z-index: 100;
+  color: #DDDDDD;
+}
+
+.drop-indicator .dropbox {
+  border: 1px #CCCCCC dashed;
+  display: block;
+  position: relative;
+  text-align: center;
+}
+
+.drop-indicator .dropbox.hover {
+  background: #333333;
+}
+
+.drop-indicator .dropbox h1 {
+  font-size: 200%;
+  margin: 0 auto;
+  padding: 0;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  width: 100%;
+}
+
+.drop-indicator h2 {
+  font-size: 200%;
+  vertical-align: middle;
+}
+
+
+/****************************************************************************
+ * List of Attached Files
+ ****************************************************************************/
+#file-list {
+  margin: 2px;
+  padding: 0.5em;
+}
+
+#file-list.dragover {
+  border: 2px green dashed;
+  display: block;
+  margin: 0;
+}
+
+#file-list h1.drop-indicator {
   clear: both;
   text-align: center;
 }
@@ -885,6 +1022,30 @@
 
 #comment-detail #review_comments ul li h2 .actions a:hover {
   background-color: #F6F6F6;
+}
+
+.issue-state {
+  font-size: 95%;
+  font-weight: bold;
+  padding: 0.3em 0.4em 0.3em 2.5em;
+}
+
+.issue-state.dropped {
+  background: url('../images/closed_issue.png') #EAEAEA no-repeat 5px 50%;
+  border: 1px solid #D0D0D0;
+}
+
+.issue-state.open {
+  background: url('../images/open_issue.png') #fff47c no-repeat 5px 50%;
+  border: 1px solid #a89c00;
+}
+
+.issue-state.resolved {
+  background: url('../images/tick.png') #FAFAFA no-repeat 5px 50%;
+}
+
+.issue-button {
+  margin-left: 5px;
 }
 
 

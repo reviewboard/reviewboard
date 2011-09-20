@@ -1,38 +1,12 @@
-.. _webapi2.0-error-206:
+.. webapi-error::
+   :instance: reviewboard.webapi.errors.INVALID_REPOSITORY
+   :example-data:
+      {"repository": "http://svn.example.com/ducks"}
 
-========================
-206 - Invalid Repository
-========================
+   The repository path or ID specified in the request isn't known by Review
+   Board.
 
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 206                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`400`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``The repository path specified is not in the list  |
-|                      | of known repositories``                             |
-+----------------------+-----------------------------------------------------+
-| **Description**      | The repository path or ID specified in the request  |
-|                      | isn't known by Review Board.                        |
-|                      |                                                     |
-|                      | This will provide a ``repository`` key containing   |
-|                      | the path or ID that failed.                         |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 206,
-       msg: "The repository path specified is not in the list of known repositories",
-     },
-     repository: "http://svn.example.com/ducks"
-   }
-
+   This will provide a ``repository`` key containing the path or ID that
+   failed.
 
 .. comment: vim: ft=rst et ts=3

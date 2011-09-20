@@ -4,12 +4,10 @@ import sys
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.contrib.auth.models import User
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.reviews.models import Group
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, \
@@ -43,10 +41,39 @@ class RepositoryForm(forms.ModelForm):
                 },
             },
         }),
+        ('fedorahosted', {
+            'label': _('Fedora Hosted'),
+            'fields': ['hosting_project_name'],
+            'hidden_fields': ['raw_file_url', 'username', 'password'],
+            'tools': {
+                'Git': {
+                    'path': 'git://git.fedorahosted.org/git/'
+                            '%(hosting_project_name)s.git',
+                    'mirror_path': 'git://git.fedorahosted.org/git/'
+                                    '%(hosting_project_name)s.git',
+                    'raw_file_url': 'http://git.fedorahosted.org/git/?p='
+                                    '%(hosting_project_name)s.git;'
+                                    'a=blob_plain;'
+                                    'f=<filename>;h=<revision>'
+                },
+                'Mercurial': {
+                    'path': 'http://hg.fedorahosted.org/hg/'
+                            '%(hosting_project_name)s/',
+                    'mirror_path': 'https://hg.fedorahosted.org/hg/'
+                                   '%(hosting_project_name)s/'
+                },
+                'Subversion': {
+                    'path': 'http://svn.fedorahosted.org/svn/'
+                            '%(hosting_project_name)s/',
+                    'mirror_path': 'https://svn.fedorahosted.org/svn/'
+                                   '%(hosting_project_name)s/',
+                },
+            },
+        }),
         ('github', {
             'label': _('GitHub'),
             'fields': ['hosting_project_name', 'hosting_owner'],
-            'hidden_fields': ['raw_file_url'],
+            'hidden_fields': ['raw_file_url','username', 'password'],
             'tools': {
                 'Git': {
                     'path': 'git://github.com/%(hosting_owner)s/'
@@ -63,7 +90,7 @@ class RepositoryForm(forms.ModelForm):
         ('github-private', {
             'label': _('GitHub (Private)'),
             'fields': ['hosting_project_name', 'hosting_owner', 'api_token'],
-            'hidden_fields': ['raw_file_url'],
+            'hidden_fields': ['raw_file_url', 'username', 'password'],
             'tools': {
                 'Git': {
                     'path': 'git@github.com:%(hosting_owner)s/'
@@ -75,6 +102,40 @@ class RepositoryForm(forms.ModelForm):
                                     '<revision>'
                                     '?login=%(hosting_owner)s'
                                     '&token=%(api_token)s'
+                },
+            },
+        }),
+        ('github-private-org', {
+            'label': _('GitHub (Private Organization)'),
+            'fields': ['hosting_project_name', 'hosting_owner', 'api_token',
+                       'username'],
+            'hidden_fields': ['raw_file_url', 'password'],
+            'tools': {
+                'Git': {
+                    'path': 'git@github.com:%(hosting_owner)s/'
+                            '%(hosting_project_name)s.git',
+                    'mirror_path': '',
+                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
+                                    '%(hosting_owner)s/'
+                                    '%(hosting_project_name)s/'
+                                    '<revision>'
+                                    '?login=%(username)s'
+                                    '&token=%(api_token)s'
+                },
+            },
+        }),
+        ('gitorious', {
+            'label': _('Gitorious'),
+            'fields': ['project_slug', 'repository_name'],
+            'hidden_fields': ['raw_file_url','username', 'password'],
+            'tools': {
+                'Git': {
+                    'path': 'git://gitorious.org/%(project_slug)s/'
+                            '%(repository_name)s.git',
+                    'mirror_path': 'http://git.gitorious.org/%(project_slug)s/'
+                                   '%(repository_name)s.git',
+                    'raw_file_url': 'http://git.gitorious.org/%(project_slug)s/'
+                                    '%(repository_name)s/blobs/raw/<revision>'
                 },
             },
         }),
@@ -158,6 +219,12 @@ class RepositoryForm(forms.ModelForm):
             'fields': ['bug_tracker_base_url'],
             'format': '%(bug_tracker_base_url)s/show_bug.cgi?id=%%s',
         }),
+        ('fedorahosted', {
+            'label': 'Fedora Hosted',
+            'fields': ['bug_tracker_project_name'],
+            'format': 'https://fedorahosted.org/%(bug_tracker_project_name)s'
+                      '/ticket/%%s',
+        }),
         ('github', {
             'label': 'GitHub',
             'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
@@ -200,7 +267,7 @@ class RepositoryForm(forms.ModelForm):
 
     HOSTING_FIELDS = [
         "path", "mirror_path", "hosting_owner", "hosting_project_name",
-        "api_token",
+        "api_token", "project_slug", "repository_name",
     ]
 
     BUG_TRACKER_FIELDS = [
@@ -236,6 +303,18 @@ class RepositoryForm(forms.ModelForm):
 
     hosting_project_name = forms.CharField(
         label=_("Project name"),
+        max_length=256,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
+    project_slug = forms.CharField(
+        label=_("Project slug"),
+        max_length=256,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
+    repository_name = forms.CharField(
+        label=_("Repository name"),
         max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
@@ -295,7 +374,15 @@ class RepositoryForm(forms.ModelForm):
         self.certerror = None
         self.userkeyerror = None
 
-        self.public_key = sshutils.get_public_key(sshutils.get_user_key())
+        local_site_name = None
+
+        if self.instance and self.instance.local_site:
+            local_site_name = self.instance.local_site.name
+        elif self.fields['local_site'].initial:
+            local_site_name = self.fields['local_site'].initial.name
+
+        self.public_key = \
+            sshutils.get_public_key(sshutils.get_user_key(local_site_name))
 
         self._populate_hosting_service_fields()
         self._populate_bug_tracker_fields()
@@ -593,11 +680,21 @@ class RepositoryForm(forms.ModelForm):
         username = self.cleaned_data['username']
         password = self.cleaned_data['password']
 
+        local_site_name = None
+
+        if self.cleaned_data['local_site']:
+            try:
+                local_site = self.cleaned_data['local_site']
+                local_site_name = local_site.name
+            except LocalSite.DoesNotExist, e:
+                raise forms.ValidationError(e)
+
         while 1:
             # Keep doing this until we have an error we don't want
             # to ignore, or it's successful.
             try:
-                scmtool_class.check_repository(path, username, password)
+                scmtool_class.check_repository(path, username, password,
+                                               local_site_name)
 
                 # Success.
                 break
@@ -606,7 +703,8 @@ class RepositoryForm(forms.ModelForm):
                     try:
                         sshutils.replace_host_key(e.hostname,
                                                   e.raw_expected_key,
-                                                  e.raw_key)
+                                                  e.raw_key,
+                                                  local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -615,7 +713,8 @@ class RepositoryForm(forms.ModelForm):
             except UnknownHostKeyError, e:
                 if self.cleaned_data['trust_host']:
                     try:
-                        sshutils.add_host_key(e.hostname, e.raw_key)
+                        sshutils.add_host_key(e.hostname, e.raw_key,
+                                              local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -624,7 +723,7 @@ class RepositoryForm(forms.ModelForm):
             except UnverifiedCertificateError, e:
                 if self.cleaned_data['trust_host']:
                     try:
-                        scmtool_class.accept_certificate(path)
+                        scmtool_class.accept_certificate(path, local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:

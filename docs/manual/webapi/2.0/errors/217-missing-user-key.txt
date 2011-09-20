@@ -1,35 +1,7 @@
-.. _webapi2.0-error-217:
+.. webapi-error::
+   :instance: reviewboard.webapi.errors.MISSING_USER_KEY
 
-======================
-217 - Missing User Key
-======================
-
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 217                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`403`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``A public SSH key was requested, but no SSH key    |
-|                      | was available to send``                             |
-+----------------------+-----------------------------------------------------+
-| **Description**      | Review Board attempted to authenticate with a       |
-|                      | repository that required a public SSH key, but no   |
-|                      | SSH key was configured on Review Board.             |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 217,
-       msg: "A public SSH key was requested, but no SSH key was available to send",
-     }
-   }
-
+   Review Board attempted to authenticate with a repository that required a
+   public SSH key, but no SSH key was configured on Review Board.
 
 .. comment: vim: ft=rst et ts=3

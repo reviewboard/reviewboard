@@ -1,6 +1,5 @@
 import os
 import re
-import subprocess
 import tempfile
 import urlparse
 
@@ -28,13 +27,19 @@ class CVSTool(SCMTool):
     ext_cvsroot_re = re.compile(r':ext:([^@]+@)?(?P<hostname>[^:/]+)')
 
     def __init__(self, repository):
-        SCMTool.__init__(self, repository)
+        super(CVSTool, self).__init__(repository)
 
         self.cvsroot, self.repopath = \
             self.build_cvsroot(self.repository.path,
                                self.repository.username,
                                self.repository.password)
-        self.client = CVSClient(self.cvsroot, self.repopath)
+
+        local_site_name = None
+
+        if repository.local_site:
+            local_site_name = repository.local_site.name
+
+        self.client = CVSClient(self.cvsroot, self.repopath, local_site_name)
 
     def get_file(self, path, revision=HEAD):
         if not path:
@@ -97,7 +102,8 @@ class CVSTool(SCMTool):
         return path, path
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         """
         Performs checks on a repository to test its validity.
 
@@ -114,10 +120,11 @@ class CVSTool(SCMTool):
         m = cls.ext_cvsroot_re.match(path)
 
         if m:
-            sshutils.check_host(m.group('hostname'), username, password)
+            sshutils.check_host(m.group('hostname'), username, password,
+                                local_site_name)
 
         cvsroot, repopath = cls.build_cvsroot(path, username, password)
-        client = CVSClient(cvsroot, repopath)
+        client = CVSClient(cvsroot, repopath, local_site_name)
 
         try:
             client.cat_file('CVSROOT/modules', HEAD)
@@ -179,12 +186,13 @@ class CVSDiffParser(DiffParser):
         return linenum
 
 
-class CVSClient:
-    def __init__(self, repository, path):
+class CVSClient(object):
+    def __init__(self, cvsroot, path, local_site_name):
         self.tempdir = ""
         self.currentdir = os.getcwd()
-        self.repository = repository
+        self.cvsroot = cvsroot
         self.path = path
+        self.local_site_name = local_site_name
 
         if not is_exe_in_path('cvs'):
             # This is technically not the right kind of error, but it's the
@@ -250,10 +258,9 @@ class CVSClient:
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
 
-        p = subprocess.Popen(['cvs', '-f', '-d', self.repository, 'checkout',
-                              '-r', str(revision), '-p', filename],
-                             stderr=subprocess.PIPE, stdout=subprocess.PIPE,
-                             close_fds=(os.name != 'nt'))
+        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'checkout',
+                           '-r', str(revision), '-p', filename],
+                          self.local_site_name)
         contents = p.stdout.read()
         errmsg = p.stderr.read()
         failure = p.wait()

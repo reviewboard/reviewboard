@@ -7,7 +7,14 @@
 {% ifuserorperm review_request.submitter "reviews.can_change_status" %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
+ <p><label for="changedescription">{% trans "Describe the submission (optional):" %}</label></p>
+ <pre id="changedescription" class="editable">{{close_description}}</pre>
 {% endifuserorperm %}
+{% ifnotuserandperm review_request.submitter "reviews.can_change_status" %}
+{%  if close_description %}
+ <pre id="changedescription">{{close_description}}</pre>
+{%  endif %}
+{% endifnotuserandperm %}
 </div>
 {% else %}
 {%  ifequal review_request.status 'D' %}
@@ -17,6 +24,15 @@
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
 {% endifequal %}
+{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
+ <p><label for="changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
+ <pre id="changedescription" class="editable">{{close_description}}</pre>
+{% endifuserorperm %}
+{% ifnotuserandperm review_request.submitter "reviews.can_change_status" %}
+{%  if close_description %}
+ <pre id="changedescription">{{close_description}}</pre>
+{%  endif %}
+{% endifnotuserandperm %}
 </div>
 {%  else %}
 {%  ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}

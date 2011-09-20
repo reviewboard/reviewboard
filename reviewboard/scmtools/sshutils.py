@@ -16,6 +16,8 @@ ssh_uri_schemes = ["ssh", "sftp"]
 
 urlparse.uses_netloc.extend(ssh_uri_schemes)
 
+_ssh_dir = None
+
 
 class RaiseUnknownHostKeyPolicy(paramiko.MissingHostKeyPolicy):
     """A Paramiko policy that raises UnknownHostKeyError for missing keys."""
@@ -23,17 +25,69 @@ class RaiseUnknownHostKeyPolicy(paramiko.MissingHostKeyPolicy):
         raise UnknownHostKeyError(hostname, key)
 
 
+class MakeSSHDirError(IOError):
+    def __init__(self, dirname):
+        IOError.__init__(_("Unable to create directory %(dirname)s, which is "
+                           "needed for the SSH host keys. Create this "
+                           "directory, set the web server's user as the "
+                           "the owner, and make it writable only by that "
+                           "user.") % {
+            'dirname': dirname,
+        })
+
+
 def humanize_key(key):
     """Returns a human-readable key as a series of hex characters."""
     return ':'.join(["%02x" % ord(c) for c in key.get_fingerprint()])
 
 
-def get_host_keys_filename():
-    """Returns the URL to the known host keys file."""
-    return os.path.expanduser('~/.ssh/known_hosts')
+def set_ssh_dir(path):
+    """Sets the SSH directory to use.
+
+    This is mostly intended for unit tests.
+    """
+    global _ssh_dir
+    _ssh_dir = path
 
 
-def get_user_key():
+def get_ssh_dir(local_site_name=None, ssh_dir_name=None):
+    """Returns the path to the SSH directory on the system.
+
+    By default, this will attempt to find either a .ssh or ssh directory.
+    If ``ssh_dir_name`` is specified, the search will be skipped, and we'll
+    use that name instead.
+    """
+    global _ssh_dir
+    path = _ssh_dir
+
+    if not _ssh_dir or ssh_dir_name:
+        path = os.path.expanduser('~')
+
+        if not ssh_dir_name:
+            ssh_dir_name = '.ssh'
+
+            for name in ('.ssh', 'ssh'):
+                if os.path.exists(os.path.join(path, name)):
+                    ssh_dir_name = name
+                    break
+
+        path = os.path.join(path, ssh_dir_name)
+
+        if not ssh_dir_name:
+            _ssh_dir = path
+
+    if local_site_name:
+        return os.path.join(path, local_site_name)
+    else:
+        return path
+
+
+def get_host_keys_filename(local_site_name=None):
+    """Returns the path to the known host keys file."""
+    return os.path.join(get_ssh_dir(local_site_name), 'known_hosts')
+
+
+def get_user_key(local_site_name=None):
     """Returns the keypair of the user running Review Board.
 
     This will be an instance of :py:mod:`paramiko.PKey`, representing
@@ -46,7 +100,8 @@ def get_user_key():
         # Paramiko looks in ~/.ssh and ~/ssh, depending on the platform,
         # so check both.
         for sshdir in ('.ssh', 'ssh'):
-            path = os.path.expanduser('~/%s/%s' % (sshdir, filename))
+            path = os.path.join(get_ssh_dir(local_site_name, sshdir),
+                                filename)
 
             if os.path.isfile(path):
                 keyfiles.append((cls, path))
@@ -84,7 +139,35 @@ def get_public_key(key):
     return public_key
 
 
-def ensure_ssh_dir():
+def is_key_authorized(key):
+    """Returns whether or not a public key is currently authorized."""
+    authorized = False
+    public_key = key.get_base64()
+
+    try:
+        filename = os.path.join(get_ssh_dir(), 'authorized_keys')
+        fp = open(filename, 'r')
+
+        for line in fp.xreadlines():
+            try:
+                authorized_key = line.split()[1]
+            except ValueError:
+                continue
+            except IndexError:
+                continue
+
+            if authorized_key == public_key:
+                authorized = True
+                break
+
+        fp.close()
+    except IOError:
+        pass
+
+    return authorized
+
+
+def ensure_ssh_dir(local_site_name=None):
     """Ensures the existance of the .ssh directory.
 
     If the directory doesn't exist, it will be created.
@@ -93,15 +176,28 @@ def ensure_ssh_dir():
     Callers are expected to handle any exceptions. This may raise
     IOError for any problems in creating the directory.
     """
-    sshdir = os.path.expanduser('~/.ssh')
+    sshdir = get_ssh_dir(local_site_name)
+
+    if local_site_name:
+        # The parent will be the .ssh dir.
+        parent = os.path.dirname(sshdir)
+
+        if not os.path.exists(parent):
+            try:
+                os.mkdir(parent, 0700)
+            except OSError:
+                raise MakeSSHDirError(parent)
 
     if not os.path.exists(sshdir):
-        os.mkdir(sshdir, 0700)
+        try:
+            os.mkdir(sshdir, 0700)
+        except OSError:
+            raise MakeSSHDirError(sshdir)
 
     return sshdir
 
 
-def generate_user_key():
+def generate_user_key(local_site_name=None):
     """Generates a new RSA keypair for the user running Review Board.
 
     This will store the new key in :file:`$HOME/.ssh/id_rsa` and return the
@@ -113,24 +209,24 @@ def generate_user_key():
     IOError for any problems in writing the key file, or
     paramiko.SSHException for any other problems.
     """
-    sshdir = ensure_ssh_dir()
+    sshdir = ensure_ssh_dir(local_site_name)
     filename = os.path.join(sshdir, 'id_rsa')
 
     if os.path.isfile(filename):
-        return get_user_key()
+        return get_user_key(local_site_name)
 
     key = paramiko.RSAKey.generate(2048)
     key.write_private_key_file(filename)
     return key
 
 
-def import_user_key(keyfile):
+def import_user_key(keyfile, local_site_name=None):
     """Imports an uploaded key file into Review Board.
 
-    ``keyfile`` is expected to be an ``UploadedFile``. If this is a
-    valid key file, it will be saved in :file:`$HOME/.ssh/`` and the
-    resulting key as an instance of :py:mod:`paramiko.RSAKey` will be
-    returned.
+    ``keyfile`` is expected to be an ``UploadedFile`` or a paramiko
+    ``KeyFile``. If this is a valid key file, it will be saved in
+    :file:`$HOME/.ssh/`` and the resulting key as an instance of
+    :py:mod:`paramiko.RSAKey` will be returned.
 
     If a key of this name already exists, it will be overwritten.
 
@@ -141,15 +237,20 @@ def import_user_key(keyfile):
     This will raise UnsupportedSSHKeyError if the uploaded key is not
     a supported type.
     """
-    sshdir = ensure_ssh_dir()
+    sshdir = ensure_ssh_dir(local_site_name)
 
     # Try to find out what key this is.
     for cls, filename in ((paramiko.RSAKey, 'id_rsa'),
                           (paramiko.DSSKey, 'id_dsa')):
         try:
-            keyfile.seek(0)
-            key = cls.from_private_key(keyfile)
-        except paramiko.SSHException, e:
+            key = None
+
+            if not isinstance(keyfile, paramiko.PKey):
+                keyfile.seek(0)
+                key = cls.from_private_key(keyfile)
+            elif isinstance(keyfile, cls):
+                key = keyfile
+        except paramiko.SSHException:
             # We don't have more detailed info than this, but most
             # likely, it's not a valid key. Skip to the next.
             continue
@@ -166,10 +267,10 @@ def is_ssh_uri(url):
     return urlparse.urlparse(url)[0] in ssh_uri_schemes
 
 
-def get_ssh_client():
+def get_ssh_client(local_site_name=None):
     """Returns a new paramiko.SSHClient with all known host keys added."""
     client = paramiko.SSHClient()
-    filename = get_host_keys_filename()
+    filename = get_host_keys_filename(local_site_name)
 
     if os.path.exists(filename):
         client.load_host_keys(filename)
@@ -177,24 +278,10 @@ def get_ssh_client():
     return client
 
 
-def add_host_key(hostname, key):
+def add_host_key(hostname, key, local_site_name=None):
     """Adds a host key to the known hosts file."""
-    dirname = os.path.dirname(get_host_keys_filename())
-
-    if not os.path.exists(dirname):
-        # Make sure the .ssh directory exists.
-        try:
-            os.mkdir(dirname, 0700)
-        except OSError, e:
-            raise IOError(_("Unable to create directory %(dirname)s, which is "
-                            "needed for the SSH host keys. Create this "
-                            "directory, set the web server's user as the "
-                            "the owner, and make it writable only by that "
-                            "user.") % {
-                'dirname': dirname,
-            })
-
-    filename = get_host_keys_filename()
+    ensure_ssh_dir(local_site_name)
+    filename = get_host_keys_filename(local_site_name)
 
     try:
         fp = open(filename, 'a')
@@ -208,16 +295,15 @@ def add_host_key(hostname, key):
             })
 
 
-def replace_host_key(hostname, old_key, new_key):
-    """
-    Replaces a host key in the known hosts file with another.
+def replace_host_key(hostname, old_key, new_key, local_site_name=None):
+    """Replaces a host key in the known hosts file with another.
 
     This is used for replacing host keys that have changed.
     """
-    filename = get_host_keys_filename()
+    filename = get_host_keys_filename(local_site_name)
 
     if not os.path.exists(filename):
-        add_host_key(hostname, new_key)
+        add_host_key(hostname, new_key, local_site_name)
         return
 
     try:
@@ -253,7 +339,7 @@ def replace_host_key(hostname, old_key, new_key):
             })
 
 
-def check_host(hostname, username=None, password=None):
+def check_host(hostname, username=None, password=None, local_site_name=None):
     """
     Checks if we can connect to a host with a known key.
 
@@ -263,16 +349,20 @@ def check_host(hostname, username=None, password=None):
     """
     from django.conf import settings
 
-    client = get_ssh_client()
+    client = get_ssh_client(local_site_name)
     client.set_missing_host_key_policy(RaiseUnknownHostKeyPolicy())
+
+    kwargs = {}
 
     # We normally want to notify on unknown host keys, but not when running
     # unit tests.
     if getattr(settings, 'RUNNING_TEST', False):
         client.set_missing_host_key_policy(paramiko.WarningPolicy())
+        kwargs['allow_agent'] = False
 
     try:
-        client.connect(hostname, username=username, password=password)
+        client.connect(hostname, username=username, password=password,
+                       pkey=get_user_key(local_site_name), **kwargs)
     except paramiko.BadHostKeyException, e:
         raise BadHostKeyError(e.hostname, e.key, e.expected_key)
     except paramiko.AuthenticationException, e:
@@ -281,13 +371,16 @@ def check_host(hostname, username=None, password=None):
         allowed_types = getattr(e, 'allowed_types', [])
 
         if 'publickey' in allowed_types:
-            key = get_user_key()
+            key = get_user_key(local_site_name)
         else:
             key = None
 
-        raise AuthenticationError(allowed_types, key)
+        raise AuthenticationError(allowed_types=allowed_types, user_key=key)
     except paramiko.SSHException, e:
-        raise SCMError(unicode(e))
+        if str(e) == 'No authentication methods available':
+            raise AuthenticationError
+        else:
+            raise SCMError(unicode(e))
 
 
 def register_rbssh(envvar):

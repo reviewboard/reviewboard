@@ -1,7 +1,6 @@
 import logging
 import os
 
-from django import forms
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
@@ -445,7 +444,6 @@ class ViewTests(TestCase):
         user = User.objects.get(username='doc')
         profile = user.get_profile()
         local_site = None
-        site_profile = profile.site_profiles.get(local_site=local_site)
 
         response = self.client.get('/dashboard/')
         self.assertEqual(response.status_code, 200)
@@ -893,9 +891,34 @@ class CounterTests(TestCase):
         self.profile.star_review_request(self.review_request)
 
         self.site_profile = self.profile.site_profiles.get(local_site=None)
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
 
         self.group = Group.objects.create(name='test-group')
         self.group.users.add(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+    def test_new_site_profile(self):
+        """Testing counters on a new LocalSiteProfile"""
+        self.site_profile.delete()
+        self.site_profile = \
+            LocalSiteProfile.objects.create(user=self.user,
+                                            profile=self.profile)
+        self.assertEqual(self.site_profile.total_outgoing_request_count, None)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, None)
+        self.assertEqual(self.site_profile.starred_public_request_count, None)
+
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
 
     def test_outgoing_requests(self):
         """Testing counters with creating outgoing review requests"""
@@ -906,7 +929,7 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
         self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
 
-        draft = ReviewRequestDraft.create(self.review_request)
+        ReviewRequestDraft.create(self.review_request)
         self.review_request.publish(self.user)
 
         self._reload_objects()
@@ -958,6 +981,35 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile2.starred_public_request_count, 0)
         self.assertEqual(self.group.incoming_request_count, 0)
 
+    def test_closing_draft_requests(self, close_type=ReviewRequest.DISCARDED):
+        """Testing counters with closing draft review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        self.assertFalse(self.review_request.public)
+        self.assertEqual(self.review_request.status,
+                         ReviewRequest.PENDING_REVIEW)
+        self.review_request.close(close_type)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
     def test_deleting_requests(self):
         """Testing counters with deleting outgoing review requests"""
         # The review request was already created
@@ -982,6 +1034,32 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
         self.assertEqual(self.site_profile2.starred_public_request_count, 0)
         self.assertEqual(self.group.incoming_request_count, 1)
+
+        self.review_request.delete()
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_deleting_draft_requests(self):
+        """Testing counters with deleting draft review requests"""
+        # The review request was already created
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
 
         self.review_request.delete()
 
@@ -1072,6 +1150,52 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile2.starred_public_request_count, 0)
         self.assertEqual(self.group.incoming_request_count, 1)
 
+    def test_reopen_discarded_draft_requests(self):
+        """Testing counters with reopening discarded draft review requests"""
+        self.assertFalse(self.review_request.public)
+
+        self.test_closing_draft_requests(ReviewRequest.DISCARDED)
+
+        self.review_request.reopen()
+        self.assertFalse(self.review_request.public)
+        self.assertTrue(self.review_request.status,
+                        ReviewRequest.PENDING_REVIEW)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_reopen_submitted_draft_requests(self):
+        """Testing counters with reopening submitted draft review requests"""
+        self.test_closing_draft_requests(ReviewRequest.SUBMITTED)
+
+        self.review_request.reopen()
+        self.assertFalse(self.review_request.public)
+        self.assertTrue(self.review_request.status,
+                        ReviewRequest.PENDING_REVIEW)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile.starred_public_request_count, 0)
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 0)
+
     def test_add_group(self):
         """Testing counters when adding a group reviewer"""
         draft = ReviewRequestDraft.create(self.review_request)
@@ -1145,6 +1269,93 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile.total_incoming_request_count, 0)
         self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
         self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+
+    def test_populate_counters(self):
+        """Testing counters when populated from a fresh upgrade or clear"""
+        # The review request was already created
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.target_people.add(self.user)
+        self.review_request.publish(self.user)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+        LocalSiteProfile.objects.update(
+            direct_incoming_request_count=None,
+            total_incoming_request_count=None,
+            pending_outgoing_request_count=None,
+            total_outgoing_request_count=None,
+            starred_public_request_count=None)
+        Group.objects.update(incoming_request_count=None)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
+
+    def test_populate_counters_after_change(self):
+        """Testing counter inc/dec on uninitialized counter fields"""
+        # The review request was already created
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.add(self.group)
+        draft.target_people.add(self.user)
+
+        LocalSiteProfile.objects.update(
+            direct_incoming_request_count=None,
+            total_incoming_request_count=None,
+            pending_outgoing_request_count=None,
+            total_outgoing_request_count=None,
+            starred_public_request_count=None)
+        Group.objects.update(incoming_request_count=None)
+
+        profile_fields = [
+            'direct_incoming_request_count',
+            'total_incoming_request_count',
+            'pending_outgoing_request_count',
+            'total_outgoing_request_count',
+            'starred_public_request_count',
+        ]
+
+        # Lock the fields so we don't re-initialize them on publish.
+        locks = {
+            self.site_profile: 1,
+            self.site_profile2: 1,
+        }
+
+        for field in profile_fields:
+            getattr(LocalSiteProfile, field)._locks = locks
+
+        Group.incoming_request_count._locks = locks
+
+        # Publish the review request. This will normally try to
+        # increment/decrement the counts, which it should ignore now.
+        self.review_request.publish(self.user)
+
+        # Unlock the profiles so we can query/re-initialize them again.
+        for field in profile_fields:
+            getattr(LocalSiteProfile, field)._locks = {}
+
+        Group.incoming_request_count._locks = {}
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile.direct_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.total_incoming_request_count, 1)
+        self.assertEqual(self.site_profile.starred_public_request_count, 1)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+        self.assertEqual(self.group.incoming_request_count, 1)
 
     def _reload_objects(self):
         self.site_profile = \
@@ -1310,7 +1521,7 @@ class PolicyTests(TestCase):
 
     def test_review_request_with_private_repository(self):
         """Testing no access to a review request with a private repository"""
-        group = Group.objects.create(name='test-group', invite_only=True)
+        Group.objects.create(name='test-group', invite_only=True)
 
         review_request = self._get_review_request()
         review_request.save()
@@ -1323,7 +1534,7 @@ class PolicyTests(TestCase):
 
     def test_review_request_with_private_repository_allowed_by_user(self):
         """Testing access to a review request with a private repository with user added"""
-        group = Group.objects.create(name='test-group', invite_only=True)
+        Group.objects.create(name='test-group', invite_only=True)
 
         review_request = self._get_review_request()
         review_request.save()

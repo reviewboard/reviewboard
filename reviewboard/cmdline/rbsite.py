@@ -358,7 +358,7 @@ class Site(object):
             import settings_local
 
             return hasattr(settings_local, 'DATABASE_ENGINE')
-        except ImportError, e:
+        except ImportError:
             sys.stderr.write("Unable to import settings_local. "
                              "Cannot determine if upgrade is needed.\n")
             return False
@@ -388,7 +388,7 @@ class Site(object):
                     if key != 'ENGINE':
                         database_info[key] = getattr(settings_local,
                                                      'DATABASE_%s' % key, '')
-        except ImportError, e:
+        except ImportError:
             sys.stderr.write("Unable to import settings_local for upgrade.\n")
             return
 
@@ -1037,11 +1037,10 @@ class GtkUI(UIToolkit):
         """
         Prompts the user for an item amongst a list of choices.
         """
-        valid_choices = {}
 
-        def on_toggled(radio_button):
+        def on_toggled(radio_button, data):
             if radio_button.get_active():
-                setattr(save_obj, save_var, valid_choices[radio_button])
+                setattr(save_obj, save_var, data)
 
         hbox = gtk.HBox(False, 0)
         hbox.show()
@@ -1063,6 +1062,7 @@ class GtkUI(UIToolkit):
         label.set_use_markup(True)
 
         buttons = []
+        first_enabled = 0
 
         for choice in choices:
             description = ''
@@ -1075,21 +1075,27 @@ class GtkUI(UIToolkit):
             else:
                 text, description, enabled = choice
 
+            if not (enabled or first_enabled):
+                first_enabled += 1
+
             radio_button = gtk.RadioButton(label='%s %s' % (text, description),
                                            use_underline=False)
             radio_button.show()
             vbox.pack_start(radio_button, False, True, 0)
             buttons.append(radio_button)
             radio_button.set_sensitive(enabled)
-            radio_button.connect('toggled', on_toggled)
+            radio_button.connect('toggled', on_toggled, text)
 
-            valid_choices[radio_button] = text
+        # Set the first enabled button chosen if there is any
+        if first_enabled >= len(buttons):
+            raise RuntimeWarning('There is no valid choice')
 
-            if buttons[0] != radio_button:
-                radio_button.set_group(buttons[0])
+        # Force 'toggled' signal to set default value
+        buttons[first_enabled].toggled()
 
-        # Force this to save.
-        on_toggled(buttons[0])
+        for button in buttons:
+            if button != buttons[first_enabled]:
+                button.set_group(buttons[first_enabled])
 
     def text(self, page, text):
         """
@@ -1519,7 +1525,7 @@ class InstallCommand(Command):
                        is_visible_func=lambda: site.web_server_type == "apache")
 
         ui.text(page, "Based on our experiences, we recommend using "
-                      "modpython with Review Board.")
+                      "wsgi with Review Board.")
 
         ui.prompt_choice(page, "Python Loader",
                          [
@@ -1637,6 +1643,9 @@ class UpgradeCommand(Command):
             print "Updating database. This may take a while."
             site.sync_database()
             site.migrate_database()
+
+            print "Resetting in-database caches."
+            site.run_manage_command("fixreviewcounts")
 
         print "Upgrade complete."
 

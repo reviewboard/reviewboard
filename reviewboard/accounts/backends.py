@@ -181,6 +181,7 @@ class LDAPBackend(AuthBackend):
         try:
             import ldap
             ldapo = ldap.initialize(settings.LDAP_URI)
+            ldapo.set_option(ldap.OPT_REFERRALS, 0)
             ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
             if settings.LDAP_TLS:
                 ldapo.start_tls_s()
@@ -237,6 +238,7 @@ class LDAPBackend(AuthBackend):
             try:
                 import ldap
                 ldapo = ldap.initialize(settings.LDAP_URI)
+                ldapo.set_option(ldap.OPT_REFERRALS, 0)
                 ldapo.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
                 if settings.LDAP_TLS:
                     ldapo.start_tls_s()
@@ -250,8 +252,21 @@ class LDAPBackend(AuthBackend):
 
                 user_info = passwd[0][1]
 
-                first_name = user_info.get('givenName', [username])[0]
-                last_name = user_info.get('sn', [""])[0]
+                given_name_attr = getattr(settings, 'LDAP_GIVEN_NAME_ATTRIBUTE',
+                                          'givenName')
+                first_name = user_info.get(given_name_attr, [username])[0]
+
+                surname_attr = getattr(settings, 'LDAP_SURNAME_ATTRIBUTE', 'sn')
+                last_name = user_info.get(surname_attr, [''])[0]
+
+                # If a single ldap attribute is used to hold the full name of
+                # a user, split it into two parts.  Where to split was a coin
+                # toss and I went with a left split for the first name and
+                # dumped the remainder into the last name field.  The system
+                # admin can handle the corner cases.
+                if settings.LDAP_FULL_NAME_ATTRIBUTE:
+                    full_name = user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
+                    first_name, last_name = full_name.split(' ', 1)
 
                 if settings.LDAP_EMAIL_DOMAIN:
                     email = u'%s@%s' % (username, settings.LDAP_EMAIL_DOMAIN)

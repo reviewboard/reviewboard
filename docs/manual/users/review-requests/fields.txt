@@ -1,0 +1,112 @@
+==============
+Editing Fields
+==============
+
+Updating review requests is very much like
+:ref:`creating review requests <creating-review-requests>`. Once you have
+a review request out there, you can upload a new diff, add new screenshots,
+or modify the fields. Any changes you make will be seen by you only until you
+:ref:`publish the changes <publishing-review-requests>`.
+
+
+Changing Fields
+===============
+
+Most fields on a review request can be changed, with the exception of
+:guilabel:`Submitter`, :guilabel:`Change Number` and :guilabel:`Repository`.
+
+To change a field, either click on the field (in the case of
+:guilabel:`Description` and :guilabel:`Testing Done`) or click on the pencil
+icon. A text box will appear allowing you to modify the value. Make sure to
+click "OK" after making a change in order to save the field before navigating
+away from the page.
+
+
+Summary
+-------
+
+The :guilabel:`Summary` field is a short, one-line description of the
+change. It's what people will see in their dashboard and in e-mail subject
+headers. You should aim to keep this short and as descriptive as possible.
+
+
+Branch
+------
+
+The :guilabel:`Branch` field describes which branch your change applies to.
+This is a very free-form field and can contain any text.
+
+Some examples may be:
+
+* ``trunk``
+* ``master``
+* ``my-feature``
+* ``release-2.0``
+* ``hotfix-branch -> release-2.0 -> main``
+
+In the latter case, this could be used to show the series of branches that
+the change would be merged down to, starting at the branch where the change
+originated.
+
+
+Bugs
+----
+
+This :guilabel:`Bugs` field is a comma-separated list of bug IDs that
+the change addresses. If the repository is configured with a bug tracker,
+the bug IDs will link to the reports on the bug tracker.
+
+
+Groups
+------
+
+The :guilabel:`Groups` field is a comma-separated list of all review groups
+that should review the change.
+
+When entering a group, Review Board will attempt to auto-complete the group.
+It will match against either the group's ID, or the group's name. While
+auto-completing, a drop-down of possible groups will be displayed, showing both
+the ID and name.
+
+Review Board doesn't enforce that the groups must review the change before
+it can be submitted. This is a policy that is left up to each organization.
+
+
+People
+------
+
+The :guilabel:`People` field is a comma-separated list of all the people
+that should review the change.
+
+When entering a person, Review Board will attempt to auto-complete the
+person's information. It will match against either the person's username, or the
+person's first or last name. While auto-completing, a drop-down of possible
+people will be displayed, showing both the username and full name.
+
+Review Board doesn't enforce that the people listed must review the change
+before it can be submitted. This is a policy that is left up to each
+organization.
+
+
+Description
+-----------
+
+The :guilabel:`Description` field describes the change that will be reviewed.
+It can support paragraphs of text with word-wrapping.
+
+This is intended to provide enough information for reviewers to know what the
+change is about before they go to review it.
+
+
+Testing Done
+------------
+
+The :guilabel:`Testing Done` field describes how this change has been tested.
+It can support paragraphs of text with word-wrapping.
+
+This should cover any and all testing scenarios that have been done, in order
+to help reviewers feel more confident about the stability and design of the
+change.
+
+
+.. comment: vim: ft=rst et ts=3

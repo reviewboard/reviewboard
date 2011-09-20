@@ -9,6 +9,11 @@ from reviewboard.webapi.resources import root_resource
 
 extension_manager = get_extension_manager()
 
+
+handler404 = 'django.views.defaults.page_not_found'
+handler500 = 'django.views.defaults.server_error'
+
+
 # Load in all the models for the admin UI.
 if not admin.site._registry:
     admin.autodiscover()

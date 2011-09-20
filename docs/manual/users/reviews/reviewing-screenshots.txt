@@ -1,3 +1,5 @@
+.. _reviewing-screenshots:
+
 =====================
 Reviewing Screenshots
 =====================
@@ -22,6 +24,9 @@ screenshot, for example. This will pop open a new comment dialog, just like in
 the diff viewer.
 
 .. image:: comment-box.png
+
+The screenshot comment dialog supports issue tracking. See the section on
+:ref:`issue-tracking` for more information.
 
 Once you're done writing your comment in the text area, click :guilabel:`Save`
 to save the comment.

@@ -4,7 +4,7 @@
     <dl>
      <dt>
       <label for="{% if draft %}your{% endif %}comment_{{context_id}}-{{id}}">
-      <a href="{% url user reply_user %}">{{reply_user|user_displayname}}</a>
+      <a href="{% url user reply_user %}" class="user">{{reply_user|user_displayname}}</a>
       <span class="timestamp">{% blocktrans with timestamp|timesince as timestamp_since and timestamp|date:"F jS, Y, P" as timestamp_date %}{{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</span>
       </label>
      </dt>

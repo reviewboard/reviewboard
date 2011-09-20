@@ -18,6 +18,8 @@
 # Files
 .coverage
 reviewboard/settings_local.py
+reviewboard.log
+settings_local.py
 
 # Directories/symlinks
 reviewboard/htdocs/media/djblets
@@ -28,3 +30,4 @@ dist
 django_cache
 pickle
 temp
+.idea

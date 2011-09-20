@@ -79,14 +79,14 @@ class AuthenticationError(SCMError):
 
     This may also take the user's SSH key that was tried, if any.
     """
-    def __init__(self, allowed_types, user_key=None):
+    def __init__(self, allowed_types=[], msg=None, user_key=None):
         if allowed_types:
             msg = _('Unable to authenticate against this repository using one '
                     'of the supported authentication types '
                     '(%(allowed_types)s).') % {
                 'allowed_types': humanize_list(allowed_types),
             }
-        else:
+        elif not msg:
             msg = _('Unable to authenticate against this repository using one '
                     'of the supported authentication types.')
 

@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import subprocess
 import urllib2
 import urlparse
 
@@ -53,13 +52,22 @@ class GitTool(SCMTool):
     """
     name = "Git"
     supports_raw_file_urls = True
+    supports_authentication = True
     dependencies = {
         'executables': ['git']
     }
 
     def __init__(self, repository):
-        SCMTool.__init__(self, repository)
-        self.client = GitClient(repository.path, repository.raw_file_url)
+        super(GitTool, self).__init__(repository)
+
+        local_site_name = None
+
+        if repository.local_site:
+            local_site_name = repository.local_site.name
+
+        self.client = GitClient(repository.path, repository.raw_file_url,
+                                repository.username, repository.password,
+                                local_site_name)
 
     def get_file(self, path, revision=HEAD):
         if revision == PRE_CREATION:
@@ -96,7 +104,8 @@ class GitTool(SCMTool):
         return GitDiffParser(data)
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None):
+    def check_repository(cls, path, username=None, password=None,
+                         local_site_name=None):
         """
         Performs checks on a repository to test its validity.
 
@@ -108,9 +117,10 @@ class GitTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
-        client = GitClient(path)
+        client = GitClient(path, local_site_name=local_site_name)
 
-        super(GitTool, cls).check_repository(client.path, username, password)
+        super(GitTool, cls).check_repository(client.path, username, password,
+                                             local_site_name)
 
         if not client.is_valid_repository():
             raise RepositoryNotFoundError()
@@ -229,13 +239,9 @@ class GitDiffParser(DiffParser):
                 and next_diff_start.startswith("diff --git"))
 
     def _is_new_file(self, linenum):
-        line = self.lines[linenum]
-
         return self.lines[linenum].startswith("new file mode")
 
     def _is_deleted_file(self, linenum):
-        line = self.lines[linenum]
-
         return self.lines[linenum].startswith("deleted file mode")
 
     def _is_mode_change(self, linenum):
@@ -278,7 +284,8 @@ class GitClient(object):
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
 
-    def __init__(self, path, raw_file_url=None):
+    def __init__(self, path, raw_file_url=None, username=None, password=None,
+                 local_site_name=None):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
@@ -286,6 +293,9 @@ class GitClient(object):
 
         self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
+        self.username = username
+        self.password = password
+        self.local_site_name = local_site_name
         self.git_dir = None
 
         url_parts = urlparse.urlparse(self.path)
@@ -319,6 +329,15 @@ class GitClient(object):
 
         return True
 
+    def _get_file(self, url):
+        host = urlparse.urlparse(url)[1]
+        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        passman.add_password(None, host, self.username, self.password)
+        auth_handler = urllib2.HTTPBasicAuthHandler(passman)
+        opener = urllib2.build_opener(auth_handler)
+        f = opener.open(url)
+        return f.read()
+
     def get_file(self, path, revision):
         if self.raw_file_url:
             self.validate_sha1_format(path, revision)
@@ -326,7 +345,7 @@ class GitClient(object):
             # First, try to grab the file remotely.
             try:
                 url = self._build_raw_url(path, revision)
-                return urllib2.urlopen(url).read()
+                return self._get_file(url)
             except Exception, e:
                 logging.error("Git: Error fetching file from %s: %s" % (url, e))
                 raise SCMError("Error fetching file from %s: %s" % (url, e))
@@ -340,7 +359,7 @@ class GitClient(object):
             # First, try to grab the file remotely.
             try:
                 url = self._build_raw_url(path, revision)
-                return urllib2.urlopen(url).geturl()
+                return self._get_file(url)
             except urllib2.HTTPError, e:
                 if e.code != 404:
                     logging.error("Git: HTTP error code %d when fetching "
@@ -360,12 +379,8 @@ class GitClient(object):
 
     def _run_git(self, args):
         """Runs a git command, returning a subprocess.Popen."""
-        return subprocess.Popen(
-            ['git'] + args,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            close_fds=(os.name != 'nt')
-        )
+        return SCMTool.popen(['git'] + args,
+                             local_site_name=self.local_site_name)
 
     def _build_raw_url(self, path, revision):
         url = self.raw_file_url
@@ -427,7 +442,7 @@ class GitClient(object):
             if not path.startswith('/'):
                 path = '/' + path
 
-            return 'ssh://%s%s%s' % (m.group('username'),
+            return 'ssh://%s%s%s' % (m.group('username') or '',
                                      m.group('hostname'),
                                      path)
 

@@ -1,42 +1,17 @@
-.. _webapi2.0-error-214:
+.. webapi-error::
+   :instance: reviewboard.webapi.errors.BAD_HOST_KEY
+   :example-data:
+       {
+           "hostname": "svn.example.com",
+           "key": "_key in base64_",
+           "expected_key": "_key in base64_"
+       }
 
-==================
-214 - Bad Host Key
-==================
+   Review Board encountered an unexpected SSH key on host (typically a
+   repository). The key found didn't match what Review Board had previously
+   recorded.
 
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 214                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`403`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``The SSH key on the host does not match the stored |
-|                      | key``                                               |
-+----------------------+-----------------------------------------------------+
-| **Description**      | Review Board encountered an unexpected SSH key on   |
-|                      | host (typically a repository). The key found didn't |
-|                      | match what Review Board had previously recorded.    |
-|                      |                                                     |
-|                      | The hostname, key (in base64) and the key we        |
-|                      | expected to find (also in base64) will be returned  |
-|                      | along with the error.                               |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 214,
-       msg: "The SSH key on the host does not match the stored key"
-     },
-     hostname: "svn.example.com",
-     key: "<key in base64>",
-     expected_key: "<key in base64>"
-   }
-
+   The hostname, key (in base64) and the key we expected to find (also in
+   base64) will be returned along with the error.
 
 .. comment: vim: ft=rst et ts=3

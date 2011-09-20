@@ -8,8 +8,10 @@ Administration Guide
    :maxdepth: 2
 
    installation/index
-   sites/index
+   upgrading/index
+   optimization/index
    admin-ui/index
-   management/index
+   configuration/index
+   sites/index
 
 .. comment: vim: ft=rst et

@@ -1,8 +1,8 @@
 .. _management-commands:
 
-===================
-Management Commands
-===================
+============================
+Advanced Management Commands
+============================
 
 :command:`rb-site` provides a ``manage`` command for certain management tasks.
 The format for the commands is always::
@@ -50,7 +50,7 @@ A sample ``crontab`` entry is available at :file:`conf/search-cron.conf` under
 an installed site directory.
 
 The generated search index will be placed in the
-:ref:`search index directory <search-index-directory` specified in the
+:ref:`search index directory <search-index-directory>` specified in the
 :ref:`general-settings` page. By default, this should be the
 :file:`search-index` directory in your site directory.
 
@@ -86,6 +86,21 @@ Board.
 To open a Python command shell, run::
 
     $ rb-site manage /path/to/site shell
+
+
+Resetting Review Request Counters
+---------------------------------
+
+The counters in the Dashboard along the left-hand side, indicating the
+number of review requests, can potentially be incorrect if changes were
+made manually to the database or if there was an error while attempting to
+save information to the database.
+
+You can fix these counters by running::
+
+    $ rb-site manage /path/to/site fixreviewcounts
+
+This is done automatically when upgrading a site.
 
 
 .. comment: vim: ft=rst et tw=75

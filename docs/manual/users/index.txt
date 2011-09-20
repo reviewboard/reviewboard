@@ -8,7 +8,8 @@ Users Guide
    :maxdepth: 2
 
    getting-started/index
-   navigating/index
+   dashboard/index
+   searching/index
    review-requests/index
    reviews/index
    tools/index

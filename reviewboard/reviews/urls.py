@@ -58,3 +58,4 @@ urlpatterns = patterns('reviewboard.reviews.views',
     # Search
     url(r'^search/$', 'search', name="search"),
 )
+

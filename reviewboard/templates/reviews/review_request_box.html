@@ -8,8 +8,12 @@
   {% star review_request %}
   <div id="summary_wrapper"><label>{% trans "Summary" %}: </label><h1 id="summary" class="editable">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">
-  {% blocktrans with review_request_details.last_updated|timesince as lastupdated and review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
-    Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> - updated {{lastupdated}} ago
+  {% blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
+    Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
+  {% endblocktrans %}
+  {% ifequal review_request.status 'S' %}{% trans "submitted" %}{% endifequal %}{% ifequal review_request.status 'D' %}{% trans "discarded" %}{% endifequal %}{% ifequal review_request.status 'P' %}{% trans "updated" %}{% endifequal %}
+  {% blocktrans with review_request_details.last_updated|timesince as lastupdated %}
+   {{lastupdated}} ago
   {% endblocktrans %}
   </p>
  </div>
@@ -27,7 +31,7 @@
   </tr>
   <tr>
    <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
-   <td class="value"><a id="submitter" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
+   <td class="value"><a id="submitter" class="user" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
    <td class="caption" colspan="2">{% trans "Reviewers" %}</td>
   </tr>
   <tr>
@@ -52,7 +56,7 @@
    <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>
    <td class="value" id="target-people-value-cell"><span id="target_people" class="editable comma-editable">{% spaceless %}
 {%  for person in review_request_details.target_people.all %}
-<a href="{% url user person %}"{% if not person.is_active %} class="inactive"{% endif %}>{{person}}</a>{% if not forloop.last %}, {% endif %}
+<a href="{% url user person %}" class="user{% if not person.is_active %} inactive{% endif %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
 {% endspaceless %}</span></td>
   </tr>
@@ -98,3 +102,41 @@
    <br clear="both" />
   </div>
  </div>
+<div class="content clearfix"{% ifequal review_request_details.file_attachments.count 0 %} style="display: none;"{% endifequal %}>
+<label for="file-list">{% trans "File Attachments" %}:</label>
+ <div id="file-list">
+{% for file in review_request_details.file_attachments.all %}
+   <div class="file-container" data-file-id="{{file.id}}">
+    <div class="file">
+     <ul class="actions">
+      <li class="file-add-comment"><a href="#">{% trans "Add Comment" %}</a></li>
+     </ul>
+     <div class="file-header">
+      <a href="{{file.get_absolute_url}}">
+      <img src="{{file.icon_url}}" />
+      {{file.filename}}</a>
+{% ifuserorperm review_request.submitter "reviews.delete_file" %}
+      <a href="#" class="delete">
+       <img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
+      </a>
+{% endifuserorperm %}
+     </div>
+     <div class="file-caption">
+      <a href="{{file.get_absolute_url}}" class="edit">{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}</a>
+     </div>
+    </div>
+   </div>
+{% endfor %}
+  <br clear="both" />
+ </div>
+</div>
+
+<script type="text/javascript">
+  $(document).ready(function() {
+    setFileAttachmentComments({
+{% for file_attachment in review_request_details.file_attachments.all %}
+        {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
+{% endfor %}
+    });
+  });
+</script>

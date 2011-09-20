@@ -33,10 +33,7 @@ import getpass
 import logging
 import os
 import select
-import socket
 import sys
-import tempfile
-import time
 from optparse import OptionParser
 
 import paramiko
@@ -105,7 +102,7 @@ class PlatformHandler(object):
             logging.debug('!! stdin empty\n')
             return False
 
-        result = channel.send(buf)
+        channel.send(buf)
 
         return True
 
@@ -211,6 +208,14 @@ def parse_options(args):
     parser.add_option('-V',
                       action='callback', callback=print_version,
                       help='display the version information and exit')
+    parser.add_option('--rb-disallow-agent',
+                      action='store_false', dest='allow_agent',
+                      default=os.getenv('RBSSH_ALLOW_AGENT') != '0',
+                      help='disable using the SSH agent for authentication')
+    parser.add_option('--rb-local-site',
+                      dest='local_site_name', metavar='NAME',
+                      default=os.getenv('RB_LOCAL_SITE'),
+                      help='the local site name containing the SSH keys to use')
 
     (options, args) = parser.parse_args(args)
 
@@ -263,16 +268,18 @@ def main():
 
     logging.debug('!!! %s, %s, %s' % (hostname, username, command))
 
-    client = sshutils.get_ssh_client()
+    client = sshutils.get_ssh_client(options.local_site_name)
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     attempts = 0
     password = None
-    success = False
+
+    key = sshutils.get_user_key(options.local_site_name)
 
     while True:
         try:
-            client.connect(hostname, username=username, password=password)
+            client.connect(hostname, username=username, password=password,
+                           pkey=key, allow_agent=options.allow_agent)
             break
         except paramiko.AuthenticationException, e:
             if attempts == 3 or not sys.stdin.isatty():

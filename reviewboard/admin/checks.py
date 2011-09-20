@@ -28,13 +28,18 @@
 #
 
 
+import getpass
 import imp
 import os
 import sys
 
 from django.conf import settings
+from django.db import DatabaseError
 from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
+from djblets.siteconfig.models import SiteConfiguration
+
+from reviewboard import get_version_string
 
 
 _updates_required = []
@@ -51,15 +56,49 @@ def check_updates_required():
     global _install_fine
 
     if not _updates_required and not _install_fine:
+        site_dir = os.path.dirname(settings.HTDOCS_ROOT)
+        devel_install = (os.path.exists(os.path.join(settings.LOCAL_ROOT,
+                                                     'manage.py')))
+        siteconfig = None
+
+        # Check if we can access a SiteConfiguration. There should always
+        # be one, unless the user has erased stuff by hand.
+        #
+        # This also checks for any sort of errors in talking to the database.
+        # This could be due to the database being down, or corrupt, or
+        # tables locked, or an empty database, or other cases. We want to
+        # catch this before getting the point where plain 500 Internal Server
+        # Errors appear.
+        try:
+            siteconfig = SiteConfiguration.objects.get_current()
+        except (DatabaseError, SiteConfiguration.DoesNotExist), e:
+            _updates_required.append((
+                'admin/manual-updates/database-error.html', {
+                    'error': e,
+                }
+            ))
+
+        # Check if the version running matches the last stored version.
+        # Only do this for non-debug installs, as it's really annoying on
+        # a developer install.:
+        cur_version = get_version_string()
+
+        if siteconfig and siteconfig.version != cur_version:
+            _updates_required.append((
+                'admin/manual-updates/version-mismatch.html', {
+                    'current_version': cur_version,
+                    'stored_version': siteconfig.version,
+                    'site_dir': site_dir,
+                    'devel_install': devel_install,
+                }
+            ))
+
         # Check if the site has moved and the old media directory no longer
         # exists.
-        if not os.path.exists(settings.MEDIA_ROOT):
+        if siteconfig and not os.path.exists(settings.MEDIA_ROOT):
             new_media_root = os.path.join(settings.HTDOCS_ROOT, "media")
 
             if os.path.exists(new_media_root):
-                from djblets.siteconfig.models import SiteConfiguration
-
-                siteconfig = SiteConfiguration.objects.get_current()
                 siteconfig.set("site_media_root", new_media_root)
                 settings.MEDIA_ROOT = new_media_root
 
@@ -77,14 +116,28 @@ def check_updates_required():
                 }
             ))
 
-        try:
-            from reviewboard.changedescs.models import ChangeDescription
-            ChangeDescription.objects.count()
-        except:
-            # We were unable to load this, so it's likely that the user
-            # hasn't run syncdb yet.
+
+        # Check if the data directory (should be $HOME) is writable by us.
+        data_dir = os.environ.get('HOME', '')
+
+        if (not data_dir or
+            not os.path.isdir(data_dir) or
+            not os.access(data_dir, os.W_OK)):
+            try:
+                username = getpass.getuser()
+            except ImportError:
+                # This will happen if running on Windows (which doesn't have
+                # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
+                # %USERNAME% are all undefined.
+                username = "<server username>"
+
             _updates_required.append((
-                "admin/manual-updates/run-syncdb.html", {}
+                'admin/manual-updates/data-dir.html', {
+                    'data_dir': data_dir,
+                    'writable': os.access(data_dir, os.W_OK),
+                    'server_user': username,
+                    'expected_data_dir': os.path.join(site_dir, 'data'),
+                }
             ))
 
         if not is_exe_in_path('patch'):

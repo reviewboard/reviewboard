@@ -40,6 +40,41 @@
 
       return false;
     });
+
+    $("#upload-file-link").click(function() {
+      $("<div/>").formDlg({
+        title: "{% trans "Upload File" %}",
+        confirmLabel: "{% trans "Upload" %}",
+        dataStoreObject: gReviewRequest.createFileAttachment(),
+        width: "50em",
+        upload: true,
+        fields: {% form_dialog_fields file_attachment_form %},
+        success: function(rsp) {
+            if (!$("#file-list").length == 0) {
+                $.newFileAttachment(rsp.file_attachment);
+            }
+
+            gDraftBanner.show();
+        }
+      });
+
+      return false;
+    });
+
+   $(".file-review").click(function() {
+      $("<div/>").formDlg({
+        title: "{% trans "Review File" %}",
+        confirmLabel: "{% trans "Save" %}",
+        dataStoreObject: gReviewRequest.createReview().createFileComment(this.id),
+        upload: false,
+        fields: {% form_dialog_fields comment_file_form %},
+        success: function(rsp) {
+            gReviewBanner.show();
+        }
+      });
+
+      return false;
+    });
   });
 </script>
 {% endifuserorperm %}

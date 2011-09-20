@@ -1,0 +1,26 @@
+{% load i18n %}
+<h1 class="title">{% trans "Review Board version mismatch" %}</h1>
+<div class="main">
+ <p>
+{% blocktrans %}
+  The version of Review Board running does not match the version the
+  site was last upgraded to. You are running <b>{{current_version}}</b> and
+  the site was last upgraded to <b>{{stored_version}}</b>.
+{% endblocktrans %}
+ </p>
+ <p>
+{% blocktrans %}
+  Please upgrade your site to fix this by running:
+{% endblocktrans %}
+ </p>
+{% if devel_install %}
+ <pre>
+   $ ./reviewboard/manage.py syncdb
+   $ ./reviewboard/manage.py evolve --execute
+</pre>
+{% else %}
+ <pre>
+    $ rb-site upgrade {{site_dir}}
+</pre>
+{% endif %}
+</div>

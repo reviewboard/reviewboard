@@ -31,7 +31,7 @@ Does Review Board support post-commit review?
 ---------------------------------------------
 
 Yes, Review Board can handle :term:`post-commit review`, though currently you
-need to :command:`post-review` for this. See :ref:`Posting Committed Code` for
+need to :command:`post-review` for this. See :ref:`posting-committed-code` for
 more information.
 
 Review Board was initially designed for :term:`pre-commit review` and large
@@ -121,7 +121,7 @@ I get a page telling me to run syncdb, but I've done that already
 
 Generally this page is there to let you know when we've updated the database
 schema so you can make the appropriate changes. Be sure to run
-``rb-site upgrade /path/to/site``. See :ref:`Upgrading Sites` for more
+``rb-site upgrade /path/to/site``. See :ref:`upgrading-sites` for more
 information on this.
 
 If you've done that already and you're still getting the error, and you're

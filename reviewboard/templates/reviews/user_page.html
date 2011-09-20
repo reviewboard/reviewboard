@@ -1,9 +1,10 @@
 {% extends "datagrid/datagrid.html" %}
 {% load djblets_deco %}
+{% load djblets_utils %}
 {% load i18n %}
 {% load reviewtags %}
 {% load gravatars %}
-{% block title %}{% trans "My Page" %}{% endblock %}
+{% block title %}{{viewing_user|user_displayname}}{% endblock %}
 
 {% block css %}
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css?{{MEDIA_SERIAL}}" />
@@ -22,32 +23,36 @@
    <col class="count" />
   </colgroup>
   <tbody>
-    <tr>
-      <td>{% gravatar viewing_user 175 %}</td>
-    </tr>
-    <tr>
-      <td><h2>{{viewing_user}}</h2></td>
-    </tr>
-    <tr>
-      <td><p><label>{% trans "Name:" %}</label></p> {{viewing_user.first_name}} {{viewing_user.last_name}}</td>
-    </tr>
-    <tr>
-      <td><p><label>{% trans "Email:" %}</label></p> {{viewing_user.email}}</td>
-    </tr>
-    <tr>
-      <td><p><label>{% trans "Last Login:" %}</label></p> {{viewing_user.last_login|date:"F jS, Y"}}</td>
-    </tr>
-    <tr>
-      <td><p><label>{% trans "Date Joined:" %}</label></p> {{viewing_user.date_joined|date:"F jS, Y"}}</td>
-    </tr>
-    <tr>
-      <td>
-        <p><label>{% trans "Groups:" %}</label></p>
-        {% for group in viewing_user.review_groups.all %}
-        <a href="{% url group group %}">{{group}}</a>{% if not forloop.last %}, {% endif %}
-        {% endfor %}
-      </td>
-    </tr>
+   <tr>
+    <td class="logo">{% gravatar viewing_user 175 %}</td>
+   </tr>
+   <tr>
+    <td><h2 class="nickname">{{viewing_user.username}}</h2></td>
+   </tr>
+{% if show_profile %}
+   <tr>
+    <td class="fn">{{viewing_user.first_name}} {{viewing_user.last_name}}</td>
+   </tr>
+{% if request.user.is_authenticated %}
+   <tr>
+    <td><a class="email" href="mailto:{{viewing_user.email}}">{{viewing_user.email}}</a></td>
+   </tr>
+{% endif %}
+   <tr>
+    <td class="logged-in">Last logged in {{viewing_user.last_login|date:"F jS, Y"}}</td>
+   </tr>
+   <tr>
+    <td class="joined">Joined {{viewing_user.date_joined|date:"F jS, Y"}}</td>
+   </tr>
+   <tr>
+    <td>
+     <p><label>{% trans "Groups:" %}</label></p>
+{% for group in viewing_user.review_groups.all %}
+     <a class="group" href="{% url group group %}">{{group}}</a>{% if not forloop.last %}, {% endif %}
+{% endfor %}
+    </td>
+   </tr>
+{% endif %}
   </tbody>
  </table>
  <div id="dashboard-main" class="clearfix">

@@ -57,7 +57,7 @@
 {% include "reviews/review_header.html" %}
 
 {% box "review-request" %}
-<ul id="actions">
+<ul class="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
 {% diffviewer_action_hooks %}
 {% if not interdiffset %}
@@ -241,8 +241,6 @@
 <a name="index_footer"></a>
 {% include "diffviewer/changeindex.html" %}
 </div>
-
-{% include "reviews/comments_dlg.html" %}
 
 {% endif %}{# !error #}
 {% endblock %}

@@ -32,7 +32,6 @@ import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
-from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -84,8 +83,16 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=False)
 
     search_index_file = forms.CharField(
-        label=_("Search index file"),
-        help_text=_("The file that search index data should be stored in."),
+        label=_("Search index directory"),
+        help_text=_("The directory that search index data should be stored "
+                    "in."),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '50'}))
+
+    cache_backend = forms.CharField(
+        label=_("Cache Backend"),
+        help_text=_("The path to the cache backend."
+                    "Example: 'memcached://127.0.0.1:11211/'"),
         required=False,
         widget=forms.TextInput(attrs={'size': '50'}))
 
@@ -161,7 +168,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'fields':  ('server', 'site_media_url',
                             'site_admin_name',
                             'site_admin_email',
-                            'locale_timezone'),
+                            'locale_timezone',
+                            'cache_backend'),
             },
             {
                 'classes': ('wide',),
@@ -549,7 +557,7 @@ class StorageSettingsForm(SiteSettingsForm):
             #('couchdb',    _('CouchDB')),
         ),
         help_text=_('Storage method and location for uploaded files, such as '
-                    'screenshots.'),
+                    'screenshots and file attachments.'),
         required=True)
 
     aws_access_key_id = forms.CharField(

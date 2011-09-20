@@ -1,3 +1,5 @@
+.. _closing-review-requests:
+
 =======================
 Closing Review Requests
 =======================
@@ -16,5 +18,21 @@ repository and no longer needs further reviews.
 
 A discarded review request is one that has been abandoned and will no longer
 be updated or reviewed.
+
+
+Close Descriptions
+------------------
+
+Once you've closed a review request, you can enter a more thorough description
+describing the commit or the reason you closed the review request.
+
+For example, if you submitted the review request, you might specify the
+revision it was committed as. If you discarded, you might explain why.
+
+The gray submitted or discarded banners have a field for the description.
+You can enter the text here and click :guilabel:`OK`. The description will
+be saved immediately, and other users will be able to see it.
+
+.. image:: submitted-banner.png
 
 .. comment: vim: ft=rst et ts=3

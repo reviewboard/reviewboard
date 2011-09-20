@@ -11,6 +11,10 @@ h1 {
   font-size: 10pt;
 }
 
+h3 {
+  margin-top: 2em;
+}
+
 img {
   border: 0;
 }
@@ -28,8 +32,16 @@ pre {
   font-size: 10pt;
 }
 
-span.draftlabel {
+span.label-draft {
   color: #008000;
+}
+
+span.label-submitted {
+  color: #b7a93e;
+}
+
+span.label-discarded {
+  color: #fe5757;
 }
 
 td.help {
@@ -414,6 +426,10 @@ form table td.label {
   margin-left: 10px;
 }
 
+#manual-updates p {
+  font-size: 9pt;
+}
+
 #navbar-outer {
   border: 1px #E0E0E0 solid;
   margin: 10px 0;
@@ -541,13 +557,11 @@ form table td.label {
  * User page hover
  ****************************************************************************/
 
-.user-infobox {
+#user-infobox {
   background: #F9F9F9;
   border: 1px black solid;
-  bottom: 2em;
   display: block;
   height: 12em;
-  left: -2em;
   padding: 1em;
   position: absolute;
   width: 30em;
@@ -560,44 +574,45 @@ form table td.label {
   box-shadow: 0px 0px 4px #000;
 }
 
-.user-infobox.loading {
+#user-infobox.loading {
   background-image: url("../images/spinner.gif");
   background-position: 1em 1em;
   background-repeat: no-repeat;
 }
 
-.user-infobox .infobox-pic {
+#user-infobox .infobox-pic {
   float: left;
   width: 85px;
   margin-right: 1em;
 }
 
-.user-infobox .infobox-text {
+#user-infobox .infobox-text {
   color: black;
   float: left;
 }
 
-.user-infobox p {
+#user-infobox p {
   font-size: 1.2em;
   margin: 0.5em 0;
   padding: 0;
 }
 
-.user-infobox h2 {
+#user-infobox h2 {
   font-size: 1.4em;
   margin: 0 0 0.5em 0;
   padding: 0;
+  text-decoration: none;
 }
 
-.user-infobox .logged-in {
+#user-infobox .logged-in {
   margin-top: 2em;
 }
 
-.user-infobox .logged-in, .user-infobox .joined {
+#user-infobox .logged-in, #user-infobox .joined {
   font-size: 0.8em;
 }
 
-.user-infobox #infobox-text h2 {
+#user-infobox #infobox-text h2 {
   margin-top: 0;
   padding-top: 0;
 }

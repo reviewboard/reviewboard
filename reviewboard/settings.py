@@ -111,6 +111,7 @@ INSTALLED_APPS = (
     'djblets.webapi',
     'reviewboard.accounts',
     'reviewboard.admin',
+    'reviewboard.attachments',
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
     'reviewboard.extensions',

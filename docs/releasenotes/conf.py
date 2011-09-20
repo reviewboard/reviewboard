@@ -51,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Release Notes'
-copyright = u'2009-2010, Christian Hammond'
+copyright = u'2009-2011, Christian Hammond'
 bugtracker_url = 'http://www.reviewboard.org/bugs/%s'
 
 # The version info for the project you're documenting, acts as replacement for

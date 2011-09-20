@@ -1,0 +1,6 @@
+.. versionadded:: 1.6
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.FileAttachmentCommentResource
+   :is-list:
+
+.. comment: vim: ft=rst et ts=3

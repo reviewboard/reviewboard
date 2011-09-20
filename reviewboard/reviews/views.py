@@ -3,14 +3,13 @@ import time
 from datetime import datetime
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.dispatch import dispatcher
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
-                        HttpResponseNotModified, HttpResponseServerError, \
-                        HttpResponseForbidden
+                        HttpResponseNotModified, HttpResponseServerError
 from django.shortcuts import get_object_or_404, get_list_or_404, \
                              render_to_response
 from django.template.context import RequestContext
@@ -31,13 +30,13 @@ from djblets.util.misc import get_object_or_none
 
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
-from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.accounts.models import ReviewRequestVisit, Profile
+from reviewboard.attachments.forms import UploadFileForm, CommentFileForm
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
-from reviewboard.diffviewer.views import view_diff, view_diff_fragment
 from reviewboard.extensions.hooks import DashboardHook, \
                                          ReviewRequestDetailHook
 from reviewboard.reviews import signals as review_signals
@@ -51,11 +50,12 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import Comment, ReviewRequest, \
-                                       ReviewRequestDraft, Review, Group, \
-                                       Screenshot, ScreenshotComment
+                                       Review, Group, Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
+from reviewboard.webapi.encoder import status_to_string
 
 
 #####
@@ -120,6 +120,8 @@ def _make_review_request_context(review_request, extra_context):
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'upload_screenshot_form': UploadScreenshotForm(),
+        'file_attachment_form': UploadFileForm(),
+        'comment_file_form': CommentFileForm(),
         'scmtool': scmtool,
     }, **extra_context)
 
@@ -216,6 +218,8 @@ fields_changed_name_map = {
     'target_people': 'Reviewers (People)',
     'screenshots': 'Screenshots',
     'screenshot_captions': 'Screenshot Captions',
+    'files': 'Uploaded Files',
+    'file_captions': 'Uploaded File Captions',
     'diff': 'Diff',
 }
 
@@ -298,8 +302,8 @@ def review_detail(request,
             visited.timestamp = datetime.now()
             visited.save()
 
-        starred = review_request in \
-                  request.user.get_profile().starred_review_requests.all()
+        profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
+        starred = review_request in profile.starred_review_requests.all()
 
         # Unlike review above, this covers replies as well.
         try:
@@ -331,9 +335,10 @@ def review_detail(request,
         return HttpResponseNotModified()
 
     changedescs = review_request.changedescs.filter(public=True)
+    latest_changedesc = None
 
     try:
-        latest_changedesc = changedescs.latest('timestamp')
+        latest_changedesc = changedescs.latest()
         latest_timestamp = latest_changedesc.timestamp
     except ChangeDescription.DoesNotExist:
         latest_timestamp = None
@@ -398,8 +403,19 @@ def review_detail(request,
 
                     if 'new' in info:
                         info['new'][0] = mark_safe(info['new'][0])
+
+                # Make status human readable.
+                if name == 'status':
+                    if 'old' in info:
+                        info['old'][0] = status_to_string(info['old'][0])
+
+                    if 'new' in info:
+                        info['new'][0] = status_to_string(info['new'][0])
+
             elif name == "screenshot_captions":
                 change_type = 'screenshot_captions'
+            elif name == "file_captions":
+                change_type = 'file_captions'
             else:
                 # No clue what this is. Bail.
                 continue
@@ -427,6 +443,14 @@ def review_detail(request,
 
     entries.sort(key=lambda item: item['timestamp'])
 
+    close_description = ''
+
+    if latest_changedesc and 'status' in latest_changedesc.fields_changed:
+        status = latest_changedesc.fields_changed['status']['new'][0]
+
+        if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
+            close_description = latest_changedesc.text
+
     response = render_to_response(
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
@@ -437,6 +461,8 @@ def review_detail(request,
             'last_activity_time': last_activity_time,
             'review': review,
             'request': request,
+            'latest_changedesc': latest_changedesc,
+            'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
         })))
     set_etag(response, etag)
@@ -659,6 +685,7 @@ def submitter(request,
         local_site=local_site)
 
     return datagrid.render_to_response(template_name, extra_context={
+        'show_profile': user.is_profile_visible(request.user),
         'viewing_user': user,
     })
 
@@ -1130,15 +1157,19 @@ def user_infobox(request, username,
         if not local_site.is_accessible_by(request.user):
             return _render_permission_denied(request)
 
+    show_profile = user.is_profile_visible(request.user)
+
     etag = ':'.join([user.first_name, user.last_name, user.email,
-                     str(user.last_login), str(settings.AJAX_SERIAL)])
+                     str(user.last_login), str(settings.AJAX_SERIAL),
+                     str(show_profile)])
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
-    response = render_to_response(template_name, {
-        'user': user,
-    })
+    response = render_to_response(template_name, RequestContext(request, {
+        'show_profile': show_profile,
+        'requested_user': user,
+    }))
     set_etag(response, etag)
 
     return response

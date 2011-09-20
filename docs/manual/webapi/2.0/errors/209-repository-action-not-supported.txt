@@ -1,36 +1,9 @@
-.. _webapi2.0-error-209:
+.. webapi-error::
+   :title: Repository Action Not Supported
+   :instance: reviewboard.webapi.errors.REPO_NOT_IMPLEMENTED
 
-=====================================
-209 - Repository Action Not Supported
-=====================================
-
-+----------------------+-----------------------------------------------------+
-| **API Error Code**   | 209                                                 |
-+----------------------+-----------------------------------------------------+
-| **HTTP Status Code** | :http:`501`                                         |
-+----------------------+-----------------------------------------------------+
-| **Error Text**       | ``The specified repository is not able to perform   |
-|                      | this action``                                       |
-+----------------------+-----------------------------------------------------+
-| **Description**      | The request made on a repository's resource can't   |
-|                      | be performed by that type of repository. That       |
-|                      | particular action is invalid for that repository    |
-|                      | type. There is no sense in retrying this request on |
-|                      | the same repository.                                |
-+----------------------+-----------------------------------------------------+
-
-
-Example
--------
-
-.. code-block:: javascript
-
-   {
-     stat: "fail",
-     err: {
-       code: 209,
-       msg: "The specified repository is not able to perform this action"
-     }
-   }
+   The request made on a repository's resource can't be performed by that type
+   of repository. That particular action is invalid for that repository type.
+   There is no sense in retrying this request on the same repository.
 
 .. comment: vim: ft=rst et ts=3

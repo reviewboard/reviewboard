@@ -24,7 +24,7 @@
 {% endif %}
 {% block jsconsts %}{% endblock %}
   </script>
-  <link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
+  <link rel="shortcut icon" type="image/x-icon" href="{{MEDIA_URL}}rb/images/favicon.ico?{{MEDIA_SERIAL}}" />
   <link rel="apple-touch-icon-precomposed" type="image/png" href="{{MEDIA_URL}}rb/images/apple-home-icon.png?{{MEDIA_SERIAL}}" />
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
 {% block css %}{% endblock %}
@@ -80,7 +80,7 @@
     </ul>
     <br />
     <div id="rbinfo">
-     <a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" width="60" height="57" alt="" border="0" /></a>
+     <a href="{% url root %}"><img id="logo" src="{{MEDIA_URL}}rb/images/logo.png?{{MEDIA_SERIAL}}" alt="" border="0" /></a>
      <h1 id="title">
 	  <a href="{% url root %}">Review Board</a>
 	  <span class="version">{{version}}</span>
@@ -88,7 +88,8 @@
     </div>
    </div>
    <div id="page-container">
-   {% template_hook_point "base-before-navbar" %}
+{% template_hook_point "base-before-navbar" %}
+{% block navbar %}
    {% if user.is_authenticated or not siteconfig.settings.auth_require_sitewide_login %}
     {% if siteconfig.settings.search_enable %}<form method="get" action="{% url search %}">{% endif %}
      <div id="navbar-outer">
@@ -102,16 +103,17 @@
        <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
        <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
 	   {% navigation_bar_hooks %}
-       {% if siteconfig.settings.search_enable %}
        <li id="searchbar">
        <input type="text" name="q" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
+       {% if siteconfig.settings.search_enable %}
         <input type="submit" value="{% trans "Search" %}" />
-       </li>
        {% endif %}
+       </li>
       </ul>
      </div>
      {% if siteconfig.settings.search_enable %}</form>{% endif %}
     {% endif %}
+{% endblock %}
 {% endblock %}
     <noscript>
 {%  box "important" %}

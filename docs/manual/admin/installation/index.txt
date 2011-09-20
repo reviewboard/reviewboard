@@ -7,7 +7,7 @@ Installation
 
    linux
    windows
-   upgrading
    development-releases
+   creating-sites
 
 .. comment: vim: ft=rst et

@@ -21,6 +21,8 @@ class PreferencesForm(forms.Form):
                                        required=False)
     syntax_highlighting = forms.BooleanField(required=False,
         label=_("Enable syntax highlighting in the diff viewer"))
+    profile_private = forms.BooleanField(required=False,
+        label=_("Keep your user profile private"))
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
     email = forms.EmailField()
@@ -32,11 +34,9 @@ class PreferencesForm(forms.Form):
 
         super(forms.Form, self).__init__(*args, **kwargs)
 
-        siteconfig = SiteConfiguration.objects.get_current()
         auth_backends = get_auth_backends()
-
-
         choices = []
+
         for g in Group.objects.accessible(user=user).order_by('display_name'):
             choices.append((g.id, g.display_name))
 
@@ -75,6 +75,7 @@ class PreferencesForm(forms.Form):
         profile = user.get_profile()
         profile.first_time_setup_done = True
         profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
+        profile.is_private = self.cleaned_data['profile_private']
         profile.save()
 
     def clean_password2(self):
@@ -288,6 +289,27 @@ class LDAPSettingsForm(SiteSettingsForm):
                     "example: ou=users,dc=example,dc=com"),
         required=True)
 
+    auth_ldap_given_name_attribute = forms.CharField(
+        label=_("Given Name Attribute"),
+        initial="givenName",
+        help_text=_("The attribute in the LDAP server that stores the user's "
+                    "given name."),
+        required=False)
+
+    auth_ldap_surname_attribute = forms.CharField(
+        label=_("Surname Attribute"),
+        initial="sn",
+        help_text=_("The attribute in the LDAP server that stores the user's "
+                    "surname."),
+        required=False)
+
+    auth_ldap_full_name_attribute = forms.CharField(
+        label=_("Full Name Attribute"),
+        help_text=_("The attribute in the LDAP server that stores the user's "
+                    "full name.  This takes precedence over the "
+                    '"Full Name Attribute" and "Surname Attribute."'),
+        required=False)
+
     auth_ldap_email_domain = forms.CharField(
         label=_("E-Mail Domain"),
         help_text=_("The domain name appended to the username to construct "
@@ -330,6 +352,9 @@ class LDAPSettingsForm(SiteSettingsForm):
 
         if not can_enable_ldap:
             self.disabled_fields['auth_ldap_uri'] = True
+            self.disabled_fields['auth_ldap_given_name_attribute'] = True
+            self.disabled_fields['auth_ldap_surname_attribute'] = True
+            self.disabled_fields['auth_ldap_full_name_attribute'] = True
             self.disabled_fields['auth_ldap_email_domain'] = True
             self.disabled_fields['auth_ldap_email_attribute'] = True
             self.disabled_fields['auth_ldap_tls'] = True
