@@ -1,7 +1,9 @@
 {% extends "reviews/reviewable_base.html" %}
 {% load i18n %}
 {% load djblets_deco %}
+{% load djblets_extensions %}
 {% load djblets_utils %}
+{% load rb_extensions %}
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
@@ -34,6 +36,8 @@
 {% box "review-request" %}
 
 <ul class="actions">
+{% review_request_action_hooks %}
+{% review_request_dropdown_action_hooks %}
 {% include "reviews/review_request_actions_secondary.html" %}
 {% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
@@ -73,10 +77,12 @@
 <div class="main">
  <div class="banners"></div>
  <div class="header">
+  {% template_hook_point "review-summary-header-pre" %}
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="collapse-button"></div>
   <div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
   <div class="posted_time">{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
+  {% template_hook_point "review-summary-header-post" %}
  </div>
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>

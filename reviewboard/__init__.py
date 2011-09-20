@@ -63,6 +63,7 @@ def initialize():
     from djblets import log
 
     from reviewboard import signals
+    from reviewboard.extensions.base import get_extension_manager
 
     # This overrides a default django templatetag (url), and we want to make
     # sure it will always get loaded in every python instance.
@@ -77,6 +78,9 @@ def initialize():
 
     # Generate cache serials
     generate_cache_serials()
+
+    # Load all extensions
+    get_extension_manager().load()
 
     signals.initializing.send(sender=None)
 

@@ -66,6 +66,16 @@
    <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
    <td class="value"><span id="repository">{{review_request.repository}}</span></td>
   </tr>
+{% for hook in detail_hooks %}
+{%  if forloop.counter0|divisibleby:2 %}
+  <tr>
+{%  endif %}
+  <td class="label"><label for="{{hook.get_field_id}}">{{hook.get_label}}:</label></td>
+  <td class="value"><span id="{{hook.get_field_id}}">{{hook.get_detail}}</span></td>
+{%  if forloop.last or forloop.counter|divisibleby:2 %}
+  </tr>
+{%  endif %}
+{% endfor %}
  </table>
  <div class="content" id="description-value-cell">
   <label for="description">{% trans "Description" %}:</label>

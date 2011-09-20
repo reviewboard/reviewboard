@@ -23,6 +23,7 @@
  <li><a href="{% url reviewboard.admin.views.dashboard %}">{% trans "Dashboard" %}</a></li>
  <li><a href="{% url reviewboard.admin.views.dashboard %}db/">{% trans "Database" %}</a></li>
  <li><a href="{% url site-settings %}">{% trans "Settings" %}</a></li>
+ <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
 </ul>
 
 {%   block subnavbar %}{% endblock %}

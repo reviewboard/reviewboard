@@ -30,12 +30,14 @@ from djblets.util.misc import get_object_or_none
 from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
+from reviewboard.attachments.forms import UploadFileForm, CommentFileForm
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
-from reviewboard.attachments.forms import UploadFileForm, CommentFileForm
+from reviewboard.extensions.hooks import DashboardHook, \
+                                         ReviewRequestDetailHook
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -451,6 +453,7 @@ def review_detail(request,
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
             'draft': draft,
+            'detail_hooks': ReviewRequestDetailHook.hooks,
             'review_request_details': draft or review_request,
             'entries': entries,
             'last_activity_time': last_activity_time,
@@ -583,7 +586,9 @@ def dashboard(request,
     else:
         grid = DashboardDataGrid(request, local_site=local_site)
 
-    return grid.render_to_response(template_name)
+    return grid.render_to_response(template_name, extra_context={
+        'sidebar_hooks': DashboardHook.hooks,
+    })
 
 
 @check_login_required

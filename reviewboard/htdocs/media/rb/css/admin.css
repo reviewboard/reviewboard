@@ -122,6 +122,16 @@ div.breadcrumbs {
   white-space: nowrap;
 }
 
+.module .actions ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.module .actions ul li {
+  margin-right: 2em;
+  display: inline;
+}
 
 /***************************************************************************
  * Change form
@@ -341,4 +351,60 @@ td, th {
 .module.news .feed-error {
   margin: 0;
   padding: 4px;
+}
+
+.extensions {
+  border: 1px #AAAAAA solid;
+  border-top: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 20px;
+}
+
+.extension {
+  border-top: 1px #AAAAAA solid;
+  list-style: none;
+  padding: 1em;
+  position: relative;
+}
+
+.extension h1 {
+  font-size: 120%;
+}
+
+.extension h1 .version {
+  font-weight: normal;
+}
+
+.extension .description {
+  margin: 0 0 0 1em;
+  padding: 0;
+}
+
+.extension .object-tools {
+  margin: 0;
+  position: absolute;
+  right: 1em;
+  top: 1em;
+}
+
+.extension .object-tools li {
+  background: #999999;
+  border: 1px #999999 solid;
+  -moz-border-radius: 12px;
+  -webkit-border-radius: 12px;
+  border-radius: 12px;
+  height: auto;
+  margin-left: 1em;
+  padding: 0;
+}
+
+.extension .object-tools li a {
+  background: none;
+  display: block;
+  height: 1em;
+  line-height: 1em;
+  margin: 0;
+  padding: 0.5em 1em;
 }

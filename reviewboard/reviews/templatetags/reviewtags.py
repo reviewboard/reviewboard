@@ -358,7 +358,7 @@ def reply_section(context, review, comment, context_type, context_id):
 
 
 @register.inclusion_tag('reviews/dashboard_entry.html', takes_context=True)
-def dashboard_entry(context, level, text, view, group_name=None):
+def dashboard_entry(context, level, text, view, param=None):
     """
     Renders an entry in the dashboard sidebar.
 
@@ -371,8 +371,12 @@ def dashboard_entry(context, level, text, view, group_name=None):
     starred = False
     show_count = True
     count = 0
+    url = None
+    group_name = None
+    review_requests = []
 
     if view == 'to-group':
+        group_name = param
         count = datagrid.counts['groups'].get(group_name,
             datagrid.counts['starred_groups'].get(group_name, 0))
     elif view == 'watched-groups':
@@ -383,6 +387,9 @@ def dashboard_entry(context, level, text, view, group_name=None):
 
         if view == 'starred':
             starred = True
+    elif view == "url":
+        url = param
+        show_count = False
     else:
         raise template.TemplateSyntaxError, \
             "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
@@ -394,6 +401,7 @@ def dashboard_entry(context, level, text, view, group_name=None):
         'text': text,
         'view': view,
         'group_name': group_name,
+        'url': url,
         'count': count,
         'show_count': show_count,
         'user': user,

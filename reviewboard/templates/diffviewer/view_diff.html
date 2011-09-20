@@ -3,6 +3,7 @@
 {% load djblets_deco %}
 {% load djblets_utils %}
 {% load i18n %}
+{% load rb_extensions %}
 {% load reviewtags %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
@@ -58,6 +59,7 @@
 {% box "review-request" %}
 <ul class="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
+{% diffviewer_action_hooks %}
 {% if not interdiffset %}
  <li class="primary"><a href="raw/">{% trans "Download Diff" %}</a></li>
 {% endif %}

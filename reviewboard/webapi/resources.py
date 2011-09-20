@@ -13,6 +13,8 @@ from django.http import HttpResponseRedirect, HttpResponse, \
                         HttpResponseNotModified
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
+from djblets.extensions.base import RegisteredExtension
+from djblets.extensions.resources import ExtensionResource
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
@@ -34,11 +36,12 @@ from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
+from reviewboard.attachments.forms import UploadFileForm
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.forms import EmptyDiffError
-from reviewboard.attachments.forms import UploadFileForm
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.extensions.base import get_extension_manager
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
@@ -6219,6 +6222,9 @@ class SessionResource(WebAPIResource):
 session_resource = SessionResource()
 
 
+extension_resource = ExtensionResource(get_extension_manager())
+
+
 class RootResource(DjbletsRootResource):
     """Links to all the main resources, including URI templates to resources
     anywhere in the tree.
@@ -6230,6 +6236,7 @@ class RootResource(DjbletsRootResource):
     """
     def __init__(self, *args, **kwargs):
         super(RootResource, self).__init__([
+            extension_resource,
             repository_resource,
             review_group_resource,
             review_request_resource,
@@ -6261,6 +6268,7 @@ register_resource_for_model(
 register_resource_for_model(DiffSet, diffset_resource)
 register_resource_for_model(FileDiff, filediff_resource)
 register_resource_for_model(Group, review_group_resource)
+register_resource_for_model(RegisteredExtension, extension_resource)
 register_resource_for_model(Repository, repository_resource)
 register_resource_for_model(
     Review,

@@ -42,6 +42,7 @@ LANGUAGES = (
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
+    'djblets.extensions.loaders.load_template_source',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -57,6 +58,7 @@ MIDDLEWARE_CLASSES = (
     'djblets.siteconfig.middleware.SettingsMiddleware',
     'reviewboard.admin.middleware.LoadSettingsMiddleware',
 
+    'djblets.extensions.middleware.ExtensionsMiddleware',
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
     'reviewboard.admin.middleware.X509AuthMiddleware',
@@ -100,6 +102,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.sessions',
     'djblets.datagrid',
+    'djblets.extensions',
     'djblets.feedview',
     'djblets.gravatars',
     'djblets.log',
@@ -111,6 +114,7 @@ INSTALLED_APPS = (
     'reviewboard.attachments',
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
+    'reviewboard.extensions',
     'reviewboard.notifications',
     'reviewboard.reports',
     'reviewboard.reviews',
@@ -177,6 +181,7 @@ if not LOCAL_ROOT:
 
 HTDOCS_ROOT = os.path.join(LOCAL_ROOT, 'htdocs')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
+EXTENSIONS_MEDIA_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 
 
 # URL prefix for media -- CSS, JavaScript and images. Make sure to use a

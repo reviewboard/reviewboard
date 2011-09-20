@@ -10,9 +10,15 @@ from os.path import abspath, dirname
 sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
 try:
-    import settings # Assumed to be in the same directory.
+    import settings  # Assumed to be in the same directory.
 except ImportError:
-    sys.stderr.write("Error: Can't find the file 'settings.py' in the directory containing %r. It appears you've customized things.\nYou'll have to run django-admin.py, passing it your settings module.\n(If the file settings.py does indeed exist, it's causing an ImportError somehow.)\n" % __file__)
+    sys.stderr.write("Error: Can't find the file 'settings.py' in the "
+                     "directory containing %r. It appears you've "
+                     "customized things.\n"
+                     "You'll have to run django-admin.py, passing it your "
+                     "settings module.\n"
+                     "(If the file settings.py does indeed exist, it's causing"
+                     " an ImportError somehow.)\n" % __file__)
     sys.exit(1)
 
 from django.core.management import execute_manager, setup_environ
@@ -20,6 +26,8 @@ from reviewboard.admin.migration import fix_django_evolution_issues
 
 
 warnings_found = 0
+
+
 def check_dependencies():
     # Some of our checks require access to django.conf.settings, so
     # tell Django about our settings.
@@ -27,14 +35,12 @@ def check_dependencies():
     # This must go before the imports.
     setup_environ(settings)
 
-
     from django.template.defaultfilters import striptags
     from djblets.util.filesystem import is_exe_in_path
 
     from reviewboard.admin import checks
 
     from settings import dependency_error
-
 
     # Python 2.4
     if sys.version_info[0] < 2 or \
@@ -68,7 +74,6 @@ def check_dependencies():
         except ImportError:
             dependency_error('The Python Imaging Library (PIL) is required.')
 
-
     # ReCaptcha
     try:
         import recaptcha
@@ -94,14 +99,17 @@ def check_dependencies():
         subprocess.call(['p4', '-h'],
                         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     except ImportError:
-        dependency_warning('p4python (>=07.3) not found.  Perforce integration will not work.')
+        dependency_warning('p4python (>=07.3) not found.  Perforce integration'
+                           ' will not work.')
     except OSError:
-        dependency_error('p4 command not found.  Perforce integration will not work.')
+        dependency_error('p4 command not found.  Perforce integration will not'
+                         ' work.')
 
     try:
         imp.find_module('mercurial')
     except ImportError:
-        dependency_warning('hg not found.  Mercurial integration will not work.')
+        dependency_warning('hg not found.  Mercurial integration will not'
+                           ' work.')
 
     try:
         imp.find_module('bzrlib')
@@ -135,17 +143,45 @@ def check_dependencies():
         sys.stderr.write('\n\n')
 
 
+def include_enabled_extensions(settings):
+    """
+    This adds enabled extensions to the INSTALLED_APPS cache
+    so that operations like syncdb and evolve will take extensions
+    into consideration.
+    """
+    from django.db.models.loading import load_app
+    from django.db import DatabaseError
+    from djblets.extensions.models import RegisteredExtension
+
+    from reviewboard.extensions.base import get_extension_manager
+
+    try:
+        manager = get_extension_manager()
+        manager.load()
+    except DatabaseError:
+        # This database is from a time before extensions, so don't attempt to
+        # load any extensions yet.
+        return
+
+    for extension in manager.get_enabled_extensions():
+        load_app(extension.info.app_name)
+
+
 if __name__ == "__main__":
-    if settings.DEBUG:
-        if len(sys.argv) > 1 and \
-           (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
+
+    fix_django_evolution_issues(settings)
+
+    if len(sys.argv) > 1 and \
+       (sys.argv[1] == 'runserver' or sys.argv[1] == 'test'):
+        if settings.DEBUG:
             # If DJANGO_SETTINGS_MODULE is in our environment, we're in
             # execute_manager's sub-process.  It doesn't make sense to do this
             # check twice, so just return.
             if 'DJANGO_SETTINGS_MODULE' not in os.environ:
-                sys.stderr.write('Running dependency checks (set DEBUG=False to turn this off)...\n')
+                sys.stderr.write('Running dependency checks (set DEBUG=False '
+                                 'to turn this off)...\n')
                 check_dependencies()
-
-    fix_django_evolution_issues(settings)
+    else:
+        include_enabled_extensions(settings)
 
     execute_manager(settings)

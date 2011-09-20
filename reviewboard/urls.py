@@ -2,11 +2,12 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib import admin
 
-from reviewboard.webapi.resources import root_resource
 from reviewboard import initialize
+from reviewboard.extensions.base import get_extension_manager
+from reviewboard.webapi.resources import root_resource
 
 
-initialize()
+extension_manager = get_extension_manager()
 
 
 handler404 = 'django.views.defaults.page_not_found'
@@ -20,6 +21,8 @@ if not admin.site._registry:
 
 # URLs global to all modes
 urlpatterns = patterns('',
+    (r'^admin/extensions/', include('djblets.extensions.urls'),
+     {'extension_manager': extension_manager}),
     (r'^admin/', include('reviewboard.admin.urls')),
 )
 
@@ -79,3 +82,5 @@ urlpatterns += patterns('django.contrib',
     url(r'^account/logout/$', 'auth.views.logout',
         {'next_page': settings.LOGIN_URL}, name="logout")
 )
+
+initialize()
