@@ -16,10 +16,7 @@ register = template.Library()
 
 def action_hooks(context, hookcls, action_key="action",
                  template_name="extensions/action.html"):
-    """
-    Displays all registered action hooks from the specified ActionHook
-    class.
-    """
+    """Displays all registered action hooks from the specified ActionHook."""
     s = ""
 
     for hook in hookcls.hooks:
@@ -41,25 +38,21 @@ def action_hooks(context, hookcls, action_key="action",
 @register.tag
 @basictag(takes_context=True)
 def diffviewer_action_hooks(context):
-    """
-    Displays all registered action hooks for the diff viewer.
-    """
+    """Displays all registered action hooks for the diff viewer."""
     return action_hooks(context, DiffViewerActionHook)
 
 
 @register.tag
 @basictag(takes_context=True)
 def review_request_action_hooks(context):
-    """
-    Displays all registered action hooks for review requests.
-    """
+    """Displays all registered action hooks for review requests."""
     return action_hooks(context, ReviewRequestActionHook)
 
 
 @register.tag
 @basictag(takes_context=True)
 def review_request_dropdown_action_hooks(context):
-    """ Displays all registered action hooks for review requests. """
+    """Displays all registered action hooks for review requests."""
     return action_hooks(context,
                         ReviewRequestDropdownActionHook,
                         "actions",
@@ -69,9 +62,7 @@ def review_request_dropdown_action_hooks(context):
 @register.tag
 @basictag(takes_context=True)
 def navigation_bar_hooks(context):
-    """
-    Displays all registered navigation bar entries.
-    """
+    """Displays all registered navigation bar entries."""
     s = ""
 
     for hook in NavigationBarHook.hooks:

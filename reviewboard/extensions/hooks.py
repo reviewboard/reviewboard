@@ -10,14 +10,11 @@ class DashboardHook(ExtensionHook):
 
 
 class NavigationBarHook(ExtensionHook):
-    """
-    A hook for adding entries to the main navigation bar.
-    """
+    """A hook for adding entries to the main navigation bar."""
     __metaclass__ = ExtensionHookPoint
 
     def get_entry(self):
-        """
-        Returns the entry to add to the navigation bar.
+        """Returns the entry to add to the navigation bar.
 
         This should be a dict with the following keys:
 
@@ -40,17 +37,13 @@ class ReviewRequestDetailHook(ExtensionHook):
         raise NotImplemented
 
     def get_wide(self):
-        """
-        Returns whether or not this detail is "wide," spanning multiple
-        columns.
-        """
+        """Returns whether or not this detail spans multiple columns."""
         return False
 
 
 class ActionHook(ExtensionHook):
     def get_action_info(self, context):
-        """
-        Returns the action information for this action.
+        """Returns the action information for this action.
 
         This should be a dict with the following keys:
 
