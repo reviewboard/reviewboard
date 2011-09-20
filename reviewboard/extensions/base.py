@@ -1,10 +1,4 @@
-from djblets.extensions.base import Extension as ExtensionBase
-from djblets.extensions.base import ExtensionManager
-
-
-class Extension(ExtensionBase):
-    def __init__(self):
-        ExtensionBase.__init__(self)
+from djblets.extensions.base import Extension, ExtensionManager
 
 
 _extension_manager = None

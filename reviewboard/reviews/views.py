@@ -7,7 +7,6 @@ from django.contrib.auth.models import User, SiteProfileNotAvailable
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
-from django.dispatch import dispatcher
 from django.http import HttpResponse, HttpResponseRedirect, Http404, \
                         HttpResponseNotModified, HttpResponseServerError
 from django.shortcuts import get_object_or_404, get_list_or_404, \
@@ -39,7 +38,6 @@ from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
 from reviewboard.extensions.hooks import DashboardHook, \
                                          ReviewRequestDetailHook
-from reviewboard.reviews import signals as review_signals
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \

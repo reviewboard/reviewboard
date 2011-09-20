@@ -14,8 +14,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.template.defaultfilters import timesince
 from django.utils.translation import ugettext as _
 from djblets.extensions.base import RegisteredExtension
-from djblets.extensions.resources import ExtensionResource as \
-                                         DjbletsExtensionResource
+from djblets.extensions.resources import ExtensionResource
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
@@ -29,12 +28,11 @@ from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_request_fields
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
                                   NOT_LOGGED_IN, PERMISSION_DENIED
-from djblets.webapi.resources import \
-    WebAPIResource as DjbletsWebAPIResource, \
-    UserResource as DjbletsUserResource, \
-    RootResource as DjbletsRootResource, \
-    register_resource_for_model, \
-    get_resource_for_object
+from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource, \
+                                     UserResource as DjbletsUserResource, \
+                                     RootResource as DjbletsRootResource, \
+                                     register_resource_for_model, \
+                                     get_resource_for_object
 
 from reviewboard import get_version_string, get_package_version, is_release
 from reviewboard.accounts.models import Profile
@@ -6224,7 +6222,7 @@ class SessionResource(WebAPIResource):
 session_resource = SessionResource()
 
 
-extension_resource = DjbletsExtensionResource(get_extension_manager())
+extension_resource = ExtensionResource(get_extension_manager())
 
 
 class RootResource(DjbletsRootResource):

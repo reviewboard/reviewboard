@@ -102,7 +102,7 @@
        <li><a href="{% url all-review-requests %}">{% trans "All review requests" %}</a></li>
        <li><a href="{% url all-groups %}">{% trans "Groups" %}</a></li>
        <li><a href="{% url all-users %}">{% trans "Submitters" %}</a></li>
-	   {% navigation_bar_hooks %}
+{% navigation_bar_hooks %}
        <li id="searchbar">
        <input type="text" name="q" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
        {% if siteconfig.settings.search_enable %}
