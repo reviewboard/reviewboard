@@ -116,7 +116,6 @@ INSTALLED_APPS = (
     'reviewboard.diffviewer',
     'reviewboard.extensions',
     'reviewboard.notifications',
-    'reviewboard.reports',
     'reviewboard.reviews',
     'reviewboard.scmtools',
     'reviewboard.site',
