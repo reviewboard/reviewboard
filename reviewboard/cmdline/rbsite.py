@@ -184,6 +184,7 @@ class Site(object):
         #       directories.
         self.mkdir(os.path.join(media_dir, "uploaded"))
         self.mkdir(os.path.join(media_dir, "uploaded", "images"))
+        self.mkdir(os.path.join(media_dir, "ext"))
 
         self.link_pkg_dir("reviewboard",
                           "htdocs/errordocs",
@@ -1582,6 +1583,7 @@ class InstallCommand(Command):
 
         ui.itemized_list(page, None, [
             os.path.join(site.abs_install_dir, 'htdocs', 'media', 'uploaded'),
+            os.path.join(site.abs_install_dir, 'htdocs', 'media', 'ext'),
             os.path.join(site.abs_install_dir, 'data'),
         ])
 

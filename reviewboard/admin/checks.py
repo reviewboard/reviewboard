@@ -117,26 +117,39 @@ def check_updates_required():
             ))
 
 
+        try:
+            username = getpass.getuser()
+        except ImportError:
+            # This will happen if running on Windows (which doesn't have
+            # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
+            # %USERNAME% are all undefined.
+            username = "<server username>"
+
         # Check if the data directory (should be $HOME) is writable by us.
         data_dir = os.environ.get('HOME', '')
 
         if (not data_dir or
             not os.path.isdir(data_dir) or
             not os.access(data_dir, os.W_OK)):
-            try:
-                username = getpass.getuser()
-            except ImportError:
-                # This will happen if running on Windows (which doesn't have
-                # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
-                # %USERNAME% are all undefined.
-                username = "<server username>"
-
             _updates_required.append((
                 'admin/manual-updates/data-dir.html', {
                     'data_dir': data_dir,
                     'writable': os.access(data_dir, os.W_OK),
                     'server_user': username,
                     'expected_data_dir': os.path.join(site_dir, 'data'),
+                }
+            ))
+
+
+        # Check if the htdocs/media/ext directory is writable by us.
+        ext_dir = os.path.join(settings.MEDIA_ROOT, 'ext')
+
+        if not os.path.isdir(ext_dir) or not os.access(ext_dir, os.W_OK):
+            _updates_required.append((
+                'admin/manual-updates/ext-dir.html', {
+                    'ext_dir': ext_dir,
+                    'writable': os.access(ext_dir, os.W_OK),
+                    'server_user': username,
                 }
             ))
 
