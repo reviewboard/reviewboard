@@ -2740,8 +2740,6 @@ class BaseScreenshotResource(WebAPIResource):
 
         try:
             screenshot = form.create(request.FILES['path'], review_request)
-            print "Caption:", screenshot.caption
-            print "Draft Caption:", screenshot.draft_caption
         except ValueError, e:
             return INVALID_FORM_DATA, {
                 'fields': {
@@ -2968,6 +2966,14 @@ class BaseFileAttachmentResource(WebAPIResource):
 
     def serialize_url_field(self, obj):
         return obj.get_absolute_url()
+
+    def serialize_caption_field(self, obj):
+        # We prefer 'caption' here, because when creating a new screenshot, it
+        # won't be full of data yet (and since we're posting to screenshots/,
+        # it doesn't hit DraftFileAttachmentResource).
+        # DraftFileAttachmentResource will prefer draft_caption, in case people
+        # are changing an existing one.
+        return obj.caption or obj.draft_caption
 
     @webapi_check_local_site
     @webapi_login_required
