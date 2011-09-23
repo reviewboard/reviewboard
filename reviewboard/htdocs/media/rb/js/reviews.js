@@ -466,7 +466,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 
         yourcomment_id += "-draft";
 
-        $("<li/>")
+        var yourcomment = $("<li/>")
             .addClass("reply-comment draft editor")
             .attr("id", yourcomment_id + "-item")
             .append($("<dl/>")
@@ -485,7 +485,13 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
 
         var yourcommentEl = $("#" + yourcomment_id);
         createCommentEditor(yourcommentEl);
-        yourcommentEl.inlineEditor("startEdit");
+        yourcommentEl
+            .inlineEditor("startEdit")
+            .bind("cancel", function(el, initialValue) {
+                if (initialValue == "") {
+                    yourcomment.remove();
+                }
+            });
 
         addCommentLink.hide();
     }
