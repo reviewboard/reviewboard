@@ -445,7 +445,7 @@ Server Options
 
 .. cmdoption:: --submit-as=<USERNAME>
 
-   Specifies the username to use for any updated made to the review request.
+   Specifies the username to use for any updates made to the review request.
    This is different than :option:`--username` in that this username is not
    used for logging in to the server. A login user with necessary
    permissions must be used in order for this parameter to work.
