@@ -30,6 +30,8 @@
 
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
+		Options -Indexes FollowSymLinks
+		Allow from all
 	</Directory>
 
 	# Alias static media requests to filesystem
