@@ -527,6 +527,7 @@ class Site(object):
             'sitedomain_escaped': domain_name_escaped,
             'siteid': self.site_id,
             'siteroot': self.site_root,
+            'siteroot_noslash': self.site_root[1:-1],
         }
 
         template = re.sub("@([a-z_]+)@", lambda m: data.get(m.group(1)),

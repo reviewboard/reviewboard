@@ -6,7 +6,7 @@
 	ErrorDocument 500 /errordocs/500.html
 
 	WSGIPassAuthorization On
-	WSGIScriptAlias "@siteroot@" "@sitedir@/htdocs/reviewboard.wsgi"
+	WSGIScriptAlias "/@siteroot_noslash@" "@sitedir@/htdocs/reviewboard.wsgi/@siteroot_noslash@"
 
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
