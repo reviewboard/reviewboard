@@ -1168,6 +1168,15 @@ class ReviewRequestDraft(models.Model):
                 s.caption = s.draft_caption
                 s.save()
 
+        # Now scan through again and set the caption correctly for newly-added
+        # screenshots by copying the draft_caption over. We don't need to
+        # include this in the changedescs here because it's a new screenshot,
+        # and update_list will record the newly-added item.
+        for s in screenshots:
+            if s.caption != s.draft_caption:
+                s.caption = s.draft_caption
+                s.save()
+
         if caption_changes and self.changedesc:
             self.changedesc.fields_changed['screenshot_captions'] = \
                 caption_changes
@@ -1192,6 +1201,15 @@ class ReviewRequestDraft(models.Model):
                     'new': (f.draft_caption,),
                 }
 
+                f.caption = f.draft_caption
+                f.save()
+
+        # Now scan through again and set the caption correctly for newly-added
+        # files by copying the draft_caption over. We don't need to include
+        # this in the changedescs here because it's a new screenshot, and
+        # update_list will record the newly-added item.
+        for f in files:
+            if f.caption != f.draft_caption:
                 f.caption = f.draft_caption
                 f.save()
 
