@@ -216,8 +216,10 @@ class BZRTool(SCMTool):
             path += '?rb-local-site-name=%s' % local_site_name
 
         try:
-            tree, branch, relpath = \
-                bzrdir.BzrDir.open_containing_tree_or_branch(path)
+            tree, branch, repository, relpath = \
+                bzrdir.BzrDir.open_containing_tree_branch_or_repository(path)
+        except AttributeError:
+            raise RepositoryNotFoundError()
         except NotBranchError, e:
             raise RepositoryNotFoundError()
         except Exception, e:
