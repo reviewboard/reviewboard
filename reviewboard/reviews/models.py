@@ -112,6 +112,18 @@ class Group(models.Model):
                 (user.is_authenticated() and
                  self.users.filter(pk=user.pk).count() > 0))
 
+    def is_mutable_by(self, user):
+        """
+        Returns whether or not the user can modify or delete the group.
+
+        The group is mutable by the user if they are  an administrator with
+        proper permissions, or the group is part of a LocalSite and the user is
+        in the admin list.
+        """
+        return (user.has_perm('reviews.change_group') or
+                (self.local_site and
+                 self.local_site.admins.filter(pk=user.pk).exists()))
+
     def __unicode__(self):
         return self.name
 

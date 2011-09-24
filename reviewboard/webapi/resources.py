@@ -1997,7 +1997,7 @@ class ReviewGroupResource(WebAPIResource):
     Review groups are groups of users that can be listed as an intended
     reviewer on a review request.
 
-    Review groups cannot be created, deleted, or modified through the API.
+    Review groups cannot be created or modified through the API.
     """
     model = Group
     fields = {
@@ -2049,7 +2049,10 @@ class ReviewGroupResource(WebAPIResource):
     model_object_key = 'name'
     autogenerate_etags = True
 
-    allowed_methods = ('GET',)
+    allowed_methods = ('GET', 'DELETE')
+
+    def has_delete_permissions(self, request, group, *args, **kwargs):
+        return group.is_mutable_by(request.user)
 
     def get_queryset(self, request, is_list=False, local_site_name=None,
                      *args, **kwargs):
@@ -2128,6 +2131,22 @@ class ReviewGroupResource(WebAPIResource):
         any groups with a name or display name starting with ``dev``.
         """
         pass
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    def delete(self, request, *args, **kwargs):
+        """Deletes a review group."""
+        try:
+            group = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_delete_permissions(request, group):
+            return _no_access_error(request.user)
+
+        group.delete()
+        return 204, {}
 
 review_group_resource = ReviewGroupResource()
 
