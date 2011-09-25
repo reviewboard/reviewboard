@@ -141,7 +141,7 @@ def register_release():
     if __version_info__[4] == 'final':
         run_setup("register")
 
-    scm_revision = execute(['git-rev-parse', 'release-%s' % __version__])
+    scm_revision = execute(['git rev-parse', 'release-%s' % __version__])
 
     data = {
         'major_version': __version_info__[0],

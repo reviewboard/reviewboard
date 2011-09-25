@@ -1058,6 +1058,54 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
         self.apiGet(self.get_item_url('sitegroup', self.local_site_name),
                     expected_status=403)
 
+    def test_delete_group(self):
+        """Testing the DELETE groups/<id>/ API"""
+        self._login_user(admin=True)
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        self.apiDelete(self.get_item_url('test-group'),
+                       expected_status=204)
+        self.assertEqual(Group.objects.filter(name='test-group').exists(), False)
+
+    def test_delete_group_with_permission_denied_error(self):
+        """Testing the DELETE groups/<id>/ API with Permission Denied error"""
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        self.apiDelete(self.get_item_url('test-group'),
+                       expected_status=403)
+
+    @add_fixtures(['test_site'])
+    def test_delete_group_with_local_site(self):
+        """Testing the DELETE groups/<id>/ API with a local site"""
+        self._login_user(local_site=True, admin=True)
+        self.apiDelete(self.get_item_url('sitegroup', self.local_site_name),
+                       expected_status=204)
+
+    @add_fixtures(['test_site'])
+    def test_delete_group_with_local_site_and_permission_denied_error(self):
+        """Testing the DELETE groups/<id>/ API with a local site and Permission Denied error"""
+        self._login_user(local_site=True)
+        self.apiDelete(self.get_item_url('sitegroup', self.local_site_name),
+                       expected_status=403)
+
+    def test_delete_group_with_review_requests(self):
+        """Testing the DELETE groups/<id>/ API with existing review requests"""
+        self._login_user(admin=True)
+
+        group = Group.objects.create(name='test-group', invite_only=True)
+        group.users.add(self.user)
+
+        request = ReviewRequest.objects.create(self.user, self.repository)
+        request.target_groups.add(group)
+
+        self.apiDelete(self.get_item_url('test-group'),
+                       expected_status=204)
+
+        request = ReviewRequest.objects.get(pk=request.id)
+        self.assertEqual(request.target_groups.count(), 0)
+
     def get_list_url(self, local_site_name=None):
         return local_site_reverse('groups-resource',
                                   local_site_name=local_site_name)

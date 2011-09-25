@@ -313,7 +313,7 @@ class UploadScreenshotForm(forms.Form):
     path = forms.ImageField(required=True)
 
     def create(self, file, review_request):
-        screenshot = Screenshot(caption=self.cleaned_data['caption'],
+        screenshot = Screenshot(caption='',
                                 draft_caption=self.cleaned_data['caption'])
         screenshot.image.save(file.name, file, save=True)
 

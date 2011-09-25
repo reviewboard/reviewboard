@@ -22,7 +22,6 @@ except ImportError:
     sys.exit(1)
 
 from django.core.management import execute_manager, setup_environ
-from reviewboard.admin.migration import fix_django_evolution_issues
 
 
 warnings_found = 0
@@ -46,17 +45,6 @@ def check_dependencies():
     if sys.version_info[0] < 2 or \
        (sys.version_info[0] == 2 and sys.version_info[1] < 4):
         dependency_error('Python 2.4 or newer is required.')
-
-    # Django 1.0
-    try:
-        # Django 1.0 final has VERSION (1, 0, "final").
-        # All subsequent versions have a 5-tuple, e.g. (1, 1, 0, "alpha", 0).
-        import django
-        if not (django.VERSION == (1, 0, "final") or
-                (len(django.VERSION) == 5 and django.VERSION[1] >= 0)):
-            raise ImportError
-    except ImportError:
-        dependency_error("Django 1.0 or newer is required.")
 
     # django-evolution
     try:
@@ -168,7 +156,6 @@ def include_enabled_extensions(settings):
 
 
 if __name__ == "__main__":
-
     fix_django_evolution_issues(settings)
 
     if len(sys.argv) > 1 and \

@@ -17,7 +17,7 @@ class UploadFileForm(forms.Form):
     def create(self, file, review_request):
         caption = self.cleaned_data['caption']
 
-        file_attachment = FileAttachment(caption=caption,
+        file_attachment = FileAttachment(caption='',
                                          draft_caption=caption,
                                          mimetype=file.content_type)
         file_attachment.file.save(file.name, file, save=True)
