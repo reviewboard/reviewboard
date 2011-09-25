@@ -63,7 +63,42 @@
 </div>
 {% endbox %}
 
-
+{% box %}
+<div class="main">
+ <div class="header">
+  <div class="collapse-button"></div>
+  <div class="issue-summary">Issue Summary:</div>
+  <div class="counters">
+   <b>Total: {{issues.total}}&nbsp;</b>
+   Open: {{issues.open}}&nbsp;
+   Resolved: {{issues.resolved}}&nbsp;
+   Dropped: {{issues.dropped}}&nbsp;
+  </div>
+ </div>
+ <div class="body">
+  <table class="issue-table">
+   <tr>
+    <th>Description</th>
+    <th>From</th>
+    <th>Status</th>
+   </tr>
+  {% for entry in entries %}
+  {% if entry.review %}
+  {% for comment in entry.review.get_all_comments %}
+  {% if comment.issue_opened %}
+   <tr class="issue-{{comment.issue_status|pretty_print_issue_status}}">
+    <td class="description"><a href="#{{comment.id}}">{{comment|char_limit}}</a></td>
+    <td><div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div></td>
+    <td>{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
+   </tr>
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+  </table>
+ </div>
+</div>
+{% endbox %}
 
 {% for entry in entries %}
 {%  if entry.review %}
@@ -107,6 +142,9 @@
      </div>
     </dt>
     <dd>
+{% if comment.issue_opened %}
+     <a name="{{comment.id}}">
+{% endif %}
      <pre>{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
@@ -137,6 +175,9 @@
      </div>
     </dt>
     <dd>
+{% if comment.issue_opened %}
+     <a name="{{comment.id}}">
+{% endif %}
      <pre>{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
@@ -176,6 +217,9 @@
      </div>
     </dt>
     <dd>
+{% if comment.issue_opened %}
+     <a name="{{comment.id}}">
+{% endif %}
      <pre class="reviewtext">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">

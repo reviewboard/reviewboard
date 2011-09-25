@@ -1152,3 +1152,62 @@
 * html .clearfix {height: 1%;}
 .clearfix {display: block;}
 /* End hide from IE-mac */
+
+/****************************************************************************
+ * Issue Summary
+ ****************************************************************************/
+
+.issue-summary {
+  font-size: 13px;
+  font-weight: bold;
+  display: inline;
+  float: left;
+}
+
+.issue-table td {
+  border-width: 1px 0px;
+  border-style: solid;
+  padding: 1px 5px;
+}
+
+.issue-open td {
+  background-color: #FFF47C;
+  border-color: #A89C00;
+}
+
+.issue-dropped td {
+  background-color: #EAEAEA;
+  border-color: #D0D0D0;
+}
+
+.issue-resolved td {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.issue-table {
+  clear: left;
+  margin: 5px 10px;
+  padding: 5px 5px;
+  font-size: 12px;
+  border-spacing: 0px 2px;
+}
+
+.issue-table tr {
+  margin: 5px 0px;
+}
+
+.issue-table th {
+  padding: 0px 5px;
+  font-size: 13px;
+}
+
+.issue-table .description a {
+  text-decoration: None;
+  color: #000;
+}
+
+.counters {
+  text-align: right;
+  font-size: 12px;
+}

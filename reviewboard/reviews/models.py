@@ -17,15 +17,15 @@ from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.signals import review_request_published, \
-                                        review_request_reopened, \
-                                        review_request_closed, \
-                                        reply_published, review_published
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.managers import DefaultReviewerManager, \
                                          ReviewGroupManager, \
                                          ReviewRequestManager, \
                                          ReviewManager
+from reviewboard.reviews.signals import review_request_published, \
+                                        review_request_reopened, \
+                                        review_request_closed, \
+                                        reply_published, review_published
 from reviewboard.scmtools.errors import EmptyChangeSetError, \
                                         InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
@@ -63,14 +63,14 @@ def update_obj_with_changenum(obj, repository, changenum):
 
 
 def truncate(string, num):
-   if len(string) > num:
-      string = string[0:num]
-      i = string.rfind('.')
+    if len(string) > num:
+        string = string[0:num]
+        i = string.rfind('.')
 
-      if i != -1:
-         string = string[0:i + 1]
+        if i != -1:
+            string = string[0:i + 1]
 
-   return string
+    return string
 
 
 class Group(models.Model):
@@ -1658,6 +1658,12 @@ class Review(models.Model):
 
     def get_absolute_url(self):
         return "%s#review%s" % (self.review_request.get_absolute_url(), self.id)
+
+    def get_all_comments(self):
+	"""Return a list of all contained comments of all types."""
+        return (list(self.comments.all()) +
+		list(self.screenshot_comments.all()) +
+		list(self.file_attachment_comments.all()))
 
     class Meta:
         ordering = ['timestamp']

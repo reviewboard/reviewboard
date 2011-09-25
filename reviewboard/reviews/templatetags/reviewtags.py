@@ -2,6 +2,7 @@ from django import template
 from django.conf import settings
 from django.db.models import Q
 from django.template import NodeList, TemplateSyntaxError
+from django.template.defaultfilters import stringfilter
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.translation import ugettext_lazy as _
@@ -201,12 +202,11 @@ def screenshotcommentcounts(context, screenshot):
                     'name': review.user.get_full_name() or review.user.username,
                 },
                 'url': comment.get_review_url(),
-                'localdraft' : review.user == user and \
-                               not review.public,
-                'x' : comment.x,
-                'y' : comment.y,
-                'w' : comment.w,
-                'h' : comment.h,
+                'localdraft': review.user == user and not review.public,
+                'x': comment.x,
+                'y': comment.y,
+                'w': comment.w,
+                'h': comment.h,
                 'review_id': review.id,
                 'review_request_id': review.review_request.id,
                 'issue_opened': comment.issue_opened,
@@ -619,3 +619,18 @@ def comment_issue(context, review_request, comment, comment_type):
         'review': comment.review.get(),
         'interactive': interactive,
     }
+
+@register.filter
+@stringfilter
+def pretty_print_issue_status(status):
+    """Turns an issue status code into a human-readable status string."""
+    return BaseComment.issue_status_to_string(status)
+
+@register.filter
+@stringfilter
+def char_limit(description):
+    """Limit the length of an issue description if it exceeds 120 chars."""
+    limit = 120
+    if len(description) > limit:
+	description = description[0:limit-3]+"..."
+    return description

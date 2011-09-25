@@ -47,7 +47,8 @@ from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
-from reviewboard.reviews.models import Comment, ReviewRequest, \
+from reviewboard.reviews.models import BaseComment, Comment, \
+				       ReviewRequest, \
                                        Review, Group, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
@@ -449,6 +450,21 @@ def review_detail(request,
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
 
+    issues = {
+        'total': 0,
+        'open': 0,
+        'resolved': 0,
+        'dropped': 0
+    }
+
+    for entry in entries:
+	if entry['review']:
+	    for comment in entry['review'].get_all_comments():
+		if comment.issue_opened:
+		    issues['total'] += 1
+		    issues[BaseComment.issue_status_to_string(
+			    comment.issue_status)] += 1
+
     response = render_to_response(
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
@@ -462,6 +478,7 @@ def review_detail(request,
             'latest_changedesc': latest_changedesc,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
+	    'issues': issues,
         })))
     set_etag(response, etag)
 
