@@ -564,7 +564,7 @@ form table td.label {
   height: 12em;
   padding: 1em;
   position: absolute;
-  width: 30em;
+  min-width: 30em;
   z-index: 25;
   -moz-border-radius: 10px;
   -webkit-border-radius: 8px; /* WebKit bug */
