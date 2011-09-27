@@ -1,0 +1,50 @@
+===========================
+RBTools 0.3.4 Release Notes
+===========================
+
+
+**Release date**: September 26, 2011
+
+
+New Features
+============
+
+post-review
+-----------
+
+* Added a ``--change-description`` option for setting the Change Description
+  text on drafts. Patch by Nathan Dimmock.
+
+
+Bug Fixes
+=========
+
+post-review
+-----------
+
+* Newlines in summaries on Git are now converted to spaces, preventing
+  errors when using ``--guess-summary``. (:bug:`1689`)
+
+* Fixed authentication failures when accessing a protected ``/api/info/``
+  URL. This was problematic particularly on RBCommons_.
+
+.. _RBCommons: http://www.rbcommons.com/
+
+* Fixed diff upload problems on Python 2.7.
+
+  Python 2.7 has a bug with uploading content to a server with non-ascii
+  characters. We work around that to restore compatibility.
+
+  Patch by Severin Gehwolf. (:bug:`2155`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Nathan Dimmock
+* Severin Gehwolf
+
+
+.. comment: vim: ft=rst et
