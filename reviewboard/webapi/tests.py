@@ -820,16 +820,30 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self._login_user(local_site=True)
         self._put_repository(False, expected_status=403)
 
+    def test_put_repository_with_archive(self):
+        """Testing the PUT repositories/<id>/ API with archive_name=True"""
+        self._login_user(admin=True)
+        repo_id = self._put_repository(False, {'archive_name': True})
+
+        repo = Repository.objects.get(pk=repo_id)
+        self.assertEqual(repo.name[:23], 'ar:New Test Repository:')
+
     def test_delete_repository(self):
         """Testing the DELETE repositories/<id>/ API"""
         self._login_user(admin=True)
-        self._delete_repository(False)
+        repo_id = self._delete_repository(False)
+
+        repo = Repository.objects.get(pk=repo_id)
+        self.assertFalse(repo.visible)
 
     @add_fixtures(['test_site'])
     def test_delete_repository_with_site(self):
         """Testing the DELETE repositories/<id>/ API with a local site"""
         self._login_user(local_site=True, admin=True)
-        self._delete_repository(True)
+        repo_id = self._delete_repository(True)
+
+        repo = Repository.objects.get(pk=repo_id)
+        self.assertFalse(repo.visible)
 
     def test_delete_repository_with_no_access(self):
         """Testing the DELETE repositories/<id>/ API with no access"""
@@ -885,6 +899,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         if 200 <= expected_status < 300:
             self._verify_repository_info(rsp, repo_name, repo_path, data)
 
+        return repo_id
+
     def _delete_repository(self, use_local_site, expected_status=204):
         local_site, local_site_name = self._get_local_site_info(use_local_site)
         repo_id = Repository.objects.filter(local_site=local_site,
@@ -892,6 +908,8 @@ class RepositoryResourceTests(BaseWebAPITestCase):
 
         self.apiDelete(self.get_item_url(repo_id, local_site_name),
                        expected_status=expected_status)
+
+        return repo_id
 
     def _get_local_site_info(self, use_local_site):
         if use_local_site:
@@ -905,10 +923,13 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         self.assertTrue('repository' in rsp)
 
         repository = Repository.objects.get(pk=rsp['repository']['id'])
-        self.assertEqual(rsp['repository']['name'], repo_name)
+
         self.assertEqual(rsp['repository']['path'], repo_path)
-        self.assertEqual(repository.name, repo_name)
         self.assertEqual(repository.path, repo_path)
+
+        if not data.get('archive_name', False):
+            self.assertEqual(rsp['repository']['name'], repo_name)
+            self.assertEqual(repository.name, repo_name)
 
         for key, value in data.iteritems():
             if hasattr(repository, key):

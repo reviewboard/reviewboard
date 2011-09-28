@@ -1,6 +1,7 @@
 import logging
 import re
-import urllib
+from time import time
+from urllib import quote as urllib_quote
 
 import dateutil.parser
 from django.conf import settings
@@ -1072,7 +1073,7 @@ class FileDiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         resp = HttpResponse(filediff.diff, mimetype='text/x-patch')
-        filename = '%s.patch' % urllib.quote(filediff.source_file)
+        filename = '%s.patch' % urllib_quote(filediff.source_file)
         resp['Content-Disposition'] = 'inline; filename=%s' % filename
         set_last_modified(resp, filediff.diffset.timestamp)
 
@@ -2468,6 +2469,13 @@ class RepositoryResource(WebAPIResource):
                 'type': str,
                 'description': 'The username used to access the repository.',
             },
+            'archive_name': {
+                'type': bool,
+                'description': "Whether or not the (non-user-visible) name of "
+                               "the repository should be changed so that it "
+                               "(probably) won't conflict with any future "
+                               "repository names.",
+            },
         },
     )
     def update(self, request, trust_host=False, *args, **kwargs):
@@ -2510,6 +2518,16 @@ class RepositoryResource(WebAPIResource):
 
             if error_result is not None:
                 return error_result
+
+        # If the API call is requesting that we archive the name, we'll give it
+        # a name which won't overlap with future user-named repositories. This
+        # should usually be used just before issuing a DELETE call, which will
+        # set the visibility flag to False
+        if kwargs.get('archive_name', False):
+            # This should be sufficiently unlikely to create duplicates. time()
+            # will use up a max of 8 characters, so we slice the name down to
+            # make the result fit in 64 characters
+            repository.name = 'ar:%s:%x' % (repository.name[:50], int(time()))
 
         repository.save()
 

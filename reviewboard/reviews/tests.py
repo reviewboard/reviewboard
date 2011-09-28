@@ -880,11 +880,11 @@ class CounterTests(TestCase):
         self.profile, is_new = Profile.objects.get_or_create(user=self.user)
         self.profile.save()
 
-        test_site = LocalSite.objects.create(name='test')
+        self.test_site = LocalSite.objects.create(name='test')
         self.site_profile2 = \
             LocalSiteProfile.objects.create(user=self.user,
                                             profile=self.profile,
-                                            local_site=test_site)
+                                            local_site=self.test_site)
 
         self.review_request = ReviewRequest.objects.create(self.user,
                                                            repository)
@@ -1009,6 +1009,38 @@ class CounterTests(TestCase):
         self.assertEqual(self.site_profile2.total_incoming_request_count, 0)
         self.assertEqual(self.site_profile2.starred_public_request_count, 0)
         self.assertEqual(self.group.incoming_request_count, 0)
+
+    def test_closing_draft_requests_with_site(self):
+        """Testing counters with closing draft review requests"""
+        self.review_request.delete()
+        self._reload_objects()
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        tool = Tool.objects.get(name='Subversion')
+        repository = Repository.objects.create(name='Test1', path='path1',
+                                               tool=tool,
+                                               local_site=self.test_site)
+        self.review_request = ReviewRequest.objects.create(
+            self.user,
+            repository,
+            local_site=self.test_site)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.starred_public_request_count, 0)
+
+        self.assertFalse(self.review_request.public)
+        self.assertEqual(self.review_request.status,
+                         ReviewRequest.PENDING_REVIEW)
+        self.review_request.close(ReviewRequest.DISCARDED)
+
+        self._reload_objects()
+        self.assertEqual(self.site_profile2.total_outgoing_request_count, 1)
+        self.assertEqual(self.site_profile2.pending_outgoing_request_count, 0)
+        self.assertEqual(self.site_profile2.direct_incoming_request_count, 0)
 
     def test_deleting_requests(self):
         """Testing counters with deleting outgoing review requests"""
@@ -1358,6 +1390,7 @@ class CounterTests(TestCase):
         self.assertEqual(self.group.incoming_request_count, 1)
 
     def _reload_objects(self):
+        self.test_site = LocalSite.objects.get(pk=self.test_site.pk)
         self.site_profile = \
             LocalSiteProfile.objects.get(pk=self.site_profile.pk)
         self.site_profile2 = \

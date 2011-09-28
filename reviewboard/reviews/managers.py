@@ -105,7 +105,8 @@ class ReviewRequestManager(ConcurrencyManager):
             status='P',
             public=False,
             repository=repository,
-            diffset_history=diffset_history)
+            diffset_history=diffset_history,
+            local_site=local_site)
 
         if changenum:
             review_request.update_from_changenum(changenum)
