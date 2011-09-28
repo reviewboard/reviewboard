@@ -20,8 +20,8 @@ class UpdateTests(TestCase):
 
         self.assertEqual(len(updates_required), 0)
 
-    def testManualUpdatesRequiredBadUpload(self):
-        """Testing check_updates_required with a bad upload directory"""
+    def testManualUpdatesRequiredBadMediaDirs(self):
+        """Testing check_updates_required with bad media directories"""
         old_media_root = settings.MEDIA_ROOT
         settings.MEDIA_ROOT = "/"
         checks.reset_check_cache()
@@ -29,10 +29,14 @@ class UpdateTests(TestCase):
         updates_required = checks.check_updates_required()
         settings.MEDIA_ROOT = old_media_root
 
-        self.assertEqual(len(updates_required), 1)
+        # Should complain about ext and upload directories.
+        self.assertEqual(len(updates_required), 2)
 
         url, data = updates_required[0]
         self.assertEqual(url, "admin/manual-updates/media-upload-dir.html")
+
+        url, data = updates_required[1]
+        self.assertEqual(url, "admin/manual-updates/ext-dir.html")
 
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
