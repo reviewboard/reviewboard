@@ -440,7 +440,6 @@ class Site(object):
 
         try:
             from django.core.management import execute_manager, get_commands
-            from reviewboard.admin.migration import fix_django_evolution_issues
             import reviewboard.settings
 
             if not params:
@@ -448,8 +447,6 @@ class Site(object):
 
             if DEBUG:
                 params.append("--verbosity=0")
-
-            fix_django_evolution_issues(reviewboard.settings)
 
             commands_dir = os.path.join(self.abs_install_dir, 'commands')
 
