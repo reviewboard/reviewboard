@@ -1689,11 +1689,11 @@ class Review(models.Model):
     def get_absolute_url(self):
         return "%s#review%s" % (self.review_request.get_absolute_url(), self.id)
 
-    def get_all_comments(self):
-	"""Return a list of all contained comments of all types."""
-        return (list(self.comments.all()) +
-		list(self.screenshot_comments.all()) +
-		list(self.file_attachment_comments.all()))
+    def get_all_comments(self, **kwargs):
+        """Return a list of all contained comments of all types."""
+        return (list(self.comments.filter(**kwargs)) +
+                list(self.screenshot_comments.filter(**kwargs)) +
+                list(self.file_attachment_comments.filter(**kwargs)))
 
     class Meta:
         ordering = ['timestamp']

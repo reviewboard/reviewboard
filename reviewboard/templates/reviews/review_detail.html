@@ -67,7 +67,7 @@
 <div class="main">
  <div class="header">
   <div class="collapse-button"></div>
-  <div class="issue-summary">Issue Summary:</div>
+  <div class="issue-summary">{% trans "Issue Summary:" %}</div>
   <div class="counters">
    <b>Total: {{issues.total}}&nbsp;</b>
    Open: {{issues.open}}&nbsp;
@@ -82,19 +82,19 @@
     <th>From</th>
     <th>Status</th>
    </tr>
-  {% for entry in entries %}
-  {% if entry.review %}
-  {% for comment in entry.review.get_all_comments %}
-  {% if comment.issue_opened %}
+{% for entry in entries %}
+{%  if entry.review %}
+{%   for comment in entry.review.get_all_comments %}
+{%    if comment.issue_opened %}
    <tr class="issue-{{comment.issue_status|pretty_print_issue_status}}">
     <td class="description"><a href="#{{comment.id}}">{{comment|char_limit}}</a></td>
     <td><div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div></td>
     <td>{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
    </tr>
-  {% endif %}
-  {% endfor %}
-  {% endif %}
-  {% endfor %}
+{%    endif %}
+{%   endfor %}
+{%  endif %}
+{% endfor %}
   </table>
  </div>
 </div>

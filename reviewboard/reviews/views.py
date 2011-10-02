@@ -48,7 +48,7 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment, Comment, \
-				       ReviewRequest, \
+                                       ReviewRequest, \
                                        Review, Group, Screenshot, \
                                        ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
@@ -458,12 +458,11 @@ def review_detail(request,
     }
 
     for entry in entries:
-	if entry['review']:
-	    for comment in entry['review'].get_all_comments():
-		if comment.issue_opened:
-		    issues['total'] += 1
-		    issues[BaseComment.issue_status_to_string(
-			    comment.issue_status)] += 1
+        if 'review' in entry:
+            for comment in entry['review'].get_all_comments(issue_opened=True):
+                issues['total'] += 1
+                issues[BaseComment.issue_status_to_string(
+                        comment.issue_status)] += 1
 
     response = render_to_response(
         template_name,
@@ -478,7 +477,7 @@ def review_detail(request,
             'latest_changedesc': latest_changedesc,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
-	    'issues': issues,
+            'issues': issues,
         })))
     set_etag(response, etag)
 

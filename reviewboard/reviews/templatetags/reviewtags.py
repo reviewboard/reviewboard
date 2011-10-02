@@ -631,6 +631,8 @@ def pretty_print_issue_status(status):
 def char_limit(description):
     """Limit the length of an issue description if it exceeds 120 chars."""
     limit = 120
+
     if len(description) > limit:
-	description = description[0:limit-3]+"..."
+        description = description[0:limit-3] + "..."
+
     return description
