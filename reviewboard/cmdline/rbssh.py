@@ -44,6 +44,7 @@ from reviewboard.scmtools.core import SCMTool
 
 
 DEBUG = os.getenv('DEBUG_RBSSH')
+DEBUG_LOGDIR = os.getenv('RBSSH_LOG_DIR')
 
 
 options = None
@@ -240,15 +241,23 @@ def parse_options(args):
 
 def main():
     if DEBUG:
+        pid = os.getpid()
+        log_filename = 'rbssh-%s.log' % pid
+
+        if DEBUG_LOGDIR:
+            log_path = os.path.join(DEBUG_LOGDIR, log_filename)
+        else:
+            log_path = log_filename
+
         logging.basicConfig(level=logging.DEBUG,
                             format='%(asctime)s %(name)-18s %(levelname)-8s '
                                    '%(message)s',
                             datefmt='%m-%d %H:%M',
-                            filename='rbssh.log',
+                            filename=log_path,
                             filemode='w')
 
         logging.debug('%s' % sys.argv)
-        logging.debug('PID %s' % os.getpid())
+        logging.debug('PID %s' % pid)
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
