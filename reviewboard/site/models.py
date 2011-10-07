@@ -55,7 +55,7 @@ class LocalSite(models.Model):
         'users' field.
         """
         return (user.is_authenticated() and
-                self.users.filter(pk=user.pk).exists())
+                (user.is_staff or self.users.filter(pk=user.pk).exists()))
 
     def is_mutable_by(self, user, perm='site.change_localsite'):
         """Returns whether or not a user can modify settings in a LocalSite.

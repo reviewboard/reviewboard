@@ -121,8 +121,7 @@ class Group(models.Model):
         in the admin list.
         """
         return (user.has_perm('reviews.change_group') or
-                (self.local_site and
-                 self.local_site.admins.filter(pk=user.pk).exists()))
+                (self.local_site and self.local_site.is_mutable_by(user)))
 
     def __unicode__(self):
         return self.name

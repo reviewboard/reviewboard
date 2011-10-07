@@ -144,8 +144,7 @@ class Repository(models.Model):
         the user is in the admin list.
         """
         return (user.has_perm('scmtools.change_repository') or
-                (self.local_site and
-                 self.local_site.admins.filter(pk=user.pk).exists()))
+                (self.local_site and self.local_site.is_mutable_by(user)))
 
     def __unicode__(self):
         return self.name
