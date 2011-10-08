@@ -207,6 +207,17 @@ Once you've added this, restart your web server and try again. If it still
 won't work, contact us on our mailing list.
 
 
+URLs are shown with an internal host/port and not the URL configured in Settings
+================================================================================
+
+This is caused by a `security-related change
+<https://www.djangoproject.com/weblog/2011/sep/09/security-releases-issued/>`
+in Django 1.3.1. You can disable this behavior by adding the following to
+your :file:`conf/settings_local.py`::
+
+    USE_X_FORWARDED_HOST = True
+
+
 Developing Review Board
 =======================
 
