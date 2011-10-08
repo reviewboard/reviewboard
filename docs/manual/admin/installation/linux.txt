@@ -40,7 +40,7 @@ Review Board supports the following database servers:
 
 And the following web servers:
 
-* Apache_ + mod_python or fastcgi
+* Apache_ + mod_wsgi, fastcgi, or mod_python
 * lighttpd_ + fastcgi
 
 
