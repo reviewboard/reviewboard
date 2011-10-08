@@ -113,9 +113,12 @@ class SVNTool(SCMTool):
             # escape the path part of the URL.
             if self.client.is_url(normpath):
                 pathtuple = urlparse.urlsplit(normpath)
+                path = pathtuple[2]
+                if isinstance(path, unicode):
+                    path = path.encode('utf-8', 'ignore')
                 normpath = urlparse.urlunsplit((pathtuple[0],
                                                 pathtuple[1],
-                                                urllib.quote(pathtuple[2]),
+                                                urllib.quote(path),
                                                 '',''))
 
             normrev  = self.__normalize_revision(revision)
