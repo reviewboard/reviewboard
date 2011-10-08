@@ -472,7 +472,7 @@ Review Request Options
    Publishes the review request immediately after submitting. Normally
    the change is left as a draft.
 
-.. cmdoption:: -r=<ID>, --review-request-id=<ID>
+.. cmdoption:: -r <ID>, --review-request-id=<ID>
 
    Updates an existing review request, instead of creating a new one. The
    ``ID`` is the review request number to use.
