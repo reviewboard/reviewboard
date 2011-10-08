@@ -20,7 +20,8 @@ from django.utils.translation import ugettext as _
 
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.misc import cache_memoize, controlled_subprocess
+from djblets.util.contextmanagers import controlled_subprocess
+from djblets.util.misc import cache_memoize
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.checks import get_can_enable_syntax_highlighting
