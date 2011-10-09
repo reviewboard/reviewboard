@@ -1,9 +1,5 @@
-import sys
-from attachments.models import FileAttachment
-
 import datetime
-
-from diffviewer.models import DiffSet
+import time
 
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
@@ -11,45 +7,47 @@ from django.utils.translation import ugettext as _
 from djblets.util.misc import cache_memoize
 
 from reviewboard.admin.cache_stats import get_cache_stats
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.scmtools.models import Repository
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import ReviewRequest, Group, \
                                        Comment, Review, Screenshot, \
                                        ReviewRequestDraft
-
-import time
+from reviewboard.scmtools.models import Repository
 
 
 DAYS_TOTAL = 30 # Set the number of days to display in date browsing widgets
 
-def getUserActivityWidget(request):
-    """ User Activity Widget
-    A pie chart of active application users based on their last login date
-    """
 
-    def activityData():
+def get_user_activity_widget(request):
+    """User activity widget.
+
+    A pie chart of active application users based on their last login date.
+    """
+    def activity_data():
         now = datetime.date.today()
         users = User.objects
 
-        activity_list = {
-            'now': users.filter(last_login__range=\
-                (now - datetime.timedelta(days=7),
-                 now + datetime.timedelta(days=1))).count(),
-            'seven_days': users.filter(last_login__range=\
-                (now - datetime.timedelta(days=30),
-                 now - datetime.timedelta(days=7))).count(),
-            'thirty_days': users.filter(last_login__range=\
-                (now - datetime.timedelta(days=60),
-                 now - datetime.timedelta(days=30))).count(),
-            'sixty_days': users.filter(last_login__range=\
-                (now - datetime.timedelta(days=90),
-                 now - datetime.timedelta(days=60))).count(),
-            'ninety_days': users.filter(last_login__lte=\
-                now - datetime.timedelta(days=90)).count(),
+        week = datetime.timedelta(days=7)
+        day = datetime.timedelta(days=1)
+        month = datetime.timedelta(days=30)
+        two_months = datetime.timedelta(days=60)
+        three_months = datetime.timedelta(days=90)
+
+        one_day = (now - week, now + day)
+        seven_days = (now - month, now - week)
+        thirty_days = (now - two_months, now - month)
+        sixty_days = (now - three_months, now - two_months)
+        ninety_days = now - three_months
+
+        return {
+            'now': users.filter(last_login__range=one_day).count(),
+            'seven_days': users.filter(last_login__range=seven_days).count(),
+            'thirty_days': users.filter(last_login__range=thirty_days).count(),
+            'sixty_days': users.filter(last_login__range=sixty_days).count(),
+            'ninety_days': users.filter(last_login__lte=ninety_days).count(),
             'total': users.count()
         }
-
-        return activity_list
 
     widget_actions = [
         ('db/auth/user/add/', _("Add New")),
@@ -57,89 +55,82 @@ def getUserActivityWidget(request):
     ]
 
     key = "w-user-activity-" + str(datetime.date.today())
-    widget_data = {
+
+    return {
         'size': 'widget-large',
         'template': 'admin/widgets/w-user-activity.html',
-        'data': cache_memoize(key,activityData),
+        'data': cache_memoize(key, activity_data),
         'actions': widget_actions
     }
 
-    return widget_data
 
+def get_request_statuses(request):
+    """Request statuses by percentage widget.
 
-def getRequestStatuses(request):
-    """ Request Statuses by Percentage Widget
-    A pie chart showing review request by status """
+    A pie chart showing review request by status.
+    """
+    def status_data():
+        request_objects = ReviewRequest.objects.all()
 
-    def statusData():
-        request_objects = ReviewRequest.objects
-
-        request_count = {
+        return {
             'pending': request_objects.filter(status="P").count(),
             'draft': request_objects.filter(status="D").count(),
             'submit': request_objects.filter(status="S").count()
         }
-        return request_count
 
     key = "w-request-statuses-" + str(datetime.date.today())
-    widget_data = {
+
+    return {
         'size': 'widget-small',
         'template': 'admin/widgets/w-request-statuses.html',
         'actions': '',
-        'data': cache_memoize(key, statusData)
+        'data': cache_memoize(key, status_data)
     }
-    return widget_data
 
 
-def getRepositories(request):
-    """ Shows a list of repositories in the system
+def get_repositories(request):
+    """Shows a list of repositories in the system.
 
     This widget displays a table with the most recent repositories.
-     """
-    def repoData():
-        repositories = Repository.objects.accessible(request.user)\
-            .order_by('-id')[:3]
-        return repositories
+    """
+    def repo_data():
+        return Repository.objects.accessible(request.user).order_by('-id')[:3]
 
     key = "w-repositories-" + str(datetime.date.today())
-    widget_data = {
+
+    return {
         'size': 'widget-large',
         'template': 'admin/widgets/w-repositories.html',
         'actions': [
             ('db/scmtools/repository/add/', _("Add")),
             ('db/scmtools/repository/',  _("View All"), 'btn-right')
         ],
-        'data': cache_memoize(key, repoData)
+        'data': cache_memoize(key, repo_data)
     }
 
-    return widget_data
 
+def get_groups(request):
+    """Review group listing.
 
-def getGroups(request):
-    """ Review Group Listing
-
-    Shows a list of recently created groups """
-    def groupData():
-        review_groups = Group.objects.all().order_by('-id')[:5]
-        return review_groups
-
-    key = "w-groups-"+ str(datetime.date.today())
-    widget_data = {
+    Shows a list of recently created groups.
+    """
+    return {
         'size': 'widget-small',
         'template': 'admin/widgets/w-groups.html',
         'actions': [
             ('db/reviews/group/add/', _("Add")),
             ('db/reviews/group/', _("View All"))
         ],
-        'data': cache_memoize(key, groupData)
+        'data': cache_memoize("w-groups-" + str(datetime.date.today()),
+                              lambda: Group.objects.all().order_by('-id')[:5]),
     }
-    return widget_data
 
 
-def getServerCache(request):
-    """ Cache Statistic Widget
+def get_server_cache(request):
+    """Cache statistic widget.
 
-    A list of memcached statistic if available to the application """
+    A list of memcached statistic if available to the application.
+    """
     cache_stats = get_cache_stats()
     uptime = {}
 
@@ -159,39 +150,37 @@ def getServerCache(request):
         "uptime": uptime
     }
 
-    widget_data = {
+    return {
         'size': 'widget-small',
         'template': 'admin/widgets/w-server-cache.html',
         'actions': '',
         'data': cache_data
     }
-    return widget_data
 
 
-def getNews(request):
-    """ News Widget
+def get_news(request):
+    """News widget.
 
-    Latest Review Board news via RSS """
-
-    widget_data = {
-    'size': 'widget-small',
-    'template': 'admin/widgets/w-news.html',
-    'actions': [
-            ('http://www.reviewboard.org/news/', _('More')),
-            ('#', _('Reload'), 'reload-news')
-    ],
+    Latest Review Board news via RSS.
+    """
+    return {
+        'size': 'widget-small',
+        'template': 'admin/widgets/w-news.html',
+        'actions': [
+                ('http://www.reviewboard.org/news/', _('More')),
+                ('#', _('Reload'), 'reload-news')
+        ],
         'data': ''
     }
-    return widget_data
 
 
-def getStats(request):
-    """ Shows a list of totals for multiple database objects.
+def get_stats(request):
+    """Shows a list of totals for multiple database objects.
 
-    Passes a count for Comments, Reviews and more to render a widget table
-     """
-    def statsData():
-        stats_data = {
+    Passes a count for Comments, Reviews and more to render a widget table.
+    """
+    def stats_data():
+        return {
             'count_comments': Comment.objects.all().count(),
             'count_reviews': Review.objects.all().count(),
             'count_attachments': FileAttachment.objects.all().count(),
@@ -199,55 +188,50 @@ def getStats(request):
             'count_screenshots': Screenshot.objects.all().count(),
             'count_diffsets': DiffSet.objects.all().count()
         }
-        return stats_data
 
     key = "w-stats-" + str(datetime.date.today())
-    widget_data = {
+
+    return {
         'size': 'widget-small',
         'template': 'admin/widgets/w-stats.html',
         'actions': '',
-        'data': cache_memoize(key, statsData)
+        'data': cache_memoize(key, stats_data)
     }
-    return widget_data
 
 
-def getRecentActions(request):
-    """ Shows a list of recent admin actions to the user.
+def get_recent_actions(request):
+    """Shows a list of recent admin actions to the user.
 
     Based on the default Django admin widget.
-     """
-
-    widget_data = {
+    """
+    return {
         'size': 'widget-small',
         'template': 'admin/widgets/w-recent-actions.html',
         'actions': '',
         'data': ''
     }
 
-    return widget_data
 
+def dynamic_activity_data(request):
+    """Large database acitivity widget helper.
 
-def dynamicActivityData(request):
-    """ Large Database Acitivity Widget Helper
-
-     This method serves as a helper for the activity widget, it's used with for
-     AJAX requests based on date ranges passed to it.
-     """
+    This method serves as a helper for the activity widget, it's used with for
+    AJAX requests based on date ranges passed to it.
+    """
     direction = request.GET.get('direction')
     range_end = request.GET.get('range_end')
     range_start = request.GET.get('range_start')
     days_total = DAYS_TOTAL
 
-    """ Converting the date from the request
-
-    This takes the date from the request in YYYY-MM-DD format and
-    converts into a format suitable for QuerySet later on.
-    """
+    # Convert the date from the request.
+    #
+    # This takes the date from the request in YYYY-MM-DD format and
+    # converts into a format suitable for QuerySet later on.
     if range_end and range_start:
-       range_end = datetime.datetime.fromtimestamp(time.mktime(time\
-            .strptime(request.GET.get('range_end'), "%Y-%m-%d")))
-       range_start = datetime.datetime.fromtimestamp(time.mktime(time\
-            .strptime(request.GET.get('range_start'), "%Y-%m-%d")))
+        range_end = datetime.datetime.fromtimestamp(
+            time.mktime(time.strptime(range_end, "%Y-%m-%d")))
+        range_start = datetime.datetime.fromtimestamp(
+            time.mktime(time.strptime(range_start, "%Y-%m-%d")))
 
     if direction == "next":
         new_range_start = range_end
@@ -268,65 +252,63 @@ def dynamicActivityData(request):
         "range_end": new_range_end.strftime("%Y-%m-%d")
     }
 
-    def largeStatsData(range_start, range_end):
-        def getObjects(modelName, timestampField, dateField):
-            """ Perform timestamp based queries
+    def large_stats_data(range_start, range_end):
+        def get_objects(modelName, timestampField, dateField):
+            """Perform timestamp based queries.
 
             This method receives a dynamic model name and performs a filter
             query. Later the results are grouped by day and prepared for the
             charting library.
             """
-            args = '%s__%s' % (timestampField, 'range')
-            unique_objects = \
-                modelName.objects.filter(**{args: (range_start, range_end)})\
-                    .extra({timestampField: dateField})\
-                    .values(timestampField).annotate(created_count=Count('id'))\
-                    .order_by(timestampField)
+            args = '%s__range' % timestampField
+            q = modelName.objects.filter(**{
+                args: (range_start, range_end)
+            })
+            q = q.extra({timestampField: dateField})
+            q = q.values(timestampField)
+            q = q.annotate(created_count=Count('pk'))
+            q = q.order_by(timestampField)
 
-            data_array = []
-            for object in unique_objects:
-                inner_array = []
-                made_time = time.mktime(time.strptime(\
-                    object[timestampField], "%Y-%m-%d")) * 1000
-                inner_array.append(made_time)
-                inner_array.append(object['created_count'])
-                data_array.append(inner_array)
-            return data_array
+            data = []
 
-        comment_array = getObjects(Comment, "timestamp", "date(timestamp)")
-        change_desc_array = \
-            getObjects(ChangeDescription, "timestamp", "date(timestamp)")
-        review_array = getObjects(Review, "timestamp", "date(timestamp)")
-        rr_array = getObjects(ReviewRequest, "time_added", "date(time_added)")
+            for obj in q:
+                data.append([
+                    time.mktime(time.strptime(obj[timestampField],
+                                              "%Y-%m-%d")) * 1000,
+                    obj['created_count']
+                ])
 
-        # getting all widget_data together
-        stat_data = {
+            return data
+
+        comment_array = get_objects(Comment, "timestamp", "date(timestamp)")
+        change_desc_array = get_objects(ChangeDescription, "timestamp",
+                                        "date(timestamp)")
+        review_array = get_objects(Review, "timestamp", "date(timestamp)")
+        rr_array = get_objects(ReviewRequest, "time_added", "date(time_added)")
+
+        return {
             'change_descriptions': change_desc_array,
             'comments': comment_array,
             'reviews': review_array,
             'review_requests': rr_array
         }
 
-        return stat_data
+    stats_data = large_stats_data(new_range_start, new_range_end)
 
-    stats_data  = largeStatsData(new_range_start, new_range_end)
-    activity_data = {
-        "range":response_data,
+    return {
+        "range": response_data,
         "activity_data": stats_data
     }
 
-    return activity_data
 
+def get_large_stats(request):
+    """Shows the latest database activity for multiple models.
 
-def getLargeStats(request):
-    """ Shows latest database activity for multiple models
-
-     This ajax powered widget shows a daily view of creation activity for a list of
-     models. This construct doesn't send any widget data, all data comes from
-     the ajax request on page load.
-     """
-
-    widget_data = {
+    This ajax powered widget shows a daily view of creation activity for a
+    list of models. This construct doesn't send any widget data, all data
+    comes from the ajax request on page load.
+    """
+    return {
         'size': 'widget-large',
         'template': 'admin/widgets/w-stats-large.html',
         'actions':  [
@@ -339,4 +321,3 @@ def getLargeStats(request):
         ],
         'data': ["Loading..."]
     }
-    return widget_data

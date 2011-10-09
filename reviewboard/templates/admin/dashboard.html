@@ -16,7 +16,6 @@
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/flot/jquery.flot.selection.min.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.masonry.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/admin.js?{{MEDIA_SERIAL}}"></script>
-
 {% endblock %}
 
 {% block pretitle %}
@@ -24,32 +23,29 @@
   {% admin_actions %}
  </div>
 {% endblock %}
+
 {% block content_title %}{% endblock %}
+
 {% block content %}
 <div id="admin-dashboard">
-
  <div id="dashboard-view">
-     <!-- Widgets -->
-     <div id="admin-widgets">
-        {% admin_widget "stats-large" _("Review Board Activity") %}
-        {% admin_widget "repositories" _("Repositories") %}
-        {% admin_widget "user-activity" _("User Activity") %}
-     </div><!-- Admin Large Widgets End -->
-
-     <div class="admin-extras">
-         {% admin_widget "request-statuses" _("Request Statuses") %}
-         {% admin_widget "recent-actions" _("Recent Actions") %}
-         {% admin_widget "review-groups" _("Review Groups") "rb/images/admin/set-auth.png" %}
-         {% if has_cache_stats %}
-             {% admin_widget "server-cache" _("Server Cache") "rb/images/admin/set-storage.png" %}
-         {% endif %}
-         {% admin_widget "news" _("Review Board News") "rb/images/rss.png" %}
-         {% admin_widget "stats" _("Database Stats") %}
-
-     </div><!-- Admin Extras End -->
-
-     <!-- Widgets End -->
-    </div>
+  <div id="admin-widgets">
+   {% admin_widget "stats-large" _("Review Board Activity") %}
+   {% admin_widget "repositories" _("Repositories") %}
+   {% admin_widget "user-activity" _("User Activity") %}
+  </div>
+  <div class="admin-extras">
+   {% admin_widget "request-statuses" _("Request Statuses") %}
+   {% admin_widget "recent-actions" _("Recent Actions") %}
+   {% admin_widget "review-groups" _("Review Groups") "rb/images/admin/set-auth.png" %}
+{% if has_cache_stats %}
+   {% admin_widget "server-cache" _("Server Cache") "rb/images/admin/set-storage.png" %}
+{% endif %}
+   {% admin_widget "news" _("Review Board News") "rb/images/rss.png" %}
+   {% admin_widget "stats" _("Database Stats") %}
+  </div>
  </div>
+</div>
+
 <br class="clear" />
 {% endblock %}

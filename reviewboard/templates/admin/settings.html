@@ -1,11 +1,11 @@
 {% extends "siteconfig/settings.html" %}
-
 {% load i18n %}
 {% load rbadmintags %}
-{% block subnavbar %}
-{% endblock %}
+
+{% block subnavbar %}{% endblock %}
+
 {% block pretitle %}
- <div id="admin-actions" class="clear">
-      {% admin_actions %}
-  </div>
+<div id="admin-actions" class="clear">
+{% admin_actions %}
+</div>
 {% endblock %}

@@ -2,7 +2,6 @@ import logging
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render_to_response
@@ -13,11 +12,11 @@ from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
-from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
+from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.forms import SSHSettingsForm
+from reviewboard.admin.widgets import dynamic_activity_data
 from reviewboard.scmtools import sshutils
-from reviewboard.admin.widgets import dynamicActivityData
 
 
 @staff_member_required
@@ -102,32 +101,32 @@ def manual_updates_required(request,
                     for (template_name, extra_context) in updates],
     }))
 
+
 def widget_toggle(request):
     """
     Controls the state of widgets - collapsed or expanded.
-    Saves the state into site settings
+    Saves the state into site settings.
     """
-    if request.GET.get('widget') and request.GET.get('collapse'):
-        state = request.GET.get('collapse', '')
-        widget = request.GET.get('widget', '')
-        siteconfig = SiteConfiguration.objects.get(site=Site.objects.get_current())
-        widgetSets = siteconfig.get("widget_settings")
+    collapsed = request.GET.get('collapse', None)
+    widget = request.GET.get('widget', None)
 
-        if not widgetSets:
-            widgetSets = {}
+    if widget and collapsed:
+        siteconfig = SiteConfiguration.objects.get_current()
+        widget_settings = siteconfig.get("widget_settings", {})
 
-        widgetSets[widget] = state
-        siteconfig.set("widget_settings", widgetSets)
+        widget_settings[widget] = collapsed
+        siteconfig.set("widget_settings", widget_settings)
         siteconfig.save()
 
     return HttpResponse("")
+
 
 def widget_activity(request):
     """
     Receives an AJAX request, sends the data to the widget controller and
     returns JSON data
     """
-    activity_data = dynamicActivityData(request)
+    activity_data = dynamic_activity_data(request)
 
-    return HttpResponse(simplejson.dumps(
-        activity_data), mimetype="application/json")
+    return HttpResponse(simplejson.dumps(activity_data),
+                        mimetype="application/json")
