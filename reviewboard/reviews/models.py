@@ -121,8 +121,7 @@ class Group(models.Model):
         in the admin list.
         """
         return (user.has_perm('reviews.change_group') or
-                (self.local_site and
-                 self.local_site.admins.filter(pk=user.pk).exists()))
+                (self.local_site and self.local_site.is_mutable_by(user)))
 
     def __unicode__(self):
         return self.name
@@ -238,16 +237,6 @@ class Screenshot(models.Model):
                 'review_request_id': review_request.display_id,
                 'screenshot_id': self.pk,
             })
-
-    def save(self, **kwargs):
-        super(Screenshot, self).save()
-
-        try:
-            draft = self.drafts.get()
-            draft.timestamp = datetime.now()
-            draft.save()
-        except ReviewRequestDraft.DoesNotExist:
-            pass
 
     def save(self, **kwargs):
         super(Screenshot, self).save()

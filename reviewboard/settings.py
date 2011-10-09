@@ -162,8 +162,8 @@ LOCAL_ROOT = None
 try:
     import settings_local
     from settings_local import *
-except ImportError:
-    dependency_error('Unable to read settings_local.py.')
+except ImportError, exc:
+    dependency_error('Unable to import settings_local.py: %s' % exc)
 
 TEMPLATE_DEBUG = DEBUG
 

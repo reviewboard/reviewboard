@@ -66,5 +66,4 @@ class RepositoryManager(Manager):
 
     def can_create(self, user, local_site=None):
         return (user.has_perm('scmtools.create_repository') or
-                (local_site and
-                 local_site.admins.filter(pk=user.pk).exists()))
+                (local_site and local_site.is_mutable_by(user)))
