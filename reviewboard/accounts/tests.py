@@ -3,7 +3,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.testing.testcases import TestCase
 
 from reviewboard.accounts.models import LocalSiteProfile
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import ReviewRequest
 
 
 class ProfileTests(TestCase):

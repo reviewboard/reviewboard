@@ -246,7 +246,6 @@ class PerforceTool(SCMTool):
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
-        p4port = str(repository.mirror_path or repository.path)
         self.client = self._create_client(
             str(repository.mirror_path or repository.path),
             str(repository.username),

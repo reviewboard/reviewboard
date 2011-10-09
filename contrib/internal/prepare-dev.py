@@ -8,6 +8,9 @@ from optparse import OptionParser
 from random import choice
 
 
+options = None
+
+
 class SiteOptions(object):
     copy_media = platform.system() == "Windows"
 
