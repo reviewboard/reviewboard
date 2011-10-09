@@ -1,4 +1,4 @@
-from djblets.extensions.base import Extension, ExtensionManager
+from djblets.extensions.base import ExtensionManager
 
 
 _extension_manager = None

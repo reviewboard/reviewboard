@@ -139,7 +139,6 @@ def include_enabled_extensions(settings):
     """
     from django.db.models.loading import load_app
     from django.db import DatabaseError
-    from djblets.extensions.models import RegisteredExtension
 
     from reviewboard.extensions.base import get_extension_manager
 

@@ -375,7 +375,6 @@ def dashboard_entry(context, level, text, view, param=None):
     count = 0
     url = None
     group_name = None
-    review_requests = []
 
     if view == 'to-group':
         group_name = param

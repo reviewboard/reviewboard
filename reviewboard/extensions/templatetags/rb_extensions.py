@@ -1,7 +1,6 @@
 from django import template
 from django.conf import settings
 from django.template.loader import render_to_string
-from djblets.extensions.hooks import TemplateHook
 from djblets.util.decorators import basictag
 
 from reviewboard.extensions.hooks import DiffViewerActionHook, \
