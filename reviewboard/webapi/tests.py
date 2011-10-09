@@ -1039,7 +1039,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
 
     def test_get_group_public_not_modified(self):
         """Testing the GET groups/<id>/ API with Not Modified response"""
-        group = Group.objects.create(name='test-group')
+        Group.objects.create(name='test-group')
 
         self._testHttpCaching(self.get_item_url('test-group'),
                               check_etags=True)

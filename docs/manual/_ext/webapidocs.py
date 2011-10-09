@@ -654,12 +654,12 @@ class ErrorDirective(Directive):
 
     def get_error_title(self, error_obj):
         if 'title' in self.options:
-            title = self.options['title']
+            error_title = self.options['title']
         else:
             name = self.options['instance'].split('.')[-1]
-            title = name.replace('_', ' ').title()
+            error_title = name.replace('_', ' ').title()
 
-        return '%s - %s' % (error_obj.code, title)
+        return '%s - %s' % (error_obj.code, error_title)
 
     def get_error_object(self, name):
         try:

@@ -7,6 +7,9 @@ import tempfile
 from optparse import OptionParser
 
 
+options = None
+
+
 def die(msg):
     sys.stderr.write(msg)
     sys.exit(1)

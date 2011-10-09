@@ -6,7 +6,7 @@ from urllib import quote as urllib_quote
 import dateutil.parser
 from django.conf import settings
 from django.contrib import auth
-from django.contrib.auth.models import User, SiteProfileNotAvailable
+from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.db.models import Q
