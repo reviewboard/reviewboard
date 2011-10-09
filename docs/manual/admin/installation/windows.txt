@@ -8,8 +8,8 @@ Installing on Windows
    dependencies, Python included, are easier to install and maintain on
    Linux.
 
-   You may have various problems on Windows, depending on where
-   different Python modules come from. These problems are beyond our
+   You may have various problems on Windows (especially 64-bit), depending
+   on where different Python modules come from. These problems are beyond our
    control.
 
    You can run Review Board inside a Linux virtual machine running on top
