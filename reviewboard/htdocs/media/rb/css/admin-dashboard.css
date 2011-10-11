@@ -2,12 +2,6 @@
   clear: both;
 }
 
-#dashboard-view {
-  -moz-opacity: .0;
-  filter: alpha(opacity = 0);
-  opacity: .0;
-}
-
 #admin-dashboard {
   width: 100%;
   overflow: hidden;
@@ -55,6 +49,10 @@
   margin: 15px;
   padding: 15px;
   text-align: center;
+}
+
+.widget-hidden .widget-content {
+  display: none;
 }
 
 .admin-extras .widget-content .no-result {

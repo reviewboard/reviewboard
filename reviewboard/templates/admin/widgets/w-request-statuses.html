@@ -3,7 +3,7 @@
 <div id="requests-percentages" style="width: 190px; height: 140px;"></div>
 <div id="requests-labels"></div>
 <script type="text/javascript">
-$(document).ready(function () {
+$(document).ready(function() {
     // Review Request percentage by status data.
     var data = [
         {
@@ -20,27 +20,29 @@ $(document).ready(function () {
         }
     ];
 
-    // Pie chart plotting function.
-    $.plot($("#requests-percentages"), data, {
-        series: {
-            pie: {
-                show: true,
-                radius: 0.8,
-                label: {
+    $("#request-statuses").one("widget-shown", function() {
+        // Pie chart plotting function.
+        $.plot($("#requests-percentages"), data, {
+            series: {
+                pie: {
                     show: true,
-                    radius: 1,
-                    formatter: function(label, series) {
-                        return '<div class="request-percentage-label">' +
-                               Math.round(series.percent) + '%</div>';
-                    },
-                    background: { opacity: 0.8 }
+                    radius: 0.8,
+                    label: {
+                        show: true,
+                        radius: 1,
+                        formatter: function(label, series) {
+                            return '<div class="request-percentage-label">' +
+                                   Math.round(series.percent) + '%</div>';
+                        },
+                        background: { opacity: 0.8 }
+                    }
                 }
+            },
+            legend: {
+                container: $("#requests-labels"),
+                show: true
             }
-        },
-        legend: {
-            container: $("#requests-labels"),
-            show: true
-        }
+        });
     });
 });
 </script>

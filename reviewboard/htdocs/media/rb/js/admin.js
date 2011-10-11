@@ -1,33 +1,29 @@
-function refreshWidgets() {
-    var sideWidth = $("#admin-actions").outerWidth(),
-        centerWidth = $("#admin-widgets").outerWidth(),
-        winWidth = $(window).width();
-
-    $(".admin-extras")
-        .css('width', winWidth - (sideWidth + centerWidth) - 50)
-        .masonry('reload');
-}
-
-function dashboardFadeIn() {
-    $('.admin-extras').masonry('reload', function() {
-        $("#dashboard-view").animate({
-            opacity: 1
-        }, "fast");
-    });
-}
-
 $(window).load(function() {
-    var hiddenWidgets = $(".widget-hidden .widget-content");
+    $(".admin-widget").each(function() {
+        var widget = $(this);
 
-    if (hiddenWidgets.length > 0) {
-        hiddenWidgets.slideUp("fast", dashboardFadeIn);
-    } else {
-        dashboardFadeIn();
-    }
+        if (widget.hasClass("widget-hidden")) {
+            widget.trigger("widget-hidden");
+        } else {
+            widget.trigger("widget-shown");
+        }
+    });
 });
 
 $(document).ready(function() {
-    $('.admin-extras').masonry({
+    var adminExtras = $(".admin-extras");
+
+    function refreshWidgets() {
+        var sideWidth = $("#admin-actions").outerWidth(),
+            centerWidth = $("#admin-widgets").outerWidth(),
+            winWidth = $(window).width();
+
+        adminExtras
+            .css('width', winWidth - (sideWidth + centerWidth) - 50)
+            .masonry('reload');
+    }
+
+    adminExtras.masonry({
         itemSelector: '.admin-widget'
     });
 
@@ -39,24 +35,23 @@ $(document).ready(function() {
         var widgetBox = $(this).parent(),
             widgetBoxId = widgetBox.attr('id');
 
-        widgetBox.fadeTo('fast', 0, function() {
-            widgetBox.find(".widget-content").slideToggle('fast', function() {
-                var collapsed;
+        widgetBox.find(".widget-content").slideToggle('fast', function() {
+            var collapsed;
 
-                $('.admin-extras').masonry('reload');
-                widgetBox.fadeTo("fast", 1);
+            adminExtras.masonry('reload');
 
-                if (widgetBox.hasClass("widget-hidden")) {
-                    widgetBox.removeClass("widget-hidden")
-                    collapsed = 0;
-                } else {
-                    widgetBox.addClass("widget-hidden");
-                    collapsed = 1;
-                }
+            if (widgetBox.hasClass("widget-hidden")) {
+                widgetBox.removeClass("widget-hidden")
+                collapsed = 0;
+                widgetBox.trigger("widget-shown");
+            } else {
+                widgetBox.addClass("widget-hidden");
+                widgetBox.trigger("widget-hidden");
+                collapsed = 1;
+            }
 
-                $.post("widget-toggle/?widget=" + widgetBoxId +
-                       "&collapse=" + collapsed);
-             });
-        });
+            $.post("widget-toggle/?widget=" + widgetBoxId +
+                   "&collapse=" + collapsed);
+         });
     });
 });

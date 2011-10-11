@@ -5,7 +5,7 @@
 <input type="hidden" value="" id="data-activity-end" />
 
 <script>
-$(document).ready(function () {
+$(document).ready(function() {
     var datasets,
         options,
         choiceContainer = $("#stats-large"),
@@ -221,7 +221,9 @@ $(document).ready(function () {
         return false
     });
 
-    getActivityData("none");
+    choiceContainer.one("widget-shown", function() {
+        getActivityData("none");
+    });
 
     choiceContainer.find(".btn-s").click(function() {
         $(this).toggleClass("btn-s-checked");

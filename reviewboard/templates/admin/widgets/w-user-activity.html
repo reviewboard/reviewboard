@@ -1,7 +1,7 @@
 {% load i18n %}
 {% if widget_data.total > 1 %}
 <script type="text/javascript">
-$(document).ready(function () {
+$(document).ready(function() {
     /*
      * Prepare data for the user chart, this data is used to generated
      * the legend and labels.
@@ -29,21 +29,24 @@ $(document).ready(function () {
         }
     ];
 
-    // flot.js plotting function to generate a user chart below.
-    $.plot($("#user-chart"), data, {
-        series: {
-            pie: {
-                show: true,
-                label: {
+    $("#user-activity").one("widget-shown", function() {
+        // flot.js plotting function to generate a user chart below.
+        $.plot($("#user-chart"), data, {
+            series: {
+                pie: {
                     show: true,
-                    radius: 1,
-                    formatter: function(label, series) {
-                        return '<div>' + Math.round(series.percent) + '%</div>';
-                    },
-                    background: { opacity: 0.8 }
+                    label: {
+                        show: true,
+                        radius: 1,
+                        formatter: function(label, series) {
+                            return '<div>' + Math.round(series.percent) +
+                                   '%</div>';
+                        },
+                        background: { opacity: 0.8 }
+                    }
                 }
             }
-        }
+        });
     });
 });
 </script>
