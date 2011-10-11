@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.template.context import RequestContext
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.decorators import basictag, blocktag
 
 from reviewboard import get_version_string
 from reviewboard.admin import widgets
@@ -31,8 +32,9 @@ def admin_subnav(context, url_name, name, icon=""):
      })
 
 
-@register.inclusion_tag('admin/admin_widget.html', takes_context=True)
-def admin_widget(context, widget_name, widget_title, widget_icon=""):
+@register.tag
+@basictag(takes_context=True)
+def admin_widget(context, widget):
     """Renders a widget with the given information.
 
     The widget will be created and returned as HTML. Any states in the
@@ -40,37 +42,15 @@ def admin_widget(context, widget_name, widget_title, widget_icon=""):
     """
     request = context.get('request')
 
-    widget_list = {
-        'user-activity': widgets.get_user_activity_widget,
-        'request-statuses': widgets.get_request_statuses,
-        'repositories': widgets.get_repositories,
-        'review-groups': widgets.get_groups,
-        'server-cache': widgets.get_server_cache,
-        'news': widgets.get_news,
-        'stats': widgets.get_stats,
-        'stats-large': widgets.get_large_stats,
-        'recent-actions': widgets.get_recent_actions,
-    }
-
-    widget_data = widget_list.get(widget_name)(request)
     siteconfig = SiteConfiguration.objects.get(site=Site.objects.get_current())
     widget_states = siteconfig.get("widget_settings")
 
     if widget_states:
-        widget_state = widget_states.get(widget_name, '0')
+        widget.collapsed = widget_states.get(widget.name, "0") != '0'
     else:
-        widget_state = ''
+        widget.collapsed = False
 
-    return RequestContext(context['request'], {
-       'widget_title': widget_title,
-       'widget_state': widget_state,
-       'widget_name': widget_name,
-       'widget_icon': widget_icon,
-       'widget_size': widget_data['size'],
-       'widget_data': widget_data['data'],
-       'widget_content': widget_data['template'],
-       'widget_actions': widget_data['actions'],
-     })
+    return widget.render(request)
 
 
 @register.inclusion_tag('admin/widgets/w-actions.html', takes_context=True)

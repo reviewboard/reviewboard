@@ -1,18 +1,17 @@
 {% load i18n %}
-{% if widget_data %}
+{% if widget.data.repositories %}
 <table class="widget-large-table">
  <thead>
   <tr>
    <th>{% trans "Name" %}</th>
-   <th>{% trans "Tool" %}</th>
+   <th>{% trans "Type" %}</th>
    <th style="width:45px;" class="td-center">{% trans "Visible" %}</th>
   </tr>
  </thead>
-{% if widget_data %}
  <tbody>
-{%  for repository in widget_data %}
+{%  for repository in widget.data.repositories %}
   <tr>
-   <td><a href="db/scmtools/repository/{{repository.id}}">{{ repository.name }}</a></td>
+   <td><a href="db/scmtools/repository/{{repository.id}}">{{repository.name}}</a></td>
    <td>{{repository.tool}}</td>
    <td class="td-center">
 {%   if repository.visible %}
@@ -26,7 +25,6 @@
   </tr>
 {%  endfor %}
  </tbody>
-{% endif %}
 </table>
 {% else %}
 <p class="no-result">{% trans "No Repositories available." %}</p>

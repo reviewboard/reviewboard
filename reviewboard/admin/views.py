@@ -15,7 +15,9 @@ from djblets.siteconfig.views import site_settings as djblets_site_settings
 from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.forms import SSHSettingsForm
-from reviewboard.admin.widgets import dynamic_activity_data
+from reviewboard.admin.widgets import dynamic_activity_data, \
+                                      primary_widgets, \
+                                      secondary_widgets
 from reviewboard.scmtools import sshutils
 
 
@@ -27,8 +29,9 @@ def dashboard(request, template_name="admin/dashboard.html"):
     """
     return render_to_response(template_name, RequestContext(request, {
         'title': _("Admin Dashboard"),
-        'has_cache_stats': get_has_cache_stats(),
-        'root_path': settings.SITE_ROOT + "admin/db/"
+        'root_path': settings.SITE_ROOT + "admin/db/",
+        'primary_widgets': primary_widgets,
+        'secondary_widgets': secondary_widgets,
     }))
 
 

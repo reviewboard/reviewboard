@@ -1,8 +1,11 @@
 import datetime
+import re
 import time
 
 from django.contrib.auth.models import User
 from django.db.models.aggregates import Count
+from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.util.misc import cache_memoize
 
@@ -18,13 +21,104 @@ from reviewboard.scmtools.models import Repository
 
 DAYS_TOTAL = 30 # Set the number of days to display in date browsing widgets
 
+NAME_TRANSFORM_RE = re.compile('([A-Z])')
 
-def get_user_activity_widget(request):
+
+primary_widgets = []
+secondary_widgets = []
+
+
+class Widget(object):
+    """The base class for an Administration Dashboard widget.
+
+    Widgets appear in the Administration Dashboard and can display useful
+    information on the system, links to other pages, or even fetch data
+    from external sites.
+
+    There are a number of built-in widgets, but extensions can provide their
+    own.
+    """
+    # Constants
+    SMALL = 'small'
+    LARGE = 'large'
+
+    # Configuration
+    title = None
+    icon = None
+    size = SMALL
+    template = None
+    actions = []
+    has_data = True
+    cache_data = True
+
+    def __init__(self):
+        self.data = None
+        self.name = NAME_TRANSFORM_RE.sub(
+            lambda m: '-%s' % m.group(1).lower(),
+            self.__class__.__name__)[1:]
+
+    def render(self, request):
+        """Renders a widget.
+
+        This will render the HTML for a widget. It takes care of generating
+        and caching the data, depending on the widget's needs.
+        """
+        if self.has_data and self.data is None:
+            cache_key = self.generate_cache_key(request)
+
+            if self.cache_data:
+                self.data = cache_memoize(self.generate_cache_key(request),
+                                          lambda: self.generate_data(request))
+            else:
+                self.data = self.generate_data(request)
+
+        return render_to_string('admin/admin_widget.html',
+                                RequestContext(request, {
+            'widget': self,
+        }))
+
+    def generate_data(self, request):
+        """Generates data for the widget.
+
+        Widgets should override this to provide extra data to pass to the
+        template. This will be available in 'widget.data'.
+
+        If cache_data is True, this data will be cached for the day.
+        """
+        return {}
+
+    def generate_cache_key(self, request):
+        """Generates a cache key for this widget's data.
+
+        By default, the key takes into account the current day. If the
+        widget is displaying specific to, for example, the user, this should
+        be overridden to include that data in the key.
+        """
+        return "w-%s-%s" % (self.name, str(datetime.date.today()))
+
+
+class UserActivityWidget(Widget):
     """User activity widget.
 
-    A pie chart of active application users based on their last login date.
+    Displays a pie chart of the active application users based on their last
+    login dates.
     """
-    def activity_data():
+    title = 'User Activity'
+    size = Widget.LARGE
+    template = 'admin/widgets/w-user-activity.html'
+    actions = [
+        {
+            'url': 'db/auth/user/add/',
+            'label': _('Add'),
+        },
+        {
+            'url': 'db/auth/user/',
+            'label': _('Manage Users'),
+            'classes': 'btn-right',
+        },
+    ]
+
+    def generate_data(self, request):
         now = datetime.date.today()
         users = User.objects
 
@@ -49,27 +143,16 @@ def get_user_activity_widget(request):
             'total': users.count()
         }
 
-    widget_actions = [
-        ('db/auth/user/add/', _("Add New")),
-        ('db/auth/user/', _("Manage Users"), 'btn-right')
-    ]
 
-    key = "w-user-activity-" + str(datetime.date.today())
+class ReviewRequestStatusesWidget(Widget):
+    """Review request statuses widget.
 
-    return {
-        'size': 'widget-large',
-        'template': 'admin/widgets/w-user-activity.html',
-        'data': cache_memoize(key, activity_data),
-        'actions': widget_actions
-    }
-
-
-def get_request_statuses(request):
-    """Request statuses by percentage widget.
-
-    A pie chart showing review request by status.
+    Displays a pie chart showing review request by status.
     """
-    def status_data():
+    title = 'Request Statuses'
+    template = 'admin/widgets/w-request-statuses.html'
+
+    def generate_data(self, request):
         request_objects = ReviewRequest.objects.all()
 
         return {
@@ -78,108 +161,132 @@ def get_request_statuses(request):
             'submit': request_objects.filter(status="S").count()
         }
 
-    key = "w-request-statuses-" + str(datetime.date.today())
 
-    return {
-        'size': 'widget-small',
-        'template': 'admin/widgets/w-request-statuses.html',
-        'actions': '',
-        'data': cache_memoize(key, status_data)
-    }
-
-
-def get_repositories(request):
+class RepositoriesWidget(Widget):
     """Shows a list of repositories in the system.
 
-    This widget displays a table with the most recent repositories.
+    This widget displays a table with the most recent repositories,
+    their types, and visibility.
     """
-    def repo_data():
-        return Repository.objects.accessible(request.user).order_by('-id')[:3]
+    MAX_REPOSITORIES = 3
 
-    key = "w-repositories-" + str(datetime.date.today())
+    title = 'Repositories'
+    size = Widget.LARGE
+    template = 'admin/widgets/w-repositories.html'
+    actions = [
+        {
+            'url': 'db/scmtools/repository/add/',
+            'label': _('Add'),
+        },
+        {
+            'url': 'db/scmtools/repository/',
+            'label': _('View All'),
+            'classes': 'btn-right',
+        },
+    ]
 
-    return {
-        'size': 'widget-large',
-        'template': 'admin/widgets/w-repositories.html',
-        'actions': [
-            ('db/scmtools/repository/add/', _("Add")),
-            ('db/scmtools/repository/',  _("View All"), 'btn-right')
-        ],
-        'data': cache_memoize(key, repo_data)
-    }
+    def generate_data(self, request):
+        repos = Repository.objects.accessible(request.user).order_by('-id')
+
+        return {
+            'repositories': repos[:self.MAX_REPOSITORIES]
+        }
+
+    def generate_cache_key(self, request):
+        return "w-%s-%s-%s" % (self.name, request.user.username,
+                               str(datetime.date.today()))
 
 
-def get_groups(request):
-    """Review group listing.
+class ReviewGroupsWidget(Widget):
+    """Review groups widget.
 
     Shows a list of recently created groups.
     """
-    return {
-        'size': 'widget-small',
-        'template': 'admin/widgets/w-groups.html',
-        'actions': [
-            ('db/reviews/group/add/', _("Add")),
-            ('db/reviews/group/', _("View All"))
-        ],
-        'data': cache_memoize("w-groups-" + str(datetime.date.today()),
-                              lambda: Group.objects.all().order_by('-id')[:5]),
-    }
+    MAX_GROUPS = 5
+
+    title = 'Review Groups'
+    template = 'admin/widgets/w-groups.html'
+    icon = 'rb/images/admin/set-auth.png'
+    actions = [
+        {
+            'url': 'db/reviews/group/',
+            'label': _('View All'),
+            'classes': 'btn-right',
+        },
+        {
+            'url': 'db/reviews/group/add/',
+            'label': _('Add'),
+        },
+    ]
+
+    def generate_data(self, request):
+        return {
+            'groups': Group.objects.all().order_by('-id')[:self.MAX_GROUPS]
+        }
 
 
-def get_server_cache(request):
-    """Cache statistic widget.
+class ServerCacheWidget(Widget):
+    """Cache statistics widget.
 
-    A list of memcached statistic if available to the application.
+    Displays a list of memcached statistics, if available.
     """
-    cache_stats = get_cache_stats()
-    uptime = {}
+    title = 'Server Cache'
+    template = 'admin/widgets/w-server-cache.html'
+    icon = 'rb/images/admin/set-storage.png'
+    cache_data = False
 
-    for hosts, stats in cache_stats:
-        if stats['uptime'] > 86400:
-            uptime['value'] = stats['uptime'] / 60 / 60 / 24
-            uptime['unit'] = _("days")
-        elif stats['uptime'] > 3600:
-            uptime['value'] = stats['uptime'] / 60 / 60
-            uptime['unit'] = _("hours")
-        else:
-            uptime['value'] = stats['uptime'] / 60
-            uptime['unit'] =  _("minutes")
+    def generate_data(self, request):
+        uptime = {}
+        cache_stats = get_cache_stats()
 
-    cache_data = {
-        "cache_stats": cache_stats,
-        "uptime": uptime
-    }
+        if cache_stats:
+            for hosts, stats in cache_stats:
+                if stats['uptime'] > 86400:
+                    uptime['value'] = stats['uptime'] / 60 / 60 / 24
+                    uptime['unit'] = _("days")
+                elif stats['uptime'] > 3600:
+                    uptime['value'] = stats['uptime'] / 60 / 60
+                    uptime['unit'] = _("hours")
+                else:
+                    uptime['value'] = stats['uptime'] / 60
+                    uptime['unit'] =  _("minutes")
 
-    return {
-        'size': 'widget-small',
-        'template': 'admin/widgets/w-server-cache.html',
-        'actions': '',
-        'data': cache_data
-    }
+        return {
+            'cache_stats': cache_stats,
+            'uptime': uptime
+        }
 
 
-def get_news(request):
+class NewsWidget(Widget):
     """News widget.
 
-    Latest Review Board news via RSS.
+    Displays the latest news headlines from reviewboard.org.
     """
-    return {
-        'size': 'widget-small',
-        'template': 'admin/widgets/w-news.html',
-        'actions': [
-                ('http://www.reviewboard.org/news/', _('More')),
-                ('#', _('Reload'), 'reload-news')
-        ],
-        'data': ''
-    }
+    title = 'Review Board News'
+    template = 'admin/widgets/w-news.html'
+    icon = 'rb/images/rss.png'
+    actions = [
+        {
+            'url': 'http://www.reviewboard.org/news/',
+            'label': _('More'),
+        },
+        {
+            'label': _('Reload'),
+            'id': 'reload-news',
+        },
+    ]
+    has_data = False
 
 
-def get_stats(request):
-    """Shows a list of totals for multiple database objects.
+class DatabaseStatsWidget(Widget):
+    """Database statistics widget.
 
-    Passes a count for Comments, Reviews and more to render a widget table.
+    Displays a list of totals for several important database tables.
     """
-    def stats_data():
+    title = 'Database Stats'
+    template = 'admin/widgets/w-stats.html'
+
+    def generate_data(self, request):
         return {
             'count_comments': Comment.objects.all().count(),
             'count_reviews': Review.objects.all().count(),
@@ -189,27 +296,15 @@ def get_stats(request):
             'count_diffsets': DiffSet.objects.all().count()
         }
 
-    key = "w-stats-" + str(datetime.date.today())
 
-    return {
-        'size': 'widget-small',
-        'template': 'admin/widgets/w-stats.html',
-        'actions': '',
-        'data': cache_memoize(key, stats_data)
-    }
+class RecentActionsWidget(Widget):
+    """Recent actions widget.
 
-
-def get_recent_actions(request):
-    """Shows a list of recent admin actions to the user.
-
-    Based on the default Django admin widget.
+    Displays a list of recent admin actions to the user.
     """
-    return {
-        'size': 'widget-small',
-        'template': 'admin/widgets/w-recent-actions.html',
-        'actions': '',
-        'data': ''
-    }
+    title = 'Recent Actions'
+    template = 'admin/widgets/w-recent-actions.html'
+    has_data = False
 
 
 def dynamic_activity_data(request):
@@ -301,23 +396,80 @@ def dynamic_activity_data(request):
     }
 
 
-def get_large_stats(request):
-    """Shows the latest database activity for multiple models.
+class ActivityGraphWidget(Widget):
+    """Detailed database statistics graph widget.
 
-    This ajax powered widget shows a daily view of creation activity for a
-    list of models. This construct doesn't send any widget data, all data
-    comes from the ajax request on page load.
+    Shows the latest database activity for multiple models in the form of
+    a graph that can be navigated by date.
+
+    This widget shows a daily view of creation activity for a list of models.
+    All displayed widget data is computed on demand, rather than up-front
+    during creation of the widget.
     """
-    return {
-        'size': 'widget-large',
-        'template': 'admin/widgets/w-stats-large.html',
-        'actions':  [
-            ('#', _('<'), '', 'set-prev'),
-            ('#', _('>'), '', 'set-next'),
-            ('#', _('Reviews'), 'btn-s btn-s-checked', 'set-reviews'),
-            ('#', _('Comments'), 'btn-s btn-s-checked', 'set-comments'),
-            ('#', _('Review Requests'), 'btn-s btn-s-checked', 'set-requests'),
-            ('#', _('Descriptions'), 'btn-s btn-s-checked', 'set-descriptions')
-        ],
-        'data': ["Loading..."]
-    }
+    title = 'Review Board Activity'
+    size = Widget.LARGE
+    template = 'admin/widgets/w-stats-large.html'
+    actions = [
+        {
+            'label': '<',
+            'id': 'db-stats-graph-prev',
+            'rel': 'prev',
+        },
+        {
+            'label': '>',
+            'id': 'db-stats-graph-next',
+            'rel': 'next',
+        },
+        {
+            'label': _('Reviews'),
+            'classes': 'btn-s btn-s-checked',
+            'rel': 'reviews',
+        },
+        {
+            'label': _('Comments'),
+            'classes': 'btn-s btn-s-checked',
+            'rel': 'comments',
+        },
+        {
+
+            'label': _('Review Requests'),
+            'classes': 'btn-s btn-s-checked',
+            'rel': 'review_requests',
+        },
+        {
+            'label': _('Changes'),
+            'classes': 'btn-s btn-s-checked',
+            'rel': 'change_descriptions',
+        },
+    ]
+    has_data = False
+
+
+def register(widget, primary=False):
+    if primary:
+        primary_widgets.append(widget)
+    else:
+        secondary_widgets.append(widget)
+
+
+def unregister(widget):
+    try:
+        primary_widgets.append(widget)
+    except ValueError:
+        try:
+            secondary_widgets.append(widget)
+        except ValueError:
+            pass
+
+
+# Register the built-in widgets
+register(ActivityGraphWidget, True)
+register(RepositoriesWidget, True)
+register(UserActivityWidget, True)
+
+register(ReviewRequestStatusesWidget)
+register(RecentActionsWidget)
+register(ReviewGroupsWidget)
+register(ServerCacheWidget)
+register(NewsWidget)
+register(DatabaseStatsWidget)

@@ -358,17 +358,14 @@
   background: url("../images/admin/wid-max.png") 0px 3px no-repeat;
 }
 
-#recent-actions li {
+#recent-actions-widget li {
   padding: 2px 0px 0px 25px;
+  background-position: 7px 11px;
 }
 
-#recent-actions li span {
+#recent-actions-widget li span {
   display: block;
   clear: both;
-}
-
-#recent-actions li {
-  background-position: 7px 11px;
 }
 
 #requests-percentages {
@@ -401,4 +398,8 @@
 
 #placeholder-stats .legendLabel {
   font-size: 10px;
+}
+
+#database-stats-widget td {
+  text-align: right;
 }

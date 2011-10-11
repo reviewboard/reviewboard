@@ -1,6 +1,6 @@
 {% load i18n %}
-{% if widget_data.cache_stats %}
- {% for hostname,stats in widget_data.cache_stats %}
+{% if widget.data.cache_stats %}
+ {% for hostname,stats in widget.data.cache_stats %}
   <table class="widget-rows">
   <colgroup>
    <col width="48%" />
@@ -33,7 +33,7 @@
   </tr>
   <tr>
    <th scope="row">{% trans "Uptime" %}</th>
-   <td>{{widget_data.uptime.value}} {{widget_data.uptime.unit}}</td>
+   <td>{{widget.data.uptime.value}} {{widget.data.uptime.unit}}</td>
   </tr>
   </table>
  {% endfor %}

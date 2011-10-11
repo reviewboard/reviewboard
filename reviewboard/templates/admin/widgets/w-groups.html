@@ -1,7 +1,7 @@
 {% load i18n %}
-{% if widget_data %}
+{% if widget.data.groups %}
 <table style="width: 100%;">
-{% for group in widget_data %}
+{% for group in widget.data.groups %}
  <tr>
   <th><a href="db/reviews/group/{{group.id}}">{{group.display_name}}</a></th>
   <td>{{group.users.count}}</td>

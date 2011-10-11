@@ -30,19 +30,14 @@
 <div id="admin-dashboard">
  <div id="dashboard-view">
   <div id="admin-widgets">
-   {% admin_widget "stats-large" _("Review Board Activity") %}
-   {% admin_widget "repositories" _("Repositories") %}
-   {% admin_widget "user-activity" _("User Activity") %}
+{% for widget in primary_widgets %}
+   {% admin_widget widget %}
+{% endfor %}
   </div>
   <div class="admin-extras">
-   {% admin_widget "request-statuses" _("Request Statuses") %}
-   {% admin_widget "recent-actions" _("Recent Actions") %}
-   {% admin_widget "review-groups" _("Review Groups") "rb/images/admin/set-auth.png" %}
-{% if has_cache_stats %}
-   {% admin_widget "server-cache" _("Server Cache") "rb/images/admin/set-storage.png" %}
-{% endif %}
-   {% admin_widget "news" _("Review Board News") "rb/images/rss.png" %}
-   {% admin_widget "stats" _("Database Stats") %}
+{% for widget in secondary_widgets %}
+   {% admin_widget widget %}
+{% endfor %}
   </div>
  </div>
 </div>

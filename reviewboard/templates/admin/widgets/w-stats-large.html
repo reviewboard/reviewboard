@@ -8,7 +8,7 @@
 $(document).ready(function() {
     var datasets,
         options,
-        choiceContainer = $("#stats-large"),
+        choiceContainer = $("#activity-graph-widget"),
         previousPoint = null;
 
     // Helper for returning the weekends in a period.
@@ -85,8 +85,8 @@ $(document).ready(function() {
                 max_date = new Date(end_array[0], end_array[1] - 1,
                                     end_array[2]).getTime(),
                 d = data.activity_data.change_descriptions,
-                d2 = data.activity_data.comment,
-                d3 = data.activity_data.review_request,
+                d2 = data.activity_data.comments,
+                d3 = data.activity_data.review_requests,
                 d4 = data.activity_data.reviews,
                 i = 0,
                 plot_data = [];
@@ -124,7 +124,7 @@ $(document).ready(function() {
             };
 
             datasets = {
-                "set-descriptions": {
+                "change_descriptions": {
                     label: "Change Descriptions",
                     data: d,
                     bars: {
@@ -134,7 +134,7 @@ $(document).ready(function() {
                         show: false
                     }
                 },
-                "set-comments": {
+                "comments": {
                     label: "Comments",
                     data: d2,
                     bars: {
@@ -144,7 +144,7 @@ $(document).ready(function() {
                         show: false
                     }
                 },
-                "set-reviews": {
+                "review_requests": {
                     label: "Review Requests",
                     data: d3,
                     bars: {
@@ -154,7 +154,7 @@ $(document).ready(function() {
                         show: false
                     }
                 },
-                "set-requests": {
+                "reviews": {
                     label: "Reviews",
                     data: d4,
                     bars: {
@@ -175,7 +175,7 @@ $(document).ready(function() {
             });
 
             choiceContainer.find(".btn-s-checked").each(function() {
-                var key = $(this).attr("id");
+                var key = $(this).attr("rel");
 
                 if (key && datasets[key]) {
                     plot_data.push(datasets[key]);
@@ -185,7 +185,6 @@ $(document).ready(function() {
             if (plot_data.length > 0) {
                 $.plot($("#placeholder-stats"), plot_data, options);
             }
-
         });
     }
 
@@ -193,13 +192,13 @@ $(document).ready(function() {
         .parent()
             .append('<span class="legend-btn">Legend</span>');
 
-    $("#set-next").click(function() {
+    $("#db-stats-graph-next").click(function() {
         getActivityData("next");
         $(".legend-btn").hide();
         return false
     });
 
-    $("#set-prev").click(function() {
+    $("#db-stats-graph-prev").click(function() {
         getActivityData("prev");
         $(".legend-btn").hide();
         return false
@@ -221,14 +220,14 @@ $(document).ready(function() {
         return false
     });
 
-    choiceContainer.one("widget-shown", function() {
-        getActivityData("none");
-    });
-
-    choiceContainer.find(".btn-s").click(function() {
-        $(this).toggleClass("btn-s-checked");
-        getActivityData("same");
-        return false;
-    });
+    choiceContainer
+        .one("widget-shown", function() {
+            getActivityData("none");
+        })
+        .find(".btn-s").click(function() {
+            $(this).toggleClass("btn-s-checked");
+            getActivityData("same");
+            return false;
+        });
 });
 </script>

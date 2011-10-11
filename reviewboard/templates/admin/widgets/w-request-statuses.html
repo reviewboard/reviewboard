@@ -1,5 +1,5 @@
 {% load i18n %}
-{% if widget_data.pending %}
+{% if widget.data.pending %}
 <div id="requests-percentages" style="width: 190px; height: 140px;"></div>
 <div id="requests-labels"></div>
 <script type="text/javascript">
@@ -7,20 +7,20 @@ $(document).ready(function() {
     // Review Request percentage by status data.
     var data = [
         {
-            label: "Pending ({{widget_data.pending}})",
-            data: {{widget_data.pending}}
+            label: "Pending ({{widget.data.pending}})",
+            data: {{widget.data.pending}}
         },
         {
-            label: "Draft ({{widget_data.draft}})",
-            data: {{widget_data.draft}}
+            label: "Draft ({{widget.data.draft}})",
+            data: {{widget.data.draft}}
         },
         {
-            label: "Submit ({{widget_data.submit}})",
-            data: {{widget_data.submit}}
+            label: "Submit ({{widget.data.submit}})",
+            data: {{widget.data.submit}}
         }
     ];
 
-    $("#request-statuses").one("widget-shown", function() {
+    $("#review-request-statuses-widget").one("widget-shown", function() {
         // Pie chart plotting function.
         $.plot($("#requests-percentages"), data, {
             series: {
