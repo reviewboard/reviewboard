@@ -1,4 +1,7 @@
-from djblets.extensions.base import ExtensionManager
+from djblets.extensions.base import ExtensionManager, Extension
+
+
+__all__ = ['ExtensionManager', 'Extension', 'get_extension_manager']
 
 
 _extension_manager = None
