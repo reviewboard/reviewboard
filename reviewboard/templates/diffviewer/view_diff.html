@@ -20,9 +20,8 @@
 {% endblock %}
 
 {% block css %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css?{{MEDIA_SERIAL}}" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css?{{MEDIA_SERIAL}}" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/syntax.css?{{MEDIA_SERIAL}}" />
+{{block.super}}
+
 {% if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
 <style type="text/css">
   #diffs.ewhl table.sidebyside .ew { background: #ee3434; }
@@ -31,9 +30,7 @@
 {% endblock %}
 
 {% block scripts-post %}
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/diffviewer.js?{{MEDIA_SERIAL}}"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
+{{block.super}}
 
 {% if not specific_diff_requested %}
 <script type="text/javascript">

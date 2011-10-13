@@ -1328,6 +1328,11 @@ function toggleExtraWhitespace(init)
 
 
 $(document).ready(function() {
+    if (!window.gRevision) {
+        /* We're not running in the diff viewer. No need for setup. */
+        return;
+    }
+
     gDiff = gReviewRequest.createDiff(gRevision, gInterdiffRevision);
 
     $(document).keypress(function(evt) {

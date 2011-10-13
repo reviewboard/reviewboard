@@ -1,5 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% load compressed %}
 {% load djblets_deco %}
 {% load djblets_extensions %}
 {% load djblets_utils %}
@@ -26,7 +27,7 @@
   </script>
   <link rel="shortcut icon" type="image/x-icon" href="{{MEDIA_URL}}rb/images/favicon.ico?{{MEDIA_SERIAL}}" />
   <link rel="apple-touch-icon-precomposed" type="image/png" href="{{MEDIA_URL}}rb/images/apple-home-icon.png?{{MEDIA_SERIAL}}" />
-  <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
+{% compressed_css "common" %}
 {% block css %}{% endblock %}
 {% template_hook_point "base-css" %}
   <!--[if lt IE 7.]>
@@ -129,11 +130,9 @@
     </div>
    </div>
   </div>
-  <script type="text/javascript" src="{{MEDIA_URL}}rb/js/datastore.js?{{MEDIA_SERIAL}}"></script>
   <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc5.min.js"></script>
   <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
-  <script type="text/javascript" src="{{MEDIA_URL}}rb/js/ui.autocomplete.min.js?{{MEDIA_SERIAL}}"></script>
-  <script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
+  {% compressed_js "common" %}
 {% block scripts-post %}{% endblock %}
 {% template_hook_point "base-scripts-post" %}
  </body>

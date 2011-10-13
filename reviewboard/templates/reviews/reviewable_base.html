@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load compressed %}
 {% load i18n %}
 
 {% block jsconsts %}
@@ -8,6 +9,14 @@
 
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }
+{% endblock %}
+
+{% block css %}
+{% compressed_css "reviews" %}
+{% endblock %}
+
+{% block scripts-post %}
+{% compressed_js "reviews" %}
 {% endblock %}
 
 {% block bodytag %}

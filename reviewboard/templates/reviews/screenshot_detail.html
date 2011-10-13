@@ -11,15 +11,8 @@
   var gScreenshotId = '{{screenshot.id}}';
 {% endblock %}
 
-{% block css %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css?{{MEDIA_SERIAL}}" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css?{{MEDIA_SERIAL}}" />
-{% endblock %}
-
 {% block scripts-post %}
-<script language="javascript" src="{{MEDIA_URL}}rb/js/reviews.js?{{MEDIA_SERIAL}}"></script>
-<script language="javascript" src="{{MEDIA_URL}}rb/js/screenshots.js?{{MEDIA_SERIAL}}"></script>
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/jquery.form.js?{{MEDIA_SERIAL}}"></script>
+{{block.super}}
 
 <script language="javascript">
   $(document).ready(function() {

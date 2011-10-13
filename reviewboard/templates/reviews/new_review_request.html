@@ -3,11 +3,6 @@
 {% load i18n %}
 {% block title %}{% trans "New Review Request" %}{% endblock %}
 
-{% block css %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/diffviewer.css?{{MEDIA_SERIAL}}" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/reviews.css?{{MEDIA_SERIAL}}" />
-{% endblock %}
-
 {% block scripts-post %}
 <script type="text/javascript">
     var visible = {{fields|safe}};

@@ -21,6 +21,14 @@ reviewboard/settings_local.py
 reviewboard.log
 settings_local.py
 
+# Generated media files
+reviewboard/htdocs/media/rb/css/admin.min.css
+reviewboard/htdocs/media/rb/css/common.min.css
+reviewboard/htdocs/media/rb/css/reviews.min.css
+reviewboard/htdocs/media/rb/js/admin.min.js
+reviewboard/htdocs/media/rb/js/base.min.js
+reviewboard/htdocs/media/rb/js/reviews.min.js
+
 # Directories/symlinks
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded

@@ -6,14 +6,6 @@
 {% load gravatars %}
 {% block title %}{{viewing_user|user_displayname}}{% endblock %}
 
-{% block css %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css?{{MEDIA_SERIAL}}" />
-{% endblock %}
-
-{% block scripts-post %}
-<script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>
-{% endblock %}
-
 {% block content %}
 {% box "dashboard" %}
 <div id="dashboard-wrapper">

@@ -1,13 +1,13 @@
 {% extends "admin/base.html" %}
+{% load compressed %}
 {% load i18n %}
 {% load rbadmintags %}
 
 {% block title %}{{title}} | {% trans "Review Board administration" %}{% endblock %}
 
 {% block extrastyle %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin.css?{{MEDIA_SERIAL}}" />
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/admin-dashboard.css?{{MEDIA_SERIAL}}" />
+{% compressed_css "common" %}
+{% compressed_css "admin" %}
 <link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
 {% endblock %}
 

@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block css %}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/dashboard.css?{{MEDIA_SERIAL}}" />
+{{block.super}}
 <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}djblets/css/datagrid.css?{{MEDIA_SERIAL}}" />
 {% endblock %}
 

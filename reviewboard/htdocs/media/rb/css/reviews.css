@@ -1,33 +1,4 @@
 /****************************************************************************
- * New Review Request
- ****************************************************************************/
-.new-review-request {
-  background-color: #fefadf;
-  background-image: url('../images/review_request_box_top_bg.png');
-}
-
-.new-review-request label {
-  color: #575012;
-  font-weight: bold;
-}
-
-.new-review-request tr {
-  padding-top: 4px;
-}
-
-.new-review-request .box-inner {
-  background-image: url('../images/review_request_box_bottom_bg.png');
-}
-
-.new-review-request table,
-#id_basedir,
-#id_diff_path,
-#id_parent_diff_path {
-   width: 100%;
-}
-
-
-/****************************************************************************
  * Review Request Box
  ****************************************************************************/
 .inline-editor-form.summary-editor {
