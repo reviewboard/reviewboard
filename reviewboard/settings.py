@@ -94,7 +94,7 @@ TEMPLATE_DIRS = (
     os.path.join(REVIEWBOARD_ROOT, 'templates'),
 )
 
-INSTALLED_APPS = (
+RB_BUILTIN_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -120,8 +120,8 @@ INSTALLED_APPS = (
     'reviewboard.scmtools',
     'reviewboard.site',
     'reviewboard.webapi',
-    'django_evolution', # Must be last
-)
+]
+RB_EXTRA_APPS = []
 
 WEB_API_ENCODERS = (
     'djblets.webapi.encoders.ResourceAPIEncoder',
@@ -164,6 +164,9 @@ try:
     from settings_local import *
 except ImportError, exc:
     dependency_error('Unable to import settings_local.py: %s' % exc)
+
+
+INSTALLED_APPS = RB_BUILTIN_APPS + RB_EXTRA_APPS + ['django_evolution']
 
 TEMPLATE_DEBUG = DEBUG
 
