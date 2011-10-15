@@ -1,0 +1,372 @@
+@import "defs.less";
+
+@widget-border-color: #CCC;
+@admin-light-border-color: #f5f5f5;
+@admin-small-font-size: 11px;
+@admin-large-font-size: 14px;
+@table-border-color: @admin-light-border-color;
+@table-header-color: #4b4b4b;
+@widget-header-icon-height: 13px;
+@widget-margin: 10px;
+@widget-padding: 5px;
+@widget-action-border-color: #CCC;
+@widget-action-dark-border-color: #CCC;
+@widget-action-font-size: 12px;
+@widget-actions-height: 20px;
+@widget-actions-padding: 20px;
+@widget-heading-color: #A2BEDC;
+@widget-heading-border-color: #728EAC;
+@widget-large-size: 460px;
+@widget-small-size: 200px;
+
+#admin-actions {
+  @admin-sep-color: @admin-light-border-color;
+  @admin-sep-size: 2px;
+  @admin-sep-distance: @widget-margin;
+  @admin-actions-width: 200px;
+
+  border-right: @admin-sep-size solid @admin-sep-color;
+  float: left;
+  margin: 0 @admin-sep-distance 0
+          -(@admin-actions-width + 4 * @admin-sep-distance);
+  padding: 0 (2 * @admin-sep-distance) 0 0;
+  width: @admin-actions-width;
+
+  .widget-content ul {
+    margin: @widget-padding;
+    padding: 0;
+  }
+}
+
+#admin-dashboard {
+  width: 100%;
+  overflow: hidden;
+
+  #admin-widgets {
+    float: left;
+    margin: 0px;
+  }
+
+  .admin-sidebar {
+    border: none;
+  }
+}
+
+#admin-extras {
+  float: left;
+
+  .admin-widget {
+    float: left;
+
+    .widget-actions {
+      a {
+        border-right: none;
+        border-left: 1px solid @widget-action-border-color;
+        float: right;
+      }
+    }
+
+    .widget-content .no-result {
+      border: none;
+      font-size: 13px;
+      margin: 0px;
+    }
+  }
+}
+
+.admin-widget {
+  border: 1px solid @widget-border-color;
+  margin: 0 0 (2 * @widget-margin);
+
+  &.widget-large {
+    width: @widget-large-size;
+  }
+
+  &.widget-small {
+    float: left;
+    width: @widget-small-size;
+    margin-left: (2 * @widget-margin);
+  }
+
+  &.widget-hidden {
+    .widget-heading {
+      .btn-state {
+        background: url("../images/admin/wid-max.png") 0px 3px no-repeat;
+      }
+    }
+
+    .widget-content {
+      display: none;
+    }
+  }
+
+  .widget-heading {
+    background: @widget-heading-color;
+    border-bottom: 1px solid @widget-heading-border-color;
+    background-image: url("../images/title_box_top_bg.png");
+    color: black;
+    cursor: pointer;
+    font-size: 11px;
+    margin: 0;
+    padding: 5px;
+    text-transform: uppercase;
+
+    h1 {
+      margin: 0;
+    }
+
+    img {
+      float: left;
+      margin: 1px 4px 0px 0px;
+      overflow: hidden;
+    }
+
+    .btn-state {
+      float: right;
+      background: url("../images/admin/wid-min.png") 0px 3px no-repeat;
+      width: @widget-actions-padding;
+      height: @widget-header-icon-height;
+    }
+  }
+
+  .widget-content {
+    position: relative;
+
+    caption {
+      text-align: left;
+      margin-left: (2 * @widget-padding);
+    }
+
+    ul {
+      margin: 0;
+      padding: 0;
+
+      li {
+        border-bottom: 1px solid @admin-light-border-color;
+        list-style-type: none;
+        padding: @widget-padding 0;
+
+        a {
+          display: block;
+        }
+      }
+    }
+
+    p {
+      padding: (2 * @widget-padding);
+    }
+
+    tr {
+      border-bottom: 1px solid @table-border-color;
+
+      th {
+        color: @table-header-color;
+        font-size: @admin-small-font-size;
+        font-weight: normal;
+      }
+    }
+
+    .no-result {
+      border: 4px dashed #CCC;
+      color: @widget-border-color;
+      font-weight: bold;
+      font-size: @admin-large-font-size;
+      text-transform: capitalize;
+      line-height: 1.9em;
+      margin: 15px;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .widget-large-table {
+      width: 100%;
+
+      .visible-column {
+        text-align: center;
+      }
+    }
+  }
+
+  .widget-actions {
+    background: url("../images/admin/header_bg.png") repeat-x scroll left bottom transparent;
+    border-bottom: 1px solid @widget-action-dark-border-color;
+    border-right: 1px solid @widget-action-border-color;
+    border-top: 1px solid @widget-action-dark-border-color;
+    color: black;
+    overflow: hidden;
+    padding: 0;
+    text-align: left;
+    white-space: nowrap;
+
+    a {
+      border-right: 1px solid @widget-action-border-color;
+      color: black;
+      display: block;
+      float: left;
+      font-size: @widget-action-font-size;
+      height: @widget-actions-height;
+      padding: 6px 5px 0;
+      text-decoration: none;
+
+      &:hover {
+        background: url("../images/admin/header_bg_primary.png") repeat-x scroll left bottom transparent;
+        text-decoration: underline;
+      }
+
+      &.btn-right {
+        float: right;
+        border-right: none;
+        border-left: 1px solid @widget-action-border-color;
+      }
+    }
+  }
+
+  .btn-s {
+    .opacity(40);
+  }
+
+  .btn-s-checked {
+    .opacity(100);
+  }
+}
+
+.clear {
+  clear: both;
+}
+
+
+/**************************************************************************
+ * Per-widget styles
+ **************************************************************************/
+
+#database-stats-widget {
+  td {
+    text-align: right;
+  }
+}
+
+/* Review Board News widget */
+#news-widget {
+  .entry {
+    border-bottom: 1px solid @widget-border-color;
+    padding: @widget-padding;
+
+    h3 {
+      font-size: 10px;
+      font-weight: normal;
+      margin: 0;
+      padding: 0;
+
+      a {
+        display: block;
+      }
+    }
+  }
+}
+
+/* Recent Actions widget */
+#recent-actions-widget {
+  li {
+    background-position: 7px 11px;
+    padding: 2px 0px 0px 25px;
+
+    span {
+      display: block;
+      clear: both;
+    }
+  }
+}
+
+/* Request Statuses widget */
+#request-statuses-widget {
+  #requests-percentages {
+    margin-top: @widget-padding;
+
+    .request-percentage-label {
+      color: white;
+      font-size: 10px;
+      padding: 2px;
+      text-align: center;
+    }
+  }
+}
+
+/* Server Cache widget */
+#server-cache-widget {
+  td, th {
+    font-size: 10px;
+  }
+}
+
+/* Review Board Activity widget */
+#activity-graph-widget {
+  .widget-content {
+    margin: 10px 0px 10px 10px;
+
+    .legendLabel {
+      font-size: 10px;
+    }
+
+    .legend-btn {
+      position: absolute;
+      left: 30px;
+      top: 10px;
+      display: none;
+      cursor: pointer;
+    }
+  }
+}
+
+/* User Activity widget */
+#user-count {
+  border-top: 1px solid @widget-border-color;
+  bottom: (2 * @widget-padding);
+  color: #545454;
+  padding-left: 30px;
+  padding-top: 5px;
+  position: absolute;
+  right: 20px;
+  text-align: left;
+  width: 99px;
+}
+
+#widget-manage {
+  table {
+    width: 100%;
+
+    .count {
+      color: @table-header-color;
+    }
+  }
+
+  .addlink {
+    background-image: url("../images/db-add.png");
+    background-position: 27px 0;
+    display: block;
+    padding: 0 21px 5px 0;
+    width: 23px;
+  }
+}
+
+/* System Information sidebar widget */
+#widget-system-info {
+  img {
+    float: right;
+
+    .admin-version {
+      text-align: right;
+    }
+  }
+}
+
+#widget-sys-settings {
+  a.active {
+    font-weight: bold;
+  }
+
+  li {
+    border: none;
+  }
+}
+
+// vim: set et ts=2 sw=2:

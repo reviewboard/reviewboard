@@ -1,0 +1,92 @@
+/****************************************************************************
+ * Dashboard
+ ****************************************************************************/
+#dashboard-main {
+  border-left: 1px black solid;
+  vertical-align: top;
+  margin-left: 18em;
+  background-color: white;
+
+  table:after {
+    clear: both;
+  }
+
+  .main {
+    padding: 0;
+  }
+
+  .repository-column {
+    white-space: nowrap;
+  }
+}
+
+#dashboard-navbar {
+  float: left;
+  width: 18em;
+
+  td {
+    font-size: 0.9em;
+    padding: 5px 8px;
+
+    img {
+      vertical-align: bottom;
+    }
+
+    label {
+      color: #575012;
+      font-weight: bold;
+    }
+  }
+
+  .selected {
+    border-top: 1px #999999 solid;
+    border-bottom: 1px #999999 solid;
+
+    td {
+      background: #D0D0D0;
+    }
+  }
+
+  tr.selected {
+    background: #b2ceec;
+  }
+
+  .main-item {
+    font-weight: bold;
+  }
+
+  .header {
+    font-weight: bold;
+    padding-top: 15px;
+  }
+
+  .sub-item {
+    padding-left: 25px;
+  }
+
+  .nickname {
+    font-size: 1.4em;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .email, .group {
+    text-decoration: underline;
+    color: #0000C0;
+  }
+
+  .fn, .email {
+    font-size: 1.2em;
+  }
+
+  .logged-in {
+    padding-top: 1.5em;
+  }
+}
+
+#dashboard-navbar tr,
+#dashboard-wrapper {
+  background-color: #E9E9E9;
+}
+
+// vim: set et ts=2 sw=2:

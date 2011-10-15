@@ -97,13 +97,13 @@ TEMPLATE_DIRS = (
 )
 
 RB_BUILTIN_APPS = [
-    'compress',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.markup',
     'django.contrib.sites',
     'django.contrib.sessions',
+    'djblets.compress',
     'djblets.datagrid',
     'djblets.extensions',
     'djblets.feedview',
@@ -112,6 +112,7 @@ RB_BUILTIN_APPS = [
     'djblets.siteconfig',
     'djblets.util',
     'djblets.webapi',
+    'compress', # Must be after djblets.compress
     'reviewboard.accounts',
     'reviewboard.admin',
     'reviewboard.attachments',
@@ -257,17 +258,17 @@ COMPRESS_JS = {
 COMPRESS_CSS = {
     'common': {
         'source_filenames': (
-            'rb/css/common.css',
-            'rb/css/dashboard.css',
-            'rb/css/search.css',
+            'rb/css/common.less',
+            'rb/css/dashboard.less',
+            'rb/css/search.less',
         ),
         'output_filename': 'rb/css/common.min.css',
         'extra_context': _COMPRESS_EXTRA_CONTEXT,
     },
     'reviews': {
         'source_filenames': (
-            'rb/css/diffviewer.css',
-            'rb/css/reviews.css',
+            'rb/css/diffviewer.less',
+            'rb/css/reviews.less',
             'rb/css/syntax.css',
         ),
         'output_filename': 'rb/css/reviews.min.css',
@@ -275,13 +276,17 @@ COMPRESS_CSS = {
     },
     'admin': {
         'source_filenames': (
-            'rb/css/admin.css',
-            'rb/css/admin-dashboard.css',
+            'rb/css/admin.less',
+            'rb/css/admin-dashboard.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
         'extra_context': _COMPRESS_EXTRA_CONTEXT,
     },
 }
+
+LESSCSS_IMPORT_PATHS = ('rb/css/',)
+
+COMPRESS_CSS_FILTERS = ('djblets.compress.filters.lesscss.LessCSSFilter',)
 
 
 # Packages to unit test

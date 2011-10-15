@@ -11,7 +11,7 @@ $(window).load(function() {
 });
 
 $(document).ready(function() {
-    var adminExtras = $(".admin-extras");
+    var adminExtras = $("#admin-extras");
 
     function refreshWidgets() {
         var sideWidth = $("#admin-actions").outerWidth(),

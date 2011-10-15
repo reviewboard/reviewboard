@@ -7,6 +7,11 @@ body {
   padding: 0;
 }
 
+form th {
+  text-align: right;
+  vertical-align: top;
+}
+
 h1 {
   font-size: 10pt;
 }
@@ -19,11 +24,6 @@ img {
   border: 0;
 }
 
-form th {
-  text-align: right;
-  vertical-align: top;
-}
-
 label.required {
   font-weight: bold;
 }
@@ -32,16 +32,18 @@ pre {
   font-size: 10pt;
 }
 
-span.label-draft {
-  color: #008000;
-}
+span {
+  &.label-draft {
+    color: #008000;
+  }
 
-span.label-submitted {
-  color: #b7a93e;
-}
+  &.label-submitted {
+    color: #b7a93e;
+  }
 
-span.label-discarded {
-  color: #fe5757;
+  &.label-discarded {
+    color: #fe5757;
+  }
 }
 
 td.help {
@@ -50,16 +52,20 @@ td.help {
   padding-top: 0;
 }
 
+textarea {
+  resize: none;
+}
+
 ul.errorlist {
   color: #DD0000;
   display: inline;
   font-weight: bold;
   margin: 0 0 0 15px;
   padding: 4px 8px;
-}
 
-ul.errorlist li {
-  display: inline;
+  li {
+    display: inline;
+  }
 }
 
 .loading img {
@@ -67,9 +73,6 @@ ul.errorlist li {
   vertical-align: text-bottom;
 }
 
-textarea {
-  resize: none;
-}
 
 /****************************************************************************
  * Banners
@@ -80,16 +83,16 @@ textarea {
   margin-bottom: 10px;
   padding: 8px 10px;
   z-index: 999;
-}
 
-.banner h1 {
-  display: inline;
-  margin-right: 0.2em;
-  padding: 0;
-}
+  h1 {
+    display: inline;
+    margin-right: 0.2em;
+    padding: 0;
+  }
 
-.banner input {
-  margin-left: 10px;
+  input {
+    margin-left: 10px;
+  }
 }
 
 
@@ -109,11 +112,11 @@ textarea {
   background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
-}
 
-.box.important .box-inner {
-  background: url("../images/important.png") no-repeat top left;
-  padding: 0 0 0 50px;
+  .box-inner {
+    background: url("../images/important.png") no-repeat top left;
+    padding: 0 0 0 50px;
+  }
 }
 
 .box.tip {
@@ -121,14 +124,14 @@ textarea {
   background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
-}
 
-.box.tip .box-inner {
-  background: transparent;
-}
+  .box-inner {
+    background: transparent;
+  }
 
-.box.tip h1 {
-  padding-left: 0;
+  h1 {
+    padding-left: 0;
+  }
 }
 
 .box.yay {
@@ -136,23 +139,23 @@ textarea {
   background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
   padding: 0px 10px;
-}
 
-.box.yay .box-inner {
-  background: transparent;
-}
+  .box-inner {
+    background: transparent;
+  }
 
-.box.yay h1 {
-  padding-left: 0;
-}
+  h1 {
+    padding-left: 0;
+  }
 
-.box.yay img {
-  float: left;
-  left: -5px;
-  margin: 0;
-  padding: 0;
-  position: relative;
-  top: -23px;
+  img {
+    float: left;
+    left: -5px;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    top: -23px;
+  }
 }
 
 .box .star {
@@ -221,35 +224,34 @@ textarea {
  ****************************************************************************/
 .modalbox {
   margin: 10px;
-}
 
-.modalbox-contents {
-  margin: 10px;
-  position: relative; /* Makes this the offsetParent for calculations. */
-}
+  .modalbox-contents {
+    margin: 10px;
+    position: relative; /* Makes this the offsetParent for calculations. */
+  }
 
-.modalbox-buttons {
-  position: absolute;
-  margin: 10px;
-  text-align: right;
-  bottom: 0;
-  right: 0;
-}
+  .modalbox-buttons {
+    position: absolute;
+    margin: 10px;
+    text-align: right;
+    bottom: 0;
+    right: 0;
 
-.modalbox-buttons input {
-  margin-left: 10px;
+    input {
+      margin-left: 10px;
+    }
+  }
 }
-
 
 /****************************************************************************
  * Inline editor forms
  ****************************************************************************/
 .editicon {
   margin-left: 4px;
-}
 
-.editicon img {
-  vertical-align: bottom;
+  img {
+    vertical-align: bottom;
+  }
 }
 
 .inline-editor-form {
@@ -257,22 +259,22 @@ textarea {
   margin: 0;
   padding: 0;
   white-space: nowrap;
-}
 
-.inline-editor-form input[type="submit"] {
-  margin-left: 5px;
-}
+  input[type="submit"] {
+    margin-left: 5px;
+  }
 
-.inline-editor-form input[type="text"] {
-  border: 1px #888a85 solid;
-  padding: 1px 2px;
-}
+  input[type="text"] {
+    border: 1px #888a85 solid;
+    padding: 1px 2px;
+  }
 
-.inline-editor-form textarea {
-  border: 1px #888a85 solid;
-  font-size: 10pt;
-  margin: 5px 0 0 0;
-  padding: 10px;
+  textarea {
+    border: 1px #888a85 solid;
+    font-size: 10pt;
+    margin: 5px 0 0 0;
+    padding: 10px;
+  }
 }
 
 .loading-indicator {
@@ -285,51 +287,53 @@ textarea {
  ****************************************************************************/
 form table td {
   padding: 8px 8px 4px 4px;
+
+  &.label {
+    text-align: right;
+    font-weight: bold;
+  }
 }
 
-form table td.label {
-  text-align: right;
-  font-weight: bold;
-}
+.formdlg {
+  tr {
+    padding-top: 4px;
+  }
 
-.formdlg tr {
-  padding-top: 4px;
-}
+  td.label {
+    white-space: nowrap;
+  }
 
-.formdlg td.label {
-  white-space: nowrap;
-}
+  .error {
+    color: #DD0000;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+  }
 
-.formdlg .error {
-  color: #DD0000;
-  font-weight: bold;
-  margin-bottom: 10px;
-  padding: 4px 8px;
-}
+  .errorlist {
+    display: block;
+    list-style: none;
+    margin: 0;
+    padding: 0;
 
-.formdlg ul.errorlist {
-  display: block;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
+    li {
+      display: list-item;
+      padding: 2px 4px;
+    }
+  }
 
-.formdlg .errorlist li {
-  display: list-item;
-  padding: 2px 4px;
-}
+  .spinner {
+    float: left;
 
-.formdlg .spinner {
-  float: left;
-}
+    img {
+      vertical-align: top;
+    }
 
-.formdlg .spinner img {
-  vertical-align: top;
-}
-
-.formdlg .spinner h1 {
-  display: inline;
-  margin-left: 10px;
+    h1 {
+      display: inline;
+      margin-left: 10px;
+    }
+  }
 }
 
 
@@ -350,17 +354,17 @@ form table td.label {
 
 .section {
   margin-bottom: 20px;
-}
 
-.section .title {
-  background: #DDDDDD;
-  border: 1px black solid;
-  padding: 4px 8px;
-}
+  .title {
+    background: #DDDDDD;
+    border: 1px black solid;
+    padding: 4px 8px;
+  }
 
-.section .body {
-  margin-left: 20px;
-  padding: 10px;
+  .body {
+    margin-left: 20px;
+    padding: 10px;
+  }
 }
 
 #accountnav {
@@ -371,10 +375,10 @@ form table td.label {
   position: relative;
   z-index: 1;
   border-bottom: 1px #DDDDDD solid;
-}
 
-#accountnav li {
-  display: inline;
+  li {
+    display: inline;
+  }
 }
 
 #activity-indicator {
@@ -393,37 +397,39 @@ form table td.label {
   padding: 0.5em 0.6em 0.5em 2.2em;
   width: 6em;
   z-index: 20000;
+
+  &.error {
+    background-color: #ffcd9c;
+    width: 28em;
+    margin-left: -14em;
+    background-image: none;
+    padding-left: 0.6em;
+
+    a {
+      margin-left: 1em;
+      color: #0000CC;
+      text-decoration: none;
+    }
+  }
 }
 
-#activity-indicator.error {
-  background-color: #ffcd9c;
-  width: 28em;
-  margin-left: -14em;
-  background-image: none;
-  padding-left: 0.6em;
-}
+#error {
+  div {
+    background: #ffcd9c;
+    border: 1px #9a4306 solid;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+  }
 
-#activity-indicator.error a {
-  margin-left: 1em;
-  color: #0000CC;
-  text-decoration: none;
-}
+  h1 {
+    display: inline;
+    margin: 0;
+    padding: 0;
+  }
 
-#error div {
-  background: #ffcd9c;
-  border: 1px #9a4306 solid;
-  margin-bottom: 10px;
-  padding: 8px 10px;
-}
-
-#error h1 {
-  display: inline;
-  margin: 0;
-  padding: 0;
-}
-
-#error input[type='submit'] {
-  margin-left: 10px;
+  input[type='submit'] {
+    margin-left: 10px;
+  }
 }
 
 #manual-updates p {
@@ -442,19 +448,23 @@ form table td.label {
   list-style: none;
   margin: 0;
   padding: 9px 6px;
-}
 
-#navbar li {
-  display: inline;
-  height: 30px;
-  margin-right: 14px;
-}
+  li {
+    display: inline;
+    height: 30px;
+    margin-right: 14px;
+  }
 
-#navbar a {
-  color: #0000AA;
-  font-size: 110%;
-  font-weight: bold;
-  text-decoration: none;
+  a {
+    color: #0000AA;
+    font-size: 110%;
+    font-weight: bold;
+    text-decoration: none;
+  }
+
+  .newreviewrequest {
+    text-align: right;
+  }
 }
 
 #page-container {
@@ -464,11 +474,11 @@ form table td.label {
 #rbinfo {
   position: relative;
   padding-left: 0.8em;
-}
 
-#rbinfo img {
-  display: inline;
-  vertical-align: middle;
+  img {
+    display: inline;
+    vertical-align: middle;
+  }
 }
 
 #searchbar {
@@ -477,26 +487,22 @@ form table td.label {
   margin-top: -3px;
 }
 
-#navbar .newreviewrequest {
-  text-align: right;
-}
-
 #title {
   display: inline;
   vertical-align: middle;
   font-size: 24pt;
   font-weight: normal;
-}
 
-#title a {
-  color: black;
-  text-decoration: none;
-}
+  a {
+    color: black;
+    text-decoration: none;
+  }
 
-#title .version {
-  color: #808080;
-  font-size: 12pt;
-  font-weight: normal;
+  .version {
+    color: #808080;
+    font-size: 12pt;
+    font-weight: normal;
+  }
 }
 
 
@@ -504,52 +510,44 @@ form table td.label {
  * Auto-complete widget
  ****************************************************************************/
 
-/* Content container wrapper */
-
-.ui-autocomplete-results
-{
+.ui-autocomplete-results {
   background: #ffffff;
   border: 1px solid #808080;
   overflow: hidden;
   position: absolute;
   width: 100%;
   z-index: 9050;
+
+  ul {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+
+    li {
+      cursor: pointer;
+      margin: 0;
+      padding: 3px 6px;
+      position: relative;
+      white-space: nowrap;
+
+      span {
+        margin-left: 6px;
+        position: absolute;
+        right: 6px;
+      }
+    }
+  }
+
+  .ui-autocomplete-over {
+    background: #71a5db;
+    color: #FFF;
+  }
 }
 
-/* Footer */
 .ui-autocomplete-footer {
   background: #ECECEC;
   border-top: 1px #C0C0C0 solid;
   padding: 3px 6px;
-}
-
-/* Results list */
-.ui-autocomplete-results ul {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
-
-/* Result item */
-.ui-autocomplete-results li {
-  cursor: pointer;
-  margin: 0;
-  padding: 3px 6px;
-  position: relative;
-  white-space: nowrap;
-}
-
-.ui-autocomplete-results li span {
-  margin-left: 6px;
-  position: absolute;
-  right: 6px;
-}
-
-/* Highlighted result item */
-.ui-autocomplete-results .ui-autocomplete-over
-{
-  background: #71a5db;
-  color: #FFF;
 }
 
 
@@ -572,49 +570,49 @@ form table td.label {
   -moz-box-shadow: 0px 0px 4px #000;
   -webkit-box-shadow: 0px 0px 4px #000;
   box-shadow: 0px 0px 4px #000;
-}
 
-#user-infobox.loading {
-  background-image: url("../images/spinner.gif");
-  background-position: 1em 1em;
-  background-repeat: no-repeat;
-}
+  &.loading {
+    background-image: url("../images/spinner.gif");
+    background-position: 1em 1em;
+    background-repeat: no-repeat;
+  }
 
-#user-infobox .infobox-pic {
-  float: left;
-  width: 85px;
-  margin-right: 1em;
-}
+  .infobox-pic {
+    float: left;
+    width: 85px;
+    margin-right: 1em;
+  }
 
-#user-infobox .infobox-text {
-  color: black;
-  float: left;
-}
+  .infobox-text {
+    color: black;
+    float: left;
+  }
 
-#user-infobox p {
-  font-size: 1.2em;
-  margin: 0.5em 0;
-  padding: 0;
-}
+  p {
+    font-size: 1.2em;
+    margin: 0.5em 0;
+    padding: 0;
+  }
 
-#user-infobox h2 {
-  font-size: 1.4em;
-  margin: 0 0 0.5em 0;
-  padding: 0;
-  text-decoration: none;
-}
+  h2 {
+    font-size: 1.4em;
+    margin: 0 0 0.5em 0;
+    padding: 0;
+    text-decoration: none;
+  }
 
-#user-infobox .logged-in {
-  margin-top: 2em;
-}
+  .logged-in {
+    margin-top: 2em;
+  }
 
-#user-infobox .logged-in, #user-infobox .joined {
-  font-size: 0.8em;
-}
+  .logged-in, .joined {
+    font-size: 0.8em;
+  }
 
-#user-infobox #infobox-text h2 {
-  margin-top: 0;
-  padding-top: 0;
+  #infobox-text h2 {
+    margin-top: 0;
+    padding-top: 0;
+  }
 }
 
 #submitter {
@@ -628,20 +626,21 @@ form table td.label {
 .new-review-request {
   background-color: #fefadf;
   background-image: url('../images/review_request_box_top_bg.png');
+
+  label {
+    color: #575012;
+    font-weight: bold;
+  }
+
+  tr {
+    padding-top: 4px;
+  }
+
+  .box-inner {
+    background-image: url('../images/review_request_box_bottom_bg.png');
+  }
 }
 
-.new-review-request label {
-  color: #575012;
-  font-weight: bold;
-}
-
-.new-review-request tr {
-  padding-top: 4px;
-}
-
-.new-review-request .box-inner {
-  background-image: url('../images/review_request_box_bottom_bg.png');
-}
 
 .new-review-request table,
 #id_basedir,
@@ -658,23 +657,25 @@ form table td.label {
 /*
  * clearfix hack. See http://www.webtoolkit.info/css-clearfix.html
  */
-.clearfix:after {
-	content: ".";
-	display: block;
-	clear: both;
-	visibility: hidden;
-	line-height: 0;
-	height: 0;
-}
-
 .clearfix {
-	display: inline-block;
+  display: inline-block;
+
+  &:after {
+    content: ".";
+    display: block;
+    clear: both;
+    visibility: hidden;
+    line-height: 0;
+    height: 0;
+  }
 }
 
 html[xmlns] .clearfix {
-	display: block;
+  display: block;
 }
 
 * html .clearfix {
-	height: 1%;
+  height: 1%;
 }
+
+// vim: set et ts=2 sw=2:

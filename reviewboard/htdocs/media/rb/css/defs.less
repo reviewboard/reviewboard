@@ -1,0 +1,20 @@
+.border-radius () {
+  -moz-border-radius: @arguments;
+  border-radius: @arguments;
+}
+
+.opacity (@value) {
+  opacity: @value / 100;
+  filter:alpha(opacity=@value);
+  -moz-opacity: @value / 100;
+}
+
+.pre-wrap () {
+  white-space: pre-wrap;      /* CSS 3 */
+  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
+  white-space: -pre-wrap;     /* Opera 4-6 */
+  white-space: -o-pre-wrap;   /* Opera 7 */
+  word-wrap: break-word;      /* IE 5.5+ */
+}
+
+// vim: set et ts=2 sw=2:

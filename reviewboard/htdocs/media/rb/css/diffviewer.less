@@ -1,0 +1,436 @@
+@import "defs.less";
+
+@diff-file-color: #F0F0F0;
+@diff-border-color: #C0C0C0;
+@diff-line-border-color: #D0D0D0;
+
+// Comment flags
+@comment-flag-color: #a1c0e3;
+@comment-flag-hover-color: #a5caf3;
+@comment-flag-border-color: #204a87;
+@comment-flag-border-radius: 4px;
+
+@comment-flag-draft-color: #aceb6f;
+@comment-flag-draft-hover-color: #b6f37c;
+@comment-flag-draft-border-color: #3e7b01;
+
+@comment-flag-ghost-color: #eeeeec;
+@comment-flag-ghost-border-color: #888a85;
+
+// Diff headers
+@diff-header-color: #e4d9cb;
+
+// Moved line information
+@diff-moved-bg-color: #66ccff;
+@diff-moved-border-color: #065a8a;
+
+// Equals lines
+@diff-linenum-color: #F0F0F0;
+@diff-selected-color: #E2E2E2;
+
+// Delete lines
+@diff-delete-selected-color: #dfb1b1;
+@diff-delete-color: #ffc5ce;
+@diff-delete-linenum-color: #ebb1ba;
+
+// Insert lines
+@diff-insert-selected-color: #9ae298;
+@diff-insert-color: #c5ffc4;
+@diff-insert-linenum-color: #b1ebb0;
+
+// Replace lines
+@diff-replace-selected-color: #e2e179;
+@diff-replace-color: #fdfebc;
+@diff-replace-linenum-color: #e9eaa8;
+
+// Revisions selector
+@revisions-border-color: #999999;
+@revisions-hover-color: #E7E0A2;
+@revisions-hover-border-color: #003366;
+@revisions-text-color: black;
+
+// Pagination
+@paginate-border-color: #DDDDDD;
+@paginate-bg-color: #417690;
+@paginate-text-color: #f4f379;
+
+
+.sidebyside {
+  background: white;
+  border: 1px @diff-border-color solid;
+  border-collapse: collapse;
+  margin: 2px;
+  padding: 2px;
+  width: 100%;
+
+  &.diff-error {
+    td {
+      background: #fff6a6;
+      padding: 6px;
+
+      a {
+        color: blue;
+        font-weight: bold;
+      }
+    }
+
+    .error-details {
+      display: none;
+    }
+  }
+
+  &.newfile {
+    col {
+      &.left {
+        border-right: 1px @diff-border-color solid;
+        width: 0%;
+      }
+
+      &.right {
+        width: 100%;
+      }
+    }
+  }
+
+  a {
+    color: black;
+    text-decoration: none;
+  }
+
+  col {
+    &.left {
+      border-right: 1px @diff-border-color solid;
+      width: 50%;
+    }
+
+    &.right {
+      width: 50%;
+    }
+
+    &.line {
+      border-right: 1px @diff-border-color solid;
+      width: 1%; /* Make sure this doesn't stretch if the header stretches. */
+    }
+  }
+
+  pre {
+    .pre-wrap;
+    font-size: 8pt;
+    line-height: 140%;
+    margin: 0;
+  }
+
+  .moved-to, .moved-from {
+    background-color: @diff-moved-bg-color;
+    background-image: url("../images/moved_bg.png");
+    background-position: top left;
+    background-repeat: repeat-x;
+    border: 1px @diff-moved-border-color solid;
+    display: block;
+    float: left;
+    padding: 0px 1em;
+  }
+
+  .moved-to {
+    float: right;
+    .border-radius(8px, 0, 0, 8px);
+  }
+
+  .moved-from {
+    .border-radius(0px, 8px, 8px, 0);
+  }
+
+  tbody {
+    tr {
+      &.selected * { background: @diff-selected-color; }
+
+      &.first {
+        td, th {
+          border-top: 1px @diff-line-border-color solid;
+        }
+      }
+
+      &.last {
+        td, th {
+          border-bottom: 1px @diff-line-border-color solid;
+        }
+      }
+
+      td {
+        vertical-align: top;
+      }
+
+      th {
+        background: @diff-linenum-color;
+        padding-left: 1em;
+        text-align: right;
+        vertical-align: top;
+      }
+    }
+
+    &.whitespace-file {
+      display: none;
+    }
+
+    &.binary td,
+    &.deleted td,
+    &.whitespace-file td {
+      background: #dbebff;
+      padding: 4px;
+    }
+
+    &.delete {
+      tr {
+        &.selected * { background: @diff-delete-selected-color; }
+        td { background: @diff-delete-color; }
+        th { background: @diff-delete-linenum-color; }
+      }
+    }
+
+    &.insert {
+      tr {
+        &.selected * { background: @diff-insert-selected-color; }
+        td { background: @diff-insert-color; }
+        th { background: @diff-insert-linenum-color; }
+      }
+    }
+
+    &.replace {
+      tr {
+        &.selected * { background: @diff-replace-selected-color; }
+
+        td { background: @diff-replace-color; }
+        th { background: @diff-replace-linenum-color; }
+      }
+
+      &.dimmed {
+        background: #FFFFFF;
+
+        .hl { background: #FFFFFF; }
+        th { background: #F0F0F0; }
+      }
+
+      .hl { background: #eff23d; }
+    }
+
+    &.diff-header {
+      a {
+        text-decoration: underline;
+        color: black;
+      }
+
+      td {
+        background: @diff-header-color;
+        font-size: x-small;
+        text-align: center;
+      }
+
+      th { background: @diff-header-color; }
+    }
+  }
+
+  thead {
+    th {
+      background: @diff-file-color;
+      border-bottom: 1px @diff-border-color solid;
+      font-size: 120%;
+      font-weight: bold;
+      padding: 4px 8px;
+      text-align: left;
+      text-overflow: ellipsis;
+
+      &.rev {
+        font-size: 100%;
+      }
+    }
+  }
+
+  thead th.controls,
+  th.controls {
+    font-size: 100%;
+    font-weight: normal;
+    padding: 2px 0 2px 2px;
+    vertical-align: top;
+  }
+
+  .commentflag {
+    .border-radius(@comment-flag-border-radius);
+    height: 20px;
+    left: -0.7em;
+    margin-top: -0.3em;
+    position: absolute;
+    width: 1.6em;
+  }
+
+  .commentflag-shadow {
+    .border-radius(@comment-flag-border-radius);
+    .opacity(10);
+    background-color: black;
+    border: 1px solid black;
+    bottom: 0;
+    left: 0.2em;
+    position: absolute;
+    right: 0;
+    top: 0.2em;
+    width: 100%;
+  }
+
+  .commentflag-inner {
+    .border-radius(@comment-flag-border-radius);
+    .opacity(95);
+    background-color: @comment-flag-color;
+    border: 1px solid @comment-flag-border-color;
+    bottom: 0.2em;
+    cursor: pointer;
+    font-size: 90%;
+    font-weight: normal;
+    left: 0;
+    line-height: 1.7em;
+    position: absolute;
+    right: 0.2em;
+    text-align: center;
+    top: 0;
+    vertical-align: top;
+    width: 100%;
+    z-index: 900;
+
+    span {
+      background: transparent !important;
+    }
+  }
+}
+
+.selected .commentflag .commentflag-inner {
+  background-color: @comment-flag-color;
+}
+
+.selected .commentflag .commentflag-inner,
+.commentflag .commentflag-inner:hover {
+  background-color: @comment-flag-hover-color;
+}
+
+.commentflag.draft .commentflag-inner {
+  background-color: @comment-flag-draft-color;
+  border-color: @comment-flag-draft-border-color;
+}
+
+.selected .commentflag.draft .commentflag-inner,
+.commentflag.draft .commentflag-inner:hover {
+  background-color: @comment-flag-draft-hover-color;
+}
+
+.ghost-commentflag {
+  cursor: pointer;
+  position: absolute;
+  left: 0.1em;
+  margin-top: -0.1em;
+  height: 21px;
+
+  .commentflag-inner {
+    background-color: @comment-flag-ghost-color;
+    border-color: @comment-flag-ghost-border-color;
+  }
+}
+
+#diffs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /* Allows highlight chunks to be absolute relative to this. */
+  position: relative;
+
+  div.index ol {
+    margin-bottom: 20px;
+    padding-left: 30px;
+  }
+
+  .sidebyside {
+    margin-bottom: 20px;
+  }
+
+  .diff-highlight-border {
+    background-color: black;
+    display: block;
+    font-size: 0; /* Prevents the 13px minimum height in IE6 */
+    width: 2px;
+    height: 2px;
+  }
+}
+
+ol.index li {
+  padding: 2px 0;
+
+  a.dimmed {
+    color: #ABABAB;
+  }
+}
+
+
+/****************************************************************************
+ * Diff information
+ ****************************************************************************/
+#diff-details {
+  border-spacing: 8px;
+  border-top: 1px #c2c1b0 solid;
+  margin-top: 20px;
+  padding: 5px 0px;
+  width: 100%;
+}
+
+.revision-selector {
+  margin-bottom: 6px;
+
+  th {
+    padding: 4px 6px;
+    text-align: right;
+    vertical-align: bottom;
+    margin: 4px;
+  }
+
+  .revisions {
+    padding: 0;
+
+    a {
+      border: 1px @revisions-border-color solid;
+      color: @revisions-text-color;
+      padding: 2px 6px;
+      text-decoration: none;
+
+      &:hover {
+        background: @revisions-hover-color;
+        border-color: @revisions-hover-border-color;
+        color: @revisions-text-color;
+      }
+
+      &:visited {
+        color: @revisions-text-color;
+      }
+    }
+
+    .current {
+      font-weight: bold;
+      padding: 2px 6px;
+    }
+  }
+}
+
+
+/****************************************************************************
+ * Pagination
+ ****************************************************************************/
+.paginate-previous,
+.paginate-next,
+.paginate-link,
+.paginate-current {
+  padding: 2px 4px;
+  border: 1px solid @paginate-border-color;
+}
+
+.paginate-current {
+  background: @paginate-bg-color;
+  color: @paginate-text-color;
+  font-weight: bold;
+}
+
+// vim: set et ts=2 sw=2:

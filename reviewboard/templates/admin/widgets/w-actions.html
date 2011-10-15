@@ -13,9 +13,9 @@
 {% enddefinevar %}
 
 {% if show_sidebar %}
-<div class="admin-widget admin-sidebar">
+<div class="admin-widget admin-sidebar" id="widget-sys-settings">
   <h1 class="widget-heading">{% trans "System Settings" %}</h1>
-  <div class="widget-content widget-sys-settings">
+  <div class="widget-content">
      <ul>
       {% admin_subnav "settings-general" _("General") %}
       {% admin_subnav "settings-authentication" _("Authentication") %}
@@ -28,29 +28,29 @@
   </div>
 </div>
 
-<div class="admin-widget admin-sidebar">
+<div class="admin-widget admin-sidebar" id="widget-manage">
   <h1 class="widget-heading">{% trans "Manage" %}</h1>
-  <div class="widget-content widget-manage action-box">
+  <div class="widget-content action-box">
   <table summary="{% trans "Common management operations." %}">
    <tbody>
     <tr>
      <th scope="row"><a href="/admin/db/auth/user/">{% trans "Users" %}</a></th>
-     <td class="td-count">{{count_users}}</td>
+     <td class="count">{{count_users}}</td>
      <td width="40" class="td-right"><a class="addlink" href="/admin/db/auth/user/add/">{% trans "Add" %}</a></td>
     </tr>
     <tr>
       <th scope="row"><a href="/admin/db/reviews/group/">{% trans "Review Groups" %}</a></th>
-      <td class="td-count">{{count_review_groups}}</td>
+      <td class="count">{{count_review_groups}}</td>
       <td class="td-right"><a class="addlink" href="/admin/db/reviews/group/add/">{% trans "Add" %}</a></td>
     </tr>
     <tr>
       <th scope="row"><a href="/admin/db/reviews/defaultreviewer/">{% trans "Default Reviewers" %}</a></th>
-      <td class="td-count">{{count_default_reviewers}}</td>
+      <td class="count">{{count_default_reviewers}}</td>
       <td class="td-right"><a class="addlink" href="/admin/db/reviews/defaultreviewer/add/">{% trans "Add" %}</a></td>
     </tr>
     <tr>
        <th scope="row"><a href="/admin/db/scmtools/repository/">{% trans "Repositories" %}</a></th>
-       <td class="td-count">{{count_repository}}</td>
+       <td class="count">{{count_repository}}</td>
        <td class="td-right"><a class="addlink" href="/admin/db/scmtools/repository/add/">{% trans "Add" %}</a></td>
     </tr>
    </tbody>
@@ -58,9 +58,9 @@
   </div>
 </div>
 
-<div class="admin-widget admin-sidebar">
+<div class="admin-widget admin-sidebar" id="widget-system-info">
  <h1 class="widget-heading">{% trans "System Information" %}</h1>
- <div class="widget-content admin-box widget-system-info action-box">
+ <div class="widget-content admin-box action-box">
   <ul>
    <li><a href="/admin/cache/">{% trans "Server Cache" %}
 {% if has_cache_stats %}
