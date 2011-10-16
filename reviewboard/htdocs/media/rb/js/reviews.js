@@ -1090,7 +1090,7 @@ $.fn.commentDlg = function() {
     this.open = function(fromEl) {
         this
             .css({
-                top: parseInt(this.css("top")) - SLIDE_DISTANCE,
+                top: parseInt(this.css("top"), 10) - SLIDE_DISTANCE,
                 opacity: 0
             })
             .show()

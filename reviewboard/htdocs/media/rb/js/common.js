@@ -224,7 +224,7 @@ $.fn.toggleStar = function() {
             }
         }
 
-        var on = (parseInt(self.attr("data-starred")) == 1) ? 0 : 1;
+        var on = (parseInt(self.attr("data-starred"), 10) == 1) ? 0 : 1;
         obj.setStarred(on);
         self.data("rb.obj", obj);
 
