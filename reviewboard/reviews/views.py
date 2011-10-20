@@ -381,6 +381,7 @@ def review_detail(request,
                 # We don't hard-code URLs in the bug info, since the
                 # tracker may move, but we can do it here.
                 if (name == "bugs_closed" and
+                    review_request.repository and
                     review_request.repository.bug_tracker):
                     bug_url = review_request.repository.bug_tracker
                     for field in info:
