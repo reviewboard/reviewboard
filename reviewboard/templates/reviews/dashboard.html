@@ -41,7 +41,7 @@
 {% endif %}
 {% dashboard_entry "main-item" "All My Requests" "mine" %}
 {% for hook in sidebar_hooks %}
-{%  for main_entry in hook.get_entries %}
+{%  for main_entry in hook.entries %}
 {%   dashboard_entry "main-item" main_entry.label "url" main_entry.url %}
 {%   for sub_entry in main_entry.subitems %}
 {%    dashboard_entry "sub-item" sub_entry.label "url" sub_entry.url %}

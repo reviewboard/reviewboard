@@ -2,11 +2,11 @@
 {% load i18n %}
 
 <li>
-  <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.title}}<img src="{{MEDIA_URL}}rb/images/dropdown.png?{{MEDIA_SERIAL}}" width="7" height="5" border="0" alt="" /></a>
-  <ul class="menu" style="display: none;">
-{% for action in actions.options %}
-  {% include "extensions/action.html" %}
+ <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.label}}<img src="{{MEDIA_URL}}rb/images/dropdown.png?{{MEDIA_SERIAL}}" width="7" height="5" border="0" alt="" /></a>
+ <ul class="menu" style="display: none;">
+{% for action in actions.items %}
+ {% include "extensions/action.html" %}
 {% endfor %}
-  </ul>
+ </ul>
 </li>
 

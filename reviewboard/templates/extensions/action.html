@@ -1,2 +1,2 @@
 {% load djblets_utils %}
- <li><a{% attr "id" %}{{action.id}}{% endattr %} {% if action.uri|startswith:"javascript:" %}href="#" onClick="{{action.uri}}"{% else %}href="{{action.uri}}"{% endif %}>{% if action.image %}<img src="{{action.image}}" width="{{image.width}}" height="{{image.height}}" border="0" alt="" />{% endif %}{{action.label}}</a></li>
+ <li><a{% attr "id" %}{{action.id}}{% endattr %} href="{{action.url}}">{% if action.image %}<img src="{{action.image}}" width="{{action.image_width}}" height="{{action.image_height}}" border="0" alt="" />{% endif %}{{action.label}}</a></li>

@@ -18,17 +18,16 @@ def action_hooks(context, hookcls, action_key="action",
     s = ""
 
     for hook in hookcls.hooks:
-        action_info = hook.get_action_info(context)
+        for actions in hook.get_actions(context):
+            if actions:
+                new_context = {
+                    'MEDIA_URL': settings.MEDIA_URL,
+                    'MEDIA_SERIAL': settings.MEDIA_SERIAL,
+                    action_key: actions
+                }
+                context.update(new_context)
 
-        if action_info:
-            new_context = {
-                'MEDIA_URL': settings.MEDIA_URL,
-                'MEDIA_SERIAL': settings.MEDIA_SERIAL,
-                action_key: action_info
-            }
-            context.update(new_context)
-
-            s += render_to_string(template_name, new_context)
+                s += render_to_string(template_name, new_context)
 
     return s
 
@@ -64,14 +63,11 @@ def navigation_bar_hooks(context):
     s = ""
 
     for hook in NavigationBarHook.hooks:
-        nav_info = hook.get_entry(context)
-
-        if nav_info:
-            new_context = {
-                'entry': nav_info,
-            }
-            new_context.update(context)
-
-            s += render_to_string("extensions/navbar_entry.html", new_context)
+        for nav_info in hook.get_entries(context):
+            if nav_info:
+                context.push()
+                context['entry'] = nav_info
+                s += render_to_string("extensions/navbar_entry.html", context)
+                context.pop()
 
     return s
