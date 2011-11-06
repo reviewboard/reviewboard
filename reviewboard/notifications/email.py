@@ -124,6 +124,10 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
         headers['Reply-To'] = from_email
 
+        # Mark the mail as 'auto-generated' (according to RFC 3834) to
+        # hopefully avoid auto replies.
+        headers['Auto-Submitted'] = 'auto-generated'
+
         super(SpiffyEmailMessage, self).__init__(subject, text_body,
                                                  from_email, to,
                                                  headers=headers)
