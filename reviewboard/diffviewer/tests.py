@@ -16,11 +16,11 @@ class MyersDifferTest(TestCase):
         """Testing myers differ"""
         self.__test_diff(["1", "2", "3"],
                          ["1", "2", "3"],
-                         [("equal", 0, 3, 0, 3),])
+                         [("equal", 0, 3, 0, 3), ])
 
         self.__test_diff(["1", "2", "3"],
                          [],
-                         [("delete", 0, 3, 0, 0),])
+                         [("delete", 0, 3, 0, 0), ])
 
         self.__test_diff("1\n2\n3\n",
                          "0\n1\n2\n3\n",
@@ -33,7 +33,6 @@ class MyersDifferTest(TestCase):
                           ("replace", 4, 5, 4, 5),
                           ("insert",  5, 5, 5, 9),
                           ("equal",   5, 8, 9, 12)])
-
 
     def __test_diff(self, a, b, expected):
         opcodes = list(diffutils.MyersDiffer(a, b).get_opcodes())
@@ -284,7 +283,6 @@ class DiffParserTest(unittest.TestCase):
         regions = diffutils.get_line_changed_regions(old, new)
         deepEqual(regions, ([(30, 36)], [(30, 34)]))
 
-
         old = '-from reviews.models import ReviewRequest, Person, Group'
         new = '+from .reviews.models import ReviewRequest, Group'
         regions = diffutils.get_line_changed_regions(old, new)
@@ -336,7 +334,6 @@ class DiffParserTest(unittest.TestCase):
             self.assertTrue(i in r_moves[0])
             self.assertEqual(i_moves[0][j], i)
             self.assertEqual(r_moves[0][i], j)
-
 
     def _get_file(self, *relative):
         f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))
@@ -411,6 +408,7 @@ class HighlightRegionTest(TestCase):
 class DbTests(TestCase):
     """Unit tests for database operations."""
     fixtures = ['test_scmtools.json']
+    PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
     def testLongFilenames(self):
         """Testing using long filenames (1024 characters) in FileDiff."""
@@ -427,3 +425,26 @@ class DbTests(TestCase):
 
         filediff = FileDiff.objects.get(pk=filediff.id)
         self.assertEquals(filediff.source_file, long_filename)
+
+    def testDiffHashes(self):
+        """
+        Testing that uploading two of the same diff will result in only
+        one database entry.
+        """
+        repository = Repository.objects.get(pk=1)
+        diffset = DiffSet.objects.create(name='test',
+                                         revision=1,
+                                         repository=repository)
+        f = open(os.path.join(self.PREFIX, "diffs", "context", "foo.c.diff"),
+                 "r")
+        data = f.read()
+        f.close()
+
+        filediff1 = FileDiff(diff=data,
+                             diffset=diffset)
+        filediff1.save()
+        filediff2 = FileDiff(diff=data,
+                             diffset=diffset)
+        filediff2.save()
+
+        self.assertEquals(filediff1.diff_hash, filediff2.diff_hash)
