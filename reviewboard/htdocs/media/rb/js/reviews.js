@@ -842,6 +842,14 @@ $.fn.floatReplyDraftBanner = function() {
                 return;
             }
 
+            /*
+             * Something about the below causes the "Publish" button to never
+             * show up on IE8. Turn it into a fixed box on IE.
+             */
+            if ($.browser.msie) {
+                return;
+            }
+
             if (floatSpacer == null) {
                 floatSpacer = self.wrap($("<div/>")).parent();
                 updateSize();
