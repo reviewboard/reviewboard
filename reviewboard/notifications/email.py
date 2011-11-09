@@ -98,9 +98,6 @@ def get_email_addresses_for_group(g):
 class SpiffyEmailMessage(EmailMultiAlternatives):
     """An EmailMessage subclass with improved header and message ID support.
 
-    Django's pre-1.3 EmailMessage class doesn't natively support CC addresses.
-    While added in 1.3, we still need to have this support for older versions.
-
     This also knows about several headers (standard and variations),
     including Sender/X-Sender, In-Reply-To/References, and Reply-To.
 
@@ -114,9 +111,6 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
         if sender:
             headers['Sender'] = sender
             headers['X-Sender'] = sender
-
-        if cc:
-            headers['Cc'] = ','.join(cc)
 
         if in_reply_to:
             headers['In-Reply-To'] = in_reply_to
