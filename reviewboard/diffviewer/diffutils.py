@@ -1,3 +1,4 @@
+from __future__ import with_statement
 import fnmatch
 import os
 import re
