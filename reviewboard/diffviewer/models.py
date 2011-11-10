@@ -58,8 +58,7 @@ class FileDiff(models.Model):
     def deleted(self):
         return self.status == 'D'
 
-    @property
-    def diff(self):
+    def _get_diff(self):
         # If the diff is not in FileDiffData, it is in FileDiff.
         if not self.diff_hash:
             return self.diff64
@@ -67,15 +66,7 @@ class FileDiff(models.Model):
             # Data exists in FileDiffData, retrieve it.
             return self.diff_hash.binary
 
-    @property
-    def parent_diff(self):
-        if not self.parent_diff_hash:
-            return self.parent_diff64
-        else:
-            return self.parent_diff_hash.binary
-
-    @diff.setter
-    def diff(self, diff):
+    def _set_diff(self, diff):
         hashkey = self._hash_hexdigest(diff)
 
         # Add hash to table if it doesn't exist, and set diff_hash to this.
@@ -83,8 +74,15 @@ class FileDiff(models.Model):
             binary_hash=hashkey, defaults={'binary': diff})
         self.diff64 = ""
 
-    @parent_diff.setter
-    def parent_diff(self, parent_diff):
+    diff = property(_get_diff, _set_diff)
+
+    def _get_parent_diff(self):
+        if not self.parent_diff_hash:
+            return self.parent_diff64
+        else:
+            return self.parent_diff_hash.binary
+
+    def _set_parent_diff(self, parent_diff):
         if parent_diff != "":
             hashkey = self._hash_hexdigest(parent_diff)
 
@@ -92,6 +90,8 @@ class FileDiff(models.Model):
             self.parent_diff_hash, is_new = FileDiffData.objects.get_or_create(
                 binary_hash=hashkey, defaults={'binary': diff})
             self.parent_diff64 = ""
+
+    parent_diff = property(_get_parent_diff, _set_parent_diff)
 
     def _hash_hexdigest(self, diff):
         hasher = hashlib.sha1()
