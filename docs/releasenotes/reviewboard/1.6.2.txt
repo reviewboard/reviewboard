@@ -1,0 +1,101 @@
+================================
+Review Board 1.6.2 Release Notes
+================================
+
+**Release date**: November 9, 2011
+
+
+New Features
+============
+
+* Staff members can now access all Local Sites.
+
+  Server administrators can now view content on all Local Sites, instead of
+  only the ones they're a part of.
+
+* Auto-generated e-mails are now marked as "auto-generated" to avoid auto
+  replies.
+
+  This is recommended as per :rfc:`3834`. Patch by Erik Johansson.
+
+
+API Changes
+===========
+
+* Added API for deleting review groups.
+
+  Issuing a HTTP DELETE on a review group in the API will now delete that
+  group if the caller has the appropriate permissions.
+
+* Allow for archiving repositories.
+
+  Updating a repository and passing ``archive_name=<value>`` will change
+  the repository's name to an auto-generated, archived name. This is useful
+  when deprecating a repository, and will prevent name clashes in the
+  future.
+
+
+Bug Fixes
+=========
+
+* Fixed the default Apache WSGI configuration for subdirectory installs.
+
+  The default WSGI configuration had a WSGIScriptAlias setting that didn't
+  work quite right for many users. Now, newly generated files should have a
+  better default that works out of the box.
+
+* Added explicit permisisions in the default Apache configurations.
+
+  Depending on the default server configuration, several bits of media may
+  break. We're now explicit in the configuration we need.
+
+* The favicon for the page is now properly switching to the "New Updates"
+  favicon on all browsers when there are review request updates.
+
+* Specifying bug numbers on review requests without a repository no longer
+  fails. (:bug:`2333`).
+
+* Fixed saving captions for newly added screenshots and files.
+
+* Fixed using special characters in SVN URLs.
+
+  If an SVN URL contained any special characters (such as most Unicode
+  characters), posting a review request would fail. The characters are now
+  handled sanely. Patch by Ralph Habermann.
+
+* Fixed Bazaar when pointing to a repository root that exists on the local
+  filesystem. Patch by Michael Plump.
+
+* Clicking Cancel on an "Add comment" box now fully removes the box, instead
+  of leaving a bit of it behind.
+
+* Fixed dashboard counters for brand new review requests on Local Sites.
+
+* Group names in the dashboard are now ordered by name in the sidebar.
+
+* Fixed a hard-coded media URL for the "Expand All" button.
+
+  This would fail on subdirectory installations. Patch by Chris Tandiono.
+  (:bug:`2343`)
+
+* Fixed a problem with IE8 where the "Publish" button on comment dialogs
+  weren't being shown.
+
+* Fixed API authentication failures when ``:`` was in the password.
+  Patch by Dave Druska. (:bug:`2334`)
+
+
+Contributors
+============
+
+* Ben Hollis
+* Christian Hammond
+* Chris Tandiono
+* Dave Druska
+* David Trowbridge
+* Erik Johansson
+* Michael Plump
+* Ralph Habermann
+
+
+.. comment: vim: ft=rst et
