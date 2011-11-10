@@ -36,7 +36,7 @@ def init_evolutions(app, created_models, **kwargs):
         # marked the schemas as being up to date in the stored signature.
         try:
             # If this succeeds, we're good.
-            FileDiff.objects.filter(parent_diff="")
+            FileDiff.objects.filter(parent_diff64="")
 
             return
         except:
