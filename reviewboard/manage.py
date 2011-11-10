@@ -11,7 +11,7 @@ sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
 try:
     import settings  # Assumed to be in the same directory.
-except ImportError:
+except ImportError, e:
     sys.stderr.write("Error: Can't find the file 'settings.py' in the "
                      "directory containing %r. It appears you've "
                      "customized things.\n"
@@ -19,6 +19,7 @@ except ImportError:
                      "settings module.\n"
                      "(If the file settings.py does indeed exist, it's causing"
                      " an ImportError somehow.)\n" % __file__)
+    sys.stderr.write("The error we got was: %s\n" % e)
     sys.exit(1)
 
 from django.core.management import execute_manager, setup_environ
