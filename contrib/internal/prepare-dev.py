@@ -133,6 +133,7 @@ def main():
 
     if options.sync_db:
         print "Synchronizing database..."
+        site.abs_install_dir = os.getcwd()
         site.sync_database(allow_input=True)
 
     print
