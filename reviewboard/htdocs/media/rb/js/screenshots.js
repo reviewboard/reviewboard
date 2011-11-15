@@ -36,6 +36,9 @@ function CommentBlock(x, y, width, height, container, comments) {
         for (var i in comments) {
             var comment = comments[i];
 
+            // We load in encoded text, so decode it.
+            comment.text = $("<div/>").html(comment.text).text();
+
             if (comment.localdraft) {
                 this._createDraftComment(comment.text);
             } else {

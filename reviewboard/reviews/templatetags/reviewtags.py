@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.template import NodeList, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils import simplejson
+from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.misc import get_object_or_none
@@ -126,7 +127,7 @@ def commentcounts(context, filediff, interfilediff=None):
 
             comment_dict.setdefault(key, []).append({
                 'comment_id': comment.id,
-                'text': comment.text,
+                'text': escape(comment.text),
                 'line': comment.first_line,
                 'num_lines': comment.num_lines,
                 'user': {
@@ -185,7 +186,7 @@ def screenshotcommentcounts(context, screenshot):
 
             comments.setdefault(position, []).append({
                 'id': comment.id,
-                'text': comment.text,
+                'text': escape(comment.text),
                 'user': {
                     'username': review.user.username,
                     'name': review.user.get_full_name() or review.user.username,
