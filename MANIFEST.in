@@ -11,3 +11,4 @@ include COPYING
 include INSTALL
 include NEWS
 include README
+exclude settings_local.py

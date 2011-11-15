@@ -101,6 +101,19 @@ def clone_git_tree(git_dir):
     return new_git_dir
 
 
+def build_settings():
+    f = open('settings_local.py', 'w')
+    f.write('DATABASES = {\n')
+    f.write('    "default": {\n')
+    f.write('        "ENGINE": "django.db.backends.sqlite3",\n')
+    f.write('        "NAME": "reviewboard.db",\n')
+    f.write('    }\n')
+    f.write('}\n\n')
+    f.write('PRODUCTION = True\n')
+    f.write('DEBUG = False\n')
+    f.close()
+
+
 def build_targets():
     for pyver in PY_VERSIONS:
         run_setup("bdist_egg", pyver)
@@ -201,6 +214,7 @@ def main():
     cur_dir = os.getcwd()
     git_dir = clone_git_tree(cur_dir)
 
+    build_settings()
     build_targets()
     build_checksums()
     upload_files()
