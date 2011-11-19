@@ -40,7 +40,7 @@ try:
     Image.init()
 except ImportError:
     try:
-        from Image import Image
+        import Image
         Image.init()
     except ImportError:
         pass

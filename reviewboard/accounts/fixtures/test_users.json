@@ -29,9 +29,7 @@
             "is_staff": false, 
             "last_login": "2007-06-24 00:03:08", 
             "groups": [], 
-            "user_permissions": [
-                55
-            ], 
+            "user_permissions": [],
             "password": "sha1$3d041$6700c5db6c46bf90d3b3c2716f5b60fb30ede072", 
             "email": "doc@example.com", 
             "date_joined": "2007-06-24 00:03:08"
