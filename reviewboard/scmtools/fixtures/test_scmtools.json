@@ -114,5 +114,17 @@
             "tool": 1, 
             "users": []
         }
-    }
+    },
+	{
+		"pk": "5",
+		"model": "scmtools.repository",
+		"fields": {
+			"username": "",
+			"name": "Test HG",
+			"tool": 4,
+			"bug_tracker": "",
+			"path": "scmtools/testdata/hg_repo",
+			"password": ""
+		}
+	}
 ]
