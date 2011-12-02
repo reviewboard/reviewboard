@@ -1110,25 +1110,41 @@
  ****************************************************************************/
 
 .issue-summary {
-  font-size: 13px;
-  font-weight: bold;
   display: inline;
   float: left;
+  font-size: 13px;
+  font-weight: bold;
 }
 
-.issue-open td {
-  background-color: #FFF47C;
-  border-color: #A89C00;
-}
+.issue {
+  .status {
+    border-right-width: 1px;
+  }
 
-.issue-dropped td {
-  background-color: #EAEAEA;
-  border-color: #D0D0D0;
-}
+  .summary-table-description {
+    border-left-width: 1px;
+  }
 
-.issue-resolved td {
-  background-color: transparent;
-  border-color: transparent;
+  &.open {
+    td {
+      background-color: @light-yellow;
+      border-color: @dark-yellow;
+    }
+  }
+
+  &.dropped {
+    td {
+      background-color: @light-grey;
+      border-color: @grey;
+    }
+  }
+
+  &.resolved {
+    td {
+      background-color: transparent;
+      border-color: #EEE;
+    }
+  }
 }
 
 .issue-table {
@@ -1136,7 +1152,7 @@
   margin: 5px 10px;
   padding: 5px 5px;
   font-size: 12px;
-  border-spacing: 0px 2px;
+  border-spacing: 0;
 
   tr {
     margin: 5px 0px;
@@ -1151,17 +1167,29 @@
       border-style: solid;
       padding: 1px 5px;
     }
+
+    &:hover td {
+      background-color: @light-blue;
+      border-color: @dark-blue;
+    }
   }
 
-  .description a {
+  .summary-table-description a {
+    display: block;
     text-decoration: None;
     color: #000;
+    width: 100%;
+  }
+
+  .status {
+    text-align: center;
   }
 }
 
 .counters {
-  text-align: right;
   font-size: 12px;
+  padding: 2px 4px;
+  text-align: right;
 }
 
 // vim: set et ts=2 sw=2:

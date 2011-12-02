@@ -2558,6 +2558,19 @@ $(document).ready(function() {
     }
 
     loadDiffFragments("diff_fragments", "comment_container");
+
+    $(".summary-table-description").click(function() {
+        /*
+         * Extract the href attribute and remove the leading
+         * '#', then attach '#comment-' and '-issue' to
+         * find the comment's location. Then find the
+         * closest box class and uncollapse it.
+         */
+        var issueId = '#comment-' +
+                      $(this).find("a.summary-anchor").attr("href").slice(1) +
+                      '-issue';
+        $(issueId).closest(".box").removeClass("collapsed");
+    });
 });
 
 // vim: set et:sw=4:
