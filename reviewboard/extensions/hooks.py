@@ -5,8 +5,8 @@ import djblets.extensions.hooks as djblets_hooks
 class DashboardHook(ExtensionHook):
     __metaclass__ = ExtensionHookPoint
 
-    def __init__(self, entries=[], *args, **kwargs):
-        super(DashboardHook, self).__init__(*args, **kwargs)
+    def __init__(self, extension, entries=[], *args, **kwargs):
+        super(DashboardHook, self).__init__(extension, *args, **kwargs)
         self.entries = entries
 
 
