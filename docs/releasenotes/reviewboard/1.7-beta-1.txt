@@ -1,0 +1,103 @@
+=====================================
+Review Board 1.7 Beta 1 Release Notes
+=====================================
+
+**Release date**: TBD
+
+
+New Features
+============
+
+* Experimental extension support.
+
+  Review Board 1.7 has experimental support for custom extensions. These can
+  augment the functionality of Review Board by providing new pages, custom
+  operations when actions take place, new review UIs, new REST API, new
+  review request actions, new administration UI widgets, and more.
+
+  Extensions have full access to the functions within Review Board, and can
+  even provide their own database models for tracking data.
+
+  This is a very experimental feature. We welcome people to play with it,
+  but note that it is very likely that your extension will break between
+  releases, depending on which APIs you rely upon. We don't intend for the
+  entire Review Board codebase to be used as a stable API. We will in time
+  document a stable API that can be relied upon.
+
+  This was the work of many developers and contributors. In particular,
+  Mike Conley led a lot of the effort into getting this feature ready.
+
+* New administration UI.
+
+  The administration UI has been totally rewritten from the ground up. It's
+  now cleaner, provides more useful information at a glance, and is
+  extensible. The general look now fits in with the look of Review Board.
+
+  The new UI consists of several widgets that flow onto the page. Each widget
+  can describe a bit of information. The built-in widgets provide graphs
+  of user activity, caching, and more.
+
+  Some of the main settings are also listed on the side, for quick reference.
+
+  Patch by Vlad Filippov.
+
+* Issue summary table for review requests.
+
+  The issue summary shows what issues have been filed on a review request,
+  and their current states. Clicking on an issue will take you to the
+  appropriate spot in the review.
+
+  This makes it easy to see what still needs to be done when visiting
+  a review request.
+
+  Patch by Yazan Medanat.
+
+* Easy addition of Django installed apps in :file:`settings_local.py`.
+
+  A site's :file:`settings_local.py` can now provide additional Django
+  app modules to load in by setting the ``RB_EXTRA_APPS`` list to a list of
+  module names. Patch by Stephen Gallagher.
+
+
+Removed Features
+================
+
+* The hidden reports feature (accessible at ``/reports/``) has been removed.
+  The goal is to replace this with a more useful extension.
+
+
+Performance Improvements
+========================
+
+* Reduced download time of JavaScript and CSS.
+
+  All JavaScript and CSS files are now combined and minified. This reduces
+  the number of downloads and the total download time by a considerable
+  amount, making for a faster experience on an empty cache.
+
+* Reduced diff storage and lookups.
+
+  Any new per-file diffs uploaded will only be stored once in the database,
+  instead of per-upload. That is, if you upload two patches, and one of the
+  per-file diffs hasn't changed between the two, the diff will only be stored
+  once in the database. This should reduce database sizes from here on out,
+  but does not affect existing diffs.
+
+  Patch by Dave Druska.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Dave Druska
+* David Trowbridge
+* Jacob Farkas
+* Kahlil Almani
+* Kevin Quinn
+* Stephen Gallagher
+* Vlad Filippov
+* Yazan Medanat
+
+
+.. comment: vim: ft=rst et
