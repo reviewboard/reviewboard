@@ -40,13 +40,13 @@ class ReviewRequestDetailHook(ExtensionHook):
     __metaclass__ = ExtensionHookPoint
 
     def get_field_id(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_label(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_detail(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_wide(self):
         """Returns whether or not this detail spans multiple columns."""
