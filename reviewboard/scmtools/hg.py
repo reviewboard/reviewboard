@@ -215,7 +215,7 @@ class HgWebClient(object):
             raise FileNotFoundError(path, rev, str(e))
 
     def get_filenames(self, rev):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class HgClient(object):

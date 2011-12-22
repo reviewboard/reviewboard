@@ -4657,7 +4657,7 @@ class BaseReviewResource(WebAPIResource):
         return self.model.objects.filter(q)
 
     def get_base_reply_to_field(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def has_access_permissions(self, request, review, *args, **kwargs):
         return review.public or review.user == request.user

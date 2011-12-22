@@ -565,49 +565,49 @@ class UIToolkit(object):
         """
         Prompts the user for some text. This may contain a default value.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
         """
         Prompts the user for an item amongst a list of choices.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def text(self, page, text):
         """
         Displays a block of text to the user.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def disclaimer(self, page, text):
         """Displays a block of disclaimer text to the user."""
-        raise NotImplemented
+        raise NotImplementedError
 
     def urllink(self, page, url):
         """
         Displays a URL to the user.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def itemized_list(self, page, title, items):
         """
         Displays an itemized list.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def step(self, page, text, func):
         """
         Adds a step of a multi-step operation. This will indicate when
         it's starting and when it's complete.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def error(self, text, done_func=None):
         """
         Displays a block of error text to the user.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class ConsoleUI(UIToolkit):
