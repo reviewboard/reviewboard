@@ -41,10 +41,10 @@ class AuthBackend(object):
     supports_change_password = False
 
     def authenticate(self, username, password):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_or_create_user(self, username):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_user(self, user_id):
         return get_object_or_none(User, pk=user_id)
@@ -56,9 +56,9 @@ class AuthBackend(object):
         on the backend. This will only be called if
         :py:attr:`supports_change_password` is ``True``.
 
-        By default, this will raise NotImplemented.
+        By default, this will raise NotImplementedError.
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def update_name(self, user):
         """Updates the user's name on the backend.
