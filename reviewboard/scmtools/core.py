@@ -166,4 +166,4 @@ class SCMTool(object):
     @classmethod
     def accept_certificate(cls, path, local_site_name=None):
         """Accepts the certificate for the given repository path."""
-        raise NotImplemented
+        raise NotImplementedError

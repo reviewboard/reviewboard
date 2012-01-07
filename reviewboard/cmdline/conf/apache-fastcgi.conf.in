@@ -21,6 +21,8 @@
 
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
+		Options -Indexes FollowSymLinks
+		Allow from all
 	</Directory>
 
 	# Direct all other requests to the fastcgi server

@@ -42,7 +42,7 @@
   <!--[if lt IE 8.]>
   <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css?{{MEDIA_SERIAL}}"></script>
   <![endif]-->
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-1.3.2.min.js"></script>
+{% include "js/jquery.html" %}
 {% block scripts %}{% endblock %}
  </head>
 {% block bodytag %}
@@ -125,8 +125,8 @@
     </div>
    </div>
   </div>
+  {% include "js/jquery-ui.html" %}
   <script type="text/javascript" src="{{MEDIA_URL}}rb/js/datastore.js?{{MEDIA_SERIAL}}"></script>
-  <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery-ui-1.6rc5.min.js"></script>
   <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
   <script type="text/javascript" src="{{MEDIA_URL}}rb/js/ui.autocomplete.min.js?{{MEDIA_SERIAL}}"></script>
   <script type="text/javascript" src="{{MEDIA_URL}}rb/js/common.js?{{MEDIA_SERIAL}}"></script>

@@ -55,10 +55,10 @@ class PlatformHandler(object):
         self.channel = channel
 
     def shell(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def transfer(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def process_channel(self, channel):
         if channel.closed:

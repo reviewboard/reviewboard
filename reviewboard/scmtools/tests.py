@@ -927,7 +927,7 @@ class VMWareTests(SCMTestCase):
 
 class MercurialTests(SCMTestCase):
     """Unit tests for mercurial."""
-    fixtures = ['hg.json', 'test_scmtools.json']
+    fixtures = ['test_scmtools.json']
 
     def setUp(self):
         super(MercurialTests, self).setUp()
