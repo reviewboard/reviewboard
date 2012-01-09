@@ -27,10 +27,12 @@
 {%  if expected_data_dir != data_dir %}
  <h3>{% trans "Non-standard directory name used" %}</h3>
  <p>
+{% blocktrans %}
   The data directory is not where we expect it. Unless you have a very
   custom setup, it should probably be at <tt>{{expected_data_dir}}</tt>.
   You may need to set the <tt>$HOME</tt> environment variable in the data
   directory.
+{% endblocktrans %}
  </p>
 {%  endif %}
 {% endif %}
@@ -48,12 +50,23 @@
     SetEnv HOME "{{expected_data_dir}}"
 </pre>
  <p>
+{% blocktrans %}
   If using fastcgi or wsgi, you want to check the <tt>reviewboard.fcgi</tt> or
   <tt>reviewboard.wsgi</tt> file in your site's <tt>htdocs</tt> directory
   and add the following if missing:
+{% endblocktrans %}
  </p>
 <pre>
     os.environ['HOME'] = '{{expected_data_dir}}'
+</pre>
+<p>
+{% blocktrans %}
+  If you're running this on Windows, you need to add the 'HOME' variable
+  to your environment variables. Set <strong>HOME</strong> to:
+{% endblocktrans %}
+</p>
+<pre>
+    '{{expected_data_dir}}'
 </pre>
 {% endif %}
 
@@ -71,7 +84,7 @@
  <p>
 {% blocktrans %}
   On Windows, right-click the data directory and change the ownership to
-  <tt>{{server_user}}</tt>.
+  <tt>{{server_user}}</tt> and restart the server.
 {% endblocktrans %}
  </p>
 {% endif %}
