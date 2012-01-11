@@ -53,7 +53,15 @@ class osx_install_data(install_data):
 
 class BuildEggInfo(egg_info):
     def run(self):
-        self.run_command('build_media')
+        # Conditionally build the media files if there's a settings_local
+        # file. If there isn't one, we assume this is a new dev tree, in which
+        # prepare-dev hasn't been run yet.
+        #
+        # This is necessary since setup.py develop must be run before
+        # prepare-dev.py, but develop will call egg_info.
+        if os.path.exists('settings_local.py'):
+            self.run_command('build_media')
+
         egg_info.run(self)
 
 
