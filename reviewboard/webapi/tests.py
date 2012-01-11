@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import os
 
 from django.conf import settings
@@ -4051,12 +4052,15 @@ class ChangeResourceTests(BaseWebAPITestCase):
 
         r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        change1 = ChangeDescription(public=True)
+        now = datetime.now()
+        change1 = ChangeDescription(public=True,
+                                    timestamp=now)
         change1.record_field_change('summary', 'foo', 'bar')
         change1.save()
         r.changedescs.add(change1)
 
-        change2 = ChangeDescription(public=True)
+        change2 = ChangeDescription(public=True,
+                                    timestamp=now + timedelta(seconds=1))
         change2.record_field_change('description', 'foo', 'bar')
         change2.save()
         r.changedescs.add(change2)
