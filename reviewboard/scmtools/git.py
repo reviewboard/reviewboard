@@ -358,8 +358,15 @@ class GitClient(object):
 
             # First, try to grab the file remotely.
             try:
+                # We want to make sure we can access the file successfully,
+                # without any HTTP errors. A successful access means the file
+                # exists. The contents themselves are meaningless, so ignore
+                # them. If we do successfully get the file without triggering
+                # any sort of exception, then the file exists.
                 url = self._build_raw_url(path, revision)
-                return self._get_file(url)
+                self._get_file(url)
+
+                return True
             except urllib2.HTTPError, e:
                 if e.code != 404:
                     logging.error("Git: HTTP error code %d when fetching "

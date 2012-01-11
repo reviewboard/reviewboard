@@ -41,7 +41,7 @@ Diffs{% if changes and changes.diff %} (updated){% endif %}
 {% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
   {{ filediff.source_file }} {{ filediff.source_revision }} {% endfor %}
 
-Diff: {{domain_method}}://{{domain}}{% url view_diff review_request.display_id %}diff
+Diff: {{domain_method}}://{{domain}}{% url view_diff review_request.display_id %}
 
 
 Testing{% if changes and changes.testing_done %} (updated){% endif %}
