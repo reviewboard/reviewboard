@@ -71,7 +71,8 @@ class UserEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(email.subject,
                          "New Review Board user registration for NewUser")
 
-        self.assertEqual(email.from_email, settings.SERVER_EMAIL)
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
         self.assertEqual(email.to[0], build_email_address(admin_name,
                                                           admin_email_addr))
 
@@ -101,7 +102,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         from_email = get_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].from_email, from_email)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Review Request: Made e-mail improvements")
         self.assertValidRecipients(["grumpy", "doc"], [])
@@ -129,7 +131,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         from_email = get_email_address_for_user(review.user)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].from_email, from_email)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Re: Review Request: Add permission checking " +
                          "for JSON API")
@@ -159,7 +162,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         from_email = get_email_address_for_user(reply.user)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].from_email, from_email)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Re: Review Request: Add permission checking " +
                          "for JSON API")
@@ -178,7 +182,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         from_email = get_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].from_email, from_email)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          "Re: Review Request: Update for cleaned_data changes")
         self.assertValidRecipients(["dopey", "doc"], ["devgroup"])
