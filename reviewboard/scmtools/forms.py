@@ -676,9 +676,14 @@ class RepositoryForm(forms.ModelForm):
 
         scmtool_class = tool.get_scmtool_class()
 
-        path = self.cleaned_data['path']
+        path = self.cleaned_data.get('path', '')
         username = self.cleaned_data['username']
         password = self.cleaned_data['password']
+
+        if not path:
+            self._errors['path'] = self.error_class(
+                ['Repository path cannot be empty'])
+            return
 
         local_site_name = None
 
