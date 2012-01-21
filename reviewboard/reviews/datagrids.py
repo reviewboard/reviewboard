@@ -205,6 +205,27 @@ class MyCommentsColumn(Column):
                  self.image_height, image_alt, image_alt)
 
 
+class ToMeColumn(Column):
+    """
+    A column used to indicate whether the current logged-in user is targeted
+    by the review request.
+    """
+    def __init__(self, *args, **kwargs):
+        Column.__init__(self, *args, **kwargs)
+        self.label = u"\u00BB"  # this is &raquo;
+        self.detailed_label = u"\u00BB To Me"
+        self.shrink = True
+
+    def render_data(self, review_request):
+        user = self.datagrid.request.user
+        if (user.is_authenticated() and
+            review_request.target_people.filter(pk=user.pk).exists()):
+            return '<div title="%s"><b>&raquo;</b></div>' % \
+                    (self.detailed_label)
+
+        return ""
+
+
 class NewUpdatesColumn(Column):
     """
     A column used to indicate whether the review request has any new updates
@@ -311,6 +332,7 @@ class PendingCountColumn(Column):
     def render_data(self, obj):
         return str(getattr(obj, self.field_name).filter(public=True,
                                                         status='P').count())
+
 
 class PeopleColumn(Column):
     def __init__(self, *args, **kwargs):
@@ -437,6 +459,7 @@ class ReviewRequestDataGrid(DataGrid):
 
     target_groups = GroupsColumn()
     target_people = PeopleColumn()
+    to_me = ToMeColumn()
 
     review_id = Column(_("Review ID"), field_name="id", db_field="id",
                        shrink=True, sortable=True, link=True)
