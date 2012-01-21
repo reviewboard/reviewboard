@@ -425,7 +425,8 @@ class ReviewRequest(models.Model):
         # some fancy way.  Certainly the most superficial optimization that
         # could be made would be to cache the compiled regexes somewhere.
         files = diffset.files.all()
-        for default in DefaultReviewer.objects.for_repository(self.repository):
+        for default in DefaultReviewer.objects.for_repository(
+                self.repository, self.local_site):
             regex = re.compile(default.file_regex)
 
             for filediff in files:
@@ -1032,7 +1033,8 @@ class ReviewRequestDraft(models.Model):
         # some fancy way.  Certainly the most superficial optimization that
         # could be made would be to cache the compiled regexes somewhere.
         files = self.diffset.files.all()
-        for default in DefaultReviewer.objects.for_repository(repository):
+        for default in DefaultReviewer.objects.for_repository(
+                repository, self.review_request.local_site):
             try:
                 regex = re.compile(default.file_regex)
             except:

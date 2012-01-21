@@ -705,12 +705,31 @@ class DefaultReviewerTests(TestCase):
         repo2 = Repository(name='Test2', path='path2', tool=tool)
         repo2.save()
 
-        default_reviewers = DefaultReviewer.objects.for_repository(repo1)
+        default_reviewers = DefaultReviewer.objects.for_repository(repo1, None)
         self.assert_(len(default_reviewers) == 2)
         self.assert_(default_reviewer1 in default_reviewers)
         self.assert_(default_reviewer2 in default_reviewers)
 
-        default_reviewers = DefaultReviewer.objects.for_repository(repo2)
+        default_reviewers = DefaultReviewer.objects.for_repository(repo2, None)
+        self.assert_(len(default_reviewers) == 1)
+        self.assert_(default_reviewer2 in default_reviewers)
+
+    def test_for_repository_with_localsite(self):
+        """Testing DefaultReviewer.objects.for_repository with a LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        default_reviewer1 = DefaultReviewer(name='Test 1', file_regex='.*',
+                                            local_site=test_site)
+        default_reviewer1.save()
+
+        default_reviewer2 = DefaultReviewer(name='Test 2', file_regex='.*')
+        default_reviewer2.save()
+
+        default_reviewers = DefaultReviewer.objects.for_repository(None, test_site)
+        self.assert_(len(default_reviewers) == 1)
+        self.assert_(default_reviewer1 in default_reviewers)
+
+        default_reviewers = DefaultReviewer.objects.for_repository(None, None)
         self.assert_(len(default_reviewers) == 1)
         self.assert_(default_reviewer2 in default_reviewers)
 
