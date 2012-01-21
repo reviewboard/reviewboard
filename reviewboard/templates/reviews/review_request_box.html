@@ -11,10 +11,21 @@
   {% blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
     Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
   {% endblocktrans %}
-  {% ifequal review_request.status 'S' %}{% trans "submitted" %}{% endifequal %}{% ifequal review_request.status 'D' %}{% trans "discarded" %}{% endifequal %}{% ifequal review_request.status 'P' %}{% trans "updated" %}{% endifequal %}
-  {% blocktrans with review_request_details.last_updated|timesince as lastupdated %}
-   {{lastupdated}} ago
-  {% endblocktrans %}
+  {% ifequal review_request.status 'S' %}
+   {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
+   Created {{dateadded}} and submitted {{lastupdated}} ago
+   {% endblocktrans %}
+  {% endifequal %}
+  {% ifequal review_request.status 'D' %}
+   {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
+   Created {{dateadded}} and discarded {{lastupdated}} ago
+   {% endblocktrans %}
+  {% endifequal %}
+  {% ifequal review_request.status 'P' %}
+   {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
+   Created {{dateadded}} and updated {{lastupdated}} ago
+   {% endblocktrans %}
+  {% endifequal %}
   </p>
  </div>
  <table id="details">
