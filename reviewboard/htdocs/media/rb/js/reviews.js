@@ -219,20 +219,20 @@ function linkifyText(text) {
                 extra = parts[2];
             }
 
-            return '<a href="' + url + '">' + url + '</a>' + extra;
+            return '<a target="_blank" href="' + url + '">' + url + '</a>' + extra;
         });
 
 
     /* Linkify /r/#/ review request numbers */
     text = text.replace(
         /(^|\s|&lt;)\/(r\/\d+(\/[\-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*[\-A-Za-z0-9+&@#\/%=~_()|])?)/g,
-        '$1<a href="' + SITE_ROOT + '$2">/$2</a>');
+        '$1<a target="_blank" href="' + SITE_ROOT + '$2">/$2</a>');
 
     /* Bug numbers */
     if (gBugTrackerURL != "") {
         text = text.replace(/\b(bug|issue) (#[^.\s]+|#?\d+)/gi,
             function(m1, m2, m3) {
-                return '<a href="' + gBugTrackerURL.replace("%s", m3) +
+                return '<a target="_blank" href="' + gBugTrackerURL.replace("%s", m3) +
                        '">' + m1 + '</a>';
             });
     }
