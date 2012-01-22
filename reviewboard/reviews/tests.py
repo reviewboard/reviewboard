@@ -17,6 +17,7 @@ from reviewboard.reviews.models import DefaultReviewer, \
                                        Review
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class DbQueryTests(TestCase):
@@ -1619,3 +1620,15 @@ class PolicyTests(TestCase):
         review_request.target_people.clear()
         review_request.target_groups.clear()
         return review_request
+
+
+class UserInfoboxTests(TestCase):
+    def testUnicode(self):
+        """Testing user_infobox with a user with non-ascii characters"""
+        user = User.objects.create_user('test', 'test@example.com')
+        user.first_name = u'Test\u21b9'
+        user.last_name = u'User\u2729'
+        user.save()
+
+        response = self.client.get(
+            local_site_reverse('user-infobox', args=['test']))
