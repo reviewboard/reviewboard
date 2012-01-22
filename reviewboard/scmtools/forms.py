@@ -741,7 +741,11 @@ class RepositoryForm(forms.ModelForm):
 
                 raise forms.ValidationError(e)
             except Exception, e:
-                raise forms.ValidationError(e)
+                try:
+                    text = unicode(e)
+                except UnicodeDecodeError:
+                    text = str(e).decode('ascii', 'replace')
+                raise forms.ValidationError(text)
 
     class Meta:
         model = Repository
