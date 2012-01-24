@@ -1630,5 +1630,4 @@ class UserInfoboxTests(TestCase):
         user.last_name = u'User\u2729'
         user.save()
 
-        response = self.client.get(
-            local_site_reverse('user-infobox', args=['test']))
+        self.client.get(local_site_reverse('user-infobox', args=['test']))
