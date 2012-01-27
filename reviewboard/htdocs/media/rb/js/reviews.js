@@ -2487,10 +2487,16 @@ $(document).ready(function() {
         $(this).closest(".box").toggleClass('collapsed');
     });
 
-    /* Expand all reviews */
+    /* Expand all reviews and issue summary table */
     $("#expand-all").click(function() {
         $(".collapsed").removeClass("collapsed");
         return false;
+    });
+
+    /* Collapse all reviews and issue summary table */
+    $("#collapse-all").click(function() {
+	$(".box").addClass("collapsed");
+	return false;
     });
 
     gCommentDlg = $("#comment-detail")

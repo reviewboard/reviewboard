@@ -48,7 +48,16 @@
 <ul class="controls">
 {% if entries %}
  <li>
-  <a href="#" id="expand-all"><img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}"> {% trans "Expand All" %}</a>
+  <a href="#" id="expand-all">
+   <img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}">
+   <span>{% trans "Expand All" %}</span>
+  </a>
+ </li>
+ <li>
+  <a href="#" id="collapse-all">
+   <img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}">
+   <span>{% trans "Collapse All" %}</span>
+  </a>
  </li>
 {% endif %}
 </ul>
@@ -163,8 +172,8 @@
      <div class="file-attachment">
       <a href="{{comment.file_attachment.get_absolute_url}}">{% spaceless %}
        <img src="{{comment.file_attachment.icon_url}}" />
-        <span class="filename">{{comment.file_attachment.filename}}</span>
-	  </a>
+       <span class="filename">{{comment.file_attachment.filename}}</span>
+      </a>
 {% if draft and comment.file_attachment.draft_caption %}
       <p class="caption">{{comment.file_attachment.draft_caption}}</p>
 {% else %}
