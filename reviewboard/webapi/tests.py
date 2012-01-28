@@ -2462,7 +2462,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
+        self.assertEqual(mail.outbox[0].subject, "Review Request 4: My Summary")
         self.assertValidRecipients(["doc", "grumpy"], [])
 
     def test_put_reviewrequestdraft_publish_with_new_review_request(self):
@@ -2491,7 +2491,7 @@ class ReviewRequestDraftResourceTests(BaseWebAPITestCase):
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "Review Request: My Summary")
+        self.assertEqual(mail.outbox[0].subject, "Review Request 10: My Summary")
         self.assertValidRecipients(["doc", "grumpy"], [])
 
     def test_delete_reviewrequestdraft(self):
@@ -2845,7 +2845,7 @@ class ReviewResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].subject,
-                         "Re: Review Request: Interdiff Revision Test")
+                         "Re: Review Request 8: Interdiff Revision Test")
         self.assertValidRecipients(["admin", "grumpy"], [])
 
     @add_fixtures(['test_site'])

@@ -105,7 +105,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
-                         "Review Request: Made e-mail improvements")
+                         "Review Request 4: Made e-mail improvements")
         self.assertValidRecipients(["grumpy", "doc"], [])
 
         message = mail.outbox[0].message()
@@ -134,7 +134,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
-                         "Re: Review Request: Add permission checking " +
+                         "Re: Review Request 3: Add permission checking " +
                          "for JSON API")
         self.assertValidRecipients(["admin", "doc", "dopey", "grumpy"], [])
 
@@ -165,7 +165,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
-                         "Re: Review Request: Add permission checking " +
+                         "Re: Review Request 3: Add permission checking " +
                          "for JSON API")
         self.assertValidRecipients(["admin", "doc", "dopey", "admin"], [])
 
@@ -185,7 +185,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
-                         "Re: Review Request: Update for cleaned_data changes")
+                         "Re: Review Request 2: Update for cleaned_data changes")
         self.assertValidRecipients(["dopey", "doc"], ["devgroup"])
 
         message = mail.outbox[0].message()
