@@ -17,6 +17,7 @@ from reviewboard.reviews.models import DefaultReviewer, \
                                        Review
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class DbQueryTests(TestCase):
@@ -705,12 +706,31 @@ class DefaultReviewerTests(TestCase):
         repo2 = Repository(name='Test2', path='path2', tool=tool)
         repo2.save()
 
-        default_reviewers = DefaultReviewer.objects.for_repository(repo1)
+        default_reviewers = DefaultReviewer.objects.for_repository(repo1, None)
         self.assert_(len(default_reviewers) == 2)
         self.assert_(default_reviewer1 in default_reviewers)
         self.assert_(default_reviewer2 in default_reviewers)
 
-        default_reviewers = DefaultReviewer.objects.for_repository(repo2)
+        default_reviewers = DefaultReviewer.objects.for_repository(repo2, None)
+        self.assert_(len(default_reviewers) == 1)
+        self.assert_(default_reviewer2 in default_reviewers)
+
+    def test_for_repository_with_localsite(self):
+        """Testing DefaultReviewer.objects.for_repository with a LocalSite."""
+        test_site = LocalSite.objects.create(name='test')
+
+        default_reviewer1 = DefaultReviewer(name='Test 1', file_regex='.*',
+                                            local_site=test_site)
+        default_reviewer1.save()
+
+        default_reviewer2 = DefaultReviewer(name='Test 2', file_regex='.*')
+        default_reviewer2.save()
+
+        default_reviewers = DefaultReviewer.objects.for_repository(None, test_site)
+        self.assert_(len(default_reviewers) == 1)
+        self.assert_(default_reviewer1 in default_reviewers)
+
+        default_reviewers = DefaultReviewer.objects.for_repository(None, None)
         self.assert_(len(default_reviewers) == 1)
         self.assert_(default_reviewer2 in default_reviewers)
 
@@ -1600,3 +1620,14 @@ class PolicyTests(TestCase):
         review_request.target_people.clear()
         review_request.target_groups.clear()
         return review_request
+
+
+class UserInfoboxTests(TestCase):
+    def testUnicode(self):
+        """Testing user_infobox with a user with non-ascii characters"""
+        user = User.objects.create_user('test', 'test@example.com')
+        user.first_name = u'Test\u21b9'
+        user.last_name = u'User\u2729'
+        user.save()
+
+        self.client.get(local_site_reverse('user-infobox', args=['test']))

@@ -32,6 +32,7 @@ import urlparse
 
 from django import forms
 from django.contrib.sites.models import Site
+from django.core.cache import parse_backend_uri, InvalidCacheBackendError
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
@@ -137,6 +138,15 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         # Reload any important changes into the Django settings.
         load_site_config()
+
+    def clean_cache_backend(self):
+        """Validates that the specified cache backend is parseable by Django."""
+        backend = self.cleaned_data['cache_backend'].strip()
+        if backend:
+            try:
+                parse_backend_uri(backend)
+            except InvalidCacheBackendError, e:
+                raise forms.ValidationError(e)
 
     def clean_search_index_file(self):
         """Validates that the specified index file is valid."""

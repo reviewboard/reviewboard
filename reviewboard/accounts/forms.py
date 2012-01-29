@@ -332,7 +332,8 @@ class LDAPSettingsForm(SiteSettingsForm):
         initial="uid=%s,ou=users,dc=example,dc=com",
         help_text=_("The string representing the user. Use \"%(varname)s\" "
                     "where the username would normally go. For example: "
-                    "(uid=%(varname)s)") %
+                    "(uid=%(varname)s) or (sAMAccountName=%(varname)s) "
+                    "[for active directory LDAP]") %
                   {'varname': '%s'})
 
     auth_ldap_anon_bind_uid = forms.CharField(

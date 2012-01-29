@@ -15,15 +15,15 @@ from reviewboard.scmtools.errors import ChangeNumberInUseError
 class DefaultReviewerManager(Manager):
     """A manager for DefaultReviewer models."""
 
-    def for_repository(self, repository):
+    def for_repository(self, repository, local_site):
         """Returns all DefaultReviewers that represent a repository.
 
         These include both DefaultReviewers that have no repositories
         (for backwards-compatibility) and DefaultReviewers that are
         associated with the given repository.
         """
-        return self.filter(Q(repository__isnull=True) |
-                           Q(repository=repository))
+        return self.filter(local_site=local_site).filter(
+            Q(repository__isnull=True) | Q(repository=repository))
 
 
 class ReviewGroupManager(Manager):

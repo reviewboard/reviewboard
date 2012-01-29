@@ -461,7 +461,7 @@ class ReviewRequestDataGrid(DataGrid):
     target_people = PeopleColumn()
     to_me = ToMeColumn()
 
-    review_id = Column(_("Review ID"), field_name="id", db_field="id",
+    review_id = Column(_("Review ID"), field_name="get_display_id",
                        shrink=True, sortable=True, link=True)
 
     def __init__(self, *args, **kwargs):

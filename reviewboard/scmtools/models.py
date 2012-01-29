@@ -50,8 +50,9 @@ class Repository(models.Model):
                     "version control systems, this will be a URI of some "
                     "form or another. For CVS, this should be a pserver "
                     "path. For Perforce, this should be a port name. For "
-                    "git, this should be the path to the .git repository "
-                    "on the local disk. For Plastic, this should be a "
+                    "local git, this should be the path to the .git directory "
+                    "on the local disk. For remote git, this should be the "
+                    "git URL that users clone. For Plastic, this should be a "
                     "repository spec in the form [repo]@[hostname]:[port]."
                     "In case of ClearCase enter absolute path to VOB."))
     mirror_path = models.CharField(max_length=255, blank=True)
