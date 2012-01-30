@@ -81,5 +81,3 @@ urlpatterns += patterns('django.contrib',
     url(r'^account/logout/$', 'auth.views.logout',
         {'next_page': settings.LOGIN_URL}, name="logout")
 )
-
-initialize()

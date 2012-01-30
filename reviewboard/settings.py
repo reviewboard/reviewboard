@@ -48,7 +48,10 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
-    'django.middleware.gzip.GZipMiddleware', # Keep this first.
+    # Keep these first, in order
+    'django.middleware.gzip.GZipMiddleware',
+    'reviewboard.admin.middleware.InitReviewBoardMiddleware',
+
     'django.middleware.common.CommonMiddleware',
     'django.middleware.doc.XViewMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
