@@ -14,12 +14,12 @@
 {%  endif %}
 {%  for reply_review in review.public_replies %}
 {%   if reply_review.body_top %}
-{%    ifnotequal reply_review reply %}
+{%    if reply_review != reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_review.body_top}}</pre>
  </blockquote>
-{%    endifnotequal %}
+{%    endif %}
 {%   endif %}
 {%  endfor %}
 {%  if review.body_top %}
@@ -48,12 +48,12 @@
  </blockquote>
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
-{%    ifnotequal reply_comment comment %}
+{%    if reply_comment != comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   <pre style="{{precss}}">{{reply_comment.text}}</pre>
  </blockquote>
-{%    endifnotequal %}
+{%    endif %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
@@ -70,12 +70,12 @@
  </blockquote>
 {%  for reply_comment in entry.comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
-{%    ifnotequal reply_comment entry.comment %}
+{%    if reply_comment != entry.comment %}
  <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_comment.text}}</pre>
  </blockquote>
-{%    endifnotequal %}
+{%    endif %}
 {%   endif %}
 {%  endfor %}
 </blockquote>
@@ -93,12 +93,12 @@
 {%  endif %}
 {%  for reply_review in review.public_replies %}
 {%   if reply_review.body_bottom %}
-{%    ifnotequal reply_review reply %}
+{%    if reply_review != reply %}
  <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_review.body_bottom}}</pre>
  </blockquote>
-{%    endifnotequal %}
+{%    endif %}
 {%   endif %}
 {%  endfor %}
 {%  if review.body_bottom %}
@@ -108,7 +108,7 @@
 <br />
 {% endif %}
 
-<p>- {% ifnotequal reply.user.first_name "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endifnotequal %}</p>
+<p>- {% if reply.user.first_name != "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endif %}</p>
 {% endblock %}
 
 {% block footer %}

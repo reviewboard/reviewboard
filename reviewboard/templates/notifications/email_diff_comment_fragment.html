@@ -20,32 +20,29 @@
 {% if chunks.0.meta.headers %}
  <tbody style="background-color: #e4d9cb; padding: 4px 8px; text-align: center;">
   <tr>
-{%  ifequal chunks.0.meta.headers.0 chunks.0.meta.headers.1 %}
+{%  if chunks.0.meta.headers.0 == chunks.0.meta.headers.1 %}
    <td colspan="4"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0}}</pre></td>
 {%  else %}
    <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0}}</pre></td>
    <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.1}}</pre></td>
-{%  endifequal %}
+{%  endif %}
   </tr>
  </tbody>
 {% endif %}
 {% for chunk in chunks %}
-{% ifequal chunk.change "replace" %}
+{% if chunk.change == "replace" %}
  {% definevar "thcolor" %}#e9eaa8{% enddefinevar %}
  {% definevar "bgcolor" %}#fdfebc{% enddefinevar %}
-{% endifequal %}
-{% ifequal chunk.change "insert" %}
+{% elif chunk.change == "insert" %}
  {% definevar "thcolor" %}#b1ebb0{% enddefinevar %}
  {% definevar "bgcolor" %}#c5ffc4{% enddefinevar %}
-{% endifequal %}
-{% ifequal chunk.change "delete" %}
+{% elif chunk.change == "delete" %}
  {% definevar "thcolor" %}#ebb1ba{% enddefinevar %}
  {% definevar "bgcolor" %}#ffc5ce{% enddefinevar %}
-{% endifequal %}
-{% ifequal chunk.change "equal" %}
+{% elif chunk.change == "equal" %}
  {% definevar "thcolor" %}#f0f0f0{% enddefinevar %}
  {% definevar "bgcolor" %}#ffffff{% enddefinevar %}
-{% endifequal %}
+{% endif %}
  <tbody>
 {% for line in chunk.lines %}
   <tr>

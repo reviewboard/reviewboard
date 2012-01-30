@@ -53,31 +53,31 @@
 {%    endif %}
 {%    for chunk in file.chunks %}
 {%     if not chunk.collapsable or not collapseall %}
- <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif%}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
+ <tbody id="chunk{{file.index}}.{{chunk.index}}"{% if chunk.change != "equal" %} class="{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif%}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endif %}>
 {%      for line in chunk.lines %}
-  <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %} {% attr "class" %}{% if forloop.first %}first {% endif %}{% if forloop.last %}last {% endif %} {% if line.7 %}whitespace-line{% endif %}{% endattr %}{% endifnotequal %}>
+  <tr line="{{line.0}}"{% if chunk.change != "equal" %} {% attr "class" %}{% if forloop.first %}first {% endif %}{% if forloop.last %}last {% endif %} {% if line.7 %}whitespace-line{% endif %}{% endattr %}{% endif %}>
 {%       if forloop.first %}
-   <th>{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}" class="chunk-anchor"></a>{% endifnotequal %}{{line.1}}</th>
+   <th>{% if chunk.change != 'equal' %}<a name="{{file.index}}.{{chunk.index}}" class="chunk-anchor"></a>{% endif %}{{line.1}}</th>
 {%       else %}
    <th>{{line.1}}</th>
 {%       endif %}
-{%       ifequal chunk.change "replace" %}
+{%       if chunk.change == "replace" %}
    <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
    <th>{{line.4}}</th>
    <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
 {%       else %}
-   <td>{% ifequal chunk.change 'insert' %}{% if line.8 %}
+   <td>{% if chunk.change == 'insert' and line.8 %}
     <a href="#" class="moved-from" line="{{line.8}}" target="{{line.4}}">{% trans "Moved from" %} {{line.8}}</a>
-    {% endif %}{% endifequal %}
+    {% endif %}
     <pre>{{line.2|showextrawhitespace}}</pre>
    </td>
    <th>{{line.4}}</th>
-   <td>{% ifequal chunk.change 'delete' %}{% if line.8 %}
+   <td>{% if chunk.change == 'delete' and line.8 %}
     <a href="#" class="moved-to" line="{{line.8}}" target="{{line.1}}">{% trans "Moved to" %} {{line.8}}</a>
-    {% endif %}{% endifequal %}
+    {% endif %}
     <pre>{{line.5|showextrawhitespace}}</pre>
    </td>
-{%       endifequal %}
+{%       endif %}
   </tr>
 {%      endfor %}
  </tbody>
@@ -90,12 +90,12 @@
   </tr>
 {% if chunk.meta.headers %}
   <tr>
-{%  ifequal chunk.meta.headers.0 chunk.meta.headers.1 %}
+{%  if chunk.meta.headers.0 == chunk.meta.headers.1 %}
    <td colspan="4"><pre>{{chunk.meta.headers.0}}</pre></td>
 {%  else %}
    <td colspan="2"><pre>{{chunk.meta.headers.0}}</pre></td>
    <td colspan="2"><pre>{{chunk.meta.headers.1}}</pre></td>
-{%  endifequal %}
+{%  endif %}
   </tr>
 {% endif %}
  </tbody>

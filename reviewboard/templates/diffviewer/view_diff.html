@@ -75,7 +75,7 @@
 {#   We're showing an interdiff, so indicate the revision range. #}
  <h1>{% blocktrans with interdiffset.revision as interdiff_revision %}Changes between revision {{revision}} and {{interdiff_revision}}{% endblocktrans %}</h1>
 {%  else %}
-{%   ifequal diffset.revision latest_revision %}
+{%   if diffset.revision == latest_revision %}
  <h1>{% blocktrans %}Diff revision {{revision}} (Latest){% endblocktrans %}</h1>
 {%   else %}
 {#    This is not the most recent diff. See if we're showing a draft. #}
@@ -98,7 +98,7 @@
 {%     endblocktrans %}
 {%    endif %}
  </p>
-{%   endifequal %}
+{%   endif %}
 {%  endif %}
 
 {#  Notify the user if they have unpublished comments in other diffs. #}
@@ -127,7 +127,7 @@
  {%  endbox %}
 {%  endif %}
 
-{%  ifnotequal num_diffs 1 %}
+{%  if num_diffs != 1 %}
 {#   Show a revision selector for jumping between revisions. #}
  <table class="revision-selector">
   <tr>
@@ -175,7 +175,7 @@
    </td>
   </tr>
  </table>
-{% endifnotequal %}
+{% endif %}
 
  <p><label>{% trans "Files Changed:" %}</label></p>
 {% include "diffviewer/changeindex.html" %}

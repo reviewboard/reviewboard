@@ -11,21 +11,19 @@
   {% blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
     Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
   {% endblocktrans %}
-  {% ifequal review_request.status 'S' %}
+  {% if review_request.status == 'S' %}
    {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
    Created {{dateadded}} and submitted {{lastupdated}} ago
    {% endblocktrans %}
-  {% endifequal %}
-  {% ifequal review_request.status 'D' %}
+  {% elif review_request.status == 'D' %}
    {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
    Created {{dateadded}} and discarded {{lastupdated}} ago
    {% endblocktrans %}
-  {% endifequal %}
-  {% ifequal review_request.status 'P' %}
+  {% elif review_request.status == 'P' %}
    {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
    Created {{dateadded}} and updated {{lastupdated}} ago
    {% endblocktrans %}
-  {% endifequal %}
+  {% endif %}
   </p>
  </div>
  <table id="details">
@@ -96,7 +94,7 @@
   <label for="testing_done">{% trans "Testing Done" %}:</label>
   <pre id="testing_done" class="editable">{{review_request_details.testing_done|escape}}</pre>
  </div>
- <div class="content clearfix"{% ifequal review_request_details.screenshots.count 0 %} style="display: none;"{% endifequal %}>
+ <div class="content clearfix"{% if review_request_details.screenshots.count == 0 %} style="display: none;"{% endif %}>
   <label for="images">{% trans "Screenshots" %}:</label>
   <div id="screenshot-thumbnails">
 {% for image in review_request_details.screenshots.all %}
@@ -113,7 +111,7 @@
    <br clear="both" />
   </div>
  </div>
-<div class="content clearfix"{% ifequal review_request_details.file_attachments.count 0 %} style="display: none;"{% endifequal %}>
+<div class="content clearfix"{% if review_request_details.file_attachments.count == 0 %} style="display: none;"{% endif %}>
 <label for="file-list">{% trans "File Attachments" %}:</label>
  <div id="file-list">
 {% for file in review_request_details.file_attachments.all %}

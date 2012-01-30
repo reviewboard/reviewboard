@@ -46,7 +46,7 @@
  </tr>
 </table>
 
-{% ifnotequal review_request.testing_done "" %}
+{% if review_request.testing_done != "" %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Testing {% if changes and changes.testing_done %}(updated){% endif %}</h1>
 <table width="100%" bgcolor="#ffffff" cellspacing="0" cellpadding="10" style="border: 1px solid #b8b5a0">
  <tr>
@@ -55,20 +55,20 @@
   </td>
  </tr>
 </table>
-{% endifnotequal %}
+{% endif %}
 
-{% ifnotequal review_request.bugs_closed "" %}
+{% if review_request.bugs_closed != "" %}
 <div style="margin-top: 1.5em;">
  <b style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </b>
-{%  ifequal review_request.repository.bug_tracker "" %}
+{%  if review_request.repository.bug_tracker == "" %}
 {{review_request.get_bug_list|join:", "}}
 {%  else %}
 {%   for bug in review_request.get_bug_list %}
  <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
 {%   endfor %}
-{%  endifequal %}
+{%  endif %}
 </div>
-{% endifnotequal %}
+{% endif %}
 
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Diffs</b> {% if changes and changes.diff %}(updated){% endif %}</h1>
 <ul style="margin-left: 3em; padding-left: 0;">

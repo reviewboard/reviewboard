@@ -11,9 +11,9 @@
   var gReviewRequestSitePrefix = "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}";
   var gReviewPending = {% if review %}true{% else %}false{% endif %};
 {% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{% ifequal review_request.status 'P' %}
+{% if review_request.status == 'P' %}
   var gEditable = true;
-{% endifequal %}
+{% endif %}
 {% endifuserorperm %}
 {% else %}{# error #}
   var gReviewPending = false;
