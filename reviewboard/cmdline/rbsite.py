@@ -154,12 +154,14 @@ class Site(object):
         self.db_port = None
         self.db_user = None
         self.db_pass = None
+        self.reenter_db_pass = None
         self.cache_type = None
         self.cache_info = None
         self.web_server_type = None
         self.python_loader = None
         self.admin_user = None
         self.admin_password = None
+        self.reenter_admin_password = None
 
     def rebuild_site_directory(self):
         """
@@ -1016,6 +1018,8 @@ class GtkUI(UIToolkit):
 
         if password:
             entry.set_visibility(False)
+            if not save_var.startswith('reenter'):
+                page['validators'].append(lambda: self.confirm_reentry(site, save_var))
 
         if default:
             entry.set_text(default)
@@ -1030,6 +1034,11 @@ class GtkUI(UIToolkit):
         # we switch to this page.
         if len(page['entries']) == 1:
             page['on_show_funcs'].append(entry.grab_focus)
+
+    def confirm_reentry(self, obj, var):
+        pw = getattr(obj, var)
+        repw = getattr(obj, 'reenter_' + var)
+        return pw == repw
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
@@ -1479,6 +1488,8 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_user")
         ui.prompt_input(page, "Database Password", site.db_pass, password=True,
                         save_obj=site, save_var="db_pass")
+        ui.prompt_input(page, "Confirm Database Password", site.db_pass, password=True,
+                        save_obj=site, save_var="reenter_db_pass")
 
     def ask_cache_type(self):
         page = ui.page("What cache mechanism should be used?")
@@ -1551,6 +1562,8 @@ class InstallCommand(Command):
                         save_obj=site, save_var="admin_user")
         ui.prompt_input(page, "Password", site.admin_password, password=True,
                         save_obj=site, save_var="admin_password")
+        ui.prompt_input(page, "Confirm Password", site.admin_password, password=True,
+                        save_obj=site, save_var="reenter_admin_password")
         ui.prompt_input(page, "E-Mail Address", site.admin_email,
                         save_obj=site, save_var="admin_email")
 
