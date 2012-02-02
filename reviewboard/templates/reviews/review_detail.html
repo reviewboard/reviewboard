@@ -86,26 +86,28 @@
   <div class="clearfix"></div>
  </div>
  <div class="body">
-  <table class="issue-table">
-   <tr>
-    <th>{% trans "Description" %}</th>
-    <th>{% trans "From" %}</th>
-    <th>{% trans "Status" %}</th>
-   </tr>
+  <div class="issue-table-wrapper">
+   <table class="issue-table">
+    <tr>
+     <th>{% trans "Description" %}</th>
+     <th>{% trans "From" %}</th>
+     <th>{% trans "Status" %}</th>
+    </tr>
 {% for entry in entries %}
 {%  if entry.review %}
 {%   for comment in entry.review.get_all_comments %}
 {%    if comment.issue_opened %}
-   <tr id="summary-table-entry-{{comment.id}}" class="issue {{comment.issue_status|pretty_print_issue_status}}">
-    <td class="summary-table-description"><a class="summary-anchor" href="#{{comment.id}}">{{comment|char_limit}}</a></td>
-    <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
-    <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
-   </tr>
+    <tr id="summary-table-entry-{{comment.id}}" class="issue {{comment.issue_status|pretty_print_issue_status}}">
+     <td class="summary-table-description"><a class="summary-anchor" href="#{{comment.id}}">{{comment}}</a></td>
+     <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
+     <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
+    </tr>
 {%    endif %}
 {%   endfor %}
 {%  endif %}
 {% endfor %}
-  </table>
+   </table>
+  </div>
  </div>
 </div>
 {% endbox %}
