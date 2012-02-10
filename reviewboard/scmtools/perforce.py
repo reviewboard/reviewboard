@@ -298,10 +298,10 @@ class PerforceTool(SCMTool):
     def get_pending_changesets(self, userid):
         return self.client.get_pending_changesets(userid)
 
-    def get_changeset(self, changesetid):
+    def get_changeset(self, changesetid, allow_empty=False):
         changeset = self.client.get_changeset(changesetid)
         if changeset:
-            return self.parse_change_desc(changeset[0], changesetid)
+            return self.parse_change_desc(changeset[0], changesetid, allow_empty)
         else:
             return None
 
@@ -323,7 +323,7 @@ class PerforceTool(SCMTool):
         return self.get_changeset(revision).files
 
     @staticmethod
-    def parse_change_desc(changedesc, changenum):
+    def parse_change_desc(changedesc, changenum, allow_empty=False):
         if not changedesc:
             return None
 
@@ -359,7 +359,8 @@ class PerforceTool(SCMTool):
         try:
             changeset.files = changedesc['depotFile']
         except KeyError:
-            raise EmptyChangeSetError(changenum)
+            if not allow_empty:
+                raise EmptyChangeSetError(changenum)
 
         split = changeset.description.find('\n\n')
         if split >= 0 and split < 100:

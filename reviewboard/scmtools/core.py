@@ -78,7 +78,7 @@ class SCMTool(object):
     def get_diffs_use_absolute_paths(self):
         return False
 
-    def get_changeset(self, changesetid):
+    def get_changeset(self, changesetid, allow_empty=False):
         raise NotImplementedError
 
     def get_pending_changesets(self, userid):
