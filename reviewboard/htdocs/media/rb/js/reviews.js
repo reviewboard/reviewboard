@@ -955,12 +955,12 @@ $.fn.commentDlg = function() {
     var saveButton = $("#comment_save", this)
         .click(function() {
             comment.setText(textField.val());
-            comment.issue_opened = issueField.attr('checked') ? 1 : 0;
+            comment.issue_opened = issueField[0].checked;
             comment.save();
             self.close();
         });
 
-    var textField    = $("#comment_text", draftForm)
+    var textField = $("#comment_text", draftForm)
         .keydown(function(e) { e.stopPropagation(); })
         .keypress(function(e) {
             e.stopPropagation();
@@ -1146,7 +1146,7 @@ $.fn.commentDlg = function() {
     this.close = function() {
         if (self.is(":visible")) {
             textField.val("");
-            issueField.attr("checked", false)
+            issueField[0].checked = false;
 
             self
                 .setDirty(false)
@@ -1270,7 +1270,7 @@ $.fn.commentDlg = function() {
 
         comment.ready(function() {
             textField.val(comment.text);
-            issueField.attr('checked', comment.issue_opened)
+            issueField[0].checked = comment.issue_opened;
 
             self.setDirty(false);
 
@@ -1449,8 +1449,12 @@ $.reviewForm = function(review) {
 
         $(".comment-editable", dlg).each(function() {
             var editable = $(this);
+            var comment = editable.data('comment');
+            var issueOpened = editable.next()[0].checked;
 
-            if (editable.inlineEditor("dirty")) {
+            if (editable.inlineEditor("dirty") ||
+                issueOpened != comment.issue_opened) {
+                comment.issue_opened = issueOpened;
                 $.funcQueue("reviewForm").add(function() {
                     editable
                         .one("saved", $.funcQueue("reviewForm").next)
@@ -1460,7 +1464,7 @@ $.reviewForm = function(review) {
         });
 
         $.funcQueue("reviewForm").add(function() {
-            review.ship_it = $("#id_shipit", dlg)[0].checked ? 1 : 0;
+            review.ship_it = $("#id_shipit", dlg)[0].checked;
             review.body_top = $(".body-top", dlg).text();;
             review.body_bottom = $(".body-bottom", dlg).text();;
 
@@ -1531,7 +1535,8 @@ $.fn.reviewFormCommentEditor = function(comment) {
                     self.trigger("saved");
                 }
             });
-        });
+        })
+        .data('comment', comment);
 };
 
 
