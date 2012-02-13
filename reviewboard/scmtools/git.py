@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import requests
 import urllib2
 import urlparse
 
@@ -67,7 +68,7 @@ class GitTool(SCMTool):
 
         self.client = GitClient(repository.path, repository.raw_file_url,
                                 repository.username, repository.password,
-                                local_site_name)
+                                repository.encoding, local_site_name)
 
     def get_file(self, path, revision=HEAD):
         if revision == PRE_CREATION:
@@ -285,7 +286,7 @@ class GitClient(object):
         r'(?P<path>.*)')
 
     def __init__(self, path, raw_file_url=None, username=None, password=None,
-                 local_site_name=None):
+                 encoding='', local_site_name=None):
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
@@ -295,6 +296,7 @@ class GitClient(object):
         self.raw_file_url = raw_file_url
         self.username = username
         self.password = password
+        self.encoding = encoding
         self.local_site_name = local_site_name
         self.git_dir = None
 
@@ -330,13 +332,14 @@ class GitClient(object):
         return True
 
     def _get_file(self, url):
-        host = urlparse.urlparse(url)[1]
-        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        passman.add_password(None, host, self.username, self.password)
-        auth_handler = urllib2.HTTPBasicAuthHandler(passman)
-        opener = urllib2.build_opener(auth_handler)
-        f = opener.open(url)
-        return f.read()
+        logging.info('Fetching file from %s' % url)
+
+        auth = requests.auth.HTTPBasicAuth(self.username, self.password)
+        response = requests.get(url, auth=auth)
+        response.raise_for_status()
+        if self.encoding:
+            response.encoding = self.encoding
+        return response.text
 
     def get_file(self, path, revision):
         if self.raw_file_url:
