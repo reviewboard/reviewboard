@@ -1078,6 +1078,19 @@ class MercurialTests(SCMTestCase):
         self.assertEqual(self.tool.get_fields(),
                          ['diff_path', 'parent_diff_path'])
 
+    def test_https_repo(self):
+        """Testing HgTool.get_file with an HTTPS-based repository"""
+        repo = Repository(name='Test HG2',
+                          path='https://bitbucket.org/pypy/pypy',
+                          tool=Tool.objects.get(name='Mercurial'))
+        tool = repo.get_scmtool()
+
+        rev = Revision('877cf1960916')
+        file = 'TODO.rst'
+
+        self.assert_(tool.file_exists('TODO.rst', rev))
+        self.assert_(not tool.file_exists('TODO.rstNotFound', rev))
+
 
 class GitTests(SCMTestCase):
     """Unit tests for Git."""

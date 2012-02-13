@@ -1,4 +1,5 @@
 import logging
+import requests
 import urllib2
 
 try:
@@ -183,36 +184,30 @@ class HgWebClient(object):
         found = False
 
         for rawpath in ["raw-file", "raw"]:
-            full_url = ''
+            url = ''
 
             try:
-                passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-                passman.add_password(None, self.url, self.username,
-                                     self.password)
-                authhandler = urllib2.HTTPBasicAuthHandler(passman)
-                opener = urllib2.build_opener(authhandler)
-                full_url = self.FULL_FILE_URL % {
+                url = self.FULL_FILE_URL % {
                     'url': self.url.rstrip('/'),
                     'rawpath': rawpath,
                     'revision': rev,
                     'quoted_path': urllib_quote(path.lstrip('/')),
                 }
-                f = opener.open(full_url)
-                return f.read()
+                logging.info('Fetching file from %s' % url)
+                auth = requests.auth.HTTPBasicAuth(self.username, self.password)
+                response = requests.get(url, auth=auth)
+                if response.status_code == requests.codes.ok:
+                    return response.text
+                elif response.status_code != 404:
+                    response.raise_for_status()
 
-            except urllib2.HTTPError, e:
-
-                if e.code != 404:
-                    logging.error("%s: HTTP error code %d when fetching "
-                                  "file from %s: %s", self.__class__.__name__,
-                                  e.code, full_url, e)
-
-            except Exception:
-                logging.exception('%s: Non-HTTP error when fetching %r: ',
-                                  self.__class__.__name__, full_url)
+            except Exception, e:
+                logging.error('%s: Error fetching file from %s: %s' %
+                              (self.__class__.__name__, url, e))
+                raise SCMError('Error fetching file from %s: %s' % (url, e))
 
         if not found:
-            raise FileNotFoundError(path, rev, str(e))
+            raise FileNotFoundError(path, rev)
 
     def get_filenames(self, rev):
         raise NotImplementedError

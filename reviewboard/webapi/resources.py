@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.http import HttpResponseRedirect, HttpResponse, \
                         HttpResponseNotModified
 from django.template.defaultfilters import timesince
+from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext as _
 from djblets.extensions.base import RegisteredExtension
 from djblets.extensions.resources import ExtensionResource
@@ -21,8 +22,7 @@ from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
                               get_modified_since, \
                               set_last_modified, http_date
-from djblets.webapi.core import WebAPIResponseFormError, \
-                                WebAPIResponsePaginated, \
+from djblets.webapi.core import WebAPIResponsePaginated, \
                                 WebAPIResponse
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_response_errors, \
@@ -94,6 +94,15 @@ def _get_local_site(local_site_name):
         return None
 
 
+def _get_form_errors(form):
+    fields = {}
+
+    for field in form.errors:
+        fields[field] = [force_unicode(e) for e in form.errors[field]]
+
+    return fields
+
+
 def _no_access_error(user):
     """Returns a WebAPIError indicating the user has no access.
 
@@ -109,6 +118,8 @@ def _no_access_error(user):
 
 class WebAPIResource(DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
+
+    mimetype_vendor = 'reviewboard.org'
 
     @webapi_check_login_required
     @augment_method_from(DjbletsWebAPIResource)
@@ -385,6 +396,9 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     model_parent_key = 'filediff'
     uri_object_key = None
 
+    mimetype_list_resource_name = 'file-diff-comments'
+    mimetype_item_resource_name = 'file-diff-comment'
+
     def get_queryset(self, request, review_request_id, diff_revision,
                      *args, **kwargs):
         """Returns a queryset for Comment models.
@@ -430,6 +444,9 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     """
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     model_parent_key = 'review'
+
+    mimetype_list_resource_name = 'review-diff-comments'
+    mimetype_item_resource_name = 'review-diff-comment'
 
     def get_queryset(self, request, review_request_id, review_id,
                      *args, **kwargs):
@@ -660,6 +677,9 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             'description': 'The comment being replied to.',
         },
     }, **BaseDiffCommentResource.fields)
+
+    mimetype_list_resource_name = 'review-reply-diff-comments'
+    mimetype_item_resource_name = 'review-reply-diff-comment'
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
@@ -1193,6 +1213,8 @@ class ChangeResource(WebAPIResource):
     model_parent_key = 'review_request'
     last_modified_field = 'timestamp'
     allowed_methods = ('GET',)
+    mimetype_list_resource_name = 'review-request-changes'
+    mimetype_item_resource_name = 'review-request-change'
 
     _changed_fields_to_models = {
         'screenshots': Screenshot,
@@ -1475,7 +1497,9 @@ class DiffResource(WebAPIResource):
         form = UploadDiffForm(review_request, form_data, request.FILES)
 
         if not form.is_valid():
-            return WebAPIResponseFormError(request, form)
+            return INVALID_FORM_DATA, {
+                'fields': _get_form_errors(form),
+            }
 
         try:
             diffset = form.create(request.FILES['path'],
@@ -2052,6 +2076,8 @@ class ReviewGroupResource(WebAPIResource):
     uri_object_key_regex = '[A-Za-z0-9_-]+'
     model_object_key = 'name'
     autogenerate_etags = True
+    mimetype_list_resource_name = 'review-groups'
+    mimetype_item_resource_name = 'review-group'
 
     allowed_methods = ('GET', 'DELETE')
 
@@ -2165,6 +2191,7 @@ class RepositoryInfoResource(WebAPIResource):
     name = 'info'
     singleton = True
     allowed_methods = ('GET',)
+    mimetype_item_resource_name = 'repository-info'
 
     @webapi_check_local_site
     @webapi_check_login_required
@@ -2776,7 +2803,9 @@ class BaseScreenshotResource(WebAPIResource):
         form = UploadScreenshotForm(form_data, request.FILES)
 
         if not form.is_valid():
-            return WebAPIResponseFormError(request, form)
+            return INVALID_FORM_DATA, {
+                'fields': _get_form_errors(form),
+            }
 
         try:
             screenshot = form.create(request.FILES['path'], review_request)
@@ -2943,7 +2972,8 @@ class DraftScreenshotResource(BaseScreenshotResource):
             extra_data={
                 'links': self.get_links(self.list_child_resources,
                                         request=request, *args, **kwargs),
-            })
+            },
+            **self.build_response_args(request))
 
 draft_screenshot_resource = DraftScreenshotResource()
 
@@ -3064,7 +3094,9 @@ class BaseFileAttachmentResource(WebAPIResource):
         form = UploadFileForm(form_data, request.FILES)
 
         if not form.is_valid():
-            return WebAPIResponseFormError(request, form)
+            return INVALID_FORM_DATA, {
+                'fields': _get_form_errors(form),
+            }
 
         try:
             file = form.create(request.FILES['path'], review_request)
@@ -3230,7 +3262,8 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
             extra_data={
                 'links': self.get_links(self.list_child_resources,
                                         request=request, *args, **kwargs),
-            })
+            },
+            **self.build_response_args(request))
 
 draft_file_attachment_resource = DraftFileAttachmentResource()
 
@@ -3256,6 +3289,7 @@ class ReviewRequestDraftResource(WebAPIResource):
     singleton = True
     model_parent_key = 'review_request'
     last_modified_field = 'last_updated'
+    mimetype_item_resource_name = 'review-request-draft'
     fields = {
         'id': {
             'type': int,
@@ -4003,6 +4037,9 @@ class ReviewReplyScreenshotCommentResource(BaseScreenshotCommentResource):
         },
     }, **BaseScreenshotCommentResource.fields)
 
+    mimetype_list_resource_name = 'review-reply-screenshot-comments'
+    mimetype_item_resource_name = 'review-reply-screenshot-comment'
+
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
         q = super(ReviewReplyScreenshotCommentResource, self).get_queryset(
@@ -4446,6 +4483,9 @@ class ReviewReplyFileAttachmentCommentResource(BaseFileAttachmentCommentResource
             'description': 'The comment being replied to.',
         },
     }, **BaseFileAttachmentCommentResource.fields)
+
+    mimetype_list_resource_name = 'review-reply-file-attachment-comments'
+    mimetype_item_resource_name = 'review-reply-file-attachment-comment'
 
     def get_queryset(self, request, review_request_id, review_id, reply_id,
                      *args, **kwargs):
@@ -4926,6 +4966,9 @@ class ReviewReplyResource(BaseReviewResource):
     uri_object_key = 'reply_id'
     model_parent_key = 'base_reply_to'
 
+    mimetype_list_resource_name = 'review-replies'
+    mimetype_item_resource_name = 'review-reply'
+
     def get_base_reply_to_field(self, review_id, *args, **kwargs):
         return {
             'base_reply_to': Review.objects.get(pk=review_id),
@@ -5243,6 +5286,9 @@ class FileAttachmentResource(BaseFileAttachmentResource):
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
+
+    mimetype_list_resource_name = 'file-attachments'
+    mimetype_item_resource_name = 'file-attachment'
 
     def get_parent_object(self, obj):
         return obj.get_review_request()
@@ -6185,6 +6231,7 @@ class ServerInfoResource(WebAPIResource):
     """
     name = 'info'
     singleton = True
+    mimetype_item_resource_name = 'server-info'
 
     @webapi_check_local_site
     @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED)
@@ -6286,6 +6333,8 @@ class RootResource(DjbletsRootResource):
     hard-coding paths, your client can remain compatible with any changes in
     the resource URI scheme.
     """
+    mimetype_vendor = 'reviewboard.org'
+
     def __init__(self, *args, **kwargs):
         super(RootResource, self).__init__([
             extension_resource,
