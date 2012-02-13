@@ -24,6 +24,10 @@ New Features
   entire Review Board codebase to be used as a stable API. We will in time
   document a stable API that can be relied upon.
 
+  There's some `in-progress documentation
+  <http://www.reviewboard.org/wiki/Building_Extensions>` available. This will
+  later be moved into a developer's guide.
+
   This was the work of many developers and contributors. In particular,
   Mike Conley led a lot of the effort into getting this feature ready.
 
@@ -52,11 +56,36 @@ New Features
 
   Patch by Yazan Medanat.
 
+* Added a "To Me" column in the dashboard.
+
+  The "To Me" column indicates whether a review request explicitly lists you
+  as a reviewer. This helps prioritize what review requests to look at first.
+
+  Patch by Anthony Mok. (:bug:`495`)
+
 * Easy addition of Django installed apps in :file:`settings_local.py`.
 
   A site's :file:`settings_local.py` can now provide additional Django
   app modules to load in by setting the ``RB_EXTRA_APPS`` list to a list of
   module names. Patch by Stephen Gallagher.
+
+* Dates and times are now localized to the user's region.
+
+  The default timezone in the database is now UTC, and users are able to
+  set their own timezone in their preferences page. All dates and times will
+  be shown relative to their timezone.
+
+  Patch by Dave Druska.
+
+* E-mails now include the review request ID in the subject header.
+
+  This helps to identify a review request a bit faster, and makes it easier
+  to refer to a review request by ID from just the e-mail.
+
+  Patch by Curtis Miller. (:bug:`2271`)
+
+* Links in the Description and Testing Done text now open in new windows or
+  tabs. Patch by Jim Chen. (:bug:`2074`)
 
 
 Removed Features
@@ -89,10 +118,13 @@ Performance Improvements
 Contributors
 ============
 
+* Anthony Mok
 * Christian Hammond
+* Curtis Miller
 * Dave Druska
 * David Trowbridge
 * Jacob Farkas
+* Jim Chen
 * Kahlil Almani
 * Kevin Quinn
 * Stephen Gallagher
