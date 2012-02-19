@@ -83,7 +83,7 @@ class GroupForm(forms.ModelForm):
 
 class NewReviewRequestForm(forms.Form):
     """
-    A form that handles creationg of new review requests. These take
+    A form that handles creation of new review requests. These take
     information on the diffs, the repository the diffs are against, and
     optionally a changelist number (for use in certain repository types
     such as Perforce).
