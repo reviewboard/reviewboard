@@ -102,7 +102,7 @@ HEADER_REGEXES = {
 }
 
 HEADER_REGEX_ALIASES = {
-    # C/C++
+    # C/C++/Objective-C
     '.cc': '.c',
     '.cpp': '.c',
     '.cxx': '.c',
@@ -114,6 +114,7 @@ HEADER_REGEX_ALIASES = {
     '.h++': '.c',
     '.C': '.c',
     '.H': '.c',
+    '.mm': '.m',
 
     # Perl
     '.pm': '.pl',
