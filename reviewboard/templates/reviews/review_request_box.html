@@ -102,9 +102,9 @@
     <div class="screenshot" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
-     {% ifuserorperm review_request.submitter "reviews.delete_screenshot" %}
+     {% if request.user == review_request.submitter or perms.reviews.delete_screenshot %}
       <a href="#" class="delete"><img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
-     {% endifuserorperm %}
+     {% endif %}
     </div>
    </div>
 {% endfor %}
@@ -124,11 +124,11 @@
       <a href="{{file.get_absolute_url}}">
       <img src="{{file.icon_url}}" />
       {{file.filename}}</a>
-{% ifuserorperm review_request.submitter "reviews.delete_file" %}
+{% if request.user == review_request.submitter or perms.reviews.delete_file %}
       <a href="#" class="delete">
        <img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
       </a>
-{% endifuserorperm %}
+{% endif %}
      </div>
      <div class="file-caption">
       <a href="{{file.get_absolute_url}}" class="edit">{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}</a>
