@@ -214,7 +214,31 @@ class RepositoryForm(forms.ModelForm):
                                      '%(codebase_repo_name)s/blob/'
                                      '<revision>',
                 },
-                # TODO: Support Subversion, Mercurial & Bazaar
+
+                #
+                # NOTE: Subversion doesn't work because it requires a
+                #       standard username and password, not an API Username/token.
+                #       We don't have a way of requesting that data just for this
+                #       type.
+                #
+                #'Subversion': {
+                #    'path': 'https://%(username)s@%(codebase_group_name)s/'
+                #            '%(hosting_project_name)s/%(codebase_repo_name)s.svn',
+                #},
+
+                # NOTE: Mercurial doesn't work because they don't use HTTP Basic
+                #       Auth for the authentication. A valid browser session cookie
+                #       is needed instead.
+                #
+                #'Mercurial': {
+                #    'username': '%(codebase_api_username)s',
+                #    'password': '%(codebase_api_key)s',
+                #    'path': 'https://%(codebase_group_name)s.codebasehq.com/'
+                #            'projects/%(hosting_project_name)s/repositories/'
+                #            '%(codebase_repo_name)s/'
+                #},
+
+                # TODO: Support Bazaar
             }
         }),
         ('custom', {
@@ -458,20 +482,28 @@ class RepositoryForm(forms.ModelForm):
             if not is_path_match:
                 continue
 
-            if not self._match_url(self.instance.mirror_path,
-                                   field_info['mirror_path'], [])[0]:
+            if ('mirror_path' in field_info and
+                not self._match_url(self.instance.mirror_path,
+                                    field_info['mirror_path'], [])[0]):
                 continue
 
-            if 'raw_file_url' in field_info:
-                is_raw_match, raw_field_data = \
-                    self._match_url(self.instance.raw_file_url,
-                                    field_info['raw_file_url'],
-                                    info['fields'])
+            all_extras_match = True
 
-                if not is_raw_match:
-                    continue
+            for extra_field, value in field_info.iteritems():
+                if extra_field not in ('path', 'mirror_path'):
+                    is_match, extra_field_data = \
+                        self._match_url(getattr(self.instance, extra_field),
+                                        value,
+                                        info['fields'])
 
-                field_data.update(raw_field_data)
+                if not is_match:
+                    all_extras_match = False
+                    break
+
+                field_data.update(extra_field_data)
+
+            if not all_extras_match:
+                continue
 
             # It all matched.
             self.fields['hosting_type'].initial = service_id
