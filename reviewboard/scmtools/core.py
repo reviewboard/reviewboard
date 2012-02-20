@@ -1,11 +1,13 @@
+import base64
 import logging
 import os
 import subprocess
+import urllib2
 import urlparse
 
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 
 class ChangeSet:
@@ -167,3 +169,46 @@ class SCMTool(object):
     def accept_certificate(cls, path, local_site_name=None):
         """Accepts the certificate for the given repository path."""
         raise NotImplementedError
+
+
+class SCMClient(object):
+    """Base class for client classes that interface with an SCM.
+
+    Some SCMTools, rather than calling out to a third-party library, provide
+    their own client class that interfaces with a command-line tool or
+    HTTP-backed repository.
+
+    While not required, this class contains functionality that may be useful to
+    such client classes. In particular, it makes it easier to fetch files from
+    an HTTP-backed repository, handling authentication and errors.
+    """
+    def __init__(self, path, username=None, password=None):
+        self.path = path
+        self.username = username
+        self.password = password
+
+    def get_file_http(self, url, path, revision):
+        logging.info('Fetching file from %s' % url)
+
+        try:
+            request = urllib2.Request(url)
+
+            if self.username:
+                auth_string = base64.b64encode('%s:%s' % (self.username,
+                                                          self.password))
+                request.add_header('Authorization', 'Basic %s' % auth_string)
+
+            return urllib2.urlopen(request).read()
+        except urllib2.HTTPError, e:
+            if e.code == 404:
+                logging.error('404')
+                raise FileNotFoundError(path, revision)
+            else:
+                msg = "HTTP error code %d when fetching file from %s: %s" % \
+                      (e.code, url, e)
+                logging.error(msg)
+                raise SCMError(msg)
+        except Exception, e:
+            msg = "Unexpected error fetching file from %s: %s" % (url, e)
+            logging.error(msg)
+            raise SCMError(msg)

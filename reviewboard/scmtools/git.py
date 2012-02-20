@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import requests
 import urllib2
 import urlparse
 
@@ -17,7 +16,7 @@ from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         InvalidRevisionFormatError, \
                                         RepositoryNotFoundError, \
@@ -278,7 +277,7 @@ class GitDiffParser(DiffParser):
                 setattr(file_info, attr, '')
 
 
-class GitClient(object):
+class GitClient(SCMClient):
     FULL_SHA1_LENGTH = 40
 
     schemeless_url_re = re.compile(
@@ -287,15 +286,16 @@ class GitClient(object):
 
     def __init__(self, path, raw_file_url=None, username=None, password=None,
                  encoding='', local_site_name=None):
+        super(GitClient, self).__init__(self._normalize_git_url(path),
+                                        username=username,
+                                        password=password)
+
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError
 
-        self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
-        self.username = username
-        self.password = password
         self.encoding = encoding
         self.local_site_name = local_site_name
         self.git_dir = None
@@ -331,53 +331,27 @@ class GitClient(object):
 
         return True
 
-    def _get_file(self, url):
-        logging.info('Fetching file from %s' % url)
-
-        auth = requests.auth.HTTPBasicAuth(self.username, self.password)
-        response = requests.get(url, auth=auth)
-        response.raise_for_status()
-        if self.encoding:
-            response.encoding = self.encoding
-        return response.text
-
     def get_file(self, path, revision):
         if self.raw_file_url:
             self.validate_sha1_format(path, revision)
 
-            # First, try to grab the file remotely.
-            try:
-                url = self._build_raw_url(path, revision)
-                return self._get_file(url)
-            except Exception, e:
-                logging.error("Git: Error fetching file from %s: %s" % (url, e))
-                raise SCMError("Error fetching file from %s: %s" % (url, e))
+            return self.get_file_http(self._build_raw_url(path, revision),
+                                      path, revision)
         else:
             return self._cat_file(path, revision, "blob")
 
     def get_file_exists(self, path, revision):
         if self.raw_file_url:
-            self.validate_sha1_format(path, revision)
-
-            # First, try to grab the file remotely.
             try:
                 # We want to make sure we can access the file successfully,
                 # without any HTTP errors. A successful access means the file
                 # exists. The contents themselves are meaningless, so ignore
                 # them. If we do successfully get the file without triggering
                 # any sort of exception, then the file exists.
-                url = self._build_raw_url(path, revision)
-                self._get_file(url)
-
+                self.get_file(path, revision)
                 return True
-            except urllib2.HTTPError, e:
-                if e.code != 404:
-                    logging.error("Git: HTTP error code %d when fetching "
-                                  "file from %s: %s" % (e.code, url, e))
             except Exception, e:
-                logging.error("Git: Error fetching file from %s: %s" % (url, e))
-
-            return False
+                return False
         else:
             contents = self._cat_file(path, revision, "-t")
             return contents and contents.strip() == "blob"

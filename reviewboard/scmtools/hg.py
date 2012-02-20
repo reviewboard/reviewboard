@@ -1,5 +1,4 @@
 import logging
-import requests
 import urllib2
 
 try:
@@ -10,7 +9,7 @@ except ImportError:
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.git import GitDiffParser
 from reviewboard.scmtools.core import \
-    FileNotFoundError, SCMTool, HEAD, PRE_CREATION, UNKNOWN
+    FileNotFoundError, SCMClient, SCMTool, HEAD, PRE_CREATION, UNKNOWN
 
 
 class HgTool(SCMTool):
@@ -165,15 +164,16 @@ class HgDiffParser(DiffParser):
         else:
             return False
 
-class HgWebClient(object):
+
+class HgWebClient(SCMClient):
     FULL_FILE_URL = '%(url)s/%(rawpath)s/%(revision)s/%(quoted_path)s'
 
-    def __init__(self, repoPath, username, password):
-        self.url = repoPath
-        self.username = username
-        self.password = password
+    def __init__(self, path, username, password):
+        super(HgWebClient, self).__init__(path, username=username,
+                                          password=password)
+
         logging.debug('Initialized HgWebClient with url=%r, username=%r',
-                      self.url, self.username)
+                      self.path, self.username)
 
     def cat_file(self, path, rev="tip"):
         if rev == HEAD or rev == UNKNOWN:
@@ -181,36 +181,22 @@ class HgWebClient(object):
         elif rev == PRE_CREATION:
             rev = ""
 
-        found = False
-
         for rawpath in ["raw-file", "raw"]:
-            url = ''
-
             try:
                 url = self.FULL_FILE_URL % {
-                    'url': self.url.rstrip('/'),
+                    'url': self.path.rstrip('/'),
                     'rawpath': rawpath,
                     'revision': rev,
                     'quoted_path': urllib_quote(path.lstrip('/')),
                 }
-                logging.info('Fetching file from %s' % url)
-                auth = requests.auth.HTTPBasicAuth(self.username, self.password)
-                response = requests.get(url, auth=auth)
-                if response.status_code == requests.codes.ok:
-                    return response.text
-                elif response.status_code != 404:
-                    response.raise_for_status()
 
-            except Exception, e:
-                logging.error('%s: Error fetching file from %s: %s' %
-                              (self.__class__.__name__, url, e))
-                raise SCMError('Error fetching file from %s: %s' % (url, e))
+                url = url.replace('https', 'http')
+                return self.get_file_http(url, path, rev)
+            except Exception:
+                # It failed. Error was logged and we may try again.
+                pass
 
-        if not found:
-            raise FileNotFoundError(path, rev)
-
-    def get_filenames(self, rev):
-        raise NotImplementedError
+        raise FileNotFoundError(path, rev)
 
 
 class HgClient(object):
@@ -251,6 +237,3 @@ class HgClient(object):
             # LookupError moves from repo to revlog in hg v0.9.4, so we
             # catch the more general Exception to avoid the dependency.
             raise FileNotFoundError(path, rev, str(e))
-
-    def get_filenames(self, rev):
-        return self.repo.changectx(rev).TODO
