@@ -6,26 +6,25 @@
 :
 {% if error %}
 {%  trans "Diff currently unavailable." %}
+{% elif file.binary %}
+{%  trans "binary file" %}
+{% elif file.deleted %}
+{%  trans "deleted" %}
 {% else %}
-{%  if file.binary %}
-{%   trans "binary file" %}
-{%  else %}
-{%   if file.deleted %}
-{%    trans "deleted" %}
-{%   else %}
-{%    blocktrans count file.num_changes as counter %}
+{%  blocktrans count file.num_changes as counter %}
  1  change
-{%     plural %}
+{%  plural %}
  {{counter}} changes
-{%    endblocktrans %} [
-{%    if file.chunks|length == 1 %}
+{%  endblocktrans %}
+{%  if file.chunks|length != 0 %}
+ [
+{%   if file.chunks|length == 1 %}
     <a href="#{{file.index}}.{{file.chunks.0.index}}" onClick="return !gotoAnchor('{{file.index}}.{{file.chunks.0.index}}');"> {% if file.chunks.0.change == "insert" %}new content{% elif file.chunks.0.change == "delete" %}deleted content{% endif %}</a>
-{%    else %}
+{%   else %}
 {%    for chunk_index in file.changed_chunk_indexes %}
      <a href="#{{file.index}}.{{chunk_index}}" onClick="return !gotoAnchor('{{file.index}}.{{chunk_index}}');">{{forloop.counter}}</a>
-{%     endfor %}
-{%    endif %}
+{%    endfor %}
+{%   endif %}
  ]
-{%   endif %}{# !deleted #}
-{%  endif %}{# !binary #}
-{% endif %}{# !error #}
+{%  endif %}
+{% endif %}
