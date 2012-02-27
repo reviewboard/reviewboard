@@ -16,10 +16,20 @@ post-review
   Many of the parameters passed to post-review can now be set in a
   repository's or user's :file:`.reviewboardrc` file. These include:
 
-  PUBLISH, OPEN_BROWSER, TARGET_GROUPS, TARGET_PEOPLE, GUESS_SUMMARY,
-  GUESS_DESCRIPTION, BRANCH, SUBMIT_AS, USERNAME, PASSWORD, PARENT_BRANCH,
-  TRACKING_BRANCH, P4_CLIENT, P4_PORT, P4_PASSWD, DEBUG, HTTP_USERNAME, and
-  HTTP_PASSWORD.
+  ENABLE_PROXY, PUBLISH, OPEN_BROWSER, TARGET_GROUPS, TARGET_PEOPLE,
+  GUESS_FIELDS, GUESS_SUMMARY, GUESS_DESCRIPTION, BRANCH, SUBMIT_AS, USERNAME,
+  PASSWORD, PARENT_BRANCH, TRACKING_BRANCH, P4_CLIENT, P4_PORT, P4_PASSWD,
+  DEBUG, HTTP_USERNAME, and HTTP_PASSWORD.
+
+* Added a :option:`--disable-proxy` option for disabling the HTTP(S) proxy
+  server.
+
+  Some systems are configured to use a proxy server, which can get in the
+  way of using a local Review Board server. By using the
+  :option:`--disable-proxy` option, this proxy server will by bypassed.
+
+  This can also be configured by setting ``ENABLE_PROXY = False`` in
+  :file:`.reviewboardrc`.
 
 
 Bug Fixes

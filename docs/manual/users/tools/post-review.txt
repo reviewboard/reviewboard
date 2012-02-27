@@ -438,6 +438,7 @@ The options include:
 
 * ``BRANCH`` (:option:`--branch`)
 * ``DEBUG`` (:option:`-d`)
+* ``ENABLE_PROXY`` (:option:`--disable-proxy`)
 * ``GUESS_DESCRIPTION`` (:option:`--guess-description`)
 * ``GUESS_FIELDS`` (:option:`-g`)
 * ``GUESS_SUMMARY`` (:option:`--guess-summary`)
@@ -486,6 +487,13 @@ Basic Options
 
 Server Options
 --------------
+
+.. cmdoption:: --disable-proxy
+
+   Disables using any configured HTTP(S) proxy server when communicating
+   with the Review Board server.
+
+   The default can be set in ``ENABLE_PROXY`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: --server=<URL>
 
