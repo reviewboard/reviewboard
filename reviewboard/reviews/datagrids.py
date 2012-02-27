@@ -438,11 +438,21 @@ class ReviewRequestDataGrid(DataGrid):
     target_groups = GroupsColumn()
     target_people = PeopleColumn()
 
-    review_id = Column(_("Review ID"), field_name="get_display_id",
+    review_id = Column(_("Review ID"),
                        shrink=True, sortable=True, link=True)
 
     def __init__(self, *args, **kwargs):
         self.local_site = kwargs.pop('local_site', None)
+
+        if self.local_site:
+            review_id_field = 'local_id'
+        else:
+            review_id_field = 'pk'
+
+        self.review_id = Column(_("Review ID"),
+                                field_name=review_id_field,
+                                shrink=True, sortable=True, link=True)
+
         DataGrid.__init__(self, *args, **kwargs)
         self.listview_template = 'reviews/review_request_listview.html'
         self.profile_sort_field = 'sort_review_request_columns'
