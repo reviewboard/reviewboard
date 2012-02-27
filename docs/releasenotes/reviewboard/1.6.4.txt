@@ -2,7 +2,7 @@
 Review Board 1.6.4 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: February 26, 2012
 
 
 New Features
@@ -41,6 +41,9 @@ New Features
 
   Note that this is intended only for use when migrating between databases,
   and may be slow depending on your database size.
+
+* Objective-C++ '.mm' files now show function/class headers in the diff
+  viewer, just like '.m' files. Patch by James Farwell.
 
 
 Web API Changes
@@ -146,6 +149,8 @@ Bug Fixes
   Patch by Curtis Muller. (:bug:`1252`)
 
 * Duplicate CC headers on e-mails have been removed. Patch by Chris Tandiono.
+
+* Fixed links to screenshots in e-mails. (:bug:`2305`)
 
 * Fixed a potential crash when using LDAP without ``fullName`` set.
   (:bug:`2382`)
