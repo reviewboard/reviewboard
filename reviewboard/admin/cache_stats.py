@@ -57,7 +57,7 @@ def get_cache_stats():
             continue
 
         s.send("stats\r\n")
-        data = s.recv(1024)
+        data = s.recv(2048)
         s.close()
 
         stats = {}
