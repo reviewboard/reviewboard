@@ -148,6 +148,8 @@ class GeneralSettingsForm(SiteSettingsForm):
             except InvalidCacheBackendError, e:
                 raise forms.ValidationError(e)
 
+        return backend
+
     def clean_search_index_file(self):
         """Validates that the specified index file is valid."""
         index_file = self.cleaned_data['search_index_file'].strip()
