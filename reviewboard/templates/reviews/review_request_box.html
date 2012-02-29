@@ -1,6 +1,7 @@
 {% load djblets_utils %}
 {% load i18n %}
 {% load reviewtags %}
+{% load staticfiles %}
 
 {% include "reviews/review_request_dlgs.html" %}
 
@@ -103,7 +104,7 @@
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
      {% if request.user == review_request.submitter or perms.reviews.delete_screenshot %}
-      <a href="#" class="delete"><img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
+      <a href="#" class="delete"><img src="{% static "rb/images/delete.png" %}?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
      {% endif %}
     </div>
    </div>
@@ -126,7 +127,7 @@
       {{file.filename}}</a>
 {% if request.user == review_request.submitter or perms.reviews.delete_file %}
       <a href="#" class="delete">
-       <img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
+       <img src="{% static "rb/images/delete.png" %}?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
       </a>
 {% endif %}
      </div>

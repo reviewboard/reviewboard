@@ -397,7 +397,7 @@ def dashboard_entry(context, level, text, view, param=None):
             "Invalid view type '%s' passed to 'dashboard_entry' tag." % view
 
     return {
-        'MEDIA_URL': settings.MEDIA_URL,
+        'STATIC_URL': settings.STATIC_URL,
         'MEDIA_SERIAL': settings.MEDIA_SERIAL,
         'level': level,
         'text': text,
@@ -595,7 +595,7 @@ def render_star(user, obj):
         'starred': int(starred),
         'alt': image_alt,
         'user': user,
-        'MEDIA_URL': settings.MEDIA_URL,
+        'STATIC_URL': settings.STATIC_URL,
     })
 
 

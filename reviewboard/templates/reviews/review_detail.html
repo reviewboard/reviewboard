@@ -5,6 +5,7 @@
 {% load djblets_utils %}
 {% load rb_extensions %}
 {% load reviewtags %}
+{% load staticfiles %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -49,13 +50,13 @@
 {% if entries %}
  <li>
   <a href="#" id="expand-all">
-   <img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}">
+   <img width="14" height="14" border="0" alt="" src="{% static "rb/images/expand.png" %}?{{MEDIA_SERIAL}}">
    <span>{% trans "Expand All" %}</span>
   </a>
  </li>
  <li>
   <a href="#" id="collapse-all">
-   <img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}">
+   <img width="14" height="14" border="0" alt="" src="{% static "rb/images/collapse.png" %}?{{MEDIA_SERIAL}}">
    <span>{% trans "Collapse All" %}</span>
   </a>
  </li>

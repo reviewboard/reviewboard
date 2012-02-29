@@ -6,6 +6,7 @@
 {% load djblets_utils %}
 {% load i18n %}
 {% load rb_extensions %}
+{% load staticfiles %}
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
  <head>
@@ -15,7 +16,7 @@
   <script type="text/javascript">
     var AJAX_SERIAL = "{{AJAX_SERIAL}}";
     var MEDIA_SERIAL = "{{MEDIA_SERIAL}}";
-    var MEDIA_URL = "{{MEDIA_URL}}";
+    var STATIC_URL = "{{STATIC_URL}}";
     var SITE_ROOT = "{{SITE_ROOT}}";
 
     var gUserAuthenticated = {{user.is_authenticated|lower}};
@@ -25,27 +26,27 @@
 {% endif %}
 {% block jsconsts %}{% endblock %}
   </script>
-  <link rel="shortcut icon" type="image/x-icon" href="{{MEDIA_URL}}rb/images/favicon.ico?{{MEDIA_SERIAL}}" />
-  <link rel="apple-touch-icon-precomposed" type="image/png" href="{{MEDIA_URL}}rb/images/apple-home-icon.png?{{MEDIA_SERIAL}}" />
+  <link rel="shortcut icon" type="image/x-icon" href="{% static "rb/images/favicon.ico" %}?{{MEDIA_SERIAL}}" />
+  <link rel="apple-touch-icon-precomposed" type="image/png" href="{% static "rb/images/apple-home-icon.png" %}?{{MEDIA_SERIAL}}" />
 {% compressed_css "common" %}
 {% block css %}{% endblock %}
 {% template_hook_point "base-css" %}
   <!--[if lt IE 7.]>
   <style type="text/css">
     body {
-      behavior: url("{{MEDIA_URL}}rb/js/csshover2.htc?{{MEDIA_SERIAL}}");
+      behavior: url("{% static "rb/js/csshover2.htc" %}?{{MEDIA_SERIAL}}");
     }
 
     img,
     table.sidebyside .commentflag,
     .box.important .box-inner {
-      behavior: url("{{MEDIA_URL}}rb/js/pngfix.htc?{{MEDIA_SERIAL}}");
+      behavior: url("{% static "rb/js/pngfix.htc" %}?{{MEDIA_SERIAL}}");
     }
 {% block ie6_csshacks %}{% endblock %}
   </style>
   <![endif]-->
   <!--[if lt IE 8.]>
-  <link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}rb/css/ie_hacks.css?{{MEDIA_SERIAL}}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static "rb/css/ie_hacks.css" %}?{{MEDIA_SERIAL}}"></script>
   <![endif]-->
 {% include "js/jquery.html" %}
 {% block scripts %}{% endblock %}
@@ -132,7 +133,7 @@
    </div>
   </div>
   {% include "js/jquery-ui.html" %}
-  <script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
+  <script type="text/javascript" src="{% static "djblets/js/jquery.gravy.js" %}?{{MEDIA_SERIAL}}"></script>
   {% compressed_js "common" %}
 {% block scripts-post %}{% endblock %}
 {% template_hook_point "base-scripts-post" %}

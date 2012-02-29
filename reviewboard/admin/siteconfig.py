@@ -194,6 +194,22 @@ def load_site_config():
         siteconfig.set('mail_default_from', 'noreply@' + domain)
 
 
+    # STATIC_* and MEDIA_* must be different paths, and differ in meaning.
+    # If site_static_* is empty or equal to media_static_*, we're probably
+    # migrating from an earlier Review Board install.
+    site_static_root = siteconfig.settings.get('site_static_root', '')
+    site_media_root = siteconfig.settings.get('site_media_root')
+
+    if site_static_root == '' or site_static_root == site_media_root:
+        siteconfig.set('site_static_root', settings.STATIC_ROOT)
+
+    site_static_url = siteconfig.settings.get('site_static_url', '')
+    site_media_url = siteconfig.settings.get('site_media_url')
+
+    if site_static_url == '' or site_static_url == site_media_url:
+        siteconfig.set('site_static_url', settings.STATIC_URL)
+
+
     # Populate the settings object with anything relevant from the siteconfig.
     apply_django_settings(siteconfig, settings_map)
 
@@ -216,8 +232,9 @@ def load_site_config():
 
     apply_setting("MANAGERS", None, settings.ADMINS)
 
-    # Explicitly base this off the MEDIA_URL
-    apply_setting("ADMIN_MEDIA_PREFIX", None, settings.MEDIA_URL + "admin/")
+
+    # Explicitly base this off the STATIC_URL
+    apply_setting("ADMIN_MEDIA_PREFIX", None, settings.STATIC_URL + "admin/")
 
 
     # Set the auth backends

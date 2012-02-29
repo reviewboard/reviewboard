@@ -29,14 +29,11 @@ class UpdateTests(TestCase):
         updates_required = checks.check_updates_required()
         settings.MEDIA_ROOT = old_media_root
 
-        # Should complain about ext and upload directories.
-        self.assertEqual(len(updates_required), 2)
+        # Should complain about the upload directory.
+        self.assertEqual(len(updates_required), 1)
 
         url, data = updates_required[0]
         self.assertEqual(url, "admin/manual-updates/media-upload-dir.html")
-
-        url, data = updates_required[1]
-        self.assertEqual(url, "admin/manual-updates/ext-dir.html")
 
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)

@@ -5,6 +5,7 @@
 {% load i18n %}
 {% load rb_extensions %}
 {% load reviewtags %}
+{% load staticfiles %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
@@ -185,16 +186,16 @@
 
 <ul class="controls">
 {% if collapseall %}
- <li><a href=".?expand=1"><img src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
+ <li><a href=".?expand=1"><img src="{% static "rb/images/expand.png" %}?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Expand changes" %}</a></li>
 {% else %}
- <li><a href=".?collapse=1"><img src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
+ <li><a href=".?collapse=1"><img src="{% static "rb/images/collapse.png" %}?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Collapse changes" %}</a></li>
 {% endif %}
 {% if siteconfig.settings.diffviewer_show_trailing_whitespace|default_if_none:1 %}
- <li class="ew" style="display:none;"><a href="#" class="toggleExtraWhitespaceButton"><img src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Hide Extra Whitespace" %}</a></li>
- <li  class="ew"><a href="#" class="toggleExtraWhitespaceButton"><img src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Show Extra Whitespace" %}</a></li>
+ <li class="ew" style="display:none;"><a href="#" class="toggleExtraWhitespaceButton"><img src="{% static "rb/images/collapse.png" %}?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Hide Extra Whitespace" %}</a></li>
+ <li  class="ew"><a href="#" class="toggleExtraWhitespaceButton"><img src="{% static "rb/images/expand.png" %}?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Show Extra Whitespace" %}</a></li>
 {% endif %}
- <li class="ws"><a href="#" class="toggleWhitespaceButton"><img src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Hide Whitespace changes" %}</a></li>
- <li  class="ws" style="display:none;"><a href="#" class="toggleWhitespaceButton"><img src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Show Whitespace changes" %}</a></li>
+ <li class="ws"><a href="#" class="toggleWhitespaceButton"><img src="{% static "rb/images/collapse.png" %}?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Hide Whitespace changes" %}</a></li>
+ <li  class="ws" style="display:none;"><a href="#" class="toggleWhitespaceButton"><img src="{% static "rb/images/expand.png" %}?{{MEDIA_SERIAL}}" width="14" height="14" border="0" alt="" /> {% trans "Show Whitespace changes" %}</a></li>
 </ul>
 {% endwith %}
 {% endwith %}

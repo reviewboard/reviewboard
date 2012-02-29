@@ -1,8 +1,9 @@
 {% load i18n %}
+{% load staticfiles %}
 <ol class="index" start="{{page_start_index}}">
 {% for file in files %}
  <li class="change_file_{{file.index}}"><a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.dest_filename}}</a>:
-  <img src="{{MEDIA_URL}}rb/images/spinner.gif?{{MEDIA_SERIAL}}"
+  <img src="{% static "rb/images/spinner.gif" %}?{{MEDIA_SERIAL}}"
        width="10" height="10" alt="{% trans "Loading..." %}" />
  </li>
 {% endfor %}

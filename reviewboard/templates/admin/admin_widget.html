@@ -1,8 +1,9 @@
 {% load djblets_utils %}
+{% load staticfiles %}
 <div class="admin-widget widget-{{widget.size}}{% if widget.collapsed %} widget-hidden %}{% endif %}" id="{{widget.name}}">
  <h1 class="widget-heading">
 {% if widget.icon %}
-  <img src="{{MEDIA_URL}}{{widget.icon}}?{{MEDIA_SERIAL}}" alt="{{widget.title}}" width="14" height="14" />
+  <img src="{% static widget.icon %}?{{MEDIA_SERIAL}}" alt="{{widget.title}}" width="14" height="14" />
 {% endif %}
   {{widget.title}}<span class="btn-state"></span>
  </h1>

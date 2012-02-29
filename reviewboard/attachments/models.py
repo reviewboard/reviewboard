@@ -36,7 +36,7 @@ class FileAttachment(models.Model):
             category = self.mimetype.split('/')[0]
             name = self.mimetype.replace('/', '-')
 
-            mimetypes_dir = os.path.join(settings.MEDIA_ROOT, 'rb', 'images',
+            mimetypes_dir = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
                                          'mimetypes')
 
             if not os.path.exists(os.path.join(mimetypes_dir, name + '.png')):
@@ -48,7 +48,7 @@ class FileAttachment(models.Model):
                     name = 'text-x-generic'
 
         return '%srb/images/mimetypes/%s.png?%s' % \
-            (settings.MEDIA_URL, name, settings.MEDIA_SERIAL)
+            (settings.STATIC_URL, name, settings.MEDIA_SERIAL)
 
     def __unicode__(self):
         return self.caption

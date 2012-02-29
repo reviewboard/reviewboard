@@ -1,2 +1,3 @@
+{% load staticfiles %}
 <li><a href="{{url}}" {% if current %}class="active"{% endif %}>
-{% if icon %}<img src="{{MEDIA_URL}}{{icon}}?{{MEDIA_SERIAL}}" alt="{{name}}" />{% endif %}{{name}}</a></li>
+{% if icon %}<img src="{% static icon %}?{{MEDIA_SERIAL}}" alt="{{name}}" />{% endif %}{{name}}</a></li>

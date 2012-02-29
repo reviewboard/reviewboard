@@ -1,10 +1,10 @@
 {% extends "notifications/email_base.html" %}
-{% load reviewtags %}
 {% load djblets_email %}
 {% load djblets_utils %}
+{% load reviewtags %}
 
 {% block content %}
-<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="background-image: url('{{domain_method}}://{{domain}}{{MEDIA_URL}}rb/images/review_request_box_top_bg.png'); background-position: left top; background-repeat: repeat-x; border: 1px black solid;">
+<table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="background-image: url('{{domain_method}}://{{domain}}{{STATIC_URL}}rb/images/review_request_box_top_bg.png'); background-position: left top; background-repeat: repeat-x; border: 1px black solid;">
  <tr>
   <td>
 

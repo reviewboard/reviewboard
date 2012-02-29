@@ -14,6 +14,7 @@
 
 	# Alias static media requests to filesystem
 	Alias /media "@sitedir@/htdocs/media"
+	Alias /static "@sitedir@/htdocs/static"
 	Alias /errordocs "@sitedir@/htdocs/errordocs"
 
 	# Error handlers
@@ -29,10 +30,12 @@
 	RewriteEngine on
 	<IfModule mod_fcgid.c>
 		RewriteRule ^/(media.*)$ /$1 [QSA,L,PT]
+		RewriteRule ^/(static.*)$ /$1 [QSA,L,PT]
 		RewriteRule ^/(errordocs.*)$ /$1 [QSA,L,PT]
 	</IfModule>
 	<IfModule mod_fastcgi.c>
 		RewriteRule ^/(media.*)$ /$1 [QSA,L,PT]
+		RewriteRule ^/(static.*)$ /$1 [QSA,L,PT]
 		RewriteRule ^/(errordocs.*)$ /$1 [QSA,L,PT]
 	</IfModule>
 	RewriteCond %{REQUEST_FILENAME} !-f

@@ -24,6 +24,9 @@
 	<Location "@siteroot@media">
 		SetHandler None
 	</Location>
+	<Location "@siteroot@static">
+		SetHandler None
+	</Location>
 	<Location "@siteroot@errordocs">
 		SetHandler None
 	</Location>
@@ -36,5 +39,6 @@
 
 	# Alias static media requests to filesystem
 	Alias @siteroot@media "@sitedir@/htdocs/media"
+	Alias @siteroot@static "@sitedir@/htdocs/static"
 	Alias @siteroot@errordocs "@sitedir@/htdocs/errordocs"
 </VirtualHost>

@@ -59,7 +59,7 @@ class CheckUpdatesRequiredMiddleware(object):
         path_info = request.META['PATH_INFO']
 
         if (check_updates_required() and
-            not path_info.startswith(settings.MEDIA_URL)):
+            not path_info.startswith(settings.STATIC_URL)):
             return manual_updates_required(request)
 
         # Let another handler handle this.

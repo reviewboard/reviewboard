@@ -4,13 +4,14 @@
 {% load i18n %}
 {% load log %}
 {% load rbadmintags %}
+{% load staticfiles %}
 
 {% block coltype %}colM{% endblock %}
 {% block bodyclass %}dashboard{% endblock %}
 {% block breadcrumbs %}{% endblock %}
 
 {% block extrahead %}
-<!--[if IE]><script src="{{MEDIA_URL}}rb/js/flot/excanvas.min.js?{{MEDIA_SERIAL}}"></script><![endif]-->
+<!--[if IE]><script src="{% static "rb/js/flot/excanvas.min.js" %}?{{MEDIA_SERIAL}}"></script><![endif]-->
 {% include "js/jquery.html" %}
 {% compressed_js "admin" %}
 {% endblock %}
