@@ -1147,18 +1147,20 @@
   }
 }
 
+.issue-table-wrapper {
+  margin: 5px;
+}
+
 .issue-table {
-  clear: left;
-  margin: 5px 10px;
-  padding: 5px 5px;
   font-size: 12px;
   border-spacing: 0;
+  width: 100%;
 
   tr {
-    margin: 5px 0px;
+    margin: 5px 0;
 
     th {
-      padding: 0px 5px;
+      padding: 0 5px;
       font-size: 13px;
     }
 
@@ -1174,15 +1176,19 @@
     }
   }
 
-  .summary-table-description a {
-    display: block;
-    text-decoration: None;
+  .summary-anchor {
     color: #000;
-    width: 100%;
+    display: block;
+    height: 14px;
+    overflow: hidden;
+    text-decoration: none;
+  }
+
+  .status, .reviewer {
+    text-align: center;
   }
 
   .status {
-    text-align: center;
     text-transform: capitalize;
   }
 }

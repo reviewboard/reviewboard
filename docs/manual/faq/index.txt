@@ -31,8 +31,10 @@ Does Review Board support post-commit review?
 ---------------------------------------------
 
 Yes, Review Board can handle :term:`post-commit review`, though currently you
-need to :command:`post-review` for this. See :ref:`posting-committed-code` for
-more information.
+need to use the command-line tool :command:`post-review` for this. See
+:ref:`posting-committed-code` for more information. Note that for this usage,
+the tool is only coincidentally named "post-review" (the "post" meaning
+"put up"). You can use post-review for both pre-commit and post-commit reviews.
 
 Review Board was initially designed for :term:`pre-commit review` and large
 changes need to be made before post-commit reviews can be handled in the web

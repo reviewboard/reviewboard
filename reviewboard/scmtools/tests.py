@@ -141,7 +141,7 @@ class SCMTestCase(DjangoTestCase):
 class CoreTests(DjangoTestCase):
     """Tests for the scmtools.core module"""
 
-    def testInterface(self):
+    def test_interface(self):
         """Testing basic scmtools.core API"""
 
         # Empty changeset
@@ -302,7 +302,7 @@ class CVSTests(SCMTestCase):
         except ImportError:
             raise nose.SkipTest('cvs binary not found')
 
-    def testPathWithPort(self):
+    def test_path_with_port(self):
         """Testing parsing a CVSROOT with a port"""
         repo = Repository(name="CVS",
                           path="example.com:123/cvsroot/test",
@@ -314,7 +314,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(tool.client.cvsroot,
                          ":pserver:anonymous@example.com:123/cvsroot/test")
 
-    def testPathWithoutPort(self):
+    def test_path_without_port(self):
         """Testing parsing a CVSROOT without a port"""
         repo = Repository(name="CVS",
                           path="example.com:/cvsroot/test",
@@ -326,7 +326,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(tool.client.cvsroot,
                          ":pserver:anonymous@example.com:/cvsroot/test")
 
-    def testGetFile(self):
+    def test_get_file(self):
         """Testing CVSTool.get_file"""
         expected = "test content\n"
         file = 'test/testfile'
@@ -353,7 +353,7 @@ class CVSTests(SCMTestCase):
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file('hello', PRE_CREATION))
 
-    def testRevisionParsing(self):
+    def test_revision_parsing(self):
         """Testing revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', 'PRE-CREATION')[1],
                          PRE_CREATION)
@@ -364,12 +364,12 @@ class CVSTests(SCMTestCase):
         self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
 
-    def testInterface(self):
+    def test_interface(self):
         """Testing basic CVSTool API"""
         self.assertEqual(self.tool.get_diffs_use_absolute_paths(), True)
         self.assertEqual(self.tool.get_fields(), ['diff_path'])
 
-    def testSimpleDiff(self):
+    def test_simple_diff(self):
         """Testing parsing CVS simple diff"""
         diff = "Index: testfile\n==========================================" + \
                "=========================\nRCS file: %s/test/testfile,v\nre" + \
@@ -386,7 +386,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
 
-    def testBadDiff(self):
+    def test_bad_diff(self):
         """Testing parsing CVS diff with bad info"""
         diff = "Index: newfile\n===========================================" + \
                "========================\ndiff -N newfile\n--- /dev/null	1" + \
@@ -396,7 +396,7 @@ class CVSTests(SCMTestCase):
         self.assertRaises(DiffParserError,
                           lambda: self.tool.get_parser(diff).parse())
 
-    def testBadDiff2(self):
+    def test_bad_diff2(self):
         """Testing parsing CVS bad diff with new file"""
         diff = "Index: newfile\n===========================================" + \
                "========================\nRCS file: newfile\ndiff -N newfil" + \
@@ -406,7 +406,7 @@ class CVSTests(SCMTestCase):
         self.assertRaises(DiffParserError,
                           lambda: self.tool.get_parser(diff).parse())
 
-    def testNewfileDiff(self):
+    def test_newfile_diff(self):
         """Testing parsing CVS diff with new file"""
         diff = "Index: newfile\n===========================================" + \
                "========================\nRCS file: newfile\ndiff -N newfil" + \
@@ -420,7 +420,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.newInfo, '26 Jul 2007 10:11:45 -0000')
         self.assertEqual(file.data, diff)
 
-    def testInterRevisionDiff(self):
+    def test_inter_revision_diff(self):
         """Testing parsing CVS inter-revision diff"""
         diff = "Index: testfile\n==========================================" + \
                "=========================\nRCS file: %s/test/testfile,v\nre" + \
@@ -438,7 +438,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.newInfo, '27 Sep 2007 22:57:16 -0000      1.2')
         self.assertEqual(file.data, diff)
 
-    def testBadRoot(self):
+    def test_bad_root(self):
         """Testing a bad CVSROOT"""
         file = 'test/testfile'
         rev = Revision('1.1')
@@ -487,7 +487,7 @@ class SubversionTests(SCMTestCase):
         self._test_ssh_with_site(self.svn_ssh_path,
                                  'trunk/doc/misc-docs/Makefile')
 
-    def testGetFile(self):
+    def test_get_file(self):
         """Testing SVNTool.get_file"""
         expected = 'include ../tools/Makefile.base-vars\nNAME = misc-docs\n' + \
                    'OUTNAME = svn-misc-docs\nINSTALL_DIR = $(DESTDIR)/usr/s' + \
@@ -517,7 +517,7 @@ class SubversionTests(SCMTestCase):
                           lambda: self.tool.get_file('hello',
                                                      PRE_CREATION))
 
-    def testRevisionParsing(self):
+    def test_revision_parsing(self):
         """Testing revision number parsing"""
         self.assertEqual(self.tool.parse_diff_revision('', '(working copy)')[1],
                          HEAD)
@@ -529,13 +529,17 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(self.tool.parse_diff_revision('', '(revision 23)')[1],
                          '23')
 
+        # Fix for bug 2176
+        self.assertEqual(self.tool.parse_diff_revision('', '\t(revision 4)')[1],
+                         '4')
+
         self.assertEqual(self.tool.parse_diff_revision('',
             '2007-06-06 15:32:23 UTC (rev 10958)')[1], '10958')
 
         self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
 
-    def testInterface(self):
+    def test_interface(self):
         """Testing basic SVNTool API"""
         self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
 
@@ -545,7 +549,7 @@ class SubversionTests(SCMTestCase):
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_pending_changesets(1))
 
-    def testBinaryDiff(self):
+    def test_binary_diff(self):
         """Testing parsing SVN diff with binary file"""
         diff = "Index: binfile\n===========================================" + \
                "========================\nCannot display: file marked as a " + \
@@ -555,7 +559,7 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(file.origFile, 'binfile')
         self.assertEqual(file.binary, True)
 
-    def testKeywordDiff(self):
+    def test_keyword_diff(self):
         """Testing parsing SVN diff with keywords"""
         # 'svn cat' will expand special variables in svn:keywords,
         # but 'svn diff' doesn't expand anything.  This causes the
@@ -579,7 +583,7 @@ class SubversionTests(SCMTestCase):
         file = self.tool.get_file(filename, rev)
         patch(diff, file, filename)
 
-    def testUnterminatedKeywordDiff(self):
+    def test_unterminated_keyword_diff(self):
         """Testing parsing SVN diff with unterminated keywords"""
         diff = "Index: Makefile\n" \
                "===========================================================" \
@@ -623,7 +627,7 @@ class PerforceTests(SCMTestCase):
         except ImportError:
             raise nose.SkipTest('perforce/p4python is not installed')
 
-    def testChangeset(self):
+    def test_changeset(self):
         """Testing PerforceTool.get_changeset"""
 
         try:
@@ -652,7 +656,30 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(md5(desc.summary).hexdigest(),
                          '99a335676b0e5821ffb2f7469d4d7019')
 
-    def testChangesetBroken(self):
+    def test_encoding(self):
+        """Testing PerforceTool.get_changeset with a specified encoding"""
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          encoding='utf8')
+        tool = repo.get_scmtool()
+        try:
+            desc = tool.get_changeset(157)
+            self.fail('Expected an error about unicode-enabled servers. Did '
+                      'perforce.com turn on unicode for public.perforce.com?')
+        except P4Error, e:
+            if str(e).startswith('Connect to server failed'):
+                raise nose.SkipTest(
+                    'Connection to public.perforce.com failed.  No internet?')
+            else:
+                raise
+        except SCMError, e:
+            # public.perforce.com doesn't have unicode enabled. Getting this
+            # error means we at least passed the charset through correctly
+            # to the p4 client.
+            self.assertTrue('clients require a unicode enabled server' in str(e))
+
+    def test_changeset_broken(self):
         """Testing PerforceTool.get_changeset error conditions"""
         repo = Repository(name='Perforce.com',
                           path='public.perforce.com:1666',
@@ -671,7 +698,7 @@ class PerforceTests(SCMTestCase):
         self.assertRaises(RepositoryNotFoundError,
                           lambda: tool.get_changeset(1))
 
-    def testGetFile(self):
+    def test_get_file(self):
         """Testing PerforceTool.get_file"""
 
         file = self.tool.get_file('//depot/foo', PRE_CREATION)
@@ -688,7 +715,7 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
-    def testEmptyDiff(self):
+    def test_empty_diff(self):
         """Testing Perforce empty diff parsing"""
         diff = "==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n"
 
@@ -701,7 +728,7 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(file.deleted)
         self.assertEqual(file.data, '')
 
-    def testBinaryDiff(self):
+    def test_binary_diff(self):
         """Testing Perforce binary diff parsing"""
         diff = "==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png " + \
                "====\nBinary files /tmp/foo and /src/proj/test.png differ\n"
@@ -715,7 +742,7 @@ class PerforceTests(SCMTestCase):
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
 
-    def testDeletedDiff(self):
+    def test_deleted_diff(self):
         """Testing Perforce deleted diff parsing"""
         diff = "==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png " + \
                "====\n"
@@ -729,7 +756,7 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
 
-    def testEmptyAndNormalDiffs(self):
+    def test_empty_and_normal_diffs(self):
         """Testing Perforce empty and normal diff parsing"""
         diff1_text = "==== //depot/foo/proj/test.png#1 ==A== " + \
                      "/src/proj/test.png ====\n"
@@ -803,7 +830,7 @@ class PerforceStunnelTests(SCMTestCase):
     def tearDown(self):
         self.proxy.shutdown()
 
-    def testChangeset(self):
+    def test_changeset(self):
         """Testing PerforceTool.get_changeset with stunnel"""
         desc = self.tool.get_changeset(157)
 
@@ -825,7 +852,7 @@ class PerforceStunnelTests(SCMTestCase):
         self.assertEqual(md5(desc.summary).hexdigest(),
                          '99a335676b0e5821ffb2f7469d4d7019')
 
-    def testGetFile(self):
+    def test_get_file(self):
         """Testing PerforceTool.get_file with stunnel"""
         file = self.tool.get_file('//depot/foo', PRE_CREATION)
         self.assertEqual(file, '')
@@ -859,7 +886,7 @@ class VMWareTests(SCMTestCase):
             raise nose.SkipTest('perforce/p4python is not installed')
 
 #    TODO: Re-enable when we find a way to feed strings into the new p4python.
-#    def testParse(self):
+#    def test_parse(self):
 #        """Testing VMware changeset parsing"""
 #
 #        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
@@ -889,7 +916,7 @@ class VMWareTests(SCMTestCase):
 #                         'hosted07-rel &rarr; hosted07 &rarr; bfg-main (manual)')
 #
 #
-#    def testParseSingleLineDesc(self):
+#    def test_parse_single_line_desc(self):
 #        """Testing VMware changeset parsing with a single line description."""
 #        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
 #                                 'vmware-single-line-desc.changeset'), 'r')
@@ -912,7 +939,7 @@ class VMWareTests(SCMTestCase):
 #        for file, expected in map(None, changeset.files, expected_files):
 #            self.assertEqual(file, expected)
 #
-#    def testParseMultiLineSummary(self):
+#    def test_parse_multi_line_summary(self):
 #        """Testing VMware changeset parsing with a summary spanning multiple lines."""
 #        file = open(os.path.join(os.path.dirname(__file__), 'testdata',
 #                                 'vmware-phil-is-crazy.changeset'), 'r')
@@ -943,52 +970,52 @@ class MercurialTests(SCMTestCase):
         except ImportError:
             raise nose.SkipTest('Hg is not installed')
 
-    def _firstFileInDiff(self, diff):
+    def _first_file_in_diff(self, diff):
         return self.tool.get_parser(diff).parse()[0]
 
-    def testPatchCreatesNewFile(self):
+    def test_patch_creates_new_file(self):
         """Testing HgTool with a patch that creates a new file"""
 
         self.assertEqual(PRE_CREATION,
             self.tool.parse_diff_revision("/dev/null", "bf544ea505f8")[1])
 
-    def testDiffParserNewFile(self):
+    def test_diff_parser_new_file(self):
         """Testing HgDiffParser with a diff that creates a new file"""
 
         diffContents = 'diff -r bf544ea505f8 readme\n' + \
                        '--- /dev/null\n' + \
                        '+++ b/readme\n'
 
-        file = self._firstFileInDiff(diffContents)
+        file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origFile, "readme")
 
-    def testDiffParserUncommitted(self):
+    def test_diff_parser_uncommitted(self):
         """Testing HgDiffParser with a diff with an uncommitted change"""
 
         diffContents = 'diff -r bf544ea505f8 readme\n' + \
                        '--- a/readme\n' + \
                        '+++ b/readme\n'
 
-        file = self._firstFileInDiff(diffContents)
+        file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
         self.assertEqual(file.origFile, "readme")
         self.assertEqual(file.newInfo, "Uncommitted")
         self.assertEqual(file.newFile, "readme")
 
-    def testDiffParserCommitted(self):
+    def test_diff_parser_committed(self):
         """Testing HgDiffParser with a diff between committed revisions"""
 
         diffContents = 'diff -r 356a6127ef19 -r 4960455a8e88 readme\n' + \
                        '--- a/readme\n' + \
                        '+++ b/readme\n'
 
-        file = self._firstFileInDiff(diffContents)
+        file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "356a6127ef19")
         self.assertEqual(file.origFile, "readme")
         self.assertEqual(file.newInfo, "4960455a8e88")
         self.assertEqual(file.newFile, "readme")
 
-    def testDiffParserWithPreambleJunk(self):
+    def test_diff_parser_with_preamble_junk(self):
         """Testing HgDiffParser with a diff that contains non-diff junk test as a preamble"""
 
         diffContents = 'changeset:   60:3613c58ad1d5\n' + \
@@ -1003,13 +1030,13 @@ class MercurialTests(SCMTestCase):
                        '--- a/readme\n' + \
                        '+++ b/readme\n'
 
-        file = self._firstFileInDiff(diffContents)
+        file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "356a6127ef19")
         self.assertEqual(file.origFile, "readme")
         self.assertEqual(file.newInfo, "4960455a8e88")
         self.assertEqual(file.newFile, "readme")
 
-    def testRevisionParsing(self):
+    def test_revision_parsing(self):
         """Testing HgDiffParser revision number parsing"""
 
         self.assertEqual(self.tool.parse_diff_revision('doc/readme', 'bf544ea505f8'),
@@ -1022,7 +1049,7 @@ class MercurialTests(SCMTestCase):
         # self.assertRaises(SCMException,
         #                  lambda: self.tool.parse_diff_revision('', 'hello'))
 
-    def testGetFile(self):
+    def test_get_file(self):
         """Testing HgTool.get_file"""
 
         rev = Revision('661e5dd3c493')
@@ -1038,7 +1065,7 @@ class MercurialTests(SCMTestCase):
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file('hello', PRE_CREATION))
 
-    def testInterface(self):
+    def test_interface(self):
         """Testing basic HgTool API"""
         self.assert_(self.tool.get_diffs_use_absolute_paths())
 
@@ -1050,6 +1077,19 @@ class MercurialTests(SCMTestCase):
 
         self.assertEqual(self.tool.get_fields(),
                          ['diff_path', 'parent_diff_path'])
+
+    def test_https_repo(self):
+        """Testing HgTool.get_file with an HTTPS-based repository"""
+        repo = Repository(name='Test HG2',
+                          path='https://bitbucket.org/pypy/pypy',
+                          tool=Tool.objects.get(name='Mercurial'))
+        tool = repo.get_scmtool()
+
+        rev = Revision('877cf1960916')
+        file = 'TODO.rst'
+
+        self.assert_(tool.file_exists('TODO.rst', rev))
+        self.assert_(not tool.file_exists('TODO.rstNotFound', rev))
 
 
 class GitTests(SCMTestCase):
@@ -1084,12 +1124,12 @@ class GitTests(SCMTestCase):
         except ImportError:
             raise nose.SkipTest('git binary not found')
 
-    def _readFixture(self, filename):
+    def _read_fixture(self, filename):
         return open( \
             os.path.join(os.path.dirname(__file__), 'testdata', filename), \
             'r').read()
 
-    def _getFileInDiff(self, diff, filenum=0):
+    def _get_file_in_diff(self, diff, filenum=0):
         return self.tool.get_parser(diff).parse()[filenum]
 
     def test_ssh(self):
@@ -1100,10 +1140,10 @@ class GitTests(SCMTestCase):
         """Testing a SSH-backed git repository with a LocalSite"""
         self._test_ssh_with_site(self.git_ssh_path)
 
-    def testFilemodeDiff(self):
+    def test_filemode_diff(self):
         """Testing parsing filemode changes Git diff"""
-        diff = self._readFixture('git_filemode.diff')
-        file = self._getFileInDiff(diff)
+        diff = self._read_fixture('git_filemode.diff')
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'testing')
         self.assertEqual(file.newFile, 'testing')
         self.assertEqual(file.origInfo, 'e69de29')
@@ -1114,10 +1154,10 @@ class GitTests(SCMTestCase):
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
 
-    def testFilemodeWithFollowingDiff(self):
+    def test_filemode_with_following_diff(self):
         """Testing parsing filemode changes with following Git diff"""
-        diff = self._readFixture('git_filemode2.diff')
-        file = self._getFileInDiff(diff)
+        diff = self._read_fixture('git_filemode2.diff')
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'testing')
         self.assertEqual(file.newFile, 'testing')
         self.assertEqual(file.origInfo, 'e69de29')
@@ -1127,7 +1167,7 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
-        file = self._getFileInDiff(diff, 1)
+        file = self._get_file_in_diff(diff, 1)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
         self.assertEqual(file.origInfo, 'cc18ec8')
@@ -1136,10 +1176,10 @@ class GitTests(SCMTestCase):
                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
 
-    def testSimpleDiff(self):
+    def test_simple_diff(self):
         """Testing parsing simple Git diff"""
-        diff = self._readFixture('git_simple.diff')
-        file = self._getFileInDiff(diff)
+        diff = self._read_fixture('git_simple.diff')
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
         self.assertEqual(file.origInfo, 'cc18ec8')
@@ -1151,10 +1191,10 @@ class GitTests(SCMTestCase):
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
 
-    def testNewfileDiff(self):
+    def test_new_file_diff(self):
         """Testing parsing Git diff with new file"""
-        diff = self._readFixture('git_newfile.diff')
-        file = self._getFileInDiff(diff)
+        diff = self._read_fixture('git_newfile.diff')
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'IAMNEW')
         self.assertEqual(file.newFile, 'IAMNEW')
         self.assertEqual(file.origInfo, PRE_CREATION)
@@ -1166,17 +1206,17 @@ class GitTests(SCMTestCase):
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
 
-    def testNewfileNoContentDiff(self):
+    def test_new_file_no_content_diff(self):
         """Testing parsing Git diff new file, no content"""
-        diff = self._readFixture('git_newfile_nocontent.diff')
+        diff = self._read_fixture('git_newfile_nocontent.diff')
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 0)
 
-    def testNewfileNoContentWithFollowingDiff(self):
+    def test_new_file_no_content_with_following_diff(self):
         """Testing parsing Git diff new file, no content, with following"""
-        diff = self._readFixture('git_newfile_nocontent2.diff')
+        diff = self._read_fixture('git_newfile_nocontent2.diff')
         self.assertEqual(len(self.tool.get_parser(diff).parse()), 1)
-        file = self._getFileInDiff(diff)
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
         self.assertEqual(file.origInfo, 'cc18ec8')
@@ -1185,10 +1225,10 @@ class GitTests(SCMTestCase):
                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
 
-    def testDelFileDiff(self):
+    def test_del_file_diff(self):
         """Testing parsing Git diff with deleted file"""
-        diff = self._readFixture('git_delfile.diff')
-        file = self._getFileInDiff(diff)
+        diff = self._read_fixture('git_delfile.diff')
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'OLDFILE')
         self.assertEqual(file.newFile, 'OLDFILE')
         self.assertEqual(file.origInfo, '8ebcb01')
@@ -1200,10 +1240,10 @@ class GitTests(SCMTestCase):
                          "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
 
-    def testBinaryDiff(self):
+    def test_binary_diff(self):
         """Testing parsing Git diff with binary"""
-        diff = self._readFixture('git_binary.diff')
-        file = self._getFileInDiff(diff)
+        diff = self._read_fixture('git_binary.diff')
+        file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'pysvn-1.5.1.tar.gz')
         self.assertEqual(file.newFile, 'pysvn-1.5.1.tar.gz')
         self.assertEqual(file.origInfo, PRE_CREATION)
@@ -1214,9 +1254,9 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
 
-    def testComplexDiff(self):
+    def test_complex_diff(self):
         """Testing parsing Git diff with existing and new files"""
-        diff = self._readFixture('git_complex.diff')
+        diff = self._read_fixture('git_complex.diff')
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 6)
         self.assertEqual(files[0].origFile, 'cfg/testcase.ini')
@@ -1289,7 +1329,7 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[5].data.splitlines()[-1],
                          "+Hello there")
 
-    def testParseDiffRevision(self):
+    def test_parse_diff_revision(self):
         """Testing Git revision number parsing"""
 
         self.assertEqual(self.tool.parse_diff_revision('doc/readme', 'bf544ea'),
@@ -1299,7 +1339,7 @@ class GitTests(SCMTestCase):
         self.assertEqual(self.tool.parse_diff_revision('/dev/null', '0000000'),
                          ('/dev/null', PRE_CREATION))
 
-    def testFileExists(self):
+    def test_file_exists(self):
         """Testing GitTool.file_exists"""
 
         self.assert_(self.tool.file_exists("readme", "e965047"))
@@ -1313,7 +1353,7 @@ class GitTests(SCMTestCase):
         self.assert_(not self.tool.file_exists("readme", "a62df6c"))
         self.assert_(not self.tool.file_exists("readme2", "ccffbb4"))
 
-    def testGetFile(self):
+    def test_get_file(self):
         """Testing GitTool.get_file"""
 
         self.assertEqual(self.tool.get_file("readme", PRE_CREATION), '')
@@ -1331,13 +1371,13 @@ class GitTests(SCMTestCase):
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file("readme", "0000000"))
 
-    def testParseDiffRevisionWithRemoteAndShortSHA1Error(self):
+    def test_parse_diff_revision_with_remote_and_short_SHA1_error(self):
         """Testing GitTool.parse_diff_revision with remote files and short SHA1 error"""
         self.assertRaises(
             ShortSHA1Error,
             lambda: self.remote_tool.parse_diff_revision('README', 'd7e96b3'))
 
-    def testGetFileWithRemoteAndShortSHA1Error(self):
+    def test_get_file_with_remote_and_short_SHA1_error(self):
         """Testing GitTool.get_file with remote files and short SHA1 error"""
         self.assertRaises(
             ShortSHA1Error,

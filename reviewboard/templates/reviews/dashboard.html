@@ -2,6 +2,8 @@
 {% load djblets_deco %}
 {% load i18n %}
 {% load reviewtags %}
+{% load staticfiles %}
+
 {% block title %}{% trans "My Dashboard" %}{% endblock %}
 
 {% block extrahead %}
@@ -10,11 +12,11 @@
 
 {% block css %}
 {{block.super}}
-<link rel="stylesheet" type="text/css" href="{{MEDIA_URL}}djblets/css/datagrid.css?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{% static "djblets/css/datagrid.css" %}?{{MEDIA_SERIAL}}" />
 {% endblock %}
 
 {% block scripts-post %}
-<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/datagrid.js?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{% static "djblets/js/datagrid.js" %}?{{MEDIA_SERIAL}}"></script>
 {% endblock %}
 
 {% block content %}

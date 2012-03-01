@@ -18,6 +18,7 @@ from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
+from reviewboard import initialize
 from reviewboard.webapi.resources import root_resource, FileDiffResource
 from sphinx import addnodes
 from sphinx.util import docname_join
@@ -32,6 +33,10 @@ MIMETYPE_LANGUAGE_MAPPING = {
     FileDiffResource.DIFF_DATA_MIMETYPE_JSON: 'javascript',
     FileDiffResource.DIFF_DATA_MIMETYPE_XML: 'xml',
 }
+
+
+# Initialize Review Board
+initialize()
 
 
 # Build the list of parents.

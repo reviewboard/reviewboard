@@ -17,9 +17,9 @@
     </span>
 {% else %}
    <th colspan="2">
-    {% ifnotequal file.index None %}<a name="{{file.index}}">{% endifnotequal %}
+    {% if file.index != None %}<a name="{{file.index}}">{% endif %}
     {{file.depot_filename}}
-    {% ifnotequal file.index None %}</a>{% endifnotequal %}
+    {% if file.index != None %}</a>{% endif %}
     </th>
 {% endif %}
   </tr>

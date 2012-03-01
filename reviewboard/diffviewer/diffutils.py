@@ -104,7 +104,7 @@ HEADER_REGEXES = {
 }
 
 HEADER_REGEX_ALIASES = {
-    # C/C++
+    # C/C++/Objective-C
     '.cc': '.c',
     '.cpp': '.c',
     '.cxx': '.c',
@@ -116,6 +116,7 @@ HEADER_REGEX_ALIASES = {
     '.h++': '.c',
     '.C': '.c',
     '.H': '.c',
+    '.mm': '.m',
 
     # Perl
     '.pm': '.pl',
@@ -1049,6 +1050,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             'force_interdiff': force_interdiff,
             'binary': filediff.binary,
             'deleted': filediff.deleted,
+            'moved': filediff.moved,
             'newfile': newfile,
             'index': len(files),
         }
@@ -1056,7 +1058,11 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         if load_chunks:
             chunks = []
 
-            if not filediff.binary and not filediff.deleted:
+            # If the file is binary or deleted, don't get chunks. Also don't
+            # get chunks if there is no source_revision, which occurs if a
+            # file has moved and has no changes.
+            if (not filediff.binary and not filediff.deleted and
+                filediff.source_revision != ''):
                 key = key_prefix
 
                 if not force_interdiff:
@@ -1087,6 +1093,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
                     if not meta.get('whitespace_chunk', False):
                         file['whitespace_only'] = False
+
+            if file['moved'] and len(chunks) == 0:
+                file['whitespace_only'] = False
 
             file['num_changes'] = len(file['changed_chunk_indexes'])
 

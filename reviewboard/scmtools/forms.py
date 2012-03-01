@@ -89,7 +89,7 @@ class RepositoryForm(forms.ModelForm):
         }),
         ('github-private', {
             'label': _('GitHub (Private)'),
-            'fields': ['hosting_project_name', 'hosting_owner', 'api_token'],
+            'fields': ['hosting_project_name', 'hosting_owner', 'github_api_token'],
             'hidden_fields': ['raw_file_url', 'username', 'password'],
             'tools': {
                 'Git': {
@@ -101,13 +101,13 @@ class RepositoryForm(forms.ModelForm):
                                     '%(hosting_project_name)s/'
                                     '<revision>'
                                     '?login=%(hosting_owner)s'
-                                    '&token=%(api_token)s'
+                                    '&token=%(github_api_token)s'
                 },
             },
         }),
         ('github-private-org', {
             'label': _('GitHub (Private Organization)'),
-            'fields': ['hosting_project_name', 'hosting_owner', 'api_token',
+            'fields': ['hosting_project_name', 'hosting_owner', 'github_api_token',
                        'username'],
             'hidden_fields': ['raw_file_url', 'password'],
             'tools': {
@@ -120,7 +120,7 @@ class RepositoryForm(forms.ModelForm):
                                     '%(hosting_project_name)s/'
                                     '<revision>'
                                     '?login=%(username)s'
-                                    '&token=%(api_token)s'
+                                    '&token=%(github_api_token)s'
                 },
             },
         }),
@@ -196,6 +196,51 @@ class RepositoryForm(forms.ModelForm):
                 # TODO: Support Git
             },
         }),
+        ('codebasehq', {
+            'label': _('Codebase HQ'),
+            'fields': ['hosting_project_name', 'codebase_group_name',
+                       'codebase_repo_name', 'codebase_api_username',
+                       'codebase_api_key'],
+            'hidden_fields': ['username', 'password', 'raw_file_url'],
+            'tools': {
+                'Git': {
+                    'username': '%(codebase_api_username)s',
+                    'password': '%(codebase_api_key)s',
+                    'path': 'git@codebasehq.com:%(codebase_group_name)s/'
+                            '%(hosting_project_name)s/'
+                            '%(codebase_repo_name)s.git',
+                    'raw_file_url': 'https://api3.codebasehq.com/'
+                                     '%(hosting_project_name)s/'
+                                     '%(codebase_repo_name)s/blob/'
+                                     '<revision>',
+                },
+
+                #
+                # NOTE: Subversion doesn't work because it requires a
+                #       standard username and password, not an API Username/token.
+                #       We don't have a way of requesting that data just for this
+                #       type.
+                #
+                #'Subversion': {
+                #    'path': 'https://%(username)s@%(codebase_group_name)s/'
+                #            '%(hosting_project_name)s/%(codebase_repo_name)s.svn',
+                #},
+
+                # NOTE: Mercurial doesn't work because they don't use HTTP Basic
+                #       Auth for the authentication. A valid browser session cookie
+                #       is needed instead.
+                #
+                #'Mercurial': {
+                #    'username': '%(codebase_api_username)s',
+                #    'password': '%(codebase_api_key)s',
+                #    'path': 'https://%(codebase_group_name)s.codebasehq.com/'
+                #            'projects/%(hosting_project_name)s/repositories/'
+                #            '%(codebase_repo_name)s/'
+                #},
+
+                # TODO: Support Bazaar
+            }
+        }),
         ('custom', {
             'label': _('Custom'),
             'fields': ['path', 'mirror_path'],
@@ -267,7 +312,7 @@ class RepositoryForm(forms.ModelForm):
 
     HOSTING_FIELDS = [
         "path", "mirror_path", "hosting_owner", "hosting_project_name",
-        "api_token", "project_slug", "repository_name",
+        "github_api_token", "project_slug", "repository_name",
     ]
 
     BUG_TRACKER_FIELDS = [
@@ -319,14 +364,13 @@ class RepositoryForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
 
-    api_token = forms.CharField(
+    github_api_token = forms.CharField(
         label=_("API token"),
         max_length=128,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('The API token provided by the hosting service. This is '
-                    'needed in order to access files on this repository. '
-                    'On GitHub, you can find this on your '
+        help_text=_('Your GitHub API token. This is needed in order to access '
+                    'files on this repository. You can find this on your '
                     '<a href="http://github.com/account">Account</a> page '
                     'under "Account Admin."'))
 
@@ -366,6 +410,36 @@ class RepositoryForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_("This should be the path to the bug tracker for this "
                     "repository."))
+
+    codebase_group_name = forms.CharField(
+        label=_('Codebase HQ domain name'),
+        max_length=128,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The subdomain used to access your Codebase account'))
+
+    codebase_repo_name = forms.CharField(
+        label=_('Repository Short Name'),
+        max_length=128,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The short name of your repository. This can be found in '
+                    'the "Repository Admin/Properties" page'))
+
+    codebase_api_username = forms.CharField(
+        label=_('API Username'),
+        max_length=128,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('Your Codebase API Username. You can find this in the '
+                    'API Credentials section of the "My Profile" page at '
+                    'http://&lt;groupname&gt;.codebasehq.com/settings/profile/'))
+
+    codebase_api_key = forms.CharField(
+        label=_('API Key'),
+        max_length=40,
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     def __init__(self, *args, **kwargs):
         super(RepositoryForm, self).__init__(*args, **kwargs)
@@ -408,20 +482,28 @@ class RepositoryForm(forms.ModelForm):
             if not is_path_match:
                 continue
 
-            if not self._match_url(self.instance.mirror_path,
-                                   field_info['mirror_path'], [])[0]:
+            if ('mirror_path' in field_info and
+                not self._match_url(self.instance.mirror_path,
+                                    field_info['mirror_path'], [])[0]):
                 continue
 
-            if 'raw_file_url' in field_info:
-                is_raw_match, raw_field_data = \
-                    self._match_url(self.instance.raw_file_url,
-                                    field_info['raw_file_url'],
-                                    info['fields'])
+            all_extras_match = True
 
-                if not is_raw_match:
-                    continue
+            for extra_field, value in field_info.iteritems():
+                if extra_field not in ('path', 'mirror_path'):
+                    is_match, extra_field_data = \
+                        self._match_url(getattr(self.instance, extra_field),
+                                        value,
+                                        info['fields'])
 
-                field_data.update(raw_field_data)
+                if not is_match:
+                    all_extras_match = False
+                    break
+
+                field_data.update(extra_field_data)
+
+            if not all_extras_match:
+                continue
 
             # It all matched.
             self.fields['hosting_type'].initial = service_id

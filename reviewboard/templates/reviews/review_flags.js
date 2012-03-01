@@ -10,11 +10,11 @@
   var gReviewRequestSummary = "{{review_request.summary|escapejs}}";
   var gReviewRequestSitePrefix = "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}";
   var gReviewPending = {% if review %}true{% else %}false{% endif %};
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{% ifequal review_request.status 'P' %}
+{%  if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+{%   if review_request.status == 'P' %}
   var gEditable = true;
-{% endifequal %}
-{% endifuserorperm %}
+{%   endif %}
+{%  endif %}
 {% else %}{# error #}
   var gReviewPending = false;
 {% endif %}{# !error #}

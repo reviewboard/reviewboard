@@ -9,7 +9,7 @@
  </p>
  <p><tt>{{search_path}}</tt></p>
  <p>
-{% ifequal platform "win32" %}
+{% if platform == "win32" %}
 {%  blocktrans %}
   You can install GNU {{binaryname}} by downloading and running the
   <a href="http://gnuwin32.sourceforge.net/downlinks/patch.php">installer</a>.
@@ -18,7 +18,7 @@
    System Variables &gt; PATH).
 {%  endblocktrans %}
 
-{% else %}{% ifequal platform "darwin" %}
+{% elif platform == "darwin" %}
 {%  blocktrans %}
   {{binaryname}} should be installed on your system by default. Make sure
   it's in the file path and accessible by your web server.
@@ -31,6 +31,6 @@
   the proper package to install.
 
 {%  endblocktrans %}
-{% endifequal %}{% endifequal %}
+{% endif %}
  </p>
 </div>

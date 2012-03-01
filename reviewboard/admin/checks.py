@@ -95,12 +95,12 @@ def check_updates_required():
 
         # Check if the site has moved and the old media directory no longer
         # exists.
-        if siteconfig and not os.path.exists(settings.MEDIA_ROOT):
-            new_media_root = os.path.join(settings.HTDOCS_ROOT, "media")
+        if siteconfig and not os.path.exists(settings.STATIC_ROOT):
+            new_media_root = os.path.join(settings.HTDOCS_ROOT, "static")
 
             if os.path.exists(new_media_root):
                 siteconfig.set("site_media_root", new_media_root)
-                settings.MEDIA_ROOT = new_media_root
+                settings.STATIC_ROOT = new_media_root
 
 
         # Check if there's a media/uploaded/images directory. If not, this is
@@ -142,7 +142,7 @@ def check_updates_required():
 
 
         # Check if the htdocs/media/ext directory is writable by us.
-        ext_dir = os.path.join(settings.MEDIA_ROOT, 'ext')
+        ext_dir = settings.EXTENSIONS_STATIC_ROOT
 
         if not os.path.isdir(ext_dir) or not os.access(ext_dir, os.W_OK):
             _updates_required.append((

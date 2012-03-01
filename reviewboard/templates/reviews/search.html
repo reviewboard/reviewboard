@@ -7,17 +7,17 @@
 <!-- TODO: highlight search terms in summaries/excerpts -->
 
 {% block content %}
- {% ifequal hits 0 %}
+ {% if hits == 0 %}
  {% trans "No review requests matching your query" %}: <b>{{ query }}</b>
  {% else %}
  {% trans "Results" %} <b>{{ first_on_page }} - {{ last_on_page }}</b> of {{ hits }} for <b>{{ query }}</b>
- {% endifequal %}
+ {% endif %}
  <br /><br />
  {% for result in object_list %}
   <div class="searchresult">
    <h2><a href="{{ result.get_absolute_url }}">{{ result.summary }}</a></h2>
    <div class="excerpt">{{ result.description|truncatewords:30 }}</div>
-   <div class="by">{% blocktrans with result.time_added|timesince as added_since and result.submitter|user_displayname as added_by%}{{added_since}} ago by {{added_by}}{% endblocktrans %}</div>
+   <div class="by">{% blocktrans with result.time_added|timesince as added_since and result.submitter|user_displayname as added_by %}{{added_since}} ago by {{added_by}}{% endblocktrans %}</div>
   </div>
  {% endfor %}
  {% if is_paginated %}

@@ -28,10 +28,12 @@ class FileDiff(models.Model):
     patched versions of a single file in a repository.
     """
     MODIFIED = 'M'
+    MOVED = 'V'
     DELETED = 'D'
 
     STATUSES = (
         (MODIFIED, _('Modified')),
+        (MOVED, _('Moved')),
         (DELETED, _('Deleted')),
     )
 
@@ -56,7 +58,11 @@ class FileDiff(models.Model):
 
     @property
     def deleted(self):
-        return self.status == 'D'
+        return self.status == self.DELETED
+
+    @property
+    def moved(self):
+        return self.status == self.MOVED
 
     def _get_diff(self):
         # If the diff is not in FileDiffData, it is in FileDiff.

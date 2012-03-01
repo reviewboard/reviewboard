@@ -582,10 +582,8 @@ class ReviewRequest(models.Model):
         """
         changeset = None
         if self.changenum:
-            try:
-                changeset = self.repository.get_scmtool().get_changeset(self.changenum)
-            except (EmptyChangeSetError, NotImplementedError):
-                pass
+            changeset = self.repository.get_scmtool().get_changeset(
+                self.changenum, allow_empty=True)
 
         return changeset and changeset.pending
 

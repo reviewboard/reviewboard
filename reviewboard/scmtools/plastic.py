@@ -35,7 +35,7 @@ class PlasticTool(SCMTool):
         self.client = PlasticClient(repository.path, self.reponame,
                                     self.hostname, self.port)
 
-    def get_changeset(self, changesetid):
+    def get_changeset(self, changesetid, allow_empty=False):
         logging.debug('Plastic: get_changeset %s' % (changesetid))
 
         changesetdata = self.client.get_changeset(changesetid)

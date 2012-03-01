@@ -48,26 +48,13 @@ def main():
                          'as a basis.\n')
         sys.exit(1)
 
-    # Next, make sure we're in the Djblets media path
-    if not os.path.exists(os.path.join('reviewboard', 'htdocs',
-                                       'media', 'djblets')):
-	sys.stderr.write('You must set up the Djblets media path. Create '
-	                 'a symlink pointing\n'
-	                 'to a development djblets/media directory and name '
-	                 'it\n'
-	                 'reviewboard/htdocs/media/djblets\n'
-	                 '\n'
-	                 'For example:\n'
-	                 '$ ln -s /path/to/djblets/djblets/media '
-	                 'reviewboard/htdocs/media/djblets\n')
-        sys.exit(1)
-
     # Build ReviewBoard.egg-info if it doesn't already exist
     if not os.path.exists('ReviewBoard.egg-info'):
         os.system("python ./setup.py egg_info")
 
     # And now just boot up the server
-    os.system(sys.executable + ' ./reviewboard/manage.py runserver 0.0.0.0:%s'
+    os.system(sys.executable +
+              ' ./reviewboard/manage.py runserver 0.0.0.0:%s --nostatic'
               % server_port)
 
 if __name__ == "__main__":

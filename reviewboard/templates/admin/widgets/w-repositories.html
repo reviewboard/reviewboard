@@ -1,4 +1,5 @@
 {% load i18n %}
+{% load staticfiles %}
 {% if widget.data.repositories %}
 <table class="widget-large-table">
  <thead>
@@ -15,10 +16,10 @@
    <td>{{repository.tool}}</td>
    <td class="visible-column">
 {%   if repository.visible %}
-    <img src="{{MEDIA_URL}}rb/images/shipit.png?{{MEDIA_URL}}" alt="Visible"
+    <img src="{% static "rb/images/shipit.png" %}?{{MEDIA_SERIAL}}" alt="Visible"
          title="Visible" />
 {%   else %}
-    <img src="{{MEDIA_URL}}rb/images/disabled.png?{{MEDIA_URL}}" alt="Invisible"
+    <img src="{% static "rb/images/disabled.png" %}?{{MEDIA_SERIAL}}" alt="Invisible"
          title="Invisible" />
 {%   endif %}
    </td>

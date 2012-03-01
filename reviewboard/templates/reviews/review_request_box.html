@@ -1,6 +1,7 @@
 {% load djblets_utils %}
 {% load i18n %}
 {% load reviewtags %}
+{% load staticfiles %}
 
 {% include "reviews/review_request_dlgs.html" %}
 
@@ -11,21 +12,19 @@
   {% blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
     Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
   {% endblocktrans %}
-  {% ifequal review_request.status 'S' %}
+  {% if review_request.status == 'S' %}
    {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
    Created {{dateadded}} and submitted {{lastupdated}} ago
    {% endblocktrans %}
-  {% endifequal %}
-  {% ifequal review_request.status 'D' %}
+  {% elif review_request.status == 'D' %}
    {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
    Created {{dateadded}} and discarded {{lastupdated}} ago
    {% endblocktrans %}
-  {% endifequal %}
-  {% ifequal review_request.status 'P' %}
+  {% elif review_request.status == 'P' %}
    {% blocktrans with review_request_details.time_added|date as dateadded and review_request_details.last_updated|timesince as lastupdated %}
    Created {{dateadded}} and updated {{lastupdated}} ago
    {% endblocktrans %}
-  {% endifequal %}
+  {% endif %}
   </p>
  </div>
  <table id="details">
@@ -96,7 +95,7 @@
   <label for="testing_done">{% trans "Testing Done" %}:</label>
   <pre id="testing_done" class="editable">{{review_request_details.testing_done|escape}}</pre>
  </div>
- <div class="content clearfix"{% ifequal review_request_details.screenshots.count 0 %} style="display: none;"{% endifequal %}>
+ <div class="content clearfix"{% if review_request_details.screenshots.count == 0 %} style="display: none;"{% endif %}>
   <label for="images">{% trans "Screenshots" %}:</label>
   <div id="screenshot-thumbnails">
 {% for image in review_request_details.screenshots.all %}
@@ -104,16 +103,16 @@
     <div class="screenshot" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
-     {% ifuserorperm review_request.submitter "reviews.delete_screenshot" %}
-      <a href="#" class="delete"><img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
-     {% endifuserorperm %}
+     {% if request.user == review_request.submitter or perms.reviews.delete_screenshot %}
+      <a href="#" class="delete"><img src="{% static "rb/images/delete.png" %}?{{MEDIA_SERIAL}}" alt="{% trans "Delete Screenshot" %}" /></a>
+     {% endif %}
     </div>
    </div>
 {% endfor %}
    <br clear="both" />
   </div>
  </div>
-<div class="content clearfix"{% ifequal review_request_details.file_attachments.count 0 %} style="display: none;"{% endifequal %}>
+<div class="content clearfix"{% if review_request_details.file_attachments.count == 0 %} style="display: none;"{% endif %}>
 <label for="file-list">{% trans "File Attachments" %}:</label>
  <div id="file-list">
 {% for file in review_request_details.file_attachments.all %}
@@ -126,11 +125,11 @@
       <a href="{{file.get_absolute_url}}">
       <img src="{{file.icon_url}}" />
       {{file.filename}}</a>
-{% ifuserorperm review_request.submitter "reviews.delete_file" %}
+{% if request.user == review_request.submitter or perms.reviews.delete_file %}
       <a href="#" class="delete">
-       <img src="{{MEDIA_URL}}rb/images/delete.png?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
+       <img src="{% static "rb/images/delete.png" %}?{{MEDIA_SERIAL}}" alt="{% trans "Delete File" %}" />
       </a>
-{% endifuserorperm %}
+{% endif %}
      </div>
      <div class="file-caption">
       <a href="{{file.get_absolute_url}}" class="edit">{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}</a>

@@ -75,8 +75,11 @@ class BuildMedia(Command):
         pass
 
     def run(self):
-        retcode = subprocess.call(['./reviewboard/manage.py', 'synccompress',
-                                   '--force'])
+        retcode = subprocess.call(['./reviewboard/manage.py', 'collectstatic',
+                                   '--noinput'],
+                                  env={
+                                      'FORCE_BUILD_MEDIA': '1',
+                                  })
 
         if retcode != 0:
             raise RuntimeError('Failed to build media files')
@@ -138,10 +141,10 @@ setup(name=PACKAGE_NAME,
       },
       cmdclass=cmdclasses,
       install_requires=[
-          'Django>=1.3.1',
+          'Django>=1.4b1',
           'django_evolution>=0.6.5',
           'Djblets>=0.7alpha0.dev',
-          'django-pipeline',
+          'django-pipeline>=1.2b5',
           'Pygments>=1.4',
           'flup',
           'paramiko>=1.7.6',
@@ -152,6 +155,7 @@ setup(name=PACKAGE_NAME,
       ],
       dependency_links = [
           "http://downloads.reviewboard.org/mirror/",
+          'http://www.djangoproject.com/download/1.4-beta-1/tarball/#egg=Django-1.4b1',
           download_url,
       ],
       include_package_data=True,

@@ -28,6 +28,7 @@ reviewboard/htdocs/media/rb/css/reviews.min.css
 reviewboard/htdocs/media/rb/js/admin.min.js
 reviewboard/htdocs/media/rb/js/base.min.js
 reviewboard/htdocs/media/rb/js/reviews.min.js
+reviewboard/htdocs/static/
 
 # Directories/symlinks
 reviewboard/htdocs/media/djblets

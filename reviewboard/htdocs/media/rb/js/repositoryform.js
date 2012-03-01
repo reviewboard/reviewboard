@@ -2,7 +2,7 @@ var prevTypes = {};
 var origRepoTypes = [];
 
 function forEachField(fields, wholeRows, func) {
-    var prefix = (wholeRows ? "#id_" : ".");
+    var prefix = (wholeRows ? "#id_" : ".field-");
 
     for (var id in fields) {
         for (var field in fields[id]) {
@@ -15,16 +15,16 @@ function updateFormDisplay(id, fields, excludeFields) {
     var type = $("#id_" + id)[0].value;
 
     for (var i in fields[prevTypes[id]]) {
-        $("." + fields[prevTypes[id]][i]).hide();
+        $(".field-" + fields[prevTypes[id]][i]).hide();
     }
 
     for (var i in fields[type]) {
-        $("." + fields[type][i]).show();
+        $(".field-" + fields[type][i]).show();
     }
 
     if (excludeFields) {
         for (var i in excludeFields) {
-            $("." + excludeFields[i]).hide();
+            $(".field-" + excludeFields[i]).hide();
         }
     }
 

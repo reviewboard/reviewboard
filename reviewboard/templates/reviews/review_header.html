@@ -1,43 +1,36 @@
 {% load i18n %}
 {% load djblets_utils %}
 
-{% ifequal review_request.status 'S' %}
+{% if review_request.status == 'S' %}
 <div class="banner" id="submitted-banner">
  <h1>{% trans "This change has been marked as submitted." %}</h1>
-{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
+{% if request.user == review_request.submitter or perms.reviews.can_change_status %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
  <p><label for="changedescription">{% trans "Describe the submission (optional):" %}</label></p>
  <pre id="changedescription" class="editable">{{close_description}}</pre>
-{% endifuserorperm %}
-{% ifnotuserandperm review_request.submitter "reviews.can_change_status" %}
-{%  if close_description %}
+{% elif close_description %}
  <pre id="changedescription">{{close_description}}</pre>
-{%  endif %}
-{% endifnotuserandperm %}
+{% endif %}
 </div>
-{% else %}
-{%  ifequal review_request.status 'D' %}
+{% elif review_request.status == 'D' %}
 <div class="banner" id="discard-banner">
  <h1>{% trans "This change has been discarded." %}</h1>
-{% ifequal request.user review_request.submitter %}
+{% if request.user == review_request.submitter %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
-{% endifequal %}
-{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
+{% endif %}
+{% if request.user == review_request.submitter or perms.reviews.can_change_status %}
  <p><label for="changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
  <pre id="changedescription" class="editable">{{close_description}}</pre>
-{% endifuserorperm %}
-{% ifnotuserandperm review_request.submitter "reviews.can_change_status" %}
-{%  if close_description %}
+{% elif close_description %}
  <pre id="changedescription">{{close_description}}</pre>
-{%  endif %}
-{% endifnotuserandperm %}
+{% endif %}
 </div>
-{%  else %}
-{%  ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
+{% else %}{# pending review #}
+{%  if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
 <div class="banner" id="draft-banner" style="display:none;">
-{%    if review_request.public %}
+{%   if review_request.public %}
  <h1>{% trans "This review request is a draft." %}</h1>
  {% trans "Be sure to publish when finished." %}
  <input type="button" id="btn-draft-publish"
@@ -46,25 +39,22 @@
   value="{% trans "Discard Draft" %}" />
  <p><label for="changedescription">{% trans "Describe your changes (optional):" %}</label></p>
  <pre id="changedescription" class="editable">{% if draft.changedesc %}{{draft.changedesc.text}}{% endif %}</pre>
-{%    else %}
+{%   else %}
  <h1>{% trans "This review request is not yet public." %}</h1>
  {% trans "Be sure to publish when finished." %}
  <input type="button" id="btn-draft-publish"
   value="{% trans "Publish" %}" />
  <input type="button" id="btn-review-request-discard"
   value="{% trans "Discard Review Request" %}" />
-{%    endif %}
-{%   endifuserorperm %}
+{%   endif %}
+{%  endif %}
 </div>
-{%  endifequal %}
-{% endifequal %}
+{% endif %}
 
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
-{%  ifequal review_request.status 'P' %}
-{%   if draft or not review_request.public %}
+{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest and review_request.status == 'P'%}
+{%  if draft or not review_request.public %}
 <script type="text/javascript">
   $("#draft-banner").show();
 </script>
-{%   endif %}
-{%  endifequal %}
-{% endifuserorperm %}
+{%  endif %}
+{% endif %}

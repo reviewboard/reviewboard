@@ -2,13 +2,14 @@
 {% load compressed %}
 {% load i18n %}
 {% load rbadmintags %}
+{% load staticfiles %}
 
 {% block title %}{{title}} | {% trans "Review Board administration" %}{% endblock %}
 
 {% block extrastyle %}
 {% compressed_css "common" %}
 {% compressed_css "admin" %}
-<link rel="icon" type="image/png" href="{{MEDIA_URL}}rb/images/favicon.png?{{MEDIA_SERIAL}}" />
+<link rel="icon" type="image/png" href="{% static "rb/images/favicon.png" %}?{{MEDIA_SERIAL}}" />
 {% include "js/pipeline.html" %}
 {% endblock %}
 

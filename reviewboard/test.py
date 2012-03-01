@@ -29,6 +29,7 @@ import shutil
 import sys
 import tempfile
 
+from django.core.management import execute_from_command_line
 from django.test.simple import DjangoTestSuiteRunner
 import pkg_resources
 import nose
@@ -56,8 +57,8 @@ class RBTestRunner(DjangoTestSuiteRunner):
         # Default to testing in a non-subdir install.
         settings.SITE_ROOT = "/"
 
+        settings.STATIC_URL = settings.SITE_ROOT + 'static/'
         settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
-        settings.ADMIN_MEDIA_PREFIX = settings.MEDIA_URL + 'admin/'
         settings.RUNNING_TEST = True
 
         self._setup_media_dirs()
@@ -104,52 +105,29 @@ class RBTestRunner(DjangoTestSuiteRunner):
             return 1
 
     def _setup_media_dirs(self):
-        settings.MEDIA_ROOT = tempfile.mkdtemp(prefix='rb-tests-')
+        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-')
 
-        if os.path.exists(settings.MEDIA_ROOT):
+        # Don't go through Pipeline for everything, since we're not
+        # triggering pipelining of our media.
+        settings.STATICFILES_STORAGE = \
+            'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+        if os.path.exists(self.tempdir):
             self._destroy_media_dirs()
 
+        settings.MEDIA_ROOT = os.path.join(self.tempdir, 'media')
         images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
 
         if not os.path.exists(images_dir):
             os.makedirs(images_dir)
 
-        # Set up symlinks to the other directories for the web-based tests
-        bundled_media_dir = os.path.join(os.path.dirname(__file__),
-                                         'htdocs', 'media')
-
-        for path in os.listdir(bundled_media_dir):
-            if path == 'uploaded':
-                continue
-
-            if not hasattr(os, 'symlink'):
-                shutil.copytree(os.path.join(bundled_media_dir, path),
-                                os.path.join(settings.MEDIA_ROOT, path))
-            else:
-                os.symlink(os.path.join(bundled_media_dir, path),
-                           os.path.join(settings.MEDIA_ROOT, path))
-
-        if not os.path.exists(os.path.join(settings.MEDIA_ROOT, 'djblets')):
-            if not pkg_resources.resource_exists("djblets", "media"):
-                sys.stderr.write("Unable to find a valid Djblets installation.\n")
-                sys.stderr.write("Make sure you've installed Djblets.")
-                sys.exit(1)
-
-            src_dir = pkg_resources.resource_filename('djblets', 'media')
-            dest_dir = os.path.join(settings.MEDIA_ROOT, 'djblets')
-
-            if platform.system() == 'windows':
-                shutil.copytree(src_dir, dest_dir)
-            else:
-                try:
-                    os.symlink(src_dir, dest_dir)
-                except OSError:
-                    pass
+        # Collect all static media needed for tests, including web-based tests.
+        execute_from_command_line([__file__, 'collectstatic', '--noinput'])
 
         generate_media_serial()
 
     def _destroy_media_dirs(self):
-        for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):
+        for root, dirs, files in os.walk(self.tempdir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
 
@@ -161,4 +139,4 @@ class RBTestRunner(DjangoTestSuiteRunner):
                 else:
                     os.rmdir(path)
 
-        os.rmdir(settings.MEDIA_ROOT)
+        os.rmdir(self.tempdir)

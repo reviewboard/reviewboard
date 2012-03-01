@@ -13,8 +13,8 @@ class FileAttachmentTests(TestCase):
 
     def test_upload_file(self):
         """Testing uploading a file attachment."""
-        filename = os.path.join(settings.HTDOCS_ROOT,
-                                'media', 'rb', 'images', 'trophy.png')
+        filename = os.path.join(settings.STATIC_ROOT,
+                                'rb', 'images', 'trophy.png')
         f = open(filename, 'r')
         file = SimpleUploadedFile(f.name, f.read(), content_type='image/png')
         f.close()

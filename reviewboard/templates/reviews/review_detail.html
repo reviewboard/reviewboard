@@ -5,6 +5,7 @@
 {% load djblets_utils %}
 {% load rb_extensions %}
 {% load reviewtags %}
+{% load staticfiles %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -49,13 +50,13 @@
 {% if entries %}
  <li>
   <a href="#" id="expand-all">
-   <img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/expand.png?{{MEDIA_SERIAL}}">
+   <img width="14" height="14" border="0" alt="" src="{% static "rb/images/expand.png" %}?{{MEDIA_SERIAL}}">
    <span>{% trans "Expand All" %}</span>
   </a>
  </li>
  <li>
   <a href="#" id="collapse-all">
-   <img width="14" height="14" border="0" alt="" src="{{MEDIA_URL}}rb/images/collapse.png?{{MEDIA_SERIAL}}">
+   <img width="14" height="14" border="0" alt="" src="{% static "rb/images/collapse.png" %}?{{MEDIA_SERIAL}}">
    <span>{% trans "Collapse All" %}</span>
   </a>
  </li>
@@ -86,26 +87,28 @@
   <div class="clearfix"></div>
  </div>
  <div class="body">
-  <table class="issue-table">
-   <tr>
-    <th>{% trans "Description" %}</th>
-    <th>{% trans "From" %}</th>
-    <th>{% trans "Status" %}</th>
-   </tr>
+  <div class="issue-table-wrapper">
+   <table class="issue-table">
+    <tr>
+     <th>{% trans "Description" %}</th>
+     <th>{% trans "From" %}</th>
+     <th>{% trans "Status" %}</th>
+    </tr>
 {% for entry in entries %}
 {%  if entry.review %}
 {%   for comment in entry.review.get_all_comments %}
 {%    if comment.issue_opened %}
-   <tr id="summary-table-entry-{{comment.id}}" class="issue {{comment.issue_status|pretty_print_issue_status}}">
-    <td class="summary-table-description"><a class="summary-anchor" href="#{{comment.id}}">{{comment|char_limit}}</a></td>
-    <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
-    <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
-   </tr>
+    <tr id="summary-table-entry-{{comment.id}}" class="issue {{comment.issue_status|pretty_print_issue_status}}">
+     <td class="summary-table-description"><a class="summary-anchor" href="#{{comment.id}}">{{comment}}</a></td>
+     <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
+     <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
+    </tr>
 {%    endif %}
 {%   endfor %}
 {%  endif %}
 {% endfor %}
-  </table>
+   </table>
+  </div>
  </div>
 </div>
 {% endbox %}
@@ -276,7 +279,7 @@
   <ul>
 {% for fieldinfo in entry.changeinfo %}
    <li><label>{{fieldinfo.title}}</label>
-{%  ifequal fieldinfo.type "changed" %}
+{%  if fieldinfo.type == "changed" %}
 {%   if fieldinfo.multiline %}
 	  <p><label>{% trans "Changed from:" %}</label></p>
       <pre>{{fieldinfo.info.old.0}}</pre>
@@ -285,8 +288,8 @@
 {%   else %}
 {%    blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</p>
 {%   endif %}
-{%  endifequal %}
-{%  ifequal fieldinfo.type "add_remove" %}
+{%  endif %}
+{%  if fieldinfo.type == "add_remove" %}
     <ul>
 {%   if fieldinfo.info.removed %}
 {% definevar "removed_values" %}
@@ -301,14 +304,14 @@
 <li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
 {%   endif %}
     </ul>
-{%  endifequal %}
-{%  ifequal fieldinfo.type "screenshot_captions" %}
+{%  endif %}
+{%  if fieldinfo.type == "screenshot_captions" %}
     <ul>
 {%   for info in fieldinfo.info.values %}
      <li>{% blocktrans with info.old.0 as old_value and info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</li>
 {%   endfor %}
     </ul>
-{%  endifequal %}
+{%  endif %}
    </li>
 {% endfor %}
   </ul>

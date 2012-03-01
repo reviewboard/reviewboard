@@ -1,0 +1,14 @@
+{{'{%'}} extends "base.html" {{'%}'}}
+{{'{%'}} load djblets_deco {{'%}'}}
+{{'{%'}} load i18n {{'%}'}}
+{{'{%'}} block title {{'%}'}}{{'{%'}} trans "{{extension_name}} Dashboard" {{'%}'}}{{'{%'}} endblock {{'%}'}}
+
+{{'{%'}} block content {{'%}'}}
+{{'{%'}} box "reports" {{'%}'}}
+ <h1 class="title">{{'{%'}} trans "{{extension_name}} Dashboard" {{'%}'}}</h1>
+
+ <div class="main">
+  <p>{{'{%'}} trans "To do..." {{'%}'}}</p>
+ </div>
+{{'{%'}} endbox {{'%}'}}
+{{'{%'}} endblock {{'%}'}}

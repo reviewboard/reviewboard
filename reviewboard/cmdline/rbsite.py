@@ -147,6 +147,7 @@ class Site(object):
         # State saved during installation
         self.domain_name = None
         self.site_root = None
+        self.static_url = None
         self.media_url = None
         self.db_type = None
         self.db_name = None
@@ -154,12 +155,14 @@ class Site(object):
         self.db_port = None
         self.db_user = None
         self.db_pass = None
+        self.reenter_db_pass = None
         self.cache_type = None
         self.cache_info = None
         self.web_server_type = None
         self.python_loader = None
         self.admin_user = None
         self.admin_password = None
+        self.reenter_admin_password = None
 
     def rebuild_site_directory(self):
         """
@@ -167,6 +170,7 @@ class Site(object):
         """
         htdocs_dir = os.path.join(self.install_dir, "htdocs")
         media_dir = os.path.join(htdocs_dir, "media")
+        static_dir = os.path.join(htdocs_dir, "static")
 
         self.mkdir(self.install_dir)
         self.mkdir(os.path.join(self.install_dir, "logs"))
@@ -179,6 +183,7 @@ class Site(object):
 
         self.mkdir(htdocs_dir)
         self.mkdir(media_dir)
+        self.mkdir(static_dir)
 
         # TODO: In the future, support changing ownership of these
         #       directories.
@@ -188,21 +193,17 @@ class Site(object):
 
         self.link_pkg_dir("reviewboard",
                           "htdocs/errordocs",
-                          os.path.join("htdocs", "errordocs"))
+                          os.path.join(self.install_dir, "htdocs", "errordocs"))
 
-        media_base = os.path.join("htdocs", "media")
-        rb_djblets_src = "htdocs/media/djblets"
-        rb_djblets_dest = os.path.join(media_base, "djblets")
-        rb_admins_dest = os.path.join(media_base, "admin")
+        rb_djblets_src = "htdocs/static/djblets"
+        rb_djblets_dest = os.path.join(static_dir, "djblets")
+        rb_admins_dest = os.path.join(static_dir, "admin")
 
-        for media_dir in ["rb"]:
-            path = os.path.join(media_base, media_dir)
-            self.link_pkg_dir("reviewboard",
-                              "htdocs/media/%s" % media_dir,
-                              os.path.join(media_base, media_dir))
+        self.link_pkg_dir("reviewboard",
+                          "htdocs/static/rb",
+                          os.path.join(static_dir, 'rb'))
 
         # Link the admin media
-        path = os.path.join(media_base, media_dir)
         self.link_pkg_dir("django",
                           "contrib/admin/media",
                           rb_admins_dest)
@@ -217,28 +218,34 @@ class Site(object):
             ui.error("Unable to find the Djblets media path. Make sure "
                      "Djblets is installed and try this again.")
 
+        # Remove any old media directories from old sites
+        self.unlink_media_dir(os.path.join(media_dir, 'admin'))
+        self.unlink_media_dir(os.path.join(media_dir, 'djblets'))
+        self.unlink_media_dir(os.path.join(media_dir, 'rb'))
 
-        # Generate a .htaccess file that enables compression and
+        # Generate .htaccess files that enable compression and
         # never expires various file types.
-        path = os.path.join(self.install_dir, media_base, ".htaccess")
-        fp = open(path, "w")
-        fp.write('<IfModule mod_expires.c>\n')
-        fp.write('  <FilesMatch "\.(jpg|gif|png|css|js|htc)">\n')
-        fp.write('    ExpiresActive on\n')
-        fp.write('    ExpiresDefault "access plus 1 year"\n')
-        fp.write('  </FilesMatch>\n')
-        fp.write('</IfModule>\n')
-        fp.write('\n')
-        fp.write('<IfModule mod_deflate.c>\n')
+        htaccess  = '<IfModule mod_expires.c>\n'
+        htaccess += '  <FilesMatch "\.(jpg|gif|png|css|js|htc)">\n'
+        htaccess += '    ExpiresActive on\n'
+        htaccess += '    ExpiresDefault "access plus 1 year"\n'
+        htaccess += '  </FilesMatch>\n'
+        htaccess += '</IfModule>\n'
+        htaccess += '\n'
+        htaccess += '<IfModule mod_deflate.c>\n'
 
         for mimetype in ["text/html", "text/plain", "text/xml",
                          "text/css", "text/javascript",
                          "application/javascript",
                          "application/x-javascript"]:
-            fp.write("  AddOutputFilterByType DEFLATE %s\n" % mimetype)
+            htaccess += "  AddOutputFilterByType DEFLATE %s\n" % mimetype
 
-        fp.write('</IfModule>\n')
-        fp.close()
+        htaccess += '</IfModule>\n'
+
+        for dirname in (static_dir, media_dir):
+            fp = open(os.path.join(dirname, '.htaccess'), 'w')
+            fp.write(htaccess)
+            fp.close()
 
     def setup_settings(self):
         # Make sure that we have our settings_local.py in our path for when
@@ -481,9 +488,8 @@ class Site(object):
         if not os.path.exists(dirname):
             os.mkdir(dirname)
 
-    def link_pkg_dir(self, pkgname, src_path, dest_path, replace=True):
+    def link_pkg_dir(self, pkgname, src_path, dest_dir, replace=True):
         src_dir = pkg_resources.resource_filename(pkgname, src_path)
-        dest_dir = os.path.join(self.install_dir, dest_path)
 
         if os.path.islink(dest_dir) and not os.path.exists(dest_dir):
             os.unlink(dest_dir)
@@ -492,15 +498,19 @@ class Site(object):
             if not replace:
                 return
 
-            if os.path.islink(dest_dir):
-                os.unlink(dest_dir)
-            else:
-                shutil.rmtree(dest_dir)
+            self.unlink_media_dir(dest_dir)
 
         if self.options.copy_media:
             shutil.copytree(src_dir, dest_dir)
         else:
             os.symlink(src_dir, dest_dir)
+
+    def unlink_media_dir(self, path):
+        if os.path.exists(path):
+            if os.path.islink(path):
+                os.unlink(path)
+            else:
+                shutil.rmtree(path)
 
     def process_template(self, template_path, dest_filename):
         """
@@ -818,7 +828,7 @@ class GtkUI(UIToolkit):
         self.window.set_icon_list(*[
             gtk.gdk.pixbuf_new_from_file(
                 pkg_resources.resource_filename(
-                    "reviewboard", "htdocs/media/rb/images/" + filename))
+                    "reviewboard", "htdocs/static/rb/images/" + filename))
             for filename in ["favicon.png", "logo.png"]
         ])
 
@@ -945,7 +955,7 @@ class GtkUI(UIToolkit):
         # Add the logo
         logo_file = pkg_resources.resource_filename(
             "reviewboard",
-            "htdocs/media/rb/images/logo.png")
+            "htdocs/static/rb/images/logo.png")
         image = gtk.image_new_from_file(logo_file)
         image.show()
         hbox.pack_start(image, False, False, 0)
@@ -1016,6 +1026,8 @@ class GtkUI(UIToolkit):
 
         if password:
             entry.set_visibility(False)
+            if not save_var.startswith('reenter'):
+                page['validators'].append(lambda: self.confirm_reentry(site, save_var))
 
         if default:
             entry.set_text(default)
@@ -1030,6 +1042,11 @@ class GtkUI(UIToolkit):
         # we switch to this page.
         if len(page['entries']) == 1:
             page['on_show_funcs'].append(entry.grab_focus)
+
+    def confirm_reentry(self, obj, var):
+        pw = getattr(obj, var)
+        repw = getattr(obj, 'reenter_' + var)
+        return pw == repw
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
@@ -1233,8 +1250,11 @@ class InstallCommand(Command):
                          "excluding the http://, port or path")
         group.add_option("--site-root", default="/",
                          help="path to the site relative to the domain name")
+        group.add_option("--static-url", default="static/",
+                         help="the URL containing the static (shipped) "
+                              "media files")
         group.add_option("--media-url", default="media/",
-                         help="the URL containing the media files")
+                         help="the URL containing the uploaded media files")
         group.add_option("--db-type",
                          help="database type (mysql, postgresql or sqlite3)")
         group.add_option("--db-name", default="reviewboard",
@@ -1280,7 +1300,8 @@ class InstallCommand(Command):
         if not options.noinput:
             self.ask_domain()
             self.ask_site_root()
-            self.ask_media_url()
+            self.ask_shipped_media_url()
+            self.ask_uploaded_media_url()
             self.ask_database_type()
             self.ask_database_name()
             self.ask_database_host()
@@ -1395,15 +1416,29 @@ class InstallCommand(Command):
                         normalize_func=self.normalize_root_url_path,
                         save_obj=site, save_var="site_root")
 
-    def ask_media_url(self):
-        page = ui.page("What URL will point to the media files?")
+    def ask_shipped_media_url(self):
+        page = ui.page("What URL will point to the shipped media files?")
 
         ui.text(page, "While most installations distribute media files on "
                       "the same server as the rest of Review Board, some "
                       "custom installs may instead have a separate server "
                       "for this purpose.")
+        ui.text(page, "If unsure, don't change the default.")
 
-        ui.prompt_input(page, "Media URL", site.media_url,
+        ui.prompt_input(page, "Shipped Media URL", site.static_url,
+                        normalize_func=self.normalize_media_url_path,
+                        save_obj=site, save_var="static_url")
+
+    def ask_uploaded_media_url(self):
+        page = ui.page("What URL will point to the uploaded media files?")
+
+        ui.text(page, "Note that this is different from shipped media. This "
+                      "is where all uploaded screenshots, file attachments, "
+                      "and extension media will go. It must be a different "
+                      "location from the shipped media.")
+        ui.text(page, "If unsure, don't change the default.")
+
+        ui.prompt_input(page, "Uploaded Media URL", site.media_url,
                         normalize_func=self.normalize_media_url_path,
                         save_obj=site, save_var="media_url")
 
@@ -1479,6 +1514,8 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_user")
         ui.prompt_input(page, "Database Password", site.db_pass, password=True,
                         save_obj=site, save_var="db_pass")
+        ui.prompt_input(page, "Confirm Database Password", site.db_pass, password=True,
+                        save_obj=site, save_var="reenter_db_pass")
 
     def ask_cache_type(self):
         page = ui.page("What cache mechanism should be used?")
@@ -1551,6 +1588,8 @@ class InstallCommand(Command):
                         save_obj=site, save_var="admin_user")
         ui.prompt_input(page, "Password", site.admin_password, password=True,
                         save_obj=site, save_var="admin_password")
+        ui.prompt_input(page, "Confirm Password", site.admin_password, password=True,
+                        save_obj=site, save_var="reenter_admin_password")
         ui.prompt_input(page, "E-Mail Address", site.admin_email,
                         save_obj=site, save_var="admin_email")
 
@@ -1599,14 +1638,23 @@ class InstallCommand(Command):
         cur_site.domain = site.domain_name
         cur_site.save()
 
+        if site.static_url.startswith("http"):
+            site_static_url = site.static_url
+        else:
+            site_static_url = site.site_root + site.static_url
+
         if site.media_url.startswith("http"):
             site_media_url = site.media_url
         else:
             site_media_url = site.site_root + site.media_url
 
-        site_media_root = os.path.join(site.abs_install_dir, "htdocs", "media")
+        htdocs_path = os.path.join(site.abs_install_dir, 'htdocs')
+        site_media_root = os.path.join(htdocs_path, "media")
+        site_static_root = os.path.join(htdocs_path, "static")
 
         siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("site_static_url", site_static_url)
+        siteconfig.set("site_static_root", site_static_root)
         siteconfig.set("site_media_url", site_media_url)
         siteconfig.set("site_media_root", site_media_root)
         siteconfig.set("site_admin_name", site.admin_user)

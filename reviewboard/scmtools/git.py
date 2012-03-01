@@ -16,7 +16,7 @@ from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
 from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         InvalidRevisionFormatError, \
                                         RepositoryNotFoundError, \
@@ -67,7 +67,7 @@ class GitTool(SCMTool):
 
         self.client = GitClient(repository.path, repository.raw_file_url,
                                 repository.username, repository.password,
-                                local_site_name)
+                                repository.encoding, local_site_name)
 
     def get_file(self, path, revision=HEAD):
         if revision == PRE_CREATION:
@@ -84,12 +84,14 @@ class GitTool(SCMTool):
         except (FileNotFoundError, InvalidRevisionFormatError):
             return False
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, moved):
         revision = revision_str
 
         if file_str == "/dev/null":
             revision = PRE_CREATION
-        elif revision != PRE_CREATION:
+        elif revision != PRE_CREATION and not moved and revision != '':
+            # Moved files with no changes has no revision,
+            # so don't validate those.
             self.client.validate_sha1_format(file_str, revision)
 
         return file_str, revision
@@ -187,7 +189,8 @@ class GitDiffParser(DiffParser):
                                   'information', linenum)
         linenum += 1
 
-        # Save the new file, deleted file, mode change and index
+        # Parse the extended header to save the new file, deleted file,
+        # mode change, file move, and index.
         if self._is_new_file(linenum):
             file_info.data += self.lines[linenum] + "\n"
             linenum += 1
@@ -199,6 +202,12 @@ class GitDiffParser(DiffParser):
             file_info.data += self.lines[linenum] + "\n"
             file_info.data += self.lines[linenum + 1] + "\n"
             linenum += 2
+        elif self._is_moved_file(linenum):
+            file_info.data += self.lines[linenum] + "\n"
+            file_info.data += self.lines[linenum + 1] + "\n"
+            file_info.data += self.lines[linenum + 2] + "\n"
+            linenum += 3
+            file_info.moved = True
 
         if self._is_index_range_line(linenum):
             index_range = self.lines[linenum].split(None, 2)[1]
@@ -248,6 +257,11 @@ class GitDiffParser(DiffParser):
         return (self.lines[linenum].startswith("old mode")
                 and self.lines[linenum + 1].startswith("new mode"))
 
+    def _is_moved_file(self, linenum):
+        return (self.lines[linenum].startswith("similarity index") and
+                self.lines[linenum + 1].startswith("rename from") and
+                self.lines[linenum + 2].startswith("rename to"))
+
     def _is_index_range_line(self, linenum):
         return (linenum < len(self.lines) and
                 self.lines[linenum].startswith("index "))
@@ -277,7 +291,7 @@ class GitDiffParser(DiffParser):
                 setattr(file_info, attr, '')
 
 
-class GitClient(object):
+class GitClient(SCMClient):
     FULL_SHA1_LENGTH = 40
 
     schemeless_url_re = re.compile(
@@ -285,16 +299,18 @@ class GitClient(object):
         r'(?P<path>.*)')
 
     def __init__(self, path, raw_file_url=None, username=None, password=None,
-                 local_site_name=None):
+                 encoding='', local_site_name=None):
+        super(GitClient, self).__init__(self._normalize_git_url(path),
+                                        username=username,
+                                        password=password)
+
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError
 
-        self.path = self._normalize_git_url(path)
         self.raw_file_url = raw_file_url
-        self.username = username
-        self.password = password
+        self.encoding = encoding
         self.local_site_name = local_site_name
         self.git_dir = None
 
@@ -329,52 +345,27 @@ class GitClient(object):
 
         return True
 
-    def _get_file(self, url):
-        host = urlparse.urlparse(url)[1]
-        passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        passman.add_password(None, host, self.username, self.password)
-        auth_handler = urllib2.HTTPBasicAuthHandler(passman)
-        opener = urllib2.build_opener(auth_handler)
-        f = opener.open(url)
-        return f.read()
-
     def get_file(self, path, revision):
         if self.raw_file_url:
             self.validate_sha1_format(path, revision)
 
-            # First, try to grab the file remotely.
-            try:
-                url = self._build_raw_url(path, revision)
-                return self._get_file(url)
-            except Exception, e:
-                logging.error("Git: Error fetching file from %s: %s" % (url, e))
-                raise SCMError("Error fetching file from %s: %s" % (url, e))
+            return self.get_file_http(self._build_raw_url(path, revision),
+                                      path, revision)
         else:
             return self._cat_file(path, revision, "blob")
 
     def get_file_exists(self, path, revision):
         if self.raw_file_url:
-            self.validate_sha1_format(path, revision)
-
-            # First, try to grab the file remotely.
             try:
                 # We want to make sure we can access the file successfully,
                 # without any HTTP errors. A successful access means the file
                 # exists. The contents themselves are meaningless, so ignore
                 # them. If we do successfully get the file without triggering
                 # any sort of exception, then the file exists.
-                url = self._build_raw_url(path, revision)
-                self._get_file(url)
-
+                self.get_file(path, revision)
                 return True
-            except urllib2.HTTPError, e:
-                if e.code != 404:
-                    logging.error("Git: HTTP error code %d when fetching "
-                                  "file from %s: %s" % (e.code, url, e))
             except Exception, e:
-                logging.error("Git: Error fetching file from %s: %s" % (url, e))
-
-            return False
+                return False
         else:
             contents = self._cat_file(path, revision, "-t")
             return contents and contents.strip() == "blob"

@@ -1,7 +1,7 @@
 {% load djblets_utils %}
 {% load reviewtags %}
 {% load difftags %}
-<table class="sidebyside{% ifequal comment.filediff.source_revision PRE_CREATION %} newfile{% endifequal %}">
+<table class="sidebyside{% if comment.filediff.source_revision == PRE_CREATION %} newfile{% endif %}">
  <colgroup>
   <col class="line" />
   <col class="left" />
@@ -25,12 +25,12 @@
 {% if chunks.0.meta.headers %}
  <tbody class="diff-header">
   <tr>
-{%  ifequal chunks.0.meta.headers.0 chunks.0.meta.headers.1 %}
+{%  if chunks.0.meta.headers.0 == chunks.0.meta.headers.1 %}
    <td colspan="4"><pre>{{chunks.0.meta.headers.0}}</pre></td>
 {%  else %}
    <td colspan="2"><pre>{{chunks.0.meta.headers.0}}</pre></td>
    <td colspan="2"><pre>{{chunks.0.meta.headers.1}}</pre></td>
-{%  endifequal %}
+{%  endif %}
   </tr>
  </tbody>
 {% endif %}
@@ -38,7 +38,7 @@
  <tbody class="{{chunk.change}}">
 {#  <tr><td colspan="4">{{chunk.meta}}</td></tr> #}
 {% for line in chunk.lines %}
-  <tr{% ifnotequal chunk.change "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endifnotequal %}>
+  <tr{% if chunk.change != "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endif %}>
     <th>{{line.1}}</td>
     <td><pre>{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
     <th>{{line.4}}</td>

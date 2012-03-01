@@ -1,8 +1,9 @@
 {% load djblets_utils %}
 {% load i18n %}
+{% load staticfiles %}
 
 <li>
- <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.label}}<img src="{{MEDIA_URL}}rb/images/dropdown.png?{{MEDIA_SERIAL}}" width="7" height="5" border="0" alt="" /></a>
+ <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.label}}<img src="{% static "rb/images/dropdown.png" %}?{{MEDIA_SERIAL}}" width="7" height="5" border="0" alt="" /></a>
  <ul class="menu" style="display: none;">
 {% for action in actions.items %}
  {% include "extensions/action.html" %}

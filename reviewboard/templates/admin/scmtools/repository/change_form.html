@@ -14,11 +14,13 @@
 </script>
 {% endblock %}
 
-{% block object-tools-items %}
-{% if adminform.form.public_key %}
- <li><a href="#" id="show-ssh-key-link">{% trans "Show SSH Public Key" %}</a></li>
-{% endif %}
+{% block pretitle %}
 {{block.super}}
+{% if adminform.form.public_key %}
+<ul class="object-tools">
+ <li><a href="#" id="show-ssh-key-link">{% trans "Show SSH Public Key" %}</a></li>
+</ul>
+{% endif %}
 {% endblock %}
 
 {% block form_top %}

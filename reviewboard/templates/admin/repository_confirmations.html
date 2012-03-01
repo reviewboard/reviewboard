@@ -21,7 +21,7 @@
  <p>Expected fingerprint is {{hostkeyerror.expected_key}}.</p>
 {%    endif %}
 
-{%   else %}{% if certerror %}
+{%   elif certerror %}
 
  {{certerror|paragraphs}}
 {%    if certificate.failures %}
@@ -43,7 +43,7 @@
   <p><label>{% trans "Issuer:" %}</label> {{certificate.issuer}}</p>
   <p><label>{% trans "Fingerprint:" %}</label> {{certificate.fingerprint}}</p>
  </div>
-{%   endif %}{% endif %}
+{%   endif %}
 
  <p>{% blocktrans %}
   Do you trust this host, or do you want to go back and edit the

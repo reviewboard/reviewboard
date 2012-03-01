@@ -202,8 +202,8 @@ $.fn.formDlg = function(options) {
  */
 $.fn.toggleStar = function() {
     // Constants
-    var STAR_ON_IMG = MEDIA_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
-    var STAR_OFF_IMG = MEDIA_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
+    var STAR_ON_IMG = STATIC_URL + "rb/images/star_on.png?" + MEDIA_SERIAL;
+    var STAR_OFF_IMG = STATIC_URL + "rb/images/star_off.png?" + MEDIA_SERIAL;
 
     return this.live('click', function() {
         var self = $(this);

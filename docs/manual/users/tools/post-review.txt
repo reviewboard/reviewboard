@@ -6,7 +6,7 @@ post-review
 ===========
 
 Overview
-============
+========
 
 :command:`post-review` is a command line tool for Windows, Linux and MacOS X
 that simplifies both creating and updating review requests. It can look at
@@ -167,11 +167,20 @@ a normal diff of your changes between ``topicA`` and ``topicB``. The changes
 in the parent diff won't appear as changed lines in the diff viewer, meaning
 that users will only see changes made on ``topicB``.
 
-.. note:: This only works with Git right now, and makes an assumption that
-          ``master`` represents an upstream revision that Review Board has
-          access to. Normally this means that ``master`` and ``origin`` should
-          point to the same revision. In the future, this will be more
-          flexible.
+
+Tracking Branches
+~~~~~~~~~~~~~~~~~
+
+When using Git, post-review makes the assumption that the closest upstream
+branch for the diff will be ``origin/master``. This may be wrong if you
+are working on a feature branch or have a remote named something other than
+``origin``.
+
+In this case, you will want to use the :option:`--tracking-branch` option,
+which specifies the remote branch name. For example::
+
+    $ post-review --tracking-branch=upstream/master
+
 
 ClearCase
 ---------
@@ -249,6 +258,9 @@ You can also use the special value of ``-`` to pipe a diff into STDIN::
 
     $ cat mycode.diff | post-review --diff-filename=-
 
+Using STDIN will require either a valid cookie, or the :option:`--username`
+and :option:`--password` options.
+
 
 .. _automating-post-review:
 
@@ -275,6 +287,9 @@ Of course, you can pass any other values as you see fit.
 
 This will log in as ``SPECIAL_USER`` and perform operations as
 ``ANOTHER_USER``.
+
+You can set the default for :option:`--submit-as` by setting ``SUBMIT_AS``
+in :file:`.reviewboardrc`.
 
 
 Configuration
@@ -412,6 +427,37 @@ Any number of repository paths can be specified. The repository path
 must match a repository configured in the Review Board server.
 
 
+Default Options
+---------------
+
+A number of options to post-review can be set by default in
+:file:`.reviewboardrc`. These can go either in the repository's or the
+user's :file:`.reviewboardrc` file.
+
+The options include:
+
+* ``BRANCH`` (:option:`--branch`)
+* ``DEBUG`` (:option:`-d`)
+* ``ENABLE_PROXY`` (:option:`--disable-proxy`)
+* ``GUESS_DESCRIPTION`` (:option:`--guess-description`)
+* ``GUESS_FIELDS`` (:option:`-g`)
+* ``GUESS_SUMMARY`` (:option:`--guess-summary`)
+* ``HTTP_PASSWORD`` (:option:`--http-password`)
+* ``HTTP_USERNAME`` (:option:`--http-username`)
+* ``OPEN_BROWSER`` (:option:`-o`)
+* ``P4_CLIENT`` (:option:`--p4-client`)
+* ``P4_PASSWD`` (:option:`--p4-passwd`)
+* ``P4_PORT`` (:option:`--p4-port`)
+* ``PARENT_BRANCH`` (:option:`--parent`)
+* ``PASSWORD`` (:option:`--password`)
+* ``PUBLISH`` (:option:`-p`)
+* ``SUBMIT_AS`` (:option:`--submit-as`)
+* ``TARGET_GROUPS`` (:option:`--target-groups`)
+* ``TARGET_PEOPLE`` (:option:`--target-people`)
+* ``TRACKING_BRANCH`` (:option:`--tracking-branch`)
+* ``USERNAME`` (:option:`--username`)
+
+
 Options
 =======
 
@@ -422,6 +468,8 @@ Basic Options
 
    Displays detailed debug output in the terminal.
 
+   The default can be set in ``DEBUG`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: -h, --help
 
    Shows the help for the program and exits.
@@ -429,6 +477,8 @@ Basic Options
 .. cmdoption:: -o, --open
 
    Opens a web browser to the address of the review request.
+
+   The default can be set in ``OPEN_BROWSER`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: --version
 
@@ -438,10 +488,19 @@ Basic Options
 Server Options
 --------------
 
+.. cmdoption:: --disable-proxy
+
+   Disables using any configured HTTP(S) proxy server when communicating
+   with the Review Board server.
+
+   The default can be set in ``ENABLE_PROXY`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: --server=<URL>
 
    Specifies the URL of Review Board server to use. By default,
    :command:`post-review` will try to scan for the correct repository.
+
+   The default can be set in ``REVIEWBOARD_URL`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: --submit-as=<USERNAME>
 
@@ -453,15 +512,35 @@ Server Options
    This is useful when used in a repository's post-commit script to update
    a review request. See :ref:`automating-post-review` for usage information.
 
+   The default can be set in ``SUBMIT_AS`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: --username=<USERNAME>
 
    Specifies the username used to log in to the Review Board server. If not
    specified, :command:`post-review` will prompt for it.
 
+   The default can be set in ``USERNAME`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: --password=<PASSWORD>
 
    Specifies the password used to log in to the Review Board server. If not
    specified, :command:`post-review` will prompt for it.
+
+   The default can be set in ``PASSWORD`` in :file:`.reviewboardrc`.
+
+.. cmdoption:: --http-username=<USERNAME>
+
+   Specifies the username to use when authenticating with Basic HTTP
+   Authentication.
+
+   The default can be set in ``HTTP_USERNAME`` in :file:`.reviewboardrc`.
+
+.. cmdoption:: --http-password=<PASSWORD>
+
+   Specifies the password to use when authenticating with Basic HTTP
+   Authentication.
+
+   The default can be set in ``HTTP_PASSWORD`` in :file:`.reviewboardrc`.
 
 
 Review Request Options
@@ -471,6 +550,14 @@ Review Request Options
 
    Publishes the review request immediately after submitting. Normally
    the change is left as a draft.
+
+   The default can be set in ``PUBLISH`` in :file:`.reviewboardrc`.
+
+.. cmdoption:: --repository-url=<URL>
+
+   Specifies the repository URL used when generating the diff.
+
+   The default can be set in ``REPOSITORY`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: -r <ID>, --review-request-id=<ID>
 
@@ -489,6 +576,8 @@ Field Defaults Options
 .. cmdoption:: --branch=<BRANCH>
 
    Sets the review request's branch field to the specified text.
+
+   The default can be set in ``BRANCH`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: --bugs-closed=<BUGS_CLOSED>
 
@@ -510,6 +599,36 @@ Field Defaults Options
    diff. The special value of ``-`` allows the diff to be piped into
    STDIN. See :ref:`posting-existing-diffs` for usage information.
 
+.. cmdoption:: -g, --guess-fields
+
+   Implies :option:`--guess-description` and :option:`--guess-summary`.
+
+   This only works with Git and Mercurial.
+
+   The default can be set in ``GUESS_FIELDS`` in :file:`.reviewboardrc`.
+
+.. cmdoption:: --guess-description
+
+   Sets the description of the review request based on all the commit
+   messages between the parent branch and HEAD.
+
+   This cannot be used with :option:`--description`.
+
+   This only works with Git and Mercurial.
+
+   The default can be set in ``GUESS_DESCRIPTION`` in :file:`.reviewboardrc`.
+
+.. cmdoption:: --guess-summary
+
+   Sets the summary of the review request based on the commit message of
+   the most recent commit.
+
+   This cannot be used with :option:`--summary`.
+
+   This only works with Git and Mercurial.
+
+   The default can be set in ``GUESS_SUMMARY`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: --summary=<SUMMARY>
 
    Sets the review request's summary field to the specified text.
@@ -519,10 +638,14 @@ Field Defaults Options
    Provides a list of groups that should be on the reviewer list. This
    should be a comma-separated list.
 
+   The default can be set in ``TARGET_GROUPS`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: --target-people=<TARGET_PEOPLE>
 
    Provides a list of usernames that should be on the reviewer list. This
    should be a comma-separated list.
+
+   The default can be set in ``TARGET_PEOPLE`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: --testing-done=<TESTING_DONE>
 
@@ -545,19 +668,13 @@ ClearCase Options
 Git Options
 -----------
 
-.. cmdoption:: --guess-description
+.. cmdoption:: --tracking-branch=<BRANCH>
 
-   Sets the description of the review request based on all the commit
-   messages between the parent branch and HEAD.
+   Specifies a remote branch to use as the basis for the diff. This
+   defaults to ``origin/master``, and should be used when a different
+   remote branch is needed.
 
-   This cannot be used with :option:`--description`.
-
-.. cmdoption:: --guess-summary
-
-   Sets the summary of the review request based on the commit message of
-   the most recent commit.
-
-   This cannot be used with :option:`--summary`.
+   The default can be set in ``TRACKING_BRANCH`` in :file:`.reviewboardrc`.
 
 
 Git and Mercurial Options
@@ -567,6 +684,8 @@ Git and Mercurial Options
 
    Specifies a parent branch that the diff should be based upon. This is
    useful when working on a branch based on another uncommitted branch.
+
+   The default can be set in ``PARENT_BRANCH`` in :file:`.reviewboardrc`.
 
    See :ref:`DVCS` for usage information.
 
@@ -589,23 +708,19 @@ Perforce Options
    Specifies the Perforce client name that should be used when generating
    the diff.
 
+   The default can be set in ``P4_CLIENT`` in :file:`.reviewboardrc`.
+
 .. cmdoption:: --p4-port=<P4_PORT>
 
    Specifies the Perforce server IP address used when generating the diff.
+
+   The default can be set in ``P4_PORT`` in :file:`.reviewboardrc`.
 
 .. cmdoption:: --p4-passwd=<PASSWORD_OR_TICKET>
 
    Specifies the Perforce Ticket or clear-text password used to authenticate
    with the repository.
 
-
-Subversion Options
-------------------
-
-.. cmdoption:: --repository-url=<URL>
-
-   Specifies the Subversion repository URL used when generating the diff.
-   This only works in conjunction with :option:`--revision-range`.
-
+   The default can be set in ``P4_PASSWD`` in :file:`.reviewboardrc`.
 
 .. comment: vim: ft=rst et ts=3
