@@ -313,26 +313,26 @@ class ActiveDirectoryBackend(AuthBackend):
     def get_domain_name(self):
         return str(settings.AD_DOMAIN_NAME)
 
-    def get_ldap_search_root(self):
+    def get_ldap_search_root(self, userdomain):
         if getattr(settings, "AD_SEARCH_ROOT", None):
             root = [settings.AD_SEARCH_ROOT]
         else:
-            root = ['dc=%s' % x for x in self.get_domain_name().split('.')]
+            root = ['dc=%s' % x for x in userdomain.split('.')]
             if settings.AD_OU_NAME:
                 root = ['ou=%s' % settings.AD_OU_NAME] + root
 
         return ','.join(root)
 
-    def search_ad(self, con, filterstr):
+    def search_ad(self, con, filterstr, userdomain):
         import ldap
-        search_root = self.get_ldap_search_root()
+        search_root = self.get_ldap_search_root(userdomain)
         logging.debug('Search root ' + search_root)
         return con.search_s(search_root, scope=ldap.SCOPE_SUBTREE, filterstr=filterstr)
 
-    def find_domain_controllers_from_dns(self):
+    def find_domain_controllers_from_dns(self, userdomain):
         import DNS
         DNS.Base.DiscoverNameServers()
-        q = '_ldap._tcp.%s' % self.get_domain_name()
+        q = '_ldap._tcp.%s' % userdomain
         req = DNS.Base.DnsRequest(q, qtype = 'SRV').req()
         return [x['data'][-2:] for x in req.answers]
 
@@ -340,7 +340,7 @@ class ActiveDirectoryBackend(AuthBackend):
         return (settings.AD_RECURSION_DEPTH == -1 or
                         depth <= settings.AD_RECURSION_DEPTH)
 
-    def get_member_of(self, con, search_results, seen=None, depth=0):
+    def get_member_of(self, con, userdomain, search_results, seen=None, depth=0):
         depth += 1
         if seen is None:
             seen = set()
@@ -364,8 +364,8 @@ class ActiveDirectoryBackend(AuthBackend):
                     # correct when the values differ (e.g. if a
                     # "pre-Windows 2000" group name is set in AD)
                     group_data = self.search_ad(
-                        con, '(&(objectClass=group)(cn=%s))' % group)
-                    seen.update(self.get_member_of(con, group_data,
+                        con, '(&(objectClass=group)(cn=%s))' % group, userdomain)
+                    seen.update(self.get_member_of(con, userdomain, group_data,
                                                    seen=seen, depth=depth))
             else:
                 logging.warning('ActiveDirectory recursive group check '
@@ -373,15 +373,16 @@ class ActiveDirectoryBackend(AuthBackend):
 
         return seen
 
-    def get_ldap_connections(self):
+    def get_ldap_connections(self, userdomain):
         import ldap
         if settings.AD_FIND_DC_FROM_DNS:
-            dcs = self.find_domain_controllers_from_dns()
+            dcs = self.find_domain_controllers_from_dns(userdomain)
         else:
             dcs = [('389', settings.AD_DOMAIN_CONTROLLER)]
 
         for dc in dcs:
             port, host = dc
+            logging.debug('Domain Controller %s:%s' % (host, port))
             con = ldap.open(host, port=int(port))
             if settings.AD_USE_TLS:
                 con.start_tls_s()
@@ -391,24 +392,41 @@ class ActiveDirectoryBackend(AuthBackend):
     def authenticate(self, username, password):
         import ldap
 
-        connections = self.get_ldap_connections()
         username = username.strip()
+
+        usersubdomain = ''
+        if username.find('@') >= 0:
+            parts = username.split('@', 1)
+            username = parts[0]
+            usersubdomain = parts[1]
+        elif username.find('\\') >= 0:
+            parts = username.split('\\', 1)
+            usersubdomain = parts[0]
+            username = parts[1]
+
+        userdomain = self.get_domain_name()
+        if len(usersubdomain) > 0:
+            userdomain = "%s.%s" % (usersubdomain, userdomain)
+
+        connections = self.get_ldap_connections(userdomain)
         required_group = settings.AD_GROUP_NAME
 
         for con in connections:
             try:
-                bind_username ='%s@%s' % (username, self.get_domain_name())
+                bind_username = '%s@%s' % (username, userdomain)
+                logging.debug('User %s is trying to log in' % bind_username)
                 con.simple_bind_s(bind_username, password)
                 user_data = self.search_ad(
                     con,
-                    '(&(objectClass=user)(sAMAccountName=%s))' % username)
+                    '(&(objectClass=user)(sAMAccountName=%s))' % username,
+                    userdomain)
 
                 if not user_data:
                     return None
 
                 if required_group:
                     try:
-                        group_names = self.get_member_of(con, user_data)
+                        group_names = self.get_member_of(con, userdomain, user_data)
                     except Exception, e:
                         logging.error("Active Directory error: failed getting"
                                       "groups for user '%s': %s" % (username, e))
