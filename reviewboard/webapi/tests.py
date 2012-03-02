@@ -489,6 +489,13 @@ class ServerInfoResourceTests(BaseWebAPITestCase):
         self.assertTrue('info' in rsp)
         self.assertTrue('product' in rsp['info'])
         self.assertTrue('site' in rsp['info'])
+        self.assertTrue('capabilities' in rsp['info'])
+
+        caps = rsp['info']['capabilities']
+        self.assertTrue('diffs' in caps)
+
+        diffs_caps = caps.get('diffs')
+        self.assertTrue(diffs_caps.get('moved_files', False))
 
     @add_fixtures(['test_users', 'test_site'])
     def test_get_server_info_with_site(self):

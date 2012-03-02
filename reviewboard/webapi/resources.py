@@ -6258,6 +6258,11 @@ class ServerInfoResource(WebAPIResource):
                                        for name, email in settings.ADMINS],
                     'time_zone': settings.TIME_ZONE,
                 },
+                'capabilities': {
+                    'diffs': {
+                        'moved_files': True,
+                    },
+                },
             },
         }
 
