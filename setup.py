@@ -75,11 +75,11 @@ class BuildMedia(Command):
         pass
 
     def run(self):
+        env = os.environ.copy()
+        env['FORCE_BUILD_MEDIA'] = 1
         retcode = subprocess.call(['./reviewboard/manage.py', 'collectstatic',
                                    '--noinput'],
-                                  env={
-                                      'FORCE_BUILD_MEDIA': '1',
-                                  })
+                                  env=env)
 
         if retcode != 0:
             raise RuntimeError('Failed to build media files')
