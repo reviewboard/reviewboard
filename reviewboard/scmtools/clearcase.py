@@ -164,7 +164,7 @@ class ClearCaseTool(SCMTool):
 
         return output
 
-    def parse_diff_revision(self, extended_path, revision_str):
+    def parse_diff_revision(self, extended_path, revision_str, *args, **kwargs):
         """Guess revision based on extended_path.
 
         Revision is part of file path, called extended-path,

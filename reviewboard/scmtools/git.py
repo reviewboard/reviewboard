@@ -84,7 +84,8 @@ class GitTool(SCMTool):
         except (FileNotFoundError, InvalidRevisionFormatError):
             return False
 
-    def parse_diff_revision(self, file_str, revision_str, moved):
+    def parse_diff_revision(self, file_str, revision_str, moved=False,
+                            *args, **kwargs):
         revision = revision_str
 
         if file_str == "/dev/null":

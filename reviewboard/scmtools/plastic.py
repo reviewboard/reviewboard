@@ -109,7 +109,7 @@ class PlasticTool(SCMTool):
         except FileNotFoundError:
             return False
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         logging.debug('Plastic: parse_diff_revision file %s revision %s' %
                       (file_str, revision_str))
 

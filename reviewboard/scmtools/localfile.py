@@ -24,7 +24,7 @@ class LocalFileTool(SCMTool):
         except IOError, e:
             raise FileNotFoundError(path, revision, str(e))
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         return file_str, HEAD
 
     def get_fields(self):

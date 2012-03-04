@@ -311,7 +311,7 @@ class PerforceTool(SCMTool):
     def get_file(self, path, revision=HEAD):
         return self.client.get_file(path, revision)
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         # Perforce has this lovely idiosyncracy that diffs show revision #1 both
         # for pre-creation and when there's an actual revision.
         filename, revision = revision_str.rsplit('#', 1)

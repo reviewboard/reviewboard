@@ -180,7 +180,7 @@ class SVNTool(SCMTool):
                       repl, data)
 
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         # Some diffs have additional tabs between the parts of the file
         # revisions
         revision_str = revision_str.strip()

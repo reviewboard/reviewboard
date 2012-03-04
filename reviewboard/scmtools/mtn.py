@@ -42,7 +42,7 @@ class MonotoneTool(SCMTool):
 
         return True
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         return file_str, revision_str
 
     def get_diffs_use_absolute_paths(self):

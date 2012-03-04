@@ -47,7 +47,7 @@ class CVSTool(SCMTool):
 
         return self.client.cat_file(path, revision)
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         if revision_str == "PRE-CREATION":
             return file_str, PRE_CREATION
 

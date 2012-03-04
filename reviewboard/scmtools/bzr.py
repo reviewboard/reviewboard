@@ -129,7 +129,7 @@ class BZRTool(SCMTool):
 
         return contents
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         if revision_str == BZRTool.PRE_CREATION_TIMESTAMP:
             return (file_str, PRE_CREATION)
 

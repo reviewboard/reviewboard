@@ -34,7 +34,7 @@ class HgTool(SCMTool):
     def get_file(self, path, revision=HEAD):
         return self.client.cat_file(path, str(revision))
 
-    def parse_diff_revision(self, file_str, revision_str):
+    def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         revision = revision_str
         if file_str == "/dev/null":
             revision = PRE_CREATION
