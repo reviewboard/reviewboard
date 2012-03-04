@@ -76,7 +76,7 @@ class BuildMedia(Command):
 
     def run(self):
         env = os.environ.copy()
-        env['FORCE_BUILD_MEDIA'] = 1
+        env['FORCE_BUILD_MEDIA'] = "1"
         retcode = subprocess.call(['./reviewboard/manage.py', 'collectstatic',
                                    '--noinput'],
                                   env=env)
