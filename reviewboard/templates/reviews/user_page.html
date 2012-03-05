@@ -4,6 +4,7 @@
 {% load i18n %}
 {% load reviewtags %}
 {% load gravatars %}
+{% load tz %}
 {% block title %}{{viewing_user|user_displayname}}{% endblock %}
 
 {% block content %}
@@ -31,10 +32,10 @@
    </tr>
 {% endif %}
    <tr>
-    <td class="logged-in">Last logged in {{viewing_user.last_login|date:"F jS, Y"}}</td>
+    <td class="logged-in">Last logged in {% localtime on %}{{viewing_user.last_login|date:"F jS, Y"}}{% endlocaltime %}</td>
    </tr>
    <tr>
-    <td class="joined">Joined {{viewing_user.date_joined|date:"F jS, Y"}}</td>
+    <td class="joined">Joined {% localtime on %}{{viewing_user.date_joined|date:"F jS, Y"}}{% endlocaltime %}</td>
    </tr>
    <tr>
     <td>

@@ -1,3 +1,5 @@
+import pytz
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import Http404
@@ -486,6 +488,11 @@ class ReviewRequestDataGrid(DataGrid):
         self.default_columns = [
             "star", "summary", "submitter", "time_added", "last_updated_since"
         ]
+
+        # Add local timezone info to the columns
+        user = self.request.user.get_profile()
+        self.timezone = pytz.timezone(user.timezone)
+        self.time_added.timezone = self.timezone
 
     def load_extra_state(self, profile):
         if profile:

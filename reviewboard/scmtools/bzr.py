@@ -193,7 +193,7 @@ class BZRTool(SCMTool):
             timestamp += delta
 
         # convert to local time
-        return datetime.fromtimestamp(calendar.timegm(timestamp.timetuple()))
+        return datetime.utcfromtimestamp(calendar.timegm(timestamp.timetuple()))
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,

@@ -41,7 +41,7 @@
 
 {% block footer %}
 <br />
-<p>On {{review_request.time_emailed|date:"F jS, Y, P"}}, {{review_request.submitter|user_displayname}} wrote:</p>
+<p>On {{review_request.time_emailed|date:"F jS, Y, P T"}}, {{review_request.submitter|user_displayname}} wrote:</p>
 
 {%  with 1 as embedded %}
 {%   include "notifications/review_request_email.html" %}

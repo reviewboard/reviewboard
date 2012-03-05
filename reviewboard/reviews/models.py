@@ -9,6 +9,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
+from djblets.util.dates import get_tz_aware_utcnow
 from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import CounterField, ModificationTimestampField
 from djblets.util.misc import get_object_or_none
@@ -243,7 +244,7 @@ class Screenshot(models.Model):
 
         try:
             draft = self.drafts.get()
-            draft.timestamp = datetime.now()
+            draft.timestamp = get_tz_aware_utcnow()
             draft.save()
         except ReviewRequestDraft.DoesNotExist:
             pass
@@ -687,7 +688,7 @@ class ReviewRequest(models.Model):
         else:
             # Update submission description.
             changedesc = self.changedescs.filter(public=True).latest()
-            changedesc.timestamp = datetime.now()
+            changedesc.timestamp = get_tz_aware_utcnow()
             changedesc.text = description or ""
             changedesc.save()
 
@@ -1247,7 +1248,7 @@ class ReviewRequestDraft(models.Model):
             self.diffset.save()
 
         if self.changedesc:
-            self.changedesc.timestamp = datetime.now()
+            self.changedesc.timestamp = get_tz_aware_utcnow()
             self.changedesc.public = True
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)
@@ -1315,7 +1316,7 @@ class BaseComment(models.Model):
             raise Exception("Invalid issue status '%s'" % status)
 
     def save(self, **kwargs):
-        self.timestamp = datetime.now()
+        self.timestamp = get_tz_aware_utcnow()
 
         super(BaseComment, self).save()
 
@@ -1614,7 +1615,7 @@ class Review(models.Model):
         return None
 
     def save(self, **kwargs):
-        self.timestamp = datetime.now()
+        self.timestamp = get_tz_aware_utcnow()
 
         super(Review, self).save()
 

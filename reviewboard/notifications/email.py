@@ -7,6 +7,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.dates import get_tz_aware_utcnow
 
 from reviewboard.accounts.signals import user_registered
 from reviewboard.reviews.models import ReviewRequest, Review
@@ -274,7 +275,7 @@ def mail_review_request(user, review_request, changedesc=None):
         extra_context['change_text'] = changedesc.text
         extra_context['changes'] = changedesc.fields_changed
 
-    review_request.time_emailed = datetime.now()
+    review_request.time_emailed = get_tz_aware_utcnow()
     review_request.email_message_id = \
         send_review_mail(user, review_request, subject, reply_message_id,
                          extra_recipients,
@@ -313,7 +314,7 @@ def mail_review(user, review):
                          'notifications/review_email.txt',
                          'notifications/review_email.html',
                          extra_context)
-    review.time_emailed = datetime.now()
+    review.time_emailed = get_tz_aware_utcnow()
     review.save()
 
 
@@ -348,7 +349,7 @@ def mail_reply(user, reply):
                          'notifications/reply_email.txt',
                          'notifications/reply_email.html',
                          extra_context)
-    reply.time_emailed = datetime.now()
+    reply.time_emailed = get_tz_aware_utcnow()
     reply.save()
 
 

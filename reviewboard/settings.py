@@ -19,8 +19,15 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+# Time zone support. If enabled, Django stores date and time information as
+# UTC in the database, uses time zone-aware datetime objects, and translates
+# them to the user's time zone in templates and forms.
+USE_TZ = True
+
 # Local time zone for this installation. All choices can be found here:
 # http://www.postgresql.org/docs/8.1/static/datetime-keywords.html#DATETIME-TIMEZONE-SET-TABLE
+# When USE_TZ is enabled, this is used as the default time zone for datetime
+# objects
 TIME_ZONE = 'UTC'
 
 # Language code for this installation. All choices can be found here:
@@ -68,6 +75,7 @@ MIDDLEWARE_CLASSES = (
 
     'djblets.extensions.middleware.ExtensionsMiddleware',
     'djblets.log.middleware.LoggingMiddleware',
+    'reviewboard.accounts.middleware.TimezoneMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
     'reviewboard.admin.middleware.X509AuthMiddleware',
     'reviewboard.site.middleware.LocalSiteMiddleware',

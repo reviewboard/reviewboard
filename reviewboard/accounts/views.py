@@ -67,6 +67,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             'first_name': request.user.first_name,
             'last_name': request.user.last_name,
             'email': request.user.email,
+            'timezone': profile.timezone,
             'syntax_highlighting': profile.syntax_highlighting,
             'profile_private': profile.is_private,
             'groups': [g.id for g in request.user.review_groups.all()],

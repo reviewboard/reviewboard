@@ -36,7 +36,7 @@ from django.core.cache import parse_backend_uri, InvalidCacheBackendError
 from django.utils.translation import ugettext as _
 from djblets.log import restart_logging
 from djblets.siteconfig.forms import SiteSettingsForm
-import pytz
+from djblets.util.forms import TimeZoneField
 
 from reviewboard.accounts.forms import LegacyAuthModuleSettingsForm
 from reviewboard.admin.checks import get_can_enable_search, \
@@ -71,10 +71,9 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
 
-    locale_timezone = forms.ChoiceField(
+    locale_timezone = TimeZoneField(
         label=_("Time Zone"),
         required=True,
-        choices=[(tz, tz) for tz in pytz.common_timezones],
         help_text=_("The time zone used for all dates on this server."))
 
     search_enable = forms.BooleanField(

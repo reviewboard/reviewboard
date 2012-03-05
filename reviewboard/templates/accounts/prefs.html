@@ -36,6 +36,12 @@
     <td>{{form.password2}} {{form.errors.password2}}</td>
    </tr>
 {% endif %}
+{% if auth_backends.0.supports_change_timezone %}
+   <tr>
+    <td><label for="timezone">{% trans "Time Zone:" %}</label></td>
+    <td>{{form.timezone}}</td>
+   </tr>
+{% endif %}
 {% if siteconfig.settings.diffviewer_syntax_highlighting %}
    <tr>
     <td></td>

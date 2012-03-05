@@ -7,7 +7,7 @@
 {% if reply.body_top %}
 {%  if review.body_top %}
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{review.body_top}}</pre>
  </blockquote>
@@ -15,7 +15,7 @@
 {%  for reply_review in review.public_replies %}
 {%   if reply_review.body_top %}
 {%    if reply_review != reply %}
- <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_review.body_top}}</pre>
  </blockquote>
@@ -31,7 +31,7 @@
 
 {% for comment in reply.screenshot_comments.all %}
 <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   {# Prevents a display glitch on the table in Outlook 2007 #}
   <br style="display: none;" />
@@ -49,7 +49,7 @@
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != comment %}
- <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   <pre style="{{precss}}">{{reply_comment.text}}</pre>
  </blockquote>
@@ -63,7 +63,7 @@
 
 {% for entry in comment_entries %}
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   {{entry.html|safe}}
   <pre style="{{precss}}">{{entry.comment.reply_to.text}}</pre>
@@ -71,7 +71,7 @@
 {%  for reply_comment in entry.comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != entry.comment %}
- <p>On {{reply_comment.timestamp|date:"F jS, Y, P"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_comment.text}}</pre>
  </blockquote>
@@ -86,7 +86,7 @@
 {% if reply.body_bottom %}
 {%  if review.body_bottom %}
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{review.body_bottom}}</pre>
  </blockquote>
@@ -94,7 +94,7 @@
 {%  for reply_review in review.public_replies %}
 {%   if reply_review.body_bottom %}
 {%    if reply_review != reply %}
- <p>On {{reply_review.timestamp|date:"F jS, Y, P"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_review.body_bottom}}</pre>
  </blockquote>
@@ -113,7 +113,7 @@
 
 {% block footer %}
 <br />
-<p>On {{review_request.time_emailed|date:"F jS, Y, P"}}, {{review_request.submitter|user_displayname}} wrote:</p>
+<p>On {{review_request.time_emailed|date:"F jS, Y, P T"}}, {{review_request.submitter|user_displayname}} wrote:</p>
 
 {%  with 1 as embedded %}
 {%   include "notifications/review_request_email.html" %}

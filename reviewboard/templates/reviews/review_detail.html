@@ -6,6 +6,7 @@
 {% load rb_extensions %}
 {% load reviewtags %}
 {% load staticfiles %}
+{% load tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -130,7 +131,7 @@
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="collapse-button"></div>
   <div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
-  <div class="posted_time">{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
+  <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}{% endlocaltime %}</div>
   {% template_hook_point "review-summary-header-post" %}
  </div>
  <div class="body">
@@ -273,7 +274,7 @@
  <div class="header">
    <div class="collapse-button"></div>
    <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
-   <div class="posted_time">{% blocktrans with entry.changedesc.timestamp|timesince as timestamp_since and entry.changedesc.timestamp|date:"F jS, Y, P" as timestamp_date %}Updated {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}</div>
+   <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp|timesince as timestamp_since and entry.changedesc.timestamp|date:"F jS, Y, P" as timestamp_date %}Updated {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}{% endlocaltime %}</div>
  </div>
  <div class="body">
   <ul>

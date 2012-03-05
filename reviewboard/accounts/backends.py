@@ -39,6 +39,7 @@ class AuthBackend(object):
     supports_change_name = False
     supports_change_email = False
     supports_change_password = False
+    supports_change_timezone = False
 
     def authenticate(self, username, password):
         raise NotImplementedError
@@ -88,6 +89,20 @@ class AuthBackend(object):
         """
         pass
 
+    def update_timezone(self, user):
+        """Updates the user's timezone on the backend.
+
+        The timezone will already be stored in the provided
+        ``user`` object.
+
+        Authentication backends can override this to update the timezone
+        on the backend based on the values in ``user``. This will only
+        be called if :py:attr:`supports_change_timezone` is ``True``.
+
+        By default, this will do nothing.
+        """
+        pass
+
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
     name = _('Standard Registration')
@@ -96,6 +111,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     supports_change_name = True
     supports_change_email = True
     supports_change_password = True
+    supports_change_timezone = True
 
     def authenticate(self, username, password):
         return ModelBackend.authenticate(self, username, password)
