@@ -1,7 +1,4 @@
-from datetime import datetime
-
 from django import forms
-
 from djblets.util.dates import get_tz_aware_utcnow
 
 from reviewboard.attachments.models import FileAttachment

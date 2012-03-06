@@ -1,5 +1,6 @@
-from django_evolution.mutations import *
+from django_evolution.mutations import AddField, RenameField
 from django.db import models
+
 
 MUTATIONS = [
     RenameField('FileDiff', 'diff', 'diff64', db_column='diff_base64'),

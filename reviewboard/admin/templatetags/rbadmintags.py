@@ -4,10 +4,9 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.template.context import RequestContext
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.decorators import basictag, blocktag
+from djblets.util.decorators import basictag
 
 from reviewboard import get_version_string
-from reviewboard.admin import widgets
 from reviewboard.admin.cache_stats import get_has_cache_stats
 from reviewboard.reviews.models import DefaultReviewer, Group
 from reviewboard.scmtools.models import Repository

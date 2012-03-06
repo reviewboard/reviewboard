@@ -64,8 +64,6 @@ class Widget(object):
         and caching the data, depending on the widget's needs.
         """
         if self.has_data and self.data is None:
-            cache_key = self.generate_cache_key(request)
-
             if self.cache_data:
                 self.data = cache_memoize(self.generate_cache_key(request),
                                           lambda: self.generate_data(request))

@@ -24,14 +24,11 @@
 #
 
 import os
-import platform
-import shutil
 import sys
 import tempfile
 
 from django.core.management import execute_from_command_line
 from django.test.simple import DjangoTestSuiteRunner
-import pkg_resources
 import nose
 
 try:

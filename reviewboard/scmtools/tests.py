@@ -664,7 +664,7 @@ class PerforceTests(SCMTestCase):
                           encoding='utf8')
         tool = repo.get_scmtool()
         try:
-            desc = tool.get_changeset(157)
+            tool.get_changeset(157)
             self.fail('Expected an error about unicode-enabled servers. Did '
                       'perforce.com turn on unicode for public.perforce.com?')
         except P4Error, e:

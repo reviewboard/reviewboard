@@ -12,7 +12,7 @@ from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
-from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
+from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.widgets import dynamic_activity_data, \

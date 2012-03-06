@@ -27,8 +27,7 @@ from reviewboard.reviews.signals import review_request_published, \
                                         review_request_reopened, \
                                         review_request_closed, \
                                         reply_published, review_published
-from reviewboard.scmtools.errors import EmptyChangeSetError, \
-                                        InvalidChangeNumberError
+from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse

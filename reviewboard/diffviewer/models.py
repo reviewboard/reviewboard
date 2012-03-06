@@ -94,7 +94,7 @@ class FileDiff(models.Model):
 
             # Add hash to table if it doesn't exist, and set diff_hash to this.
             self.parent_diff_hash, is_new = FileDiffData.objects.get_or_create(
-                binary_hash=hashkey, defaults={'binary': diff})
+                binary_hash=hashkey, defaults={'binary': parent_diff})
             self.parent_diff64 = ""
 
     parent_diff = property(_get_parent_diff, _set_parent_diff)

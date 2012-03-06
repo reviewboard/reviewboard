@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import os
 import re
-import sys
 from optparse import OptionParser
-from pkg_resources import parse_version
 
 from jinja2 import Environment, PackageLoader
 
@@ -12,6 +10,8 @@ from reviewboard import get_version_string
 
 env = Environment(loader=PackageLoader('reviewboard',
     '../contrib/tools/templates/extensions'))
+
+options = None
 
 
 def get_confirmation(question):

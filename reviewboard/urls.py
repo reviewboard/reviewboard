@@ -4,9 +4,7 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
-from reviewboard import initialize
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.webapi.resources import root_resource
 
