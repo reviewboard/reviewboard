@@ -1,6 +1,7 @@
 from django_evolution.mutations import AddField
-from djblets.util.fields import TimeZoneField
+from django.db import models
+
 
 MUTATIONS = [
-    AddField('Profile', 'timezone', TimeZoneField, initial=u'UTC', max_length=20)
+    AddField('Profile', 'timezone', models.CharField, initial=u'UTC', max_length=20)
 ]
