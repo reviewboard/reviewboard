@@ -6,7 +6,7 @@ from django import db
 from django.core import serializers
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.db.models import get_apps, get_models
+from django.db.models import get_apps
 
 
 class Command(BaseCommand):

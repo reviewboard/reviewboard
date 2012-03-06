@@ -1,7 +1,7 @@
 from django.http import HttpRequest
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
-from djblets.webapi.core import WebAPIResponse
+from djblets.webapi.core import WebAPIResponse, WebAPIResponseError
 from djblets.webapi.decorators import webapi_login_required, \
                                       webapi_response_errors, \
                                       _find_httprequest
