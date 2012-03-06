@@ -21,6 +21,11 @@ sys.path.append(os.path.abspath('_ext'))
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, "..", "..", '..')))
 sys.path.insert(0, os.path.dirname(__file__))
 
+# The nightly docs system needs to inject certain builds of Djblets and Django.
+# PYTHONPATH will only append, meaning that the system-installed ones will
+# be looked up first, so allow us to append instead.
+sys.path = os.getenv('PYTHONPATH_PREPEND', '').split(':') + sys.path
+
 import reviewboard
 from reviewboard import settings
 from django.core.management import setup_environ
