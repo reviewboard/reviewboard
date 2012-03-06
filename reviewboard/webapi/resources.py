@@ -333,8 +333,14 @@ class BaseDiffCommentResource(BaseCommentResource):
         """
         review_request = review_request_resource.get_object(
             request, review_request_id, *args, **kwargs)
+
+        q = Q(review__public = True)
+
+        if request.user.is_authenticated():
+            q = q | Q(review__user=request.user)
+
         q = self.model.objects.filter(
-            Q(review__public=True) | Q(review__user=request.user),
+            q,
             filediff__diffset__history__review_request=review_request)
 
         if is_list:

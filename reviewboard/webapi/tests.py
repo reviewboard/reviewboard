@@ -4947,6 +4947,36 @@ class FileDiffCommentResourceTests(BaseWebAPITestCase):
         for i in range(0, len(rsp['diff_comments'])):
             self.assertEqual(rsp['diff_comments'][i]['text'], comments[i].text)
 
+    def test_get_comments_as_anonymous(self):
+        """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API as an anonymous user"""
+        diff_comment_text = 'Sample comment.'
+
+        review_request = ReviewRequest.objects.public()[0]
+        diffset = review_request.diffset_history.diffsets.latest()
+        filediff = diffset.files.all()[0]
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
+                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue('review' in rsp)
+        review_id = rsp['review']['id']
+
+        self._postNewDiffComment(review_request, review_id, diff_comment_text)
+        review = Review.objects.get(pk=review_id)
+        review.publish()
+
+        self.client.logout()
+
+        rsp = self.apiGet(self.get_list_url(filediff),
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comments = Comment.objects.filter(filediff=filediff)
+        self.assertEqual(len(rsp['diff_comments']), comments.count())
+
+        for i in range(0, len(rsp['diff_comments'])):
+            self.assertEqual(rsp['diff_comments'][i]['text'], comments[i].text)
+
     def test_get_comments_with_site(self):
         """Testing the GET review-requests/<id>/diffs/<revision>/files/<id>/diff-comments/ API with a local site"""
         diff_comment_text = 'Sample comment.'
