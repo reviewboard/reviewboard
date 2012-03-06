@@ -1,5 +1,5 @@
 recursive-include contrib *
-recursive-include docs *.txt *.png *.py Makefile
+recursive-include docs *.db *.txt *.png *.py Makefile
 recursive-include locale *
 recursive-include reviewboard *
 recursive-include webtests *
