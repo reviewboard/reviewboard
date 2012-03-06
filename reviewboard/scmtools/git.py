@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import urllib2
 import urlparse
 
 # Python 2.5+ provides urllib2.quote, whereas Python 2.4 only
@@ -365,7 +364,7 @@ class GitClient(SCMClient):
                 # any sort of exception, then the file exists.
                 self.get_file(path, revision)
                 return True
-            except Exception, e:
+            except Exception:
                 return False
         else:
             contents = self._cat_file(path, revision, "-t")

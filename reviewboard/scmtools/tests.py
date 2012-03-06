@@ -1086,7 +1086,6 @@ class MercurialTests(SCMTestCase):
         tool = repo.get_scmtool()
 
         rev = Revision('877cf1960916')
-        file = 'TODO.rst'
 
         self.assert_(tool.file_exists('TODO.rst', rev))
         self.assert_(not tool.file_exists('TODO.rstNotFound', rev))

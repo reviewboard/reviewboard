@@ -1,5 +1,4 @@
 import logging
-import urllib2
 
 try:
     from urllib2 import quote as urllib_quote
