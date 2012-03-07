@@ -5,6 +5,22 @@ Review Board 1.7 Beta 1 Release Notes
 **Release date**: TBD
 
 
+Compatibilty Changes
+====================
+
+* Added a requirement for Django 1.4.
+
+  This is the first release to require Django 1.4. This release is not
+  backwards-compatible with earlier versions of Django.
+
+* Dropped Python 2.4 support.
+
+  We no longer support Python 2.4 deployments. This is part of our effort
+  to move to more modern versions of Python, in order to improve the codebase.
+  It's also a requirement that's otherwise enforced on us by Django 1.4,
+  for the same reasons.
+
+
 New Features
 ============
 
@@ -55,6 +71,18 @@ New Features
   a review request.
 
   Patch by Yazan Medanat.
+
+* Moved files in a change are better represented in the diff viewer.
+
+  Diffs that contain moved or renamed files under certain supported SCMs
+  are no longer shown as one deleted file and one added file. We now show
+  that the file was moved, and even show any changes that may have been
+  made alongside the move.
+
+  This is currently only supported for Git, but more SCMs will be supported
+  in the future.
+
+  Patch by Dave Druska.
 
 * Added a "To Me" column in the dashboard.
 
@@ -113,6 +141,20 @@ Performance Improvements
   but does not affect existing diffs.
 
   Patch by Dave Druska.
+
+
+Web API Changes
+===============
+
+* Added server capabilities in ``/api/info/``.
+
+  The ``/api/info/`` resource now has a list of server capabilities in
+  a ``capabilities`` dictionary. These are organized by categories, each
+  of which has a dictionary of capabilities as values. See the documentation
+  for an example.
+
+  This currently only contains one item, ``diffs.moved_files``, which
+  indicates whether the server supports moved file information in diffs.
 
 
 Contributors
