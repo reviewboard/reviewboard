@@ -645,7 +645,7 @@
         "fields": {
             "name": "comments.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:12:57", 
+            "timestamp": "2007-06-24T00:12:57+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -658,7 +658,7 @@
         "fields": {
             "name": "cleaned_data.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:14:37", 
+            "timestamp": "2007-06-24T00:14:37+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -671,7 +671,7 @@
         "fields": {
             "name": "delete_review_req_permissions.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:17:47", 
+            "timestamp": "2007-06-24T00:17:47+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -684,7 +684,7 @@
         "fields": {
             "name": "email_improvements.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:42:45", 
+            "timestamp": "2007-06-24T00:42:45+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -697,7 +697,7 @@
         "fields": {
             "name": "interdiffs.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:45:25", 
+            "timestamp": "2007-06-24T00:45:25+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -710,7 +710,7 @@
         "fields": {
             "name": "error-output-dlg.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:47:18", 
+            "timestamp": "2007-06-24T00:47:18+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -723,7 +723,7 @@
         "fields": {
             "name": "improved-login-form.diff", 
             "repository": 1, 
-            "timestamp": "2007-06-24 00:49:13", 
+            "timestamp": "2007-06-24T00:49:13+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -736,7 +736,7 @@
         "fields": {
             "name": "diff64", 
             "repository": 1, 
-            "timestamp": "2009-02-25 02:01:21", 
+            "timestamp": "2009-02-25T02:01:21+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -749,7 +749,7 @@
         "fields": {
             "name": "1.diff", 
             "repository": 3, 
-            "timestamp": "2010-12-01 23:46:37", 
+            "timestamp": "2010-12-01T23:46:37+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 1, 
@@ -762,7 +762,7 @@
         "fields": {
             "name": "diff64", 
             "repository": 1, 
-            "timestamp": "2009-02-25 02:03:05", 
+            "timestamp": "2009-02-25T02:03:05+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 2, 
@@ -775,7 +775,7 @@
         "fields": {
             "name": "diff64", 
             "repository": 1, 
-            "timestamp": "2009-02-25 21:39:42", 
+            "timestamp": "2009-02-25T21:39:42+00:00", 
             "basedir": "", 
             "diffcompat": 1, 
             "revision": 3, 
@@ -786,7 +786,7 @@
         "pk": 1, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:12:44", 
+            "timestamp": "2007-06-24T00:12:44+00:00", 
             "name": ""
         }
     }, 
@@ -794,7 +794,7 @@
         "pk": 2, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:14:32", 
+            "timestamp": "2007-06-24T00:14:32+00:00", 
             "name": ""
         }
     }, 
@@ -802,7 +802,7 @@
         "pk": 3, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:17:33", 
+            "timestamp": "2007-06-24T00:17:33+00:00", 
             "name": ""
         }
     }, 
@@ -810,7 +810,7 @@
         "pk": 4, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:42:42", 
+            "timestamp": "2007-06-24T00:42:42+00:00", 
             "name": ""
         }
     }, 
@@ -818,7 +818,7 @@
         "pk": 5, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:45:13", 
+            "timestamp": "2007-06-24T00:45:13+00:00", 
             "name": ""
         }
     }, 
@@ -826,7 +826,7 @@
         "pk": 6, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:47:14", 
+            "timestamp": "2007-06-24T00:47:14+00:00", 
             "name": ""
         }
     }, 
@@ -834,7 +834,7 @@
         "pk": 7, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2007-06-24 00:49:06", 
+            "timestamp": "2007-06-24T00:49:06+00:00", 
             "name": ""
         }
     }, 
@@ -842,7 +842,7 @@
         "pk": 8, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2009-02-25 02:01:21", 
+            "timestamp": "2009-02-25T02:01:21+00:00", 
             "name": ""
         }
     }, 
@@ -850,7 +850,7 @@
         "pk": 9, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2010-12-01 23:46:18", 
+            "timestamp": "2010-12-01T23:46:18+00:00", 
             "name": ""
         }
     }, 
@@ -858,7 +858,7 @@
         "pk": 10, 
         "model": "diffviewer.diffsethistory", 
         "fields": {
-            "timestamp": "2010-12-01 23:46:36", 
+            "timestamp": "2010-12-01T23:46:36+00:00", 
             "name": ""
         }
     }, 
@@ -946,7 +946,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2010-12-03 17:45:33", 
+            "last_updated": "2010-12-03T17:45:33+00:00", 
             "target_people": [
                 2
             ], 
@@ -957,7 +957,7 @@
             "bugs_closed": "", 
             "testing_done": "", 
             "branch": "", 
-            "time_added": "2010-12-01 23:46:36", 
+            "time_added": "2010-12-01T23:46:36+00:00", 
             "public": true, 
             "status": "P", 
             "shipit_count": 0, 
@@ -982,7 +982,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2009-02-25 22:32:14", 
+            "last_updated": "2009-02-25T22:32:14+00:00", 
             "target_people": [
                 4
             ], 
@@ -993,7 +993,7 @@
             "bugs_closed": "", 
             "testing_done": "", 
             "branch": "trunk", 
-            "time_added": "2009-02-25 02:01:21", 
+            "time_added": "2009-02-25T02:01:21+00:00", 
             "public": true, 
             "status": "P", 
             "shipit_count": 0, 
@@ -1016,7 +1016,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [],
-            "last_updated": "2007-06-24 01:11:24", 
+            "last_updated": "2007-06-24T01:11:24+00:00", 
             "target_people": [
                 2
             ], 
@@ -1027,13 +1027,13 @@
             "bugs_closed": "12345", 
             "testing_done": "Tested.", 
             "branch": "", 
-            "time_added": "2007-06-24 00:42:42", 
+            "time_added": "2007-06-24T00:42:42+00:00", 
             "public": true, 
             "status": "P", 
             "shipit_count": 0, 
             "description": "Test description.", 
             "repository": 1, 
-            "last_review_timestamp": "2011-07-29 01:02:27", 
+            "last_review_timestamp": "2011-07-29T01:02:27+00:00", 
             "inactive_file_attachments": [], 
             "local_site": null, 
             "target_groups": [], 
@@ -1052,7 +1052,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2007-06-24 01:11:10", 
+            "last_updated": "2007-06-24T01:11:10+00:00", 
             "target_people": [
                 1, 
                 2
@@ -1064,7 +1064,7 @@
             "bugs_closed": "", 
             "testing_done": "", 
             "branch": "", 
-            "time_added": "2007-06-24 00:49:06", 
+            "time_added": "2007-06-24T00:49:06+00:00", 
             "public": true, 
             "status": "S", 
             "shipit_count": 0, 
@@ -1087,7 +1087,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2007-06-24 01:10:59", 
+            "last_updated": "2007-06-24T01:10:59+00:00", 
             "target_people": [], 
             "inactive_screenshots": [], 
             "email_message_id": "", 
@@ -1096,7 +1096,7 @@
             "bugs_closed": "", 
             "testing_done": "Bar", 
             "branch": "trunk", 
-            "time_added": "2007-06-24 00:47:14", 
+            "time_added": "2007-06-24T00:47:14+00:00", 
             "public": true, 
             "status": "P", 
             "shipit_count": 0, 
@@ -1121,7 +1121,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2007-06-24 00:34:17", 
+            "last_updated": "2007-06-24T00:34:17+00:00", 
             "target_people": [], 
             "inactive_screenshots": [], 
             "email_message_id": "", 
@@ -1130,7 +1130,7 @@
             "bugs_closed": "123", 
             "testing_done": "Works.", 
             "branch": "trunk", 
-            "time_added": "2007-06-24 00:14:32", 
+            "time_added": "2007-06-24T00:14:32+00:00", 
             "public": true, 
             "status": "P", 
             "shipit_count": 0, 
@@ -1155,7 +1155,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2007-06-24 00:32:47", 
+            "last_updated": "2007-06-24T00:32:47+00:00", 
             "target_people": [], 
             "inactive_screenshots": [], 
             "email_message_id": "", 
@@ -1164,7 +1164,7 @@
             "bugs_closed": "", 
             "testing_done": "", 
             "branch": "trunk", 
-            "time_added": "2007-06-24 00:12:44", 
+            "time_added": "2007-06-24T00:12:44+00:00", 
             "public": false, 
             "status": "P", 
             "shipit_count": 0, 
@@ -1189,7 +1189,7 @@
         "model": "reviews.reviewrequest", 
         "fields": {
             "changedescs": [], 
-            "last_updated": "2007-06-24 00:28:33", 
+            "last_updated": "2007-06-24T00:28:33+00:00", 
             "target_people": [
                 2, 
                 3
@@ -1201,7 +1201,7 @@
             "bugs_closed": "1234, 5678, 8765, 4321", 
             "testing_done": "Tested some functions.", 
             "branch": "trunk", 
-            "time_added": "2007-06-24 00:17:33", 
+            "time_added": "2007-06-24T00:17:33+00:00", 
             "public": true, 
             "status": "P", 
             "shipit_count": 0, 
@@ -1228,7 +1228,7 @@
             "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 9, 
-            "timestamp": "2007-06-24 00:21:45", 
+            "timestamp": "2007-06-24T00:21:45+00:00", 
             "text": "Sample comment.", 
             "reply_to": null, 
             "first_line": 333, 
@@ -1243,7 +1243,7 @@
             "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 9, 
-            "timestamp": "2007-06-24 00:22:48", 
+            "timestamp": "2007-06-24T00:22:48+00:00", 
             "text": "Generic reply", 
             "reply_to": 1, 
             "first_line": 333, 
@@ -1258,7 +1258,7 @@
             "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 1, 
-            "timestamp": "2007-06-24 00:23:43", 
+            "timestamp": "2007-06-24T00:23:43+00:00", 
             "text": "Sample comment 1", 
             "reply_to": null, 
             "first_line": 433, 
@@ -1273,7 +1273,7 @@
             "issue_opened": false, 
             "interfilediff": null, 
             "num_lines": 1, 
-            "timestamp": "2007-06-24 00:24:28", 
+            "timestamp": "2007-06-24T00:24:28+00:00", 
             "text": "Sample comment 2", 
             "reply_to": null, 
             "first_line": 449, 
@@ -1286,7 +1286,7 @@
         "model": "reviews.fileattachmentcomment", 
         "fields": {
             "issue_opened": false, 
-            "timestamp": "2011-07-29 01:02:27", 
+            "timestamp": "2011-07-29T01:02:27+00:00", 
             "text": "This is a test.", 
             "reply_to": null, 
             "file_attachment": 1, 
@@ -1300,7 +1300,7 @@
             "body_top": "Looks fine.", 
             "ship_it": true, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:16:41", 
+            "timestamp": "2007-06-24T00:16:41+00:00", 
             "base_reply_to": null, 
             "email_message_id": "", 
             "comments": [], 
@@ -1322,7 +1322,7 @@
             "body_top": "Test", 
             "ship_it": false, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:21:45", 
+            "timestamp": "2007-06-24T00:21:45+00:00", 
             "base_reply_to": null, 
             "email_message_id": "", 
             "comments": [
@@ -1346,7 +1346,7 @@
             "body_top": "", 
             "ship_it": false, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:22:48", 
+            "timestamp": "2007-06-24T00:22:48+00:00", 
             "base_reply_to": 2, 
             "email_message_id": "", 
             "comments": [
@@ -1370,7 +1370,7 @@
             "body_top": "", 
             "ship_it": false, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:23:43", 
+            "timestamp": "2007-06-24T00:23:43+00:00", 
             "base_reply_to": null, 
             "email_message_id": "", 
             "comments": [
@@ -1395,7 +1395,7 @@
             "body_top": "Grumpy body", 
             "ship_it": false, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:25:33", 
+            "timestamp": "2007-06-24T00:25:33+00:00", 
             "base_reply_to": null, 
             "email_message_id": "", 
             "comments": [], 
@@ -1417,7 +1417,7 @@
             "body_top": "Dopey reply", 
             "ship_it": false, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:25:52", 
+            "timestamp": "2007-06-24T00:25:52+00:00", 
             "base_reply_to": 5, 
             "email_message_id": "", 
             "comments": [], 
@@ -1439,7 +1439,7 @@
             "body_top": "Grumpy reply", 
             "ship_it": false, 
             "file_attachment_comments": [], 
-            "timestamp": "2007-06-24 00:26:03", 
+            "timestamp": "2007-06-24T00:26:03+00:00", 
             "base_reply_to": 5, 
             "email_message_id": "", 
             "comments": [], 
@@ -1463,7 +1463,7 @@
             "file_attachment_comments": [
                 1
             ], 
-            "timestamp": "2011-07-29 01:02:27", 
+            "timestamp": "2011-07-29T01:02:27+00:00", 
             "base_reply_to": null, 
             "email_message_id": null, 
             "comments": [], 

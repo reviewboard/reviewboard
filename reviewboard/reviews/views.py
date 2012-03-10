@@ -16,13 +16,14 @@ from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
+from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
 from django.views.decorators.cache import cache_control
 from django.views.generic.list_detail import object_list
 
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.dates import get_latest_timestamp
+from djblets.util.dates import get_latest_timestamp, get_tz_aware_utcnow
 from djblets.util.http import set_last_modified, get_modified_since, \
                               set_etag, etag_if_none_match
 from djblets.util.misc import get_object_or_none
@@ -297,8 +298,8 @@ def review_detail(request,
         if review_request.public and review_request.status == "P":
             visited, visited_is_new = ReviewRequestVisit.objects.get_or_create(
                 user=request.user, review_request=review_request)
-            last_visited = visited.timestamp
-            visited.timestamp = datetime.now()
+            last_visited = visited.timestamp.replace(tzinfo=utc)
+            visited.timestamp = get_tz_aware_utcnow()
             visited.save()
 
         profile, profile_is_new = \
