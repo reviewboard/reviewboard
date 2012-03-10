@@ -73,7 +73,8 @@ def install_media(site):
     print "Using Djblets media from %s" % \
         pkg_resources.resource_filename("djblets", "media")
 
-    site.link_pkg_dir("djblets", "media", os.path.join(media_path, "djblets"))
+    site.link_pkg_dir("djblets", "media",
+                      os.path.join(site.install_dir, media_path, "djblets"))
 
 
 def build_egg_info():
