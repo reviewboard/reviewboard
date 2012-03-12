@@ -111,7 +111,7 @@ TEMPLATE_DIRS = (
 )
 
 STATICFILES_DIRS = (
-    ('rb', os.path.join(REVIEWBOARD_ROOT, 'htdocs', 'media', 'rb')),
+    ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
     ('djblets', os.path.join(os.path.dirname(djblets.__file__), 'media')),
 )
 

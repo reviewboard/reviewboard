@@ -474,8 +474,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         return rsp
 
     def _getTrophyFilename(self):
-        return os.path.join(settings.HTDOCS_ROOT,
-                            "media", "rb", "images", "trophy.png")
+        return os.path.join(settings.STATIC_ROOT, "rb", "images", "trophy.png")
 
 
 class ServerInfoResourceTests(BaseWebAPITestCase):
