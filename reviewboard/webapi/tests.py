@@ -52,6 +52,8 @@ def _build_mimetype(resource_name, fmt='json'):
 class BaseWebAPITestCase(TestCase, EmailTestHelper):
     local_site_name = 'local-site-1'
 
+    error_mimetype = _build_mimetype('error')
+
     def setUp(self):
         initialize()
 
@@ -89,7 +91,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
-            self.assertEqual(response['Content-Type'], _build_mimetype('error'))
+            self.assertEqual(response['Content-Type'], self.error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
@@ -139,7 +141,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         if expected_status >= 400:
             self.assertEqual(expected_mimetype, None)
-            self.assertEqual(response['Content-Type'], _build_mimetype('error'))
+            self.assertEqual(response['Content-Type'], self.error_mimetype)
         else:
             self.assertNotEqual(expected_mimetype, None)
             self.assertEqual(response['Content-Type'], expected_mimetype)
