@@ -22,6 +22,13 @@ except ImportError, e:
     sys.stderr.write("The error we got was: %s\n" % e)
     sys.exit(1)
 
+if dirname(settings.__file__) == os.getcwd():
+    sys.stderr.write("manage.py should not be run from within the "
+                     "'reviewboard' Python package directory.\n")
+    sys.stderr.write("Make sure to run this from the top of the Review Board "
+                     "source tree.\n")
+    sys.exit(1)
+
 from django.core.management import execute_manager, setup_environ
 
 
