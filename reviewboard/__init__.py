@@ -59,7 +59,7 @@ def initialize():
     import os
 
     from django.conf import settings
-    from djblets.util.misc import generate_cache_serials
+    from djblets.util.misc import generate_ajax_serial
     from djblets import log
 
     from reviewboard import signals
@@ -76,8 +76,8 @@ def initialize():
         logging.debug("Log file for Review Board v%s (PID %s)" %
                       (get_version_string(), os.getpid()))
 
-    # Generate cache serials
-    generate_cache_serials()
+    # Generate the AJAX serial, used for AJAX request caching.
+    generate_ajax_serial()
 
     # Load all extensions
     get_extension_manager().load()

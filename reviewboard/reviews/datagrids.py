@@ -2,6 +2,7 @@ import pytz
 
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.http import Http404
 from django.utils.datastructures import SortedDict
 from django.utils.html import conditional_escape
@@ -23,8 +24,7 @@ class StarColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = "%srb/images/star_on.png?%s" % \
-            (settings.STATIC_URL, settings.MEDIA_SERIAL)
+        self.image_url = static("rb/images/star_on.png")
         self.image_width = 16
         self.image_height = 15
         self.image_alt = _("Starred")
@@ -98,8 +98,7 @@ class ShipItColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = "%srb/images/shipit.png?%s" % \
-            (settings.STATIC_URL, settings.MEDIA_SERIAL)
+        self.image_url = static("rb/images/shipit.png")
         self.image_width = 16
         self.image_height = 16
         self.image_alt = _("Ship It!")
@@ -111,10 +110,10 @@ class ShipItColumn(Column):
     def render_data(self, review_request):
         if review_request.shipit_count > 0:
             return '<span class="shipit-count">' \
-                    '<img src="%srb/images/shipit_checkmark.png?%s" ' \
-                         'width="9" height="8" alt="%s" title="%s" /> %s' \
+                    '<img src="%s" width="9" height="8" alt="%s" ' \
+                         'title="%s" /> %s' \
                    '</span>' % \
-                (settings.STATIC_URL, settings.MEDIA_SERIAL,
+                (static("rb/images/shipit_checkmark.png"),
                  self.image_alt, self.image_alt, review_request.shipit_count)
 
         return ""
@@ -127,8 +126,7 @@ class MyCommentsColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = "%srb/images/comment-draft-small.png?%s" % \
-            (settings.STATIC_URL, settings.MEDIA_SERIAL)
+        self.image_url = static("rb/images/comment-draft-small.png")
         self.image_width = 16
         self.image_height = 16
         self.image_alt = _("My Comments")
@@ -193,18 +191,16 @@ class MyCommentsColumn(Column):
             image_alt = _("Comments drafted")
         else:
             if review_request.mycomments_shipit_reviews > 0:
-                image_url = "%srb/images/comment-shipit-small.png?%s" % \
-                    (settings.STATIC_URL, settings.MEDIA_SERIAL)
+                image_url = static("rb/images/comment-shipit-small.png")
                 image_alt = _("Comments published. Ship it!")
             else:
-                image_url = "%srb/images/comment-small.png?%s" % \
-                    (settings.STATIC_URL, settings.MEDIA_SERIAL)
+                image_url = static("rb/images/comment-small.png")
                 image_alt = _("Comments published")
 
-        return '<img src="%s?%s" width="%s" height="%s" alt="%s" ' \
+        return '<img src="%s" width="%s" height="%s" alt="%s" ' \
                'title="%s" />' % \
-                (image_url, settings.MEDIA_SERIAL, self.image_width,
-                 self.image_height, image_alt, image_alt)
+                (image_url, self.image_width, self.image_height,
+                 image_alt, image_alt)
 
 
 class ToMeColumn(Column):
@@ -235,8 +231,7 @@ class NewUpdatesColumn(Column):
     """
     def __init__(self, *args, **kwargs):
         Column.__init__(self, *args, **kwargs)
-        self.image_url = "%srb/images/convo.png?%s" % \
-            (settings.STATIC_URL, settings.MEDIA_SERIAL)
+        self.image_url = static("rb/images/convo.png")
         self.image_width = 18
         self.image_height = 16
         self.image_alt = "New Updates"

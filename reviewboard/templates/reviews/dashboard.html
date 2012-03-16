@@ -12,11 +12,11 @@
 
 {% block css %}
 {{block.super}}
-<link rel="stylesheet" type="text/css" href="{% static "djblets/css/datagrid.css" %}?{{MEDIA_SERIAL}}" />
+<link rel="stylesheet" type="text/css" href="{% static "djblets/css/datagrid.css" %}" />
 {% endblock %}
 
 {% block scripts-post %}
-<script type="text/javascript" src="{% static "djblets/js/datagrid.js" %}?{{MEDIA_SERIAL}}"></script>
+<script type="text/javascript" src="{% static "djblets/js/datagrid.js" %}"></script>
 {% endblock %}
 
 {% block content %}

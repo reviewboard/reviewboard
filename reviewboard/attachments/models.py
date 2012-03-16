@@ -1,6 +1,7 @@
 import os
 
 from django.conf import settings
+from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -47,8 +48,7 @@ class FileAttachment(models.Model):
                     # We'll just use this as our fallback.
                     name = 'text-x-generic'
 
-        return '%srb/images/mimetypes/%s.png?%s' % \
-            (settings.STATIC_URL, name, settings.MEDIA_SERIAL)
+        return static('rb/images/mimetypes/%s.png' % name)
 
     def __unicode__(self):
         return self.caption

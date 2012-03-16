@@ -21,8 +21,6 @@ def action_hooks(context, hookcls, action_key="action",
         for actions in hook.get_actions(context):
             if actions:
                 new_context = {
-                    'STATIC_URL': settings.STATIC_URL,
-                    'MEDIA_SERIAL': settings.MEDIA_SERIAL,
                     action_key: actions
                 }
                 context.update(new_context)

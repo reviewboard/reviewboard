@@ -186,8 +186,6 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     context['domain'] = current_site.domain
     context['domain_method'] = domain_method
     context['review_request'] = review_request
-    context['STATIC_URL'] = settings.STATIC_URL
-    context['MEDIA_SERIAL'] = settings.MEDIA_SERIAL
 
     if review_request.local_site:
         context['local_site_name'] = review_request.local_site.name

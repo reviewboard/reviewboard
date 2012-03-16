@@ -513,8 +513,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
             self
                 .inlineEditor({
                     cls: "inline-comment-editor",
-                    editIconPath: STATIC_URL + "rb/images/edit.png?" +
-                                  MEDIA_SERIAL,
+                    editIconPath: STATIC_URLS["rb/images/edit.png"],
                     notifyUnchangedCompletion: true,
                     multiline: true
                 })
@@ -1026,8 +1025,7 @@ $.fn.commentDlg = function() {
          */
         var grip = $("<img/>")
             .addClass("ui-resizable-handle ui-resizable-grip")
-            .attr("src", STATIC_URL + "rb/images/resize-grip.png?" +
-                         MEDIA_SERIAL)
+            .attr("src", STATIC_URLS["rb/images/resize-grip.png"])
             .insertAfter(buttons)
             .proxyTouchEvents();
 
@@ -1550,7 +1548,7 @@ $.fn.reviewFormCommentEditor = function(comment) {
 $.fn.reviewCloseCommentEditor = function(type) {
     return this
         .inlineEditor({
-            editIconPath: STATIC_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+            editIconPath: STATIC_URLS["rb/images/edit.png"],
             multiline: true,
             startOpen: false
         })
@@ -1571,7 +1569,7 @@ $.fn.reviewRequestFieldEditor = function() {
         $(this)
             .inlineEditor({
                 cls: this.id + "-editor",
-                editIconPath: STATIC_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                editIconPath: STATIC_URLS["rb/images/edit.png"],
                 multiline: this.tagName == "PRE",
                 showButtons: !$(this).hasClass("screenshot-editable"),
                 startOpen: this.id == "changedescription",
@@ -1607,7 +1605,7 @@ $.fn.screenshotThumbnail = function() {
         captionEl.find("a.edit")
             .inlineEditor({
                 cls: this.id + "-editor",
-                editIconPath: STATIC_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                editIconPath: STATIC_URLS["rb/images/edit.png"],
                 showButtons: false
             })
             .bind("beginEdit", function() {
@@ -1690,8 +1688,7 @@ $.newScreenshotThumbnail = function(screenshot) {
                 .attr("href", "#")
                 .append($("<img/>")
                     .attr({
-                        src: STATIC_URL + "rb/images/delete.png?" +
-                             MEDIA_SERIAL,
+                        src: STATIC_URLS["rb/images/delete.png"],
                         alt: "Delete Screenshot"
                     })
                 )
@@ -1730,7 +1727,7 @@ $.fn.fileAttachment = function() {
         self.find("a.edit")
             .inlineEditor({
                 cls: "file-" + fileID + "-editor",
-                editIconPath: STATIC_URL + "rb/images/edit.png?" + MEDIA_SERIAL,
+                editIconPath: STATIC_URLS["rb/images/edit.png"],
                 showButtons: false
             })
             .bind("beginEdit", function() {
@@ -1886,8 +1883,7 @@ $.newFileAttachment = function(fileAttachment) {
                 .attr('href', '#')
                 .append($('<img/>')
                     .attr({
-                        src: STATIC_URL + 'rb/images/delete.png?' +
-                             MEDIA_SERIAL,
+                        src: STATIC_URLS['rb/images/delete.png'],
                         alt: 'Delete File'
                     })));
 
@@ -1939,8 +1935,7 @@ function registerForUpdates(lastTimestamp, type) {
 
     var faviconEl = $("head").find("link[rel=icon]");
     var faviconURL = faviconEl.attr("href");
-    var faviconNotifyURL = STATIC_URL + "rb/images/favicon_notify.ico?" +
-                           MEDIA_SERIAL;
+    var faviconNotifyURL = STATIC_URLS["rb/images/favicon_notify.ico"];
 
     $.event.add(gReviewRequest, "updated", function(evt, info) {
         if (bubble.length == 0) {

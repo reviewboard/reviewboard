@@ -6,11 +6,11 @@
 {% load staticfiles %}
 
 {% definevar "enabled_img" %}
-<img src="{% static "rb/images/shipit.png" %}?{{MEDIA_SERIAL}}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
+<img src="{% static "rb/images/shipit.png" %}" alt="{% trans 'Enabled' %}" title="{% trans 'Enabled' %}"/>
 {% enddefinevar %}
 
 {% definevar "disabled_img" %}
-    <img src="{% static "rb/images/disabled.png" %}?{{MEDIA_SERIAL}}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
+    <img src="{% static "rb/images/disabled.png" %}" alt="{% trans 'Disabled' %}" title="{% trans 'Disabled' %}"/>
 {% enddefinevar %}
 
 {% if show_sidebar %}

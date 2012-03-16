@@ -238,9 +238,6 @@ SESSION_COOKIE_NAME = "rbsessionid"
 SESSION_COOKIE_AGE = 365 * 24 * 60 * 60 # 1 year
 SESSION_COOKIE_PATH = SITE_ROOT
 
-# The list of directories that will be searched to generate a media serial.
-MEDIA_SERIAL_DIRS = ["admin", "djblets", "rb"]
-
 # Media compression
 PIPELINE_JS = {
     'common': {
