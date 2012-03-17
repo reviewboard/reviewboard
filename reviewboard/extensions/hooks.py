@@ -28,8 +28,9 @@ class NavigationBarHook(ExtensionHook):
     """
     __metaclass__ = ExtensionHookPoint
 
-    def __init__(self, entries={}, *args, **kwargs):
-        super(NavigationBarHook, self).__init__(*args, **kwargs)
+    def __init__(self, extension, entries={}, *args, **kwargs):
+        super(NavigationBarHook, self).__init__(extension, *args,
+                                                **kwargs)
         self.entries = entries
 
     def get_entries(self, context):
@@ -75,8 +76,8 @@ class ActionHook(ExtensionHook):
     If your hook needs to access the template context, it can override
     get_actions and return results from there.
     """
-    def __init__(self, actions={}, *args, **kwargs):
-        super(ActionHook, self).__init__(*args, **kwargs)
+    def __init__(self, extension, actions={}, *args, **kwargs):
+        super(ActionHook, self).__init__(extension, *args, **kwargs)
         self.actions = actions
 
     def get_actions(self, context):
