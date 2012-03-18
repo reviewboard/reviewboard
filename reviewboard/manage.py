@@ -145,12 +145,6 @@ def include_enabled_extensions(settings):
     so that operations like syncdb and evolve will take extensions
     into consideration.
     """
-    # Some of our checks require access to django.conf.settings, so
-    # tell Django about our settings.
-    #
-    # This must go before the imports.
-    setup_environ(settings)
-
     from django.db.models.loading import load_app
     from django.db import DatabaseError
 
@@ -158,7 +152,6 @@ def include_enabled_extensions(settings):
 
     try:
         manager = get_extension_manager()
-        manager.load()
     except DatabaseError:
         # This database is from a time before extensions, so don't attempt to
         # load any extensions yet.
@@ -180,6 +173,17 @@ if __name__ == "__main__":
                                  'to turn this off)...\n')
                 check_dependencies()
     else:
+        # Some of our checks require access to django.conf.settings, so
+        # tell Django about our settings.
+        #
+        # This must go before the imports.
+        setup_environ(settings)
+
+        # Initialize Review Board, so we're in a state ready to load extensions and
+        # run management commands.
+        from reviewboard import initialize
+        initialize()
+
         include_enabled_extensions(settings)
 
     execute_manager(settings)

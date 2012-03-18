@@ -59,6 +59,7 @@ def initialize():
     import os
 
     from django.conf import settings
+    from django.db import DatabaseError
     from djblets.util.misc import generate_ajax_serial
     from djblets import log
 
@@ -69,9 +70,9 @@ def initialize():
     # sure it will always get loaded in every python instance.
     import reviewboard.site.templatetags
 
-
     # Set up logging.
     log.init_logging()
+
     if settings.DEBUG:
         logging.debug("Log file for Review Board v%s (PID %s)" %
                       (get_version_string(), os.getpid()))
@@ -80,7 +81,12 @@ def initialize():
     generate_ajax_serial()
 
     # Load all extensions
-    get_extension_manager().load()
+    try:
+        get_extension_manager().load()
+    except DatabaseError:
+        # This database is from a time before extensions, so don't attempt to
+        # load any extensions yet.
+        pass
 
     signals.initializing.send(sender=None)
 
