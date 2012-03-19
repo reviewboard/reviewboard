@@ -496,11 +496,11 @@ class RepositoryForm(forms.ModelForm):
                                         value,
                                         info['fields'])
 
-                if not is_match:
-                    all_extras_match = False
-                    break
+                    if not is_match:
+                        all_extras_match = False
+                        break
 
-                field_data.update(extra_field_data)
+                    field_data.update(extra_field_data)
 
             if not all_extras_match:
                 continue
