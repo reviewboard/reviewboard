@@ -11,13 +11,7 @@
    {% if entry.is_addition %}addlink{% endif %}
    {% if entry.is_change %}changelink{% endif %}
    {% if entry.is_deletion %}deletelink{% endif %}{% endspaceless %}">
-{%   if not entry.is_deletion %}
-  <a href="db/{{entry.get_admin_url}}">
-{%   endif %}
    {{entry.object_repr|escape}}
-{%   if not entry.is_deletion %}
-  </a>
-{%   endif %}
   <span class="mini quiet">
    {% filter capfirst %}{% trans entry.content_type.name %}{% endfilter %}
   </span>
