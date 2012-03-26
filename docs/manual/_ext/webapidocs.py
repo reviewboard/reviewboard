@@ -852,7 +852,7 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
     request.META['HTTP_ACCEPT'] = mimetype
 
     result = unicode(response_class(request, **kwargs))
-    headers, data = result.split('\n\n', 2)
+    headers, data = result.split('\n\n', 1)
     return data
 
 
