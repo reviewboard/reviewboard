@@ -88,7 +88,9 @@ class GitTool(SCMTool):
 
         if file_str == "/dev/null":
             revision = PRE_CREATION
-        elif revision != PRE_CREATION:
+        elif revision != PRE_CREATION and revision != '':
+            # Moved files with no changes has no revision,
+            # so don't validate those.
             self.client.validate_sha1_format(file_str, revision)
 
         return file_str, revision
@@ -186,7 +188,8 @@ class GitDiffParser(DiffParser):
                                   'information', linenum)
         linenum += 1
 
-        # Save the new file, deleted file, mode change and index
+        # Parse the extended header to save the new file, deleted file,
+        # mode change, file move, and index.
         if self._is_new_file(linenum):
             file_info.data += self.lines[linenum] + "\n"
             linenum += 1
@@ -198,6 +201,12 @@ class GitDiffParser(DiffParser):
             file_info.data += self.lines[linenum] + "\n"
             file_info.data += self.lines[linenum + 1] + "\n"
             linenum += 2
+        elif self._is_moved_file(linenum):
+            file_info.data += self.lines[linenum] + "\n"
+            file_info.data += self.lines[linenum + 1] + "\n"
+            file_info.data += self.lines[linenum + 2] + "\n"
+            linenum += 3
+            file_info.moved = True
 
         if self._is_index_range_line(linenum):
             index_range = self.lines[linenum].split(None, 2)[1]
@@ -246,6 +255,11 @@ class GitDiffParser(DiffParser):
     def _is_mode_change(self, linenum):
         return (self.lines[linenum].startswith("old mode")
                 and self.lines[linenum + 1].startswith("new mode"))
+
+    def _is_moved_file(self, linenum):
+        return (self.lines[linenum].startswith("similarity index") and
+                self.lines[linenum + 1].startswith("rename from") and
+                self.lines[linenum + 2].startswith("rename to"))
 
     def _is_index_range_line(self, linenum):
         return (linenum < len(self.lines) and

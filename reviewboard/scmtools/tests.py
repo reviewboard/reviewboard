@@ -1301,6 +1301,28 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[5].data.splitlines()[-1],
                          "+Hello there")
 
+    def test_parse_diff_with_index_range(self):
+        """Testing Git diff parsing with an index range"""
+        diff = "diff --git a/foo/bar b/foo/bar2\n" + \
+               "similarity index 88%\n" + \
+               "rename from foo/bar\n" + \
+               "rename to foo/bar2\n" + \
+               "index 612544e4343bf04967eb5ea80257f6c64d6f42c7.." + \
+               "e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n" + \
+               "--- a/foo/bar\n" + \
+               "+++ b/foo/bar2\n" + \
+               "@ -1,1 +1,1 @@\n" + \
+               "-blah blah\n" + \
+               "+blah\n"
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'foo/bar')
+        self.assertEqual(files[0].newFile, 'foo/bar2')
+        self.assertEqual(files[0].origInfo,
+                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[0].newInfo,
+                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+
     def testParseDiffRevision(self):
         """Testing Git revision number parsing"""
 
