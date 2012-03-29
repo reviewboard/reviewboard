@@ -624,14 +624,3 @@ def comment_issue(context, review_request, comment, comment_type):
 def pretty_print_issue_status(status):
     """Turns an issue status code into a human-readable status string."""
     return BaseComment.issue_status_to_string(status)
-
-@register.filter
-@stringfilter
-def char_limit(description):
-    """Limit the length of an issue description if it exceeds 120 chars."""
-    limit = 120
-
-    if len(description) > limit:
-        description = description[0:limit-3] + "..."
-
-    return description
