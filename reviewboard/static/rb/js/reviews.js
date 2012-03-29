@@ -1573,7 +1573,8 @@ $.fn.reviewRequestFieldEditor = function() {
                 multiline: this.tagName == "PRE",
                 showButtons: !$(this).hasClass("screenshot-editable"),
                 startOpen: this.id == "changedescription",
-                useEditIconOnly: $(this).hasClass("comma-editable")
+                useEditIconOnly: $(this).hasClass("comma-editable"),
+		showRequiredFlag: $(this).hasClass("required")
             })
             .bind("beginEdit", function() {
                 gEditCount++;

@@ -7,7 +7,7 @@
 
  <div class="header">
   {% star review_request %}
-  <div id="summary_wrapper"><label>{% trans "Summary" %}: </label><h1 id="summary" class="editable">{{review_request_details.summary|escape}}</h1></div>
+  <div id="summary_wrapper"><label>{% trans "Summary" %}: </label><h1 id="summary" class="editable required">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">
   {% blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
     Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
@@ -42,7 +42,12 @@
   <tr>
    <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
    <td class="value"><a id="submitter" class="user" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
-   <td class="caption" colspan="2">{% trans "Reviewers" %}</td>
+   <td class="caption" colspan="2">
+    {% trans "Reviewers" %}
+{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+    <span class="required-flag">*</span>
+{% endif %}
+   </td>
   </tr>
   <tr>
    <td class="label"><label for="branch">{% trans "Branch" %}:</label></td>
@@ -89,12 +94,15 @@
  </table>
  <div class="content" id="description-value-cell">
   <label for="description">{% trans "Description" %}:</label>
-  <pre id="description" class="editable">{{review_request_details.description|escape}}</pre>
+  <pre id="description" class="editable required">{{review_request_details.description|escape}}</pre>
  </div>
  <div class="content" id="testing-done-value-cell">
   <label for="testing_done">{% trans "Testing Done" %}:</label>
   <pre id="testing_done" class="editable">{{review_request_details.testing_done|escape}}</pre>
  </div>
+{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+ <div class="content" id="required-field-legend"><span class="required-flag">*</span> {% trans "Required Field" %}</div>
+{% endif %}
  <div class="content clearfix"{% if review_request_details.screenshots.count == 0 %} style="display: none;"{% endif %}>
   <label for="images">{% trans "Screenshots" %}:</label>
   <div id="screenshot-thumbnails">

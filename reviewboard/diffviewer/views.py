@@ -4,11 +4,10 @@ import traceback
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseServerError
-from django.shortcuts import get_object_or_404, render_to_response
+from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
-
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.misc import cache_memoize, get_object_or_none
 
@@ -158,8 +157,7 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
                                         highlighting, collapse_diffs, context,
                                         'diffviewer/diff_file_fragment.html')
 
-        response = render_to_response(template_name,
-                                      RequestContext(request, context))
+        response = render(template_name, RequestContext(request, context))
         response.set_cookie('collapsediffs', collapse_diffs)
 
         if interdiffset:
