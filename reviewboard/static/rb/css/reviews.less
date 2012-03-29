@@ -11,7 +11,7 @@
   }
 
   .buttons input[type='button'] {
-    margin-left: 0px;
+    margin-left: 0;
     margin-right: 6px;
   }
 
@@ -88,7 +88,7 @@
   .controls {
     list-style: none;
     margin: 0;
-    padding: 0px 8px 4px 8px;
+    padding: 0 8px 4px 8px;
     text-align: right;
 
     a {
@@ -124,7 +124,7 @@
     border-spacing: 8px;
     border-top: 1px #c2c1b0 solid;
     margin-top: 5px;
-    padding: 5px 0px;
+    padding: 5px 0;
     width: 100%;
 
     .caption {
@@ -169,7 +169,7 @@
 
   #summary_wrapper {
     margin-right: 10em;
-    padding: 0px;
+    padding: 0;
 
     label {
       font-size: 130%;
@@ -190,7 +190,7 @@
     float: right;
     list-style: none;
     margin: -1px -1px 0 0;
-    padding: 0px;
+    padding: 0;
     white-space: nowrap;
 
     a {
@@ -268,9 +268,7 @@
   }
 
   .actions>li:first-child {
-    -moz-border-radius: 0 0 0 8px;
-    -webkit-border-radius: 0 0 0 8px;
-    border-radius: 0 0 0 8px;
+    .border-radius(0 0 0 8px);
   }
 
   #updated_time, #created_time {
@@ -338,7 +336,7 @@
     }
 
     .body_top, .body_bottom {
-      margin: 0px;
+      margin: 0;
     }
   }
 
@@ -349,7 +347,7 @@
   .controls {
     list-style: none;
     margin: 0;
-    padding: 0px 8px 4px 8px;
+    padding: 0 8px 4px 8px;
     text-align: right;
 
     a {
@@ -449,8 +447,8 @@
   }
 
   .reply-comments {
-    margin: 20px 0px 0px 0px;
-    padding: 0px;
+    margin: 20px 0 0 0;
+    padding: 0;
 
     .reply-comment {
       display: inline;
@@ -470,7 +468,7 @@
          * border-left size for every following item.
          */
         border-bottom: 1px #FAFAFA solid;
-        margin: 0px;
+        margin: 0;
         padding: 5px;
 
         dt {
@@ -660,9 +658,7 @@
   height: 6em;
   position: relative;
   margin: 0 2em 2em 0;
-  -moz-border-radius: 0 0 8px 8px;
-  -webkit-border-radius: 0 0 8px 8px;
-  border-radius: 0 0 8px 8px;
+  .border-radius(0 0 8px 8px);
 
   .file-header {
     background: white;
@@ -687,9 +683,7 @@
     line-height: 2.5em;
     padding: 0 0.5em;
     text-align: center;
-    -moz-border-radius: 0 0 7px 7px;
-    -webkit-border-radius: 0 0 7px 7px;
-    border-radius: 0 0 7px 7px;
+    .border-radius(0 0 7px 7px);
 
     a {
       color: black;
@@ -711,9 +705,7 @@
   border: 1px #999999 solid;
   border-top: 1px #CCCCCC solid;
   padding: 2px 8px;
-  -moz-border-radius: 0 0 8px 8px;
-  -webkit-border-radius: 0 0 8px 8px;
-  border-radius: 0 0 8px 8px;
+  .border-radius(0 0 8px 8px);
 
   img {
     vertical-align: bottom;
@@ -1098,9 +1090,7 @@
   position: absolute;
   white-space: nowrap;
   z-index: 999;
-  -moz-border-radius: 8px;
-  -webkit-border-radius: 8px;
-  border-radius: 8px;
+  .border-radius(8px);
 }
 
 /* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */

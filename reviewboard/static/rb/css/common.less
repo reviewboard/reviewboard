@@ -1,3 +1,6 @@
+@import "defs.less";
+
+
 body {
   background-color: white;
   color: black;
@@ -111,7 +114,7 @@ ul.errorlist {
   background-color: #fdf2a0;
   background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
-  padding: 0px 10px;
+  padding: 0 10px;
 
   .box-inner {
     background: url("../images/important.png") no-repeat top left;
@@ -123,7 +126,7 @@ ul.errorlist {
   background-color: #fdf2a0;
   background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
-  padding: 0px 10px;
+  padding: 0 10px;
 
   .box-inner {
     background: transparent;
@@ -138,7 +141,7 @@ ul.errorlist {
   background-color: #fdf2a0;
   background-image: url('../images/gold_box_top_bg.png');
   border: 1px #b7a93e solid;
-  padding: 0px 10px;
+  padding: 0 10px;
 
   .box-inner {
     background: transparent;
@@ -567,9 +570,7 @@ form table td {
   -moz-border-radius: 10px;
   -webkit-border-radius: 8px; /* WebKit bug */
   border-radius: 10px;
-  -moz-box-shadow: 0px 0px 4px #000;
-  -webkit-box-shadow: 0px 0px 4px #000;
-  box-shadow: 0px 0px 4px #000;
+  .box-shadow (0px 0px 4px #000);
 
   &.loading {
     background-image: url("../images/spinner.gif");

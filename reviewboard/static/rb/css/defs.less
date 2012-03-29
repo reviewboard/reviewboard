@@ -9,7 +9,14 @@
 
 .border-radius () {
   -moz-border-radius: @arguments;
+  -webkit-border-radius: @arguments;
   border-radius: @arguments;
+}
+
+.box-shadow () {
+  -moz-box-shadow: @arguments;
+  -webkit-box-shadow: @arguments;
+  box-shadow: @arguments;
 }
 
 .opacity (@value) {
