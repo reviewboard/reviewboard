@@ -1139,12 +1139,6 @@ class FileDiffResource(WebAPIResource):
 
         return resp
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.diffset.history.review_request.get(), request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
 filediff_resource = FileDiffResource()
 
 
