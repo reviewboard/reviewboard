@@ -2,6 +2,7 @@ from datetime import datetime
 import hashlib
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import Base64Field
 
@@ -120,7 +121,7 @@ class DiffSet(models.Model):
     """
     name = models.CharField(_('name'), max_length=256)
     revision = models.IntegerField(_("revision"))
-    timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
+    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
     basedir = models.CharField(_('base directory'), max_length=256,
                                blank=True, default='')
     history = models.ForeignKey('DiffSetHistory', null=True,
@@ -167,7 +168,7 @@ class DiffSetHistory(models.Model):
     diffsets belonging to an object.
     """
     name = models.CharField(_('name'), max_length=256)
-    timestamp = models.DateTimeField(_("timestamp"), default=datetime.now)
+    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
 
     def __unicode__(self):
         return u'Diff Set History (%s revisions)' % self.diffsets.count()

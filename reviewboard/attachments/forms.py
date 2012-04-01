@@ -1,5 +1,5 @@
 from django import forms
-from djblets.util.dates import get_tz_aware_utcnow
+from django.utils import timezone
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import ReviewRequestDraft, FileAttachmentComment
@@ -37,7 +37,7 @@ class CommentFileForm(forms.Form):
         comment = FileAttachmentComment(text=self.cleaned_data['review'],
                                         file_attachment=file_attachment)
 
-        comment.timestamp = get_tz_aware_utcnow()
+        comment.timestamp = timezone.now()
         comment.save(save=True)
 
         draft = ReviewRequestDraft.create(review_request)

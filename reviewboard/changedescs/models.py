@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import JSONField
 
@@ -31,7 +32,7 @@ class ChangeDescription(models.Model):
        * 'removed': The fields that were removed, if any.
        * 'added': The fields that were added, if any.
     """
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
     text = models.TextField(_("change text"), blank=True)
     fields_changed = JSONField(_("fields changed"))

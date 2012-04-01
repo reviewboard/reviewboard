@@ -4,9 +4,8 @@ import time
 from django.contrib.auth.models import Permission, User
 from django.core.urlresolvers import reverse
 from django.db import transaction
-
+from django.utils import timezone
 from djblets.testing import testcases
-from djblets.util.dates import get_tz_aware_utcnow
 
 from reviewboard.reviews.models import Group, Review, ReviewRequest, \
                                        ReviewRequestDraft, Screenshot, \
@@ -296,7 +295,7 @@ class ReviewRequestTests(SeleniumUnitTest):
         self.selenium.open(r.get_absolute_url())
 
         # Simulate an update.
-        r.last_updated = get_tz_aware_utcnow()
+        r.last_updated = timezone.now()
         r.save()
         transaction.commit()
 

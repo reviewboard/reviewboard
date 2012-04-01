@@ -6,11 +6,10 @@ from django.contrib.auth.models import User, Permission
 from django.core import mail
 from django.core.files import File
 from django.db.models import Q
-from django.utils import simplejson
+from django.utils import simplejson, timezone
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from djblets.testing.testcases import TestCase
-from djblets.util.dates import get_tz_aware_utcnow
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA, \
                                   PERMISSION_DENIED
 import paramiko
@@ -4246,7 +4245,7 @@ class ChangeResourceTests(BaseWebAPITestCase):
 
         r = ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
-        now = get_tz_aware_utcnow()
+        now = timezone.now()
         change1 = ChangeDescription(public=True,
                                     timestamp=now)
         change1.record_field_change('summary', 'foo', 'bar')

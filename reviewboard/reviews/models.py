@@ -5,11 +5,10 @@ from datetime import datetime
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
-
-from djblets.util.dates import get_tz_aware_utcnow
 from djblets.util.db import ConcurrencyManager
 from djblets.util.fields import CounterField, ModificationTimestampField
 from djblets.util.misc import get_object_or_none
@@ -243,7 +242,7 @@ class Screenshot(models.Model):
 
         try:
             draft = self.drafts.get()
-            draft.timestamp = get_tz_aware_utcnow()
+            draft.timestamp = timezone.now()
             draft.save()
         except ReviewRequestDraft.DoesNotExist:
             pass
@@ -272,7 +271,7 @@ class ReviewRequest(models.Model):
 
     submitter = models.ForeignKey(User, verbose_name=_("submitter"),
                                   related_name="review_requests")
-    time_added = models.DateTimeField(_("time added"), default=datetime.now)
+    time_added = models.DateTimeField(_("time added"), default=timezone.now)
     last_updated = ModificationTimestampField(_("last updated"))
     status = models.CharField(_("status"), max_length=1, choices=STATUSES,
                               db_index=True)
@@ -687,7 +686,7 @@ class ReviewRequest(models.Model):
         else:
             # Update submission description.
             changedesc = self.changedescs.filter(public=True).latest()
-            changedesc.timestamp = get_tz_aware_utcnow()
+            changedesc.timestamp = timezone.now()
             changedesc.text = description or ""
             changedesc.save()
 
@@ -1247,7 +1246,7 @@ class ReviewRequestDraft(models.Model):
             self.diffset.save()
 
         if self.changedesc:
-            self.changedesc.timestamp = get_tz_aware_utcnow()
+            self.changedesc.timestamp = timezone.now()
             self.changedesc.public = True
             self.changedesc.save()
             review_request.changedescs.add(self.changedesc)
@@ -1315,7 +1314,7 @@ class BaseComment(models.Model):
             raise Exception("Invalid issue status '%s'" % status)
 
     def save(self, **kwargs):
-        self.timestamp = get_tz_aware_utcnow()
+        self.timestamp = timezone.now()
 
         super(BaseComment, self).save()
 
@@ -1353,7 +1352,7 @@ class Comment(BaseComment):
     reply_to = models.ForeignKey("self", blank=True, null=True,
                                  related_name="replies",
                                  verbose_name=_("reply to"))
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     text = models.TextField(_("comment text"))
 
     # A null line number applies to an entire diff.  Non-null line numbers are
@@ -1412,7 +1411,7 @@ class ScreenshotComment(BaseComment):
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
                                  verbose_name=_("reply to"))
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     text = models.TextField(_('comment text'))
 
     # This is a sub-region of the screenshot.  Null X indicates the entire
@@ -1466,7 +1465,7 @@ class FileAttachmentComment(BaseComment):
     reply_to = models.ForeignKey('self', blank=True, null=True,
                                  related_name='replies',
                                  verbose_name=_("reply to"))
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     text = models.TextField(_('comment text'))
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
@@ -1508,7 +1507,7 @@ class Review(models.Model):
                                        verbose_name=_("review request"))
     user = models.ForeignKey(User, verbose_name=_("user"),
                              related_name="reviews")
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
     ship_it = models.BooleanField(_("ship it"), default=False,
         help_text=_("Indicates whether the reviewer thinks this code is "
@@ -1614,7 +1613,7 @@ class Review(models.Model):
         return None
 
     def save(self, **kwargs):
-        self.timestamp = get_tz_aware_utcnow()
+        self.timestamp = timezone.now()
 
         super(Review, self).save()
 
