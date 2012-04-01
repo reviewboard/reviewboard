@@ -5438,7 +5438,14 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if isinstance(updated_object, ReviewRequest):
             user = updated_object.submitter
-            summary = _("Review request updated")
+
+            if updated_object.status == ReviewRequest.SUBMITTED:
+                summary = _("Review request submitted")
+            elif updated_object.status == ReviewRequest.DISCARDED:
+                summary = _("Review request discarded")
+            else:
+                summary = _("Review request updated")
+
             update_type = "review-request"
         elif isinstance(updated_object, DiffSet):
             summary = _("Diff updated")
