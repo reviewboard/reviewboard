@@ -34,6 +34,10 @@ resources are children of others.
 
               * :ref:`webapi2.0-file-diff-comment-list-resource`
 
+              * :ref:`webapi2.0-original-file-resource`
+
+              * :ref:`webapi2.0-patched-file-resource`
+
       * :ref:`webapi2.0-review-request-draft-resource`
 
         * :ref:`webapi2.0-draft-screenshot-list-resource`

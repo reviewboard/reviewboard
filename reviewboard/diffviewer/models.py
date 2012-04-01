@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.fields import Base64Field
 
 from reviewboard.diffviewer.managers import FileDiffDataManager
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository
 
 
@@ -63,6 +64,10 @@ class FileDiff(models.Model):
     @property
     def moved(self):
         return self.status == self.MOVED
+
+    @property
+    def is_new(self):
+        return self.source_revision == PRE_CREATION
 
     def _get_diff(self):
         # If the diff is not in FileDiffData, it is in FileDiff.

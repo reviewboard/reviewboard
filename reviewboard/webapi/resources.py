@@ -40,7 +40,9 @@ from reviewboard.accounts.models import Profile
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.diffutils import get_diff_files
+from reviewboard.diffviewer.diffutils import get_diff_files, \
+                                             get_original_file, \
+                                             get_patched_file
 from reviewboard.diffviewer.forms import EmptyDiffError
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.reviews.errors import PermissionError
@@ -70,6 +72,7 @@ from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       CHANGE_NUMBER_IN_USE, \
                                       EMPTY_CHANGESET, \
+                                      FILE_RETRIEVAL_ERROR, \
                                       INVALID_CHANGE_NUMBER, \
                                       INVALID_REPOSITORY, \
                                       INVALID_USER, \
@@ -855,6 +858,86 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
 review_reply_diff_comment_resource = ReviewReplyDiffCommentResource()
 
 
+class OriginalFileResource(WebAPIResource):
+    """Provides the unpatched file corresponding to a file diff."""
+    name = 'original_file'
+    singleton = True
+    allowed_item_mimetypes = ['text/plain']
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        """Returns the original unpatched file.
+
+        The file is returned as :mimetype:`text/plain` and is the original
+        file before applying a patch.
+        """
+        try:
+            filediff = filediff_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if filediff.is_new:
+            return DOES_NOT_EXIST
+
+        try:
+            orig_file = get_original_file(filediff)
+        except Exception, e:
+            logging.error("Error retrieving original file: %s", e, exc_info=1)
+            return FILE_RETRIEVAL_ERROR
+
+        resp = HttpResponse(orig_file, mimetype='text/plain')
+        filename = urllib_quote(filediff.source_file)
+        resp['Content-Disposition'] = 'inline; filename=%s' % filename
+        set_last_modified(resp, filediff.diffset.timestamp)
+
+        return resp
+
+original_file_resource = OriginalFileResource()
+
+
+class PatchedFileResource(WebAPIResource):
+    """Provides the patched file corresponding to a file diff."""
+    name = 'patched_file'
+    singleton = True
+    allowed_item_mimetypes = ['text/plain']
+
+    @webapi_check_login_required
+    def get(self, request, *args, **kwargs):
+        """Returns the patched file.
+
+        The file is returned as :mimetype:`text/plain` and is the result
+        of applying the patch to the original file.
+        """
+        try:
+            filediff = filediff_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if filediff.deleted:
+            return DOES_NOT_EXIST
+
+        try:
+            orig_file = get_original_file(filediff)
+        except Exception, e:
+            logging.error("Error retrieving original file: %s", e, exc_info=1)
+            return FILE_RETRIEVAL_ERROR
+
+        try:
+            patched_file = get_patched_file(orig_file, filediff)
+        except Exception, e:
+            logging.error("Error retrieving patched file: %s", e, exc_info=1)
+            return FILE_RETRIEVAL_ERROR
+
+        resp = HttpResponse(patched_file, mimetype='text/plain')
+        filename = urllib_quote(filediff.dest_file)
+        resp['Content-Disposition'] = 'inline; filename=%s' % filename
+        set_last_modified(resp, filediff.diffset.timestamp)
+
+        return resp
+
+patched_file_resource = PatchedFileResource()
+
+
 class FileDiffResource(WebAPIResource):
     """Provides information on per-file diffs.
 
@@ -890,7 +973,11 @@ class FileDiffResource(WebAPIResource):
                            'not used for anything.',
         },
     }
-    item_child_resources = [filediff_comment_resource]
+    item_child_resources = [
+        filediff_comment_resource,
+        original_file_resource,
+        patched_file_resource,
+    ]
 
     uri_object_key = 'filediff_id'
     model_parent_key = 'diffset'
@@ -924,6 +1011,30 @@ class FileDiffResource(WebAPIResource):
         resource directly and use the correct mimetype.
         """
         pass
+
+    def get_links(self, resources=[], obj=None, request=None,
+                  *args, **kwargs):
+        """Returns a dictionary of links coming off this resource.
+
+        If the file represented by the FileDiffResource is new,
+        the link to the OriginalFileResource will be removed.
+        Alternatively, if the file is deleted, the link to the
+        PatchedFileResource will be removed.
+        """
+        links = super(FileDiffResource, self).get_links(resources, obj,
+                                                        request, *args,
+                                                        **kwargs)
+
+        # Only remove the links if we are returning them for
+        # a specific filediff, and not a list of filediffs.
+        if obj:
+            if obj.is_new:
+                del links[original_file_resource.name_plural]
+
+            if obj.deleted:
+                del links[patched_file_resource.name_plural]
+
+        return links
 
     @webapi_check_login_required
     def get(self, request, *args, **kwargs):

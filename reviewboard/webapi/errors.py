@@ -64,3 +64,7 @@ REPO_AUTHENTICATION_ERROR = WebAPIError(218, "Unable to authenticate with "
                                              "the repository using the "
                                              "provided credentials",
                                         http_status=403) # 403 Forbidden
+FILE_RETRIEVAL_ERROR      = WebAPIError(219, "There was an error fetching "
+                                             "a source file",
+                                        http_status=500) # 500 Internal Server
+                                                         #     Error

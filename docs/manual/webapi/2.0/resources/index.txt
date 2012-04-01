@@ -20,6 +20,8 @@ Resources
    file-diff-comment-list
    file-diff-list
    file-diff
+   original-file
+   patched-file
    repository-info
    repository-list
    repository

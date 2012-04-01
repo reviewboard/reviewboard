@@ -1,0 +1,4 @@
+.. webapi-resource::
+   :classname: reviewboard.webapi.resources.OriginalFileResource
+
+.. comment: vim: ft=rst et ts=3
