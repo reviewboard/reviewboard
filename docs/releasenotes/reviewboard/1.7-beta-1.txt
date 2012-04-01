@@ -105,6 +105,9 @@ New Features
 
   Patch by Dave Druska.
 
+* The review request update bubble now says if the review request was closed.
+  Patch by Jim Chen.
+
 * E-mails now include the review request ID in the subject header.
 
   This helps to identify a review request a bit faster, and makes it easier
@@ -114,6 +117,9 @@ New Features
 
 * Links in the Description and Testing Done text now open in new windows or
   tabs. Patch by Jim Chen. (:bug:`2074`)
+
+* Required fields on a review request are now marked as required by showing
+  an asterisk. Patch by Yazan Medanat.
 
 
 Removed Features
@@ -156,6 +162,17 @@ Web API Changes
   This currently only contains one item, ``diffs.moved_files``, which
   indicates whether the server supports moved file information in diffs.
 
+* Added resources for viewing the original and patched files for a FileDiff.
+
+  These are child resources of the FileDiff resource, and can be retrieved
+  by following the ``original_file`` and ``patched_file`` links, when
+  available.
+
+  The original file resource is not available for new files, and the
+  patched file resource is not available for deleted files.
+
+  Patch by Steven MacLeod.
+
 
 Contributors
 ============
@@ -170,6 +187,7 @@ Contributors
 * Kahlil Almani
 * Kevin Quinn
 * Stephen Gallagher
+* Steven MacLeod
 * Vlad Filippov
 * Yazan Medanat
 
