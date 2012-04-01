@@ -1142,12 +1142,6 @@ class FileDiffResource(WebAPIResource):
 
         return resp
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object"""
-        base = review_request_resource.get_href(
-            obj.diffset.history.review_request.get(), request, *args, **kwargs)
-        return '%s%s/%s/' % (base, self.uri_name, obj.id)
-
 filediff_resource = FileDiffResource()
 
 
@@ -5441,7 +5435,14 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if isinstance(updated_object, ReviewRequest):
             user = updated_object.submitter
-            summary = _("Review request updated")
+
+            if updated_object.status == ReviewRequest.SUBMITTED:
+                summary = _("Review request submitted")
+            elif updated_object.status == ReviewRequest.DISCARDED:
+                summary = _("Review request discarded")
+            else:
+                summary = _("Review request updated")
+
             update_type = "review-request"
         elif isinstance(updated_object, DiffSet):
             summary = _("Diff updated")
