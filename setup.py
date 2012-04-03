@@ -53,8 +53,9 @@ class osx_install_data(install_data):
 
 class BuildEggInfo(egg_info):
     def run(self):
-        if (sys.argv[0] in ('sdist', 'bdist_egg', 'install') and
-            os.path.exists('settings_local.py')):
+        if ('sdist' in sys.argv or
+            'bdist_egg' in sys.argv or
+            'install' in sys.argv):
             self.run_command('build_media')
 
         egg_info.run(self)
@@ -70,11 +71,7 @@ class BuildMedia(Command):
         pass
 
     def run(self):
-        env = os.environ.copy()
-        env['FORCE_BUILD_MEDIA'] = "1"
-        retcode = subprocess.call(['./reviewboard/manage.py', 'collectstatic',
-                                   '--noinput'],
-                                  env=env)
+        retcode = subprocess.call(['./contrib/internal/build-media.py'])
 
         if retcode != 0:
             raise RuntimeError('Failed to build media files')
@@ -139,7 +136,7 @@ setup(name=PACKAGE_NAME,
           'Django>=1.4',
           'django_evolution>=0.6.6',
           'Djblets>=0.7alpha0.dev',
-          'django-pipeline>=1.2b5',
+          'django-pipeline>=1.2.1',
           'Pygments>=1.4',
           'flup',
           'paramiko>=1.7.6',
