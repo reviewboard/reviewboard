@@ -1,5 +1,5 @@
 {% load staticfiles %}
-    <tr onclick="javascript:window.location=&quot;{% if url %}{{url}}{% else %}{% url dashboard %}?view={{view}}{% if group %}&amp;group={{group_name}}{% endif %}{% endif %}&quot;; return false;"{% if selected %} class="selected"{% endif %}>
-     <td class="summary {{level}}"><a href="{% if url %}{{url}}{% else %}{% url dashboard %}?view={{view}}{% if group %}&amp;group={{group_name}}{% endif %}{% endif %}">{% if starred %}<img src="{% static "rb/images/star_on.png" %}" width="16" height="15" alt="" />{% endif %} {{text}}</a></td>
+    <tr onclick="javascript:window.location=&quot;{% if url %}{{url}}{% else %}{% url dashboard %}?view={{view}}{% if group_name %}&amp;group={{group_name}}{% endif %}{% endif %}&quot;; return false;"{% if selected %} class="selected"{% endif %}>
+     <td class="summary {{level}}"><a href="{% if url %}{{url}}{% else %}{% url dashboard %}?view={{view}}{% if group_name %}&amp;group={{group_name}}{% endif %}{% endif %}">{% if starred %}<img src="{% static "rb/images/star_on.png" %}" width="16" height="15" alt="" />{% endif %} {{text}}</a></td>
      <td>{% if show_count %}{{count}}{% endif %}</td>
     </tr>
