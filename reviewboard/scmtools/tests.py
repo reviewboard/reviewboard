@@ -602,6 +602,67 @@ class SubversionTests(SCMTestCase):
         file = self.tool.get_file(filename, rev)
         patch(diff, file, filename)
 
+    def test_svn16_property_diff(self):
+        """Testing parsing SVN 1.6 diff with property changes"""
+        prop_diff = (
+            "Index:\n"
+            "======================================================"
+            "=============\n"
+            "--- (revision 123)\n"
+            "+++ (working copy)\n"
+            "Property changes on: .\n"
+            "______________________________________________________"
+            "_____________\n"
+            "Modified: reviewboard:url\n"
+            "## -1 +1 ##\n"
+            "-http://reviews.reviewboard.org\n"
+            "+http://reviews.reviewboard.org\n")
+        bin_diff = (
+            "Index: binfile\n"
+            "======================================================="
+            "============\nCannot display: file marked as a "
+            "binary type.\nsvn:mime-type = application/octet-stream\n")
+        diff = prop_diff + bin_diff
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'binfile')
+        self.assertTrue(files[0].binary)
+
+    def test_svn17_property_diff(self):
+        """Testing parsing SVN 1.7+ diff with property changes"""
+        prop_diff = (
+            "Index .:\n"
+            "======================================================"
+            "=============\n"
+            "--- .  (revision 123)\n"
+            "+++ .  (working copy)\n"
+            "\n"
+            "Property changes on: .\n"
+            "______________________________________________________"
+            "_____________\n"
+            "Modified: reviewboard:url\n"
+            "## -0,0 +1,3 ##\n"
+            "-http://reviews.reviewboard.org\n"
+            "+http://reviews.reviewboard.org\n"
+            "Added: myprop\n"
+            "## -0,0 +1 ##\n"
+            "+Property test.\n")
+        bin_diff = (
+            "Index: binfile\n"
+            "======================================================="
+            "============\nCannot display: file marked as a "
+            "binary type.\nsvn:mime-type = application/octet-stream\n")
+        diff = prop_diff + bin_diff
+
+        files = self.tool.get_parser(diff).parse()
+        print files
+        print files[0].__dict__
+
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].origFile, 'binfile')
+        self.assertTrue(files[0].binary)
+
 
 class PerforceTests(SCMTestCase):
     """Unit tests for perforce.

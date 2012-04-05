@@ -81,10 +81,19 @@ class DiffParser(object):
         linenum = self.parse_special_header(linenum, info)
         linenum = self.parse_diff_header(linenum, info)
 
+        if info.get('skip', False):
+            return linenum, None
+
         # If we have enough information to represent a header, build the
         # file to return.
-        if 'origFile' in info and 'newFile' in info and \
-           'origInfo' in info and 'newInfo' in info:
+        if ('origFile' in info and 'newFile' in info and
+            'origInfo' in info and 'newInfo' in info):
+            if linenum < len(self.lines):
+                linenum = self.parse_after_headers(linenum, info)
+
+                if info.get('skip', False):
+                    return linenum, None
+
             file = File()
             file.binary   = info.get('binary', False)
             file.deleted  = info.get('deleted', False)
@@ -154,6 +163,14 @@ class DiffParser(object):
                 raise DiffParserError("The diff file is missing revision " +
                                       "information", linenum)
 
+        return linenum
+
+    def parse_after_headers(self, linenum, info):
+        """Parses data after the diff headers but before the data.
+
+        By default, this does nothing, but a DiffParser subclass can
+        override to look for special headers before the content.
+        """
         return linenum
 
     def parse_filename_header(self, s, linenum):
