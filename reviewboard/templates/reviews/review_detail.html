@@ -221,7 +221,7 @@
 	  <p><label>{% trans "Changed to:" %}</label></p>
 	  <pre>{{fieldinfo.info.new.0}}</pre>
 {%   else %}
-{%    blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</p>
+{%    blocktrans with fieldinfo.info.old.0 as old_value and fieldinfo.info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}
 {%   endif %}
 {%  endifequal %}
 {%  ifequal fieldinfo.type "add_remove" %}
