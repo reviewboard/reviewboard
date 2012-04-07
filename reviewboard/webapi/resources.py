@@ -5536,6 +5536,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
             return _no_access_error(request.user)
 
         timestamp, updated_object = review_request.get_last_activity()
+        timestamp = timestamp.isoformat()
 
         if get_modified_since(request, timestamp):
             return HttpResponseNotModified()

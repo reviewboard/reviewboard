@@ -326,10 +326,12 @@
 {%  endif %}
 {% endfor %}
 
+{% localtime off %}
 <script type="text/javascript">
   $(document).ready(function() {
 	  /* Listen for updates to this review request. */
-	  registerForUpdates("{{last_activity_time|date:"Y-m-d H:i:s"}}");
+	  registerForUpdates("{{last_activity_time|date:"c"}}");
+{% endlocaltime %}
 
 {% if request.GET.reply_id and request.GET.reply_type %}
       $.funcQueue("diff_comments").add(function() {

@@ -6,6 +6,7 @@
 {% load rb_extensions %}
 {% load reviewtags %}
 {% load staticfiles %}
+{% load tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
@@ -34,12 +35,14 @@
 {{block.super}}
 
 {% if not specific_diff_requested %}
+{% localtime off %}
 <script type="text/javascript">
   $(document).ready(function() {
 	  /* Listen for updates to this review request. */
-	  registerForUpdates("{{last_activity_time|date:"Y-m-d H:i:s"}}", "diff");
+	  registerForUpdates("{{last_activity_time|date:"c"}}", "diff");
   });
 </script>
+{% endlocaltime %}
 {% endif %}
 {% endblock %}
 
