@@ -5,6 +5,7 @@
 {% block jsconsts %}
 {{block.super}}
   var gUserURL = "{% url user user %}";
+  var gOpenAnIssue = {{user.get_profile.open_an_issue|lower}};
 {% endblock %}
 
 {% block ie6_csshacks %}

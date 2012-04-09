@@ -24,6 +24,8 @@ class PreferencesForm(forms.Form):
         label=_("Enable syntax highlighting in the diff viewer"))
     profile_private = forms.BooleanField(required=False,
         label=_("Keep your user profile private"))
+    open_an_issue = forms.BooleanField(required=False,
+        label=_("Always open an issue when comment box opens"))
     first_name = forms.CharField(required=False)
     last_name = forms.CharField(required=False)
     email = forms.EmailField()
@@ -81,6 +83,7 @@ class PreferencesForm(forms.Form):
         profile.first_time_setup_done = True
         profile.syntax_highlighting = self.cleaned_data['syntax_highlighting']
         profile.is_private = self.cleaned_data['profile_private']
+        profile.open_an_issue = self.cleaned_data['open_an_issue']
         profile.timezone = self.cleaned_data['timezone']
         profile.save()
 

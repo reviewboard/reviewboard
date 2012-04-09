@@ -1268,8 +1268,11 @@ $.fn.commentDlg = function() {
 
         comment.ready(function() {
             textField.val(comment.text);
-            issueField[0].checked = comment.issue_opened;
-
+            if (comment.loaded){
+                issueField[0].checked = comment.issue_opened;
+            } else {
+                issueField[0].checked = gOpenAnIssue;
+            }
             self.setDirty(false);
 
             /* Set the initial button states */

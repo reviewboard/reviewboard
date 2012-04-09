@@ -70,6 +70,7 @@ def user_preferences(request, template_name='accounts/prefs.html'):
             'timezone': profile.timezone,
             'syntax_highlighting': profile.syntax_highlighting,
             'profile_private': profile.is_private,
+            'open_an_issue': profile.open_an_issue,
             'groups': [g.id for g in request.user.review_groups.all()],
         })
 
