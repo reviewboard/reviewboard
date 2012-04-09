@@ -243,9 +243,9 @@ PIPELINE_JS = {
     'common': {
         'source_filenames': (
             'rb/js/jquery.form.js',
-            'rb/js/datastore.js',
             'rb/js/ui.autocomplete.js',
             'rb/js/common.js',
+            'rb/js/datastore.js',
         ),
         'output_filename': 'rb/js/base.min.js',
     },
