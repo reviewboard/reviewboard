@@ -76,7 +76,7 @@ $.extend(RB.DiffComment.prototype, {
                     }
                 }
 
-                rbApiCall({
+                RB.apiCall({
                     type: type,
                     url: url,
                     data: data,
@@ -102,7 +102,7 @@ $.extend(RB.DiffComment.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -140,7 +140,7 @@ $.extend(RB.DiffComment.prototype, {
                 return;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review.links.diff_comments.href + self.id + "/",
                 success: function(rsp, status) {
@@ -221,7 +221,7 @@ $.extend(RB.DiffCommentReply.prototype, {
                     url = self.reply.links.diff_comments.href;
                 }
 
-                rbApiCall({
+                RB.apiCall({
                     type: type,
                     url: url,
                     data: data,
@@ -247,7 +247,7 @@ $.extend(RB.DiffCommentReply.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -287,7 +287,7 @@ $.extend(RB.DiffCommentReply.prototype, {
                 return;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.reply.links.diff_comments.href + self.id + "/",
                 success: function(rsp, status) {
@@ -328,7 +328,7 @@ $.extend(RB.Diff.prototype, {
             revisionStr += "-" + interdiff_revision;
         }
 
-        rbApiCall({
+        RB.apiCall({
             url: review_base_url + 'diff/' + revisionStr + '/fragment/' +
                  filediff_id + '/chunk/' + chunk_index + '/',
             data: {},
@@ -393,7 +393,7 @@ $.extend(RB.Diff.prototype, {
         }
 
         self.review_request.ready(function() {
-            rbApiCall({
+            RB.apiCall({
                 url: self.review_request.links.diffs.href,
                 form: self.form,
                 buttons: options.buttons,
@@ -512,7 +512,7 @@ $.extend(RB.ReviewRequest.prototype, {
             path += this.id + "/";
         }
 
-        rbApiCall({
+        RB.apiCall({
             type: apiType,
             path: path,
             data: data,
@@ -649,7 +649,7 @@ $.extend(RB.ReviewRequest.prototype, {
             options.success = function() { window.location = self.path; };
         }
 
-        rbApiCall(options);
+        RB.apiCall(options);
     }
 });
 
@@ -794,7 +794,7 @@ $.extend(RB.Review.prototype, {
         var self = this;
 
         self.review_request.ready(function() {
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review_request.links.reviews.href +
                      (self.id || "draft") + "/",
@@ -835,7 +835,7 @@ $.extend(RB.Review.prototype, {
                 };
             }
 
-            rbApiCall(options);
+            RB.apiCall(options);
         });
     }
 });
@@ -861,7 +861,7 @@ $.extend(RB.ReviewGroup.prototype, {
             path += this.id + "/";
         }
 
-        rbApiCall({
+        RB.apiCall({
             type: apiType,
             path: path,
             data: data,
@@ -938,7 +938,7 @@ $.extend(RB.ReviewReply.prototype, {
                 url = self.review.links.replies.href;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: type,
                 url: url,
                 data: data,
@@ -967,7 +967,7 @@ $.extend(RB.ReviewReply.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall($.extend(true, options, {
+                RB.apiCall($.extend(true, options, {
                     url: self.url,
                     type: "DELETE",
                     errorText: "Discarding the reply draft " +
@@ -988,12 +988,12 @@ $.extend(RB.ReviewReply.prototype, {
             }
 
             /* We can only discard if there are on comments of any kind. */
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.links.diff_comments.href,
                 success: function(rsp, status) {
                     if (rsp.diff_comments.length == 0) {
-                        rbApiCall({
+                        RB.apiCall({
                             type: "GET",
                             url: self.links.screenshot_comments.href,
                             success: function(rsp, status) {
@@ -1012,7 +1012,7 @@ $.extend(RB.ReviewReply.prototype, {
         var self = this;
 
         self.review.ready(function() {
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review.links.replies.href +
                      (self.id ? self.id : "draft") + "/",
@@ -1082,7 +1082,7 @@ $.extend(RB.FileAttachment.prototype, {
 
             var self = this;
             this.ready(function() {
-                rbApiCall({
+                RB.apiCall({
                     type: "PUT",
                     url: self.url,
                     data: data,
@@ -1113,7 +1113,7 @@ $.extend(RB.FileAttachment.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -1134,7 +1134,7 @@ $.extend(RB.FileAttachment.prototype, {
         var self = this;
 
         self.review_request.ready(function() {
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review_request.links.file_attachments.href + self.id + "/",
                 success: function(rsp, status) {
@@ -1171,7 +1171,7 @@ $.extend(RB.FileAttachment.prototype, {
     _saveApiCall: function(onSuccess, onError, options) {
         var self = this;
         self.review_request.ready(function() {
-            rbApiCall($.extend(options, {
+            RB.apiCall($.extend(options, {
                 url: self.review_request.links.file_attachments.href,
                 success: function(rsp) {
                     if (rsp.stat == "ok") {
@@ -1247,7 +1247,7 @@ $.extend(RB.FileAttachmentCommentReply.prototype, {
                     url = self.reply.links.file_attachment_comments.href;
                 }
 
-                rbApiCall({
+                RB.apiCall({
                     type: type,
                     url: url,
                     data: data,
@@ -1273,7 +1273,7 @@ $.extend(RB.FileAttachmentCommentReply.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -1311,7 +1311,7 @@ $.extend(RB.FileAttachmentCommentReply.prototype, {
                 return;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.reply.links.file_attachment_comments.href + self.id + "/",
                 success: function(rsp, status) {
@@ -1380,7 +1380,7 @@ $.extend(RB.Screenshot.prototype, {
             var self = this;
 
             this.ready(function() {
-                rbApiCall({
+                RB.apiCall({
                     type: "PUT",
                     url: self.url,
                     data: data,
@@ -1411,7 +1411,7 @@ $.extend(RB.Screenshot.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -1432,7 +1432,7 @@ $.extend(RB.Screenshot.prototype, {
         var self = this;
 
         self.review_request.ready(function() {
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review_request.links.screenshots.href + self.id + "/",
                 success: function(rsp, status) {
@@ -1470,7 +1470,7 @@ $.extend(RB.Screenshot.prototype, {
         var self = this;
 
         self.review_request.ready(function() {
-            rbApiCall($.extend(options, {
+            RB.apiCall($.extend(options, {
                 url: self.review_request.links.screenshots.href,
                 success: function(rsp) {
                     if (rsp.stat == "ok") {
@@ -1565,7 +1565,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                     url = self.review.links.screenshot_comments.href;
                 }
 
-                rbApiCall({
+                RB.apiCall({
                     type: type,
                     url: url,
                     data: data,
@@ -1587,7 +1587,7 @@ $.extend(RB.ScreenshotComment.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -1627,7 +1627,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                 return;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review.links.screenshot_comments.href +
                      self.id + "/",
@@ -1731,7 +1731,7 @@ $.extend(RB.FileAttachmentComment.prototype, {
                     url = self.review.links.file_attachment_comments.href;
                 }
 
-                rbApiCall({
+                RB.apiCall({
                     type: type,
                     url: url,
                     data: data,
@@ -1756,7 +1756,7 @@ $.extend(RB.FileAttachmentComment.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -1794,7 +1794,7 @@ $.extend(RB.FileAttachmentComment.prototype, {
                 return;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.review.links.file_attachment_comments.href +
                      self.id + "/",
@@ -1874,7 +1874,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
                     url = self.reply.links.screenshot_comments.href;
                 }
 
-                rbApiCall({
+                RB.apiCall({
                     type: type,
                     url: url,
                     data: data,
@@ -1900,7 +1900,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
 
         self.ready(function() {
             if (self.loaded) {
-                rbApiCall({
+                RB.apiCall({
                     type: "DELETE",
                     url: self.url,
                     success: function() {
@@ -1940,7 +1940,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
                 return;
             }
 
-            rbApiCall({
+            RB.apiCall({
                 type: "GET",
                 url: self.reply.links.screenshot_comments.href + self.id + "/",
                 success: function(rsp, status) {
@@ -1987,7 +1987,7 @@ $.extend(RB.ScreenshotCommentReply.prototype, {
  *
  * @param {object} options  The options, listed above.
  */
-function rbApiCall(options) {
+RB.apiCall = function(options) {
     var prefix = options.prefix || "";
     var url = options.url || (SITE_ROOT + prefix + "api" + options.path);
 

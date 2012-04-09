@@ -1346,7 +1346,7 @@ $.fn.commentDlg = function() {
  * @return {jQuery} The new review form element.
  */
 $.reviewForm = function(review) {
-    rbApiCall({
+    RB.apiCall({
         type: "GET",
         dataType: "html",
         data: {},
