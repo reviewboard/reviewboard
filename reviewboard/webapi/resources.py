@@ -43,7 +43,8 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              get_original_file, \
                                              get_patched_file
-from reviewboard.diffviewer.forms import EmptyDiffError
+from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError, \
+                                         MAX_DIFF_SIZE
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
@@ -71,6 +72,8 @@ from reviewboard.webapi.decorators import webapi_check_login_required, \
 from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       CHANGE_NUMBER_IN_USE, \
+                                      DIFF_EMPTY, \
+                                      DIFF_TOO_BIG, \
                                       EMPTY_CHANGESET, \
                                       FILE_RETRIEVAL_ERROR, \
                                       INVALID_CHANGE_NUMBER, \
@@ -1539,7 +1542,8 @@ class DiffResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED,
-                            REPO_FILE_NOT_FOUND, INVALID_FORM_DATA)
+                            REPO_FILE_NOT_FOUND, INVALID_FORM_DATA,
+                            DIFF_EMPTY, DIFF_TOO_BIG)
     @webapi_request_fields(
         required={
             'path': {
@@ -1621,10 +1625,11 @@ class DiffResource(WebAPIResource):
                 'revision': e.revision
             }
         except EmptyDiffError, e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'path': [str(e)]
-                }
+            return DIFF_EMPTY
+        except DiffTooBigError, e:
+            return DIFF_TOO_BIG, {
+                'reason': str(e),
+                'max_size': MAX_DIFF_SIZE,
             }
         except Exception, e:
             # This could be very wrong, but at least they'll see the error.

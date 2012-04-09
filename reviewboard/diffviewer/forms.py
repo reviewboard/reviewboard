@@ -9,6 +9,13 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
 
 
+MAX_DIFF_SIZE = 2**20 # 1 MB
+
+
+class DiffTooBigError(ValueError):
+    pass
+
+
 class EmptyDiffError(ValueError):
     pass
 
@@ -48,6 +55,12 @@ class UploadDiffForm(forms.Form):
 
     def create(self, diff_file, parent_diff_file=None, diffset_history=None):
         tool = self.repository.get_scmtool()
+
+        if diff_file.size > MAX_DIFF_SIZE:
+            raise DiffTooBigError(_('The supplied diff file is too large'))
+
+        if parent_diff_file and parent_diff_file.size > MAX_DIFF_SIZE:
+            raise DiffTooBigError(_('The supplied parent diff file is too large'))
 
         # Grab the base directory if there is one.
         if not tool.get_diffs_use_absolute_paths():

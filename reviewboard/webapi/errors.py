@@ -64,6 +64,12 @@ REPO_AUTHENTICATION_ERROR = WebAPIError(218, "Unable to authenticate with "
                                              "the repository using the "
                                              "provided credentials",
                                         http_status=403) # 403 Forbidden
+DIFF_EMPTY                = WebAPIError(219, "The specified diff file is "
+                                             "empty",
+                                        http_status=400) # 400 Bad Request
+DIFF_TOO_BIG              = WebAPIError(220, "The specified diff file is "
+                                             "too large",
+                                        http_status=400) # 400 Bad Request
 FILE_RETRIEVAL_ERROR      = WebAPIError(221, "There was an error fetching "
                                              "a source file",
                                         http_status=500) # 500 Internal Server
