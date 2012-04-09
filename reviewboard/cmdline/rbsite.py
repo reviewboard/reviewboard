@@ -205,7 +205,7 @@ class Site(object):
 
         # Link the admin media
         self.link_pkg_dir("django",
-                          "contrib/admin/media",
+                          "contrib/admin/static/admin",
                           rb_admins_dest)
 
         # Link from Djblets if available.
