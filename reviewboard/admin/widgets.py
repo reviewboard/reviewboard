@@ -366,7 +366,7 @@ def dynamic_activity_data(request):
 
             for obj in q:
                 data.append([
-                    time.mktime(time.strptime(obj[timestampField],
+                    time.mktime(time.strptime(str(obj[timestampField]),
                                               "%Y-%m-%d")) * 1000,
                     obj['created_count']
                 ])
