@@ -108,7 +108,7 @@
             editor.inlineEditor("startEdit");
         });
 
-        queueLoadDiffFragment("review_draft_diff_comments", "{{comment.id}}",
+        RB.queueLoadDiffFragment("review_draft_diff_comments", "{{comment.id}}",
 {% if comment.interfilediff %}
           "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
 {% else %}

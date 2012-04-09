@@ -1173,9 +1173,9 @@ function updateAnchors(table) {
  * @param {string} file_index                The file index
  * @param {dict}   comment_counts            The comments for this region
  */
-function loadFileDiff(review_base_url, filediff_id, filediff_revision,
-                      interfilediff_id, interfilediff_revision, file_index,
-                      comment_counts) {
+RB.loadFileDiff = function(review_base_url, filediff_id, filediff_revision,
+                           interfilediff_id, interfilediff_revision,
+                           file_index, comment_counts) {
     if ($("#file" + filediff_id).length == 1) {
         /* We already have this one. This is probably a pre-loaded file. */
         setupFileDiff();

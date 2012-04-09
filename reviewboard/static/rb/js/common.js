@@ -1,3 +1,6 @@
+RB = {};
+
+
 /*
  * Creates a form dialog based on serialized form field data.
  * This will handle creating and managing a form dialog and posting the

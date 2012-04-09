@@ -132,7 +132,7 @@ var gCommentIssueManager = new function() {
                      * issue status.
                      */
                     if (rsp.last_activity_time) {
-                        registerForUpdates(rsp.last_activity_time);
+                        RB.registerForUpdates(rsp.last_activity_time);
                     }
                 }
             });
@@ -1907,7 +1907,7 @@ $.newFileAttachment = function(fileAttachment) {
 /*
  * Sets the list of file attachment comments.
  */
-function setFileAttachmentComments(comments) {
+RB.setFileAttachmentComments = function(comments) {
     gFileAttachmentComments = comments;
 }
 
@@ -1921,7 +1921,7 @@ function setFileAttachmentComments(comments) {
  * @param {string} type           The type of update to watch for, or
  *                                undefined for all types.
  */
-function registerForUpdates(lastTimestamp, type) {
+RB.registerForUpdates = function(lastTimestamp, type) {
     function updateFavIcon(url) {
         var head = $("head");
         head.find("link[rel=icon]").remove();
@@ -2023,7 +2023,7 @@ function hideReviewBanner() {
  * @param {string} key         The key for this request, using the
  *                             filediff and interfilediff.
  */
-function queueLoadDiffFragment(queue_name, comment_id, key) {
+RB.queueLoadDiffFragment = function(queue_name, comment_id, key) {
     if (!gPendingDiffFragments[queue_name]) {
         gPendingDiffFragments[queue_name] = {};
     }

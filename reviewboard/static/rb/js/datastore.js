@@ -1,5 +1,3 @@
-RB = {};
-
 RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
                           endLineNum) {
     this.id = id;

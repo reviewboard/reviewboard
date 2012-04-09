@@ -245,7 +245,7 @@
     </dd>
     <script type="text/javascript">
       $(document).ready(function() {
-        queueLoadDiffFragment("diff_fragments", "{{comment.id}}",
+        RB.queueLoadDiffFragment("diff_fragments", "{{comment.id}}",
 {% if comment.interfilediff %}
           "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
 {% else %}
@@ -330,7 +330,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
 	  /* Listen for updates to this review request. */
-	  registerForUpdates("{{last_activity_time|date:"c"}}");
+	  RB.registerForUpdates("{{last_activity_time|date:"c"}}");
 {% endlocaltime %}
 
 {% if request.GET.reply_id and request.GET.reply_type %}

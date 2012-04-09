@@ -151,7 +151,7 @@
 
 <script type="text/javascript">
   $(document).ready(function() {
-    setFileAttachmentComments({
+    RB.setFileAttachmentComments({
 {% for file_attachment in review_request_details.file_attachments.all %}
         {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
 {% endfor %}
