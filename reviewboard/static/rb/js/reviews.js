@@ -1,6 +1,9 @@
+this.gCommentDlg = null;
+this.gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
+                                           gReviewRequestSitePrefix,
+                                           gReviewRequestPath);
 
 // State variables
-var gCommentDlg = null;
 var gEditCount = 0;
 var gPublishing = false;
 var gPendingSaveCount = 0;
@@ -9,9 +12,6 @@ var gReviewBanner = $("#review-banner");
 var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
 var gFileAttachmentComments = {};
-var gReviewRequest = new RB.ReviewRequest(gReviewRequestId,
-                                          gReviewRequestSitePrefix,
-                                          gReviewRequestPath);
 
 
 /*
