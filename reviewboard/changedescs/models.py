@@ -87,12 +87,6 @@ class ChangeDescription(models.Model):
                 'new': (new_value,),
             }
 
-    def truncate_text(self):
-        if len(self.text) > 60:
-            return self.text[0:57] + "..."
-        else:
-            return self.text
-
     def __unicode__(self):
         return self.text
 

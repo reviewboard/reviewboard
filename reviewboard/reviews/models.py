@@ -1394,12 +1394,6 @@ class Comment(BaseComment):
     def __unicode__(self):
         return self.text
 
-    def truncate_text(self):
-        if len(self.text) > 60:
-            return self.text[0:57] + "..."
-        else:
-            return self.text
-
 
 class ScreenshotComment(BaseComment):
     """
