@@ -53,14 +53,6 @@ def init_siteconfig(app, created_models, verbosity, db=None, **kwargs):
         siteconfig.version = new_version
         siteconfig.save()
 
-        # TODO: Someday we'll want to enable this code when we actually
-        #       have something to tell them.
-        #print "*** You are upgrading Review Board from v%s to v%s" % \
-        #      (siteconfig.version, new_version)
-        #print "*** To complete the upgrade, please follow the instructions at:"
-        #print "*** %s://%s%s" % (siteconfig.get("site_domain_method"),
-        #                         site.domain, settings.SITE_ROOT)
-
 
 migration_table = {
     # new settings key                   # old settings key

@@ -103,6 +103,21 @@ def check_updates_required():
                 settings.STATIC_ROOT = new_media_root
 
 
+        # Check if the user has any pending static media configuration
+        # changes they need to make.
+        if siteconfig and 'manual-updates' in siteconfig.settings:
+            stored_updates = siteconfig.settings['manual-updates']
+
+            if not stored_updates.get('static-media', False):
+                updates_required.append((
+                    'admin/manual-updates/server-static-config.html', {
+                        'STATIC_ROOT': settings.STATIC_ROOT,
+                        'SITE_ROOT': settings.SITE_ROOT,
+                        'SITE_DIR': settings.LOCAL_ROOT,
+                    }
+                ))
+
+
         # Check if there's a media/uploaded/images directory. If not, this is
         # either a new install or is using the old-style media setup and needs
         # to be manually upgraded.

@@ -360,6 +360,18 @@ class Site(object):
         """
         self.run_manage_command("evolve", ["--noinput", "--execute"])
 
+    def get_static_media_upgrade_needed(self):
+        """Determines whether or not a static media config upgrade is needed."""
+        from djblets.siteconfig.models import SiteConfiguration
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        manual_updates = siteconfig.settings.get('manual-updates', {})
+        resolved_update = manual_updates.get('static-media', False)
+
+        return (not resolved_update and
+                pkg_resources.parse_version(siteconfig.version) <
+                    pkg_resources.parse_version("1.7"))
+
     def get_settings_upgrade_needed(self):
         """Determines whether or not a settings upgrade is needed."""
         try:
@@ -1713,6 +1725,43 @@ class UpgradeCommand(Command):
             print
             print "    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
                                                       "data")
+
+
+        if site.get_static_media_upgrade_needed():
+            from djblets.siteconfig.models import SiteConfiguration
+            from django.conf import settings
+
+            siteconfig = SiteConfiguration.objects.get_current()
+
+            if 'manual-updates' not in siteconfig.settings:
+                siteconfig.settings['manual-updates'] = {}
+
+            siteconfig.settings['manual-updates']['static-media'] = False
+            siteconfig.save()
+
+            static_dir = "%s/htdocs/static" % \
+                         site.abs_install_dir.replace('\\', '/')
+
+            print
+            print "The location of static media files (CSS, JavaScript, images)"
+            print "has changed. You will need to make manual changes to "
+            print "your web server configuration."
+            print
+            print "For Apache, you will need to add:"
+            print
+            print "    Alias %sstatic \"%s\"" % (settings.SITE_ROOT,
+                                                 static_dir)
+            print
+            print "For lighttpd, add the following to alias.url:"
+            print
+            print "    \"%sstatic\" => \"%s\"" % (settings.SITE_ROOT,
+                                                  static_dir)
+            print
+            print "Once you have made these changes, type the following "
+            print "to resolve this:"
+            print
+            print "    $ rb-site manage %s resolve-check static-media" % \
+                  site.abs_install_dir
 
 
 class ManageCommand(Command):

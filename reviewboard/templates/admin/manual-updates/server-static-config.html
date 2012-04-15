@@ -1,0 +1,39 @@
+{% load i18n %}
+<h1 class="title">{% trans "Static media directory changes" %}</h1>
+<div class="main">
+ <p>
+{% blocktrans %}
+  The location of static media files (CSS, JavaScript, images) has changed.
+  You will need to make manual changes to your web server configuration.
+{% endblocktrans %}
+ </p>
+ <p>
+{% blocktrans %}
+  For Apache, you will need to add:
+{% endblocktrans %}
+ </p>
+ <pre>
+  $ Alias {{SITE_ROOT}}static "{{STATIC_ROOT}}"
+</pre>
+<p>
+{% blocktrans %}
+  For lighttpd, add the following to <tt>alias.url</tt>:
+{% endblocktrans %}
+ </p>
+ <pre>
+  $ "{{SITE_ROOT}}static" =&gt; "{{STATIC_ROOT}}"
+</pre>
+<p>
+{% blocktrans %}
+  These lines will look similar to the existing lines for the media files.
+{% endblocktrans %}
+ </p>
+<p>
+{% blocktrans %}
+  Once you have made these changes, type the following to resolve this:
+{% endblocktrans %}
+ </p>
+ <pre>
+  $ rb-site manage {{SITE_DIR}} resolve-check static-media
+ </pre>
+</div>
