@@ -1,14 +1,17 @@
+import base64
 import logging
+import urllib2
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
+from django.views.decorators.http import require_POST
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard.admin.checks import check_updates_required
@@ -104,3 +107,25 @@ def manual_updates_required(request,
                                      RequestContext(request, extra_context))
                     for (template_name, extra_context) in updates],
     }))
+
+
+@require_POST
+@staff_member_required
+def github_token(request):
+    if request.method == 'POST':
+        if ('username' not in request.POST or
+            'password' not in request.POST):
+            return HttpResponse(status=400)
+
+        r = urllib2.Request(
+            'https://api.github.com/legacy/token',
+            headers={
+                urllib2.HTTPBasicAuthHandler.auth_header:
+                'Basic %s' % base64.b64encode(request.POST['username'] + ':' +
+                                              request.POST['password']),
+            })
+
+        try:
+            return HttpResponse(urllib2.urlopen(r).read())
+        except (urllib2.URLError, urllib2.HTTPError), e:
+            return HttpResponse(status=401)

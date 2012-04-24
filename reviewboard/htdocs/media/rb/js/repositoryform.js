@@ -60,6 +60,25 @@ function updateRepositoryType() {
                       HOSTING_SERVICE_HIDDEN_FIELDS[hostingType]);
 }
 
+function getGitHubAPIToken(username, password) {
+    $.ajax({
+        type: 'POST',
+        url: "../../../../github-token/",
+        dataType: "json",
+        data: {
+            username: username,
+            password: password
+        },
+        success: function(data) {
+            $("#id_github_api_token").val(data.token);
+            $("#github_token_dlg").modalBox("destroy");
+        },
+        error: function() {
+            $("#github_token_error").text("Invalid username or password");
+        }
+    });
+}
+
 $(document).ready(function() {
     prevTypes['bug_tracker_type'] = "none";
     prevTypes['hosting_type'] = "custom";
@@ -79,6 +98,7 @@ $(document).ready(function() {
     var bugTrackerProjectNameEl = $("#id_bug_tracker_project_name");
     var repoNameEl = $("#id_name");
     var repoEl = $("#id_tool");
+    var gitHubGetTokenEl = $("#github-get-token");
 
     var hostingProjectNameDirty = false;
     var bugTrackerProjectNameDirty = false;
@@ -159,6 +179,59 @@ $(document).ready(function() {
     }, function() {
         $(this).text("Show SSH Public Key");
         publicKeyPopup.hide();
+        return false;
+    });
+
+    $("#id_hosting_owner")
+        .change(function() {
+            if ($(this).val()) {
+                gitHubGetTokenEl[0].disabled = false;
+            } else {
+                gitHubGetTokenEl[0].disabled = true;
+            }
+        })
+        .triggerHandler("change")
+
+    gitHubGetTokenEl
+        .click(function() {
+            var username = $("#id_hosting_owner").val();
+
+            $("<div/>")
+                .attr("id", "github_token_dlg")
+                .append($("<p>/>")
+                    .html("Enter the password for <b>" +
+                          username + "</b> on GitHub."))
+                .append($("<p>/>")
+                    .text("The password will not be stored."))
+                .append($("<label for='github_token_password'/>")
+                    .text("Password: "))
+                .append($("<input/>")
+                    .attr({
+                        id: 'github_token_password',
+                        type: 'password'
+                    }))
+                .append($("<p id='github_token_error'/>"))
+                .appendTo("body")
+                .modalBox({
+                    title: "GitHub API Token Retrieval",
+                    buttons: [
+                        $('<input type="button"/>')
+                            .val("Cancel"),
+
+                        $('<input type="button"/>')
+                            .val("Get Token")
+                            .click(function() {
+                                getGitHubAPIToken(
+                                    username,
+                                    $("#github_token_password").val());
+
+                                return false;
+                            })
+                    ]
+                });
+
+            $("#github_token_password").focus();
+
         return false;
     });
 });

@@ -3,7 +3,10 @@
 
 {% block extrahead %}
 {{block.super}}
+<link rel="stylesheet" href="{{MEDIA_URL}}rb/css/common.css?{{MEDIA_SERIAL}}" />
 {% include "js/jquery.html" %}
+{% include "js/jquery-ui.html" %}
+<script type="text/javascript" src="{{MEDIA_URL}}djblets/js/jquery.gravy.js?{{MEDIA_SERIAL}}"></script>
 <script type="text/javascript" src="{{MEDIA_URL}}rb/js/repositoryform.js?{{MEDIA_SERIAL}}"></script>
 
 <script type="text/javascript">

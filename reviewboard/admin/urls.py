@@ -65,6 +65,7 @@ urlpatterns = patterns('reviewboard.admin.views',
     (r'^$', 'dashboard'),
     (r'^cache/$', 'cache_stats'),
     (r'^settings/', include(settings_urlpatterns)),
+    (r'^github-token/$', 'github_token'),
 )
 
 urlpatterns += patterns('',
