@@ -1058,7 +1058,7 @@ function addCommentFlags(table, lines, key) {
  * @param {int}    chunk_index         The chunk index number.
  * @param {string} tbody_id            The tbody ID to insert into.
  */
-function expandChunk(review_base_url, fileid, filediff_id, revision,
+RB.expandChunk = function(review_base_url, fileid, filediff_id, revision,
                      interdiff_revision, chunk_index, link) {
     gDiff.getDiffFragment(review_base_url, fileid, filediff_id, revision,
                           interdiff_revision, chunk_index, function(html) {

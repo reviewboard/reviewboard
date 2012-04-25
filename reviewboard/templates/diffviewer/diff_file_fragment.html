@@ -87,7 +87,7 @@
  <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
   <tr>
    <th>...</th>
-   <td colspan="3">{{chunk.numlines}} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]
+   <td colspan="3">{{chunk.numlines}} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]
    </td>
   </tr>
 {% if chunk.meta.headers %}
