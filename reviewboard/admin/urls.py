@@ -67,6 +67,7 @@ urlpatterns = patterns('reviewboard.admin.views',
     (r'^settings/', include(settings_urlpatterns)),
     (r'^widget-toggle/', 'widget_toggle'),
     (r'^widget-activity/','widget_activity'),
+    (r'^github-token/$', 'github_token'),
 )
 
 urlpatterns += patterns('',

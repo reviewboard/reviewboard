@@ -5,6 +5,7 @@ import sys
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.datastructures import SortedDict
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -16,6 +17,19 @@ from reviewboard.scmtools.errors import AuthenticationError, \
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.validation import validate_review_groups, validate_users
+
+
+class GitHubAPITokenWidget(forms.TextInput):
+    def __init__(self, *args, **kwargs):
+        super(GitHubAPITokenWidget, self).__init__(attrs={'size': '60'},
+                                                   *args, **kwargs)
+    def render(self, *args, **kwargs):
+        html = super(GitHubAPITokenWidget, self).render(*args, **kwargs)
+
+        html += ' <button id="github-get-token">%s</button>' % \
+                unicode(_('Get your API token'))
+
+        return mark_safe(html)
 
 
 class RepositoryForm(forms.ModelForm):
@@ -368,11 +382,9 @@ class RepositoryForm(forms.ModelForm):
         label=_("API token"),
         max_length=128,
         required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_('Your GitHub API token. This is needed in order to access '
-                    'files on this repository. You can find this on your '
-                    '<a href="http://github.com/account">Account</a> page '
-                    'under "Account Admin."'))
+                    'files on this repository.'),
+        widget=GitHubAPITokenWidget())
 
     tool = forms.ModelChoiceField(
         label=_("Repository type"),
