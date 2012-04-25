@@ -47,6 +47,8 @@ New Features
   This can be used for installations that need to load custom Django apps,
   without having to override ``INSTALLED_APPS``.
 
+  Patch by Stephen Gallagher.
+
 
 Web API Changes
 ===============
@@ -70,6 +72,7 @@ Contributors
 * Christian Hammond
 * David Trowbridge
 * Jim Chen
+* Stephen Gallagher
 * Steven MacLeod
 
 
