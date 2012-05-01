@@ -79,6 +79,10 @@
     }
   }
 
+  .content-divider {
+    border-top: 1px #C2C1B0 solid;
+  }
+
   #required-field-legend {
     color: darkRed;
     font-weight: bold;
@@ -333,6 +337,12 @@
 
     pre {
       .pre-wrap;
+    }
+
+    .comment-text:target {
+      background-color: #E7EDF3;
+      border: 1px solid @dark-blue;
+      padding: 1em;
     }
 
     .body_top, .body_bottom {
@@ -1005,6 +1015,12 @@
     background: url('../images/tick.png') #FAFAFA no-repeat 5px 50%;
   }
 
+  .back-to-issue-summary {
+    float: right;
+    padding: 7px 0;
+    text-decoration: none;
+  }
+
   .issue-button {
     margin-left: 5px;
   }
@@ -1116,87 +1132,101 @@
  * Issue Summary
  ****************************************************************************/
 
-.issue-summary {
-  display: inline;
-  float: left;
-  font-size: 13px;
-  font-weight: bold;
-}
-
-.issue {
-  .status {
-    border-right-width: 1px;
-  }
-
-  .summary-table-description {
-    border-left-width: 1px;
-  }
-
-  &.open {
-    td {
-      background-color: @light-yellow;
-      border-color: @dark-yellow;
-    }
-  }
-
-  &.dropped {
-    td {
-      background-color: @light-grey;
-      border-color: @grey;
-    }
-  }
-
-  &.resolved {
-    td {
-      background-color: transparent;
-      border-color: #EEE;
-    }
-  }
-}
-
 .issue-table-wrapper {
-  margin: 5px;
+  margin: 8px 9px 14px 9px;
 }
 
-.issue-table {
-  font-size: 12px;
+#issue-summary-table {
   border-spacing: 0;
   width: 100%;
 
   tr {
-    margin: 5px 0;
-
-    th {
-      padding: 0 5px;
-      font-size: 13px;
+    td {
+      border-width: 1px 0;
+      border-style: solid;
+      padding: 2px 5px;
     }
 
-    td {
-      border-width: 1px 0px;
+    &.hidden {
+      display: none;
+    }
+  }
+
+  thead {
+    th {
+      background: url("../../../static/djblets/images/datagrid/header_bg.png") repeat-x bottom left;
+      border-color: #999;
       border-style: solid;
-      padding: 1px 5px;
+      border-width: 1px 0;
+      cursor: pointer;
+      height: 21px;
+      padding: 2px 5px;
+      text-align: left;
+      white-space: nowrap;
+
+      &:hover {
+        background: url("../../../static/djblets/images/datagrid/header_bg_primary.png") repeat-x bottom left;
+      }
+    }
+
+    .comment-id-header {
+      border-left-width: 1px;
+    }
+
+    .status-header {
+      border-right-width: 1px;
+    }
+  }
+
+  .issue {
+    .status {
+      border-right-width: 1px;
+    }
+
+    .comment-id {
+      border-left-width: 1px;
+    }
+
+    &.open {
+      td {
+        background-color: #FDF4A4;
+        border-color: @dark-yellow;
+      }
+    }
+
+    &.dropped {
+      td {
+        background-color: @light-grey;
+        border-color: #AAA;
+      }
+    }
+
+    &.resolved {
+      td {
+        background-color: #FFF;
+        border-color: #BBB;
+      }
     }
 
     &:hover td {
-      background-color: @light-blue;
+      background-color: #D4E0F3;
       border-color: @dark-blue;
     }
-  }
 
-  .summary-anchor {
-    color: #000;
-    display: block;
-    height: 14px;
-    overflow: hidden;
-    text-decoration: none;
-  }
-
-  .status, .reviewer {
-    text-align: center;
+    .summary-anchor {
+      color: #000;
+      display: block;
+      overflow: hidden;
+      text-decoration: none;
+    }
   }
 
   .status {
     text-transform: capitalize;
+  }
+
+  .comment-id, .last-updated, .reviewer, .status {
+    white-space: nowrap;
   }
 }
 
@@ -1204,7 +1234,7 @@
   display: inline;
   font-size: 12px;
   text-align: right;
-  float: right;
+  float: left;
 
   div {
     margin-right: 3px;
@@ -1213,6 +1243,14 @@
 
   .counter {
     margin-left: 4px;
+  }
+}
+
+.filters {
+  margin: 3px 0 0 0;
+
+  .filter {
+    margin: 0 4px;
   }
 }
 

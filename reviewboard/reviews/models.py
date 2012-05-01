@@ -1341,7 +1341,8 @@ class Comment(BaseComment):
     A comment can belong to a single filediff or to an interdiff between
     two filediffs. It can also have multiple replies.
     """
-
+    anchor_prefix = "comment"
+    comment_type = "diff"
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
                                  related_name="comments")
     interfilediff = models.ForeignKey(FileDiff,
@@ -1388,8 +1389,8 @@ class Comment(BaseComment):
               self.first_line)
 
     def get_review_url(self):
-        return "%s#comment%d" % \
-            (self.review.get().review_request.get_absolute_url(), self.id)
+        return "%s#%s%d" % \
+            (self.review.get().review_request.get_absolute_url(), self.anchor_prefix, self.id)
 
     def __unicode__(self):
         return self.text
@@ -1399,6 +1400,8 @@ class ScreenshotComment(BaseComment):
     """
     A comment on a screenshot.
     """
+    anchor_prefix = "scomment"
+    comment_type = "screenshot"
     screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
                                    related_name="comments")
     reply_to = models.ForeignKey('self', blank=True, null=True,
@@ -1443,8 +1446,8 @@ class ScreenshotComment(BaseComment):
             (self.get_image_url(), self.w, self.h, escape(self.text))
 
     def get_review_url(self):
-        return "%s#scomment%d" % \
-            (self.review.get().review_request.get_absolute_url(), self.id)
+        return "%s#%s%d" % \
+            (self.review.get().review_request.get_absolute_url(), self.anchor_prefix, self.id)
 
     def __unicode__(self):
         return self.text
@@ -1452,6 +1455,8 @@ class ScreenshotComment(BaseComment):
 
 class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
+    anchor_prefix = "fcomment"
+    comment_type = "file"
     file_attachment = models.ForeignKey(FileAttachment,
                                         verbose_name=_('file_attachment'),
                                         related_name="comments")
@@ -1484,8 +1489,8 @@ class FileAttachmentComment(BaseComment):
                                              escape(self.text))
 
     def get_review_url(self):
-        return "%s#fcomment%d" % \
-            (self.review.get().review_request.get_absolute_url(), self.id)
+        return "%s#%s%d" % \
+            (self.review.get().review_request.get_absolute_url(), self.anchor_prefix, self.id)
 
     def __unicode__(self):
         return self.text

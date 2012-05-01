@@ -67,54 +67,6 @@
 </div>
 {% endbox %}
 
-{% if issues.total > 0 %}
-{% box "collapsed" %}
-<div class="main">
- <div class="header">
-  <div class="collapse-button"></div>
-  <div class="issue-summary">{% trans "Issue Summary" %}:</div>
-  <div class="counters">
-   <strong>
-    <div class="counter">{% trans "Total" %}:</div>
-    <div id="total-counter">{{issues.total}}</div>
-   </strong>
-   <div class="counter">{% trans "Open" %}:</div>
-   <div id="open-counter">{{issues.open}}</div>
-   <div class="counter">{% trans "Resolved" %}:</div>
-   <div id="resolved-counter">{{issues.resolved}}</div>
-   <div class="counter">{% trans "Dropped" %}:</div>
-   <div id="dropped-counter">{{issues.dropped}}</div>
-  </div>
-  <div class="clearfix"></div>
- </div>
- <div class="body">
-  <div class="issue-table-wrapper">
-   <table class="issue-table">
-    <tr>
-     <th>{% trans "Description" %}</th>
-     <th>{% trans "From" %}</th>
-     <th>{% trans "Status" %}</th>
-    </tr>
-{% for entry in entries %}
-{%  if entry.review %}
-{%   for comment in entry.review.get_all_comments %}
-{%    if comment.issue_opened %}
-    <tr id="summary-table-entry-{{comment.id}}" class="issue {{comment.issue_status|pretty_print_issue_status}}">
-     <td class="summary-table-description"><a class="summary-anchor" href="#{{comment.id}}">{{comment}}</a></td>
-     <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
-     <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
-    </tr>
-{%    endif %}
-{%   endfor %}
-{%  endif %}
-{% endfor %}
-   </table>
-  </div>
- </div>
-</div>
-{% endbox %}
-{% endif %}
-
 {% for entry in entries %}
 {%  if entry.review %}
 <a name="review{{entry.review.id}}"></a>
@@ -142,7 +94,7 @@
 
 {% for comment in entry.review.screenshot_comments.all %}
     <dt>
-     <a name="scomment{{comment.id}}"></a>
+     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="screenshot">
       <span class="filename">
        <a href="{{comment.screenshot.get_absolute_url}}">{% spaceless %}
@@ -157,10 +109,7 @@
      </div>
     </dt>
     <dd>
-{% if comment.issue_opened %}
-     <a name="{{comment.id}}"></a>
-{% endif %}
-     <pre>{{comment.text|escape}}</pre>
+     <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
        {% comment_issue review_request_details comment "screenshot_comment" %}
@@ -172,7 +121,7 @@
 
 {% for comment in entry.review.file_attachment_comments.all %}
     <dt>
-     <a name="fcomment{{comment.id}}"></a>
+     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="file-attachment">
       <a href="{{comment.file_attachment.get_absolute_url}}">{% spaceless %}
        <img src="{{comment.file_attachment.icon_url}}" />
@@ -190,10 +139,7 @@
      </div>
     </dt>
     <dd>
-{% if comment.issue_opened %}
-     <a name="{{comment.id}}"></a>
-{% endif %}
-     <pre>{{comment.text|escape}}</pre>
+     <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
        {% comment_issue review_request_details comment "file_attachment_comment" %}
@@ -205,7 +151,7 @@
 
 {% for comment in entry.review.ordered_comments %}
     <dt>
-     <a name="comment{{comment.id}}"></a>
+     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div id="comment_container_{{comment.id}}">
       <table class="sidebyside loading">
        <thead>
@@ -232,10 +178,7 @@
      </div>
     </dt>
     <dd>
-{% if comment.issue_opened %}
-     <a name="{{comment.id}}"></a>
-{% endif %}
-     <pre class="reviewtext">{{comment.text|escape}}</pre>
+     <pre class="reviewtext comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
        {% comment_issue review_request_details comment "comment" %}

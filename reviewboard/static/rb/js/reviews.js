@@ -118,12 +118,15 @@ var gCommentIssueManager = new function() {
     // Helper function to set the state of a comment
     function requestState(comment, state) {
         comment.ready(function() {
-	    var old_issue_status = comment.issue_status;
+            var old_issue_status = comment.issue_status;
             comment.issue_status = state;
             comment.save({
                 success: function(rsp) {
+                    var rspComment = (rsp.diff_comment ||
+                                      rsp.file_attachment_comment ||
+                                      rsp.screenshot_comment);
                     notifyCallbacks(comment.id, comment.issue_status,
-				    old_issue_status);
+                                    old_issue_status, rspComment.timestamp);
 
                     /*
                      * We don't want the current user to receive the
@@ -143,12 +146,120 @@ var gCommentIssueManager = new function() {
      * Helper function that notifies all callbacks registered for
      * a particular comment
      */
-    function notifyCallbacks(comment_id, issue_status, old_issue_status) {
+    function notifyCallbacks(comment_id, issue_status, old_issue_status,
+                             last_updated) {
         for (var i = 0; i < callbacks[comment_id].length; i++) {
-            callbacks[comment_id][i](issue_status, old_issue_status);
+            callbacks[comment_id][i](issue_status, old_issue_status,
+                                     last_updated);
         }
     }
 }();
+
+
+/*
+ * issueSummaryTableManager handles all interactions with
+ * the issue summary table.
+ */
+var issueSummaryTableManager = new function() {
+    // Default state is "open"
+    var statusFilterState = "open";
+
+    // Maps a status filter state to its corresponding selector
+    var stateToSelectorMap = {
+        "open": ".issue.open",
+        "dropped": ".issue.dropped",
+        "resolved": ".issue.resolved",
+        "all": ".issue.open, .issue.dropped, .issue.resolved"
+    }
+
+    this.init = function() {
+        // Event Listeners
+        $(".summary-anchor").live("click", function(event) {
+            event.stopPropagation();
+            /*
+            * Extract the issue-id attribute and attach '#comment-' and
+            * '-issue' to find the comment's location. Then find the
+            * closest box class and uncollapse it.
+            */
+            var issueId = '#comment-' + $(this).attr("issue-id") + '-issue';
+            $(issueId).closest(".box").removeClass("collapsed");
+        });
+
+        $("#issue-summary-filter").change(function() {
+            $(stateToSelectorMap[statusFilterState]).toggleClass("hidden");
+            statusFilterState = $("#issue-summary-filter").val().toLowerCase();;
+            $(stateToSelectorMap[statusFilterState]).toggleClass("hidden");
+        });
+
+        $('#issue-summary-table thead th').click(function() {
+            var col = $(this).parent().children().index($(this)) + 1;
+
+            $('#issue-summary-table tbody').html($('.issue').sort(function(a, b) {
+                var firstElement = $(a).find('td:nth-child(' + col + ')'),
+                    secondElement = $(b).find('td:nth-child(' + col + ')'),
+                    firstElementText = firstElement.text().toLowerCase(),
+                    secondElementText = secondElement.text().toLowerCase();
+
+                if (firstElement.attr('timestamp')) {
+                    return parseInt(firstElement.attr('timestamp'), 10) -
+                           parseInt(secondElement.attr('timestamp'), 10);
+                } else if (firstElement.hasClass('comment-id')) {
+                     var firstText = firstElementText.split(" "),
+                         secondText = secondElementText.split(" ");
+
+                     if (firstText[0] > secondText[0]) {
+                         return 1;
+                     } else if (firstText[0] < secondText[0]) {
+                         return -1;
+                     } else {
+                         return parseInt(firstText[1], 10) -
+                                parseInt(secondText[1], 10)
+                     }
+                } else if (firstElementText > secondElementText) {
+                    return 1;
+                } else if (firstElementText === secondElementText) {
+                    return 0;
+                } else {
+                    return -1;
+                }
+            }));
+
+            return false;
+        });
+    }
+
+    // Show or hide entry according to issue summary filter state.
+    this.setVisibility = function(entry, status) {
+        if (statusFilterState !== status && statusFilterState !== 'all') {
+            entry.addClass('hidden');
+        } else {
+            entry.removeClass('hidden');
+        }
+    }
+
+    // Decrement old status counter and increment new status counter.
+    this.updateCounters = function(old_status, new_status) {
+        var old_counter = $('#' + old_status + '-counter');
+        old_counter.text(parseInt(old_counter.text(), 10) - 1);
+
+        var new_counter = $('#' + new_status + '-counter');
+        new_counter.text(parseInt(new_counter.text(), 10) + 1);
+    }
+
+    // Replace old status class with new status class and update text.
+    this.updateStatus = function(entry, old_status, new_status) {
+        entry.removeClass(old_status)
+            .addClass(new_status)
+            .find('.status').text(new_status);
+    }
+
+    // Replace old timestamp attirbute with new timestamp and update text.
+    this.updateTimeStamp = function(entry, timestamp) {
+        entry.find(".last-updated")
+            .attr("timestamp", new Date(timestamp).getTime())
+            .text(timestamp);
+    }
+}
 
 
 /*
@@ -669,20 +780,14 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
         }
     }
 
-    self.update_issue_summary_table = function(new_status, old_status) {
-	var comment_id = self.comment_id;
-	var entry = $('#summary-table-entry-' + comment_id);
+    self.update_issue_summary_table = function(new_status, old_status, timestamp) {
+        var comment_id = self.comment_id;
+        var entry = $('#summary-table-entry-' + comment_id);
 
-	// Remove old status class and decrement counter.
-	entry.removeClass(old_status);
-	var old_counter = $('#' + old_status + '-counter');
-	old_counter.text(parseInt(old_counter.text(), 10) - 1);
-
-	// Add new status class, update text, and increment counter.
-	entry.addClass(new_status);
-	entry.find('.status').text(new_status);
-	var new_counter = $('#' + new_status + '-counter');
-	new_counter.text(parseInt(new_counter.text(), 10) + 1);
+        issueSummaryTableManager.updateStatus(entry, old_status, new_status);
+        issueSummaryTableManager.updateCounters(old_status, new_status);
+        issueSummaryTableManager.setVisibility(entry, new_status);
+        issueSummaryTableManager.updateTimeStamp(entry, timestamp);
     }
 
     var open_state = {
@@ -2591,18 +2696,7 @@ $(document).ready(function() {
 
     loadDiffFragments("diff_fragments", "comment_container");
 
-    $(".summary-table-description").click(function() {
-        /*
-         * Extract the href attribute and remove the leading
-         * '#', then attach '#comment-' and '-issue' to
-         * find the comment's location. Then find the
-         * closest box class and uncollapse it.
-         */
-        var issueId = '#comment-' +
-                      $(this).find("a.summary-anchor").attr("href").slice(1) +
-                      '-issue';
-        $(issueId).closest(".box").removeClass("collapsed");
-    });
+    issueSummaryTableManager.init();
 });
 
 // vim: set et:sw=4:

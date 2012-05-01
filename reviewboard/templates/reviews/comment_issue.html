@@ -1,8 +1,11 @@
+{% load i18n %}
+
 <div class="issue-state">
   <span class="issue-message"></span>
   <input type="button" value="Fixed" class="issue-button resolve" style="display:none;"/>
   <input type="button" value="Drop" class="issue-button drop" style="display:none;"/>
   <input type="button" value="Re-open" class="issue-button reopen" style="display:none;"/>
+  <a class="back-to-issue-summary" href="#issue-summary">{% trans "Back to issue summary" %}</a>
 </div>
 <script language="javascript">
   $(document).ready(function() {

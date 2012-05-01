@@ -14,6 +14,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
                         HttpResponseNotModified
 from django.template.defaultfilters import timesince
 from django.utils.encoding import force_unicode
+from django.utils.formats import localize
 from django.utils.translation import ugettext as _
 from djblets.extensions.base import RegisteredExtension
 from djblets.extensions.resources import ExtensionResource
@@ -245,6 +246,7 @@ class BaseCommentResource(WebAPIResource):
         comment.save()
 
         last_activity_time, updated_object = review_request.get_last_activity()
+        comment.timestamp = localize(comment.timestamp)
 
         return 200, {
             comment_resource.item_result_key: comment,
