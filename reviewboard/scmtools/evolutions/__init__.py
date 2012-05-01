@@ -6,4 +6,5 @@ SEQUENCE = [
     'localsite',
     'repository_access_control',
     'group_site',
+    'repository_hosting_accounts',
 ]

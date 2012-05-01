@@ -1,111 +1,97 @@
-var prevTypes = {};
-var origRepoTypes = [];
+var prevTypes = {},
+    origRepoTypes = [];
 
 function forEachField(fields, wholeRows, func) {
-    var prefix = (wholeRows ? "#id_" : ".");
+    var prefix = (wholeRows ? "#id_" : "#row-"),
+        id,
+        field;
 
-    for (var id in fields) {
-        for (var field in fields[id]) {
+    for (id in fields) {
+        for (field in fields[id]) {
             func($(prefix + fields[id][field]));
         }
     }
 }
 
-function updateFormDisplay(id, fields, excludeFields) {
-    var type = $("#id_" + id)[0].value;
+function updateFormDisplay(id, fields) {
+    var type = $("#id_" + id)[0].value,
+        i;
 
-    for (var i in fields[prevTypes[id]]) {
-        $("." + fields[prevTypes[id]][i]).hide();
+    for (i in fields[prevTypes[id]]) {
+        $("#row-" + fields[prevTypes[id]][i]).hide();
     }
 
-    for (var i in fields[type]) {
-        $("." + fields[type][i]).show();
-    }
-
-    if (excludeFields) {
-        for (var i in excludeFields) {
-            $("." + excludeFields[i]).hide();
-        }
+    for (i in fields[type]) {
+        $("#row-" + fields[type][i]).show();
     }
 
     prevTypes[id] = type;
 }
 
-function updateRepositoryType() {
-    var hostingType = $("#id_hosting_type")[0].value;
-    var newRepoTypes = HOSTING_SERVICE_TOOLS[hostingType];
+function hideAllToolsFields() {
+    var fields = TOOLS_FIELDS["none"];
 
-    var repoTypesEl = $("#id_tool");
-    var currentRepoType = repoTypesEl[0].value;
+    for (i = 0; i < fields.length; i++) {
+        $("#row-" + fields[i]).hide();
+    }
+}
+
+function updateRepositoryType() {
+    var hostingType = $("#id_hosting_type")[0].value,
+        newRepoTypes = (hostingType === "custom"
+                        ? []
+                        : HOSTING_SERVICES[hostingType].scmtools),
+        repoTypesEl = $("#id_tool"),
+        currentRepoType = repoTypesEl[0].value;
 
     repoTypesEl.empty();
 
     $(origRepoTypes).each(function(i) {
         var repoType = origRepoTypes[i];
 
-        if (newRepoTypes.length == 0 ||
+        if (newRepoTypes.length === 0 ||
             $.inArray(repoType.text, newRepoTypes) !== -1) {
             $("<option/>")
                 .text(repoType.text)
                 .val(repoType.value)
                 .appendTo(repoTypesEl);
 
-            if (repoType.value == currentRepoType) {
+            if (repoType.value === currentRepoType) {
                 repoTypesEl[0].value = currentRepoType;
             }
         }
     });
 
-    updateFormDisplay("tool", TOOLS_FIELDS,
-                      HOSTING_SERVICE_HIDDEN_FIELDS[hostingType]);
+    repoTypesEl.triggerHandler("change");
 }
 
 $(document).ready(function() {
+    var hostingTypeEl = $("#id_hosting_type"),
+        hostingAccountEl = $("#id_hosting_account"),
+        hostingAccountRowEl = $(".field-hosting_account"),
+        hostingAccountDetailsEls = $(".field-hosting_account_username, " +
+                                     ".field-hosting_account_password"),
+        bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
+        bugTrackerTypeEl = $("#id_bug_tracker_type"),
+        repoPathRowEl = $("#row-path"),
+        repoMirrorPathRowEl = $("#row-mirror_path"),
+        repoPlanRowEl = $("#row-repository_plan"),
+        repoPlanEl = $("#id_repository_plan"),
+        publicAccessEl = $("#id_public"),
+        toolEl = $("#id_tool"),
+        publicKeyPopup = $("#ssh-public-key-popup"),
+        repoForms = $(".repo-form"),
+        service_id;
+
     prevTypes['bug_tracker_type'] = "none";
     prevTypes['hosting_type'] = "custom";
     prevTypes['tool'] = "none";
 
-    $("option", "#id_tool").each(function() {
+    toolEl.find("option").each(function() {
         origRepoTypes.push({value: $(this).val(), text: $(this).text()});
     });
 
-    forEachField(HOSTING_SERVICE_FIELDS, false, function(el) { el.hide(); });
     forEachField(BUG_TRACKER_FIELDS, false, function(el) { el.hide(); });
-
-    var hostingTypeEl = $("#id_hosting_type");
-    var hostingProjectNameEl = $("#id_hosting_project_name");
-    var bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting");
-    var bugTrackerTypeEl = $("#id_bug_tracker_type");
-    var bugTrackerProjectNameEl = $("#id_bug_tracker_project_name");
-    var repoNameEl = $("#id_name");
-    var repoEl = $("#id_tool");
-
-    var hostingProjectNameDirty = false;
-    var bugTrackerProjectNameDirty = false;
-
-    repoNameEl.keyup(function() {
-        var value = $(this).val();
-
-        if (!hostingProjectNameDirty) {
-            hostingProjectNameEl.val(value);
-        }
-
-        if (!bugTrackerProjectNameDirty) {
-            bugTrackerProjectNameEl.val(value);
-        }
-    });
-
-    hostingProjectNameEl
-        .keyup(function() {
-            hostingProjectNameDirty = ($(this).val() != "");
-        })
-        .triggerHandler("keyup");
-
-    bugTrackerProjectNameEl
-        .keyup(function() {
-            bugTrackerProjectNameDirty = ($(this).val() != "");
-        })
-        .triggerHandler("keyup");
 
     bugTrackerUseHostingEl
         .change(function() {
@@ -116,18 +102,75 @@ $(document).ready(function() {
             forEachField(BUG_TRACKER_FIELDS, true, function(el) {
                 el[0].disabled = checked;
             });
+
+            updateFormDisplay("bug_tracker_type", BUG_TRACKER_FIELDS);
         })
         .triggerHandler("change");
 
+    repoPlanEl.change(function() {
+        var hostingType = hostingTypeEl[0].value,
+            repoFormID = "repo-form-" + hostingType + "-" +
+                         (repoPlanEl.val() || "default");
+
+        repoForms.hide();
+        $("#" + repoFormID).show();
+    });
+
     hostingTypeEl
         .change(function() {
-            updateFormDisplay("hosting_type", HOSTING_SERVICE_FIELDS);
-            updateRepositoryType();
-
             var hostingType = hostingTypeEl[0].value;
 
-            if (hostingType == "custom" ||
-                BUG_TRACKER_FIELDS[hostingType] == undefined) {
+            updateRepositoryType();
+
+            if (hostingType === "custom") {
+                repoPlanRowEl.hide();
+                repoPathRowEl.show();
+                repoMirrorPathRowEl.show();
+            } else {
+                var planTypes = HOSTING_SERVICES[hostingType].plans,
+                    accounts = HOSTING_SERVICES[hostingType].accounts,
+                    i;
+
+                hideAllToolsFields();
+                repoPathRowEl.hide();
+                repoMirrorPathRowEl.hide();
+
+                repoPlanEl.empty();
+
+                if (planTypes.length === 1) {
+                    repoPlanRowEl.hide();
+                } else {
+                    for (i = 0; i < planTypes.length; i++) {
+                        var planType = planTypes[i];
+
+                        repoPlanEl.append($("<option/>")
+                            .val(planType.type)
+                            .text(planType.label));
+                    }
+
+                    repoPlanRowEl.show();
+                }
+
+                /* Rebuild the list of accounts. */
+                hostingAccountEl.find('option[value!=""]').remove();
+
+                for (i = 0; i < accounts.length; i++) {
+                    var account = accounts[i],
+                        opt = $("<option/>")
+                            .val(account.pk)
+                            .text(account.username)
+                            .appendTo(hostingAccountEl);
+
+                    if (i === 0) {
+                        opt.attr("selected", "selected");
+                    }
+                }
+            }
+
+            repoPlanEl.triggerHandler("change");
+
+            if (hostingType === "custom" ||
+                BUG_TRACKER_FIELDS[hostingType] === undefined) {
                 bugTrackerUseHostingEl[0].disabled = true;
                 bugTrackerUseHostingEl[0].checked = false;
                 bugTrackerUseHostingEl.triggerHandler("change");
@@ -137,10 +180,32 @@ $(document).ready(function() {
         })
         .triggerHandler("change");
 
-    $("#id_tool")
+    $([hostingTypeEl[0], hostingAccountEl[0]])
         .change(function() {
-            updateFormDisplay("tool", TOOLS_FIELDS,
-                HOSTING_SERVICE_HIDDEN_FIELDS[hostingTypeEl[0].value]);
+            var hostingType = hostingTypeEl.val();
+
+            if (hostingType === "custom") {
+                hostingAccountRowEl.hide();
+                hostingAccountDetailsEls.hide();
+            } else {
+                hostingAccountRowEl.show();
+
+                if (hostingAccountEl.val() === "") {
+                    hostingAccountDetailsEls.show();
+                } else {
+                    hostingAccountDetailsEls.hide();
+                }
+            }
+        })
+        .triggerHandler("change");
+
+    toolEl
+        .change(function() {
+            if (hostingTypeEl[0].value === "custom") {
+                updateFormDisplay("tool", TOOLS_FIELDS);
+            } else {
+                hideAllToolsFields();
+            }
         })
         .triggerHandler("change");
 
@@ -150,7 +215,17 @@ $(document).ready(function() {
         })
         .triggerHandler("change");
 
-    var publicKeyPopup = $("#ssh-public-key-popup");
+    publicAccessEl
+        .change(function() {
+            if (this.checked) {
+                $("#row-users").hide();
+                $("#row-review_groups").hide();
+            } else {
+                $("#row-users").show();
+                $("#row-review_groups").show();
+            }
+        })
+        .triggerHandler("change");
 
     $("#show-ssh-key-link").toggle(function() {
         $(this).text("Hide SSH Public Key");

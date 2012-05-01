@@ -80,6 +80,16 @@ setup(name=PACKAGE_NAME,
               'rb-site = reviewboard.cmdline.rbsite:main',
               'rbssh = reviewboard.cmdline.rbssh:main',
           ],
+          'reviewboard.hosting_services': [
+              'bitbucket = reviewboard.hostingsvcs.bitbucket:Bitbucket',
+              'codebasehq = reviewboard.hostingsvcs.codebasehq:CodebaseHQ',
+              'fedorahosted = '
+                  'reviewboard.hostingsvcs.fedorahosted:FedoraHosted',
+              'github = reviewboard.hostingsvcs.github:GitHub',
+              'gitorious = reviewboard.hostingsvcs.gitorious:Gitorious',
+              'googlecode = reviewboard.hostingsvcs.googlecode:GoogleCode',
+              'sourceforge = reviewboard.hostingsvcs.sourceforge:SourceForge',
+          ],
           'reviewboard.scmtools': [
               'bzr = reviewboard.scmtools.bzr:BZRTool',
               'clearcase = reviewboard.scmtools.clearcase:ClearCaseTool',

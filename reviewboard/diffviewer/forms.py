@@ -159,7 +159,7 @@ class UploadDiffForm(forms.Form):
                 not f.binary and
                 not f.deleted and
                 (check_existance and
-                 not tool.file_exists(filename, revision))):
+                 not self.repository.get_file_exists(filename, revision))):
                 raise FileNotFoundError(filename, revision)
 
             f.origFile = filename

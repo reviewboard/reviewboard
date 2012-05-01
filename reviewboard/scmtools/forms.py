@@ -1,13 +1,20 @@
 import imp
+import logging
 import re
 import sys
 
 from django import forms
+from django.contrib.admin.helpers import Fieldset
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.datastructures import SortedDict
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.hostingsvcs.errors import AuthorizationError
+from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.service import get_hosting_services, \
+                                            get_hosting_service
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
                                         BadHostKeyError, \
@@ -19,234 +26,16 @@ from reviewboard.site.validation import validate_review_groups, validate_users
 
 
 class RepositoryForm(forms.ModelForm):
-    """
-    A specialized form for RepositoryAdmin that makes the "password"
-    field use a PasswordInput widget.
+    """A form for creating and updating repositories.
+
+    This form provides an interface for creating and updating repositories,
+    handling the association with hosting services, linking accounts,
+    dealing with SSH keys and SSL certificates, and more.
     """
 
     # NOTE: The list of fields must match that of the corresponding
     #       bug tracker (not including the hosting_ and bug_tracker_
     #       prefixes), for hosting services matching bug trackers.
-    HOSTING_SERVICE_INFO = SortedDict([
-        ('bitbucket', {
-            'label': _('Bitbucket'),
-            'fields': ['hosting_project_name', 'hosting_owner'],
-            'tools': {
-                'Mercurial': {
-                    'path': 'http://bitbucket.org/%(hosting_owner)s/'
-                            '%(hosting_project_name)s/',
-                    'mirror_path': 'ssh://hg@bitbucket.org/'
-                                   '%(hosting_owner)s/'
-                                   '%(hosting_project_name)s/'
-                },
-            },
-        }),
-        ('fedorahosted', {
-            'label': _('Fedora Hosted'),
-            'fields': ['hosting_project_name'],
-            'hidden_fields': ['raw_file_url', 'username', 'password'],
-            'tools': {
-                'Git': {
-                    'path': 'git://git.fedorahosted.org/git/'
-                            '%(hosting_project_name)s.git',
-                    'mirror_path': 'git://git.fedorahosted.org/git/'
-                                    '%(hosting_project_name)s.git',
-                    'raw_file_url': 'http://git.fedorahosted.org/git/?p='
-                                    '%(hosting_project_name)s.git;'
-                                    'a=blob_plain;'
-                                    'f=<filename>;h=<revision>'
-                },
-                'Mercurial': {
-                    'path': 'http://hg.fedorahosted.org/hg/'
-                            '%(hosting_project_name)s/',
-                    'mirror_path': 'https://hg.fedorahosted.org/hg/'
-                                   '%(hosting_project_name)s/'
-                },
-                'Subversion': {
-                    'path': 'http://svn.fedorahosted.org/svn/'
-                            '%(hosting_project_name)s/',
-                    'mirror_path': 'https://svn.fedorahosted.org/svn/'
-                                   '%(hosting_project_name)s/',
-                },
-            },
-        }),
-        ('github', {
-            'label': _('GitHub'),
-            'fields': ['hosting_project_name', 'hosting_owner'],
-            'hidden_fields': ['raw_file_url','username', 'password'],
-            'tools': {
-                'Git': {
-                    'path': 'git://github.com/%(hosting_owner)s/'
-                            '%(hosting_project_name)s.git',
-                    'mirror_path': 'git@github.com:%(hosting_owner)s/'
-                                   '%(hosting_project_name)s.git',
-                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
-                                    '%(hosting_owner)s/'
-                                    '%(hosting_project_name)s/'
-                                    '<revision>'
-                },
-            },
-        }),
-        ('github-private', {
-            'label': _('GitHub (Private)'),
-            'fields': ['hosting_project_name', 'hosting_owner', 'github_api_token'],
-            'hidden_fields': ['raw_file_url', 'username', 'password'],
-            'tools': {
-                'Git': {
-                    'path': 'git@github.com:%(hosting_owner)s/'
-                            '%(hosting_project_name)s.git',
-                    'mirror_path': '',
-                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
-                                    '%(hosting_owner)s/'
-                                    '%(hosting_project_name)s/'
-                                    '<revision>'
-                                    '?login=%(hosting_owner)s'
-                                    '&token=%(github_api_token)s'
-                },
-            },
-        }),
-        ('github-private-org', {
-            'label': _('GitHub (Private Organization)'),
-            'fields': ['hosting_project_name', 'hosting_owner', 'github_api_token',
-                       'username'],
-            'hidden_fields': ['raw_file_url', 'password'],
-            'tools': {
-                'Git': {
-                    'path': 'git@github.com:%(hosting_owner)s/'
-                            '%(hosting_project_name)s.git',
-                    'mirror_path': '',
-                    'raw_file_url': 'http://github.com/api/v2/yaml/blob/show/'
-                                    '%(hosting_owner)s/'
-                                    '%(hosting_project_name)s/'
-                                    '<revision>'
-                                    '?login=%(username)s'
-                                    '&token=%(github_api_token)s'
-                },
-            },
-        }),
-        ('gitorious', {
-            'label': _('Gitorious'),
-            'fields': ['project_slug', 'repository_name'],
-            'hidden_fields': ['raw_file_url','username', 'password'],
-            'tools': {
-                'Git': {
-                    'path': 'git://gitorious.org/%(project_slug)s/'
-                            '%(repository_name)s.git',
-                    'mirror_path': 'http://git.gitorious.org/%(project_slug)s/'
-                                   '%(repository_name)s.git',
-                    'raw_file_url': 'http://git.gitorious.org/%(project_slug)s/'
-                                    '%(repository_name)s/blobs/raw/<revision>'
-                },
-            },
-        }),
-        ('googlecode', {
-            'label': _('Google Code'),
-            'fields': ['hosting_project_name'],
-            'tools': {
-                'Mercurial': {
-                    'path': 'http://%(hosting_project_name)s'
-                            '.googlecode.com/hg',
-                    'mirror_path': 'https://%(hosting_project_name)s'
-                                   '.googlecode.com/hg',
-                },
-                'Subversion': {
-                    'path': 'http://%(hosting_project_name)s'
-                            '.googlecode.com/svn',
-                    'mirror_path': 'https://%(hosting_project_name)s'
-                                   '.googlecode.com/svn',
-                },
-            },
-        }),
-        ('sourceforge', {
-            'label': _('SourceForge'),
-            'fields': ['hosting_project_name'],
-            'tools': {
-                'Bazaar': {
-                    'path': 'bzr://%(hosting_project_name)s'
-                            '.bzr.sourceforge.net/bzrroot/'
-                            '%(hosting_project_name)s',
-                    'mirror_path': 'bzr+ssh://%(hosting_project_name)s'
-                                   '.bzr.sourceforge.net/bzrroot/'
-                                   '%(hosting_project_name)s',
-                },
-                'CVS': {
-                    'path': ':pserver:anonymous@%(hosting_project_name)s'
-                            '.cvs.sourceforge.net:/cvsroot/'
-                            '%(hosting_project_name)s',
-                    'mirror_path': '%(hosting_project_name)s'
-                                   '.cvs.sourceforge.net/cvsroot/'
-                                   '%(hosting_project_name)s',
-                },
-                'Mercurial': {
-                    'path': 'http://%(hosting_project_name)s'
-                            '.hg.sourceforge.net:8000/hgroot/'
-                            '%(hosting_project_name)s',
-                    'mirror_path': 'ssh://%(hosting_project_name)s'
-                                   '.hg.sourceforge.net/hgroot/'
-                                   '%(hosting_project_name)s',
-                },
-                'Subversion': {
-                    'path': 'http://%(hosting_project_name)s'
-                            '.svn.sourceforge.net/svnroot/'
-                            '%(hosting_project_name)s',
-                    'mirror_path': 'https://%(hosting_project_name)s'
-                                   '.svn.sourceforge.net/svnroot/'
-                                   '%(hosting_project_name)s',
-                },
-                # TODO: Support Git
-            },
-        }),
-        ('codebasehq', {
-            'label': _('Codebase HQ'),
-            'fields': ['hosting_project_name', 'codebase_group_name',
-                       'codebase_repo_name', 'codebase_api_username',
-                       'codebase_api_key'],
-            'hidden_fields': ['username', 'password', 'raw_file_url'],
-            'tools': {
-                'Git': {
-                    'username': '%(codebase_api_username)s',
-                    'password': '%(codebase_api_key)s',
-                    'path': 'git@codebasehq.com:%(codebase_group_name)s/'
-                            '%(hosting_project_name)s/'
-                            '%(codebase_repo_name)s.git',
-                    'raw_file_url': 'https://api3.codebasehq.com/'
-                                     '%(hosting_project_name)s/'
-                                     '%(codebase_repo_name)s/blob/'
-                                     '<revision>',
-                },
-
-                #
-                # NOTE: Subversion doesn't work because it requires a
-                #       standard username and password, not an API Username/token.
-                #       We don't have a way of requesting that data just for this
-                #       type.
-                #
-                #'Subversion': {
-                #    'path': 'https://%(username)s@%(codebase_group_name)s/'
-                #            '%(hosting_project_name)s/%(codebase_repo_name)s.svn',
-                #},
-
-                # NOTE: Mercurial doesn't work because they don't use HTTP Basic
-                #       Auth for the authentication. A valid browser session cookie
-                #       is needed instead.
-                #
-                #'Mercurial': {
-                #    'username': '%(codebase_api_username)s',
-                #    'password': '%(codebase_api_key)s',
-                #    'path': 'https://%(codebase_group_name)s.codebasehq.com/'
-                #            'projects/%(hosting_project_name)s/repositories/'
-                #            '%(codebase_repo_name)s/'
-                #},
-
-                # TODO: Support Bazaar
-            }
-        }),
-        ('custom', {
-            'label': _('Custom'),
-            'fields': ['path', 'mirror_path'],
-        }),
-    ])
-
     BUG_TRACKER_INFO = SortedDict([
         ('none', {
             'label': _('None'),
@@ -272,12 +61,6 @@ class RepositoryForm(forms.ModelForm):
         }),
         ('github', {
             'label': 'GitHub',
-            'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
-            'format': 'http://github.com/%(bug_tracker_owner)s/'
-                      '%(bug_tracker_project_name)s/issues#issue/%%s',
-        }),
-        ('github-private', {
-            'label': 'GitHub (Private)',
             'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
             'format': 'http://github.com/%(bug_tracker_owner)s/'
                       '%(bug_tracker_project_name)s/issues#issue/%%s',
@@ -310,18 +93,12 @@ class RepositoryForm(forms.ModelForm):
         }),
     ])
 
-    HOSTING_FIELDS = [
-        "path", "mirror_path", "hosting_owner", "hosting_project_name",
-        "github_api_token", "project_slug", "repository_name",
-    ]
-
-    BUG_TRACKER_FIELDS = [
-        "bug_tracker_base_url", "bug_tracker_owner",
-        "bug_tracker_project_name", "bug_tracker",
-    ]
-
     FORMAT_STR_RE = re.compile(r'%\(([A-Za-z0-9_-]+)\)s')
 
+    REPOSITORY_INFO_FIELDSET = _("Repository Information")
+    NO_HOSTING_SERVICE_ID = 'custom'
+    DEFAULT_PLAN_ID = 'default'
+    DEFAULT_PLAN_NAME = _('Default')
 
     # Host trust state
     reedit_repository = forms.BooleanField(
@@ -332,54 +109,42 @@ class RepositoryForm(forms.ModelForm):
         label=_("I trust this host"),
         required=False)
 
-    # Fields
+    # Repository Hosting fields
     hosting_type = forms.ChoiceField(
         label=_("Hosting service"),
         required=True,
-        choices=[(service_id, info['label'])
-                 for service_id, info in HOSTING_SERVICE_INFO.iteritems()],
-        initial="custom")
+        initial=NO_HOSTING_SERVICE_ID)
 
-    hosting_owner = forms.CharField(
-        label=_("Project's owner"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+    hosting_account = forms.ModelChoiceField(
+        label=_('Account'),
+        required=True,
+        empty_label=_('<Link a new account>'),
+        help_text=_("Link this repository to an account on the hosting "
+                    "service."),
+        queryset=HostingServiceAccount.objects.none())
 
-    hosting_project_name = forms.CharField(
-        label=_("Project name"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+    hosting_account_username = forms.CharField(
+        label=_('Account username'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
-    project_slug = forms.CharField(
-        label=_("Project slug"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+    hosting_account_password = forms.CharField(
+        label=_('Account password'),
+        required=True,
+        widget=forms.PasswordInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
-    repository_name = forms.CharField(
-        label=_("Repository name"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
-
-    github_api_token = forms.CharField(
-        label=_("API token"),
-        max_length=128,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('Your GitHub API token. This is needed in order to access '
-                    'files on this repository. You can find this on your '
-                    '<a href="http://github.com/account">Account</a> page '
-                    'under "Account Admin."'))
-
+    # Repository Information fields
     tool = forms.ModelChoiceField(
         label=_("Repository type"),
         required=True,
         empty_label=None,
         queryset=Tool.objects.all())
 
+    repository_plan = forms.ChoiceField(
+        label=_('Repository plan'),
+        required=True)
+
+    # Bug Tracker fields
     bug_tracker_use_hosting = forms.BooleanField(
         label=_("Use hosting service's bug tracker"),
         required=False)
@@ -411,111 +176,147 @@ class RepositoryForm(forms.ModelForm):
         help_text=_("This should be the path to the bug tracker for this "
                     "repository."))
 
-    codebase_group_name = forms.CharField(
-        label=_('Codebase HQ domain name'),
-        max_length=128,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('The subdomain used to access your Codebase account'))
-
-    codebase_repo_name = forms.CharField(
-        label=_('Repository Short Name'),
-        max_length=128,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('The short name of your repository. This can be found in '
-                    'the "Repository Admin/Properties" page'))
-
-    codebase_api_username = forms.CharField(
-        label=_('API Username'),
-        max_length=128,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_('Your Codebase API Username. You can find this in the '
-                    'API Credentials section of the "My Profile" page at '
-                    'http://&lt;groupname&gt;.codebasehq.com/settings/profile/'))
-
-    codebase_api_key = forms.CharField(
-        label=_('API Key'),
-        max_length=40,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '40'}))
-
     def __init__(self, *args, **kwargs):
         super(RepositoryForm, self).__init__(*args, **kwargs)
 
         self.hostkeyerror = None
         self.certerror = None
         self.userkeyerror = None
+        self.hosting_account_linked = False
+        self.local_site_name = None
+        self.repository_forms = {}
+        self.hosting_service_info = {}
 
-        local_site_name = None
-
+        # Determine the local_site that will be associated with any
+        # repository coming from this form.
+        #
+        # We're careful to disregard any local_sites that are specified
+        # from the form data. The caller needs to pass in a local_site
+        # as initial data to ensure that it will be used.
         if self.instance and self.instance.local_site:
-            local_site_name = self.instance.local_site.name
+            self.local_site_name = self.instance.local_site.name
         elif self.fields['local_site'].initial:
-            local_site_name = self.fields['local_site'].initial.name
+            self.local_site_name = self.fields['local_site'].initial.name
+
+        if self.local_site_name:
+            self.local_site = LocalSite.objects.get(name=self.local_site_name)
+        else:
+            self.local_site = None
+
+        # Grab the entire list of HostingServiceAccounts that can be
+        # used by this form. When the form is actually being used by the
+        # user, the listed accounts will consist only of the ones available
+        # for the selected hosting service.
+        hosting_accounts = HostingServiceAccount.objects.accessible(
+            local_site=self.local_site)
+        self.fields['hosting_account'].queryset = hosting_accounts
+
+        # Standard forms don't support 'instance', so don't pass it through
+        # to any created hosting service forms.
+        if 'instance' in kwargs:
+            kwargs.pop('instance')
+
+        # Load the list of repository forms and hosting services.
+        hosting_service_choices = []
+
+        for hosting_service_id, hosting_service in get_hosting_services():
+            hosting_service_choices.append((hosting_service_id,
+                                            hosting_service.name))
+
+            self.repository_forms[hosting_service_id] = {}
+            self.hosting_service_info[hosting_service_id] = {
+                'scmtools': hosting_service.supported_scmtools,
+                'plans': [],
+                'accounts': [
+                    {
+                        'pk': account.pk,
+                        'username': account.username,
+                    }
+                    for account in hosting_accounts
+                    if account.service_name == hosting_service_id
+                ],
+            }
+
+            try:
+                if hosting_service.repository_plans:
+                    for type_id, info in hosting_service.repository_plans:
+                        repository_form = info.get('repository_form', None)
+
+                        if repository_form:
+                            self._load_repository_form(hosting_service_id,
+                                                       type_id,
+                                                       info['name'],
+                                                       repository_form,
+                                                       *args, **kwargs)
+                elif hosting_service.repository_form:
+                    self._load_repository_form(hosting_service_id,
+                                               self.DEFAULT_PLAN_ID,
+                                               self.DEFAULT_PLAN_NAME,
+                                               hosting_service.repository_form,
+                                               *args, **kwargs)
+            except Exception, e:
+                logging.error('Error loading hosting service %s: %s'
+                              % (hosting_service_id, e),
+                              exc_info=1)
+
+        # Build the list of hosting service choices, sorted, with
+        # "None" being first.
+        hosting_service_choices.sort(key=lambda x: x[1])
+        hosting_service_choices.insert(0, (self.NO_HOSTING_SERVICE_ID,
+                                           _('(None - Custom Repository)')))
+        self.fields['hosting_type'].choices = hosting_service_choices
 
         self.public_key = \
-            sshutils.get_public_key(sshutils.get_user_key(local_site_name))
+            sshutils.get_public_key(sshutils.get_user_key(self.local_site_name))
 
         self._populate_hosting_service_fields()
         self._populate_bug_tracker_fields()
 
+    def _load_repository_form(self, hosting_service_id, repo_type_id,
+                              repo_type_label, form_class, *args, **kwargs):
+        """Loads a hosting service form.
+
+        The form will be instantiated and added to the list of forms to be
+        rendered, cleaned, loaded, and saved.
+        """
+        form = form_class(*args, **kwargs)
+
+        self.repository_forms[hosting_service_id][repo_type_id] = form
+
+        self.hosting_service_info[hosting_service_id]['plans'].append({
+            'type': repo_type_id,
+            'label': unicode(repo_type_label),
+        })
+
+        if self.instance:
+            form.load(self.instance)
+
     def _populate_hosting_service_fields(self):
-        if (not self.instance or
-            not self.instance.path):
-            return
+        """Populates all the main hosting service fields in the form.
 
-        tool_name = self.instance.tool.name
+        This populates the hosting service type and the repository plan
+        on the form. These are only set if operating on an existing
+        repository.
+        """
+        if self.instance:
+            hosting_account = self.instance.hosting_account
 
-        for service_id, info in self.HOSTING_SERVICE_INFO.iteritems():
-            if (service_id == 'custom' or tool_name not in info['tools']):
-                continue
+            if hosting_account:
+                self.fields['hosting_type'].initial = \
+                    hosting_account.service_name
 
-            field_info = info['tools'][tool_name]
+            repository_plan = self.instance.extra_data.get('repository_plan',
+                                                           None)
 
-            is_path_match, field_data = \
-                self._match_url(self.instance.path,
-                                field_info['path'],
-                                info['fields'])
-
-            if not is_path_match:
-                continue
-
-            if ('mirror_path' in field_info and
-                not self._match_url(self.instance.mirror_path,
-                                    field_info['mirror_path'], [])[0]):
-                continue
-
-            all_extras_match = True
-
-            for extra_field, value in field_info.iteritems():
-                if extra_field not in ('path', 'mirror_path'):
-                    is_match, extra_field_data = \
-                        self._match_url(getattr(self.instance, extra_field),
-                                        value,
-                                        info['fields'])
-
-                    if not is_match:
-                        all_extras_match = False
-                        break
-
-                    field_data.update(extra_field_data)
-
-            if not all_extras_match:
-                continue
-
-            # It all matched.
-            self.fields['hosting_type'].initial = service_id
-
-            for key, value in field_data.iteritems():
-                self.fields[key].initial = value
-
-            break
+            if repository_plan:
+                self.fields['repository_plan'].initial = repository_plan
 
     def _populate_bug_tracker_fields(self):
         if not self.instance or not self.instance.bug_tracker:
             return
+
+        # XXX
+        return
 
         for tracker_id, info in self.BUG_TRACKER_INFO.iteritems():
             if tracker_id == 'none':
@@ -550,26 +351,134 @@ class RepositoryForm(forms.ModelForm):
                 break
 
     def _clean_hosting_info(self):
+        """Clean the hosting service information.
+
+        If using a hosting service, this will validate that the data
+        provided is valid on that hosting service. Then it will create an
+        account and link it, if necessary, with the hosting service.
+        """
         hosting_type = self.cleaned_data['hosting_type']
 
         if hosting_type == 'custom':
             return
 
-        # Should be caught during validation.
-        assert hosting_type in self.HOSTING_SERVICE_INFO
-        info = self.HOSTING_SERVICE_INFO[hosting_type]
+        # This should have been caught during validation, so we can assume
+        # it's fine.
+        hosting_service = get_hosting_service(hosting_type)
+        assert hosting_service
 
+        # Validate that the provided tool is valid for the hosting service.
         tool_name = self.cleaned_data['tool'].name
-        assert tool_name in info['tools']
 
-        field_data = {}
+        if tool_name not in hosting_service.supported_scmtools:
+            self.errors['tool'] = self.error_class([
+                _('This tool is not supported on the given hosting service')
+            ])
+            return
 
-        for field in info['fields']:
-            field_data[field] = self.cleaned_data[field]
+        # Now make sure all the account info is correct.
+        hosting_account = self.cleaned_data['hosting_account']
+        username = self.cleaned_data['hosting_account_username']
+        password = self.cleaned_data['hosting_account_password']
 
-        for field, value in info['tools'][tool_name].iteritems():
-            self.cleaned_data[field] = value % field_data
-            self.data[field] = value % field_data
+        if not hosting_account and not username:
+            self.errors['hosting_account'] = self.error_class([
+                _('An account must be linked in order to use this hosting '
+                  'service'),
+            ])
+            return
+
+        if not hosting_account:
+            # See if this account with the supplied credentials already
+            # exists. If it does, we don't want to create a new entry.
+            try:
+                hosting_account = HostingServiceAccount.objects.get(
+                    service_name=hosting_type,
+                    username=username,
+                    local_site=self.local_site)
+            except HostingServiceAccount.DoesNotExist:
+                # That's fine. We're just going to create it later.
+                pass
+
+        # If the hosting account needs to authorize and link with an external
+        # service, attempt to do so and watch for any errors.
+        if not hosting_account and hosting_service.needs_authorization:
+            hosting_account = HostingServiceAccount(service_name=hosting_type,
+                                                    username=username)
+
+            try:
+                hosting_account.service.authorize(
+                    username, password, local_site_name=self.local_site_name)
+
+                # Flag that we've linked the account. If there are any
+                # validation errors, and this flag is set, we tell the user
+                # that we successfully linked and they don't have to do it
+                # again.
+                self.hosting_account_linked = True
+            except AuthorizationError, e:
+                self.errors['hosting_account'] = self.error_class([
+                    _('Unable to link the account: %s') % e,
+                ])
+                return
+            except Exception, e:
+                self.errors['hosting_account'] = self.error_class([
+                    _('Unknown error when linking the account: %s') % e,
+                ])
+                return
+
+            hosting_account.save()
+
+        self.data['hosting_account'] = hosting_account
+        self.cleaned_data['hosting_account'] = hosting_account
+
+        # Grab the list of fields for population below. We have to do this
+        # differently depending on whether or not this hosting service has
+        # different repository plans.
+        if hosting_service.repository_plans:
+            plan = self.cleaned_data['repository_plan']
+            fields = None
+
+            for plan_name, info in hosting_service.repository_plans:
+                if plan_name == plan:
+                    fields = info['repository_fields']
+                    break
+
+            # We should have already validated this.
+            assert fields is not None
+        else:
+            plan = self.DEFAULT_PLAN_ID
+            fields = hosting_service.repository_plans
+
+        # Set the main repository fields (Path, Mirror Path, etc.) based on
+        # the field definitions in the hosting service.
+        #
+        # This will take into account the hosting service's form data for
+        # the given repository plan, the main form data, and the hosting
+        # account information.
+        #
+        # It's expected that the required fields will have validated by now.
+        repository_form = self.repository_forms[hosting_type][plan]
+        field_vars = repository_form.cleaned_data.copy()
+        field_vars.update(self.cleaned_data)
+        field_vars['hosting_account_username'] = hosting_account.username
+
+        for field, value in fields[tool_name].iteritems():
+            try:
+                self.cleaned_data[field] = value % field_vars
+            except KeyError, e:
+                logging.error('Failed to generate %s field for hosting '
+                              'service %s using %s and %r: Missing key %s'
+                              % (field, hosting_type, value,
+                                 field_vars, e),
+                              exc_info=1)
+                raise forms.ValidationError([
+                    _('Internal error when generating %(field)s field '
+                      '(Missing key "%(key)s"). '
+                      'Please report this.') % {
+                          'field': field,
+                          'key': e,
+                      }
+                ])
 
     def _clean_bug_tracker_info(self):
         use_hosting = self.cleaned_data['bug_tracker_use_hosting']
@@ -602,20 +511,82 @@ class RepositoryForm(forms.ModelForm):
         self.data['bug_tracker'] = bug_tracker_url
 
     def full_clean(self):
+        extra_cleaned_data = {}
+        extra_errors = {}
+
         if self.data:
-            hosting_type = (self['hosting_type'].data or
-                            self.fields['hosting_type'].initial)
-            use_hosting = (self['bug_tracker_use_hosting'].data or
-                           self.fields['bug_tracker_use_hosting'].initial)
+            hosting_type = self._get_field_data('hosting_type')
+            hosting_service = get_hosting_service(hosting_type)
 
-            self.fields['path'].required = (hosting_type == "custom")
-            self.fields['bug_tracker_type'].required = not use_hosting
+            bug_tracker_use_hosting = \
+                self._get_field_data('bug_tracker_use_hosting')
+            new_hosting_account = (
+                hosting_type != self.NO_HOSTING_SERVICE_ID and
+                not self._get_field_data('hosting_account'))
 
-        return super(RepositoryForm, self).full_clean()
+            self.fields['path'].required = \
+                (hosting_type == self.NO_HOSTING_SERVICE_ID)
+            self.fields['bug_tracker_type'].required = \
+                not bug_tracker_use_hosting
+
+            # The repository plan will only be listed if the hosting service
+            # lists some plans. Otherwise, there's nothing to require.
+
+            self.fields['repository_plan'].required = \
+                (hosting_service and hosting_service.repository_plans)
+
+            if hosting_service:
+                self.fields['repository_plan'].choices = [
+                    (id, info['name'])
+                    for id, info in hosting_service.repository_plans
+                ]
+
+            # We want to show this as required (in the label), but not
+            # actually require, since we use a blank entry as
+            # "Link new account."
+            self.fields['hosting_account'].required = False
+
+            # Only require a username and password if not using an existing
+            # hosting account.
+            for field in ('hosting_account_username',
+                          'hosting_account_password'):
+                self.fields[field].required = new_hosting_account
+
+            plan = (self._get_field_data('repository_plan') or
+                    self.DEFAULT_PLAN_ID)
+
+            if hosting_type in self.repository_forms:
+                # Validate the hosting service form and store any
+                # data or errors for later.
+                form = self.repository_forms[hosting_type][plan]
+
+                if not form.is_valid():
+                    extra_cleaned_data.update(form.cleaned_data)
+                else:
+                    extra_errors.update(form.errors)
+        else:
+            # Validate every hosting service form and store any
+            # data or errors for later.
+            for plans in self.repository_forms.values():
+                for form in plans:
+                    if form.is_valid():
+                        extra_cleaned_data.update(form.cleaned_data)
+                    else:
+                        extra_errors.update(form.errors)
+
+        super(RepositoryForm, self).full_clean()
+
+        if self.is_valid():
+            self.cleaned_data.update(extra_cleaned_data)
+        else:
+            self.errors.update(extra_errors)
+
+        # Undo the hosting account above. This is so that the field will
+        # display correctly.
+        self.fields['hosting_account'].required = True
 
     def clean(self):
-        """
-        Performs validation on the form.
+        """Performs validation on the form.
 
         This will check the form fields for errors, calling out to the
         various clean_* methods.
@@ -627,14 +598,18 @@ class RepositoryForm(forms.ModelForm):
         This will also build repository and bug tracker URLs based on other
         fields set in the form.
         """
-        self._clean_hosting_info()
-        self._clean_bug_tracker_info()
+        if not self.errors:
+            self._clean_hosting_info()
+            self._clean_bug_tracker_info()
 
-        validate_review_groups(self)
-        validate_users(self)
+            validate_review_groups(self)
+            validate_users(self)
 
-        if not self.cleaned_data['reedit_repository']:
-            self._verify_repository_path()
+            # The clean/validation functions could create new errors, so
+            # skip validating the repository path if everything else isn't
+            # clean.
+            if not self.errors and not self.cleaned_data['reedit_repository']:
+                self._verify_repository_path()
 
         return super(RepositoryForm, self).clean()
 
@@ -645,12 +620,25 @@ class RepositoryForm(forms.ModelForm):
         return self.cleaned_data['mirror_path'].strip()
 
     def clean_bug_tracker_base_url(self):
-        data = self.cleaned_data['bug_tracker_base_url']
-        return data.rstrip("/")
+        return self.cleaned_data['bug_tracker_base_url'].rstrip('/')
+
+    def clean_hosting_type(self):
+        """Validates that the hosting type represents a valid hosting service.
+
+        This won't do anything if no hosting service is used.
+        """
+        hosting_type = self.cleaned_data['hosting_type']
+
+        if hosting_type != self.NO_HOSTING_SERVICE_ID:
+            hosting_service = get_hosting_service(hosting_type)
+
+            if not hosting_service:
+                raise forms.ValidationError(['Not a valid hosting service'])
+
+        return hosting_type
 
     def clean_tool(self):
-        """
-        Checks the SCMTool used for this repository for dependencies.
+        """Checks the SCMTool used for this repository for dependencies.
 
         If one or more dependencies aren't found, they will be presented
         as validation errors.
@@ -684,19 +672,52 @@ class RepositoryForm(forms.ModelForm):
         return tool
 
     def is_valid(self):
-        """
-        Returns whether or not the form is valid.
+        """Returns whether or not the form is valid.
 
         This will return True if the form fields are all valid, if there's
         no certificate error, host key error, and if the form isn't
         being re-displayed after canceling an SSH key or HTTPS certificate
         verification.
+
+        This also takes into account the validity of the hosting service form
+        for the selected hosting service and repository plan.
         """
-        return (super(RepositoryForm, self).is_valid() and
-                not self.hostkeyerror and
+        if not super(RepositoryForm, self).is_valid():
+            return False
+
+        hosting_type = self.cleaned_data['hosting_type']
+        plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
+
+        return (not self.hostkeyerror and
                 not self.certerror and
                 not self.userkeyerror and
-                not self.cleaned_data['reedit_repository'])
+                not self.cleaned_data['reedit_repository'] and
+                (hosting_type not in self.repository_forms or
+                 self.repository_forms[hosting_type][plan].is_valid()))
+
+    def save(self, commit=True, *args, **kwargs):
+        """Saves the repository.
+
+        This will thunk out to the hosting service form to save any extra
+        repository data used for the hosting service, and saves the
+        repository plan, if any.
+        """
+        repository = super(RepositoryForm, self).save(commit=False,
+                                                      *args, **kwargs)
+
+        repository.extra_data['repository_plan'] = \
+            self.cleaned_data['repository_plan']
+
+        hosting_type = self.cleaned_data['hosting_type']
+        plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
+
+        if hosting_type in self.repository_forms:
+            self.repository_forms[hosting_type][plan].save(repository)
+
+        if commit:
+            repository.save()
+
+        return repository
 
     def _match_url(self, url, format, fields):
         """
@@ -767,21 +788,12 @@ class RepositoryForm(forms.ModelForm):
                 ['Repository path cannot be empty'])
             return
 
-        local_site_name = None
-
-        if self.cleaned_data['local_site']:
-            try:
-                local_site = self.cleaned_data['local_site']
-                local_site_name = local_site.name
-            except LocalSite.DoesNotExist, e:
-                raise forms.ValidationError(e)
-
         while 1:
             # Keep doing this until we have an error we don't want
             # to ignore, or it's successful.
             try:
                 scmtool_class.check_repository(path, username, password,
-                                               local_site_name)
+                                               self.local_site_name)
 
                 # Success.
                 break
@@ -791,7 +803,7 @@ class RepositoryForm(forms.ModelForm):
                         sshutils.replace_host_key(e.hostname,
                                                   e.raw_expected_key,
                                                   e.raw_key,
-                                                  local_site_name)
+                                                  self.local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -801,7 +813,7 @@ class RepositoryForm(forms.ModelForm):
                 if self.cleaned_data['trust_host']:
                     try:
                         sshutils.add_host_key(e.hostname, e.raw_key,
-                                              local_site_name)
+                                              self.local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -810,7 +822,8 @@ class RepositoryForm(forms.ModelForm):
             except UnverifiedCertificateError, e:
                 if self.cleaned_data['trust_host']:
                     try:
-                        scmtool_class.accept_certificate(path, local_site_name)
+                        scmtool_class.accept_certificate(path,
+                                                         self.local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:
@@ -828,6 +841,9 @@ class RepositoryForm(forms.ModelForm):
                 except UnicodeDecodeError:
                     text = str(e).decode('ascii', 'replace')
                 raise forms.ValidationError(text)
+
+    def _get_field_data(self, field):
+        return self[field].data or self.fields[field].initial
 
     class Meta:
         model = Repository

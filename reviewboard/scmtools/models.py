@@ -2,7 +2,9 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from djblets.util.fields import JSONField
 
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.managers import RepositoryManager, ToolManager
 from reviewboard.site.models import LocalSite
 
@@ -68,7 +70,16 @@ class Repository(models.Model):
                     "revision and filename parts of the path."))
     username = models.CharField(max_length=32, blank=True)
     password = models.CharField(max_length=128, blank=True)
+    extra_data = JSONField(default={})
+
     tool = models.ForeignKey(Tool, related_name="repositories")
+    hosting_account = models.ForeignKey(
+        HostingServiceAccount,
+        related_name='repositories',
+        verbose_name=_('Hosting service account'),
+        blank=True,
+        null=True)
+
     bug_tracker = models.CharField(
         _('Bug tracker URL'),
         max_length=256,
@@ -121,6 +132,41 @@ class Repository(models.Model):
     def get_scmtool(self):
         cls = self.tool.get_scmtool_class()
         return cls(self)
+
+    @property
+    def hosting_service(self):
+        if self.hosting_account:
+            return self.hosting_account.service
+
+        return None
+
+    def get_file(self, path, revision):
+        """Returns a file from the repository.
+
+        This will attempt to retrieve the file from the repository. If the
+        repository is backed by a hosting service, it will go through that.
+        Otherwise, it will attempt to directly access the repository.
+        """
+        hosting_service = self.hosting_service
+
+        if hosting_service:
+            return hosting_service.get_file(self, path, revision)
+        else:
+            return self.get_scmtool().get_file(path, revision)
+
+    def get_file_exists(self, path, revision):
+        """Returns whether or not a file exists in the repository.
+
+        If the repository is backed by a hosting service, this will go
+        through that. Otherwise, it will attempt to directly access the
+        repository.
+        """
+        hosting_service = self.hosting_service
+
+        if hosting_service:
+            return hosting_service.get_file_exists(self, path, revision)
+        else:
+            return self.get_scmtool().file_exists(path, revision)
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the repository.
