@@ -39,6 +39,16 @@ class HostingService(object):
         assert account
         self.account = account
 
+    def is_authorized(self):
+        """Returns whether or not the account is currently authorized.
+
+        An account may no longer be authorized if the hosting service
+        switches to a new API that doesn't match the current authorization
+        records. This function will determine whether the account is still
+        considered authorized.
+        """
+        return False
+
     def authorize(self, username, password, local_site_name=None,
                   *args, **kwargs):
         raise NotImplementedError

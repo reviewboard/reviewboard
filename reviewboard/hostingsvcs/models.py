@@ -30,8 +30,19 @@ class HostingServiceAccount(models.Model):
 
             if cls:
                 self._service = cls(self)
+            else:
+                self._service = None
 
         return self._service
+
+    @property
+    def is_authorized(self):
+        service = self.service
+
+        if service:
+            return service.is_authorized()
+        else:
+            return False
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to the account.

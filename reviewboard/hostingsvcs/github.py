@@ -155,6 +155,10 @@ class GitHub(HostingService):
         self.account.data['authorization'] = rsp
         self.account.save()
 
+    def is_authorized(self):
+        return ('authorization' in self.account.data and
+                'token' in self.account.data['authorization'])
+
     def get_file(self, repository, path, revision, *args, **kwargs):
         url = '%sgit/blobs/%s' % (self._get_repo_api_url(repository), revision)
 
