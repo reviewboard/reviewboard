@@ -431,23 +431,7 @@ class RepositoryForm(forms.ModelForm):
         self.data['hosting_account'] = hosting_account
         self.cleaned_data['hosting_account'] = hosting_account
 
-        # Grab the list of fields for population below. We have to do this
-        # differently depending on whether or not this hosting service has
-        # different repository plans.
-        if hosting_service.repository_plans:
-            plan = self.cleaned_data['repository_plan']
-            fields = None
-
-            for plan_name, info in hosting_service.repository_plans:
-                if plan_name == plan:
-                    fields = info['repository_fields']
-                    break
-
-            # We should have already validated this.
-            assert fields is not None
-        else:
-            plan = self.DEFAULT_PLAN_ID
-            fields = hosting_service.repository_plans
+        plan = self.cleaned_data.get('repository_plan', self.DEFAULT_PLAN_ID)
 
         # Set the main repository fields (Path, Mirror Path, etc.) based on
         # the field definitions in the hosting service.
@@ -460,25 +444,12 @@ class RepositoryForm(forms.ModelForm):
         repository_form = self.repository_forms[hosting_type][plan]
         field_vars = repository_form.cleaned_data.copy()
         field_vars.update(self.cleaned_data)
-        field_vars['hosting_account_username'] = hosting_account.username
 
-        for field, value in fields[tool_name].iteritems():
-            try:
-                self.cleaned_data[field] = value % field_vars
-            except KeyError, e:
-                logging.error('Failed to generate %s field for hosting '
-                              'service %s using %s and %r: Missing key %s'
-                              % (field, hosting_type, value,
-                                 field_vars, e),
-                              exc_info=1)
-                raise forms.ValidationError([
-                    _('Internal error when generating %(field)s field '
-                      '(Missing key "%(key)s"). '
-                      'Please report this.') % {
-                          'field': field,
-                          'key': e,
-                      }
-                ])
+        try:
+            self.cleaned_data.update(hosting_service.get_repository_fields(
+                plan, tool_name, field_vars))
+        except KeyError, e:
+            raise forms.ValidationError([unicode(e)])
 
     def _clean_bug_tracker_info(self):
         use_hosting = self.cleaned_data['bug_tracker_use_hosting']

@@ -110,7 +110,6 @@ class GitHub(HostingService):
     ]
 
     needs_authorization = True
-    hidden_fields = ['raw_file_url', 'username', 'password']
     supported_scmtools = ['Git']
 
     API_URL = 'https://api.github.com/'

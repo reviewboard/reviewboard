@@ -5,6 +5,7 @@ import urllib2
 from pkg_resources import iter_entry_points
 
 from django.utils import simplejson
+from django.utils.translation import ugettext_lazy as _
 
 
 class HostingService(object):
@@ -32,7 +33,6 @@ class HostingService(object):
     repository_form = None
     fields = []
     repository_fields = {}
-    hidden_fields = []
     bug_tracker_url = None
 
     def __init__(self, account):
@@ -58,6 +58,46 @@ class HostingService(object):
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
         return repository.get_scmtool().file_exists(path, revision)
+
+    def get_repository_fields(self, plan, tool_name, field_vars):
+        # Grab the list of fields for population below. We have to do this
+        # differently depending on whether or not this hosting service has
+        # different repository plans.
+        if self.repository_plans:
+            assert plan
+
+            fields = None
+
+            for plan_name, info in self.repository_plans:
+                if plan_name == plan:
+                    fields = info['repository_fields']
+                    break
+
+            assert fields is not None
+        else:
+            fields = self.repository_fields
+
+        new_vars = field_vars.copy()
+        new_vars['hosting_account_username'] = self.account.username
+
+        results = {}
+
+        for field, value in fields[tool_name].iteritems():
+            try:
+                results[field] = value % new_vars
+            except KeyError, e:
+                logging.error('Failed to generate %s field for hosting '
+                              'service %s using %s and %r: Missing key %s'
+                              % (field, unicode(self.name), value, new_vars, e),
+                              exc_info=1)
+                raise KeyError(
+                    _('Internal error when generating %(field)s field '
+                      '(Missing key "%(key)s"). Please report this.') % {
+                          'field': field,
+                          'key': e,
+                      })
+
+        return results
 
     #
     # HTTP utility methods
