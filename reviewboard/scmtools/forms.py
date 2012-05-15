@@ -227,6 +227,7 @@ class RepositoryForm(forms.ModelForm):
             self.hosting_service_info[hosting_service_id] = {
                 'scmtools': hosting_service.supported_scmtools,
                 'plans': [],
+                'needs_authorization': hosting_service.needs_authorization,
                 'accounts': [
                     {
                         'pk': account.pk,
@@ -359,18 +360,18 @@ class RepositoryForm(forms.ModelForm):
         """
         hosting_type = self.cleaned_data['hosting_type']
 
-        if hosting_type == 'custom':
+        if hosting_type == self.NO_HOSTING_SERVICE_ID:
             return
 
         # This should have been caught during validation, so we can assume
         # it's fine.
-        hosting_service = get_hosting_service(hosting_type)
-        assert hosting_service
+        hosting_service_cls = get_hosting_service(hosting_type)
+        assert hosting_service_cls
 
         # Validate that the provided tool is valid for the hosting service.
         tool_name = self.cleaned_data['tool'].name
 
-        if tool_name not in hosting_service.supported_scmtools:
+        if tool_name not in hosting_service_cls.supported_scmtools:
             self.errors['tool'] = self.error_class([
                 _('This tool is not supported on the given hosting service')
             ])
@@ -402,30 +403,35 @@ class RepositoryForm(forms.ModelForm):
 
         # If the hosting account needs to authorize and link with an external
         # service, attempt to do so and watch for any errors.
-        if not hosting_account and hosting_service.needs_authorization:
+        #
+        # If it doesn't need to link with it, we'll just create an entry
+        # with the username and save it.
+        if not hosting_account:
             hosting_account = HostingServiceAccount(service_name=hosting_type,
-                                                    username=username)
+                                                    username=username,
+                                                    local_site=self.local_site)
 
-            try:
-                hosting_account.service.authorize(
-                    username, password, local_site_name=self.local_site_name)
+            if hosting_service_cls.needs_authorization:
+                try:
+                    hosting_account.service.authorize(
+                        username, password,
+                        local_site_name=self.local_site_name)
+                except AuthorizationError, e:
+                    self.errors['hosting_account'] = self.error_class([
+                        _('Unable to link the account: %s') % e,
+                    ])
+                    return
+                except Exception, e:
+                    self.errors['hosting_account'] = self.error_class([
+                        _('Unknown error when linking the account: %s') % e,
+                    ])
+                    return
 
-                # Flag that we've linked the account. If there are any
-                # validation errors, and this flag is set, we tell the user
-                # that we successfully linked and they don't have to do it
-                # again.
-                self.hosting_account_linked = True
-            except AuthorizationError, e:
-                self.errors['hosting_account'] = self.error_class([
-                    _('Unable to link the account: %s') % e,
-                ])
-                return
-            except Exception, e:
-                self.errors['hosting_account'] = self.error_class([
-                    _('Unknown error when linking the account: %s') % e,
-                ])
-                return
-
+            # Flag that we've linked the account. If there are any
+            # validation errors, and this flag is set, we tell the user
+            # that we successfully linked and they don't have to do it
+            # again.
+            self.hosting_account_linked = True
             hosting_account.save()
 
         self.data['hosting_account'] = hosting_account
@@ -444,6 +450,8 @@ class RepositoryForm(forms.ModelForm):
         repository_form = self.repository_forms[hosting_type][plan]
         field_vars = repository_form.cleaned_data.copy()
         field_vars.update(self.cleaned_data)
+
+        hosting_service = hosting_account.service
 
         try:
             self.cleaned_data.update(hosting_service.get_repository_fields(
@@ -522,6 +530,11 @@ class RepositoryForm(forms.ModelForm):
             for field in ('hosting_account_username',
                           'hosting_account_password'):
                 self.fields[field].required = new_hosting_account
+
+            self.fields['hosting_account_username'].required = \
+                new_hosting_account
+            self.fields['hosting_account_password'].required = \
+                (new_hosting_account and hosting_service.needs_authorization)
 
             plan = (self._get_field_data('repository_plan') or
                     self.DEFAULT_PLAN_ID)

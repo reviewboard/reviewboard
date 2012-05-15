@@ -69,8 +69,8 @@ $(document).ready(function() {
     var hostingTypeEl = $("#id_hosting_type"),
         hostingAccountEl = $("#id_hosting_account"),
         hostingAccountRowEl = $(".field-hosting_account"),
-        hostingAccountDetailsEls = $(".field-hosting_account_username, " +
-                                     ".field-hosting_account_password"),
+        hostingAccountUserRowEl = $(".field-hosting_account_username"),
+        hostingAccountPassRowEl = $(".field-hosting_account_password"),
         bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
         bugTrackerTypeEl = $("#id_bug_tracker_type"),
         repoPathRowEl = $("#row-path"),
@@ -186,14 +186,22 @@ $(document).ready(function() {
 
             if (hostingType === "custom") {
                 hostingAccountRowEl.hide();
-                hostingAccountDetailsEls.hide();
+                hostingAccountUserRowEl.hide();
+                hostingAccountPassRowEl.hide();
             } else {
                 hostingAccountRowEl.show();
 
                 if (hostingAccountEl.val() === "") {
-                    hostingAccountDetailsEls.show();
+                    hostingAccountUserRowEl.show();
+
+                    if (HOSTING_SERVICES[hostingType].needs_authorization) {
+                        hostingAccountPassRowEl.show();
+                    } else {
+                        hostingAccountPassRowEl.hide();
+                    }
                 } else {
-                    hostingAccountDetailsEls.hide();
+                    hostingAccountUserRowEl.hide();
+                    hostingAccountPassRowEl.hide();
                 }
             }
         })
