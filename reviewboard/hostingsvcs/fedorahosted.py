@@ -21,8 +21,6 @@ class FedoraHosted(HostingService):
         'Git': {
             'path': 'git://git.fedorahosted.org/git/'
                     '%(fedorahosted_repo_name)s.git',
-            'mirror_path': 'git://git.fedorahosted.org/git/'
-                            '%(fedorahosted_repo_name)s.git',
             'raw_file_url': 'http://git.fedorahosted.org/git/?p='
                             '%(fedorahosted_repo_name)s.git;'
                             'a=blob_plain;'

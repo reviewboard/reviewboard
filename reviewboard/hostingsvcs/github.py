@@ -78,9 +78,9 @@ class GitHub(HostingService):
             'repository_form': GitHubPublicOrgForm,
             'repository_fields': {
                 'Git': {
-                    'path': 'git://github.com/%(github_org_name)s/'
+                    'path': 'git://github.com/%(github_public_org_name)s/'
                             '%(github_public_org_repo_name)s.git',
-                    'mirror_path': 'git@github.com:%(github_org_name)s/'
+                    'mirror_path': 'git@github.com:%(github_public_org_name)s/'
                                    '%(github_public_org_repo_name)s.git',
                 }
             },
@@ -101,7 +101,7 @@ class GitHub(HostingService):
             'repository_form': GitHubPrivateOrgForm,
             'repository_fields': {
                 'Git': {
-                    'path': 'git@github.com:%(github_org_name)s/'
+                    'path': 'git@github.com:%(github_private_org_name)s/'
                             '%(github_private_org_repo_name)s.git',
                     'mirror_path': '',
                 },
@@ -127,7 +127,7 @@ class GitHub(HostingService):
 
         try:
             rsp = self._json_post(
-                self.API_URL + 'authorizations',
+                url=self.API_URL + 'authorizations',
                 username=username,
                 password=password,
                 body=simplejson.dumps({

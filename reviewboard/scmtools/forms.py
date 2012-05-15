@@ -560,7 +560,7 @@ class RepositoryForm(forms.ModelForm):
             # Validate every hosting service form and store any
             # data or errors for later.
             for plans in self.repository_forms.values():
-                for form in plans:
+                for form in plans.values():
                     if form.is_valid():
                         extra_cleaned_data.update(form.cleaned_data)
                     else:

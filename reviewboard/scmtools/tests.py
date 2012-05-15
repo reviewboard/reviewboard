@@ -22,6 +22,7 @@ except ImportError:
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
@@ -1491,3 +1492,74 @@ class PolicyTests(DjangoTestCase):
             'tool': tool.pk,
         })
         self.assertFalse(form.is_valid())
+
+
+class RepositoryFormTests(DjangoTestCase):
+    fixtures = ['test_scmtools']
+
+    def test_with_hosting_service_new_account(self):
+        """Testing RepositoryForm with a hosting service and new account"""
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account_username': 'testuser',
+            'hosting_account_password': 'testpass',
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.hosting_account.username, 'testuser')
+        self.assertEqual(repository.hosting_account.service_name, 'bitbucket')
+        self.assertEqual(repository.hosting_account.local_site, None)
+        self.assertEqual(repository.extra_data['repository_plan'], '')
+
+    def test_with_hosting_service_new_account_localsite(self):
+        """Testing RepositoryForm with a hosting service, new account and LocalSite"""
+        local_site = LocalSite.objects.create(name='testsite')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account_username': 'testuser',
+            'hosting_account_password': 'testpass',
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+            'local_site': local_site.pk,
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.local_site, local_site)
+        self.assertEqual(repository.hosting_account.username, 'testuser')
+        self.assertEqual(repository.hosting_account.service_name, 'bitbucket')
+        self.assertEqual(repository.hosting_account.local_site, local_site)
+        self.assertEqual(repository.extra_data['repository_plan'], '')
+
+    def test_with_hosting_service_existing_account(self):
+        """Testing RepositoryForm with a hosting service and existing account"""
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='bitbucket')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.hosting_account, account)
+        self.assertEqual(repository.extra_data['repository_plan'], '')
