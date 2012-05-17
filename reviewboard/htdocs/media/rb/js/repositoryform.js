@@ -118,7 +118,8 @@ $(document).ready(function() {
 
     hostingTypeEl
         .change(function() {
-            var hostingType = hostingTypeEl[0].value;
+            var hostingType = hostingTypeEl[0].value,
+                selectedAccount;
 
             updateRepositoryType();
 
@@ -129,6 +130,7 @@ $(document).ready(function() {
             } else {
                 var planTypes = HOSTING_SERVICES[hostingType].plans,
                     accounts = HOSTING_SERVICES[hostingType].accounts,
+                    selectedRepoPlan = repoPlanEl.val(),
                     i;
 
                 hideAllToolsFields();
@@ -141,17 +143,22 @@ $(document).ready(function() {
                     repoPlanRowEl.hide();
                 } else {
                     for (i = 0; i < planTypes.length; i++) {
-                        var planType = planTypes[i];
+                        var planType = planTypes[i],
+                            opt = $('<option/>')
+                                .val(planType.type)
+                                .text(planType.label)
+                                .appendTo(repoPlanEl);
 
-                        repoPlanEl.append($("<option/>")
-                            .val(planType.type)
-                            .text(planType.label));
+                        if (planType.type === selectedRepoPlan) {
+                            opt.attr('selected', 'selected');
+                        }
                     }
 
                     repoPlanRowEl.show();
                 }
 
                 /* Rebuild the list of accounts. */
+                selectedAccount = hostingAccountEl.val();
                 hostingAccountEl.find('option[value!=""]').remove();
 
                 for (i = 0; i < accounts.length; i++) {
@@ -161,7 +168,7 @@ $(document).ready(function() {
                             .text(account.username)
                             .appendTo(hostingAccountEl);
 
-                    if (i === 0) {
+                    if (account.pk === selectedAccount) {
                         opt.attr("selected", "selected");
                     }
                 }

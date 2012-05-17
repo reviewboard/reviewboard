@@ -280,7 +280,7 @@ class RepositoryForm(forms.ModelForm):
         The form will be instantiated and added to the list of forms to be
         rendered, cleaned, loaded, and saved.
         """
-        form = form_class(*args, **kwargs)
+        form = form_class()
 
         self.repository_forms[hosting_service_id][repo_type_id] = form
 
@@ -303,14 +303,22 @@ class RepositoryForm(forms.ModelForm):
             hosting_account = self.instance.hosting_account
 
             if hosting_account:
+                service = hosting_account.service
                 self.fields['hosting_type'].initial = \
                     hosting_account.service_name
 
-            repository_plan = self.instance.extra_data.get('repository_plan',
-                                                           None)
+                if service.repository_plans:
+                    self.fields['repository_plan'].choices = [
+                        (plan_id, info['name'])
+                        for plan_id, info in service.repository_plans
+                    ]
 
-            if repository_plan:
-                self.fields['repository_plan'].initial = repository_plan
+                    repository_plan = \
+                        self.instance.extra_data.get('repository_plan', None)
+
+                    if repository_plan:
+                        self.fields['repository_plan'].initial = \
+                            repository_plan
 
     def _populate_bug_tracker_fields(self):
         if not self.instance or not self.instance.bug_tracker:
@@ -437,7 +445,7 @@ class RepositoryForm(forms.ModelForm):
         self.data['hosting_account'] = hosting_account
         self.cleaned_data['hosting_account'] = hosting_account
 
-        plan = self.cleaned_data.get('repository_plan', self.DEFAULT_PLAN_ID)
+        plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
 
         # Set the main repository fields (Path, Mirror Path, etc.) based on
         # the field definitions in the hosting service.
@@ -517,7 +525,7 @@ class RepositoryForm(forms.ModelForm):
             if hosting_service:
                 self.fields['repository_plan'].choices = [
                     (id, info['name'])
-                    for id, info in hosting_service.repository_plans
+                    for id, info in hosting_service.repository_plans or []
                 ]
 
             # We want to show this as required (in the label), but not
@@ -544,7 +552,7 @@ class RepositoryForm(forms.ModelForm):
                 # data or errors for later.
                 form = self.repository_forms[hosting_type][plan]
 
-                if not form.is_valid():
+                if form.is_valid():
                     extra_cleaned_data.update(form.cleaned_data)
                 else:
                     extra_errors.update(form.errors)
@@ -583,6 +591,14 @@ class RepositoryForm(forms.ModelForm):
         fields set in the form.
         """
         if not self.errors:
+            try:
+                self.local_site = self.cleaned_data['local_site']
+
+                if self.local_site:
+                    self.local_site_name = self.local_site.name
+            except LocalSite.DoesNotExist, e:
+                raise forms.ValidationError([e])
+
             self._clean_hosting_info()
             self._clean_bug_tracker_info()
 
@@ -689,8 +705,9 @@ class RepositoryForm(forms.ModelForm):
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
 
-        repository.extra_data['repository_plan'] = \
-            self.cleaned_data['repository_plan']
+        repository.extra_data = {
+            'repository_plan': self.cleaned_data['repository_plan'],
+        }
 
         hosting_type = self.cleaned_data['hosting_type']
         plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
