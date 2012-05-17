@@ -6,7 +6,7 @@ from reviewboard.scmtools.models import Repository, Tool
 
 
 class RepositoryAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'path', 'visible')
+    list_display = ('__unicode__', 'path', 'hosting', 'visible')
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'visible',),
@@ -60,6 +60,13 @@ class RepositoryAdmin(admin.ModelAdmin):
         }),
     )
     form = RepositoryForm
+
+    def hosting(self, repository):
+        if repository.hosting_account_id:
+            account = repository.hosting_account
+            return '%s@%s' % (account.username, account.service.name)
+        else:
+            return ''
 
 
 class ToolAdmin(admin.ModelAdmin):
