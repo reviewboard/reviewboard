@@ -273,27 +273,32 @@ class SummaryColumn(Column):
 
     def render_data(self, review_request):
         summary = conditional_escape(review_request.summary)
+        labels = {}
+
         if not summary:
             summary = '&nbsp;<i>%s</i>' % _('No Summary')
 
         if review_request.submitter_id == self.datagrid.request.user.id:
+
             if review_request.draft_summary is not None:
                 summary = conditional_escape(review_request.draft_summary)
-                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
-
-            if (not review_request.public and
-                review_request.status == ReviewRequest.PENDING_REVIEW):
-                return self.__labeled_summary(_('Draft'), summary, 'label-draft')
+                labels.update({_('Draft'):  'label-draft'})
+            elif (not review_request.public and
+                  review_request.status == ReviewRequest.PENDING_REVIEW):
+                labels.update({_('Draft'): 'label-draft'})
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            return self.__labeled_summary(_('Submitted'), summary, 'label-submitted')
+            labels.update({_('Submitted'): 'label-submitted'})
         elif review_request.status == ReviewRequest.DISCARDED:
-            return self.__labeled_summary(_('Discarded'), summary, 'label-discarded')
+            labels.update({_('Discarded'): 'label-discarded'})
 
-        return summary
+        display_data = ''
 
-    def __labeled_summary(self, label, summary, label_class):
-        return u'<span class="%s">[%s]</span> %s' % (label_class, label, summary)
+        for label in labels:
+           display_data += u'<span class="%s">[%s] </span>' % (
+               labels[label], label)
+        display_data += u'%s' % summary
+        return display_data
 
 
 class SubmitterColumn(Column):
