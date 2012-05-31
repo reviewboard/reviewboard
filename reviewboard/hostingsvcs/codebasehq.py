@@ -46,7 +46,8 @@ class CodebaseHQForm(HostingServiceForm):
 
 class CodebaseHQ(HostingService):
     name = 'Codebase HQ'
-    repository_form = CodebaseHQForm
+    form = CodebaseHQForm
+    supports_repositories = True
     supported_scmtools = ['Git']
     repository_fields = {
         'Git': {

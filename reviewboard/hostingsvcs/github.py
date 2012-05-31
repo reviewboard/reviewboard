@@ -59,10 +59,10 @@ class GitHubPrivateOrgForm(HostingServiceForm):
 
 class GitHub(HostingService):
     name = _('GitHub')
-    repository_plans = [
+    plans = [
         ('public', {
             'name': _('Public'),
-            'repository_form': GitHubPublicForm,
+            'form': GitHubPublicForm,
             'repository_fields': {
                 'Git': {
                     'path': 'git://github.com/%(hosting_account_username)s/'
@@ -72,10 +72,13 @@ class GitHub(HostingService):
                                    '%(github_public_repo_name)s.git',
                 }
             },
+            'bug_tracker_field': 'http://github.com/'
+                                 '%(hosting_account_username)s/'
+                                 '%(github_public_repo_name)s/issues#issue/%%s',
         }),
         ('public-org', {
             'name': _('Public Organization'),
-            'repository_form': GitHubPublicOrgForm,
+            'form': GitHubPublicOrgForm,
             'repository_fields': {
                 'Git': {
                     'path': 'git://github.com/%(github_public_org_name)s/'
@@ -84,10 +87,14 @@ class GitHub(HostingService):
                                    '%(github_public_org_repo_name)s.git',
                 }
             },
+            'bug_tracker_field': 'http://github.com/'
+                                 '%(github_public_org_name)s/'
+                                 '%(github_public_org_repo_name)s/'
+                                 'issues#issue/%%s',
         }),
         ('private', {
             'name': _('Private'),
-            'repository_form': GitHubPrivateForm,
+            'form': GitHubPrivateForm,
             'repository_fields': {
                 'Git': {
                     'path': 'git@github.com:%(hosting_account_username)s/'
@@ -95,10 +102,14 @@ class GitHub(HostingService):
                     'mirror_path': '',
                 },
             },
+            'bug_tracker_field': 'http://github.com/'
+                                 '%(hosting_account_username)s/'
+                                 '%(github_private_repo_name)s/'
+                                 'issues#issue/%%s',
         }),
         ('private-org', {
             'name': _('Private Organization'),
-            'repository_form': GitHubPrivateOrgForm,
+            'form': GitHubPrivateOrgForm,
             'repository_fields': {
                 'Git': {
                     'path': 'git@github.com:%(github_private_org_name)s/'
@@ -106,10 +117,16 @@ class GitHub(HostingService):
                     'mirror_path': '',
                 },
             },
+            'bug_tracker_field': 'http://github.com/'
+                                 '%(github_private_org_name)s/'
+                                 '%(github_private_org_repo_name)s/'
+                                 'issues#issue/%%s',
         }),
     ]
 
     needs_authorization = True
+    supports_repositories = True
+    supports_bug_trackers = True
     supported_scmtools = ['Git']
 
     API_URL = 'https://api.github.com/'

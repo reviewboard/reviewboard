@@ -32,71 +32,20 @@ class RepositoryForm(forms.ModelForm):
     handling the association with hosting services, linking accounts,
     dealing with SSH keys and SSL certificates, and more.
     """
+    REPOSITORY_INFO_FIELDSET = _('Repository Information')
+    BUG_TRACKER_FIELDSET = _('Bug Tracker')
 
-    # NOTE: The list of fields must match that of the corresponding
-    #       bug tracker (not including the hosting_ and bug_tracker_
-    #       prefixes), for hosting services matching bug trackers.
-    BUG_TRACKER_INFO = SortedDict([
-        ('none', {
-            'label': _('None'),
-            'fields': [],
-            'format': '',
-        }),
-        ('bitbucket', {
-            'label': 'Bitbucket',
-            'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
-            'format': 'http://bitbucket.org/%(bug_tracker_owner)s/'
-                      '%(bug_tracker_project_name)s/issue/%%s/',
-        }),
-        ('bugzilla', {
-            'label': 'Bugzilla',
-            'fields': ['bug_tracker_base_url'],
-            'format': '%(bug_tracker_base_url)s/show_bug.cgi?id=%%s',
-        }),
-        ('fedorahosted', {
-            'label': 'Fedora Hosted',
-            'fields': ['bug_tracker_project_name'],
-            'format': 'https://fedorahosted.org/%(bug_tracker_project_name)s'
-                      '/ticket/%%s',
-        }),
-        ('github', {
-            'label': 'GitHub',
-            'fields': ['bug_tracker_project_name', 'bug_tracker_owner'],
-            'format': 'http://github.com/%(bug_tracker_owner)s/'
-                      '%(bug_tracker_project_name)s/issues#issue/%%s',
-        }),
-        ('googlecode', {
-            'label': 'Google Code',
-            'fields': ['bug_tracker_project_name'],
-            'format': 'http://code.google.com/p/%(bug_tracker_project_name)s/'
-                      'issues/detail?id=%%s',
-        }),
-        ('redmine', {
-            'label': 'Redmine',
-            'fields': ['bug_tracker_base_url'],
-            'format': '%(bug_tracker_base_url)s/issues/%%s',
-        }),
-        ('sourceforge', {
-            'label': 'SourceForge',
-            'fields': [],
-            'format': 'http://sourceforge.net/support/tracker.php?aid=%%s',
-        }),
-        ('trac', {
-            'label': 'Trac',
-            'fields': ['bug_tracker_base_url'],
-            'format': '%(bug_tracker_base_url)s/ticket/%%s',
-        }),
-        ('custom', {
-            'label': _('Custom'),
-            'fields': ['bug_tracker'],
-            'format': '%(bug_tracker)s',
-        }),
-    ])
-
-    FORMAT_STR_RE = re.compile(r'%\(([A-Za-z0-9_-]+)\)s')
-
-    REPOSITORY_INFO_FIELDSET = _("Repository Information")
     NO_HOSTING_SERVICE_ID = 'custom'
+    NO_HOSTING_SERVICE_NAME = _('(None - Custom Repository)')
+
+    NO_BUG_TRACKER_ID = 'none'
+    NO_BUG_TRACKER_NAME = _('(None)')
+
+    CUSTOM_BUG_TRACKER_ID = 'custom'
+    CUSTOM_BUG_TRACKER_NAME = _('(Custom Bug Tracker)')
+
+    IGNORED_SERVICE_IDS = ('none', 'custom')
+
     DEFAULT_PLAN_ID = 'default'
     DEFAULT_PLAN_NAME = _('Default')
 
@@ -147,33 +96,29 @@ class RepositoryForm(forms.ModelForm):
     # Bug Tracker fields
     bug_tracker_use_hosting = forms.BooleanField(
         label=_("Use hosting service's bug tracker"),
+        initial=False,
         required=False)
 
     bug_tracker_type = forms.ChoiceField(
         label=_("Type"),
         required=True,
-        choices=[(tracker_id, info['label'])
-                 for tracker_id, info in BUG_TRACKER_INFO.iteritems()],
-        initial="none")
+        initial=NO_BUG_TRACKER_ID)
 
-    bug_tracker_owner = forms.CharField(
-        label=_("Bug Tracker's owner"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+    bug_tracker_plan = forms.ChoiceField(
+        label=_('Bug tracker plan'),
+        required=True)
 
-    bug_tracker_project_name = forms.CharField(
-        label=_("Project name"),
-        max_length=256,
-        required=False,
-        widget=forms.TextInput(attrs={'size': '30'}))
+    bug_tracker_hosting_account_username = forms.CharField(
+        label=_('Account username'),
+        required=True,
+        widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
-    bug_tracker_base_url = forms.CharField(
+    bug_tracker = forms.CharField(
         label=_("Bug tracker URL"),
         max_length=256,
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
-        help_text=_("This should be the path to the bug tracker for this "
+        help_text=_("The optional path to the bug tracker for this "
                     "repository."))
 
     def __init__(self, *args, **kwargs):
@@ -185,6 +130,7 @@ class RepositoryForm(forms.ModelForm):
         self.hosting_account_linked = False
         self.local_site_name = None
         self.repository_forms = {}
+        self.bug_tracker_forms = {}
         self.hosting_service_info = {}
 
         # Determine the local_site that will be associated with any
@@ -218,16 +164,25 @@ class RepositoryForm(forms.ModelForm):
 
         # Load the list of repository forms and hosting services.
         hosting_service_choices = []
+        bug_tracker_choices = []
 
         for hosting_service_id, hosting_service in get_hosting_services():
-            hosting_service_choices.append((hosting_service_id,
+            if hosting_service.supports_repositories:
+                hosting_service_choices.append((hosting_service_id,
+                                                hosting_service.name))
+
+            if hosting_service.supports_bug_trackers:
+                bug_tracker_choices.append((hosting_service_id,
                                             hosting_service.name))
 
+            self.bug_tracker_forms[hosting_service_id] = {}
             self.repository_forms[hosting_service_id] = {}
             self.hosting_service_info[hosting_service_id] = {
                 'scmtools': hosting_service.supported_scmtools,
                 'plans': [],
+                'planInfo': {},
                 'needs_authorization': hosting_service.needs_authorization,
+                'supports_bug_trackers': hosting_service.supports_bug_trackers,
                 'accounts': [
                     {
                         'pk': account.pk,
@@ -239,21 +194,23 @@ class RepositoryForm(forms.ModelForm):
             }
 
             try:
-                if hosting_service.repository_plans:
-                    for type_id, info in hosting_service.repository_plans:
-                        repository_form = info.get('repository_form', None)
+                if hosting_service.plans:
+                    for type_id, info in hosting_service.plans:
+                        form = info.get('form', None)
 
-                        if repository_form:
-                            self._load_repository_form(hosting_service_id,
+                        if form:
+                            self._load_hosting_service(hosting_service_id,
+                                                       hosting_service,
                                                        type_id,
                                                        info['name'],
-                                                       repository_form,
+                                                       form,
                                                        *args, **kwargs)
-                elif hosting_service.repository_form:
-                    self._load_repository_form(hosting_service_id,
+                elif hosting_service.form:
+                    self._load_hosting_service(hosting_service_id,
+                                               hosting_service,
                                                self.DEFAULT_PLAN_ID,
                                                self.DEFAULT_PLAN_NAME,
-                                               hosting_service.repository_form,
+                                               hosting_service.form,
                                                *args, **kwargs)
             except Exception, e:
                 logging.error('Error loading hosting service %s: %s'
@@ -264,33 +221,60 @@ class RepositoryForm(forms.ModelForm):
         # "None" being first.
         hosting_service_choices.sort(key=lambda x: x[1])
         hosting_service_choices.insert(0, (self.NO_HOSTING_SERVICE_ID,
-                                           _('(None - Custom Repository)')))
+                                           self.NO_HOSTING_SERVICE_NAME))
         self.fields['hosting_type'].choices = hosting_service_choices
 
+        # Now do the same for bug trackers, but have separate None and Custom
+        # entries.
+        bug_tracker_choices.sort(key=lambda x: x[1])
+        bug_tracker_choices.insert(0, (self.NO_BUG_TRACKER_ID,
+                                       self.NO_BUG_TRACKER_NAME))
+        bug_tracker_choices.insert(1, (self.CUSTOM_BUG_TRACKER_ID,
+                                       self.CUSTOM_BUG_TRACKER_NAME))
+        self.fields['bug_tracker_type'].choices = bug_tracker_choices
+
+        # Get the current SSH public key that would be used for repositories,
+        # if one has been created.
         self.public_key = \
             sshutils.get_public_key(sshutils.get_user_key(self.local_site_name))
 
-        self._populate_hosting_service_fields()
-        self._populate_bug_tracker_fields()
+        if self.instance:
+            self._populate_hosting_service_fields()
+            self._populate_bug_tracker_fields()
 
-    def _load_repository_form(self, hosting_service_id, repo_type_id,
-                              repo_type_label, form_class, *args, **kwargs):
+    def _load_hosting_service(self, hosting_service_id, hosting_service,
+                              repo_type_id, repo_type_label, form_class,
+                              *args, **kwargs):
         """Loads a hosting service form.
 
         The form will be instantiated and added to the list of forms to be
         rendered, cleaned, loaded, and saved.
         """
-        form = form_class()
+        plan_info = {}
 
-        self.repository_forms[hosting_service_id][repo_type_id] = form
+        if hosting_service.supports_repositories:
+            form = form_class(self.data or None)
+            self.repository_forms[hosting_service_id][repo_type_id] = form
 
-        self.hosting_service_info[hosting_service_id]['plans'].append({
+            if self.instance:
+                form.load(self.instance)
+
+        if hosting_service.supports_bug_trackers:
+            form = form_class(self.data or None, prefix='bug_tracker')
+            self.bug_tracker_forms[hosting_service_id][repo_type_id] = form
+
+            plan_info['bug_tracker_requires_username'] = \
+                hosting_service.get_bug_tracker_requires_username(repo_type_id)
+
+            if self.instance:
+                form.load(self.instance)
+
+        hosting_info = self.hosting_service_info[hosting_service_id]
+        hosting_info['planInfo'][repo_type_id] = plan_info
+        hosting_info['plans'].append({
             'type': repo_type_id,
             'label': unicode(repo_type_label),
         })
-
-        if self.instance:
-            form.load(self.instance)
 
     def _populate_hosting_service_fields(self):
         """Populates all the main hosting service fields in the form.
@@ -299,65 +283,69 @@ class RepositoryForm(forms.ModelForm):
         on the form. These are only set if operating on an existing
         repository.
         """
-        if self.instance:
-            hosting_account = self.instance.hosting_account
+        hosting_account = self.instance.hosting_account
 
-            if hosting_account:
-                service = hosting_account.service
-                self.fields['hosting_type'].initial = \
-                    hosting_account.service_name
+        if hosting_account:
+            service = hosting_account.service
+            self.fields['hosting_type'].initial = \
+                hosting_account.service_name
 
-                if service.repository_plans:
-                    self.fields['repository_plan'].choices = [
-                        (plan_id, info['name'])
-                        for plan_id, info in service.repository_plans
-                    ]
+            if service.plans:
+                self.fields['repository_plan'].choices = [
+                    (plan_id, info['name'])
+                    for plan_id, info in service.plans
+                ]
 
-                    repository_plan = \
-                        self.instance.extra_data.get('repository_plan', None)
+                repository_plan = \
+                    self.instance.extra_data.get('repository_plan', None)
 
-                    if repository_plan:
-                        self.fields['repository_plan'].initial = \
-                            repository_plan
+                if repository_plan:
+                    self.fields['repository_plan'].initial = repository_plan
 
     def _populate_bug_tracker_fields(self):
-        if not self.instance or not self.instance.bug_tracker:
+        """Populates all the main bug tracker fields in the form.
+
+        This populates the bug tracker type, plan, and other fields
+        related to the bug tracker on the form.
+        """
+        data = self.instance.extra_data
+        bug_tracker_type = data.get('bug_tracker_type', None)
+
+        if (data.get('bug_tracker_use_hosting', False) and
+            self.instance.hosting_account):
+            # The user has chosen to use the hosting service's bug tracker.
+            # We only care about the checkbox. Don't bother populating the form.
+            self.fields['bug_tracker_use_hosting'].initial = True
+        elif bug_tracker_type == self.NO_BUG_TRACKER_ID:
+            # Do nothing.
             return
+        elif (bug_tracker_type is not None and
+              bug_tracker_type != self.CUSTOM_BUG_TRACKER_ID):
+            # A bug tracker service or custom bug tracker was chosen.
+            service = get_hosting_service(bug_tracker_type)
 
-        # XXX
-        return
+            if not service:
+                return
 
-        for tracker_id, info in self.BUG_TRACKER_INFO.iteritems():
-            if tracker_id == 'none':
-                continue
+            self.fields['bug_tracker_type'].initial = bug_tracker_type
+            self.fields['bug_tracker_hosting_account_username'].initial = \
+                data.get('bug_tracker-hosting_account_username', None)
 
-            is_match, field_data = \
-                self._match_url(self.instance.bug_tracker,
-                                info['format'], info['fields'])
+            if service.plans:
+                self.fields['bug_tracker_plan'].choices = [
+                    (plan_id, info['name'])
+                    for plan_id, info in service.plans
+                ]
 
-            if is_match:
-                self.fields['bug_tracker_type'].initial = tracker_id
-
-                for key, value in field_data.iteritems():
-                    self.fields[key].initial = value
-
-                # Figure out whether this matches the hosting service.
-                if tracker_id == self.fields['hosting_type'].initial:
-                    is_match = True
-
-                    for field in info['fields']:
-                        hosting_field = field.replace("bug_tracker_",
-                                                      "hosting_")
-
-                        if (self.fields[hosting_field].initial !=
-                               self.fields[field].initial):
-                            is_match = False
-                            break
-
-                    if is_match:
-                        self.fields['bug_tracker_use_hosting'].initial = True
-
-                break
+                self.fields['bug_tracker_plan'].initial = \
+                    data.get('bug_tracker_plan', None)
+        elif self.instance.bug_tracker:
+            # We have a custom bug tracker. There's no point in trying to
+            # reverse-match it, because we can potentially be wrong when a
+            # hosting service has multiple plans with similar bug tracker
+            # URLs, so just show it raw. Admins can migrate it if they want.
+            self.fields['bug_tracker_type'].initial = \
+                self.CUSTOM_BUG_TRACKER_ID
 
     def _clean_hosting_info(self):
         """Clean the hosting service information.
@@ -459,41 +447,79 @@ class RepositoryForm(forms.ModelForm):
         field_vars = repository_form.cleaned_data.copy()
         field_vars.update(self.cleaned_data)
 
-        hosting_service = hosting_account.service
-
         try:
-            self.cleaned_data.update(hosting_service.get_repository_fields(
-                plan, tool_name, field_vars))
+            self.cleaned_data.update(hosting_service_cls.get_repository_fields(
+                hosting_account.username, plan, tool_name, field_vars))
         except KeyError, e:
             raise forms.ValidationError([unicode(e)])
 
     def _clean_bug_tracker_info(self):
-        use_hosting = self.cleaned_data['bug_tracker_use_hosting']
-        bug_tracker_type = self.cleaned_data['bug_tracker_type']
+        """Clean the bug tracker information.
 
-        if bug_tracker_type == 'none' and not use_hosting:
-            self.instance.bug_tracker = ""
-            return
+        This will figure out the defaults for all the bug tracker fields,
+        based on the stored bug tracker settings.
+        """
+        use_hosting = self.cleaned_data['bug_tracker_use_hosting']
+        plan = self.cleaned_data['bug_tracker_plan'] or self.DEFAULT_PLAN_ID
+        bug_tracker_type = self.cleaned_data['bug_tracker_type']
+        bug_tracker_url = ''
 
         if use_hosting:
-            match_type = self.cleaned_data['hosting_type']
-        else:
-            match_type = bug_tracker_type
+            # We're using the main repository form fields instead of the
+            # custom bug tracker fields.
+            hosting_type = self.cleaned_data['hosting_type']
 
-        assert match_type in self.BUG_TRACKER_INFO
-        info = self.BUG_TRACKER_INFO[match_type]
+            if hosting_type == self.NO_HOSTING_SERVICE_ID:
+                self.errors['bug_tracker_use_hosting'] = self.error_class([
+                    _('A hosting service must be chosen in order to use this')
+                ])
+                return
 
-        field_data = {}
+            hosting_service_cls = get_hosting_service(hosting_type)
 
-        for field in info['fields']:
-            src_field = field
+            # We already validated server-side that the hosting service
+            # exists.
+            assert hosting_service_cls
 
-            if use_hosting:
-                src_field = src_field.replace("bug_tracker_", "hosting_")
+            if hosting_service_cls.supports_bug_trackers:
+                form = self.repository_forms[hosting_type][plan]
+                new_data = self.cleaned_data.copy()
+                new_data.update(form.cleaned_data)
+                new_data['hosting_account_username'] = \
+                    self.cleaned_data['hosting_account'].username
 
-            field_data[field] = self.cleaned_data[src_field]
+                bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
+                    plan, new_data)
+        elif bug_tracker_type == self.CUSTOM_BUG_TRACKER_ID:
+            # bug_tracker_url should already be in cleaned_data.
+            return
+        elif bug_tracker_type != self.NO_BUG_TRACKER_ID:
+            # We're using a bug tracker of a certain type. We need to
+            # get the right data, strip the prefix on the forms, and
+            # build the bug tracker URL from that.
+            hosting_service_cls = get_hosting_service(bug_tracker_type)
 
-        bug_tracker_url = info['format'] % field_data
+            if not hosting_service_cls:
+                self.errors['bug_tracker_type'] = self.error_class([
+                    _('This bug tracker type is not supported')
+                ])
+                return
+
+            form = self.bug_tracker_forms[bug_tracker_type][plan]
+
+            # Strip the prefix from each bit of cleaned data in the form.
+            new_data = {
+                'hosting_account_username':
+                    self.cleaned_data['bug_tracker_hosting_account_username'],
+            }
+
+            for key, value in form.cleaned_data.iteritems():
+                key = key.replace(form.prefix, '')
+                new_data[key] = value
+
+            bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
+                plan, new_data)
+
         self.cleaned_data['bug_tracker'] = bug_tracker_url
         self.data['bug_tracker'] = bug_tracker_url
 
@@ -504,29 +530,46 @@ class RepositoryForm(forms.ModelForm):
         if self.data:
             hosting_type = self._get_field_data('hosting_type')
             hosting_service = get_hosting_service(hosting_type)
+            repository_plan = (self._get_field_data('repository_plan') or
+                               self.DEFAULT_PLAN_ID)
 
             bug_tracker_use_hosting = \
                 self._get_field_data('bug_tracker_use_hosting')
+
+            # If using the hosting service's bug tracker, we want to ignore
+            # the bug tracker form (which will be hidden) and just use the
+            # hosting service's form.
+            if bug_tracker_use_hosting:
+                bug_tracker_type = hosting_type
+                bug_tracker_service = hosting_service
+                bug_tracker_plan = repository_plan
+            else:
+                bug_tracker_type = self._get_field_data('bug_tracker_type')
+                bug_tracker_service = get_hosting_service(bug_tracker_type)
+                bug_tracker_plan = (self._get_field_data('bug_tracker_plan') or
+                                    self.DEFAULT_PLAN_ID)
+
+            self.fields['bug_tracker_type'].required = \
+                not bug_tracker_use_hosting
+
             new_hosting_account = (
                 hosting_type != self.NO_HOSTING_SERVICE_ID and
                 not self._get_field_data('hosting_account'))
 
             self.fields['path'].required = \
                 (hosting_type == self.NO_HOSTING_SERVICE_ID)
-            self.fields['bug_tracker_type'].required = \
-                not bug_tracker_use_hosting
 
             # The repository plan will only be listed if the hosting service
             # lists some plans. Otherwise, there's nothing to require.
+            for service, field in ((hosting_service, 'repository_plan'),
+                                   (bug_tracker_service, 'bug_tracker_plan')):
+                self.fields[field].required = service and service.plans
 
-            self.fields['repository_plan'].required = \
-                (hosting_service and hosting_service.repository_plans)
-
-            if hosting_service:
-                self.fields['repository_plan'].choices = [
-                    (id, info['name'])
-                    for id, info in hosting_service.repository_plans or []
-                ]
+                if service:
+                    self.fields[field].choices = [
+                        (id, info['name'])
+                        for id, info in service.plans or []
+                    ]
 
             # We want to show this as required (in the label), but not
             # actually require, since we use a blank entry as
@@ -535,36 +578,49 @@ class RepositoryForm(forms.ModelForm):
 
             # Only require a username and password if not using an existing
             # hosting account.
-            for field in ('hosting_account_username',
-                          'hosting_account_password'):
-                self.fields[field].required = new_hosting_account
-
             self.fields['hosting_account_username'].required = \
                 new_hosting_account
             self.fields['hosting_account_password'].required = \
                 (new_hosting_account and hosting_service.needs_authorization)
 
-            plan = (self._get_field_data('repository_plan') or
-                    self.DEFAULT_PLAN_ID)
+            # Only require the bug tracker username if the bug tracker field
+            # requires the username.
+            self.fields['bug_tracker_hosting_account_username'].required = \
+                (not bug_tracker_use_hosting and
+                 bug_tracker_service and
+                 bug_tracker_service.get_bug_tracker_requires_username(
+                    bug_tracker_plan))
 
-            if hosting_type in self.repository_forms:
-                # Validate the hosting service form and store any
-                # data or errors for later.
-                form = self.repository_forms[hosting_type][plan]
+            # Validate the custom forms and store any data or errors for later.
+            custom_form_info = [
+                (hosting_type, repository_plan, self.repository_forms),
+            ]
 
-                if form.is_valid():
-                    extra_cleaned_data.update(form.cleaned_data)
-                else:
-                    extra_errors.update(form.errors)
-        else:
-            # Validate every hosting service form and store any
-            # data or errors for later.
-            for plans in self.repository_forms.values():
-                for form in plans.values():
+            if not bug_tracker_use_hosting:
+                custom_form_info.append((bug_tracker_type, bug_tracker_plan,
+                                         self.bug_tracker_forms))
+
+            for service_type, plan, form_list in custom_form_info:
+                if service_type not in self.IGNORED_SERVICE_IDS:
+                    form = form_list[service_type][plan]
+                    form.is_bound = True
+
                     if form.is_valid():
                         extra_cleaned_data.update(form.cleaned_data)
                     else:
                         extra_errors.update(form.errors)
+        else:
+            # Validate every hosting service form and bug tracker form and
+            # store any data or errors for later.
+            for form_list in (self.repository_forms, self.bug_tracker_forms):
+                for plans in form_list.values():
+                    for form in plans.values():
+                        if form.is_valid():
+                            extra_cleaned_data.update(form.cleaned_data)
+                        else:
+                            extra_errors.update(form.errors)
+
+        self.subforms_valid = not extra_errors
 
         super(RepositoryForm, self).full_clean()
 
@@ -590,7 +646,7 @@ class RepositoryForm(forms.ModelForm):
         This will also build repository and bug tracker URLs based on other
         fields set in the form.
         """
-        if not self.errors:
+        if not self.errors and self.subforms_valid:
             try:
                 self.local_site = self.cleaned_data['local_site']
 
@@ -636,6 +692,24 @@ class RepositoryForm(forms.ModelForm):
                 raise forms.ValidationError(['Not a valid hosting service'])
 
         return hosting_type
+
+    def clean_bug_tracker_type(self):
+        """Validates that the bug tracker type represents a valid hosting
+        service.
+
+        This won't do anything if no hosting service is used.
+        """
+        bug_tracker_type = (self.cleaned_data['bug_tracker_type'] or
+                            self.NO_BUG_TRACKER_ID)
+
+        if bug_tracker_type not in self.IGNORED_SERVICE_IDS:
+            hosting_service = get_hosting_service(bug_tracker_type)
+
+            if (not hosting_service or
+                not hosting_service.supports_bug_trackers):
+                raise forms.ValidationError(['Not a valid hosting service'])
+
+        return bug_tracker_type
 
     def clean_tool(self):
         """Checks the SCMTool used for this repository for dependencies.
@@ -704,66 +778,46 @@ class RepositoryForm(forms.ModelForm):
         """
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
+        bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
 
         repository.extra_data = {
             'repository_plan': self.cleaned_data['repository_plan'],
+            'bug_tracker_use_hosting': bug_tracker_use_hosting,
         }
 
         hosting_type = self.cleaned_data['hosting_type']
-        plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
 
         if hosting_type in self.repository_forms:
+            plan = (self.cleaned_data['repository_plan'] or
+                    self.DEFAULT_PLAN_ID)
             self.repository_forms[hosting_type][plan].save(repository)
+
+        if not bug_tracker_use_hosting:
+            bug_tracker_type = self.cleaned_data['bug_tracker_type']
+
+            if bug_tracker_type in self.bug_tracker_forms:
+                plan = (self.cleaned_data['bug_tracker_plan'] or
+                        self.DEFAULT_PLAN_ID)
+                self.bug_tracker_forms[bug_tracker_type][plan].save(repository)
+                repository.extra_data.update({
+                    'bug_tracker_type': bug_tracker_type,
+                    'bug_tracker_plan': plan,
+                })
+
+                service = get_hosting_service(bug_tracker_type)
+                assert service
+
+                if service.get_bug_tracker_requires_username(plan):
+                    repository.extra_data.update({
+                        'bug_tracker-hosting_account_username':
+                            self.cleaned_data[
+                                'bug_tracker_hosting_account_username'],
+                    })
 
         if commit:
             repository.save()
 
         return repository
-
-    def _match_url(self, url, format, fields):
-        """
-        Matches a URL against a format string.
-
-        This will determine if the URL can be represented by the format
-        string. If so, the URL will parsed for the list of fields and
-        returned.
-
-        The result is in the form of (bool, field_dict).
-        """
-        def replace_match_group(m):
-            name = m.group(1)
-
-            if name in found_groups:
-                return r'(?P=%s)' % name
-            else:
-                found_groups[name] = True
-                return r'(?P<%s>[A-Za-z0-9:/._-]+)' % name
-
-        # First, transform our Python format-style pattern to a regex.
-        pattern = format.replace("%%s", "%s")
-        pattern = pattern.replace("?", "\?")
-        pattern = pattern.replace("+", "\+")
-
-        # A list of match groups to replace that we've already found.
-        # re.sub will get angry if it sees two with the same name.
-        found_groups = {}
-
-        pattern = self.FORMAT_STR_RE.sub(replace_match_group, pattern)
-
-        m = re.match(pattern, url)
-
-        if not m:
-            return False, {}
-
-        field_data = {}
-
-        for field in fields:
-            try:
-                field_data[field] = m.group(field)
-            except IndexError:
-                pass
-
-        return True, field_data
 
     def _verify_repository_path(self):
         """

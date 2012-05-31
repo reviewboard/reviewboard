@@ -15,7 +15,9 @@ class BitbucketForm(HostingServiceForm):
 
 class Bitbucket(HostingService):
     name = 'Bitbucket'
-    repository_form = BitbucketForm
+    form = BitbucketForm
+    supports_repositories = True
+    supports_bug_trackers = True
     supported_scmtools = ['Mercurial']
     repository_fields = {
         'Mercurial': {
@@ -26,3 +28,5 @@ class Bitbucket(HostingService):
                            '%(bitbucket_repo_name)s/'
         },
     }
+    bug_tracker_field = 'http://bitbucket.org/%(hosting_account_username)s/' \
+                        '%(bitbucket_repo_name)s/issue/%%s/'

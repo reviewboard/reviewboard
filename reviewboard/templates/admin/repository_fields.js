@@ -1,15 +1,5 @@
 {% load djblets_js %}
 
-var BUG_TRACKER_FIELDS = { {% spaceless %}
-{% for id, info in form.BUG_TRACKER_INFO.items %}
-    "{{id}}": [ {% spaceless %}
-{%  for field in info.fields %}
-        "{{field}}"{% if not forloop.last %},{% endif %}
-{%  endfor %}
-    {% endspaceless %} ]{% if not forloop.last %},{% endif %}
-{% endfor %}
-}{% endspaceless %};
-
 var HOSTING_SERVICES = {{form.hosting_service_info|json_dumps:2}};
 
 var TOOLS_FIELDS = { {% spaceless %}

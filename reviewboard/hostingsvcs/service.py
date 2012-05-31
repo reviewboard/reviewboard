@@ -24,16 +24,18 @@ class HostingService(object):
     be available when configuring the repository.
     """
     name = None
-    repository_plans = None
+    plans = None
+    supports_bug_trackers = False
+    supports_repositories = False
 
     # These values are defaults that can be overridden in repository_plans
     # above.
     needs_authorization = False
     supported_scmtools = []
-    repository_form = None
+    form = None
     fields = []
     repository_fields = {}
-    bug_tracker_url = None
+    bug_tracker_field = None
 
     def __init__(self, account):
         assert account
@@ -54,31 +56,29 @@ class HostingService(object):
         raise NotImplementedError
 
     def get_file(self, repository, path, revision, *args, **kwargs):
+        if not self.supports_repositories:
+            raise NotImplementedError
+
         return repository.get_scmtool().get_file(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
+        if not self.supports_repositories:
+            raise NotImplementedError
+
         return repository.get_scmtool().file_exists(path, revision)
 
-    def get_repository_fields(self, plan, tool_name, field_vars):
+    @classmethod
+    def get_repository_fields(cls, username, plan, tool_name, field_vars):
+        if not cls.supports_repositories:
+            raise NotImplementedError
+
         # Grab the list of fields for population below. We have to do this
         # differently depending on whether or not this hosting service has
         # different repository plans.
-        if self.repository_plans:
-            assert plan
-
-            fields = None
-
-            for plan_name, info in self.repository_plans:
-                if plan_name == plan:
-                    fields = info['repository_fields']
-                    break
-
-            assert fields is not None
-        else:
-            fields = self.repository_fields
+        fields = cls._get_field(plan, 'repository_fields')
 
         new_vars = field_vars.copy()
-        new_vars['hosting_account_username'] = self.account.username
+        new_vars['hosting_account_username'] = username
 
         results = {}
 
@@ -88,7 +88,7 @@ class HostingService(object):
             except KeyError, e:
                 logging.error('Failed to generate %s field for hosting '
                               'service %s using %s and %r: Missing key %s'
-                              % (field, unicode(self.name), value, new_vars, e),
+                              % (field, unicode(cls.name), value, new_vars, e),
                               exc_info=1)
                 raise KeyError(
                     _('Internal error when generating %(field)s field '
@@ -98,6 +98,50 @@ class HostingService(object):
                       })
 
         return results
+
+    @classmethod
+    def get_bug_tracker_requires_username(cls, plan=None):
+        if not cls.supports_bug_trackers:
+            raise NotImplementedError
+
+        return ('%(hosting_account_username)s' in
+                cls._get_field(plan, 'bug_tracker_field', ''))
+
+    @classmethod
+    def get_bug_tracker_field(cls, plan, field_vars):
+        if not cls.supports_bug_trackers:
+            raise NotImplementedError
+
+        bug_tracker_field = cls._get_field(plan, 'bug_tracker_field')
+
+        if not bug_tracker_field:
+            return ''
+
+        try:
+            return bug_tracker_field % field_vars
+        except KeyError, e:
+            logging.error('Failed to generate %s field for hosting '
+                          'service %s using %r: Missing key %s'
+                          % (bug_tracker_field, unicode(cls.name),
+                             field_vars, e),
+                          exc_info=1)
+            raise KeyError(
+                _('Internal error when generating %(field)s field '
+                  '(Missing key "%(key)s"). Please report this.') % {
+                      'field': bug_tracker_field,
+                      'key': e,
+                  })
+
+    @classmethod
+    def _get_field(cls, plan, name, default=None):
+        if cls.plans:
+            assert plan
+
+            for plan_name, info in cls.plans:
+                if plan_name == plan and name in info:
+                    return info[name]
+
+        return getattr(cls, name, default)
 
     #
     # HTTP utility methods

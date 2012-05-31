@@ -15,7 +15,9 @@ class FedoraHostedForm(HostingServiceForm):
 
 class FedoraHosted(HostingService):
     name = 'Fedora Hosted'
-    repository_form = FedoraHostedForm
+    form = FedoraHostedForm
+    supports_repositories = True
+    supports_bug_trackers = True
     supported_scmtools = ['Git', 'Mercurial', 'Subversion']
     repository_fields = {
         'Git': {
@@ -39,3 +41,5 @@ class FedoraHosted(HostingService):
                            '%(fedorahosted_repo_name)s/',
         },
     }
+    bug_tracker_field = 'https://fedorahosted.org/%(fedorahosted_repo_name)s' \
+                        '/ticket/%%s'

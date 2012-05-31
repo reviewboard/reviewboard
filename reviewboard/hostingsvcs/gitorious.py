@@ -21,8 +21,9 @@ class GitoriousForm(HostingServiceForm):
 
 class Gitorious(HostingService):
     name = 'Gitorious'
-    repository_form = GitoriousForm
+    form = GitoriousForm
     supported_scmtools = ['Git']
+    supports_repositories = True
     repository_fields = {
         'Git': {
             'path': 'git://gitorious.org/%(gitorious_project_name)s/'

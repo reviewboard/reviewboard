@@ -28,6 +28,42 @@ function updateFormDisplay(id, fields) {
     prevTypes[id] = type;
 }
 
+function updatePlanEl(rowEl, planEl, serviceType) {
+    var planTypes = HOSTING_SERVICES[serviceType].plans,
+        selectedPlan = planEl.val(),
+        i;
+
+    planEl.empty();
+
+    if (planTypes.length === 1) {
+        rowEl.hide();
+    } else {
+        for (i = 0; i < planTypes.length; i++) {
+            var planType = planTypes[i],
+                opt = $('<option/>')
+                    .val(planType.type)
+                    .text(planType.label)
+                    .appendTo(planEl);
+
+            if (planType.type === selectedPlan) {
+                opt.attr('selected', 'selected');
+            }
+        }
+
+        rowEl.show();
+    }
+
+    planEl.triggerHandler('change');
+}
+
+function updateHostingForm(hostingTypeEl, formPrefix, planEl, formsEl) {
+    var formID = formPrefix + "-" + hostingTypeEl[0].value + "-" +
+                 (planEl.val() || "default");
+
+    formsEl.hide();
+    $("#" + formID).show();
+}
+
 function hideAllToolsFields() {
     var fields = TOOLS_FIELDS["none"];
 
@@ -68,11 +104,17 @@ function updateRepositoryType() {
 $(document).ready(function() {
     var hostingTypeEl = $("#id_hosting_type"),
         hostingAccountEl = $("#id_hosting_account"),
-        hostingAccountRowEl = $(".field-hosting_account"),
-        hostingAccountUserRowEl = $(".field-hosting_account_username"),
-        hostingAccountPassRowEl = $(".field-hosting_account_password"),
+        hostingAccountRowEl = $("#row-hosting_account"),
+        hostingAccountUserRowEl = $("#row-hosting_account_username"),
+        hostingAccountPassRowEl = $("#row-hosting_account_password"),
         bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
         bugTrackerTypeEl = $("#id_bug_tracker_type"),
+        bugTrackerTypeRowEl = $("#row-bug_tracker_type"),
+        bugTrackerPlanEl = $("#id_bug_tracker_plan"),
+        bugTrackerPlanRowEl = $("#row-bug_tracker_plan"),
+        bugTrackerURLRowEl = $("#row-bug_tracker"),
+        bugTrackerUsernameRowEl =
+            $("#row-bug_tracker_hosting_account_username"),
         repoPathRowEl = $("#row-path"),
         repoMirrorPathRowEl = $("#row-mirror_path"),
         repoPlanRowEl = $("#row-repository_plan"),
@@ -81,6 +123,7 @@ $(document).ready(function() {
         toolEl = $("#id_tool"),
         publicKeyPopup = $("#ssh-public-key-popup"),
         repoForms = $(".repo-form"),
+        bugTrackerForms = $(".bug-tracker-form"),
         service_id;
 
     prevTypes['bug_tracker_type'] = "none";
@@ -91,29 +134,40 @@ $(document).ready(function() {
         origRepoTypes.push({value: $(this).val(), text: $(this).text()});
     });
 
-    forEachField(BUG_TRACKER_FIELDS, false, function(el) { el.hide(); });
-
     bugTrackerUseHostingEl
         .change(function() {
             var checked = this.checked;
 
-            bugTrackerTypeEl[0].disabled = checked;
-
-            forEachField(BUG_TRACKER_FIELDS, true, function(el) {
-                el[0].disabled = checked;
-            });
-
-            updateFormDisplay("bug_tracker_type", BUG_TRACKER_FIELDS);
+            if (this.checked) {
+                bugTrackerTypeRowEl.hide();
+                bugTrackerPlanRowEl.hide();
+                bugTrackerUsernameRowEl.hide();
+                bugTrackerURLRowEl.hide();
+                bugTrackerForms.hide();
+            } else {
+                bugTrackerTypeRowEl.show();
+                bugTrackerTypeEl.triggerHandler('change');
+            }
         })
         .triggerHandler("change");
 
     repoPlanEl.change(function() {
-        var hostingType = hostingTypeEl[0].value,
-            repoFormID = "repo-form-" + hostingType + "-" +
-                         (repoPlanEl.val() || "default");
+        updateHostingForm(hostingTypeEl, "repo-form", repoPlanEl, repoForms);
+    });
 
-        repoForms.hide();
-        $("#" + repoFormID).show();
+    bugTrackerPlanEl.change(function() {
+        var plan = bugTrackerPlanEl.val() || 'default',
+            bugTrackerType = bugTrackerTypeEl.val(),
+            planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
+
+        updateHostingForm(bugTrackerTypeEl, "bug-tracker-form",
+                          bugTrackerPlanEl, bugTrackerForms);
+
+        if (planInfo.bug_tracker_requires_username) {
+            bugTrackerUsernameRowEl.show();
+        } else {
+            bugTrackerUsernameRowEl.hide();
+        }
     });
 
     hostingTypeEl
@@ -128,34 +182,14 @@ $(document).ready(function() {
                 repoPathRowEl.show();
                 repoMirrorPathRowEl.show();
             } else {
-                var planTypes = HOSTING_SERVICES[hostingType].plans,
-                    accounts = HOSTING_SERVICES[hostingType].accounts,
-                    selectedRepoPlan = repoPlanEl.val(),
+                var accounts = HOSTING_SERVICES[hostingType].accounts,
                     i;
 
                 hideAllToolsFields();
                 repoPathRowEl.hide();
                 repoMirrorPathRowEl.hide();
 
-                repoPlanEl.empty();
-
-                if (planTypes.length === 1) {
-                    repoPlanRowEl.hide();
-                } else {
-                    for (i = 0; i < planTypes.length; i++) {
-                        var planType = planTypes[i],
-                            opt = $('<option/>')
-                                .val(planType.type)
-                                .text(planType.label)
-                                .appendTo(repoPlanEl);
-
-                        if (planType.type === selectedRepoPlan) {
-                            opt.attr('selected', 'selected');
-                        }
-                    }
-
-                    repoPlanRowEl.show();
-                }
+                updatePlanEl(repoPlanRowEl, repoPlanEl, hostingType);
 
                 /* Rebuild the list of accounts. */
                 selectedAccount = hostingAccountEl.val();
@@ -177,7 +211,7 @@ $(document).ready(function() {
             repoPlanEl.triggerHandler("change");
 
             if (hostingType === "custom" ||
-                BUG_TRACKER_FIELDS[hostingType] === undefined) {
+                !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
                 bugTrackerUseHostingEl[0].disabled = true;
                 bugTrackerUseHostingEl[0].checked = false;
                 bugTrackerUseHostingEl.triggerHandler("change");
@@ -226,7 +260,23 @@ $(document).ready(function() {
 
     bugTrackerTypeEl
         .change(function() {
-            updateFormDisplay("bug_tracker_type", BUG_TRACKER_FIELDS);
+            var bugTrackerType = bugTrackerTypeEl[0].value;
+
+            bugTrackerForms.hide();
+
+            if (bugTrackerType === 'custom') {
+                bugTrackerPlanRowEl.hide();
+                bugTrackerUsernameRowEl.hide();
+                bugTrackerURLRowEl.show();
+            } else if (bugTrackerType === 'none') {
+                bugTrackerPlanRowEl.hide();
+                bugTrackerUsernameRowEl.hide();
+                bugTrackerURLRowEl.hide();
+            } else {
+                bugTrackerURLRowEl.hide();
+                updatePlanEl(bugTrackerPlanRowEl, bugTrackerPlanEl,
+                             bugTrackerType);
+            }
         })
         .triggerHandler("change");
 

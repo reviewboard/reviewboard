@@ -15,7 +15,9 @@ class SourceForgeForm(HostingServiceForm):
 
 class SourceForge(HostingService):
     name = 'SourceForge'
-    repository_form = SourceForgeForm
+    form = SourceForgeForm
+    supports_repositories = True
+    supports_bug_trackers = True
     supported_scmtools = ['Bazaar', 'CVS', 'Mercurial', 'Subversion']
     repository_fields = {
         'Bazaar': {
@@ -52,3 +54,4 @@ class SourceForge(HostingService):
         },
         # TODO: Support Git
     }
+    bug_tracker_field = 'http://sourceforge.net/support/tracker.php?aid=%%s'

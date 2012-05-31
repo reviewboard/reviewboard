@@ -21,7 +21,7 @@ class RepositoryAdmin(admin.ModelAdmin):
             ),
             'classes': ('wide',),
         }),
-        (_('Repository Information'), {
+        (RepositoryForm.REPOSITORY_INFO_FIELDSET, {
             'fields': (
                 'tool',
                 'repository_plan',
@@ -33,13 +33,12 @@ class RepositoryAdmin(admin.ModelAdmin):
             ),
             'classes': ('wide',),
         }),
-        (_('Bug Tracker'), {
+        (RepositoryForm.BUG_TRACKER_FIELDSET, {
             'fields': (
                 'bug_tracker_use_hosting',
                 'bug_tracker_type',
-                'bug_tracker_owner',
-                'bug_tracker_project_name',
-                'bug_tracker_base_url',
+                'bug_tracker_plan',
+                'bug_tracker_hosting_account_username',
                 'bug_tracker',
             ),
             'classes': ('wide',),
@@ -55,7 +54,7 @@ class RepositoryAdmin(admin.ModelAdmin):
         (_('Internal State'), {
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
-            'fields': ('local_site',),
+            'fields': ('local_site', 'extra_data'),
             'classes': ['collapse'],
         }),
     )

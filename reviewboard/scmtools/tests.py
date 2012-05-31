@@ -1563,3 +1563,148 @@ class RepositoryFormTests(DjangoTestCase):
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(repository.extra_data['repository_plan'], '')
+
+    def test_with_hosting_service_custom_bug_tracker(self):
+        """Testing RepositoryForm with a custom bug tracker"""
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='bitbucket')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_type': 'custom',
+            'bug_tracker': 'http://example.com/issue/%s',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
+        self.assertEqual(repository.bug_tracker, 'http://example.com/issue/%s')
+        self.assertFalse('bug_tracker_type' in repository.extra_data)
+
+    def test_with_hosting_service_bug_tracker_service(self):
+        """Testing RepositoryForm with a bug tracker service"""
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='bitbucket')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_type': 'bitbucket',
+            'bug_tracker_hosting_account_username': 'testuser',
+            'bug_tracker-bitbucket_repo_name': 'testrepo',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
+        self.assertEqual(repository.bug_tracker,
+                         'http://bitbucket.org/testuser/testrepo/issue/%s/')
+        self.assertEqual(repository.extra_data['bug_tracker_type'],
+                         'bitbucket')
+        self.assertEqual(
+            repository.extra_data['bug_tracker-bitbucket_repo_name'],
+            'testrepo')
+        self.assertEqual(
+            repository.extra_data['bug_tracker-hosting_account_username'],
+            'testuser')
+
+    def test_with_hosting_service_with_hosting_bug_tracker(self):
+        """Testing RepositoryForm with hosting service's bug tracker"""
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='bitbucket')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_use_hosting': True,
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
+        self.assertEqual(repository.bug_tracker,
+                         'http://bitbucket.org/testuser/testrepo/issue/%s/')
+        self.assertFalse('bug_tracker_type' in repository.extra_data)
+        self.assertFalse('bug_tracker-bitbucket_repo_name'
+                         in repository.extra_data)
+        self.assertFalse('bug_tracker-hosting_account_username'
+                         in repository.extra_data)
+
+    def test_with_hosting_service_no_bug_tracker(self):
+        """Testing RepositoryForm with no bug tracker"""
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='bitbucket')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'bitbucket',
+            'hosting_account': account.pk,
+            'tool': Tool.objects.get(name='Mercurial').pk,
+            'bitbucket_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+        self.assertFalse(repository.extra_data['bug_tracker_use_hosting'])
+        self.assertEqual(repository.bug_tracker, '')
+        self.assertFalse('bug_tracker_type' in repository.extra_data)
+
+    def test_with_hosting_service_with_existing_custom_bug_tracker(self):
+        """Testing RepositoryForm with existing custom bug tracker"""
+        repository = Repository(name='test',
+                                bug_tracker='http://example.com/issue/%s')
+
+        form = RepositoryForm(instance=repository)
+        self.assertFalse(form._get_field_data('bug_tracker_use_hosting'))
+        self.assertEqual(form._get_field_data('bug_tracker_type'), 'custom')
+        self.assertEqual(form.initial['bug_tracker'],
+                         'http://example.com/issue/%s')
+
+    def test_with_hosting_service_with_existing_bug_tracker_service(self):
+        """Testing RepositoryForm with existing bug tracker service"""
+        repository = Repository(name='test')
+        repository.extra_data['bug_tracker_type'] = 'bitbucket'
+        repository.extra_data['bug_tracker-bitbucket_repo_name'] = 'testrepo'
+        repository.extra_data['bug_tracker-hosting_account_username'] = \
+            'testuser'
+
+        form = RepositoryForm(instance=repository)
+        self.assertFalse(form._get_field_data('bug_tracker_use_hosting'))
+        self.assertEqual(form._get_field_data('bug_tracker_type'), 'bitbucket')
+        self.assertEqual(
+            form._get_field_data('bug_tracker_hosting_account_username'),
+            'testuser')
+
+        self.assertTrue('bitbucket' in form.bug_tracker_forms)
+        self.assertTrue('default' in form.bug_tracker_forms['bitbucket'])
+        bitbucket_form = form.bug_tracker_forms['bitbucket']['default']
+        self.assertEqual(
+            bitbucket_form.fields['bitbucket_repo_name'].initial,
+            'testrepo')
+
+    def test_with_hosting_service_with_existing_bug_tracker_using_hosting(self):
+        """Testing RepositoryForm with existing bug tracker using hosting service"""
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='bitbucket')
+        repository = Repository(name='test',
+                                hosting_account=account)
+        repository.extra_data['bug_tracker_use_hosting'] = True
+        repository.extra_data['bitbucket_repo_name'] = 'testrepo'
+
+        form = RepositoryForm(instance=repository)
+        self.assertTrue(form._get_field_data('bug_tracker_use_hosting'))

@@ -15,8 +15,10 @@ class GoogleCodeForm(HostingServiceForm):
 
 class GoogleCode(HostingService):
     name = 'Google Code'
-    repository_form = GoogleCodeForm
+    form = GoogleCodeForm
     supported_scmtools = ['Mercurial', 'Subversion']
+    supports_repositories = True
+    supports_bug_trackers = True
     repository_fields = {
         'Mercurial': {
             'path': 'http://%(googlecode_project_name)s'
@@ -31,3 +33,6 @@ class GoogleCode(HostingService):
                            '.googlecode.com/svn',
         },
     }
+    bug_tracker_field = 'http://code.google.com/p/' \
+                        '%(googlecode_project_name)s/' \
+                        'issues/detail?id=%%s'

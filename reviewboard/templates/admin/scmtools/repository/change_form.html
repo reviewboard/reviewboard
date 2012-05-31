@@ -74,6 +74,18 @@
   </div>
 {%     endfor %}
 {%    endfor %}
+{%   else %}
+{%    if fieldset.name == adminform.form.BUG_TRACKER_FIELDSET %}
+{%     for hosting_service, bug_tracker_types in adminform.form.bug_tracker_forms.items %}
+{%      for bug_tracker_type_id, bug_tracker_form in bug_tracker_types.items %}
+  <div class="bug-tracker-form" id="bug-tracker-form-{{hosting_service}}{% if bug_tracker_type_id %}-{{bug_tracker_type_id}}{% endif %}" style="display: none;">
+{%       for field in bug_tracker_form %}
+{%        include "siteconfig/settings_field.html" %}
+{%       endfor %}
+  </div>
+{%      endfor %}
+{%     endfor %}
+{%    endif %}
 {%   endif %}
 </fieldset>
 {%  endfor %}
