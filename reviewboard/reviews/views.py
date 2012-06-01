@@ -205,18 +205,18 @@ def build_diff_comment_fragments(
 
 
 fields_changed_name_map = {
-    'summary': 'Summary',
-    'description': 'Description',
-    'testing_done': 'Testing Done',
-    'bugs_closed': 'Bugs Closed',
-    'branch': 'Branch',
-    'target_groups': 'Reviewers (Groups)',
-    'target_people': 'Reviewers (People)',
-    'screenshots': 'Screenshots',
-    'screenshot_captions': 'Screenshot Captions',
-    'files': 'Uploaded Files',
-    'file_captions': 'Uploaded File Captions',
-    'diff': 'Diff',
+    'summary': _('Summary'),
+    'description': _('Description'),
+    'testing_done': _('Testing Done'),
+    'bugs_closed': _('Bugs Closed'),
+    'branch': _('Branch'),
+    'target_groups': _('Reviewers (Groups)'),
+    'target_people': _('Reviewers (People)'),
+    'screenshots': _('Screenshots'),
+    'screenshot_captions': _('Screenshot Captions'),
+    'files': _('Uploaded Files'),
+    'file_captions': _('Uploaded File Captions'),
+    'diff': _('Diff'),
 }
 
 
