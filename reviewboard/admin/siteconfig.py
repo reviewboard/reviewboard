@@ -118,6 +118,7 @@ defaults.update({
     'auth_x509_autocreate_users':          False,
     'diffviewer_context_num_lines':        5,
     'diffviewer_include_space_patterns':   [],
+    'diffviewer_max_diff_size':            0,
     'diffviewer_paginate_by':              20,
     'diffviewer_paginate_orphans':         10,
     'diffviewer_syntax_highlighting':      True,

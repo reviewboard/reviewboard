@@ -33,6 +33,7 @@ from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
+                                      DIFF_TOO_BIG, \
                                       INVALID_REPOSITORY, \
                                       MISSING_USER_KEY, \
                                       REPO_AUTHENTICATION_ERROR, \
@@ -57,10 +58,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def setUp(self):
         initialize()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("mail_send_review_mail", True)
-        siteconfig.set("auth_require_sitewide_login", False)
-        siteconfig.save()
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.siteconfig.set("mail_send_review_mail", True)
+        self.siteconfig.set("auth_require_sitewide_login", False)
+        self.siteconfig.save()
+        self._saved_siteconfig_settings = self.siteconfig.settings.copy()
+
         mail.outbox = []
 
         fixtures = getattr(self, 'fixtures', [])
@@ -82,6 +85,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def tearDown(self):
         self.client.logout()
+
+        if self.siteconfig.settings != self._saved_siteconfig_settings:
+            self.siteconfig.settings = self._saved_siteconfig_settings
+            self.siteconfig.save()
 
     def api_func_wrapper(self, api_func, path, query, expected_status,
                          follow_redirects, expected_redirects,
@@ -4529,6 +4536,32 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('basedir' in rsp['fields'])
+
+    def test_post_diffs_too_big(self):
+        """Testing the POST review-requests/<id>/diffs/ API with diff exceeding max size"""
+        self.siteconfig.set('diffviewer_max_diff_size', 2)
+        self.siteconfig.save()
+
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+        f = open(diff_filename, "r")
+
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
+            'path': f,
+            'basedir': "/trunk",
+        }, expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
+        self.assertTrue('reason' in rsp)
+        self.assertTrue('max_size' in rsp)
+        self.assertEqual(rsp['max_size'],
+                         self.siteconfig.get('diffviewer_max_diff_size'))
 
     @add_fixtures(['test_site'])
     def test_post_diffs_with_site(self):

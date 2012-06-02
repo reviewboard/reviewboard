@@ -407,6 +407,11 @@ class DiffSettingsForm(SiteSettingsForm):
                     "page to the diff viewer."),
         initial=10)
 
+    diffviewer_max_diff_size = forms.IntegerField(
+        label=_('Max diff size'),
+        help_text=_('The maximum size (in bytes) for any given diff. Enter 0 '
+                    'to disable size restrictions.'))
+
     def load(self):
         # TODO: Move this check into a dependencies module so we can catch it
         #       when the user starts up Review Board.
@@ -450,7 +455,8 @@ class DiffSettingsForm(SiteSettingsForm):
                     "settings do not need to be changed."
                 ),
                 'classes': ('wide',),
-                'fields': ('diffviewer_context_num_lines',
+                'fields': ('diffviewer_max_diff_size',
+                           'diffviewer_context_num_lines',
                            'diffviewer_paginate_by',
                            'diffviewer_paginate_orphans')
             }

@@ -39,8 +39,7 @@ from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files
-from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError, \
-                                         MAX_DIFF_SIZE
+from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.reviews.errors import PermissionError
@@ -1519,7 +1518,7 @@ class DiffResource(WebAPIResource):
         except DiffTooBigError, e:
             return DIFF_TOO_BIG, {
                 'reason': str(e),
-                'max_size': MAX_DIFF_SIZE,
+                'max_size': e.max_diff_size,
             }
         except Exception, e:
             # This could be very wrong, but at least they'll see the error.
