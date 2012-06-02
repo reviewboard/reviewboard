@@ -91,14 +91,12 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
     }))
 
 
-def manual_updates_required(request,
+def manual_updates_required(request, updates,
                             template_name="admin/manual_updates_required.html"):
     """
     Checks for required manual updates and displays informational pages on
     performing the necessary updates.
     """
-    updates = check_updates_required()
-
     return render_to_response(template_name, RequestContext(request, {
         'updates': [render_to_string(template_name,
                                      RequestContext(request, extra_context))
