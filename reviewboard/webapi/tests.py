@@ -399,6 +399,20 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
         return rsp
 
+    def _delete_screenshot(self, review_request, screenshot):
+        """Deletes a screenshot but does not return, as deletes don't return a
+        payload response.
+        """
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+        else:
+            local_site_name = None
+
+        self.apiDelete(
+            ScreenshotResourceTests.get_list_url(review_request,
+                                                 local_site_name) +
+                                                 str(screenshot.id) + '/')
+
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,
                                       issue_opened=None,
@@ -5600,6 +5614,68 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         }, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_update_deleted_screenshot_comment_issue_status(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>
+        API with an issue and a deleted screenshot
+        """
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
+                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
+        # First, let's ensure that the user that has created the comment
+        # cannot alter the issue_status while the review is unpublished.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # The issue_status should still be "open"
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
+
+        # Next, let's publish the review, and try altering the issue_status.
+        # This should be allowed, since the review request was made by the
+        # current user.
+        review.public = True
+        review.save()
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
+
+        # Delete the screenshot.
+        self._delete_screenshot(review_request, screenshot)
+        review_request.publish(review_request.submitter)
+
+        # Try altering the issue_status. This should be allowed.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'open',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
     @classmethod
     def get_list_url(cls, review, local_site_name=None):

@@ -3766,9 +3766,9 @@ class BaseScreenshotCommentResource(BaseCommentResource):
     def get_queryset(self, request, *args, **kwargs):
         review_request = \
             review_request_resource.get_object(request, *args, **kwargs)
-        return self.model.objects.filter(
-            screenshot__review_request=review_request,
-            review__isnull=False)
+        return self.model.objects.filter(Q(screenshot__review_request=review_request) |
+                                         Q(screenshot__inactive_review_request=review_request),
+                                         review__isnull=False)
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
