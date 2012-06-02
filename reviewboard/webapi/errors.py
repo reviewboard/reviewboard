@@ -70,3 +70,10 @@ DIFF_EMPTY                = WebAPIError(219, "The specified diff file is "
 DIFF_TOO_BIG              = WebAPIError(220, "The specified diff file is "
                                              "too large",
                                         http_status=400) # 400 Bad Request
+FILE_RETRIEVAL_ERROR      = WebAPIError(221, "There was an error fetching "
+                                             "a source file",
+                                        http_status=500) # 500 Internal Server
+                                                         #     Error
+HOSTINGSVC_AUTH_ERROR     = WebAPIError(222, "There was an error authorizing "
+                                             "with a service.",
+                                        http_status=403) # 403 Forbidden
