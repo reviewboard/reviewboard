@@ -275,10 +275,9 @@ class PlasticClient(object):
         repo = "rep:%s@repserver:%s:%s" % (self.reponame, self.hostname,
                                            self.port)
 
-        p = subprocess.Popen(['cm', 'find', 'revs', 'where',
-                              'changeset=' + str(changesetid), 'and',
-                              'id=' + str(revid), 'on',
-                              'repository', '\'' + repo + '\'',
+        p = subprocess.Popen(['cm', 'find', 'changesets', 'where',
+                              'changesetid=' + str(changesetid),
+                              'on', 'repository', '\'' + repo + '\'',
                               '--format={comment}', '--nototal'],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=(os.name != 'nt'))

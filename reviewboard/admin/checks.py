@@ -42,7 +42,6 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard import get_version_string
 
 
-_updates_required = []
 _install_fine = False
 
 
@@ -52,10 +51,11 @@ def check_updates_required():
     Sometimes, especially in developer installs, some things need to be tweaked
     by hand before Review Board can be used on this server.
     """
-    global _updates_required
     global _install_fine
 
-    if not _updates_required and not _install_fine:
+    updates_required = []
+
+    if not _install_fine:
         site_dir = os.path.dirname(settings.HTDOCS_ROOT)
         devel_install = (os.path.exists(os.path.join(settings.LOCAL_ROOT,
                                                      'manage.py')))
@@ -72,7 +72,7 @@ def check_updates_required():
         try:
             siteconfig = SiteConfiguration.objects.get_current()
         except (DatabaseError, SiteConfiguration.DoesNotExist), e:
-            _updates_required.append((
+            updates_required.append((
                 'admin/manual-updates/database-error.html', {
                     'error': e,
                 }
@@ -84,7 +84,7 @@ def check_updates_required():
         cur_version = get_version_string()
 
         if siteconfig and siteconfig.version != cur_version:
-            _updates_required.append((
+            updates_required.append((
                 'admin/manual-updates/version-mismatch.html', {
                     'current_version': cur_version,
                     'stored_version': siteconfig.version,
@@ -110,7 +110,7 @@ def check_updates_required():
 
         if not os.path.isdir(uploaded_dir) or \
            not os.path.isdir(os.path.join(uploaded_dir, "images")):
-            _updates_required.append((
+            updates_required.append((
                 "admin/manual-updates/media-upload-dir.html", {
                     'MEDIA_ROOT': settings.MEDIA_ROOT
                 }
@@ -131,7 +131,15 @@ def check_updates_required():
         if (not data_dir or
             not os.path.isdir(data_dir) or
             not os.access(data_dir, os.W_OK)):
-            _updates_required.append((
+            try:
+                username = getpass.getuser()
+            except ImportError:
+                # This will happen if running on Windows (which doesn't have
+                # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
+                # %USERNAME% are all undefined.
+                username = "<server username>"
+
+            updates_required.append((
                 'admin/manual-updates/data-dir.html', {
                     'data_dir': data_dir,
                     'writable': os.access(data_dir, os.W_OK),
@@ -159,7 +167,7 @@ def check_updates_required():
             else:
                 binaryname = 'patch'
 
-            _updates_required.append((
+            updates_required.append((
                 "admin/manual-updates/install-patch.html", {
                     'platform': sys.platform,
                     'binaryname': binaryname,
@@ -173,10 +181,10 @@ def check_updates_required():
         #
 
 
-        _install_fine = not _updates_required
+        _install_fine = not updates_required
 
 
-    return _updates_required
+    return updates_required
 
 
 def reset_check_cache():
@@ -184,10 +192,8 @@ def reset_check_cache():
 
     This is mainly useful during unit tests.
     """
-    global _updates_required
     global _install_fine
 
-    _updates_required = []
     _install_fine = False
 
 

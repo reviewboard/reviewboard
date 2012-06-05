@@ -3,17 +3,17 @@ import os
 from django import forms
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.diffutils import DEFAULT_DIFF_COMPAT_VERSION
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION, UNKNOWN, FileNotFoundError
 
 
-MAX_DIFF_SIZE = 2**20 # 1 MB
-
-
 class DiffTooBigError(ValueError):
-    pass
+    def __init__(self, msg, max_diff_size):
+        ValueError.__init__(self, msg)
+        self.max_diff_size = max_diff_size
 
 
 class EmptyDiffError(ValueError):
@@ -56,11 +56,19 @@ class UploadDiffForm(forms.Form):
     def create(self, diff_file, parent_diff_file=None, diffset_history=None):
         tool = self.repository.get_scmtool()
 
-        if diff_file.size > MAX_DIFF_SIZE:
-            raise DiffTooBigError(_('The supplied diff file is too large'))
+        siteconfig = SiteConfiguration.objects.get_current()
+        max_diff_size = siteconfig.get('diffviewer_max_diff_size')
 
-        if parent_diff_file and parent_diff_file.size > MAX_DIFF_SIZE:
-            raise DiffTooBigError(_('The supplied parent diff file is too large'))
+        if max_diff_size > 0:
+            if diff_file.size > max_diff_size:
+                raise DiffTooBigError(
+                    _('The supplied diff file is too large'),
+                    max_diff_size=max_diff_size)
+
+            if parent_diff_file and parent_diff_file.size > max_diff_size:
+                raise DiffTooBigError(
+                    _('The supplied parent diff file is too large'),
+                    max_diff_size=max_diff_size)
 
         # Grab the base directory if there is one.
         if not tool.get_diffs_use_absolute_paths():
@@ -165,7 +173,7 @@ class UploadDiffForm(forms.Form):
                 not f.deleted and
                 not f.moved and
                 (check_existance and
-                 not tool.file_exists(filename, revision))):
+                 not self.repository.get_file_exists(filename, revision))):
                 raise FileNotFoundError(filename, revision)
 
             f.origFile = filename

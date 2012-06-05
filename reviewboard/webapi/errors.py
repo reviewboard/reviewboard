@@ -74,3 +74,6 @@ FILE_RETRIEVAL_ERROR      = WebAPIError(221, "There was an error fetching "
                                              "a source file",
                                         http_status=500) # 500 Internal Server
                                                          #     Error
+HOSTINGSVC_AUTH_ERROR     = WebAPIError(222, "There was an error authorizing "
+                                             "with a service.",
+                                        http_status=403) # 403 Forbidden

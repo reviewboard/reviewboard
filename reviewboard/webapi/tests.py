@@ -33,6 +33,7 @@ from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
+                                      DIFF_TOO_BIG, \
                                       INVALID_REPOSITORY, \
                                       MISSING_USER_KEY, \
                                       REPO_AUTHENTICATION_ERROR, \
@@ -57,10 +58,12 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def setUp(self):
         initialize()
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("mail_send_review_mail", True)
-        siteconfig.set("auth_require_sitewide_login", False)
-        siteconfig.save()
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.siteconfig.set("mail_send_review_mail", True)
+        self.siteconfig.set("auth_require_sitewide_login", False)
+        self.siteconfig.save()
+        self._saved_siteconfig_settings = self.siteconfig.settings.copy()
+
         mail.outbox = []
 
         fixtures = getattr(self, 'fixtures', [])
@@ -82,6 +85,10 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
 
     def tearDown(self):
         self.client.logout()
+
+        if self.siteconfig.settings != self._saved_siteconfig_settings:
+            self.siteconfig.settings = self._saved_siteconfig_settings
+            self.siteconfig.save()
 
     def api_func_wrapper(self, api_func, path, query, expected_status,
                          follow_redirects, expected_redirects,
@@ -398,6 +405,20 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
         self.assertEqual(rsp['stat'], 'ok')
 
         return rsp
+
+    def _delete_screenshot(self, review_request, screenshot):
+        """Deletes a screenshot but does not return, as deletes don't return a
+        payload response.
+        """
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+        else:
+            local_site_name = None
+
+        self.apiDelete(
+            ScreenshotResourceTests.get_list_url(review_request,
+                                                 local_site_name) +
+                                                 str(screenshot.id) + '/')
 
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,
@@ -4522,6 +4543,32 @@ class DiffResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assert_('basedir' in rsp['fields'])
 
+    def test_post_diffs_too_big(self):
+        """Testing the POST review-requests/<id>/diffs/ API with diff exceeding max size"""
+        self.siteconfig.set('diffviewer_max_diff_size', 2)
+        self.siteconfig.save()
+
+        rsp = self._postNewReviewRequest()
+        self.assertEqual(rsp['stat'], 'ok')
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+
+        diff_filename = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "scmtools", "testdata", "svn_makefile.diff")
+        f = open(diff_filename, "r")
+
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
+            'path': f,
+            'basedir': "/trunk",
+        }, expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], DIFF_TOO_BIG.code)
+        self.assertTrue('reason' in rsp)
+        self.assertTrue('max_size' in rsp)
+        self.assertEqual(rsp['max_size'],
+                         self.siteconfig.get('diffviewer_max_diff_size'))
+
     @add_fixtures(['test_site'])
     def test_post_diffs_with_site(self):
         """Testing the POST review-requests/<id>/diffs/ API with a local site"""
@@ -5606,6 +5653,68 @@ class ReviewScreenshotCommentResourceTests(BaseWebAPITestCase):
         }, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_update_deleted_screenshot_comment_issue_status(self):
+        """Testing the PUT review-requests/<id>/reviews/<id>/screenshot-comments/<id>
+        API with an issue and a deleted screenshot
+        """
+        comment_text = "Test screenshot comment with an opened issue"
+        x, y, w, h = (2, 2, 10, 10)
+
+        # Post the review request
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the screenshot.
+        rsp = self._postNewScreenshot(review_request)
+        screenshot = Screenshot.objects.get(pk=rsp['screenshot']['id'])
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        rsp = self.apiPost(ReviewResourceTests.get_list_url(review_request),
+                           expected_mimetype=ReviewResourceTests.item_mimetype)
+        review_id = rsp['review']['id']
+        review = Review.objects.get(pk=review_id)
+
+        rsp = self._postNewScreenshotComment(review_request, review_id,
+                                             screenshot, comment_text,
+                                             x, y, w, h, issue_opened=True)
+
+        # First, let's ensure that the user that has created the comment
+        # cannot alter the issue_status while the review is unpublished.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # The issue_status should still be "open"
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
+
+        # Next, let's publish the review, and try altering the issue_status.
+        # This should be allowed, since the review request was made by the
+        # current user.
+        review.public = True
+        review.save()
+
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'resolved',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'resolved')
+
+        # Delete the screenshot.
+        self._delete_screenshot(review_request, screenshot)
+        review_request.publish(review_request.submitter)
+
+        # Try altering the issue_status. This should be allowed.
+        rsp = self.apiPut(rsp['screenshot_comment']['links']['self']['href'], {
+            'issue_status': 'open',
+        }, expected_mimetype=ScreenshotCommentResourceTests.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['screenshot_comment']['issue_status'], 'open')
 
     @classmethod
     def get_list_url(cls, review, local_site_name=None):

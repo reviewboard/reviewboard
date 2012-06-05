@@ -44,9 +44,10 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              get_original_file, \
                                              get_patched_file
-from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError, \
-                                         MAX_DIFF_SIZE
+from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError
 from reviewboard.extensions.base import get_extension_manager
+from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.reviews.errors import PermissionError
 from reviewboard.reviews.forms import UploadDiffForm, UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
@@ -77,6 +78,7 @@ from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_TOO_BIG, \
                                       EMPTY_CHANGESET, \
                                       FILE_RETRIEVAL_ERROR, \
+                                      HOSTINGSVC_AUTH_ERROR, \
                                       INVALID_CHANGE_NUMBER, \
                                       INVALID_REPOSITORY, \
                                       INVALID_USER, \
@@ -1631,7 +1633,7 @@ class DiffResource(WebAPIResource):
         except DiffTooBigError, e:
             return DIFF_TOO_BIG, {
                 'reason': str(e),
-                'max_size': MAX_DIFF_SIZE,
+                'max_size': e.max_diff_size,
             }
         except Exception, e:
             # This could be very wrong, but at least they'll see the error.
@@ -2297,6 +2299,132 @@ class ReviewGroupResource(WebAPIResource):
         return 204, {}
 
 review_group_resource = ReviewGroupResource()
+
+
+class HostingServiceAccountResource(WebAPIResource):
+    """Provides information and allows linking of hosting service accounts.
+
+    The list of accounts tied to hosting services can be retrieved, and new
+    accounts can be linked through an HTTP POST.
+    """
+    name = 'hosting-service-account'
+    model = HostingServiceAccount
+    fields = {
+        'id': {
+            'type': int,
+            'description': 'The numeric ID of the hosting service account.',
+        },
+        'username': {
+            'type': str,
+            'description': 'The username of the account.',
+        },
+        'service': {
+            'type': str,
+            'description': 'The ID of the service this account is on.',
+        },
+    }
+    uri_object_key = 'account_id'
+    autogenerate_etags = True
+
+    allowed_methods = ('GET', 'POST',)
+
+    @webapi_check_login_required
+    def get_queryset(self, request, local_site_name=None, *args, **kwargs):
+        local_site = _get_local_site(local_site_name)
+        return self.model.objects.accessible(visible_only=True,
+                                             local_site=local_site)
+
+    def has_access_permissions(self, request, account, *args, **kwargs):
+        return account.is_accessible_by(request.user)
+
+    def has_modify_permissions(self, request, account, *args, **kwargs):
+        return account.is_mutable_by(request.user)
+
+    def has_delete_permissions(self, request, account, *args, **kwargs):
+        return account.is_mutable_by(request.user)
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get_list(self, request, *args, **kwargs):
+        """Retrieves the list of accounts on the server.
+
+        This will only list visible accounts. Any account that the
+        administrator has hidden will be excluded from the list.
+        """
+        pass
+
+    @webapi_check_local_site
+    @augment_method_from(WebAPIResource)
+    def get(self, *args, **kwargs):
+        """Retrieves information on a particular account.
+
+        This will only return very basic information on the account.
+        Authentication information is not provided.
+        """
+        pass
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(BAD_HOST_KEY, INVALID_FORM_DATA, NOT_LOGGED_IN,
+                            PERMISSION_DENIED, REPO_AUTHENTICATION_ERROR,
+                            SERVER_CONFIG_ERROR, UNVERIFIED_HOST_CERT,
+                            UNVERIFIED_HOST_KEY)
+    @webapi_request_fields(
+        required={
+            'username': {
+                'type': str,
+                'description': 'The username on the account.',
+            },
+            'service_id': {
+                'type': str,
+                'description': 'The registered ID of the service for the '
+                               'account.',
+            },
+        },
+        optional={
+            'password': {
+                'type': str,
+                'description': 'The password on the account, if the hosting '
+                               'service needs it.',
+            },
+        }
+    )
+    def create(self, request, username, service_id, password=None,
+               local_site_name=None, *args, **kwargs):
+        local_site = _get_local_site(local_site_name)
+
+        if not HostingServiceAccount.objects.can_create(request.user,
+                                                        local_site):
+            return _no_access_error(request.user)
+
+        # Validate the service.
+        if not get_hosting_service(service):
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'service': ['This is not a valid service name'],
+                }
+            }
+
+        account = HostingServiceAccount(service_name=service_id,
+                                        username=username,
+                                        local_site=local_site)
+        service = account.service
+
+        if service.needs_authorization:
+            try:
+                service.authorize(request, username, password)
+            except AuthorizationError, e:
+                return HOSTINGSVC_AUTH_ERROR, {
+                    'reason': str(e),
+                }
+
+        service.save()
+
+        return 201, {
+            self.item_result_key: account,
+        }
+
+hosting_service_account_resource = HostingServiceAccountResource()
 
 
 class RepositoryInfoResource(WebAPIResource):
@@ -3882,9 +4010,9 @@ class BaseScreenshotCommentResource(BaseCommentResource):
     def get_queryset(self, request, *args, **kwargs):
         review_request = \
             review_request_resource.get_object(request, *args, **kwargs)
-        return self.model.objects.filter(
-            screenshot__review_request=review_request,
-            review__isnull=False)
+        return self.model.objects.filter(Q(screenshot__review_request=review_request) |
+                                         Q(screenshot__inactive_review_request=review_request),
+                                         review__isnull=False)
 
     def serialize_public_field(self, obj):
         return obj.review.get().public
@@ -6469,6 +6597,7 @@ class RootResource(DjbletsRootResource):
     def __init__(self, *args, **kwargs):
         super(RootResource, self).__init__([
             extension_resource,
+            hosting_service_account_resource,
             repository_resource,
             review_group_resource,
             review_request_resource,
@@ -6501,6 +6630,8 @@ register_resource_for_model(DiffSet, diffset_resource)
 register_resource_for_model(FileDiff, filediff_resource)
 register_resource_for_model(Group, review_group_resource)
 register_resource_for_model(RegisteredExtension, extension_resource)
+register_resource_for_model(HostingServiceAccount,
+                            hosting_service_account_resource)
 register_resource_for_model(Repository, repository_resource)
 register_resource_for_model(
     Review,

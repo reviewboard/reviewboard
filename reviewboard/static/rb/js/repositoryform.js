@@ -1,153 +1,217 @@
-var prevTypes = {};
-var origRepoTypes = [];
+var prevTypes = {},
+    origRepoTypes = [];
 
 function forEachField(fields, wholeRows, func) {
-    var prefix = (wholeRows ? "#id_" : ".field-");
+    var prefix = (wholeRows ? "#id_" : "#row-"),
+        id,
+        field;
 
-    for (var id in fields) {
-        for (var field in fields[id]) {
+    for (id in fields) {
+        for (field in fields[id]) {
             func($(prefix + fields[id][field]));
         }
     }
 }
 
-function updateFormDisplay(id, fields, excludeFields) {
-    var type = $("#id_" + id)[0].value;
+function updateFormDisplay(id, fields) {
+    var type = $("#id_" + id)[0].value,
+        i;
 
-    for (var i in fields[prevTypes[id]]) {
-        $(".field-" + fields[prevTypes[id]][i]).hide();
+    for (i in fields[prevTypes[id]]) {
+        $("#row-" + fields[prevTypes[id]][i]).hide();
     }
 
-    for (var i in fields[type]) {
-        $(".field-" + fields[type][i]).show();
-    }
-
-    if (excludeFields) {
-        for (var i in excludeFields) {
-            $(".field-" + excludeFields[i]).hide();
-        }
+    for (i in fields[type]) {
+        $("#row-" + fields[type][i]).show();
     }
 
     prevTypes[id] = type;
 }
 
-function updateRepositoryType() {
-    var hostingType = $("#id_hosting_type")[0].value;
-    var newRepoTypes = HOSTING_SERVICE_TOOLS[hostingType];
+function updatePlanEl(rowEl, planEl, serviceType) {
+    var planTypes = HOSTING_SERVICES[serviceType].plans,
+        selectedPlan = planEl.val(),
+        i;
 
-    var repoTypesEl = $("#id_tool");
-    var currentRepoType = repoTypesEl[0].value;
+    planEl.empty();
+
+    if (planTypes.length === 1) {
+        rowEl.hide();
+    } else {
+        for (i = 0; i < planTypes.length; i++) {
+            var planType = planTypes[i],
+                opt = $('<option/>')
+                    .val(planType.type)
+                    .text(planType.label)
+                    .appendTo(planEl);
+
+            if (planType.type === selectedPlan) {
+                opt.attr('selected', 'selected');
+            }
+        }
+
+        rowEl.show();
+    }
+
+    planEl.triggerHandler('change');
+}
+
+function updateHostingForm(hostingTypeEl, formPrefix, planEl, formsEl) {
+    var formID = formPrefix + "-" + hostingTypeEl[0].value + "-" +
+                 (planEl.val() || "default");
+
+    formsEl.hide();
+    $("#" + formID).show();
+}
+
+function hideAllToolsFields() {
+    var fields = TOOLS_FIELDS["none"];
+
+    for (i = 0; i < fields.length; i++) {
+        $("#row-" + fields[i]).hide();
+    }
+}
+
+function updateRepositoryType() {
+    var hostingType = $("#id_hosting_type")[0].value,
+        newRepoTypes = (hostingType === "custom"
+                        ? []
+                        : HOSTING_SERVICES[hostingType].scmtools),
+        repoTypesEl = $("#id_tool"),
+        currentRepoType = repoTypesEl[0].value;
 
     repoTypesEl.empty();
 
     $(origRepoTypes).each(function(i) {
         var repoType = origRepoTypes[i];
 
-        if (newRepoTypes.length == 0 ||
+        if (newRepoTypes.length === 0 ||
             $.inArray(repoType.text, newRepoTypes) !== -1) {
             $("<option/>")
                 .text(repoType.text)
                 .val(repoType.value)
                 .appendTo(repoTypesEl);
 
-            if (repoType.value == currentRepoType) {
+            if (repoType.value === currentRepoType) {
                 repoTypesEl[0].value = currentRepoType;
             }
         }
     });
 
-    updateFormDisplay("tool", TOOLS_FIELDS,
-                      HOSTING_SERVICE_HIDDEN_FIELDS[hostingType]);
-}
-
-function getGitHubAPIToken(username, password) {
-    $.ajax({
-        type: 'POST',
-        url: "../../../../github-token/",
-        dataType: "json",
-        data: {
-            username: username,
-            password: password
-        },
-        success: function(data) {
-            $("#id_github_api_token").val(data.token);
-            $("#github_token_dlg").modalBox("destroy");
-        },
-        error: function() {
-            $("#github_token_error").text("Invalid username or password");
-        }
-    });
+    repoTypesEl.triggerHandler("change");
 }
 
 $(document).ready(function() {
+    var hostingTypeEl = $("#id_hosting_type"),
+        hostingAccountEl = $("#id_hosting_account"),
+        hostingAccountRowEl = $("#row-hosting_account"),
+        hostingAccountUserRowEl = $("#row-hosting_account_username"),
+        hostingAccountPassRowEl = $("#row-hosting_account_password"),
+        bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
+        bugTrackerTypeEl = $("#id_bug_tracker_type"),
+        bugTrackerTypeRowEl = $("#row-bug_tracker_type"),
+        bugTrackerPlanEl = $("#id_bug_tracker_plan"),
+        bugTrackerPlanRowEl = $("#row-bug_tracker_plan"),
+        bugTrackerURLRowEl = $("#row-bug_tracker"),
+        bugTrackerUsernameRowEl =
+            $("#row-bug_tracker_hosting_account_username"),
+        repoPathRowEl = $("#row-path"),
+        repoMirrorPathRowEl = $("#row-mirror_path"),
+        repoPlanRowEl = $("#row-repository_plan"),
+        repoPlanEl = $("#id_repository_plan"),
+        publicAccessEl = $("#id_public"),
+        toolEl = $("#id_tool"),
+        publicKeyPopup = $("#ssh-public-key-popup"),
+        repoForms = $(".repo-form"),
+        bugTrackerForms = $(".bug-tracker-form"),
+        service_id;
+
     prevTypes['bug_tracker_type'] = "none";
     prevTypes['hosting_type'] = "custom";
     prevTypes['tool'] = "none";
 
-    $("option", "#id_tool").each(function() {
+    toolEl.find("option").each(function() {
         origRepoTypes.push({value: $(this).val(), text: $(this).text()});
     });
-
-    forEachField(HOSTING_SERVICE_FIELDS, false, function(el) { el.hide(); });
-    forEachField(BUG_TRACKER_FIELDS, false, function(el) { el.hide(); });
-
-    var hostingTypeEl = $("#id_hosting_type");
-    var hostingProjectNameEl = $("#id_hosting_project_name");
-    var bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting");
-    var bugTrackerTypeEl = $("#id_bug_tracker_type");
-    var bugTrackerProjectNameEl = $("#id_bug_tracker_project_name");
-    var repoNameEl = $("#id_name");
-    var repoEl = $("#id_tool");
-    var gitHubGetTokenEl = $("#github-get-token");
-
-    var hostingProjectNameDirty = false;
-    var bugTrackerProjectNameDirty = false;
-
-    repoNameEl.keyup(function() {
-        var value = $(this).val();
-
-        if (!hostingProjectNameDirty) {
-            hostingProjectNameEl.val(value);
-        }
-
-        if (!bugTrackerProjectNameDirty) {
-            bugTrackerProjectNameEl.val(value);
-        }
-    });
-
-    hostingProjectNameEl
-        .keyup(function() {
-            hostingProjectNameDirty = ($(this).val() != "");
-        })
-        .triggerHandler("keyup");
-
-    bugTrackerProjectNameEl
-        .keyup(function() {
-            bugTrackerProjectNameDirty = ($(this).val() != "");
-        })
-        .triggerHandler("keyup");
 
     bugTrackerUseHostingEl
         .change(function() {
             var checked = this.checked;
 
-            bugTrackerTypeEl[0].disabled = checked;
-
-            forEachField(BUG_TRACKER_FIELDS, true, function(el) {
-                el[0].disabled = checked;
-            });
+            if (this.checked) {
+                bugTrackerTypeRowEl.hide();
+                bugTrackerPlanRowEl.hide();
+                bugTrackerUsernameRowEl.hide();
+                bugTrackerURLRowEl.hide();
+                bugTrackerForms.hide();
+            } else {
+                bugTrackerTypeRowEl.show();
+                bugTrackerTypeEl.triggerHandler('change');
+            }
         })
         .triggerHandler("change");
 
+    repoPlanEl.change(function() {
+        updateHostingForm(hostingTypeEl, "repo-form", repoPlanEl, repoForms);
+    });
+
+    bugTrackerPlanEl.change(function() {
+        var plan = bugTrackerPlanEl.val() || 'default',
+            bugTrackerType = bugTrackerTypeEl.val(),
+            planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
+
+        updateHostingForm(bugTrackerTypeEl, "bug-tracker-form",
+                          bugTrackerPlanEl, bugTrackerForms);
+
+        if (planInfo.bug_tracker_requires_username) {
+            bugTrackerUsernameRowEl.show();
+        } else {
+            bugTrackerUsernameRowEl.hide();
+        }
+    });
+
     hostingTypeEl
         .change(function() {
-            updateFormDisplay("hosting_type", HOSTING_SERVICE_FIELDS);
+            var hostingType = hostingTypeEl[0].value,
+                selectedAccount;
+
             updateRepositoryType();
 
-            var hostingType = hostingTypeEl[0].value;
+            if (hostingType === "custom") {
+                repoPlanRowEl.hide();
+                repoPathRowEl.show();
+                repoMirrorPathRowEl.show();
+            } else {
+                var accounts = HOSTING_SERVICES[hostingType].accounts,
+                    i;
 
-            if (hostingType == "custom" ||
-                BUG_TRACKER_FIELDS[hostingType] == undefined) {
+                hideAllToolsFields();
+                repoPathRowEl.hide();
+                repoMirrorPathRowEl.hide();
+
+                updatePlanEl(repoPlanRowEl, repoPlanEl, hostingType);
+
+                /* Rebuild the list of accounts. */
+                selectedAccount = hostingAccountEl.val();
+                hostingAccountEl.find('option[value!=""]').remove();
+
+                for (i = 0; i < accounts.length; i++) {
+                    var account = accounts[i],
+                        opt = $("<option/>")
+                            .val(account.pk)
+                            .text(account.username)
+                            .appendTo(hostingAccountEl);
+
+                    if (account.pk === selectedAccount) {
+                        opt.attr("selected", "selected");
+                    }
+                }
+            }
+
+            repoPlanEl.triggerHandler("change");
+
+            if (hostingType === "custom" ||
+                !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
                 bugTrackerUseHostingEl[0].disabled = true;
                 bugTrackerUseHostingEl[0].checked = false;
                 bugTrackerUseHostingEl.triggerHandler("change");
@@ -157,20 +221,76 @@ $(document).ready(function() {
         })
         .triggerHandler("change");
 
-    $("#id_tool")
+    $([hostingTypeEl[0], hostingAccountEl[0]])
         .change(function() {
-            updateFormDisplay("tool", TOOLS_FIELDS,
-                HOSTING_SERVICE_HIDDEN_FIELDS[hostingTypeEl[0].value]);
+            var hostingType = hostingTypeEl.val();
+
+            if (hostingType === "custom") {
+                hostingAccountRowEl.hide();
+                hostingAccountUserRowEl.hide();
+                hostingAccountPassRowEl.hide();
+            } else {
+                hostingAccountRowEl.show();
+
+                if (hostingAccountEl.val() === "") {
+                    hostingAccountUserRowEl.show();
+
+                    if (HOSTING_SERVICES[hostingType].needs_authorization) {
+                        hostingAccountPassRowEl.show();
+                    } else {
+                        hostingAccountPassRowEl.hide();
+                    }
+                } else {
+                    hostingAccountUserRowEl.hide();
+                    hostingAccountPassRowEl.hide();
+                }
+            }
+        })
+        .triggerHandler("change");
+
+    toolEl
+        .change(function() {
+            if (hostingTypeEl[0].value === "custom") {
+                updateFormDisplay("tool", TOOLS_FIELDS);
+            } else {
+                hideAllToolsFields();
+            }
         })
         .triggerHandler("change");
 
     bugTrackerTypeEl
         .change(function() {
-            updateFormDisplay("bug_tracker_type", BUG_TRACKER_FIELDS);
+            var bugTrackerType = bugTrackerTypeEl[0].value;
+
+            bugTrackerForms.hide();
+
+            if (bugTrackerType === 'custom') {
+                bugTrackerPlanRowEl.hide();
+                bugTrackerUsernameRowEl.hide();
+                bugTrackerURLRowEl.show();
+            } else if (bugTrackerType === 'none') {
+                bugTrackerPlanRowEl.hide();
+                bugTrackerUsernameRowEl.hide();
+                bugTrackerURLRowEl.hide();
+            } else {
+                bugTrackerURLRowEl.hide();
+                updatePlanEl(bugTrackerPlanRowEl, bugTrackerPlanEl,
+                             bugTrackerType);
+            }
         })
         .triggerHandler("change");
 
-    var publicKeyPopup = $("#ssh-public-key-popup");
+    publicAccessEl
+        .change(function() {
+            if (this.checked) {
+                $("#row-users").hide();
+                $("#row-review_groups").hide();
+            } else {
+                $("#row-users").show();
+                $("#row-review_groups").show();
+            }
+        })
+        .triggerHandler("change");
 
     $("#show-ssh-key-link").toggle(function() {
         $(this).text("Hide SSH Public Key");
@@ -179,59 +299,6 @@ $(document).ready(function() {
     }, function() {
         $(this).text("Show SSH Public Key");
         publicKeyPopup.hide();
-        return false;
-    });
-
-    $("#id_hosting_owner")
-        .change(function() {
-            if ($(this).val()) {
-                gitHubGetTokenEl[0].disabled = false;
-            } else {
-                gitHubGetTokenEl[0].disabled = true;
-            }
-        })
-        .triggerHandler("change")
-
-    gitHubGetTokenEl
-        .click(function() {
-            var username = $("#id_hosting_owner").val();
-
-            $("<div/>")
-                .attr("id", "github_token_dlg")
-                .append($("<p>/>")
-                    .html("Enter the password for <b>" +
-                          username + "</b> on GitHub."))
-                .append($("<p>/>")
-                    .text("The password will not be stored."))
-                .append($("<label for='github_token_password'/>")
-                    .text("Password: "))
-                .append($("<input/>")
-                    .attr({
-                        id: 'github_token_password',
-                        type: 'password'
-                    }))
-                .append($("<p id='github_token_error'/>"))
-                .appendTo("body")
-                .modalBox({
-                    title: "GitHub API Token Retrieval",
-                    buttons: [
-                        $('<input type="button"/>')
-                            .val("Cancel"),
-
-                        $('<input type="button"/>')
-                            .val("Get Token")
-                            .click(function() {
-                                getGitHubAPIToken(
-                                    username,
-                                    $("#github_token_password").val());
-
-                                return false;
-                            })
-                    ]
-                });
-
-            $("#github_token_password").focus();
-
         return false;
     });
 });

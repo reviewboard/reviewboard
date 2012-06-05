@@ -6,7 +6,7 @@ from reviewboard.scmtools.models import Repository, Tool
 
 
 class RepositoryAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'path', 'visible')
+    list_display = ('__unicode__', 'path', 'hosting', 'visible')
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'visible',),
@@ -15,31 +15,30 @@ class RepositoryAdmin(admin.ModelAdmin):
         (_('Repository Hosting'), {
             'fields': (
                 'hosting_type',
-                'tool',
-                'hosting_owner',
-                'hosting_project_name',
-                'path',
-                'mirror_path',
-                'raw_file_url',
-                'github_api_token',
-                'username',
-                'password',
-                'project_slug',
-                'repository_name',
-                'codebase_repo_name',
-                'codebase_group_name',
-                'codebase_api_username',
-                'codebase_api_key',
+                'hosting_account',
+                'hosting_account_username',
+                'hosting_account_password',
             ),
             'classes': ('wide',),
         }),
-        (_('Bug Tracker'), {
+        (RepositoryForm.REPOSITORY_INFO_FIELDSET, {
+            'fields': (
+                'tool',
+                'repository_plan',
+                'path',
+                'mirror_path',
+                'raw_file_url',
+                'username',
+                'password',
+            ),
+            'classes': ('wide',),
+        }),
+        (RepositoryForm.BUG_TRACKER_FIELDSET, {
             'fields': (
                 'bug_tracker_use_hosting',
                 'bug_tracker_type',
-                'bug_tracker_owner',
-                'bug_tracker_project_name',
-                'bug_tracker_base_url',
+                'bug_tracker_plan',
+                'bug_tracker_hosting_account_username',
                 'bug_tracker',
             ),
             'classes': ('wide',),
@@ -48,18 +47,25 @@ class RepositoryAdmin(admin.ModelAdmin):
             'fields': ('public', 'users', 'review_groups'),
             'classes': ('wide',),
         }),
-        (_('Advanced'), {
+        (_('Advanced Settings'), {
             'fields': ('encoding',),
-            'classes': ('wide',),
+            'classes': ('wide', 'collapse'),
         }),
-        (_('State'), {
+        (_('Internal State'), {
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
-            'fields': ('local_site',),
+            'fields': ('local_site', 'extra_data'),
             'classes': ['collapse'],
         }),
     )
     form = RepositoryForm
+
+    def hosting(self, repository):
+        if repository.hosting_account_id:
+            account = repository.hosting_account
+            return '%s@%s' % (account.username, account.service.name)
+        else:
+            return ''
 
 
 class ToolAdmin(admin.ModelAdmin):
