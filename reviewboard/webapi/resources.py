@@ -2192,6 +2192,7 @@ class HostingServiceAccountResource(WebAPIResource):
     The list of accounts tied to hosting services can be retrieved, and new
     accounts can be linked through an HTTP POST.
     """
+    name = 'hosting-service-account'
     model = HostingServiceAccount
     fields = {
         'id': {
