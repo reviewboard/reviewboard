@@ -70,7 +70,7 @@ class Repository(models.Model):
                     "revision and filename parts of the path."))
     username = models.CharField(max_length=32, blank=True)
     password = models.CharField(max_length=128, blank=True)
-    extra_data = JSONField(default={})
+    extra_data = JSONField(null=True)
 
     tool = models.ForeignKey(Tool, related_name="repositories")
     hosting_account = models.ForeignKey(

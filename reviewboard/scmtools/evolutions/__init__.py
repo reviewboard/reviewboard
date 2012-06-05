@@ -7,4 +7,5 @@ SEQUENCE = [
     'repository_access_control',
     'group_site',
     'repository_hosting_accounts',
+    'repository_extra_data_null',
 ]

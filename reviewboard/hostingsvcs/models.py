@@ -10,7 +10,7 @@ from reviewboard.site.models import LocalSite
 class HostingServiceAccount(models.Model):
     service_name = models.CharField(max_length=128)
     username = models.CharField(max_length=128)
-    data = JSONField(default={})
+    data = JSONField()
     visible = models.BooleanField(default=True)
     local_site = models.ForeignKey(LocalSite,
                                    related_name='hosting_service_accounts',
