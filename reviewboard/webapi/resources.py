@@ -2187,11 +2187,20 @@ review_group_resource = ReviewGroupResource()
 
 
 class HostingServiceAccountResource(WebAPIResource):
+    """Provides information and allows linking of hosting service accounts.
+
+    The list of accounts tied to hosting services can be retrieved, and new
+    accounts can be linked through an HTTP POST.
+    """
     model = HostingServiceAccount
     fields = {
         'id': {
             'type': int,
             'description': 'The numeric ID of the hosting service account.',
+        },
+        'username': {
+            'type': str,
+            'description': 'The username of the account.',
         },
         'service': {
             'type': str,
@@ -2206,8 +2215,7 @@ class HostingServiceAccountResource(WebAPIResource):
     @webapi_check_login_required
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         local_site = _get_local_site(local_site_name)
-        return self.model.objects.accessible(request.user,
-                                             visible_only=True,
+        return self.model.objects.accessible(visible_only=True,
                                              local_site=local_site)
 
     def has_access_permissions(self, request, account, *args, **kwargs):
