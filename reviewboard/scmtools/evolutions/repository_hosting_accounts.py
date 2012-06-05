@@ -4,7 +4,7 @@ from djblets.util.fields import JSONField
 
 
 MUTATIONS = [
-    AddField('Repository', 'extra_data', JSONField, initial=u'{}'),
+    AddField('Repository', 'extra_data', JSONField, null=True),
     AddField('Repository', 'hosting_account',
              models.ForeignKey, null=True,
              related_model='hostingsvcs.HostingServiceAccount')
