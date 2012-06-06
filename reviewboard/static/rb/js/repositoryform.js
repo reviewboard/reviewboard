@@ -192,7 +192,7 @@ $(document).ready(function() {
                 updatePlanEl(repoPlanRowEl, repoPlanEl, hostingType);
 
                 /* Rebuild the list of accounts. */
-                selectedAccount = hostingAccountEl.val();
+                selectedAccount = parseInt(hostingAccountEl.val(), 10);
                 hostingAccountEl.find('option[value!=""]').remove();
 
                 for (i = 0; i < accounts.length; i++) {
