@@ -187,6 +187,7 @@ class RepositoryForm(forms.ModelForm):
                     {
                         'pk': account.pk,
                         'username': account.username,
+                        'is_authorized': account.is_authorized,
                     }
                     for account in hosting_accounts
                     if account.service_name == hosting_service_id
@@ -378,7 +379,9 @@ class RepositoryForm(forms.ModelForm):
         username = self.cleaned_data['hosting_account_username']
         password = self.cleaned_data['hosting_account_password']
 
-        if not hosting_account and not username:
+        if hosting_account and not username:
+            username = hosting_account.username
+        elif not hosting_account and not username:
             self.errors['hosting_account'] = self.error_class([
                 _('An account must be linked in order to use this hosting '
                   'service'),
@@ -407,21 +410,22 @@ class RepositoryForm(forms.ModelForm):
                                                     username=username,
                                                     local_site=self.local_site)
 
-            if hosting_service_cls.needs_authorization:
-                try:
-                    hosting_account.service.authorize(
-                        username, password,
-                        local_site_name=self.local_site_name)
-                except AuthorizationError, e:
-                    self.errors['hosting_account'] = self.error_class([
-                        _('Unable to link the account: %s') % e,
-                    ])
-                    return
-                except Exception, e:
-                    self.errors['hosting_account'] = self.error_class([
-                        _('Unknown error when linking the account: %s') % e,
-                    ])
-                    return
+        if (hosting_service_cls.needs_authorization and
+            not hosting_account.is_authorized):
+            try:
+                hosting_account.service.authorize(
+                    username, password,
+                    local_site_name=self.local_site_name)
+            except AuthorizationError, e:
+                self.errors['hosting_account'] = self.error_class([
+                    _('Unable to link the account: %s') % e,
+                ])
+                return
+            except Exception, e:
+                self.errors['hosting_account'] = self.error_class([
+                    _('Unknown error when linking the account: %s') % e,
+                ])
+                return
 
             # Flag that we've linked the account. If there are any
             # validation errors, and this flag is set, we tell the user
@@ -552,9 +556,15 @@ class RepositoryForm(forms.ModelForm):
             self.fields['bug_tracker_type'].required = \
                 not bug_tracker_use_hosting
 
+            account_pk = self._get_field_data('hosting_account')
+
             new_hosting_account = (
-                hosting_type != self.NO_HOSTING_SERVICE_ID and
-                not self._get_field_data('hosting_account'))
+                hosting_type != self.NO_HOSTING_SERVICE_ID and not account_pk)
+
+            if account_pk:
+                account = HostingServiceAccount.objects.get(pk=account_pk)
+            else:
+                account = None
 
             self.fields['path'].required = \
                 (hosting_type == self.NO_HOSTING_SERVICE_ID)
@@ -580,8 +590,11 @@ class RepositoryForm(forms.ModelForm):
             # hosting account.
             self.fields['hosting_account_username'].required = \
                 new_hosting_account
-            self.fields['hosting_account_password'].required = \
-                (new_hosting_account and hosting_service.needs_authorization)
+            self.fields['hosting_account_password'].required = (
+                hosting_service and
+                hosting_service.needs_authorization and
+                (new_hosting_account or
+                 (account and not account.is_authorized)))
 
             # Only require the bug tracker username if the bug tracker field
             # requires the username.

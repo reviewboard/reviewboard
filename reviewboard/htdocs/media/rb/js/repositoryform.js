@@ -107,6 +107,12 @@ $(document).ready(function() {
         hostingAccountRowEl = $("#row-hosting_account"),
         hostingAccountUserRowEl = $("#row-hosting_account_username"),
         hostingAccountPassRowEl = $("#row-hosting_account_password"),
+        hostingAccountRelinkEl = $("<p/>")
+            .text('The authentication requirements for this account has ' +
+                  'changed. You will need to re-authenticate.')
+            .addClass('errornote')
+            .hide()
+            .appendTo(hostingAccountRowEl),
         bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
         bugTrackerTypeEl = $("#id_bug_tracker_type"),
         bugTrackerTypeRowEl = $("#row-bug_tracker_type"),
@@ -200,6 +206,7 @@ $(document).ready(function() {
                         opt = $("<option/>")
                             .val(account.pk)
                             .text(account.username)
+                            .data('account', account)
                             .appendTo(hostingAccountEl);
 
                     if (account.pk === selectedAccount) {
@@ -225,6 +232,8 @@ $(document).ready(function() {
         .change(function() {
             var hostingType = hostingTypeEl.val();
 
+            hostingAccountRelinkEl.hide();
+
             if (hostingType === "custom") {
                 hostingAccountRowEl.hide();
                 hostingAccountUserRowEl.hide();
@@ -241,8 +250,19 @@ $(document).ready(function() {
                         hostingAccountPassRowEl.hide();
                     }
                 } else {
+                    var selectedOption =
+                            $(hostingAccountEl[0].options[
+                                hostingAccountEl[0].selectedIndex]),
+                        account = selectedOption.data('account');
+
                     hostingAccountUserRowEl.hide();
-                    hostingAccountPassRowEl.hide();
+
+                    if (account.is_authorized) {
+                        hostingAccountPassRowEl.hide();
+                    } else {
+                        hostingAccountPassRowEl.show();
+                        hostingAccountRelinkEl.show();
+                    }
                 }
             }
         })
