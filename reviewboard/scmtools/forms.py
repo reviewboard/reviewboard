@@ -69,7 +69,9 @@ class RepositoryForm(forms.ModelForm):
         required=True,
         empty_label=_('<Link a new account>'),
         help_text=_("Link this repository to an account on the hosting "
-                    "service."),
+                    "service. This username may be used as part of the "
+                    "repository URL, depending on the hosting service and "
+                    "plan."),
         queryset=HostingServiceAccount.objects.none())
 
     hosting_account_username = forms.CharField(
@@ -91,7 +93,9 @@ class RepositoryForm(forms.ModelForm):
 
     repository_plan = forms.ChoiceField(
         label=_('Repository plan'),
-        required=True)
+        required=True,
+        help_text=_('The plan for your repository on this hosting service. '
+                    'This must match what is set for your repository.'))
 
     # Bug Tracker fields
     bug_tracker_use_hosting = forms.BooleanField(

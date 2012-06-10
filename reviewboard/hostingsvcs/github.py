@@ -18,7 +18,10 @@ class GitHubPublicForm(HostingServiceForm):
         label=_('Repository name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in '
+                    'http://github.com/&lt;username&gt;/&lt;repo_name&gt;/'))
 
 
 class GitHubPrivateForm(HostingServiceForm):
@@ -26,7 +29,10 @@ class GitHubPrivateForm(HostingServiceForm):
         label=_('Repository name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in '
+                    'http://github.com/&lt;username&gt;/&lt;repo_name&gt;/'))
 
 
 class GitHubPublicOrgForm(HostingServiceForm):
@@ -34,13 +40,19 @@ class GitHubPublicOrgForm(HostingServiceForm):
         label=_('Organization name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the organization. This is the '
+                    '&lt;org_name&gt; in '
+                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
 
     github_public_org_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in '
+                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
 
 
 class GitHubPrivateOrgForm(HostingServiceForm):
@@ -48,13 +60,19 @@ class GitHubPrivateOrgForm(HostingServiceForm):
         label=_('Organization name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the organization. This is the '
+                    '&lt;org_name&gt; in '
+                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
 
     github_private_org_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in '
+                    'http://github.com/&lt;org_name&gt;/&lt;repo_name&gt;/'))
 
 
 class GitHub(HostingService):
