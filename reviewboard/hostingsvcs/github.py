@@ -201,7 +201,7 @@ class GitHub(HostingService):
                 'Accept': self.RAW_MIMETYPE,
             })
         except (urllib2.URLError, urllib2.HTTPError), e:
-            raise FileNotFoundError(str(e))
+            raise FileNotFoundError(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
         url = '%sgit/blobs/%s' % (self._get_repo_api_url(repository), revision)
