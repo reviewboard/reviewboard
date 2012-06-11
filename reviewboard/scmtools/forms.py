@@ -69,7 +69,9 @@ class RepositoryForm(forms.ModelForm):
         required=True,
         empty_label=_('<Link a new account>'),
         help_text=_("Link this repository to an account on the hosting "
-                    "service."),
+                    "service. This username may be used as part of the "
+                    "repository URL, depending on the hosting service and "
+                    "plan."),
         queryset=HostingServiceAccount.objects.none())
 
     hosting_account_username = forms.CharField(
@@ -91,7 +93,9 @@ class RepositoryForm(forms.ModelForm):
 
     repository_plan = forms.ChoiceField(
         label=_('Repository plan'),
-        required=True)
+        required=True,
+        help_text=_('The plan for your repository on this hosting service. '
+                    'This must match what is set for your repository.'))
 
     # Bug Tracker fields
     bug_tracker_use_hosting = forms.BooleanField(
@@ -132,6 +136,7 @@ class RepositoryForm(forms.ModelForm):
         self.repository_forms = {}
         self.bug_tracker_forms = {}
         self.hosting_service_info = {}
+        self.validate_repository = True
 
         # Determine the local_site that will be associated with any
         # repository coming from this form.
@@ -187,6 +192,7 @@ class RepositoryForm(forms.ModelForm):
                     {
                         'pk': account.pk,
                         'username': account.username,
+                        'is_authorized': account.is_authorized,
                     }
                     for account in hosting_accounts
                     if account.service_name == hosting_service_id
@@ -378,7 +384,9 @@ class RepositoryForm(forms.ModelForm):
         username = self.cleaned_data['hosting_account_username']
         password = self.cleaned_data['hosting_account_password']
 
-        if not hosting_account and not username:
+        if hosting_account and not username:
+            username = hosting_account.username
+        elif not hosting_account and not username:
             self.errors['hosting_account'] = self.error_class([
                 _('An account must be linked in order to use this hosting '
                   'service'),
@@ -407,21 +415,22 @@ class RepositoryForm(forms.ModelForm):
                                                     username=username,
                                                     local_site=self.local_site)
 
-            if hosting_service_cls.needs_authorization:
-                try:
-                    hosting_account.service.authorize(
-                        username, password,
-                        local_site_name=self.local_site_name)
-                except AuthorizationError, e:
-                    self.errors['hosting_account'] = self.error_class([
-                        _('Unable to link the account: %s') % e,
-                    ])
-                    return
-                except Exception, e:
-                    self.errors['hosting_account'] = self.error_class([
-                        _('Unknown error when linking the account: %s') % e,
-                    ])
-                    return
+        if (hosting_service_cls.needs_authorization and
+            not hosting_account.is_authorized):
+            try:
+                hosting_account.service.authorize(
+                    username, password,
+                    local_site_name=self.local_site_name)
+            except AuthorizationError, e:
+                self.errors['hosting_account'] = self.error_class([
+                    _('Unable to link the account: %s') % e,
+                ])
+                return
+            except Exception, e:
+                self.errors['hosting_account'] = self.error_class([
+                    _('Unknown error when linking the account: %s') % e,
+                ])
+                return
 
             # Flag that we've linked the account. If there are any
             # validation errors, and this flag is set, we tell the user
@@ -475,6 +484,7 @@ class RepositoryForm(forms.ModelForm):
                 ])
                 return
 
+            plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
             hosting_service_cls = get_hosting_service(hosting_type)
 
             # We already validated server-side that the hosting service
@@ -526,6 +536,10 @@ class RepositoryForm(forms.ModelForm):
     def full_clean(self):
         extra_cleaned_data = {}
         extra_errors = {}
+        required_values = {}
+
+        for field in self.fields.itervalues():
+            required_values[field] = field.required
 
         if self.data:
             hosting_type = self._get_field_data('hosting_type')
@@ -552,9 +566,15 @@ class RepositoryForm(forms.ModelForm):
             self.fields['bug_tracker_type'].required = \
                 not bug_tracker_use_hosting
 
+            account_pk = self._get_field_data('hosting_account')
+
             new_hosting_account = (
-                hosting_type != self.NO_HOSTING_SERVICE_ID and
-                not self._get_field_data('hosting_account'))
+                hosting_type != self.NO_HOSTING_SERVICE_ID and not account_pk)
+
+            if account_pk:
+                account = HostingServiceAccount.objects.get(pk=account_pk)
+            else:
+                account = None
 
             self.fields['path'].required = \
                 (hosting_type == self.NO_HOSTING_SERVICE_ID)
@@ -571,6 +591,10 @@ class RepositoryForm(forms.ModelForm):
                         for id, info in service.plans or []
                     ]
 
+            self.fields['bug_tracker_plan'].required = (
+                self.fields['bug_tracker_plan'].required and
+                not bug_tracker_use_hosting)
+
             # We want to show this as required (in the label), but not
             # actually require, since we use a blank entry as
             # "Link new account."
@@ -580,8 +604,11 @@ class RepositoryForm(forms.ModelForm):
             # hosting account.
             self.fields['hosting_account_username'].required = \
                 new_hosting_account
-            self.fields['hosting_account_password'].required = \
-                (new_hosting_account and hosting_service.needs_authorization)
+            self.fields['hosting_account_password'].required = (
+                hosting_service and
+                hosting_service.needs_authorization and
+                (new_hosting_account or
+                 (account and not account.is_authorized)))
 
             # Only require the bug tracker username if the bug tracker field
             # requires the username.
@@ -629,9 +656,11 @@ class RepositoryForm(forms.ModelForm):
         else:
             self.errors.update(extra_errors)
 
-        # Undo the hosting account above. This is so that the field will
-        # display correctly.
-        self.fields['hosting_account'].required = True
+        # Undo the required settings above. Now that we're done with them
+        # for validation, we want to fix the display so that users don't
+        # see the required states change.
+        for field, required in required_values.iteritems():
+            field.required = required
 
     def clean(self):
         """Performs validation on the form.
@@ -664,7 +693,9 @@ class RepositoryForm(forms.ModelForm):
             # The clean/validation functions could create new errors, so
             # skip validating the repository path if everything else isn't
             # clean.
-            if not self.errors and not self.cleaned_data['reedit_repository']:
+            if (not self.errors and
+                not self.cleaned_data['reedit_repository'] and
+                self.validate_repository):
                 self._verify_repository_path()
 
         return super(RepositoryForm, self).clean()

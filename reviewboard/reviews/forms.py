@@ -163,7 +163,13 @@ class NewReviewRequestForm(forms.Form):
         return set([constructor(name) for name in names])
 
     def create(self, user, diff_file, parent_diff_file, local_site=None):
-        repository = self.cleaned_data['repository']
+        # Django forms now use defer() to give us the object we need. This
+        # actually fails with the JSONField in Repository, as we end up
+        # getting the serialized data and not the dict we place there. So,
+        # fetch this again.
+        repository = Repository.objects.get(
+            pk=self.cleaned_data['repository'].pk)
+
         changenum = self.cleaned_data['changenum'] or None
 
         # It's a little odd to validate this here, but we want to have access to

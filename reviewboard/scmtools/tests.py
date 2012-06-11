@@ -1647,25 +1647,32 @@ class RepositoryFormTests(DjangoTestCase):
     def test_with_hosting_service_with_hosting_bug_tracker(self):
         """Testing RepositoryForm with hosting service's bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
-                                                       service_name='bitbucket')
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': '1234',
+        }
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'bitbucket',
+            'hosting_type': 'github',
             'hosting_account': account.pk,
-            'tool': Tool.objects.get(name='Mercurial').pk,
-            'bitbucket_repo_name': 'testrepo',
+            'tool': Tool.objects.get(name='Git').pk,
+            'repository_plan': 'public',
+            'github_public_repo_name': 'testrepo',
             'bug_tracker_use_hosting': True,
+            'bug_tracker_type': 'googlecode',
         })
+        form.validate_repository = False
 
         self.assertTrue(form.is_valid())
 
         repository = form.save()
         self.assertTrue(repository.extra_data['bug_tracker_use_hosting'])
         self.assertEqual(repository.bug_tracker,
-                         'http://bitbucket.org/testuser/testrepo/issue/%s/')
+                         'http://github.com/testuser/testrepo/issues#issue/%s')
         self.assertFalse('bug_tracker_type' in repository.extra_data)
-        self.assertFalse('bug_tracker-bitbucket_repo_name'
+        self.assertFalse('bug_tracker-github_public_repo_name'
                          in repository.extra_data)
         self.assertFalse('bug_tracker-hosting_account_username'
                          in repository.extra_data)
