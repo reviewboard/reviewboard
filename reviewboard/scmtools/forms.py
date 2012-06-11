@@ -136,6 +136,7 @@ class RepositoryForm(forms.ModelForm):
         self.repository_forms = {}
         self.bug_tracker_forms = {}
         self.hosting_service_info = {}
+        self.validate_repository = True
 
         # Determine the local_site that will be associated with any
         # repository coming from this form.
@@ -483,6 +484,7 @@ class RepositoryForm(forms.ModelForm):
                 ])
                 return
 
+            plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
             hosting_service_cls = get_hosting_service(hosting_type)
 
             # We already validated server-side that the hosting service
@@ -534,6 +536,10 @@ class RepositoryForm(forms.ModelForm):
     def full_clean(self):
         extra_cleaned_data = {}
         extra_errors = {}
+        required_values = {}
+
+        for field in self.fields.itervalues():
+            required_values[field] = field.required
 
         if self.data:
             hosting_type = self._get_field_data('hosting_type')
@@ -584,6 +590,10 @@ class RepositoryForm(forms.ModelForm):
                         (id, info['name'])
                         for id, info in service.plans or []
                     ]
+
+            self.fields['bug_tracker_plan'].required = (
+                self.fields['bug_tracker_plan'].required and
+                not bug_tracker_use_hosting)
 
             # We want to show this as required (in the label), but not
             # actually require, since we use a blank entry as
@@ -646,9 +656,11 @@ class RepositoryForm(forms.ModelForm):
         else:
             self.errors.update(extra_errors)
 
-        # Undo the hosting account above. This is so that the field will
-        # display correctly.
-        self.fields['hosting_account'].required = True
+        # Undo the required settings above. Now that we're done with them
+        # for validation, we want to fix the display so that users don't
+        # see the required states change.
+        for field, required in required_values.iteritems():
+            field.required = required
 
     def clean(self):
         """Performs validation on the form.
@@ -681,7 +693,9 @@ class RepositoryForm(forms.ModelForm):
             # The clean/validation functions could create new errors, so
             # skip validating the repository path if everything else isn't
             # clean.
-            if not self.errors and not self.cleaned_data['reedit_repository']:
+            if (not self.errors and
+                not self.cleaned_data['reedit_repository'] and
+                self.validate_repository):
                 self._verify_repository_path()
 
         return super(RepositoryForm, self).clean()
