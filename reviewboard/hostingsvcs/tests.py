@@ -328,7 +328,7 @@ class GitHubTests(ServiceTests):
                 'note_url': '',
                 'updated_at': '2012-05-04T03:30:00Z',
                 'created_at': '2012-05-04T03:30:00Z',
-            })
+            }), {}
 
         self.service_class._http_post = _http_post
 

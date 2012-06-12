@@ -1,3 +1,4 @@
+import logging
 import urllib2
 
 from django import forms
@@ -161,7 +162,7 @@ class GitHub(HostingService):
             local_site_reverse('root', local_site_name=local_site_name))
 
         try:
-            rsp = self._json_post(
+            rsp, headers = self._json_post(
                 url=self.API_URL + 'authorizations',
                 username=username,
                 password=password,
@@ -194,17 +195,17 @@ class GitHub(HostingService):
                 'token' in self.account.data['authorization'])
 
     def get_file(self, repository, path, revision, *args, **kwargs):
-        url = '%sgit/blobs/%s' % (self._get_repo_api_url(repository), revision)
+        url = self._build_api_url(repository, 'git/blobs/%s' % revision)
 
         try:
             return self._http_get(url, headers={
                 'Accept': self.RAW_MIMETYPE,
-            })
+            })[0]
         except (urllib2.URLError, urllib2.HTTPError), e:
             raise FileNotFoundError(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
-        url = '%sgit/blobs/%s' % (self._get_repo_api_url(repository), revision)
+        url = self._build_api_url(repository, 'git/blobs/%s' % revision)
 
         try:
             self._http_get(url, headers={
@@ -214,6 +215,33 @@ class GitHub(HostingService):
             return True
         except (urllib2.URLError, urllib2.HTTPError), e:
             return False
+
+    def _http_get(self, url, *args, **kwargs):
+        data, headers = super(GitHub, self)._http_get(url, *args, **kwargs)
+        self._check_rate_limits(headers)
+        return data, headers
+
+    def _http_post(self, url, *args, **kwargs):
+        data, headers = super(GitHub, self)._http_post(url, *args, **kwargs)
+        self._check_rate_limits(headers)
+        return data, headers
+
+    def _check_rate_limits(self, headers):
+        rate_limit_remaining = headers.get('X-RateLimit-Remaining', None)
+
+        try:
+            if (rate_limit_remaining is not None and
+                int(rate_limit_remaining) <= 100):
+                logging.warning('GitHub rate limit for %s is down to %s',
+                                self.account.username, rate_limit_remaining)
+        except ValueError:
+            pass
+
+    def _build_api_url(self, repository, api_path):
+        return '%s%s?access_token=%s' % (
+            self._get_repo_api_url(repository),
+            api_path,
+            self.account.data['authorization']['token'])
 
     def _get_repo_api_url(self, repository):
         url = self.API_URL
