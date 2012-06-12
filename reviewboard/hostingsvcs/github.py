@@ -194,7 +194,9 @@ class GitHub(HostingService):
                 'token' in self.account.data['authorization'])
 
     def get_file(self, repository, path, revision, *args, **kwargs):
-        url = '%sgit/blobs/%s' % (self._get_repo_api_url(repository), revision)
+        url = '%sgit/blobs/%s?access_token=%s' % (
+            self._get_repo_api_url(repository), revision,
+            self.account.data['authorization']['token'])
 
         try:
             return self._http_get(url, headers={
@@ -204,7 +206,9 @@ class GitHub(HostingService):
             raise FileNotFoundError(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
-        url = '%sgit/blobs/%s' % (self._get_repo_api_url(repository), revision)
+        url = '%sgit/blobs/%s?access_token=%s' % (
+            self._get_repo_api_url(repository), revision,
+            self.account.data['authorization']['token'])
 
         try:
             self._http_get(url, headers={
