@@ -167,8 +167,11 @@ class NewReviewRequestForm(forms.Form):
         # actually fails with the JSONField in Repository, as we end up
         # getting the serialized data and not the dict we place there. So,
         # fetch this again.
-        repository = Repository.objects.get(
-            pk=self.cleaned_data['repository'].pk)
+        if self.cleaned_data['repository']:
+            repository = Repository.objects.get(
+                pk=self.cleaned_data['repository'].pk)
+        else:
+            repository = None
 
         changenum = self.cleaned_data['changenum'] or None
 
