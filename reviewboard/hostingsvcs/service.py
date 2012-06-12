@@ -148,14 +148,17 @@ class HostingService(object):
     #
 
     def _json_get(self, *args, **kwargs):
-        return simplejson.loads(self._http_get(*args, **kwargs))
+        data, headers = self._http_get(*args, **kwargs)
+        return simplejson.loads(data), headers
 
     def _json_post(self, *args, **kwargs):
-        return simplejson.loads(self._http_post(*args, **kwargs))
+        data, headers = self._http_post(*args, **kwargs)
+        return simplejson.loads(data), headers
 
     def _http_get(self, url, *args, **kwargs):
         r = self._build_request(url, *args, **kwargs)
-        return urllib2.urlopen(r).read()
+        u = urllib2.urlopen(r)
+        return u.read(), u.headers
 
     def _http_post(self, url, body=None, fields={}, files={},
                    content_type=None, headers={}, *args, **kwargs):
@@ -173,7 +176,8 @@ class HostingService(object):
         headers['Content-Length'] = str(len(body))
 
         r = self._build_request(url, body, headers, **kwargs)
-        return urllib2.urlopen(r).read()
+        u = urllib2.urlopen(r)
+        return u.read(), u.headers
 
     def _build_request(self, url, body=None, headers={}, username=None,
                        password=None):
