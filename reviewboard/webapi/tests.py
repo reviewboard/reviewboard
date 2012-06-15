@@ -4574,7 +4574,11 @@ class DiffResourceTests(BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/diffs/ API with a local site"""
         self._login_user(local_site=True)
 
-        repo = Repository.objects.get(name='Review Board Git')
+        repo = self.repository
+        self.repository.local_site = \
+            LocalSite.objects.get(name=self.local_site_name)
+        self.repository.save()
+
         rsp = self._postNewReviewRequest(local_site_name=self.local_site_name,
                                          repository=repo)
 
@@ -4582,17 +4586,17 @@ class DiffResourceTests(BaseWebAPITestCase):
 
         diff_filename = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
-            'scmtools', 'testdata', 'git_deleted_file_indication.diff')
+            'scmtools', 'testdata', 'svn_makefile.diff')
         f = open(diff_filename, 'r')
-        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'],
-                           { 'path': f, },
-                           expected_mimetype=self.item_mimetype)
+        rsp = self.apiPost(rsp['review_request']['links']['diffs']['href'], {
+            'path': f,
+            'basedir': '/trunk',
+        }, expected_mimetype=self.item_mimetype)
         f.close()
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['diff']['name'],
-                         'git_deleted_file_indication.diff')
-
+                         'svn_makefile.diff')
 
     @add_fixtures(['test_reviewrequests'])
     def test_get_diffs(self):
