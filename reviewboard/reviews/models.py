@@ -606,6 +606,30 @@ class ReviewRequest(models.Model):
                                   local_site_name=local_site_name,
                                   kwargs={'review_request_id': self.display_id})
 
+    def get_screenshots(self):
+        """Returns the list of all screenshots on a review request.
+
+        This includes all current screenshots, but not previous ones.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        for screenshot in self.screenshots.all():
+            screenshot._review_request = self
+            yield screenshot
+
+    def get_file_attachments(self):
+        """Returns the list of all file attachments on a review request.
+
+        This includes all current file attachments, but not previous ones.
+
+        By accessing file attachments through this method, future review request
+        lookups from the file attachments will be avoided.
+        """
+        for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = self
+            yield file_attachment
+
     def __unicode__(self):
         if self.summary:
             return self.summary
@@ -1278,6 +1302,34 @@ class ReviewRequestDraft(models.Model):
         """
         update_obj_with_changenum(self, self.review_request.repository,
                                   changenum)
+
+    def get_screenshots(self):
+        """Returns the list of all screenshots on a review request.
+
+        This includes all current screenshots, but not previous ones.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        review_request = self.review_request
+
+        for screenshot in self.screenshots.all():
+            screenshot._review_request = review_request
+            yield screenshot
+
+    def get_file_attachments(self):
+        """Returns the list of all file attachments on a review request.
+
+        This includes all current file attachments, but not previous ones.
+
+        By accessing file attachments through this method, future review request
+        lookups from the file attachments will be avoided.
+        """
+        review_request = self.review_request
+
+        for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = review_request
+            yield file_attachment
 
     class Meta:
         ordering = ['-last_updated']
