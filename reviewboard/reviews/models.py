@@ -1294,6 +1294,15 @@ class BaseComment(models.Model):
                                     null=True,
                                     db_index=True)
 
+    reply_to = models.ForeignKey("self", blank=True, null=True,
+                                 related_name="replies",
+                                 verbose_name=_("reply to"))
+    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
+    text = models.TextField(_("comment text"))
+
+    # Set this up with a ConcurrencyManager to help prevent race conditions.
+    objects = ConcurrencyManager()
+
     @staticmethod
     def issue_status_to_string(status):
         if status == "O":
@@ -1316,6 +1325,28 @@ class BaseComment(models.Model):
         else:
             raise Exception("Invalid issue status '%s'" % status)
 
+    def get_review_request(self):
+        if hasattr(self, '_review_request'):
+            return self._review_request
+        else:
+            return self.review.get().review_request
+
+    def get_review_url(self):
+        return "%s#%s%d" % \
+            (self.get_review_request().get_absolute_url(),
+             self.anchor_prefix, self.id)
+
+    def public_replies(self, user=None):
+        """
+        Returns a list of public replies to this comment, optionally
+        specifying the user replying.
+        """
+        if user:
+            return self.replies.filter(Q(review__public=True) |
+                                       Q(review__user=user))
+        else:
+            return self.replies.filter(review__public=True)
+
     def save(self, **kwargs):
         self.timestamp = datetime.now()
 
@@ -1333,6 +1364,9 @@ class BaseComment(models.Model):
         except Review.DoesNotExist:
             pass
 
+    def __unicode__(self):
+        return self.text
+
     class Meta:
         abstract = True
         ordering = ['timestamp']
@@ -1345,18 +1379,14 @@ class Comment(BaseComment):
     A comment can belong to a single filediff or to an interdiff between
     two filediffs. It can also have multiple replies.
     """
-
+    anchor_prefix = "comment"
+    comment_type = "diff"
     filediff = models.ForeignKey(FileDiff, verbose_name=_('file diff'),
                                  related_name="comments")
     interfilediff = models.ForeignKey(FileDiff,
                                       verbose_name=_('interdiff file'),
                                       blank=True, null=True,
                                       related_name="interdiff_comments")
-    reply_to = models.ForeignKey("self", blank=True, null=True,
-                                 related_name="replies",
-                                 verbose_name=_("reply to"))
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
-    text = models.TextField(_("comment text"))
 
     # A null line number applies to an entire diff.  Non-null line numbers are
     # the line within the entire file, starting at 1.
@@ -1367,20 +1397,6 @@ class Comment(BaseComment):
 
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
-
-    def public_replies(self, user=None):
-        """
-        Returns a list of public replies to this comment, optionally
-        specifying the user replying.
-        """
-        if user:
-            return self.replies.filter(Q(review__public=True) |
-                                       Q(review__user=user))
-        else:
-            return self.replies.filter(review__public=True)
-
     def get_absolute_url(self):
         revision_path = str(self.filediff.diffset.revision)
         if self.interfilediff:
@@ -1390,13 +1406,6 @@ class Comment(BaseComment):
              (self.review.get().review_request.get_absolute_url(),
               revision_path, self.filediff.id, self.filediff.id,
               self.first_line)
-
-    def get_review_url(self):
-        return "%s#comment%d" % \
-            (self.review.get().review_request.get_absolute_url(), self.id)
-
-    def __unicode__(self):
-        return self.text
 
     def truncate_text(self):
         if len(self.text) > 60:
@@ -1409,13 +1418,10 @@ class ScreenshotComment(BaseComment):
     """
     A comment on a screenshot.
     """
+    anchor_prefix = "scomment"
+    comment_type = "screenshot"
     screenshot = models.ForeignKey(Screenshot, verbose_name=_('screenshot'),
                                    related_name="comments")
-    reply_to = models.ForeignKey('self', blank=True, null=True,
-                                 related_name='replies',
-                                 verbose_name=_("reply to"))
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
-    text = models.TextField(_('comment text'))
 
     # This is a sub-region of the screenshot.  Null X indicates the entire
     # image.
@@ -1423,20 +1429,6 @@ class ScreenshotComment(BaseComment):
     y = models.PositiveSmallIntegerField(_("sub-image Y"))
     w = models.PositiveSmallIntegerField(_("sub-image width"))
     h = models.PositiveSmallIntegerField(_("sub-image height"))
-
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
-
-    def public_replies(self, user=None):
-        """
-        Returns a list of public replies to this comment, optionally
-        specifying the user replying.
-        """
-        if user:
-            return self.replies.filter(Q(review__public=True) |
-                                       Q(review__user=user))
-        else:
-            return self.replies.filter(review__public=True)
 
     def get_image_url(self):
         """
@@ -1452,38 +1444,14 @@ class ScreenshotComment(BaseComment):
         return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
             (self.get_image_url(), self.w, self.h, escape(self.text))
 
-    def get_review_url(self):
-        return "%s#scomment%d" % \
-            (self.review.get().review_request.get_absolute_url(), self.id)
-
-    def __unicode__(self):
-        return self.text
-
 
 class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
+    anchor_prefix = "fcomment"
+    comment_type = "file"
     file_attachment = models.ForeignKey(FileAttachment,
                                         verbose_name=_('file_attachment'),
                                         related_name="comments")
-    reply_to = models.ForeignKey('self', blank=True, null=True,
-                                 related_name='replies',
-                                 verbose_name=_("reply to"))
-    timestamp = models.DateTimeField(_('timestamp'), default=datetime.now)
-    text = models.TextField(_('comment text'))
-
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
-
-    def public_replies(self, user=None):
-        """
-        Returns a list of public replies to this comment, optionally
-        specifying the user replying.
-        """
-        if user:
-            return self.replies.filter(Q(review__public=True) |
-                                       Q(review__user=user))
-        else:
-            return self.replies.filter(review__public=True)
 
     def get_file(self):
         """
@@ -1492,13 +1460,6 @@ class FileAttachmentComment(BaseComment):
         """
         return '<a href="%s" alt="%s" />' % (self.file_attachment.file,
                                              escape(self.text))
-
-    def get_review_url(self):
-        return "%s#fcomment%d" % \
-            (self.review.get().review_request.get_absolute_url(), self.id)
-
-    def __unicode__(self):
-        return self.text
 
 
 class Review(models.Model):
