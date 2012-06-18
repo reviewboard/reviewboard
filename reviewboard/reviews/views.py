@@ -292,6 +292,8 @@ def review_detail(request,
     entries = []
     all_reviews = list(review_request.reviews.all())
     public_reviews = []
+    replies = {}
+    reply_timestamps = {}
     reviews_entry_map = {}
     review_timestamp = 0
 
@@ -308,6 +310,23 @@ def review_detail(request,
             # This is a review we'll display on the page. Keep track of it
             # for later display and filtering.
             public_reviews.append(review)
+            parent_id = review.base_reply_to_id
+
+            if parent_id is not None:
+                # This is a reply to a review. We'll store the reply data
+                # into a map, which associates a review ID with its list of
+                # replies, and also figures out the timestamps.
+                #
+                # Later, we'll use this to associate reviews and replies for
+                # rendering.
+                if parent_id not in replies:
+                    replies[parent_id] = [review]
+                    reply_timestamps[parent_id] = review.timestamp
+                else:
+                    replies[parent_id].append(review)
+                    reply_timestamps[parent_id] = max(
+                        reply_timestamps[parent_id],
+                        review.timestamp)
         elif (review.user_id == request.user.pk and
               (review_timestamp == 0 or review.timestamp > review_timestamp)):
             # This is the latest draft so far from the current user, so
@@ -388,15 +407,10 @@ def review_detail(request,
             if latest_timestamp and review.timestamp < latest_timestamp:
                 state = 'collapsed'
 
-            try:
-                replies = review.public_replies()
-                latest_reply = replies.latest('timestamp').timestamp
-            except Review.DoesNotExist:
-                latest_reply = None
+            latest_reply = reply_timestamps.get(review.pk, None)
 
             # Mark as expanded if there is a reply newer than last_visited
-            if (latest_reply and last_visited and
-                last_visited < latest_reply):
+            if latest_reply and last_visited and last_visited < latest_reply:
                 state = ''
 
             entry = {
