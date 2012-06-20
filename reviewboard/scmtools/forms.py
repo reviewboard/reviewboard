@@ -126,13 +126,15 @@ class RepositoryForm(forms.ModelForm):
                     "repository."))
 
     def __init__(self, *args, **kwargs):
+        self.local_site_name = kwargs.pop('local_site_name', None)
+
         super(RepositoryForm, self).__init__(*args, **kwargs)
 
         self.hostkeyerror = None
         self.certerror = None
         self.userkeyerror = None
         self.hosting_account_linked = False
-        self.local_site_name = None
+        self.local_site = None
         self.repository_forms = {}
         self.bug_tracker_forms = {}
         self.hosting_service_info = {}
@@ -142,17 +144,16 @@ class RepositoryForm(forms.ModelForm):
         # repository coming from this form.
         #
         # We're careful to disregard any local_sites that are specified
-        # from the form data. The caller needs to pass in a local_site
-        # as initial data to ensure that it will be used.
-        if self.instance and self.instance.local_site:
-            self.local_site_name = self.instance.local_site.name
-        elif self.fields['local_site'].initial:
-            self.local_site_name = self.fields['local_site'].initial.name
-
+        # from the form data. The caller needs to pass in a local_site_name
+        # to ensure that it will be used.
         if self.local_site_name:
             self.local_site = LocalSite.objects.get(name=self.local_site_name)
-        else:
-            self.local_site = None
+        elif self.instance and self.instance.local_site:
+            self.local_site = self.instance.local_site
+            self.local_site_name = self.local_site.name
+        elif self.fields['local_site'].initial:
+            self.local_site = self.fields['local_site'].initial
+            self.local_site_name = self.local_site.name
 
         # Grab the entire list of HostingServiceAccounts that can be
         # used by this form. When the form is actually being used by the
