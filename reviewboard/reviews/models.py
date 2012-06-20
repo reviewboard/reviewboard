@@ -543,7 +543,7 @@ class ReviewRequest(models.Model):
         """
         return Review.objects.get_pending_review(self, user)
 
-    def get_last_activity(self):
+    def get_last_activity(self, diffsets=None, reviews=None):
         """Returns the last public activity information on the review request.
 
         This will return the last object updated, along with the timestamp
@@ -554,24 +554,28 @@ class ReviewRequest(models.Model):
         updated_object = self
 
         # Check if the diff was updated along with this.
-        try:
-            diffset = self.diffset_history.diffsets.latest()
+        if not diffsets:
+            try:
+                diffsets = [self.diffset_history.diffsets.latest()]
+            except DiffSet.DoesNotExist:
+                diffsets = []
 
+        for diffset in diffsets:
             if diffset.timestamp >= timestamp:
                 timestamp = diffset.timestamp
                 updated_object = diffset
-        except DiffSet.DoesNotExist:
-            pass
 
         # Check for the latest review or reply.
-        try:
-            review = self.reviews.filter(public=True).latest()
+        if not reviews:
+            try:
+                reviews = [self.reviews.filter(public=True).latest()]
+            except Review.DoesNotExist:
+                reviews = []
 
-            if review.timestamp >= timestamp:
+        for review in reviews:
+            if review.public and review.timestamp >= timestamp:
                 timestamp = review.timestamp
                 updated_object = review
-        except Review.DoesNotExist:
-            pass
 
         return timestamp, updated_object
 

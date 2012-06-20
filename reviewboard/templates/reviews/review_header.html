@@ -20,7 +20,7 @@
 {%  ifequal review_request.status 'D' %}
 <div class="banner" id="discard-banner">
  <h1>{% trans "This change has been discarded." %}</h1>
-{% ifequal request.user review_request.submitter %}
+{% ifequal request.user.pk review_request.submitter_id %}
  <input type="submit" id="btn-review-request-reopen"
   value="{% trans "Reopen for Review" %}" />
 {% endifequal %}

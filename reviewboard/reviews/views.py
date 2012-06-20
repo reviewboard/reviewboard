@@ -291,6 +291,7 @@ def review_detail(request,
     # some other lists, build some ID maps, and later do further processing.
     entries = []
     all_reviews = list(review_request.reviews.all())
+    public_reviews = []
     reviews_entry_map = {}
     review_timestamp = 0
 
@@ -303,8 +304,12 @@ def review_detail(request,
     #
     # The second pass will come after the ETag calculation.
     for review in all_reviews:
-        if (not review.public and review.user == request.user and
-            (review_timestamp == 0 or review.timestamp > review_timestamp)):
+        if review.public:
+            # This is a review we'll display on the page. Keep track of it
+            # for later display and filtering.
+            public_reviews.append(review)
+        elif (review.user_id == request.user.pk and
+              (review_timestamp == 0 or review.timestamp > review_timestamp)):
             # This is the latest draft so far from the current user, so
             # we'll use this timestamp in the ETag.
             review_timestamp = review.timestamp
@@ -335,9 +340,12 @@ def review_detail(request,
 
 
     draft = review_request.get_draft(request.user)
+    diffsets = list(DiffSet.objects.filter(
+        history__pk=review_request.diffset_history_id))
 
     # Find out if we can bail early. Generate an ETag for this.
-    last_activity_time, updated_object = review_request.get_last_activity()
+    last_activity_time, updated_object = \
+        review_request.get_last_activity(diffsets, public_reviews)
 
     if draft:
         draft_timestamp = draft.last_updated
@@ -371,43 +379,36 @@ def review_detail(request,
     #
     # We do this here and not above because we don't want to build *too* much
     # before the ETag check.
-    public_reviews = []
+    for review in public_reviews:
+        if review.base_reply_to_id is None:
+            state = ''
 
-    for review in all_reviews:
-        if review.public:
-            if review.base_reply_to_id is None:
+            # Mark as collapsed if the review is older than the latest
+            # change.
+            if latest_timestamp and review.timestamp < latest_timestamp:
+                state = 'collapsed'
+
+            try:
+                replies = review.public_replies()
+                latest_reply = replies.latest('timestamp').timestamp
+            except Review.DoesNotExist:
+                latest_reply = None
+
+            # Mark as expanded if there is a reply newer than last_visited
+            if (latest_reply and last_visited and
+                last_visited < latest_reply):
                 state = ''
 
-                # Mark as collapsed if the review is older than the latest
-                # change.
-                if latest_timestamp and review.timestamp < latest_timestamp:
-                    state = 'collapsed'
-
-                try:
-                    replies = review.public_replies()
-                    latest_reply = replies.latest('timestamp').timestamp
-                except Review.DoesNotExist:
-                    latest_reply = None
-
-                # Mark as expanded if there is a reply newer than last_visited
-                if (latest_reply and last_visited and
-                    last_visited < latest_reply):
-                    state = ''
-
-                entry = {
-                    'review': review,
-                    'diff_comments': [],
-                    'screenshot_comments': [],
-                    'file_attachment_comments': [],
-                    'timestamp': review.timestamp,
-                    'class': state,
-                }
-                reviews_entry_map[review.pk] = entry
-                entries.append(entry)
-
-                public_reviews.append(review)
-            else:
-                print review
+            entry = {
+                'review': review,
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'timestamp': review.timestamp,
+                'class': state,
+            }
+            reviews_entry_map[review.pk] = entry
+            entries.append(entry)
 
     review_ids = reviews_entry_map.keys()
 
@@ -521,8 +522,7 @@ def review_detail(request,
             'latest_changedesc': latest_changedesc,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
-            'has_diffs': (draft and draft.diffset) or
-                         review_request.diffset_history.diffsets.count() > 0,
+            'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
             'file_attachments':
                 list(review_request_details.file_attachments.all()),
             'screenshots': list(review_request_details.screenshots.all()),
