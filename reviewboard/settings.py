@@ -44,7 +44,7 @@ TEMPLATE_LOADERS = (
     'django.template.loaders.app_directories.Loader',
 )
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     'django.middleware.gzip.GZipMiddleware', # Keep this first.
     'django.middleware.common.CommonMiddleware',
     'django.middleware.doc.XViewMiddleware',
@@ -61,7 +61,8 @@ MIDDLEWARE_CLASSES = (
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
     'reviewboard.admin.middleware.X509AuthMiddleware',
     'reviewboard.site.middleware.LocalSiteMiddleware',
-)
+]
+RB_EXTRA_MIDDLEWARE_CLASSES = []
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
@@ -165,6 +166,7 @@ except ImportError, exc:
 
 
 INSTALLED_APPS = RB_BUILTIN_APPS + RB_EXTRA_APPS + ['django_evolution']
+MIDDLEWARE_CLASSES += RB_EXTRA_MIDDLEWARE_CLASSES
 
 TEMPLATE_DEBUG = DEBUG
 
