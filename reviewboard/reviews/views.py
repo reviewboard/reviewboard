@@ -453,6 +453,10 @@ def review_detail(request,
             entry = reviews_entry_map[obj.review_id]
             entry[key].append(comment)
 
+            # Short-circuit the review request calculation for the comment
+            # by setting _review_request on it.
+            comment._review_request = review_request
+
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.
     for changedesc in changedescs:
@@ -539,6 +543,22 @@ def review_detail(request,
 
     review_request_details = draft or review_request
 
+    # Get the list of all screenshots on the review request. We set
+    # _review_request on each of these, which will short-circuit the queries
+    # to get the review request in ScreenShot.get_review_request.
+    screenshots = []
+
+    for screenshot in review_request_details.screenshots.all():
+        screenshot._review_request = review_request
+        screenshots.append(screenshot)
+
+    # Now do the same for file attachments.
+    file_attachments = []
+
+    for file_attachment in review_request_details.file_attachments.all():
+        file_attachment._review_request = review_request
+        file_attachments.append(file_attachment)
+
     response = render_to_response(
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
@@ -552,9 +572,8 @@ def review_detail(request,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
             'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
-            'file_attachments':
-                list(review_request_details.file_attachments.all()),
-            'screenshots': list(review_request_details.screenshots.all()),
+            'file_attachments': file_attachments,
+            'screenshots': screenshots,
         })))
     set_etag(response, etag)
 

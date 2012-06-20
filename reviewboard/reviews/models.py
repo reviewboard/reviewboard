@@ -208,6 +208,9 @@ class Screenshot(models.Model):
         return u"%s (%s)" % (self.caption, self.image)
 
     def get_review_request(self):
+        if hasattr(self, '_review_request'):
+            return self._review_request
+
         try:
             return self.review_request.all()[0]
         except IndexError:
@@ -1340,6 +1343,12 @@ class BaseComment(models.Model):
             (self.get_review_request().get_absolute_url(),
              self.anchor_prefix, self.id)
 
+    def get_review_request(self):
+        if hasattr(self, '_review_request'):
+            return self._review_request
+        else:
+            return self.review.get().review_request
+
     def public_replies(self, user=None):
         """
         Returns a list of public replies to this comment, optionally
@@ -1407,7 +1416,7 @@ class Comment(BaseComment):
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
         return "%sdiff/%s/?file=%s#file%sline%s" % \
-             (self.review.get().review_request.get_absolute_url(),
+             (self.get_review_request().get_absolute_url(),
               revision_path, self.filediff.id, self.filediff.id,
               self.first_line)
 
