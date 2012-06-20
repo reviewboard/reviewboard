@@ -1388,24 +1388,32 @@ class BaseComment(models.Model):
         if hasattr(self, '_review_request'):
             return self._review_request
         else:
-            return self.review.get().review_request
+            return self.get_review().review_request
+
+    def get_review(self):
+        if hasattr(self, '_review'):
+            return self._review
+        else:
+            return self.review.get()
 
     def get_review_url(self):
         return "%s#%s%d" % \
             (self.get_review_request().get_absolute_url(),
              self.anchor_prefix, self.id)
 
-    def get_review_request(self):
-        if hasattr(self, '_review_request'):
-            return self._review_request
-        else:
-            return self.review.get().review_request
+    def is_reply(self):
+        """Returns whether this comment is a reply to another comment."""
+        return self.reply_to_id is not None
+    is_reply.boolean = True
 
     def public_replies(self, user=None):
         """
         Returns a list of public replies to this comment, optionally
         specifying the user replying.
         """
+        if hasattr(self, '_replies'):
+            return self._replies
+
         if user:
             return self.replies.filter(Q(review__public=True) |
                                        Q(review__user=user))
@@ -1421,7 +1429,7 @@ class BaseComment(models.Model):
             # Update the review timestamp, but only if it's a draft.
             # Otherwise, resolving an issue will change the timestamp of
             # the review.
-            review = self.review.get()
+            review = self.get_review()
 
             if not review.public:
                 review.timestamp = self.timestamp
@@ -1619,7 +1627,7 @@ class Review(models.Model):
         """
         Returns whether or not this review is a reply to another review.
         """
-        return self.base_reply_to != None
+        return self.base_reply_to_id is not None
     is_reply.boolean = True
 
     def public_replies(self):
@@ -1627,6 +1635,30 @@ class Review(models.Model):
         Returns a list of public replies to this review.
         """
         return self.replies.filter(public=True)
+
+    def public_body_top_replies(self, user=None):
+        """Returns a list of public replies to this review's body top."""
+        if hasattr(self, '_body_top_replies'):
+            return self._body_top_replies
+        else:
+            q = Q(public=True)
+
+            if user:
+                q = q | Q(user=user)
+
+            return self.body_top_replies.filter(q)
+
+    def public_body_bottom_replies(self, user=None):
+        """Returns a list of public replies to this review's body bottom."""
+        if hasattr(self, '_body_bottom_replies'):
+            return self._body_bottom_replies
+        else:
+            q = Q(public=True)
+
+            if user:
+                q = q | Q(user=user)
+
+            return self.body_bottom_replies.filter(q)
 
     def get_pending_reply(self, user):
         """

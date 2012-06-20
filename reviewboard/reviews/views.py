@@ -290,11 +290,13 @@ def review_detail(request,
     # We will start by getting the list of reviews. We'll filter this out into
     # some other lists, build some ID maps, and later do further processing.
     entries = []
-    all_reviews = list(review_request.reviews.all())
     public_reviews = []
+    body_top_replies = {}
+    body_bottom_replies = {}
     replies = {}
     reply_timestamps = {}
     reviews_entry_map = {}
+    reviews_id_map = {}
     review_timestamp = 0
 
     # Start by going through all reviews that point to this review request.
@@ -305,7 +307,13 @@ def review_detail(request,
     # generation below.
     #
     # The second pass will come after the ETag calculation.
+    all_reviews = list(review_request.reviews.select_related('user'))
+
     for review in all_reviews:
+        reviews_id_map[review.pk] = review
+        review._body_top_replies = []
+        review._body_bottom_replies = []
+
         if review.public:
             # This is a review we'll display on the page. Keep track of it
             # for later display and filtering.
@@ -333,7 +341,20 @@ def review_detail(request,
             # we'll use this timestamp in the ETag.
             review_timestamp = review.timestamp
 
+        if review.public or review.user_id == request.user.pk:
+            # If this review is replying to another review's body_top or
+            # body_bottom fields, store that data.
+            for reply_id, reply_list in (
+                (review.body_top_reply_to_id, body_top_replies),
+                (review.body_bottom_reply_to_id, body_bottom_replies)):
+                if reply_id is not None:
+                    if reply_id not in reply_list:
+                        reply_list[reply_id] = [review]
+                    else:
+                        reply_list[reply_id].append(review)
+
     pending_review = review_request.get_pending_review(request.user)
+    review_ids = reviews_id_map.keys()
     last_visited = 0
     starred = False
 
@@ -399,7 +420,7 @@ def review_detail(request,
     # We do this here and not above because we don't want to build *too* much
     # before the ETag check.
     for review in public_reviews:
-        if review.base_reply_to_id is None:
+        if not review.is_reply():
             state = ''
 
             # Mark as collapsed if the review is older than the latest
@@ -424,7 +445,11 @@ def review_detail(request,
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
 
-    review_ids = reviews_entry_map.keys()
+    # Link up all the review body replies.
+    for key, reply_list in (('_body_top_replies', body_top_replies),
+                            ('_body_bottom_replies', body_bottom_replies)):
+        for reply_id, replies in reply_list.iteritems():
+            setattr(reviews_id_map[reply_id], key, replies)
 
     # Get all the comments and attach them to the reviews.
     for model, key, ordering in (
@@ -448,14 +473,44 @@ def review_detail(request,
         if ordering:
             q = q.order_by(*ordering)
 
-        for obj in q:
-            comment = getattr(obj, comment_field_name)
-            entry = reviews_entry_map[obj.review_id]
-            entry[key].append(comment)
+        objs = list(q)
 
-            # Short-circuit the review request calculation for the comment
-            # by setting _review_request on it.
+        # Two passes. One to build a mapping, and one to actually process
+        # comments.
+        comment_map = {}
+
+        for obj in objs:
+            comment = getattr(obj, comment_field_name)
+            comment_map[comment.pk] = comment
+            comment._replies = []
+
+        for obj in objs:
+            comment = getattr(obj, comment_field_name)
+
+            # Short-circuit some object fetches for the comment by setting
+            # some internal state on them.
+            assert obj.review_id in reviews_id_map
+            parent_review = reviews_id_map[obj.review_id]
+            comment._review = parent_review
             comment._review_request = review_request
+
+            if parent_review.is_reply():
+                # This is a reply to a comment. Add it to the list of replies.
+                assert obj.review_id not in reviews_entry_map
+                assert parent_review.base_reply_to_id in reviews_entry_map
+
+                # If there's an entry that isn't a reply, then it's
+                # orphaned. Ignore it.
+                if comment.is_reply():
+                    replied_comment = comment_map[comment.reply_to_id]
+                    replied_comment._replies.append(comment)
+            else:
+                # This is a comment on a public review we're going to show.
+                # Add it to the list.
+                assert obj.review_id in reviews_entry_map
+                entry = reviews_entry_map[obj.review_id]
+                entry[key].append(comment)
+
 
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.

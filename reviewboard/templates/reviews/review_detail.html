@@ -79,7 +79,7 @@
  </div>
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
-   {% reply_section entry.review "" "body_top" "rcbt" %}
+   {% reply_section entry "" "body_top" "rcbt" %}
 {% if entry.diff_comments or entry.screenshot_comments or entry.file_attachment_comments %}
    <dl class="diff-comments">
 
@@ -106,7 +106,7 @@
        {% comment_issue review_request_details comment "screenshot_comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "screenshot_comment" "rc" %}
+     {% reply_section entry comment "screenshot_comments" "rc" %}
     </dd>
 {% endfor %}
 
@@ -136,7 +136,7 @@
        {% comment_issue review_request_details comment "file_attachment_comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "file_attachment_comment" "rc" %}
+     {% reply_section entry comment "file_attachment_comments" "rc" %}
     </dd>
 {% endfor %}
 
@@ -175,7 +175,7 @@
        {% comment_issue review_request_details comment "comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "comment" "rc" %}
+     {% reply_section entry comment "diff_comments" "rc" %}
     </dd>
     <script type="text/javascript">
       $(document).ready(function() {
@@ -193,7 +193,7 @@
 {% endif %}
   {% if entry.review.body_bottom %}
    <pre class="body_bottom reviewtext">{{entry.review.body_bottom|escape}}</pre>
-   {% reply_section entry.review "" "body_bottom" "rcbb" %}
+   {% reply_section entry "" "body_bottom" "rcbb" %}
   {% endif %}
  </div><!-- body -->
 </div><!-- main -->
