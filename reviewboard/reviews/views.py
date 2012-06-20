@@ -413,15 +413,30 @@ def review_detail(request,
     review_ids = reviews_entry_map.keys()
 
     # Get all the comments and attach them to the reviews.
-    for q, key in ((Comment.objects.order_by('filediff', 'first_line'),
-                    'diff_comments'),
-                   (ScreenshotComment.objects, 'screenshot_comments'),
-                   (FileAttachmentComment.objects, 'file_attachment_comments')):
-        comments = q.filter(review__in=review_ids).select_related('review')
+    for model, key, ordering in (
+        (Comment, 'diff_comments',
+         ('comment__filediff', 'comment__first_line')),
+        (ScreenshotComment, 'screenshot_comments', None),
+        (FileAttachmentComment, 'file_attachment_comments', None)):
+        # Due to how we initially made the schema, we have a ManyToManyField
+        # inbetween comments and reviews, instead of comments having a
+        # ForeignKey to the review. This makes it difficult to easily go
+        # from a comment to a review ID.
+        #
+        # The solution to this is to not query the comment objects, but rather
+        # the through table. This will let us grab the review and comment in
+        # one go, using select_related.
+        related_field = model.review.related.field
+        comment_field_name = related_field.m2m_reverse_field_name()
+        through = related_field.rel.through
+        q = through.objects.filter(review__in=review_ids).select_related()
 
-        for comment in comments:
-            # XXX
-            entry = reviews_entry_map[comment.review.get().pk]
+        if ordering:
+            q = q.order_by(*ordering)
+
+        for obj in q:
+            comment = getattr(obj, comment_field_name)
+            entry = reviews_entry_map[obj.review_id]
             entry[key].append(comment)
 
     # Sort all the reviews and ChangeDescriptions into a single list, for
