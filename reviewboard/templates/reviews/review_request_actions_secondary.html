@@ -1,6 +1,6 @@
 {% load djblets_utils %}
 {% load i18n %}
-{% ifuserorperm review_request.submitter "reviews.can_change_status" %}
+{% ifuserorperm review_request.submitter_id "reviews.can_change_status" %}
 {%  if review_request.public %}
 {%    ifequal review_request.status 'P' %}
  <li>
@@ -16,7 +16,7 @@
 {%    endifequal %}
 {%  endif %}
 {% endifuserorperm %}
-{% ifuserorperm review_request.submitter "reviews.can_edit_reviewrequest" %}
+{% ifuserorperm review_request.submitter_id "reviews.can_edit_reviewrequest" %}
  <li><a id="upload-screenshot-link" href="#">{% trans "Add Screenshot" %}</a></li>
  <li><a id="upload-file-link" href="#">{% trans "Add File" %}</a></li>
 {% if upload_diff_form %}
