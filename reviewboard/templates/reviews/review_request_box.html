@@ -86,10 +86,10 @@
   <label for="testing_done">{% trans "Testing Done" %}:</label>
   <pre id="testing_done" class="editable">{{review_request_details.testing_done|escape}}</pre>
  </div>
- <div class="content clearfix"{% ifequal review_request_details.screenshots.count 0 %} style="display: none;"{% endifequal %}>
+ <div class="content clearfix"{% if not screenshots %} style="display: none;"{% endif %}>
   <label for="images">{% trans "Screenshots" %}:</label>
   <div id="screenshot-thumbnails">
-{% for image in review_request_details.screenshots.all %}
+{% for image in screenshots %}
    <div class="screenshot-container" data-screenshot-id="{{image.id}}">
     <div class="screenshot" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
@@ -103,10 +103,10 @@
    <br clear="both" />
   </div>
  </div>
-<div class="content clearfix"{% ifequal review_request_details.file_attachments.count 0 %} style="display: none;"{% endifequal %}>
+<div class="content clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
 <label for="file-list">{% trans "File Attachments" %}:</label>
  <div id="file-list">
-{% for file in review_request_details.file_attachments.all %}
+{% for file in file_attachments %}
    <div class="file-container" data-file-id="{{file.id}}">
     <div class="file">
      <ul class="actions">
@@ -135,7 +135,7 @@
 <script type="text/javascript">
   $(document).ready(function() {
     setFileAttachmentComments({
-{% for file_attachment in review_request_details.file_attachments.all %}
+{% for file_attachment in file_attachments %}
         {{file_attachment.id}}: {% file_attachment_comments file_attachment %}{% if not forloop.last %},{% endif %}
 {% endfor %}
     });

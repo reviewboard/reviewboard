@@ -35,11 +35,11 @@
 
 <ul class="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
-{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+{% if has_diffs %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
 {% endif %}
 {% include "reviews/review_request_actions_primary.html" %}
-{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+{% if has_diffs %}
  <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
 {% endif %}
 </ul>
@@ -80,10 +80,10 @@
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
    {% reply_section entry.review "" "body_top" "rcbt" %}
-{% if entry.review.comments.all or entry.review.screenshot_comments.all or entry.review.file_attachment_comments.all %}
+{% if entry.diff_comments or entry.screenshot_comments or entry.file_attachment_comments %}
    <dl class="diff-comments">
 
-{% for comment in entry.review.screenshot_comments.all %}
+{% for comment in entry.screenshot_comments %}
     <dt>
      <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
@@ -110,7 +110,7 @@
     </dd>
 {% endfor %}
 
-{% for comment in entry.review.file_attachment_comments.all %}
+{% for comment in entry.file_attachment_comments %}
     <dt>
      <a name="fcomment{{comment.id}}"></a>
      <div class="file-attachment">
@@ -140,7 +140,7 @@
     </dd>
 {% endfor %}
 
-{% for comment in entry.review.ordered_comments %}
+{% for comment in entry.diff_comments %}
     <dt>
      <a name="comment{{comment.id}}"></a>
      <div id="comment_container_{{comment.id}}">

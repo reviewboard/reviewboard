@@ -45,9 +45,9 @@ from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
-from reviewboard.reviews.models import Comment, ReviewRequest, \
-                                       Review, Group, Screenshot, \
-                                       ScreenshotComment
+from reviewboard.reviews.models import Comment, FileAttachmentComment, \
+                                       Group, ReviewRequest, Review, \
+                                       Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
@@ -282,9 +282,34 @@ def review_detail(request,
     if not review_request:
         return response
 
-    reviews = review_request.get_public_reviews()
-    review = review_request.get_pending_review(request.user)
+    # The review request detail page needs a lot of data from the database,
+    # and going through standard model relations will result in far too many
+    # queries. So we'll be optimizing quite a bit by prefetching and
+    # re-associating data.
+    #
+    # We will start by getting the list of reviews. We'll filter this out into
+    # some other lists, build some ID maps, and later do further processing.
+    entries = []
+    all_reviews = list(review_request.reviews.all())
+    reviews_entry_map = {}
     review_timestamp = 0
+
+    # Start by going through all reviews that point to this review request.
+    # This includes draft reviews. We'll be separating these into a list of
+    # public reviews and a mapping of replies.
+    #
+    # We'll also compute the latest review timestamp early, for the ETag
+    # generation below.
+    #
+    # The second pass will come after the ETag calculation.
+    for review in all_reviews:
+        if (not review.public and review.user == request.user and
+            (review_timestamp == 0 or review.timestamp > review_timestamp)):
+            # This is the latest draft so far from the current user, so
+            # we'll use this timestamp in the ETag.
+            review_timestamp = review.timestamp
+
+    pending_review = review_request.get_pending_review(request.user)
     last_visited = 0
     starred = False
 
@@ -298,17 +323,14 @@ def review_detail(request,
             visited.timestamp = datetime.now()
             visited.save()
 
-        profile, profile_is_new = Profile.objects.get_or_create(user=request.user)
-        starred = review_request in profile.starred_review_requests.all()
-
-        # Unlike review above, this covers replies as well.
+        # Try using get_profile first, because it caches for future calls.
+        # If it fails, it's okay. We don't rely upon it here.
         try:
-            last_draft_review = Review.objects.filter(
-                review_request=review_request,
-                user=request.user,
-                public=False).latest()
-            review_timestamp = last_draft_review.timestamp
-        except Review.DoesNotExist:
+            profile = request.user.get_profile()
+            starred_review_requests = \
+                profile.starred_review_requests.filter(pk=review_request.pk)
+            starred = (starred_review_requests.count() > 0)
+        except Profile.DoesNotExist:
             pass
 
 
@@ -330,42 +352,79 @@ def review_detail(request,
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
-    changedescs = review_request.changedescs.filter(public=True)
-    latest_changedesc = None
+    # Get the list of public ChangeDescriptions.
+    #
+    # We want to get the latest ChangeDescription along with this. This is
+    # best done here and not in a separate SQL query.
+    changedescs = list(review_request.changedescs.filter(public=True))
 
-    try:
-        latest_changedesc = changedescs.latest()
+    if changedescs:
+        # We sort from newest to oldest, so the latest one is the first.
+        latest_changedesc = changedescs[0]
         latest_timestamp = latest_changedesc.timestamp
-    except ChangeDescription.DoesNotExist:
+    else:
+        latest_changedesc = None
         latest_timestamp = None
 
-    entries = []
+    # Now that we have the list of public reviews and all that metadata,
+    # being processing them and adding entries for display in the page.
+    #
+    # We do this here and not above because we don't want to build *too* much
+    # before the ETag check.
+    public_reviews = []
 
-    for temp_review in reviews:
-        temp_review.ordered_comments = \
-            temp_review.comments.order_by('filediff', 'first_line')
+    for review in all_reviews:
+        if review.public:
+            if review.base_reply_to_id is None:
+                state = ''
 
-        state = ''
+                # Mark as collapsed if the review is older than the latest
+                # change.
+                if latest_timestamp and review.timestamp < latest_timestamp:
+                    state = 'collapsed'
 
-        # Mark as collapsed if the review is older than the latest change
-        if latest_timestamp and temp_review.timestamp < latest_timestamp:
-            state = 'collapsed'
+                try:
+                    replies = review.public_replies()
+                    latest_reply = replies.latest('timestamp').timestamp
+                except Review.DoesNotExist:
+                    latest_reply = None
 
-        try:
-            latest_reply = temp_review.public_replies().latest('timestamp').timestamp
-        except Review.DoesNotExist:
-            latest_reply = None
+                # Mark as expanded if there is a reply newer than last_visited
+                if (latest_reply and last_visited and
+                    last_visited < latest_reply):
+                    state = ''
 
-        # Mark as expanded if there is a reply newer than last_visited
-        if latest_reply and last_visited and last_visited < latest_reply:
-          state = ''
+                entry = {
+                    'review': review,
+                    'diff_comments': [],
+                    'screenshot_comments': [],
+                    'file_attachment_comments': [],
+                    'timestamp': review.timestamp,
+                    'class': state,
+                }
+                reviews_entry_map[review.pk] = entry
+                entries.append(entry)
 
-        entries.append({
-            'review': temp_review,
-            'timestamp': temp_review.timestamp,
-            'class': state,
-        })
+                public_reviews.append(review)
+            else:
+                print review
 
+    review_ids = reviews_entry_map.keys()
+
+    # Get all the comments and attach them to the reviews.
+    for q, key in ((Comment.objects.order_by('filediff', 'first_line'),
+                    'diff_comments'),
+                   (ScreenshotComment.objects, 'screenshot_comments'),
+                   (FileAttachmentComment.objects, 'file_attachment_comments')):
+        comments = q.filter(review__in=review_ids).select_related('review')
+
+        for comment in comments:
+            # XXX
+            entry = reviews_entry_map[comment.review.get().pk]
+            entry[key].append(comment)
+
+    # Sort all the reviews and ChangeDescriptions into a single list, for
+    # display.
     for changedesc in changedescs:
         fields_changed = []
 
@@ -448,18 +507,25 @@ def review_detail(request,
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
 
+    review_request_details = draft or review_request
+
     response = render_to_response(
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
             'draft': draft,
-            'review_request_details': draft or review_request,
+            'review_request_details': review_request_details,
             'entries': entries,
             'last_activity_time': last_activity_time,
-            'review': review,
+            'review': pending_review,
             'request': request,
             'latest_changedesc': latest_changedesc,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
+            'has_diffs': (draft and draft.diffset) or
+                         review_request.diffset_history.diffsets.count() > 0,
+            'file_attachments':
+                list(review_request_details.file_attachments.all()),
+            'screenshots': list(review_request_details.screenshots.all()),
         })))
     set_etag(response, etag)
 
