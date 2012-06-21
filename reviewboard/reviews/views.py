@@ -129,6 +129,19 @@ def _make_review_request_context(review_request, extra_context):
     }, **extra_context)
 
 
+def _build_id_map(objects):
+    """Builds an ID map out of a list of objects.
+
+    The resulting map makes it easy to quickly look up an object from an ID.
+    """
+    id_map = {}
+
+    for obj in objects:
+        id_map[obj.pk] = obj
+
+    return id_map
+
+
 def _query_for_diff(review_request, user, revision, query_extra=None):
     """
     Queries for a diff based on several parameters.
@@ -458,6 +471,13 @@ def review_detail(request,
         for reply_id, replies in reply_list.iteritems():
             setattr(reviews_id_map[reply_id], key, replies)
 
+    # Get all the file attachments and screenshots and build a couple maps,
+    # so we can easily # associate those objects in comments.
+    file_attachments = list(review_request.get_file_attachments())
+    file_attachment_id_map = _build_id_map(file_attachments)
+    screenshots = list(review_request.get_screenshots())
+    screenshot_id_map = _build_id_map(screenshots)
+
     # Get all the comments and attach them to the reviews.
     for model, key, ordering in (
         (Comment, 'diff_comments',
@@ -500,6 +520,17 @@ def review_detail(request,
             parent_review = reviews_id_map[obj.review_id]
             comment._review = parent_review
             comment._review_request = review_request
+
+            # If the comment has an associated object that we've already
+            # queried, attach it to prevent a future lookup.
+            if isinstance(comment, ScreenshotComment):
+                if comment.screenshot_id in screenshot_id_map:
+                    comment.screenshot = \
+                        screenshot_id_map[comment.screenshot_id]
+            elif isinstance(comment, FileAttachmentComment):
+                if comment.file_attachment_id in file_attachment_id_map:
+                    comment.file_attachment = \
+                        file_attachment_id_map[comment.file_attachment_id]
 
             if parent_review.is_reply():
                 # This is a reply to a comment. Add it to the list of replies.
@@ -618,9 +649,8 @@ def review_detail(request,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
             'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
-            'file_attachments':
-                list(review_request_details.get_file_attachments()),
-            'screenshots': list(review_request_details.get_screenshots()),
+            'file_attachments': file_attachments,
+            'screenshots': screenshots,
         })))
     set_etag(response, etag)
 
