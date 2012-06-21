@@ -79,16 +79,23 @@ def _find_review_request(request, review_request_id, local_site_name):
 
     Returns either (None, response) or (ReviewRequest, None).
     """
+    q = ReviewRequest.objects.all()
+
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
         if not local_site.is_accessible_by(request.user):
             return None, _render_permission_denied(request)
 
-        review_request = get_object_or_404(ReviewRequest,
-                                           local_site=local_site,
-                                           local_id=review_request_id)
+        q = q.filter(local_site=local_site,
+                     local_id=review_request_id)
     else:
-        review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+        q = q.filter(pk=review_request_id)
+
+    try:
+        q = q.select_related('submitter', 'repository')
+        review_request = q.get()
+    except ReviewRequest.DoesNotExist:
+        raise Http404
 
     if review_request.is_accessible_by(request.user):
         return review_request, None
