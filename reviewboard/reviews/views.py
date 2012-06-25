@@ -472,7 +472,7 @@ def review_detail(request,
             setattr(reviews_id_map[reply_id], key, replies)
 
     # Get all the file attachments and screenshots and build a couple maps,
-    # so we can easily # associate those objects in comments.
+    # so we can easily associate those objects in comments.
     file_attachments = list(review_request.get_file_attachments())
     file_attachment_id_map = _build_id_map(file_attachments)
     screenshots = list(review_request.get_screenshots())
@@ -915,15 +915,46 @@ def diff(request,
     is_draft_interdiff = has_draft_diff and interdiffset and \
                          draft.diffset == interdiffset
 
-    num_diffs = review_request.diffset_history.diffsets.count()
+    # Get the list of diffsets. We only want to calculate this once.
+    diffsets = list(DiffSet.objects.filter(
+        history__pk=review_request.diffset_history_id))
+    latest_diffset = diffsets[-1]
+
+    num_diffs = len(diffsets)
+
     if draft and draft.diffset:
         num_diffs += 1
 
-    last_activity_time, updated_object = review_request.get_last_activity()
+    last_activity_time, updated_object = \
+        review_request.get_last_activity(diffsets)
+
+    file_attachments = list(review_request.get_file_attachments())
+    screenshots = list(review_request.get_screenshots())
+
+    # Compute the lists of comments based on filediffs and interfilediffs.
+    # We do this using the 'through' table so that we can select_related
+    # the reviews and comments.
+    comments = {}
+    q = Comment.review.related.field.rel.through.objects.filter(
+        review__review_request=review_request)
+    q = q.select_related()
+
+    for obj in q:
+        comment = obj.comment
+        review = obj.review
+        comment._review = review
+        key = (comment.filediff_id, comment.interfilediff_id)
+
+        if key in comments:
+            comments[key].append(comment)
+        else:
+            comments[key] = [comment]
 
     return view_diff(
          request, diffset, interdiffset, template_name=template_name,
          extra_context=_make_review_request_context(review_request, {
+            'diffsets': diffsets,
+            'latest_diffset': latest_diffset,
             'review': review,
             'review_request_details': draft or review_request,
             'draft': draft,
@@ -934,6 +965,9 @@ def diff(request,
             'specific_diff_requested': revision is not None or
                                        interdiff_revision is not None,
             'base_url': review_request.get_absolute_url(),
+            'file_attachments': file_attachments,
+            'screenshots': screenshots,
+            'comments': comments,
         }))
 
 

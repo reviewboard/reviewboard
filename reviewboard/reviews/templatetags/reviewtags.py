@@ -115,16 +115,17 @@ def commentcounts(context, filediff, interfilediff=None):
     """
     comment_dict = {}
     user = context.get('user', None)
+    all_comments = context.get('comments', {})
 
     if interfilediff:
-        query = Comment.objects.filter(filediff=filediff,
-                                       interfilediff=interfilediff)
+        key = (filediff.pk, interfilediff.pk)
     else:
-        query = Comment.objects.filter(filediff=filediff,
-                                       interfilediff__isnull=True)
+        key = (filediff.pk, None)
 
-    for comment in query:
-        review = get_object_or_none(comment.review)
+    comments = all_comments.get(key, [])
+
+    for comment in comments:
+        review = comment.get_review()
 
         if review and (review.public or review.user == user):
             key = (comment.first_line, comment.num_lines)
@@ -138,7 +139,6 @@ def commentcounts(context, filediff, interfilediff=None):
                     'username': review.user.username,
                     'name': review.user.get_full_name() or review.user.username,
                 },
-                #'timestamp': comment.timestamp,
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and \
                               not review.public,
