@@ -1,3 +1,162 @@
+import mimeparse
+import os
+
+from django.conf import settings
+from django.contrib.staticfiles.templatetags.staticfiles import static
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
+from djblets.util.templatetags.djblets_images import crop_image, thumbnail
+
+
+def score_match(pattern, mimetype):
+    """Returns a score for how well the pattern matches the mimetype.
+
+    This is an ordered list of precedence (_ indicates non-match):
+       Type/Vendor+Subtype   2
+       Type/_     +Subtype   1.9
+       Type/*                1.8
+          */Vendor+Subtype   1.7
+          */_     +Subtype   1.6
+       Type/_                1
+          */_                0.7
+    """
+    EXACT_TYPE = 1
+    ANY_TYPE = 0.7
+    EXACT_SUBTYPE = 1
+    VND_SUBTYPE = 0.9
+    ANY_SUBTYPE = 0.8
+
+    score = 0
+
+    if pattern[0] == mimetype[0]:
+        score += EXACT_TYPE
+    elif pattern[0] == '*':
+        score += ANY_TYPE
+    else:
+        return 0
+
+    if pattern[1] == mimetype[1]:
+        score += EXACT_SUBTYPE
+    elif pattern[1] == '*' or mimetype[1] == '*':
+        score += ANY_SUBTYPE
+    else:
+        pattern_subtype = pattern[1].split('+')
+        mimetype_subtype = mimetype[1].split('+')
+
+        if len(mimetype_subtype) > 1:
+            if len(pattern_subtype) > 1:
+                if pattern_subtype[1] == mimetype_subtype[1]:
+                    score += VND_SUBTYPE
+            elif pattern_subtype[0] == mimetype_subtype[1]:
+                score += VND_SUBTYPE
+        elif len(pattern_subtype) > 1:
+            if pattern_subtype[1] == mimetype_subtype[0]:
+                score += VND_SUBTYPE
+
+    return score
+
+
+class MimetypeHandler(object):
+    """Handles mimetype-specific properties.
+
+    This class also acts as a generic handler for mimetypes not matched
+    explicitly by any handler. Note that this is not the same as '*/*'.
+    """
+    supported_mimetypes = []
+
+    def __init__(self, attachment, mimetype):
+        self.attachment = attachment
+        self.mimetype = mimetype
+
+    @classmethod
+    def get_best_handler(cls, mimetype):
+        """Returns the handler and score that that best fit the mimetype."""
+        best_score, best_fit = (0, cls)
+
+        for mt in cls.supported_mimetypes:
+            try:
+                score = score_match(mimeparse.parse_mime_type(mt), mimetype)
+
+                if score > best_score:
+                    best_score, best_fit = (score, cls)
+            except ValueError:
+                continue
+
+        for handler in cls.__subclasses__():
+            score, best_handler = handler.get_best_handler(mimetype)
+
+            if score > best_score:
+                best_score, best_fit = (score, best_handler)
+
+        return (best_score, best_fit)
+
+    @classmethod
+    def for_type(cls, attachment):
+        """Returns the handler that is the best fit for provided mimetype."""
+        mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+        score, handler = cls.get_best_handler(mimetype)
+        return handler(attachment, mimetype)
+
+    def get_icon_url(self):
+        mimetype_string = self.mimetype[0] + '/' + self.mimetype[1]
+
+        if mimetype_string in MIMETYPE_ICON_ALIASES:
+            name = MIMETYPE_ICON_ALIASES[mimetype_string]
+        else:
+            category = self.mimetype[0]
+            name = self.mimetype[0] + '-' + self.mimetype[1]
+
+            mimetypes_dir = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
+                                         'mimetypes')
+
+            if not os.path.exists(os.path.join(mimetypes_dir, name + '.png')):
+                name = category + '-x-generic'
+
+                if not os.path.exists(os.path.join(mimetypes_dir,
+                                                   name + '.png')):
+                    # We'll just use this as our fallback.
+                    name = 'text-x-generic'
+
+        return static("rb/images/mimetypes/%s.png" % name)
+
+    def get_thumbnail(self):
+        """Returns HTML that represents a preview of the attachment.
+
+        The outer-most object should have the class 'file-thubmnail'.
+        """
+        return mark_safe('<pre class="file-thumbnail"></pre>')
+
+
+class ImageMimetype(MimetypeHandler):
+    """Handles image mimetypes."""
+    supported_mimetypes = ['image/*']
+
+    def get_thumbnail(self):
+        """Returns a thumbnail of the image."""
+        return mark_safe('<img src="%s" class="file-thumbnail" alt="%s" />'
+                         % (thumbnail(self.attachment.file),
+                            self.attachment.caption))
+
+
+class TextMimetype(MimetypeHandler):
+    """Handles text mimetypes."""
+    supported_mimetypes = ['text/*']
+
+    def get_thumbnail(self):
+        """Returns the first few truncated lines of the file."""
+        height = 4
+        length = 50
+
+        f = self.attachment.file.file
+        preview = escape(f.readline()[:length])
+        for i in range(height - 1):
+            preview = preview + '<br />' + escape(f.readline()[:length])
+        f.close()
+
+        return mark_safe('<pre class="file-thumbnail">%s</pre>'
+                         % preview)
+
+
 # A mapping of mimetypes to icon names.
 #
 # Normally, a mimetype will be normalized and looked up in our bundled

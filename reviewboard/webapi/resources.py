@@ -3251,6 +3251,10 @@ class BaseFileAttachmentResource(WebAPIResource):
             'type': str,
             'description': 'The URL to a 24x24 icon representing this file.'
         },
+        'thumbnail': {
+            'type': str,
+            'description': 'A thumbnail representing this file.',
+        },
     }
 
     uri_object_key = 'file_attachment_id'

@@ -139,6 +139,7 @@
       </a>
 {% endif %}
      </div>
+     <div class="file-thumbnail-container">{{file.thumbnail}}</div>
      <div class="file-caption">
       <a href="{{file.get_absolute_url}}" class="edit">{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}</a>
      </div>

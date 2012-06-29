@@ -1964,6 +1964,10 @@ $.newFileAttachment = function(fileAttachment) {
         .addClass('file-header')
         .appendTo(body);
 
+    var thumbnailContainer = $('<div/>')
+        .addClass('file-thumbnail-container')
+        .appendTo(body);
+
     var fileCaption = $('<div/>')
         .addClass('file-caption')
         .append($('<a/>')
@@ -2005,7 +2009,7 @@ $.newFileAttachment = function(fileAttachment) {
 
     var attachments = $("#file-list");
     $(attachments.parent()[0]).show();
-    return container.insertBefore(attachments.find("br"));
+    return container.insertBefore(attachments.find("> br"));
 };
 
 
