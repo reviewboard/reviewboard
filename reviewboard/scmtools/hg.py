@@ -203,6 +203,7 @@ class HgClient(object):
         from mercurial import hg, ui
         from mercurial.__version__ import version
 
+        version = version.replace("+", ".")
         version_parts = [int(x) for x in version.split(".")]
 
         if version_parts[0] == 1 and version_parts[1] <= 2:
