@@ -3,7 +3,7 @@
 
 {% block jsconsts %}
 {{block.super}}
-  var gUserURL = "{% url user user %}";
+  var gUserURL = "{% url user request.user %}";
 {% endblock %}
 
 {% block ie6_csshacks %}

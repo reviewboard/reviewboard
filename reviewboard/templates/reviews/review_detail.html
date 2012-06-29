@@ -35,11 +35,11 @@
 
 <ul class="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
-{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+{% if has_diffs %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
 {% endif %}
 {% include "reviews/review_request_actions_primary.html" %}
-{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+{% if has_diffs %}
  <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
 {% endif %}
 </ul>
@@ -79,11 +79,11 @@
  </div>
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
-   {% reply_section entry.review "" "body_top" "rcbt" %}
-{% if entry.review.comments.all or entry.review.screenshot_comments.all or entry.review.file_attachment_comments.all %}
+   {% reply_section entry "" "body_top" "rcbt" %}
+{% if entry.diff_comments or entry.screenshot_comments or entry.file_attachment_comments %}
    <dl class="diff-comments">
 
-{% for comment in entry.review.screenshot_comments.all %}
+{% for comment in entry.screenshot_comments %}
     <dt>
      <a name="scomment{{comment.id}}"></a>
      <div class="screenshot">
@@ -106,11 +106,11 @@
        {% comment_issue review_request_details comment "screenshot_comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "screenshot_comment" "rc" %}
+     {% reply_section entry comment "screenshot_comments" "rc" %}
     </dd>
 {% endfor %}
 
-{% for comment in entry.review.file_attachment_comments.all %}
+{% for comment in entry.file_attachment_comments %}
     <dt>
      <a name="fcomment{{comment.id}}"></a>
      <div class="file-attachment">
@@ -136,11 +136,11 @@
        {% comment_issue review_request_details comment "file_attachment_comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "file_attachment_comment" "rc" %}
+     {% reply_section entry comment "file_attachment_comments" "rc" %}
     </dd>
 {% endfor %}
 
-{% for comment in entry.review.ordered_comments %}
+{% for comment in entry.diff_comments %}
     <dt>
      <a name="comment{{comment.id}}"></a>
      <div id="comment_container_{{comment.id}}">
@@ -175,7 +175,7 @@
        {% comment_issue review_request_details comment "comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "comment" "rc" %}
+     {% reply_section entry comment "diff_comments" "rc" %}
     </dd>
     <script type="text/javascript">
       $(document).ready(function() {
@@ -193,7 +193,7 @@
 {% endif %}
   {% if entry.review.body_bottom %}
    <pre class="body_bottom reviewtext">{{entry.review.body_bottom|escape}}</pre>
-   {% reply_section entry.review "" "body_bottom" "rcbb" %}
+   {% reply_section entry "" "body_bottom" "rcbb" %}
   {% endif %}
  </div><!-- body -->
 </div><!-- main -->
