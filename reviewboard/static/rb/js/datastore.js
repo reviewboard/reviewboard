@@ -2152,7 +2152,7 @@ function sendFileBlob(file, save_func, obj, options) {
         blob += "--" + boundary + "\r\n";
         blob += 'Content-Disposition: form-data; name="path"; ' +
                 'filename="' + file.name + '"\r\n';
-        blob += 'Content-Type: application/octet-stream\r\n';
+        blob += 'Content-Type: ' + file.type + '\r\n';
         blob += '\r\n';
         blob += reader.result;
         blob += '\r\n';
