@@ -6,6 +6,7 @@ from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
+from pipeline.storage import default_storage
 
 
 def score_match(pattern, mimetype):
@@ -62,11 +63,14 @@ class MimetypeHandler(object):
     This class also acts as a generic handler for mimetypes not matched
     explicitly by any handler. Note that this is not the same as '*/*'.
     """
+    MIMETYPES_DIR = 'rb/images/mimetypes'
+
     supported_mimetypes = []
 
     def __init__(self, attachment, mimetype):
         self.attachment = attachment
         self.mimetype = mimetype
+        self.storage = default_storage
 
     @classmethod
     def get_best_handler(cls, mimetype):
@@ -101,23 +105,19 @@ class MimetypeHandler(object):
         mimetype_string = self.mimetype[0] + '/' + self.mimetype[1]
 
         if mimetype_string in MIMETYPE_ICON_ALIASES:
-            name = MIMETYPE_ICON_ALIASES[mimetype_string]
+            path = self._get_mimetype_file(
+                MIMETYPE_ICON_ALIASES[mimetype_string])
         else:
-            category = self.mimetype[0]
-            name = self.mimetype[0] + '-' + self.mimetype[1]
+            path = self._get_mimetype_file(self.mimetype[0] + '-' +
+                                           self.mimetype[1])
+            if not self.storage.exists(path):
+                path = self._get_mimetype_file(self.mimetype[0] + '-x-generic')
 
-            mimetypes_dir = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                         'mimetypes')
-
-            if not os.path.exists(os.path.join(mimetypes_dir, name + '.png')):
-                name = category + '-x-generic'
-
-                if not os.path.exists(os.path.join(mimetypes_dir,
-                                                   name + '.png')):
+                if not self.storage.exists(path):
                     # We'll just use this as our fallback.
-                    name = 'text-x-generic'
+                    path = self._get_mimetype_file('text-x-generic')
 
-        return static("rb/images/mimetypes/%s.png" % name)
+        return static(path)
 
     def get_thumbnail(self):
         """Returns HTML that represents a preview of the attachment.
@@ -125,6 +125,9 @@ class MimetypeHandler(object):
         The outer-most object should have the class 'file-thubmnail'.
         """
         return mark_safe('<pre class="file-thumbnail"></pre>')
+
+    def _get_mimetype_file(self, name):
+        return '%s/%s.png' % (self.MIMETYPES_DIR, name)
 
 
 class ImageMimetype(MimetypeHandler):
