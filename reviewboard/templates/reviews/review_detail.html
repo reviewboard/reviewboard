@@ -35,11 +35,11 @@
 {% review_request_action_hooks %}
 {% review_request_dropdown_action_hooks %}
 {% include "reviews/review_request_actions_secondary.html" %}
-{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+{% if has_diffs %}
  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
 {% endif %}
 {% include "reviews/review_request_actions_primary.html" %}
-{% if review_request_details.diffset or review_request.diffset_history.diffsets.count %}
+{% if has_diffs %}
  <li class="primary"><a href="diff/#index_header">{% trans "View Diff" %}</a></li>
 {% endif %}
 </ul>
@@ -83,16 +83,16 @@
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
   <div class="collapse-button"></div>
   <div class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
-  <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp|timesince as timestamp_since  and entry.review.timestamp|date:"F jS, Y, P" as timestamp_date %}Posted {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}{% endlocaltime %}</div>
+  <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}Posted <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
   {% template_hook_point "review-summary-header-post" %}
  </div>
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
-   {% reply_section entry.review "" "body_top" "rcbt" %}
-{% if entry.review.comments.all or entry.review.screenshot_comments.all or entry.review.file_attachment_comments.all %}
+   {% reply_section entry "" "body_top" "rcbt" %}
+{% if entry.diff_comments or entry.screenshot_comments or entry.file_attachment_comments %}
    <dl class="diff-comments">
 
-{% for comment in entry.review.screenshot_comments.all %}
+{% for comment in entry.screenshot_comments %}
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="screenshot">
@@ -115,11 +115,11 @@
        {% comment_issue review_request_details comment "screenshot_comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "screenshot_comment" "rc" %}
+     {% reply_section entry comment "screenshot_comments" "rc" %}
     </dd>
 {% endfor %}
 
-{% for comment in entry.review.file_attachment_comments.all %}
+{% for comment in entry.file_attachment_comments %}
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="file-attachment">
@@ -145,11 +145,11 @@
        {% comment_issue review_request_details comment "file_attachment_comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "file_attachment_comment" "rc" %}
+     {% reply_section entry comment "file_attachment_comments" "rc" %}
     </dd>
 {% endfor %}
 
-{% for comment in entry.review.ordered_comments %}
+{% for comment in entry.diff_comments %}
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div id="comment_container_{{comment.id}}">
@@ -184,7 +184,7 @@
        {% comment_issue review_request_details comment "comment" %}
      </div>
 {% endif %}
-     {% reply_section entry.review comment "comment" "rc" %}
+     {% reply_section entry comment "diff_comments" "rc" %}
     </dd>
     <script type="text/javascript">
       $(document).ready(function() {
@@ -202,7 +202,7 @@
 {% endif %}
   {% if entry.review.body_bottom %}
    <pre class="body_bottom reviewtext">{{entry.review.body_bottom|escape}}</pre>
-   {% reply_section entry.review "" "body_bottom" "rcbb" %}
+   {% reply_section entry "" "body_bottom" "rcbb" %}
   {% endif %}
  </div><!-- body -->
 </div><!-- main -->
@@ -217,7 +217,7 @@
  <div class="header">
    <div class="collapse-button"></div>
    <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
-   <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp|timesince as timestamp_since and entry.changedesc.timestamp|date:"F jS, Y, P" as timestamp_date %}Updated {{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}{% endlocaltime %}</div>
+   <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}Updated <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
  </div>
  <div class="body">
   <ul>

@@ -278,7 +278,8 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
         if ('basedir' in self.fields and
             (not data or 'basedir' not in data)):
             try:
-                diffset = review_request.diffset_history.diffsets.latest()
+                diffset = DiffSet.objects.filter(
+                    history=review_request.diffset_history_id).latest()
                 self.fields['basedir'].initial = diffset.basedir
             except DiffSet.DoesNotExist:
                 pass

@@ -10,7 +10,7 @@
   var gReviewRequestSummary = "{{review_request.summary|escapejs}}";
   var gReviewRequestSitePrefix = "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}";
   var gReviewPending = {% if review %}true{% else %}false{% endif %};
-{%  if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+{%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
 {%   if review_request.status == 'P' %}
   var gEditable = true;
 {%   endif %}

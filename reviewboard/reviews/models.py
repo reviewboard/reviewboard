@@ -206,6 +206,9 @@ class Screenshot(models.Model):
         return u"%s (%s)" % (self.caption, self.image)
 
     def get_review_request(self):
+        if hasattr(self, '_review_request'):
+            return self._review_request
+
         try:
             return self.review_request.all()[0]
         except IndexError:
@@ -541,7 +544,7 @@ class ReviewRequest(models.Model):
         """
         return Review.objects.get_pending_review(self, user)
 
-    def get_last_activity(self):
+    def get_last_activity(self, diffsets=None, reviews=None):
         """Returns the last public activity information on the review request.
 
         This will return the last object updated, along with the timestamp
@@ -552,24 +555,28 @@ class ReviewRequest(models.Model):
         updated_object = self
 
         # Check if the diff was updated along with this.
-        try:
-            diffset = self.diffset_history.diffsets.latest()
+        if not diffsets:
+            try:
+                diffsets = [self.diffset_history.diffsets.latest()]
+            except DiffSet.DoesNotExist:
+                diffsets = []
 
+        for diffset in diffsets:
             if diffset.timestamp >= timestamp:
                 timestamp = diffset.timestamp
                 updated_object = diffset
-        except DiffSet.DoesNotExist:
-            pass
 
         # Check for the latest review or reply.
-        try:
-            review = self.reviews.filter(public=True).latest()
+        if not reviews:
+            try:
+                reviews = [self.reviews.filter(public=True).latest()]
+            except Review.DoesNotExist:
+                reviews = []
 
-            if review.timestamp >= timestamp:
+        for review in reviews:
+            if review.public and review.timestamp >= timestamp:
                 timestamp = review.timestamp
                 updated_object = review
-        except Review.DoesNotExist:
-            pass
 
         return timestamp, updated_object
 
@@ -594,6 +601,30 @@ class ReviewRequest(models.Model):
         return local_site_reverse('review-request-detail',
                                   local_site_name=local_site_name,
                                   kwargs={'review_request_id': self.display_id})
+
+    def get_screenshots(self):
+        """Returns the list of all screenshots on a review request.
+
+        This includes all current screenshots, but not previous ones.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        for screenshot in self.screenshots.all():
+            screenshot._review_request = self
+            yield screenshot
+
+    def get_file_attachments(self):
+        """Returns the list of all file attachments on a review request.
+
+        This includes all current file attachments, but not previous ones.
+
+        By accessing file attachments through this method, future review request
+        lookups from the file attachments will be avoided.
+        """
+        for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = self
+            yield file_attachment
 
     def __unicode__(self):
         if self.summary:
@@ -1268,6 +1299,34 @@ class ReviewRequestDraft(models.Model):
         update_obj_with_changenum(self, self.review_request.repository,
                                   changenum)
 
+    def get_screenshots(self):
+        """Returns the list of all screenshots on a review request.
+
+        This includes all current screenshots, but not previous ones.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        review_request = self.review_request
+
+        for screenshot in self.screenshots.all():
+            screenshot._review_request = review_request
+            yield screenshot
+
+    def get_file_attachments(self):
+        """Returns the list of all file attachments on a review request.
+
+        This includes all current file attachments, but not previous ones.
+
+        By accessing file attachments through this method, future review request
+        lookups from the file attachments will be avoided.
+        """
+        review_request = self.review_request
+
+        for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = review_request
+            yield file_attachment
+
     class Meta:
         ordering = ['-last_updated']
 
@@ -1325,18 +1384,32 @@ class BaseComment(models.Model):
         if hasattr(self, '_review_request'):
             return self._review_request
         else:
-            return self.review.get().review_request
+            return self.get_review().review_request
+
+    def get_review(self):
+        if hasattr(self, '_review'):
+            return self._review
+        else:
+            return self.review.get()
 
     def get_review_url(self):
         return "%s#%s%d" % \
             (self.get_review_request().get_absolute_url(),
              self.anchor_prefix, self.id)
 
+    def is_reply(self):
+        """Returns whether this comment is a reply to another comment."""
+        return self.reply_to_id is not None
+    is_reply.boolean = True
+
     def public_replies(self, user=None):
         """
         Returns a list of public replies to this comment, optionally
         specifying the user replying.
         """
+        if hasattr(self, '_replies'):
+            return self._replies
+
         if user:
             return self.replies.filter(Q(review__public=True) |
                                        Q(review__user=user))
@@ -1352,7 +1425,7 @@ class BaseComment(models.Model):
             # Update the review timestamp, but only if it's a draft.
             # Otherwise, resolving an issue will change the timestamp of
             # the review.
-            review = self.review.get()
+            review = self.get_review()
 
             if not review.public:
                 review.timestamp = self.timestamp
@@ -1399,7 +1472,7 @@ class Comment(BaseComment):
             revision_path += "-%s" % self.interfilediff.diffset.revision
 
         return "%sdiff/%s/?file=%s#file%sline%s" % \
-             (self.review.get().review_request.get_absolute_url(),
+             (self.get_review_request().get_absolute_url(),
               revision_path, self.filediff.id, self.filediff.id,
               self.first_line)
 
@@ -1544,7 +1617,7 @@ class Review(models.Model):
         """
         Returns whether or not this review is a reply to another review.
         """
-        return self.base_reply_to != None
+        return self.base_reply_to_id is not None
     is_reply.boolean = True
 
     def public_replies(self):
@@ -1552,6 +1625,30 @@ class Review(models.Model):
         Returns a list of public replies to this review.
         """
         return self.replies.filter(public=True)
+
+    def public_body_top_replies(self, user=None):
+        """Returns a list of public replies to this review's body top."""
+        if hasattr(self, '_body_top_replies'):
+            return self._body_top_replies
+        else:
+            q = Q(public=True)
+
+            if user:
+                q = q | Q(user=user)
+
+            return self.body_top_replies.filter(q)
+
+    def public_body_bottom_replies(self, user=None):
+        """Returns a list of public replies to this review's body bottom."""
+        if hasattr(self, '_body_bottom_replies'):
+            return self._body_bottom_replies
+        else:
+            q = Q(public=True)
+
+            if user:
+                q = q | Q(user=user)
+
+            return self.body_bottom_replies.filter(q)
 
     def get_pending_reply(self, user):
         """

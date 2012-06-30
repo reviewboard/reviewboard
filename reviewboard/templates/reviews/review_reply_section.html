@@ -1,13 +1,13 @@
 {% load i18n %}
 {% load reviewtags %}
-  <div id="{{context_id}}-{{review.id}}">
+  <div id="{{context_id}}-{{entry.review.id}}">
    <div class="issue-indicator"></div>
    <ol class="reply-comments">
-    {% reply_list review comment context_type context_id %}
+    {% reply_list entry comment context_type context_id %}
    </ol>
 {% if user.is_authenticated %}
    <ul class="controls">
-    <li><a href="#" id="add_{{review.id}}_{{context_type}}{% if comment %}_{{comment.id}}{% endif %}" class="add_comment_link">{% trans "Add comment" %}</a></li>
+    <li><a href="#" id="add_{{entry.review.id}}_{{context_type}}{% if comment %}_{{comment.id}}{% endif %}" class="add_comment_link">{% trans "Add comment" %}</a></li>
    </ul>
 {% endif %}
   </div>
@@ -15,8 +15,8 @@
 {% if user.is_authenticated %}
   <script language="javascript">
   $(document).ready(function() {
-      $("#{{context_id}}-{{review.id}}").commentSection(
-          "{{review.id}}",
+      $("#{{context_id}}-{{entry.review.id}}").commentSection(
+          "{{entry.review.id}}",
           {% if comment %}"{{comment.id}}"{% else %}null{% endif %},
           "{{context_type}}");
   });

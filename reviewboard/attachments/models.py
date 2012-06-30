@@ -46,6 +46,9 @@ class FileAttachment(models.Model):
         return self.caption
 
     def get_review_request(self):
+        if hasattr(self, '_review_request'):
+            return self._review_request
+
         try:
             return self.review_request.all()[0]
         except IndexError:

@@ -116,16 +116,17 @@ def commentcounts(context, filediff, interfilediff=None):
     """
     comment_dict = {}
     user = context.get('user', None)
+    all_comments = context.get('comments', {})
 
     if interfilediff:
-        query = Comment.objects.filter(filediff=filediff,
-                                       interfilediff=interfilediff)
+        key = (filediff.pk, interfilediff.pk)
     else:
-        query = Comment.objects.filter(filediff=filediff,
-                                       interfilediff__isnull=True)
+        key = (filediff.pk, None)
 
-    for comment in query:
-        review = get_object_or_none(comment.review)
+    comments = all_comments.get(key, [])
+
+    for comment in comments:
+        review = comment.get_review()
 
         if review and (review.public or review.user == user):
             key = (comment.first_line, comment.num_lines)
@@ -139,7 +140,6 @@ def commentcounts(context, filediff, interfilediff=None):
                     'username': review.user.username,
                     'name': review.user.get_full_name() or review.user.username,
                 },
-                #'timestamp': comment.timestamp,
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and \
                               not review.public,
@@ -254,7 +254,7 @@ def file_attachment_comments(context, file_attachment):
 
 @register.tag
 @basictag(takes_context=True)
-def reply_list(context, review, comment, context_type, context_id):
+def reply_list(context, entry, comment, context_type, context_id):
     """
     Renders a list of comments of a specified type.
 
@@ -262,8 +262,8 @@ def reply_list(context, review, comment, context_type, context_id):
     to display replies to a type of object. In each case, the replies will
     be rendered using the template :template:`reviews/review_reply.html`.
 
-    If ``context_type`` is ``"comment"``, ``"screenshot_comment"``
-    or ``"file_attachment_comment"``, the generated list of replies are to
+    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``
+    or ``"file_attachment_comments"``, the generated list of replies are to
     ``comment``.
 
     If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
@@ -300,25 +300,22 @@ def reply_list(context, review, comment, context_type, context_id):
 
         return s
 
+    review = entry['review']
+
     user = context.get('user', None)
     if user.is_anonymous():
         user = None
 
     s = ""
 
-    if context_type in ('comment', 'screenshot_comment',
-                        'file_attachment_comment'):
+    if context_type in ('diff_comments', 'screenshot_comments',
+                        'file_attachment_comments'):
         for reply_comment in comment.public_replies(user):
-            s += generate_reply_html(reply_comment.review.get(),
+            s += generate_reply_html(reply_comment.get_review(),
                                      reply_comment.timestamp,
                                      reply_comment.text)
     elif context_type == "body_top" or context_type == "body_bottom":
-        q = Q(public=True)
-
-        if user:
-            q = q | Q(user=user)
-
-        replies = getattr(review, "%s_replies" % context_type).filter(q)
+        replies = getattr(review, "public_%s_replies" % context_type)()
 
         for reply in replies:
             s += generate_reply_html(reply, reply.timestamp,
@@ -333,7 +330,7 @@ def reply_list(context, review, comment, context_type, context_id):
 
 @register.inclusion_tag('reviews/review_reply_section.html',
                         takes_context=True)
-def reply_section(context, review, comment, context_type, context_id):
+def reply_section(context, entry, comment, context_type, context_id):
     """
     Renders a template for displaying a reply.
 
@@ -351,7 +348,7 @@ def reply_section(context, review, comment, context_type, context_id):
         context_id += str(comment.id)
 
     return {
-        'review': review,
+        'entry': entry,
         'comment': comment,
         'context_type': context_type,
         'context_id': context_id,
@@ -615,7 +612,7 @@ def comment_issue(context, review_request, comment, comment_type):
         'comment': comment,
         'comment_type': comment_type,
         'issue_status': issue_status,
-        'review': comment.review.get(),
+        'review': comment.get_review(),
         'interactive': interactive,
     }
 

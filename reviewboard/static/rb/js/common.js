@@ -389,6 +389,7 @@ $(document).ready(function() {
 
     $('.user').user_infobox();
     $('.star').toggleStar();
+    $("time.timesince").timesince();
 });
 
 // vim: set et:sw=4:

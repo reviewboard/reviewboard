@@ -2,7 +2,7 @@
 {% load djblets_utils %}
 {% load i18n %}
 
-{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+{% if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
 <script type="text/javascript">
   $(document).ready(function() {
 {%  if upload_diff_form %}

@@ -246,6 +246,7 @@ PIPELINE_JS = {
     'common': {
         'source_filenames': (
             'rb/js/jquery.form.js',
+            'rb/js/jquery.timesince.js',
             'rb/js/ui.autocomplete.js',
             'rb/js/common.js',
             'rb/js/datastore.js',

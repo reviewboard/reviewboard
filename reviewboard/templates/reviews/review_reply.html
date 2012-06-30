@@ -6,7 +6,7 @@
      <dt>
       <label for="{% if draft %}your{% endif %}comment_{{context_id}}-{{id}}">
       <a href="{% url user reply_user %}" class="user">{{reply_user|user_displayname}}</a>
-      <span class="timestamp">{% localtime on %}{% blocktrans with timestamp|timesince as timestamp_since and timestamp|date:"F jS, Y, P" as timestamp_date %}{{ timestamp_since }} ago ({{ timestamp_date }}){% endblocktrans %}{% endlocaltime %}</span>
+      <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</span>
       </label>
      </dt>
      <dd><pre id="{% if draft %}your{% endif %}comment_{{context_id}}-{{id}}" class="reviewtext">{{text|escape}}</pre></dd>

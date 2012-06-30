@@ -49,9 +49,9 @@ from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
 from reviewboard.reviews.models import BaseComment, Comment, \
-                                       ReviewRequest, \
-                                       Review, Group, Screenshot, \
-                                       ScreenshotComment
+                                       FileAttachmentComment, \
+                                       Group, ReviewRequest, Review, \
+                                       Screenshot, ScreenshotComment
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
@@ -83,16 +83,23 @@ def _find_review_request(request, review_request_id, local_site_name):
 
     Returns either (None, response) or (ReviewRequest, None).
     """
+    q = ReviewRequest.objects.all()
+
     if local_site_name:
         local_site = get_object_or_404(LocalSite, name=local_site_name)
         if not local_site.is_accessible_by(request.user):
             return None, _render_permission_denied(request)
 
-        review_request = get_object_or_404(ReviewRequest,
-                                           local_site=local_site,
-                                           local_id=review_request_id)
+        q = q.filter(local_site=local_site,
+                     local_id=review_request_id)
     else:
-        review_request = get_object_or_404(ReviewRequest, pk=review_request_id)
+        q = q.filter(pk=review_request_id)
+
+    try:
+        q = q.select_related('submitter', 'repository')
+        review_request = q.get()
+    except ReviewRequest.DoesNotExist:
+        raise Http404
 
     if review_request.is_accessible_by(request.user):
         return review_request, None
@@ -124,6 +131,19 @@ def _make_review_request_context(review_request, extra_context):
         'comment_file_form': CommentFileForm(),
         'scmtool': scmtool,
     }, **extra_context)
+
+
+def _build_id_map(objects):
+    """Builds an ID map out of a list of objects.
+
+    The resulting map makes it easy to quickly look up an object from an ID.
+    """
+    id_map = {}
+
+    for obj in objects:
+        id_map[obj.pk] = obj
+
+    return id_map
 
 
 def _query_for_diff(review_request, user, revision, query_extra=None):
@@ -286,9 +306,79 @@ def review_detail(request,
     if not review_request:
         return response
 
-    reviews = review_request.get_public_reviews()
-    review = review_request.get_pending_review(request.user)
+    # The review request detail page needs a lot of data from the database,
+    # and going through standard model relations will result in far too many
+    # queries. So we'll be optimizing quite a bit by prefetching and
+    # re-associating data.
+    #
+    # We will start by getting the list of reviews. We'll filter this out into
+    # some other lists, build some ID maps, and later do further processing.
+    entries = []
+    public_reviews = []
+    body_top_replies = {}
+    body_bottom_replies = {}
+    replies = {}
+    reply_timestamps = {}
+    reviews_entry_map = {}
+    reviews_id_map = {}
     review_timestamp = 0
+
+    # Start by going through all reviews that point to this review request.
+    # This includes draft reviews. We'll be separating these into a list of
+    # public reviews and a mapping of replies.
+    #
+    # We'll also compute the latest review timestamp early, for the ETag
+    # generation below.
+    #
+    # The second pass will come after the ETag calculation.
+    all_reviews = list(review_request.reviews.select_related('user'))
+
+    for review in all_reviews:
+        reviews_id_map[review.pk] = review
+        review._body_top_replies = []
+        review._body_bottom_replies = []
+
+        if review.public:
+            # This is a review we'll display on the page. Keep track of it
+            # for later display and filtering.
+            public_reviews.append(review)
+            parent_id = review.base_reply_to_id
+
+            if parent_id is not None:
+                # This is a reply to a review. We'll store the reply data
+                # into a map, which associates a review ID with its list of
+                # replies, and also figures out the timestamps.
+                #
+                # Later, we'll use this to associate reviews and replies for
+                # rendering.
+                if parent_id not in replies:
+                    replies[parent_id] = [review]
+                    reply_timestamps[parent_id] = review.timestamp
+                else:
+                    replies[parent_id].append(review)
+                    reply_timestamps[parent_id] = max(
+                        reply_timestamps[parent_id],
+                        review.timestamp)
+        elif (review.user_id == request.user.pk and
+              (review_timestamp == 0 or review.timestamp > review_timestamp)):
+            # This is the latest draft so far from the current user, so
+            # we'll use this timestamp in the ETag.
+            review_timestamp = review.timestamp
+
+        if review.public or review.user_id == request.user.pk:
+            # If this review is replying to another review's body_top or
+            # body_bottom fields, store that data.
+            for reply_id, reply_list in (
+                (review.body_top_reply_to_id, body_top_replies),
+                (review.body_bottom_reply_to_id, body_bottom_replies)):
+                if reply_id is not None:
+                    if reply_id not in reply_list:
+                        reply_list[reply_id] = [review]
+                    else:
+                        reply_list[reply_id].append(review)
+
+    pending_review = review_request.get_pending_review(request.user)
+    review_ids = reviews_id_map.keys()
     last_visited = 0
     starred = False
 
@@ -302,24 +392,23 @@ def review_detail(request,
             visited.timestamp = timezone.now()
             visited.save()
 
-        profile, profile_is_new = \
-            Profile.objects.get_or_create(user=request.user)
-        starred = review_request in profile.starred_review_requests.all()
-
-        # Unlike review above, this covers replies as well.
+        # Try using get_profile first, because it caches for future calls.
+        # If it fails, it's okay. We don't rely upon it here.
         try:
-            last_draft_review = Review.objects.filter(
-                review_request=review_request,
-                user=request.user,
-                public=False).latest()
-            review_timestamp = last_draft_review.timestamp
-        except Review.DoesNotExist:
+            profile = request.user.get_profile()
+            starred_review_requests = \
+                profile.starred_review_requests.filter(pk=review_request.pk)
+            starred = (starred_review_requests.count() > 0)
+        except Profile.DoesNotExist:
             pass
 
     draft = review_request.get_draft(request.user)
+    diffsets = list(DiffSet.objects.filter(
+        history__pk=review_request.diffset_history_id))
 
     # Find out if we can bail early. Generate an ETag for this.
-    last_activity_time, updated_object = review_request.get_last_activity()
+    last_activity_time, updated_object = \
+        review_request.get_last_activity(diffsets, public_reviews)
 
     if draft:
         draft_timestamp = draft.last_updated
@@ -334,43 +423,151 @@ def review_detail(request,
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
-    changedescs = review_request.changedescs.filter(public=True)
-    latest_changedesc = None
+    # Get the list of public ChangeDescriptions.
+    #
+    # We want to get the latest ChangeDescription along with this. This is
+    # best done here and not in a separate SQL query.
+    changedescs = list(review_request.changedescs.filter(public=True))
 
-    try:
-        latest_changedesc = changedescs.latest()
+    if changedescs:
+        # We sort from newest to oldest, so the latest one is the first.
+        latest_changedesc = changedescs[0]
         latest_timestamp = latest_changedesc.timestamp
-    except ChangeDescription.DoesNotExist:
+    else:
+        latest_changedesc = None
         latest_timestamp = None
 
-    entries = []
-
-    for temp_review in reviews:
-        temp_review.ordered_comments = \
-            temp_review.comments.order_by('filediff', 'first_line')
-
-        state = ''
-
-        # Mark as collapsed if the review is older than the latest change
-        if latest_timestamp and temp_review.timestamp < latest_timestamp:
-            state = 'collapsed'
-
-        try:
-            latest_reply = \
-                temp_review.public_replies().latest('timestamp').timestamp
-        except Review.DoesNotExist:
-            latest_reply = None
-
-        # Mark as expanded if there is a reply newer than last_visited
-        if latest_reply and last_visited and last_visited < latest_reply:
+    # Now that we have the list of public reviews and all that metadata,
+    # being processing them and adding entries for display in the page.
+    #
+    # We do this here and not above because we don't want to build *too* much
+    # before the ETag check.
+    for review in public_reviews:
+        if not review.is_reply():
             state = ''
 
-        entries.append({
-            'review': temp_review,
-            'timestamp': temp_review.timestamp,
-            'class': state,
-        })
+            # Mark as collapsed if the review is older than the latest
+            # change.
+            if latest_timestamp and review.timestamp < latest_timestamp:
+                state = 'collapsed'
 
+            latest_reply = reply_timestamps.get(review.pk, None)
+
+            # Mark as expanded if there is a reply newer than last_visited
+            if latest_reply and last_visited and last_visited < latest_reply:
+                state = ''
+
+            entry = {
+                'review': review,
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'timestamp': review.timestamp,
+                'class': state,
+            }
+            reviews_entry_map[review.pk] = entry
+            entries.append(entry)
+
+    # Link up all the review body replies.
+    for key, reply_list in (('_body_top_replies', body_top_replies),
+                            ('_body_bottom_replies', body_bottom_replies)):
+        for reply_id, replies in reply_list.iteritems():
+            setattr(reviews_id_map[reply_id], key, replies)
+
+    # Get all the file attachments and screenshots and build a couple maps,
+    # so we can easily associate those objects in comments.
+    file_attachments = list(review_request.get_file_attachments())
+    file_attachment_id_map = _build_id_map(file_attachments)
+    screenshots = list(review_request.get_screenshots())
+    screenshot_id_map = _build_id_map(screenshots)
+
+    issues = {
+        'total': 0,
+        'open': 0,
+        'resolved': 0,
+        'dropped': 0
+    }
+
+    # Get all the comments and attach them to the reviews.
+    for model, key, ordering in (
+        (Comment, 'diff_comments',
+         ('comment__filediff', 'comment__first_line')),
+        (ScreenshotComment, 'screenshot_comments', None),
+        (FileAttachmentComment, 'file_attachment_comments', None)):
+        # Due to how we initially made the schema, we have a ManyToManyField
+        # inbetween comments and reviews, instead of comments having a
+        # ForeignKey to the review. This makes it difficult to easily go
+        # from a comment to a review ID.
+        #
+        # The solution to this is to not query the comment objects, but rather
+        # the through table. This will let us grab the review and comment in
+        # one go, using select_related.
+        related_field = model.review.related.field
+        comment_field_name = related_field.m2m_reverse_field_name()
+        through = related_field.rel.through
+        q = through.objects.filter(review__in=review_ids).select_related()
+
+        if ordering:
+            q = q.order_by(*ordering)
+
+        objs = list(q)
+
+        # Two passes. One to build a mapping, and one to actually process
+        # comments.
+        comment_map = {}
+
+        for obj in objs:
+            comment = getattr(obj, comment_field_name)
+            comment_map[comment.pk] = comment
+            comment._replies = []
+
+        for obj in objs:
+            comment = getattr(obj, comment_field_name)
+
+            # Short-circuit some object fetches for the comment by setting
+            # some internal state on them.
+            assert obj.review_id in reviews_id_map
+            parent_review = reviews_id_map[obj.review_id]
+            comment._review = parent_review
+            comment._review_request = review_request
+
+            # If the comment has an associated object that we've already
+            # queried, attach it to prevent a future lookup.
+            if isinstance(comment, ScreenshotComment):
+                if comment.screenshot_id in screenshot_id_map:
+                    comment.screenshot = \
+                        screenshot_id_map[comment.screenshot_id]
+            elif isinstance(comment, FileAttachmentComment):
+                if comment.file_attachment_id in file_attachment_id_map:
+                    comment.file_attachment = \
+                        file_attachment_id_map[comment.file_attachment_id]
+
+            if parent_review.is_reply():
+                # This is a reply to a comment. Add it to the list of replies.
+                assert obj.review_id not in reviews_entry_map
+                assert parent_review.base_reply_to_id in reviews_entry_map
+
+                # If there's an entry that isn't a reply, then it's
+                # orphaned. Ignore it.
+                if comment.is_reply():
+                    replied_comment = comment_map[comment.reply_to_id]
+                    replied_comment._replies.append(comment)
+            else:
+                # This is a comment on a public review we're going to show.
+                # Add it to the list.
+                assert obj.review_id in reviews_entry_map
+                entry = reviews_entry_map[obj.review_id]
+                entry[key].append(comment)
+
+                if comment.issue_opened:
+                    status_key = \
+                        comment.issue_status_to_string(comment.issue_status)
+                    issues[status_key] += 1
+                    issues['total'] += 1
+
+
+    # Sort all the reviews and ChangeDescriptions into a single list, for
+    # display.
     for changedesc in changedescs:
         fields_changed = []
 
@@ -453,34 +650,25 @@ def review_detail(request,
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
 
-    issues = {
-        'total': 0,
-        'open': 0,
-        'resolved': 0,
-        'dropped': 0
-    }
-
-    for entry in entries:
-        if 'review' in entry:
-            for comment in entry['review'].get_all_comments(issue_opened=True):
-                issues['total'] += 1
-                issues[BaseComment.issue_status_to_string(
-                        comment.issue_status)] += 1
+    review_request_details = draft or review_request
 
     response = render_to_response(
         template_name,
         RequestContext(request, _make_review_request_context(review_request, {
             'draft': draft,
             'detail_hooks': ReviewRequestDetailHook.hooks,
-            'review_request_details': draft or review_request,
+            'review_request_details': review_request_details,
             'entries': entries,
             'last_activity_time': last_activity_time,
-            'review': review,
+            'review': pending_review,
             'request': request,
             'latest_changedesc': latest_changedesc,
             'close_description': close_description,
             'PRE_CREATION': PRE_CREATION,
             'issues': issues,
+            'has_diffs': (draft and draft.diffset) or len(diffsets) > 0,
+            'file_attachments': file_attachments,
+            'screenshots': screenshots,
         })))
     set_etag(response, etag)
 
@@ -747,15 +935,46 @@ def diff(request,
     is_draft_interdiff = has_draft_diff and interdiffset and \
                          draft.diffset == interdiffset
 
-    num_diffs = review_request.diffset_history.diffsets.count()
+    # Get the list of diffsets. We only want to calculate this once.
+    diffsets = list(DiffSet.objects.filter(
+        history__pk=review_request.diffset_history_id))
+    latest_diffset = diffsets[-1]
+
+    num_diffs = len(diffsets)
+
     if draft and draft.diffset:
         num_diffs += 1
 
-    last_activity_time, updated_object = review_request.get_last_activity()
+    last_activity_time, updated_object = \
+        review_request.get_last_activity(diffsets)
+
+    file_attachments = list(review_request.get_file_attachments())
+    screenshots = list(review_request.get_screenshots())
+
+    # Compute the lists of comments based on filediffs and interfilediffs.
+    # We do this using the 'through' table so that we can select_related
+    # the reviews and comments.
+    comments = {}
+    q = Comment.review.related.field.rel.through.objects.filter(
+        review__review_request=review_request)
+    q = q.select_related()
+
+    for obj in q:
+        comment = obj.comment
+        review = obj.review
+        comment._review = review
+        key = (comment.filediff_id, comment.interfilediff_id)
+
+        if key in comments:
+            comments[key].append(comment)
+        else:
+            comments[key] = [comment]
 
     return view_diff(
          request, diffset, interdiffset, template_name=template_name,
          extra_context=_make_review_request_context(review_request, {
+            'diffsets': diffsets,
+            'latest_diffset': latest_diffset,
             'review': review,
             'review_request_details': draft or review_request,
             'draft': draft,
@@ -766,6 +985,9 @@ def diff(request,
             'specific_diff_requested': revision is not None or
                                        interdiff_revision is not None,
             'base_url': review_request.get_absolute_url(),
+            'file_attachments': file_attachments,
+            'screenshots': screenshots,
+            'comments': comments,
         }))
 
 
