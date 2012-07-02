@@ -4,7 +4,7 @@ from django.contrib import admin
 
 from reviewboard.webapi.resources import root_resource
 from reviewboard import initialize
-
+from reviewboard.reviews.feeds import RssSubmitterReviewsFeed
 
 initialize()
 
@@ -43,6 +43,8 @@ localsite_urlpatterns = patterns('',
     # Dashboard
     url(r'^dashboard/$',
         'reviewboard.reviews.views.dashboard', name="dashboard"),
+    url(r'^dashboard/feed/(?P<username>[A-Za-z0-9@_\-\.]+)/$', 
+     RssSubmitterReviewsFeed(), name="submitter-feeds"),
 
     # Users
     url(r'^users/$',

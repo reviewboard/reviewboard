@@ -1,7 +1,9 @@
 from django.conf.urls.defaults import patterns, url
+from reviewboard.reviews.feeds import RssReviewsFeed
 
 urlpatterns = patterns('reviewboard.reviews.views',
     url(r'^$', 'all_review_requests', name="all-review-requests"),
+    (r'^feed/$', RssReviewsFeed()),
 
     # Review request creation
     url(r'^new/$', 'new_review_request', name="new-review-request"),
