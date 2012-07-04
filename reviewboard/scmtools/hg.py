@@ -180,10 +180,14 @@ class HgWebClient(SCMClient):
         elif rev == PRE_CREATION:
             rev = ""
 
-        for rawpath in ["raw-file", "raw"]:
+        for rawpath in ["raw-file", "raw", "hg-history"]:
             try:
+                path = self.path.rstrip('/')
+                if rawpath == 'hg-history':
+                    path = self.path[:self.path.rfind('/')]
+
                 url = self.FULL_FILE_URL % {
-                    'url': self.path.rstrip('/'),
+                    'url': path
                     'rawpath': rawpath,
                     'revision': rev,
                     'quoted_path': urllib_quote(path.lstrip('/')),
