@@ -189,7 +189,6 @@ class HgWebClient(SCMClient):
                     'quoted_path': urllib_quote(path.lstrip('/')),
                 }
 
-                url = url.replace('https', 'http')
                 return self.get_file_http(url, path, rev)
             except Exception:
                 # It failed. Error was logged and we may try again.
