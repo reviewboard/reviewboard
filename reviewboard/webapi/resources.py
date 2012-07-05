@@ -2192,7 +2192,7 @@ class HostingServiceAccountResource(WebAPIResource):
     The list of accounts tied to hosting services can be retrieved, and new
     accounts can be linked through an HTTP POST.
     """
-    name = 'hosting-service-account'
+    name = 'hosting_service_account'
     model = HostingServiceAccount
     fields = {
         'id': {
@@ -3135,9 +3135,9 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'url': {
             'type': str,
-            'description': "The URL of the file, for downloading purposes."
+            'description': "The URL of the file, for downloading purposes. "
                            "If this is not an absolute URL, then it's "
-                           "relative t othe Review Board server's URL.",
+                           "relative to the Review Board server's URL.",
         },
         'icon_url': {
             'type': str,
