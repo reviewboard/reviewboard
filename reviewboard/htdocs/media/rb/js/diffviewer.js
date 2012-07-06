@@ -279,7 +279,7 @@ $.extend(DiffCommentBlock.prototype, {
 
                 gCommentDlg
                     .setDraftComment(self.draftComment)
-                    .setCommentsList(self.comments, "comment")
+                    .setCommentsList(self.comments, "diff_comments")
                     .css({
                         left: $(document).scrollLeft() +
                               ($(window).width() - gCommentDlg.width()) / 2,
