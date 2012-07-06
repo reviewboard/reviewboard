@@ -210,7 +210,7 @@ class Site(object):
 
         # Link from Djblets if available.
         if pkg_resources.resource_exists("djblets", "media"):
-            self.link_pkg_dir("djblets", "media", rb_djblets_dest)
+            self.link_pkg_dir("djblets", "static", rb_djblets_dest)
         elif pkg_resources.resource_exists("reviewboard", rb_djblets_src):
             self.link_pkg_dir("reviewboard", rb_djblets_src,
                               rb_djblets_dest)
