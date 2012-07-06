@@ -59,8 +59,8 @@ var gCommentIssueManager = new function() {
      * setCommentState - set the state of comment issue
      * @param review_id the id for the review that the comment belongs to
      * @param comment_id the id of the comment with the issue
-     * @param comment_type the type of comment, either "comment" or
-     *                     "screenshot_comment"
+     * @param comment_type the type of comment, either "diff_comments",
+     *                     "screenshot_comments", or "file_attachment_comments".
      * @param state the state to set the comment issue to - either
      *              "open", "resolved", or "dropped"
      */
@@ -97,18 +97,21 @@ var gCommentIssueManager = new function() {
 
         var comment = null;
 
-        if (comment_type == "comment") {
+        if (comment_type === "diff_comments") {
             comment = gReviewRequest
                 .createReview(review_id)
                 .createDiffComment(comment_id);
-        } else if (comment_type == "screenshot_comment") {
+        } else if (comment_type === "screenshot_comments") {
             comment = gReviewRequest
                 .createReview(review_id)
                 .createScreenshotComment(comment_id);
-        } else if (comment_type == "file_attachment_comment") {
+        } else if (comment_type === "file_attachment_comments") {
             comment = gReviewRequest
                 .createReview(review_id)
                 .createFileAttachmentComment(comment_id);
+        } else {
+            console.log("getComment received unexpected context type '%s'",
+                        comment_type);
         }
 
         comments[comment_id] = comment;
@@ -640,20 +643,23 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                         context_type == "body_bottom") {
                         review_reply[context_type] = value;
                         obj = review_reply;
-                    } else if (context_type == "comment") {
+                    } else if (context_type === "diff_comments") {
                         obj = new RB.DiffCommentReply(review_reply, null,
                                                       context_id);
                         obj.setText(value);
-                    } else if (context_type == "screenshot_comment") {
+                    } else if (context_type === "screenshot_comments") {
                         obj = new RB.ScreenshotCommentReply(review_reply, null,
                                                             context_id);
                         obj.setText(value);
-                    } else if (context_type == "file_comment") {
+                    } else if (context_type === "file_attachment_comments") {
                         obj = new RB.FileAttachmentCommentReply(
                             review_reply, null, context_id);
                         obj.setText(value);
                     } else {
                         /* Shouldn't be reached. */
+                        console.log("createCommentEditor received unexpected " +
+                                    "context type '%s'",
+                                    context_type);
                         return;
                     }
 
@@ -719,7 +725,8 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
  * @param review_id the id of the review that the comment belongs to
  * @param comment_id the id of the comment with the issue
  * @param comment_type dictates the type of comment - either
- *                     "comment" or "screenshot_comment"
+ *                     "diff_comments", "screenshot_comments" or
+ *                     "file_attachment_comments".
  * @param issue_status the initial status of the comment - either
  *                     "open", "resolved" or "dropped"
  * @param interactive true if the user should be shown buttons to
