@@ -112,6 +112,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         if os.path.exists(self.tempdir):
             self._destroy_media_dirs()
 
+        settings.STATIC_ROOT = os.path.join(self.tempdir, 'static')
         settings.MEDIA_ROOT = os.path.join(self.tempdir, 'media')
         images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
 
