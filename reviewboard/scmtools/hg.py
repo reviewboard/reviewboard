@@ -180,16 +180,20 @@ class HgWebClient(SCMClient):
         elif rev == PRE_CREATION:
             rev = ""
 
-        for rawpath in ["raw-file", "raw"]:
+        for rawpath in ["raw-file", "raw", "hg-history"]:
             try:
+                base_url = self.path.rstrip('/')
+
+                if rawpath == 'hg-history':
+                    base_url = self.path[:self.path.rfind('/')]
+
                 url = self.FULL_FILE_URL % {
-                    'url': self.path.rstrip('/'),
+                    'url': base_url,
                     'rawpath': rawpath,
                     'revision': rev,
                     'quoted_path': urllib_quote(path.lstrip('/')),
                 }
 
-                url = url.replace('https', 'http')
                 return self.get_file_http(url, path, rev)
             except Exception:
                 # It failed. Error was logged and we may try again.

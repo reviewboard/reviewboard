@@ -31,6 +31,9 @@ from reviewboard.diffviewer.smdiff import SMDiffer
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
+# The maximum size a line can be before we start shutting off styling.
+STYLED_MAX_LINE_LEN = 1000
+
 DEFAULT_DIFF_COMPAT_VERSION = 1
 
 NEW_FILE_STR = _("New File")
@@ -406,7 +409,10 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
                   oldmarkup, newmarkup):
         # This function accesses the variable meta, defined in an outer context.
-        if oldline and newline and oldline != newline:
+        if (oldline and newline and
+            len(oldline) <= STYLED_MAX_LINE_LEN and
+            len(newline) <= STYLED_MAX_LINE_LEN and
+            oldline != newline):
             oldregion, newregion = get_line_changed_regions(oldline, newline)
         else:
             oldregion = newregion = []
@@ -594,6 +600,19 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     if threshold and (a_num_lines > threshold or b_num_lines > threshold):
         enable_syntax_highlighting = False
+
+    if enable_syntax_highlighting:
+        # Don't style the file if we have any *really* long lines.
+        # It's likely a minified file or data or something that doesn't
+        # need styling, and it will just grind Review Board to a halt.
+        for lines in (a, b):
+            for line in lines:
+                if len(line) > STYLED_MAX_LINE_LEN:
+                    enable_syntax_highlighting = False
+                    break
+
+            if not enable_syntax_highlighting:
+                break
 
     if enable_syntax_highlighting:
         repository = filediff.diffset.repository

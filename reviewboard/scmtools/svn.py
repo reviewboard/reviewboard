@@ -15,10 +15,11 @@ from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
-from reviewboard.scmtools.errors import SCMError, \
+from reviewboard.scmtools.errors import AuthenticationError, \
                                         FileNotFoundError, \
-                                        UnverifiedCertificateError, \
-                                        RepositoryNotFoundError
+                                        RepositoryNotFoundError, \
+                                        SCMError, \
+                                        UnverifiedCertificateError
 
 
 # Register these URI schemes so we can handle them properly.
@@ -148,7 +149,7 @@ class SVNTool(SCMTool):
                     'for the user that reviewboard is running as.'
                     % os.path.join(self.config_dir, 'auth'))
             elif 'callback_get_login required' in stre:
-                raise SCMError('Login to the SCM server failed.')
+                raise AuthenticationError(msg='Login to the SCM server failed.')
             else:
                 raise SCMError(e)
 
@@ -302,7 +303,7 @@ class SVNTool(SCMTool):
                           'for %s: %s' % (path, e))
 
             if 'callback_get_login required' in str(e):
-                raise SCMError("Authentication failed") # XXX
+                raise AuthenticationError(msg="Authentication failed")
 
             if cert_data:
                 failures = cert_data['failures']
