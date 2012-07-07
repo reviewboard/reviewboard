@@ -355,13 +355,15 @@ def review_detail(request,
                     reply_timestamps[parent_id] = max(
                         reply_timestamps[parent_id],
                         review.timestamp)
-        elif (review.user_id == request.user.pk and
+        elif (request.user.is_authenticated() and
+              review.user_id == request.user.pk and
               (review_timestamp == 0 or review.timestamp > review_timestamp)):
             # This is the latest draft so far from the current user, so
             # we'll use this timestamp in the ETag.
             review_timestamp = review.timestamp
 
-        if review.public or review.user_id == request.user.pk:
+        if review.public or (request.user.is_authenticated() and
+                             review.user_id == request.user.pk):
             # If this review is replying to another review's body_top or
             # body_bottom fields, store that data.
             for reply_id, reply_list in (
@@ -907,7 +909,7 @@ def diff(request,
 
     # Try to find an existing pending review of this diff from the
     # current user.
-    review = review_request.get_pending_review(request.user)
+    pending_review = review_request.get_pending_review(request.user)
     draft = review_request.get_draft(request.user)
 
     has_draft_diff = draft and draft.diffset
@@ -955,7 +957,7 @@ def diff(request,
          extra_context=_make_review_request_context(review_request, {
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
-            'review': review,
+            'review': pending_review,
             'review_request_details': draft or review_request,
             'draft': draft,
             'is_draft_diff': is_draft_diff,
