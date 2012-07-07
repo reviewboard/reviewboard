@@ -153,7 +153,7 @@ def check_updates_required():
         ext_dir = settings.EXTENSIONS_STATIC_ROOT
 
         if not os.path.isdir(ext_dir) or not os.access(ext_dir, os.W_OK):
-            _updates_required.append((
+            updates_required.append((
                 'admin/manual-updates/ext-dir.html', {
                     'ext_dir': ext_dir,
                     'writable': os.access(ext_dir, os.W_OK),
