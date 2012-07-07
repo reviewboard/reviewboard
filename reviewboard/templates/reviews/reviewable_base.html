@@ -3,7 +3,9 @@
 
 {% block jsconsts %}
 {{block.super}}
+{%  if request.user.is_authenticated %}
   var gUserURL = "{% url user request.user %}";
+{%  endif %}
 {% endblock %}
 
 {% block ie6_csshacks %}
