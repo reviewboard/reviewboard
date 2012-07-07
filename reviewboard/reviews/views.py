@@ -544,7 +544,7 @@ def review_detail(request,
                 if comment.is_reply():
                     replied_comment = comment_map[comment.reply_to_id]
                     replied_comment._replies.append(comment)
-            else:
+            elif parent_review.public:
                 # This is a comment on a public review we're going to show.
                 # Add it to the list.
                 assert obj.review_id in reviews_entry_map
