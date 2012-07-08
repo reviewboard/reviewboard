@@ -1891,7 +1891,7 @@ $.fn.fileAttachment = function() {
 
                     gCommentDlg
                         .setDraftComment(draftComment)
-                        .setCommentsList(comments, "file_attachment_comment")
+                        .setCommentsList(comments, "file_attachment_comments")
                         .positionToSide(addCommentButton, {
                             side: 'b',
                             fitOnScreen: true

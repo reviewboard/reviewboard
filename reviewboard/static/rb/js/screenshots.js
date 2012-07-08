@@ -366,7 +366,7 @@ jQuery.fn.screenshotCommentBox = function(regions) {
                 gCommentDlg
                     .setDraftComment(commentBlock.draftComment)
                     .setCommentsList(commentBlock.comments,
-                                     "screenshot_comment")
+                                     "screenshot_comments")
                     .positionToSide(commentBlock.flag, {
                         side: 'b',
                         fitOnScreen: true
