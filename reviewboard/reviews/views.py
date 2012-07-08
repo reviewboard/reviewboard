@@ -920,9 +920,12 @@ def diff(request,
     # Get the list of diffsets. We only want to calculate this once.
     diffsets = list(DiffSet.objects.filter(
         history__pk=review_request.diffset_history_id))
-    latest_diffset = diffsets[-1]
-
     num_diffs = len(diffsets)
+
+    if num_diffs > 0:
+        latest_diffset = diffsets[-1]
+    else:
+        latest_diffset = None
 
     if draft and draft.diffset:
         num_diffs += 1
