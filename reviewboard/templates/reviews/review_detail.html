@@ -103,7 +103,7 @@
      <pre>{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
-       {% comment_issue review_request_details comment "screenshot_comment" %}
+       {% comment_issue review_request_details comment "screenshot_comments" %}
      </div>
 {% endif %}
      {% reply_section entry comment "screenshot_comments" "rc" %}
@@ -133,7 +133,7 @@
      <pre>{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
-       {% comment_issue review_request_details comment "file_attachment_comment" %}
+       {% comment_issue review_request_details comment "file_attachment_comments" %}
      </div>
 {% endif %}
      {% reply_section entry comment "file_attachment_comments" "rc" %}
@@ -172,7 +172,7 @@
      <pre class="reviewtext">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
      <div id="comment-{{comment.id}}-issue" class="issue-indicator">
-       {% comment_issue review_request_details comment "comment" %}
+       {% comment_issue review_request_details comment "diff_comments" %}
      </div>
 {% endif %}
      {% reply_section entry comment "diff_comments" "rc" %}
