@@ -1453,10 +1453,8 @@ class DiffResource(WebAPIResource):
     model_parent_key = 'history'
     last_modified_field = 'timestamp'
 
-    allowed_mimetypes = [
-        'application/json',
-        'application/xml',
-        'text/x-patch'
+    allowed_item_mimetypes = WebAPIResource.allowed_item_mimetypes + [
+        'text/x-patch',
     ]
 
     def get_queryset(self, request, *args, **kwargs):
@@ -1512,7 +1510,7 @@ class DiffResource(WebAPIResource):
         diff.
         """
         mimetype = get_http_requested_mimetype(request,
-                                               self.allowed_mimetypes)
+                                               self.allowed_item_mimetypes)
 
         if mimetype == 'text/x-patch':
             return self._get_patch(request, *args, **kwargs)
