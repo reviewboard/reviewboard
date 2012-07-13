@@ -15,6 +15,7 @@ from djblets.util.misc import cache_memoize, get_object_or_none
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.diffutils import UserVisibleError, \
                                              get_diff_files, \
+                                             populate_diff_chunks, \
                                              get_enable_highlighting
 
 
@@ -82,8 +83,7 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
             logging.debug("Generating diff viewer page for filediff id %s",
                           diffset.id)
 
-        files = get_diff_files(diffset, None, interdiffset,
-                               highlighting, False)
+        files = get_diff_files(diffset, None, interdiffset)
 
         # Break the list of files into pages
         siteconfig = SiteConfiguration.objects.get_current()
@@ -144,13 +144,13 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
             filediff = first_file['filediff']
 
             if filediff.diffset == interdiffset:
-                temp_files = get_diff_files(interdiffset, filediff,
-                                            None, highlighting, True)
+                temp_files = get_diff_files(interdiffset, filediff, None)
             else:
-                temp_files = get_diff_files(diffset, filediff,
-                                            interdiffset, highlighting, True)
+                temp_files = get_diff_files(diffset, filediff, interdiffset)
 
             if temp_files:
+                populate_diff_chunks(temp_files, highlighting)
+
                 file_temp = temp_files[0]
                 file_temp['index'] = first_file['index']
                 first_file['fragment'] = \
@@ -189,8 +189,10 @@ def view_diff_fragment(
     """View which renders a specific fragment from a diff."""
 
     def get_requested_diff_file(get_chunks=True):
-        files = get_diff_files(diffset, filediff, interdiffset, highlighting,
-                               get_chunks)
+        files = get_diff_files(diffset, filediff, interdiffset)
+
+        if get_chunks:
+            populate_diff_chunks(files, highlighting)
 
         if files:
             assert len(files) == 1
