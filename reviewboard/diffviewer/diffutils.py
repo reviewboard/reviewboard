@@ -1266,11 +1266,14 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
 
 
 def get_enable_highlighting(user):
+    user_syntax_highlighting = True
+
     if user.is_authenticated():
-        profile, profile_is_new = Profile.objects.get_or_create(user=user)
-        user_syntax_highlighting = profile.syntax_highlighting
-    else:
-        user_syntax_highlighting = True
+        try:
+            profile = user.get_profile()
+            user_syntax_highlighting = profile.syntax_highlighting
+        except Profile.DoesNotExist:
+            pass
 
     siteconfig = SiteConfiguration.objects.get_current()
     return (siteconfig.get('diffviewer_syntax_highlighting') and

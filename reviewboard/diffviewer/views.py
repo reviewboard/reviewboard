@@ -3,7 +3,7 @@ import traceback
 
 from django.conf import settings
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseServerError, Http404
 from django.shortcuts import get_object_or_404, render_to_response
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -179,10 +179,10 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
 
 def view_diff_fragment(
     request,
-    diffset_id,
+    diffset_or_id,
     filediff_id,
     base_url,
-    interdiffset_id=None,
+    interdiffset_or_id=None,
     chunkindex=None,
     template_name='diffviewer/diff_file_fragment.html',
     error_template_name='diffviewer/diff_fragment_error.html'):
@@ -205,9 +205,46 @@ def view_diff_fragment(
 
         return None
 
-    diffset = get_object_or_404(DiffSet, pk=diffset_id)
+    # Depending on whether we're invoked from a URL or from a wrapper
+    # with precomputed diffsets, we may be working with either IDs or
+    # actual objects. If they're objects, just use them as-is. Otherwise,
+    # if they're IDs, we want to grab them both (if both are provided)
+    # in one go, to save on an SQL query.
+    diffset_ids = []
+    diffset = None
+    interdiffset = None
+
+    if isinstance(diffset_or_id, DiffSet):
+        diffset = diffset_or_id
+    else:
+        diffset_ids.append(diffset_id)
+
+    if interdiffset_or_id:
+        if isinstance(interdiffset_or_id, DiffSet):
+            interdiffset = interdiffset_or_id
+        else:
+            diffset_ids.append(interdiffset_or_id)
+
+    if diffset_ids:
+        diffsets = DiffSet.objects.filter(pk__in=diffset_ids)
+
+        if len(diffsets) != len(diffset_ids):
+            raise Http404
+
+        for temp_diffset in diffsets:
+            if temp_diffset.pk == diffset_id:
+                diffset = temp_diffset
+            elif temp_diffset.pk == interdiffset_id:
+                interdiffset = temp_diffset
+            else:
+                assert False
+
     filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
-    interdiffset = get_object_or_none(DiffSet, pk=interdiffset_id)
+
+    # Store this so we don't end up causing an SQL query later when looking
+    # this up.
+    filediff.diffset = diffset
+
     highlighting = get_enable_highlighting(request.user)
 
     if chunkindex:

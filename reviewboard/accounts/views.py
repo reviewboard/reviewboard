@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from django.core.urlresolvers import reverse
+from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
@@ -47,9 +48,17 @@ def user_preferences(request, template_name='accounts/prefs.html'):
     if not redirect_to:
         redirect_to = reverse("dashboard")
 
-    profile, profile_is_new = \
-        Profile.objects.get_or_create(user=request.user)
-    profile.save()
+    try:
+        profile = request.user.get_profile()
+    except Profile.DoesNotExist:
+        # The Profile didn't exist, but it might have been created since.
+        # Let's try to create one, and if one exists now, we'll just
+        # fetch again.
+        try:
+            profile = Profile.objects.create(user=request.user)
+        except IntegrityError:
+            # This was created since we checked, so load it again.
+            profile = request.user.get_profile()
 
     auth_backends = get_auth_backends()
 
