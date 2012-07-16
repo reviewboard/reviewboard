@@ -605,6 +605,10 @@ $.extend(RB.ReviewRequest.prototype, {
         });
     },
 
+    markUpdated: function(timestamp) {
+        this.lastUpdateTimestamp = timestamp;
+    },
+
     beginCheckForUpdates: function(type, lastUpdateTimestamp) {
         var self = this;
 

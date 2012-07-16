@@ -133,7 +133,7 @@ var gCommentIssueManager = new function() {
                      * issue status.
                      */
                     if (rsp.last_activity_time) {
-                        registerForUpdates(rsp.last_activity_time);
+                        gReviewRequest.markUpdated(rsp.last_activity_time);
                     }
                 }
             });
