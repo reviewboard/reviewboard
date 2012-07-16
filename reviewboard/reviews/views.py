@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 from datetime import datetime
@@ -567,7 +568,8 @@ def review_detail(request,
     for changedesc in changedescs:
         fields_changed = []
 
-        for name, info in changedesc.fields_changed.items():
+        for name, info in changedesc.fields_changed.iteritems():
+            info = copy.deepcopy(info)
             multiline = False
 
             if 'added' in info or 'removed' in info:
