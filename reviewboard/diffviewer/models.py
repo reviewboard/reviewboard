@@ -152,6 +152,7 @@ class DiffSet(models.Model):
         if self.history:
             self.history.last_diff_updated = self.timestamp
             self.history.save()
+
         super(DiffSet, self).save()
 
     def __unicode__(self):
@@ -171,8 +172,11 @@ class DiffSetHistory(models.Model):
     """
     name = models.CharField(_('name'), max_length=256)
     timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
-    last_diff_updated = models.DateTimeField(_("last updated"), blank=True,
-            null=True, default=None)
+    last_diff_updated = models.DateTimeField(
+        _("last updated"),
+        blank=True,
+        null=True,
+        default=None)
 
     def __unicode__(self):
         return u'Diff Set History (%s revisions)' % self.diffsets.count()
