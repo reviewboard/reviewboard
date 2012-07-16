@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from djblets.auth.util import login_required
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
@@ -34,10 +35,20 @@ def valid_prefs_required(view_func):
     be used with @check_login_required.
     """
     def _check_valid_prefs(request, *args, **kwargs):
-        profile, is_new = Profile.objects.get_or_create(user=request.user)
+        # Fetch the profile. If it exists, we're done, and it's cached for
+        # later. If not, try to create it.
+        try:
+            profile = request.user.get_profile()
+        except Profile.DoesNotExist:
+            # Inbetween the request and now, the profile may have been
+            # created. That's okay, because we don't have anything special
+            # to set, so just ignore it.
+            try:
+                Profile.objects.create(user=request.user)
+            except IntegrityError:
+                # It was created already. We're satisfied, so bail.
+                pass
 
-        if is_new:
-            profile.save()
         return view_func(request, *args, **kwargs)
 
     return _check_valid_prefs

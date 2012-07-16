@@ -43,7 +43,8 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              get_original_file, \
-                                             get_patched_file
+                                             get_patched_file, \
+                                             populate_diff_chunks
 from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -1232,8 +1233,8 @@ class FileDiffResource(WebAPIResource):
 
         highlighting = request.GET.get('syntax-highlighting', False)
 
-        files = get_diff_files(filediff.diffset, filediff,
-                               enable_syntax_highlighting=highlighting)
+        files = get_diff_files(filediff.diffset, filediff)
+        populate_diff_chunks(files, highlighting)
 
         if not files:
             # This may not be the right error here.

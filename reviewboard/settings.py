@@ -160,6 +160,8 @@ WEB_API_ENCODERS = (
     'djblets.webapi.encoders.ResourceAPIEncoder',
 )
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+
 LOGGING_NAME = "reviewboard"
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
