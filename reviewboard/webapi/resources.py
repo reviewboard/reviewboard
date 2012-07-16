@@ -252,7 +252,7 @@ class BaseCommentResource(WebAPIResource):
 
         return 200, {
             comment_resource.item_result_key: comment,
-            'last_activity_time': last_activity_time,
+            'last_activity_time': last_activity_time.isoformat(),
         }
 
     def should_update_issue_status(self, comment, **kwargs):
@@ -5680,7 +5680,6 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
             return _no_access_error(request.user)
 
         timestamp, updated_object = review_request.get_last_activity()
-        timestamp = timestamp.isoformat()
 
         if get_modified_since(request, timestamp):
             return HttpResponseNotModified()
@@ -5719,7 +5718,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         return 200, {
             self.item_result_key: {
-                'timestamp': timestamp,
+                'timestamp': timestamp.isoformat(),
                 'user': user,
                 'summary': summary,
                 'type': update_type,
