@@ -76,7 +76,8 @@ def _render_permission_denied(
 
 def _find_review_request(request, review_request_id, local_site_name):
     """
-    Find a review request based on an ID and optional LocalSite name.
+    Find a review request based on an ID, optional LocalSite name and optional
+    select related query.
 
     If a local site is passed in on the URL, we want to look up the review
     request using the local_id instead of the pk. This allows each LocalSite
@@ -295,8 +296,8 @@ def review_detail(request,
     # request based on the local_id instead of the pk. This allows each
     # local_site configured to have its own review request ID namespace
     # starting from 1.
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site_name)
+    review_request, response = _find_review_request(
+        request, review_request_id, local_site_name)
 
     if not review_request:
         return response
@@ -402,6 +403,11 @@ def review_detail(request,
     draft = review_request.get_draft(request.user)
     diffsets = list(DiffSet.objects.filter(
         history__pk=review_request.diffset_history_id))
+
+    # Map diffset IDs to their revision ID for changedescs
+    diffset_versions = {}
+    for diffset in diffsets:
+        diffset_versions[diffset.pk] = diffset.revision
 
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
@@ -571,6 +577,7 @@ def review_detail(request,
         for name, info in changedesc.fields_changed.iteritems():
             info = copy.deepcopy(info)
             multiline = False
+            diff_revision = False
 
             if 'added' in info or 'removed' in info:
                 change_type = 'add_remove'
@@ -588,6 +595,10 @@ def review_detail(request,
                                 info[field][i] = (buginfo[0], full_bug_url)
                             except TypeError:
                                 logging.warning("Invalid bugtracker url format")
+                elif name == "diff" and "added" in info:
+                    # Sets the incremental revision number for a review
+                    # request change, provided it is an updated diff.
+                    diff_revision = diffset_versions[info['added'][0][2]]
 
             elif 'old' in info or 'new' in info:
                 change_type = 'changed'
@@ -622,6 +633,7 @@ def review_detail(request,
                 'multiline': multiline,
                 'info': info,
                 'type': change_type,
+                'diff_revision': diff_revision,
             })
 
         # Expand the latest review change

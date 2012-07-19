@@ -236,16 +236,35 @@
 {%  if fieldinfo.type == "add_remove" %}
     <ul>
 {%   if fieldinfo.info.removed %}
-{% definevar "removed_values" %}
-{% for item in fieldinfo.info.removed %}{% if item.1 %}<a href="{{item.1}}">{{item.0}}</a>{% else %}{{item.0}}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
-{% enddefinevar %}
-<li>{% blocktrans %}removed {{removed_values}}{% endblocktrans %}</li>
+{%    definevar "removed_values" %}
+{%     for item in fieldinfo.info.removed %}
+{%      if item.1 %}
+     <a href="{{item.1}}">{{item.0}}</a>
+{%      else %}
+         {{item.0}}
+{%      endif %}
+{%      if not forloop.last %}, {% endif %}
+{%     endfor %}
+{%    enddefinevar %}
+     <li>{% blocktrans %}removed {{removed_values}}{% endblocktrans %}</li>
 {%   endif %}
 {%   if fieldinfo.info.added %}
-{% definevar "added_values" %}
-{% for item in fieldinfo.info.added %}{% if item.1 %}<a href="{{item.1}}">{{item.0}}</a>{% else %}{{item.0}}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
-{% enddefinevar %}
-<li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
+{%    definevar "added_values" %}
+{%     for item in fieldinfo.info.added %}
+{%      if item.1 %}
+     <a href="{{item.1}}">{{item.0}}</a>
+{%       if fieldinfo.diff_revision %}
+{%        with fieldinfo.diff_revision|add:"-1" as past_revision and fieldinfo.diff_revision as current_revision %}
+     - <a href="{% url view-interdiff review_request.display_id past_revision current_revision %}">{% trans "Show changes" %}</a>
+{%        endwith %}
+{%       endif %}
+{%      else %}
+         {{item.0}}
+{%      endif %}
+{%      if not forloop.last %}, {% endif %}
+{%     endfor %}
+{%    enddefinevar %}
+     <li>{% blocktrans %}added {{added_values}}{% endblocktrans %}</li>
 {%   endif %}
     </ul>
 {%  endif %}

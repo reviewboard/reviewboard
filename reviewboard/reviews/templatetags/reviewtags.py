@@ -616,6 +616,7 @@ def comment_issue(context, review_request, comment, comment_type):
         'interactive': interactive,
     }
 
+
 @register.filter
 @stringfilter
 def pretty_print_issue_status(status):
