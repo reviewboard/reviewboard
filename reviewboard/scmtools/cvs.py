@@ -220,7 +220,7 @@ class CVSClient(object):
 
         # Strip off the ",v" we sometimes get for CVS paths.
         if filename.endswith(",v"):
-            filename = filename.rstrip(",v")
+            filename = filename[:-2]
 
         # We want to try to fetch the files with different permutations of
         # "Attic" and no "Attic". This means there are 4 various permutations
