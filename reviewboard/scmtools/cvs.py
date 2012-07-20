@@ -52,10 +52,18 @@ class CVSTool(SCMTool):
             return file_str, PRE_CREATION
 
         m = self.rev_re.match(revision_str)
-        if not m:
-            raise SCMError("Unable to parse diff revision header '%s'" %
-                           revision_str)
-        return file_str, m.group(1)
+        if m:
+            return file_str, m.group(1)
+        else:
+            # Newer versions of CVS stick the file revision after the filename,
+            # separated by a colon. Check for that format too.
+            colon_idx = file_str.rfind(":")
+            if colon_idx == -1:
+                raise SCMError("Unable to parse diff revision header "
+                               "(file_str='%s', revision_str='%s')"
+                               % (file_str, revision_str))
+            return file_str[:colon_idx], file_str[colon_idx+1:]
+
 
     def get_diffs_use_absolute_paths(self):
         return True
