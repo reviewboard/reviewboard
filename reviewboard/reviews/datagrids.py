@@ -7,14 +7,25 @@ from django.template.defaultfilters import date
 from django.utils.datastructures import SortedDict
 from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy as _
-from djblets.datagrid.grids import Column, DateTimeColumn, \
-                                   DateTimeSinceColumn, DataGrid
+from djblets.datagrid.grids import Column, DateTimeColumn, DataGrid
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+class DateTimeSinceColumn(DateTimeColumn):
+    """A column that displays how long it has been since a date/time.
+
+    These columns will dynamically update as the page is shown, so that the
+    number of minutes, hours, days, etc. ago is correct.
+    """
+    def render_data(self, obj):
+        return '<time class="timesince" datetime="%s">%s</time>' % (
+            date(getattr(obj, self.field_name), 'c'),
+            super(DateTimeSinceColumn, self).render_data(obj))
 
 
 class StarColumn(Column):

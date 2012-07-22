@@ -83,7 +83,7 @@
             prefix = (prefix ? prefix + " " : "");
             suffix = (suffix ? " " + suffix : "");
 
-            if (seconds <= 0) {
+            if (seconds < 60) {
                 return prefix + "0 " + strings.minutes + suffix;
             }
 
