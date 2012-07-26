@@ -478,7 +478,7 @@ def review_detail(request,
     # Get all the comments and attach them to the reviews.
     for model, key, ordering in (
         (Comment, 'diff_comments',
-         ('comment__filediff', 'comment__first_line')),
+         ('comment__filediff', 'comment__first_line', 'comment__timestamp')),
         (ScreenshotComment, 'screenshot_comments', None),
         (FileAttachmentComment, 'file_attachment_comments', None)):
         # Due to how we initially made the schema, we have a ManyToManyField

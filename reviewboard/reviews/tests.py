@@ -1,3 +1,4 @@
+from datetime import timedelta
 import logging
 import os
 
@@ -10,7 +11,8 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import DefaultReviewer, \
+from reviewboard.reviews.models import Comment, \
+                                       DefaultReviewer, \
                                        Group, \
                                        ReviewRequest, \
                                        ReviewRequestDraft, \
@@ -230,6 +232,90 @@ class ViewTests(TestCase):
         # TODO - reviews
 
         self.client.logout()
+
+    def test_review_detail_diff_comment_ordering(self):
+        """Testing order of diff comments on a review."""
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+        comment_text_3 = "Comment text 3"
+
+        review_request = ReviewRequest.objects.get(
+            summary="Add permission checking for JSON API")
+        filediff = \
+            review_request.diffset_history.diffsets.latest().files.all()[0]
+
+        # Remove all the reviews on this.
+        review_request.reviews.all().delete()
+
+        # Create the users who will be commenting.
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='dopey')
+        user3 = User.objects.get(username='grumpy')
+
+        # Create the master review.
+        main_review = Review.objects.create(review_request=review_request,
+                                            user=user1)
+        main_comment = main_review.comments.create(filediff=filediff,
+                                                   first_line=1,
+                                                   num_lines=1,
+                                                   text=comment_text_1)
+        main_review.publish()
+
+        # First reply
+        reply1 = Review.objects.create(review_request=review_request,
+                                       user=user1,
+                                       base_reply_to=main_review,
+                                       timestamp=main_review.timestamp +
+                                                 timedelta(days=1))
+        reply1.comments.create(filediff=filediff,
+                               first_line=1,
+                               num_lines=1,
+                               text=comment_text_2,
+                               reply_to=main_comment)
+
+        # Second reply
+        reply2 = Review.objects.create(review_request=review_request,
+                                       user=user2,
+                                       base_reply_to=main_review,
+                                       timestamp=main_review.timestamp +
+                                                 timedelta(days=2))
+        reply2.comments.create(filediff=filediff,
+                               first_line=1,
+                               num_lines=1,
+                               text=comment_text_3,
+                               reply_to=main_comment)
+
+        # Publish them out of order.
+        reply2.publish()
+        reply1.publish()
+
+        # Make sure they published in the order expected.
+        self.assertTrue(reply1.timestamp > reply2.timestamp)
+
+        # Make sure they're looked up in the order expected.
+        comments = list(Comment.objects.filter(
+            review__review_request=review_request))
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_3)
+        self.assertEqual(comments[2].text, comment_text_2)
+
+        # Now figure out the order on the page.
+        response = self.client.get('/r/%d/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+
+        entries = response.context['entries']
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        review_entry = entry['review']
+        comments = entry['diff_comments']
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(comments[0].text, comment_text_1)
+
+        replies = comments[0].public_replies()
+        self.assertEqual(len(replies), 2)
+        self.assertEqual(replies[0].text, comment_text_3)
+        self.assertEqual(replies[1].text, comment_text_2)
 
     def testReviewDetailSitewideLogin(self):
         """Testing review_detail view with site-wide login enabled"""
