@@ -618,6 +618,19 @@ class ReviewRequest(models.Model):
             screenshot._review_request = self
             yield screenshot
 
+    def get_inactive_screenshots(self):
+        """Returns all inactive screenshots on a review request.
+
+        This only includes screenshots that were previously visible but
+        have since been removed.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        for screenshot in self.inactive_screenshots.all():
+            screenshot._review_request = self
+            yield screenshot
+
     def get_file_attachments(self):
         """Returns the list of all file attachments on a review request.
 
@@ -627,6 +640,18 @@ class ReviewRequest(models.Model):
         lookups from the file attachments will be avoided.
         """
         for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = self
+            yield file_attachment
+
+    def get_inactive_file_attachments(self):
+        """Returns the list of all file attachments on a review request.
+
+        This includes all current file attachments, but not previous ones.
+
+        By accessing file attachments through this method, future review request
+        lookups from the file attachments will be avoided.
+        """
+        for file_attachment in self.inactive_file_attachments.all():
             file_attachment._review_request = self
             yield file_attachment
 
@@ -1317,6 +1342,21 @@ class ReviewRequestDraft(models.Model):
             screenshot._review_request = review_request
             yield screenshot
 
+    def get_inactive_screenshots(self):
+        """Returns the list of all inactive screenshots on a review request.
+
+        This only includes screenshots that were previously visible but
+        have since been removed.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        review_request = self.review_request
+
+        for screenshot in self.inactive_screenshots.all():
+            screenshot._review_request = review_request
+            yield screenshot
+
     def get_file_attachments(self):
         """Returns the list of all file attachments on a review request.
 
@@ -1328,6 +1368,21 @@ class ReviewRequestDraft(models.Model):
         review_request = self.review_request
 
         for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = review_request
+            yield file_attachment
+
+    def get_inactive_file_attachments(self):
+        """Returns all inactive file attachments on a review request.
+
+        This only includes file attachments that were previously visible
+        but have since been removed.
+
+        By accessing file attachments through this method, future review request
+        lookups from the file attachments will be avoided.
+        """
+        review_request = self.review_request
+
+        for file_attachment in self.inactive_file_attachments.all():
             file_attachment._review_request = review_request
             yield file_attachment
 

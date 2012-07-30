@@ -397,6 +397,8 @@ def review_detail(request,
 
 
     draft = review_request.get_draft(request.user)
+    review_request_details = draft or review_request
+
     diffsets = list(DiffSet.objects.filter(
         history__pk=review_request.diffset_history_id))
 
@@ -470,10 +472,16 @@ def review_detail(request,
 
     # Get all the file attachments and screenshots and build a couple maps,
     # so we can easily associate those objects in comments.
-    file_attachments = list(review_request.get_file_attachments())
+    file_attachments = list(review_request_details.get_file_attachments())
     file_attachment_id_map = _build_id_map(file_attachments)
-    screenshots = list(review_request.get_screenshots())
+    screenshots = list(review_request_details.get_screenshots())
     screenshot_id_map = _build_id_map(screenshots)
+
+    # There will be non-visible (generally deleted) file attachments and
+    # screenshots we'll need to reference. to save on queries, we'll only
+    # get these when we first encounter one not in the above maps.
+    has_inactive_file_attachments = False
+    has_inactive_screenshots = False
 
     # Get all the comments and attach them to the reviews.
     for model, key, ordering in (
@@ -521,10 +529,26 @@ def review_detail(request,
             # If the comment has an associated object that we've already
             # queried, attach it to prevent a future lookup.
             if isinstance(comment, ScreenshotComment):
+                if (comment.screenshot_id not in screenshot_id_map and
+                    not has_inactive_screenshots):
+                    inactive_screenshots = \
+                        review_request_details.get_inactive_screenshots()
+                    screenshot_id_map.update(
+                        _build_id_map(inactive_screenshots))
+                    has_inactive_screenshots = True
+
                 if comment.screenshot_id in screenshot_id_map:
                     comment.screenshot = \
                         screenshot_id_map[comment.screenshot_id]
             elif isinstance(comment, FileAttachmentComment):
+                if (comment.file_attachment_id not in file_attachment_id_map and
+                    not has_inactive_file_attachments):
+                    inactive_file_attachments = \
+                        review_request_details.get_inactive_file_attachments()
+                    file_attachment_id_map.update(
+                        _build_id_map(inactive_file_attachments))
+                    has_inactive_file_attachments = True
+
                 if comment.file_attachment_id in file_attachment_id_map:
                     comment.file_attachment = \
                         file_attachment_id_map[comment.file_attachment_id]
@@ -631,8 +655,6 @@ def review_detail(request,
 
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
-
-    review_request_details = draft or review_request
 
     response = render_to_response(
         template_name,
