@@ -189,6 +189,13 @@ class Screenshot(models.Model):
                               upload_to=os.path.join('uploaded', 'images',
                                                      '%Y', '%m', '%d'))
 
+    def get_comments(self):
+        """Returns all the comments made on this screenshot."""
+        if not hasattr(self, '_comments'):
+            self._comments = list(self.comments.all())
+
+        return self._comments
+
     def get_thumbnail_url(self):
         """
         Returns the URL for the thumbnail, creating it if necessary.
@@ -557,16 +564,17 @@ class ReviewRequest(models.Model):
         updated_object = self
 
         # Check if the diff was updated along with this.
-        if not diffsets:
+        if not diffsets and self.repository_id:
             try:
                 diffsets = [self.diffset_history.diffsets.latest()]
             except DiffSet.DoesNotExist:
                 diffsets = []
 
-        for diffset in diffsets:
-            if diffset.timestamp >= timestamp:
-                timestamp = diffset.timestamp
-                updated_object = diffset
+        if diffsets:
+            for diffset in diffsets:
+                if diffset.timestamp >= timestamp:
+                    timestamp = diffset.timestamp
+                    updated_object = diffset
 
         # Check for the latest review or reply.
         if not reviews:
@@ -654,6 +662,17 @@ class ReviewRequest(models.Model):
         for file_attachment in self.inactive_file_attachments.all():
             file_attachment._review_request = self
             yield file_attachment
+
+    def get_diffsets(self):
+        """Returns a list of all diffsets on this review request."""
+        if not self.repository_id:
+            return []
+
+        if not hasattr(self, '_diffsets'):
+            self._diffsets = list(DiffSet.objects.filter(
+                history__pk=self.diffset_history_id))
+
+        return self._diffsets
 
     def __unicode__(self):
         if self.summary:
