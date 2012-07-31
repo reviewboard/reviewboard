@@ -6,6 +6,7 @@ recursive-include webtests *
 prune docs/*/_build
 prune reviewboard/htdocs/media/uploaded/files
 prune reviewboard/htdocs/media/uploaded/images
+prune reviewboard/htdocs/static/djblets
 include ez_setup.py
 include AUTHORS
 include COPYING
