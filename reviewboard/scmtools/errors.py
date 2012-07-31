@@ -1,7 +1,7 @@
 import socket
 
 from django.utils.translation import ugettext as _
-from djblets.util.templatetags.djblets_utils import humanize_list
+from djblets.util.humanize import humanize_list
 
 
 class SCMError(Exception):
