@@ -63,5 +63,12 @@ class FileAttachment(models.Model):
 
                 return draft.review_request
 
+    def get_comments(self):
+        """Returns all the comments made on this file attachment."""
+        if not hasattr(self, '_comments'):
+            self._comments = list(self.comments.all())
+
+        return self._comments
+
     def get_absolute_url(self):
         return self.file.url

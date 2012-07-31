@@ -1,7 +1,10 @@
+from datetime import timedelta
 import logging
 import os
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.test import TestCase
@@ -9,12 +12,16 @@ from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import DefaultReviewer, \
+from reviewboard.reviews.models import Comment, \
+                                       DefaultReviewer, \
                                        Group, \
                                        ReviewRequest, \
                                        ReviewRequestDraft, \
-                                       Review
+                                       Review, \
+                                       Screenshot, \
+                                       ScreenshotComment
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -230,6 +237,235 @@ class ViewTests(TestCase):
         # TODO - reviews
 
         self.client.logout()
+
+    def test_review_detail_diff_comment_ordering(self):
+        """Testing order of diff comments on a review."""
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+        comment_text_3 = "Comment text 3"
+
+        review_request = ReviewRequest.objects.get(
+            summary="Add permission checking for JSON API")
+        filediff = \
+            review_request.diffset_history.diffsets.latest().files.all()[0]
+
+        # Remove all the reviews on this.
+        review_request.reviews.all().delete()
+
+        # Create the users who will be commenting.
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='dopey')
+        user3 = User.objects.get(username='grumpy')
+
+        # Create the master review.
+        main_review = Review.objects.create(review_request=review_request,
+                                            user=user1)
+        main_comment = main_review.comments.create(filediff=filediff,
+                                                   first_line=1,
+                                                   num_lines=1,
+                                                   text=comment_text_1)
+        main_review.publish()
+
+        # First reply
+        reply1 = Review.objects.create(review_request=review_request,
+                                       user=user1,
+                                       base_reply_to=main_review,
+                                       timestamp=main_review.timestamp +
+                                                 timedelta(days=1))
+        reply1.comments.create(filediff=filediff,
+                               first_line=1,
+                               num_lines=1,
+                               text=comment_text_2,
+                               reply_to=main_comment)
+
+        # Second reply
+        reply2 = Review.objects.create(review_request=review_request,
+                                       user=user2,
+                                       base_reply_to=main_review,
+                                       timestamp=main_review.timestamp +
+                                                 timedelta(days=2))
+        reply2.comments.create(filediff=filediff,
+                               first_line=1,
+                               num_lines=1,
+                               text=comment_text_3,
+                               reply_to=main_comment)
+
+        # Publish them out of order.
+        reply2.publish()
+        reply1.publish()
+
+        # Make sure they published in the order expected.
+        self.assertTrue(reply1.timestamp > reply2.timestamp)
+
+        # Make sure they're looked up in the order expected.
+        comments = list(Comment.objects.filter(
+            review__review_request=review_request))
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_3)
+        self.assertEqual(comments[2].text, comment_text_2)
+
+        # Now figure out the order on the page.
+        response = self.client.get('/r/%d/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+
+        entries = response.context['entries']
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        review_entry = entry['review']
+        comments = entry['diff_comments']
+        self.assertEqual(len(comments), 1)
+        self.assertEqual(comments[0].text, comment_text_1)
+
+        replies = comments[0].public_replies()
+        self.assertEqual(len(replies), 2)
+        self.assertEqual(replies[0].text, comment_text_3)
+        self.assertEqual(replies[1].text, comment_text_2)
+
+    def test_review_detail_file_attachment_visibility(self):
+        """Testing visibility of file attachments on review requests."""
+        caption_1 = 'File Attachment 1'
+        caption_2 = 'File Attachment 2'
+        caption_3 = 'File Attachment 3'
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+
+        user1 = User.objects.get(username='doc')
+        review_request = ReviewRequest.objects.create(user1, None)
+
+        # Add two file attachments. One active, one inactive.
+        filename = os.path.join(settings.HTDOCS_ROOT,
+                                'media', 'rb', 'images', 'trophy.png')
+        f = open(filename, 'r')
+        file = SimpleUploadedFile(f.name, f.read(), content_type='image/png')
+        f.close()
+
+        file1 = FileAttachment.objects.create(caption=caption_1,
+                                              file=file)
+        file2 = FileAttachment.objects.create(caption=caption_2,
+                                              file=file)
+        review_request.file_attachments.add(file1)
+        review_request.inactive_file_attachments.add(file2)
+        review_request.publish(user1)
+
+        # Create one on a draft with a new file attachment.
+        draft = ReviewRequestDraft.create(review_request)
+        file3 = FileAttachment.objects.create(caption=caption_3,
+                                              file=file)
+        draft.file_attachments.add(file3)
+
+        # Create the review with comments for each screenshot.
+        review = Review.objects.create(review_request=review_request,
+                                       user=user1)
+        review.file_attachment_comments.create(file_attachment=file1,
+                                               text=comment_text_1)
+        review.file_attachment_comments.create(file_attachment=file2,
+                                               text=comment_text_2)
+        review.publish()
+
+        # Check that we can find all the objects we expect on the page.
+        self.client.login(username='doc', password='doc')
+        response = self.client.get('/r/%d/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+
+        file_attachments = response.context['file_attachments']
+        self.assertEqual(len(file_attachments), 2)
+        self.assertEqual(file_attachments[0].caption, caption_1)
+        self.assertEqual(file_attachments[1].caption, caption_3)
+
+        # Make sure that other users won't see the draft one.
+        self.client.logout()
+        response = self.client.get('/r/%d/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+
+        file_attachments = response.context['file_attachments']
+        self.assertEqual(len(file_attachments), 1)
+        self.assertEqual(file_attachments[0].caption, caption_1)
+
+        # Make sure we loaded the reviews and all data correctly.
+        entries = response.context['entries']
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        review_entry = entry['review']
+
+        comments = entry['file_attachment_comments']
+        self.assertEqual(len(comments), 2)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_2)
+
+    def test_review_detail_screenshot_visibility(self):
+        """Testing visibility of screenshots on review requests."""
+        caption_1 = 'Screenshot 1'
+        caption_2 = 'Screenshot 2'
+        caption_3 = 'Screenshot 3'
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+
+        user1 = User.objects.get(username='doc')
+        review_request = ReviewRequest.objects.create(user1, None)
+
+        # Add two screenshots. One active, one inactive.
+        screenshot1 = Screenshot.objects.create(caption=caption_1,
+                                                image='')
+        screenshot2 = Screenshot.objects.create(caption=caption_2,
+                                                image='')
+        review_request.screenshots.add(screenshot1)
+        review_request.inactive_screenshots.add(screenshot2)
+        review_request.publish(user1)
+
+        # Create one on a draft with a new screenshot.
+        draft = ReviewRequestDraft.create(review_request)
+        screenshot3 = Screenshot.objects.create(caption=caption_3,
+                                                image='')
+        draft.screenshots.add(screenshot3)
+
+        # Create the review with comments for each screenshot.
+        user1 = User.objects.get(username='doc')
+        review = Review.objects.create(review_request=review_request,
+                                       user=user1)
+        review.screenshot_comments.create(screenshot=screenshot1,
+                                          text=comment_text_1,
+                                          x=10,
+                                          y=10,
+                                          w=20,
+                                          h=20)
+        review.screenshot_comments.create(screenshot=screenshot2,
+                                          text=comment_text_2,
+                                          x=0,
+                                          y=0,
+                                          w=10,
+                                          h=10)
+        review.publish()
+
+        # Check that we can find all the objects we expect on the page.
+        self.client.login(username='doc', password='doc')
+        response = self.client.get('/r/%d/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+
+        screenshots = response.context['screenshots']
+        self.assertEqual(len(screenshots), 2)
+        self.assertEqual(screenshots[0].caption, caption_1)
+        self.assertEqual(screenshots[1].caption, caption_3)
+
+        # Make sure that other users won't see the draft one.
+        self.client.logout()
+        response = self.client.get('/r/%d/' % review_request.pk)
+        self.assertEqual(response.status_code, 200)
+
+        screenshots = response.context['screenshots']
+        self.assertEqual(len(screenshots), 1)
+        self.assertEqual(screenshots[0].caption, caption_1)
+
+        entries = response.context['entries']
+        self.assertEqual(len(entries), 1)
+        entry = entries[0]
+        review_entry = entry['review']
+
+        # Make sure we loaded the reviews and all data correctly.
+        comments = entry['screenshot_comments']
+        self.assertEqual(len(comments), 2)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_2)
 
     def testReviewDetailSitewideLogin(self):
         """Testing review_detail view with site-wide login enabled"""

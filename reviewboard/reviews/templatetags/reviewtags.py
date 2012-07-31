@@ -10,7 +10,6 @@ from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
-from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_utils import humanize_list
 
 from reviewboard.accounts.models import Profile
@@ -21,33 +20,6 @@ from reviewboard.reviews.models import BaseComment, Comment, Group, \
 
 
 register = template.Library()
-
-
-@register.tag
-@blocktag
-def forcomment(context, nodelist, filediff, review=None):
-    """
-    Loops over a list of comments beloning to a filediff.
-
-    This will populate a special ``comment`` variable for use in the content.
-    This is of the type :model:`reviews.Comment`.
-    """
-    new_nodelist = NodeList()
-    context.push()
-
-    if not review:
-        comments = filediff.comments.all()
-    else:
-        comments = filediff.comments.filter(review=review)
-
-    for comment in comments:
-        context['comment'] = comment
-
-        for node in nodelist:
-            new_nodelist.append(node.render(context))
-
-    context.pop()
-    return new_nodelist.render(context)
 
 
 @register.tag
@@ -190,8 +162,8 @@ def screenshotcommentcounts(context, screenshot):
     comments = {}
     user = context.get('user', None)
 
-    for comment in screenshot.comments.all():
-        review = get_object_or_none(comment.review)
+    for comment in screenshot.get_comments():
+        review = comment.get_review()
 
         if review and (review.public or review.user == user):
             position = '%dx%d+%d+%d' % (comment.w, comment.h, \
@@ -211,7 +183,7 @@ def screenshotcommentcounts(context, screenshot):
                 'w': comment.w,
                 'h': comment.h,
                 'review_id': review.id,
-                'review_request_id': review.review_request.id,
+                'review_request_id': review.review_request_id,
                 'issue_opened': comment.issue_opened,
                 'issue_status': BaseComment
                                 .issue_status_to_string(comment
@@ -228,8 +200,8 @@ def file_attachment_comments(context, file_attachment):
     comments = []
     user = context.get('user', None)
 
-    for comment in file_attachment.comments.all():
-        review = get_object_or_none(comment.review)
+    for comment in file_attachment.get_comments():
+        review = comment.get_review()
 
         if review and (review.public or review.user == user):
             comments.append({
@@ -242,7 +214,7 @@ def file_attachment_comments(context, file_attachment):
                 'url': comment.get_review_url(),
                 'localdraft': review.user == user and not review.public,
                 'review_id': review.id,
-                'review_request_id': review.review_request.id,
+                'review_request_id': review.review_request_id,
                 'issue_opened': comment.issue_opened,
                 'issue_status': BaseComment
                                 .issue_status_to_string(comment

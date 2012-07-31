@@ -401,8 +401,8 @@ def review_detail(request,
             pass
 
     draft = review_request.get_draft(request.user)
-    diffsets = list(DiffSet.objects.filter(
-        history__pk=review_request.diffset_history_id))
+    review_request_details = draft or review_request
+    diffsets = review_request.get_diffsets()
 
     # Map diffset IDs to their revision ID for changedescs
     diffset_versions = {}
@@ -479,10 +479,16 @@ def review_detail(request,
 
     # Get all the file attachments and screenshots and build a couple maps,
     # so we can easily associate those objects in comments.
-    file_attachments = list(review_request.get_file_attachments())
+    file_attachments = list(review_request_details.get_file_attachments())
     file_attachment_id_map = _build_id_map(file_attachments)
-    screenshots = list(review_request.get_screenshots())
+    screenshots = list(review_request_details.get_screenshots())
     screenshot_id_map = _build_id_map(screenshots)
+
+    # There will be non-visible (generally deleted) file attachments and
+    # screenshots we'll need to reference. to save on queries, we'll only
+    # get these when we first encounter one not in the above maps.
+    has_inactive_file_attachments = False
+    has_inactive_screenshots = False
 
     issues = {
         'total': 0,
@@ -494,7 +500,7 @@ def review_detail(request,
     # Get all the comments and attach them to the reviews.
     for model, key, ordering in (
         (Comment, 'diff_comments',
-         ('comment__filediff', 'comment__first_line')),
+         ('comment__filediff', 'comment__first_line', 'comment__timestamp')),
         (ScreenshotComment, 'screenshot_comments', None),
         (FileAttachmentComment, 'file_attachment_comments', None)):
         # Due to how we initially made the schema, we have a ManyToManyField
@@ -537,13 +543,40 @@ def review_detail(request,
             # If the comment has an associated object that we've already
             # queried, attach it to prevent a future lookup.
             if isinstance(comment, ScreenshotComment):
+                if (comment.screenshot_id not in screenshot_id_map and
+                    not has_inactive_screenshots):
+                    inactive_screenshots = \
+                        review_request_details.get_inactive_screenshots()
+                    screenshot_id_map.update(
+                        _build_id_map(inactive_screenshots))
+                    has_inactive_screenshots = True
+
                 if comment.screenshot_id in screenshot_id_map:
-                    comment.screenshot = \
-                        screenshot_id_map[comment.screenshot_id]
+                    screenshot = screenshot_id_map[comment.screenshot_id]
+                    comment.screenshot = screenshot
+
+                    if not hasattr(screenshot, '_comments'):
+                        screenshot._comments = []
+
+                    screenshot._comments.append(comment)
             elif isinstance(comment, FileAttachmentComment):
+                if (comment.file_attachment_id not in file_attachment_id_map and
+                    not has_inactive_file_attachments):
+                    inactive_file_attachments = \
+                        review_request_details.get_inactive_file_attachments()
+                    file_attachment_id_map.update(
+                        _build_id_map(inactive_file_attachments))
+                    has_inactive_file_attachments = True
+
                 if comment.file_attachment_id in file_attachment_id_map:
-                    comment.file_attachment = \
+                    file_attachment = \
                         file_attachment_id_map[comment.file_attachment_id]
+                    comment.file_attachment = file_attachment
+
+                    if not hasattr(file_attachment, '_comments'):
+                        file_attachment._comments = []
+
+                    file_attachment._comments.append(comment)
 
             if parent_review.is_reply():
                 # This is a reply to a comment. Add it to the list of replies.
@@ -659,8 +692,6 @@ def review_detail(request,
 
         if status in (ReviewRequest.DISCARDED, ReviewRequest.SUBMITTED):
             close_description = latest_changedesc.text
-
-    review_request_details = draft or review_request
 
     response = render_to_response(
         template_name,
@@ -945,8 +976,7 @@ def diff(request,
                          draft.diffset == interdiffset
 
     # Get the list of diffsets. We only want to calculate this once.
-    diffsets = list(DiffSet.objects.filter(
-        history__pk=review_request.diffset_history_id))
+    diffsets = review_request.get_diffsets()
     num_diffs = len(diffsets)
 
     if num_diffs > 0:
@@ -1299,19 +1329,30 @@ def view_screenshot(request,
     if not review_request:
         return response
 
-    screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
-    review = review_request.get_pending_review(request.user)
     draft = review_request.get_draft(request.user)
+    review_request_details = draft or review_request
 
-    query = Q(history=review_request.diffset_history)
+    screenshots = list(review_request_details.get_screenshots())
+    screenshot = None
 
-    if draft:
-        query = query & Q(reviewrequestdraft=draft)
+    # We're going to try to find the screenshot being requested from the
+    # already fetched list, instead of having to query again.
+    for s in screenshots:
+        if s.pk == screenshot_id:
+            screenshot = s
+            break
 
-    try:
-        comments = ScreenshotComment.objects.filter(screenshot=screenshot)
-    except ScreenshotComment.DoesNotExist:
-        comments = []
+    if not screenshot:
+        # This wasn't a public screenshot. It may be inactive or on a draft.
+        screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+
+    review = review_request.get_pending_review(request.user)
+
+    if review_request.repository_id:
+        diffset_count = DiffSet.objects.filter(
+            history__pk=review_request.diffset_history_id).count()
+    else:
+        diffset_count = 0
 
     return render_to_response(
         template_name,
@@ -1321,8 +1362,10 @@ def view_screenshot(request,
             'review': review,
             'details': draft or review_request,
             'screenshot': screenshot,
+            'screenshots': screenshots,
             'request': request,
-            'comments': comments,
+            'comments': screenshot.get_comments(),
+            'has_diffs': (draft and draft.diffset) or diffset_count > 0,
         })))
 
 
