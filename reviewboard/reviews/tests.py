@@ -313,7 +313,7 @@ class ViewTests(TestCase):
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         review_entry = entry['review']
-        comments = entry['diff_comments']
+        comments = entry['comments']['diff_comments']
         self.assertEqual(len(comments), 1)
         self.assertEqual(comments[0].text, comment_text_1)
 
@@ -334,16 +334,18 @@ class ViewTests(TestCase):
         review_request = ReviewRequest.objects.create(user1, None)
 
         # Add two file attachments. One active, one inactive.
-        filename = os.path.join(settings.HTDOCS_ROOT,
-                                'media', 'rb', 'images', 'trophy.png')
+        filename = os.path.join(settings.STATIC_ROOT,
+                                'rb', 'images', 'trophy.png')
         f = open(filename, 'r')
         file = SimpleUploadedFile(f.name, f.read(), content_type='image/png')
         f.close()
 
         file1 = FileAttachment.objects.create(caption=caption_1,
-                                              file=file)
+                                              file=file,
+                                              mimetype='image/png')
         file2 = FileAttachment.objects.create(caption=caption_2,
-                                              file=file)
+                                              file=file,
+                                              mimetype='image/png')
         review_request.file_attachments.add(file1)
         review_request.inactive_file_attachments.add(file2)
         review_request.publish(user1)
@@ -351,7 +353,8 @@ class ViewTests(TestCase):
         # Create one on a draft with a new file attachment.
         draft = ReviewRequestDraft.create(review_request)
         file3 = FileAttachment.objects.create(caption=caption_3,
-                                              file=file)
+                                              file=file,
+                                              mimetype='image/png')
         draft.file_attachments.add(file3)
 
         # Create the review with comments for each screenshot.
@@ -388,7 +391,7 @@ class ViewTests(TestCase):
         entry = entries[0]
         review_entry = entry['review']
 
-        comments = entry['file_attachment_comments']
+        comments = entry['comments']['file_attachment_comments']
         self.assertEqual(len(comments), 2)
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
@@ -462,7 +465,7 @@ class ViewTests(TestCase):
         review_entry = entry['review']
 
         # Make sure we loaded the reviews and all data correctly.
-        comments = entry['screenshot_comments']
+        comments = entry['comments']['screenshot_comments']
         self.assertEqual(len(comments), 2)
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
