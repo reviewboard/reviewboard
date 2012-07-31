@@ -9,7 +9,7 @@ from django.utils import simplejson
 from django.utils.html import escape
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
-from djblets.util.templatetags.djblets_utils import humanize_list
+from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
