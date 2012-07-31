@@ -462,9 +462,11 @@ def review_detail(request,
 
             entry = {
                 'review': review,
-                'diff_comments': [],
-                'screenshot_comments': [],
-                'file_attachment_comments': [],
+                'comments': {
+                    'diff_comments': [],
+                    'screenshot_comments': [],
+                    'file_attachment_comments': []
+                },
                 'timestamp': review.timestamp,
                 'class': state,
             }
@@ -593,7 +595,7 @@ def review_detail(request,
                 # Add it to the list.
                 assert obj.review_id in reviews_entry_map
                 entry = reviews_entry_map[obj.review_id]
-                entry[key].append(comment)
+                entry['comments'][key].append(comment)
 
                 if comment.issue_opened:
                     status_key = \

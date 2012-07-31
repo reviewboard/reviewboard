@@ -1,0 +1,76 @@
+{% load djblets_utils %}
+{% load i18n %}
+{% load reviewtags %}
+
+{% if issues.total > 0 %}
+<div class="content-divider"></div>
+<div class="content">
+ <a name="issue-summary"></a>
+ <label>{% trans "Issue Summary" %}:</label>
+ <div class="header">
+  <div class="counters">
+   <strong>
+    <div class="counter">{% trans "Total" %}:</div>
+    <div id="total-counter">{{issues.total}}</div>
+   </strong>
+   <div class="counter">{% trans "Open" %}:</div>
+   <div id="open-counter">{{issues.open}}</div>
+   <div class="counter">{% trans "Resolved" %}:</div>
+   <div id="resolved-counter">{{issues.resolved}}</div>
+   <div class="counter">{% trans "Dropped" %}:</div>
+   <div id="dropped-counter">{{issues.dropped}}</div>
+  </div>
+  <div class="clearfix"></div>
+  <div class="filters">
+   <div class="filter-wrapper">
+    <span><strong>{% trans "Status:" %}</strong></span>
+    <select class="filter" id="issue-state-filter">
+     <option value="open">{% trans "Open" %}</option>
+     <option value="dropped">{% trans "Dropped" %}</option>
+     <option value="resolved">{% trans "Resolved" %}</option>
+     <option value="all">{% trans "All" %}</option>
+    </select>
+   </div>
+   <div class="filter-wrapper">
+    <span><strong>{% trans "From:" %}</strong></span>
+    <select class="filter" id="issue-reviewer-filter">
+     <option value="all">{% trans "All" %}</option>
+    </select>
+   </div>
+  </div>
+  <div class="clearfix"></div>
+ </div>
+ <div class="issue-table-wrapper">
+  <table id="issue-summary-table">
+   <thead>
+    <tr>
+     <th class="comment-id-header">{% trans "Issue ID" %}</th>
+     <th class="description-header">{% trans "Description" %}</th>
+     <th class="from-header">{% trans "From" %}</th>
+     <th class="last-updated-header">{% trans "Last Updated" %}</th>
+     <th class="status-header">{% trans "Status" %}</th>
+    </tr>
+   </thead>
+   <tbody>
+{% for entry in entries %}
+{%  if entry.review %}
+{%   for comment_type, comments in entry.comments.items %}
+{%    for comment in comments %}
+{%     if comment.issue_opened %}
+    <tr id="summary-table-entry-{{comment.id}}" reviewer="{{entry.review.user|user_displayname}}" class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}">
+     <td class="comment-id"><a class="summary-anchor" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment.comment_type|capfirst}} {{comment.id}}</a></td>
+     <td class="summary-table-description"><a class="summary-anchor" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment}}</a></td>
+     <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
+     <td class="last-updated" timestamp={{comment.timestamp|date:"U"}}>{{comment.timestamp}}</td>
+     <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
+    </tr>
+{%     endif %}
+{%    endfor %}
+{%   endfor %}
+{%  endif %}
+{% endfor %}
+   </tbody>
+  </table>
+ </div>
+</div>
+{% endif %}

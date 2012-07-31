@@ -1018,7 +1018,9 @@
 .issue-state {
   font-size: 95%;
   font-weight: bold;
+  min-height: 26px;
   padding: 0.3em 0.4em 0.3em 2.5em;
+  position: relative;
 
   &.dropped {
     background: url('../images/closed_issue.png') #EAEAEA no-repeat 5px 50%;
@@ -1035,13 +1037,41 @@
   }
 
   .back-to-issue-summary {
-    float: right;
-    padding: 7px 0;
+    background-color: #FFF;
+    border: 1px solid #888;
+    color: #2828EE;
+    font-size: 8pt;
+    font-weight: normal;
+    padding: 5px;
+    position: absolute;
     text-decoration: none;
+    right: 3px;
+
+    &:visited {
+      color: #2828EE;
+    }
+
+    img {
+      float: left;
+      height: 14px;
+    }
+
+    span {
+      float: right;
+      padding: 1px 6px;
+    }
+
+    .clear {
+      clear: both;
+    }
   }
 
   .issue-button {
     margin-left: 5px;
+  }
+
+  .issue-message {
+    line-height: 260%;
   }
 }
 
@@ -1240,6 +1270,14 @@
     }
   }
 
+  .no-issues {
+    td {
+        background-color: #FFF;
+        border-color: #999;
+        border-width: 1px;
+    }
+  }
+
   .status {
     text-transform: capitalize;
   }
@@ -1268,7 +1306,8 @@
 .filters {
   margin: 3px 0 0 0;
 
-  .filter {
+  .filter-wrapper {
+    float: left;
     margin: 0 4px;
   }
 }

@@ -89,10 +89,10 @@
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
    {% reply_section entry "" "body_top" "rcbt" %}
-{% if entry.diff_comments or entry.screenshot_comments or entry.file_attachment_comments %}
+{% if entry.comments.diff_comments or entry.comments.screenshot_comments or entry.comments.file_attachment_comments %}
    <dl class="diff-comments">
 
-{% for comment in entry.screenshot_comments %}
+{% for comment in entry.comments.screenshot_comments %}
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="screenshot">
@@ -119,7 +119,7 @@
     </dd>
 {% endfor %}
 
-{% for comment in entry.file_attachment_comments %}
+{% for comment in entry.comments.file_attachment_comments %}
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div class="file-attachment">
@@ -149,7 +149,7 @@
     </dd>
 {% endfor %}
 
-{% for comment in entry.diff_comments %}
+{% for comment in entry.comments.diff_comments %}
     <dt>
      <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
      <div id="comment_container_{{comment.id}}">

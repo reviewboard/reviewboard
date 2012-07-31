@@ -155,69 +155,7 @@
  </div>
 </div>
 
-{% if issues.total > 0 %}
-<div class="content-divider"></div>
-<div class="content">
- <a name="issue-summary"></a>
- <label>{% trans "Issue Summary" %}:</label>
- <div class="header">
-  <div class="counters">
-   <strong>
-    <div class="counter">{% trans "Total" %}:</div>
-    <div id="total-counter">{{issues.total}}</div>
-   </strong>
-   <div class="counter">{% trans "Open" %}:</div>
-   <div id="open-counter">{{issues.open}}</div>
-   <div class="counter">{% trans "Resolved" %}:</div>
-   <div id="resolved-counter">{{issues.resolved}}</div>
-   <div class="counter">{% trans "Dropped" %}:</div>
-   <div id="dropped-counter">{{issues.dropped}}</div>
-  </div>
-  <div class="clearfix"></div>
-  <div class="filters">
-   <div class="filter">
-    <span><strong>{% trans "Show status:" %}</strong></span>
-    <select id="issue-summary-filter">
-     <option>{% trans "Open" %}</option>
-     <option>{% trans "Dropped" %}</option>
-     <option>{% trans "Resolved" %}</option>
-     <option>{% trans "All" %}</option>
-    </select>
-   </div>
-  </div>
- </div>
- <div class="issue-table-wrapper">
-  <table id="issue-summary-table">
-   <thead>
-    <tr>
-     <th class="comment-id-header">{% trans "Issue ID" %}</th>
-     <th class="description-header">{% trans "Description" %}</th>
-     <th class="from-header">{% trans "From" %}</th>
-     <th class="last-updated-header">{% trans "Last Updated" %}</th>
-     <th class="status-header">{% trans "Status" %}</th>
-    </tr>
-   </thead>
-   <tbody>
-{% for entry in entries %}
-{%  if entry.review %}
-{%   for comment in entry.review.get_all_comments %}
-{%    if comment.issue_opened %}
-    <tr id="summary-table-entry-{{comment.id}}" class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}">
-     <td class="comment-id">{{comment.comment_type|capfirst}} {{comment.id}}</td>
-     <td class="summary-table-description"><a class="summary-anchor" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}">{{comment}}</a></td>
-     <td class="reviewer"><a href="{% url user entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></td>
-     <td class="last-updated" timestamp={{comment.timestamp|date:"U"}}>{{comment.timestamp}}</td>
-     <td class="status">{{comment.issue_status|pretty_print_issue_status|capfirst}}</td>
-    </tr>
-{%    endif %}
-{%   endfor %}
-{%  endif %}
-{% endfor %}
-   </tbody>
-  </table>
- </div>
-</div>
-{% endif %}
+{% include "reviews/review_issue_summary_table.html" %}
 
 <script type="text/javascript">
   $(document).ready(function() {

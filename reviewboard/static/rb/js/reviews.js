@@ -164,20 +164,37 @@ var gCommentIssueManager = new function() {
  * the issue summary table.
  */
 var issueSummaryTableManager = new function() {
-    // Default state is "open"
-    var statusFilterState = "open";
+    var self = this,
+        statusFilterState = "open",  // Default status is "open"
+        reviewerFilterState = "all", // Default reviewer is "all"
 
-    // Maps a status filter state to its corresponding selector
-    var stateToSelectorMap = {
-        "open": ".issue.open",
-        "dropped": ".issue.dropped",
-        "resolved": ".issue.resolved",
-        "all": ".issue.open, .issue.dropped, .issue.resolved"
-    }
+        // Maps a status filter state to its corresponding selector
+        stateToSelectorMap = {
+            open: ".open",
+            dropped: ".dropped",
+            resolved: ".resolved",
+            all: ""
+        },
+
+        // Maps a reviewer name to issues issued by the reviewer
+        reviewerToSelectorMap = {
+            all: ""
+        },
+
+        // Element Pointers
+        table, thead, tbody;
 
     this.init = function() {
+        table = $('#issue-summary-table');
+        thead = table.find('thead');
+        tbody = table.find('tbody');
+
+        buildReviewerFilterMap();
+        checkNoIssues();
+        uncollapseTarget();
+
         // Event Listeners
-        $(".summary-anchor").live("click", function(event) {
+        tbody.find(".summary-anchor").live("click", function(event) {
             event.stopPropagation();
             /*
             * Extract the issue-id attribute and attach '#comment-' and
@@ -188,44 +205,29 @@ var issueSummaryTableManager = new function() {
             $(issueId).closest(".box").removeClass("collapsed");
         });
 
-        $("#issue-summary-filter").change(function() {
-            $(stateToSelectorMap[statusFilterState]).toggleClass("hidden");
-            statusFilterState = $("#issue-summary-filter").val().toLowerCase();;
-            $(stateToSelectorMap[statusFilterState]).toggleClass("hidden");
+        $('.filter').change(function() {
+            // Hide all visible rows
+            $('.issue' + stateToSelectorMap[statusFilterState] +
+              reviewerToSelectorMap[reviewerFilterState]).toggleClass("hidden");
+
+            // Update filter states
+            statusFilterState = $("#issue-state-filter").val();
+            reviewerFilterState = $("#issue-reviewer-filter").val();
+
+            // Show rows that match the intersection of the filters
+            $('.issue' + stateToSelectorMap[statusFilterState] +
+              reviewerToSelectorMap[reviewerFilterState]).toggleClass("hidden");
+
+            checkNoIssues();
         });
 
-        $('#issue-summary-table thead th').click(function() {
-            var col = $(this).parent().children().index($(this)) + 1;
+        thead.find('th').click(function() {
+            if (tbody.find('tr.issue:visible').length !== 0) {
+                var $this = $(this),
+                    colIndex = $this.parent().children().index($this) + 1;
 
-            $('#issue-summary-table tbody').html($('.issue').sort(function(a, b) {
-                var firstElement = $(a).find('td:nth-child(' + col + ')'),
-                    secondElement = $(b).find('td:nth-child(' + col + ')'),
-                    firstElementText = firstElement.text().toLowerCase(),
-                    secondElementText = secondElement.text().toLowerCase();
-
-                if (firstElement.attr('timestamp')) {
-                    return parseInt(firstElement.attr('timestamp'), 10) -
-                           parseInt(secondElement.attr('timestamp'), 10);
-                } else if (firstElement.hasClass('comment-id')) {
-                     var firstText = firstElementText.split(" "),
-                         secondText = secondElementText.split(" ");
-
-                     if (firstText[0] > secondText[0]) {
-                         return 1;
-                     } else if (firstText[0] < secondText[0]) {
-                         return -1;
-                     } else {
-                         return parseInt(firstText[1], 10) -
-                                parseInt(secondText[1], 10)
-                     }
-                } else if (firstElementText > secondElementText) {
-                    return 1;
-                } else if (firstElementText === secondElementText) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            }));
+                sortByCol(colIndex);
+            }
 
             return false;
         });
@@ -242,10 +244,10 @@ var issueSummaryTableManager = new function() {
 
     // Decrement old status counter and increment new status counter.
     this.updateCounters = function(old_status, new_status) {
-        var old_counter = $('#' + old_status + '-counter');
-        old_counter.text(parseInt(old_counter.text(), 10) - 1);
+        var old_counter = $('#' + old_status + '-counter'),
+            new_counter = $('#' + new_status + '-counter');
 
-        var new_counter = $('#' + new_status + '-counter');
+        old_counter.text(parseInt(old_counter.text(), 10) - 1);
         new_counter.text(parseInt(new_counter.text(), 10) + 1);
     }
 
@@ -254,6 +256,9 @@ var issueSummaryTableManager = new function() {
         entry.removeClass(old_status)
             .addClass(new_status)
             .find('.status').text(new_status);
+
+        self.setVisibility(entry, status);
+        checkNoIssues();
     }
 
     // Replace old timestamp attirbute with new timestamp and update text.
@@ -261,6 +266,97 @@ var issueSummaryTableManager = new function() {
         entry.find(".last-updated")
             .attr("timestamp", new Date(timestamp).getTime())
             .text(timestamp);
+    }
+
+    // Check that there are no issues that match the selected filter(s).
+    function checkNoIssues() {
+        tbody.find('tr.no-issues').remove();
+        thead.show();
+
+        if (tbody.find('tr.issue:visible').length === 0) {
+            var text = "There are no " + statusFilterState + " issues";
+
+            if (reviewerFilterState !== "all") {
+                text += " from " + reviewerFilterState;
+            }
+
+            thead.hide();
+            tbody.append($('<tr>')
+                .addClass('no-issues')
+                .append($('<td>')
+                    .attr("colspan", 5)
+                    .append($('<i>')
+                        .text(text))));
+        }
+    }
+
+    /*
+     * Sort the issue summary table entries by the selected column in ascending
+     * order.
+     *
+     * Entries with timestamps will be sorted using the timestamp attribute.
+     * Entries with comment ids will be sorted using the comment-id attribute.
+     * All other entries will be sorted alphabetically.
+     */
+    function sortByCol(colIndex) {
+        tbody.html($('.issue').sort(function(a, b) {
+            var firstElement = $(a).find('td:nth-child(' + colIndex + ')'),
+                secondElement = $(b).find('td:nth-child(' + colIndex + ')'),
+                firstElementText = firstElement.text().toLowerCase(),
+                secondElementText = secondElement.text().toLowerCase();
+
+            if (firstElement.attr('timestamp')) {
+                return parseInt(firstElement.attr('timestamp'), 10) -
+                       parseInt(secondElement.attr('timestamp'), 10);
+            } else if (firstElement.hasClass('comment-id')) {
+                 var firstText = firstElementText.split(" "),
+                     secondText = secondElementText.split(" ");
+
+                 if (firstText[0] > secondText[0]) {
+                     return 1;
+                 } else if (firstText[0] < secondText[0]) {
+                    return -1;
+                 } else {
+                     return parseInt(firstText[1], 10) -
+                            parseInt(secondText[1], 10)
+                 }
+            } else if (firstElementText > secondElementText) {
+                return 1;
+            } else if (firstElementText === secondElementText) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }));
+    }
+
+    // Add entries to the reviewerToSelectorMap
+    function buildReviewerFilterMap() {
+        tbody.find('.issue').each(function() {
+            var entry = $(this),
+                reviewer = entry.attr('reviewer');
+
+            if (!(reviewer in reviewerToSelectorMap)) {
+                reviewerToSelectorMap[reviewer] = '[reviewer="' + reviewer + '"]';
+                $('#issue-reviewer-filter').append(
+                    $('<option>').text(reviewer).val(reviewer));
+            }
+        });
+    }
+
+    function uncollapseTarget() {
+        var hash = window.location.hash;
+
+        if (hash.indexOf("comment") > 0) {
+            var comment_name = hash.toString().substring(1),
+                target_box = $('a[name=' + comment_name + ']').closest(".box");
+
+            if (target_box.hasClass('collapsed')) {
+                target_box.removeClass("collapsed");
+                // Scroll down to the targeted comment box
+                window.location = window.location;
+            }
+        }
     }
 }
 
@@ -788,12 +884,11 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
     }
 
     self.update_issue_summary_table = function(new_status, old_status, timestamp) {
-        var comment_id = self.comment_id;
-        var entry = $('#summary-table-entry-' + comment_id);
+        var comment_id = self.comment_id,
+            entry = $('#summary-table-entry-' + comment_id);
 
         issueSummaryTableManager.updateStatus(entry, old_status, new_status);
         issueSummaryTableManager.updateCounters(old_status, new_status);
-        issueSummaryTableManager.setVisibility(entry, new_status);
         issueSummaryTableManager.updateTimeStamp(entry, timestamp);
     }
 
