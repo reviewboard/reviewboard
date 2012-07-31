@@ -13,6 +13,8 @@ var gDraftBanner = $("#draft-banner");
 var gDraftBannerButtons = $("input", gDraftBanner);
 var gFileAttachmentComments = {};
 
+// Attach to global RB object
+RB.draftBanner = gDraftBanner;
 
 /*
  * "complete" signal handlers for various fields, designed to do
