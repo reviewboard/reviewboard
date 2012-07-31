@@ -1300,7 +1300,7 @@ class ChangeResource(WebAPIResource):
     * ``removed``: A list of items that were removed, if any.
     * ``added``: A list of items that were added, if any.
 
-    For ``screenshot_captions`` fields:
+    For ``screenshot_captions`` and ``file_captions`` fields:
 
     * ``old``: The old caption.
     * ``new``: The new caption.
@@ -1354,7 +1354,7 @@ class ChangeResource(WebAPIResource):
         fields_changed = obj.fields_changed.copy()
 
         for field, data in fields_changed.iteritems():
-            if field == 'screenshot_captions':
+            if field in ('screenshot_captions', 'file_captions'):
                 fields_changed[field] = [
                     {
                         'old': data[pk]['old'][0],

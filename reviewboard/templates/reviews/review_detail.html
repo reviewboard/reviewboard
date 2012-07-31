@@ -268,7 +268,7 @@
 {%   endif %}
     </ul>
 {%  endif %}
-{%  if fieldinfo.type == "screenshot_captions" %}
+{%  if fieldinfo.type == "screenshot_captions" or fieldinfo.type == "file_captions" %}
     <ul>
 {%   for info in fieldinfo.info.values %}
      <li>{% blocktrans with info.old.0 as old_value and info.new.0 as new_value %}changed from <i>{{old_value}}</i> to <i>{{new_value}}</i>{% endblocktrans %}</li>
