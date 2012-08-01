@@ -259,7 +259,7 @@ var issueSummaryTableManager = new function() {
             .addClass(new_status)
             .find('.status').text(new_status);
 
-        self.setVisibility(entry, status);
+        self.setVisibility(entry, new_status);
         checkNoIssues();
     }
 
