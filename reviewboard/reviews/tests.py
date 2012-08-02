@@ -20,8 +20,7 @@ from reviewboard.reviews.models import Comment, \
                                        ReviewRequest, \
                                        ReviewRequestDraft, \
                                        Review, \
-                                       Screenshot, \
-                                       ScreenshotComment
+                                       Screenshot
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -255,7 +254,6 @@ class ViewTests(TestCase):
         # Create the users who will be commenting.
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='dopey')
-        user3 = User.objects.get(username='grumpy')
 
         # Create the master review.
         main_review = Review.objects.create(review_request=review_request,
@@ -312,7 +310,6 @@ class ViewTests(TestCase):
         entries = response.context['entries']
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        review_entry = entry['review']
         comments = entry['diff_comments']
         self.assertEqual(len(comments), 1)
         self.assertEqual(comments[0].text, comment_text_1)
@@ -386,7 +383,6 @@ class ViewTests(TestCase):
         entries = response.context['entries']
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        review_entry = entry['review']
 
         comments = entry['file_attachment_comments']
         self.assertEqual(len(comments), 2)
@@ -459,7 +455,6 @@ class ViewTests(TestCase):
         entries = response.context['entries']
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        review_entry = entry['review']
 
         # Make sure we loaded the reviews and all data correctly.
         comments = entry['screenshot_comments']

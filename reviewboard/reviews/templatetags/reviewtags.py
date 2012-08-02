@@ -3,7 +3,7 @@ import logging
 from django import template
 from django.conf import settings
 from django.db.models import Q
-from django.template import NodeList, TemplateSyntaxError
+from django.template import TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils import simplejson
 from django.utils.html import escape
@@ -13,7 +13,7 @@ from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import BaseComment, Comment, Group, \
+from reviewboard.reviews.models import BaseComment, Group, \
                                        ReviewRequest, ScreenshotComment, \
                                        FileAttachmentComment
 

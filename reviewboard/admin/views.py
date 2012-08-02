@@ -11,7 +11,6 @@ from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
-from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.cache_stats import get_cache_stats, get_has_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.reviews.models import Group, DefaultReviewer

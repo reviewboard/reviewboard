@@ -38,7 +38,7 @@ def valid_prefs_required(view_func):
         # Fetch the profile. If it exists, we're done, and it's cached for
         # later. If not, try to create it.
         try:
-            profile = request.user.get_profile()
+            request.user.get_profile()
         except Profile.DoesNotExist:
             # Inbetween the request and now, the profile may have been
             # created. That's okay, because we don't have anything special

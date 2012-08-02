@@ -1,4 +1,4 @@
-from django.db.models import Manager, Q
+from django.db.models import Manager
 
 
 class HostingServiceAccountManager(Manager):
