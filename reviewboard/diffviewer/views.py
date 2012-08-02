@@ -9,7 +9,7 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.misc import cache_memoize, get_object_or_none
+from djblets.util.misc import cache_memoize
 
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.diffutils import UserVisibleError, \
@@ -215,7 +215,7 @@ def view_diff_fragment(
     if isinstance(diffset_or_id, DiffSet):
         diffset = diffset_or_id
     else:
-        diffset_ids.append(diffset_id)
+        diffset_ids.append(diffset_or_id)
 
     if interdiffset_or_id:
         if isinstance(interdiffset_or_id, DiffSet):
@@ -230,9 +230,9 @@ def view_diff_fragment(
             raise Http404
 
         for temp_diffset in diffsets:
-            if temp_diffset.pk == diffset_id:
+            if temp_diffset.pk == diffset_or_id:
                 diffset = temp_diffset
-            elif temp_diffset.pk == interdiffset_id:
+            elif temp_diffset.pk == interdiffset_or_id:
                 interdiffset = temp_diffset
             else:
                 assert False

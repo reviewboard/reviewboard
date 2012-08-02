@@ -201,7 +201,7 @@ class GitHub(HostingService):
             return self._http_get(url, headers={
                 'Accept': self.RAW_MIMETYPE,
             })[0]
-        except (urllib2.URLError, urllib2.HTTPError), e:
+        except (urllib2.URLError, urllib2.HTTPError):
             raise FileNotFoundError(path, revision)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
@@ -213,7 +213,7 @@ class GitHub(HostingService):
             })
 
             return True
-        except (urllib2.URLError, urllib2.HTTPError), e:
+        except (urllib2.URLError, urllib2.HTTPError):
             return False
 
     def _http_get(self, url, *args, **kwargs):
@@ -244,8 +244,6 @@ class GitHub(HostingService):
             self.account.data['authorization']['token'])
 
     def _get_repo_api_url(self, repository):
-        url = self.API_URL
-
         plan = repository.extra_data['repository_plan']
 
         if plan == 'public':

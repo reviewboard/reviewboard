@@ -47,6 +47,7 @@ from reviewboard.diffviewer.diffutils import get_diff_files, \
                                              populate_diff_chunks
 from reviewboard.diffviewer.forms import EmptyDiffError, DiffTooBigError
 from reviewboard.extensions.base import get_extension_manager
+from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_service
 from reviewboard.reviews.errors import PermissionError
@@ -78,7 +79,6 @@ from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_EMPTY, \
                                       DIFF_TOO_BIG, \
                                       EMPTY_CHANGESET, \
-                                      FILE_RETRIEVAL_ERROR, \
                                       HOSTINGSVC_AUTH_ERROR, \
                                       INVALID_CHANGE_NUMBER, \
                                       INVALID_REPOSITORY, \
@@ -2397,7 +2397,7 @@ class HostingServiceAccountResource(WebAPIResource):
             return _no_access_error(request.user)
 
         # Validate the service.
-        if not get_hosting_service(service):
+        if not get_hosting_service(service_id):
             return INVALID_FORM_DATA, {
                 'fields': {
                     'service': ['This is not a valid service name'],

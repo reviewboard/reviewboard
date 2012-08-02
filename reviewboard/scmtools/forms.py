@@ -1,13 +1,9 @@
 import imp
 import logging
-import re
 import sys
 
 from django import forms
-from django.contrib.admin.helpers import Fieldset
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.utils.datastructures import SortedDict
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
