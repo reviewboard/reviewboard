@@ -20,7 +20,8 @@
    </dt>
    <dd>
     <pre class="editable comment-editable" id="screenshot-comment-{{comment.id}}">{{comment.text|escape}}</pre>
-
+    <input type="checkbox" id="comment-issue-{{comment.id}}" {% if comment.issue_opened %}checked="checked"{% endif %}/>
+    <label for="comment-issue-{{comment.id}}">Open an issue</label>
 {% comment %}
     <!-- We'll want to do this eventually... Need to make it work in a
          non-instant-apply world. -->
