@@ -2,7 +2,11 @@
 Review Board 1.7 Beta 1 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: August 3, 2012
+
+
+This release contains all bug fixes and features found in
+Review Board version :doc:`1.6.11 <1.6.11>`.
 
 
 Compatibilty Changes
@@ -67,6 +71,9 @@ New Features
   and their current states. Clicking on an issue will take you to the
   appropriate spot in the review.
 
+  The list of issues can be filtered by status (opened, resolved, etc.),
+  or by the reviewer.
+
   This makes it easy to see what still needs to be done when visiting
   a review request.
 
@@ -84,18 +91,21 @@ New Features
 
   Patch by Dave Druska.
 
+* Some file attachments are now shown with more detailed previews.
+
+  We've begun work on better file attachment support. The first step of
+  that allows us to render image files with a thumbnail of the image, and
+  text files with a snippet of their text. These renderers are extensible
+  through our new extension support.
+
+  Patch by Anthony Mok.
+
 * Added a "To Me" column in the dashboard.
 
   The "To Me" column indicates whether a review request explicitly lists you
   as a reviewer. This helps prioritize what review requests to look at first.
 
   Patch by Anthony Mok. (:bug:`495`)
-
-* Easy addition of Django installed apps in :file:`settings_local.py`.
-
-  A site's :file:`settings_local.py` can now provide additional Django
-  app modules to load in by setting the ``RB_EXTRA_APPS`` list to a list of
-  module names. Patch by Stephen Gallagher.
 
 * Dates and times are now localized to the user's region.
 
@@ -120,6 +130,19 @@ New Features
 
 * Required fields on a review request are now marked as required by showing
   an asterisk. Patch by Yazan Medanat.
+
+* Added a "Show changes" link on the change description boxes after publishing
+  a diff. These will take you to an interdiff between the new diff and the
+  previous version.
+
+  Patch by Curtis Miller.
+
+* Added support for the latest CVS diff file format.
+
+  The latest CVS diff file format appends version information to the filenames
+  in the diffs. We now support this format if encountered.
+
+  Patch by Rodrigo Castro.
 
 
 Removed Features
@@ -174,10 +197,28 @@ Web API Changes
   Patch by Steven MacLeod.
 
 
+Bug Fixes
+=========
+
+* The "Diff Updated" column in the dashboard now actually reflects the
+  last diff update.
+
+  Existing review requests will see blank values under the column until
+  their next diff update.
+
+  Patch by Bogdana Popa. (:bug:`1246`)
+
+* Captions changes for file attachments are now shown on change description
+  boxes, just like screenshot caption changes.
+
+  Patch by Bogdana Popa.
+
+
 Contributors
 ============
 
 * Anthony Mok
+* Bogdana Popa
 * Christian Hammond
 * Curtis Miller
 * Dave Druska
@@ -186,9 +227,11 @@ Contributors
 * Jim Chen
 * Kahlil Almani
 * Kevin Quinn
+* Rodrigo Castro
 * Stephen Gallagher
 * Steven MacLeod
 * Vlad Filippov
+* Wilson Yeung
 * Yazan Medanat
 
 
