@@ -1,11 +1,9 @@
 import mimeparse
-import os
 
-from django.conf import settings
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
-from djblets.util.templatetags.djblets_images import crop_image, thumbnail
+from djblets.util.templatetags.djblets_images import thumbnail
 from pipeline.storage import default_storage
 
 

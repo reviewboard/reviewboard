@@ -1,7 +1,6 @@
 import logging
 
 from django import template
-from django.conf import settings
 from django.db.models import Q
 from django.template import TemplateSyntaxError
 from django.template.defaultfilters import stringfilter

@@ -1,7 +1,6 @@
 import copy
 import logging
 import time
-from datetime import datetime
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -49,7 +48,7 @@ from reviewboard.reviews.errors import OwnershipError
 from reviewboard.reviews.forms import NewReviewRequestForm, \
                                       UploadDiffForm, \
                                       UploadScreenshotForm
-from reviewboard.reviews.models import BaseComment, Comment, \
+from reviewboard.reviews.models import Comment, \
                                        FileAttachmentComment, \
                                        Group, ReviewRequest, Review, \
                                        Screenshot, ScreenshotComment

@@ -79,6 +79,7 @@ from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_EMPTY, \
                                       DIFF_TOO_BIG, \
                                       EMPTY_CHANGESET, \
+                                      FILE_RETRIEVAL_ERROR, \
                                       HOSTINGSVC_AUTH_ERROR, \
                                       INVALID_CHANGE_NUMBER, \
                                       INVALID_REPOSITORY, \
