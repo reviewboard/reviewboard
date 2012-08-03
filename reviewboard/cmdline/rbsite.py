@@ -197,16 +197,13 @@ class Site(object):
 
         rb_djblets_src = "htdocs/static/djblets"
         rb_djblets_dest = os.path.join(static_dir, "djblets")
-        rb_admins_dest = os.path.join(static_dir, "admin")
 
         self.link_pkg_dir("reviewboard",
                           "htdocs/static/rb",
                           os.path.join(static_dir, 'rb'))
-
-        # Link the admin media
-        self.link_pkg_dir("django",
-                          "contrib/admin/static/admin",
-                          rb_admins_dest)
+        self.link_pkg_dir("reviewboard",
+                          "htdocs/static/admin",
+                          os.path.join(static_dir, 'admin'))
 
         # Link from Djblets if available.
         if pkg_resources.resource_exists("djblets", "media"):
