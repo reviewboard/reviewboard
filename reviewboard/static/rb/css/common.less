@@ -381,7 +381,6 @@ form table td {
   background: @headerbar-bg;
   border-bottom: 1px #DDDDDD solid;
   color: white;
-  font-size: 120%;
   margin: 0;
   padding: @headerbar-padding;
 
@@ -394,8 +393,9 @@ form table td {
     color: white;
     display: inline;
     font-weight: normal;
+    font-size: 120%;
     vertical-align: middle;
-    margin-left: 4.5em;
+    margin: 0;
     padding: 0;
 
     a {
@@ -413,8 +413,8 @@ form table td {
 
   #logo {
     position: absolute;
-    top: 2px;
-    left: 0;
+    top: 0px;
+    left: @headerbar-logo-padding-horiz;
   }
 
   #search {
@@ -433,8 +433,10 @@ form table td {
 
 #rbinfo {
   float: left;
-  position: relative;
+  position: absolute;
+  left: 0;
   padding-top: 0.2em;
+  padding-left: @headerbar-padding-left;
 
   img {
     display: inline;
@@ -467,6 +469,7 @@ form table td {
     a {
       color: white;
       display: block;
+      font-size: 120%;
       margin: 0;
       padding: 0 1em;
       text-decoration: none;
@@ -571,12 +574,12 @@ form table td {
   margin: 0 0 1em 0;
   min-height: 1.5em;
   padding: @headerbar-padding;
-  padding-left: 5.5em;
+  padding-left: @headerbar-padding-left;
 
   li {
     display: inline;
     height: 30px;
-    margin: 0 1em;
+    margin: 0 1em 0 0;
   }
 
   a {

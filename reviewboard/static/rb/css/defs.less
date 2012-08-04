@@ -7,16 +7,35 @@
 @light-blue: #C6DCF3;
 @dark-blue: #3465A4;
 
+@headerbar-logo-padding-horiz: 6px;
+@headerbar-logo-width: 60px;
+@headerbar-padding-left: @headerbar-logo-width +
+                         2 * @headerbar-logo-padding-horiz;
 @headerbar-bg: #333333;
 @headerbar-bg-active: #555555;
 @headerbar-padding: 0.5em;
-@navbar-bg: #C6DCF3;
-@navbar-border-color: #3465A4;
+@headerbar-menu-min-width: 9em;
+
+@navbar-bg: @light-blue;
+@navbar-border-color: @dark-blue;
 @navbar-text-color: #0000AA;
 
 @box-title-bg: #C6DCF3;
 
-@headerbar-menu-min-width: 9em;
+@review-request-actions-bg: @review-request-action-primary-bg;
+@review-request-action-bg: #DCC889;
+@review-request-action-active-bg: lighten(@review-request-action-bg, 5%);
+@review-request-action-hover-bg: lighten(@review-request-action-bg, 10%);
+
+@review-request-action-primary-bg: lighten(@review-request-action-bg, 8%);
+@review-request-action-primary-active-bg:
+  lighten(@review-request-action-primary-bg, 5%);
+@review-request-action-primary-hover-bg:
+  lighten(@review-request-action-primary-bg, 10%);
+
+@review-request-action-menu-bg: @review-request-action-primary-bg;
+@review-request-action-menu-item-hover-bg:
+  lighten(@review-request-action-menu-bg, 5%);
 
 .border-radius () {
   -moz-border-radius: @arguments;

@@ -83,6 +83,10 @@
     border-top: 1px #C2C1B0 solid;
   }
 
+  .main {
+    clear: both;
+  }
+
   #required-field-legend {
     color: darkRed;
     font-weight: bold;
@@ -190,19 +194,24 @@
   }
 
   .actions {
-    border-right: 1px #000000 solid;
-    float: right;
+    background: @review-request-actions-bg;
+    border-bottom: 1px black solid;
+    float: left;
     list-style: none;
-    margin: -1px -1px 0 0;
+    margin: 0;
     padding: 0;
     white-space: nowrap;
+    width: 100%;
 
     a {
       color: black;
       cursor: pointer;
       display: block;
-      padding: 4px 8px;
       text-decoration: none;
+      padding: 4px 8px;
+
+      background: @review-request-action-bg;
+      border-left: 1px black solid;
     }
 
     img {
@@ -210,49 +219,44 @@
     }
 
     li {
-      background: #dfb16a url("../images/review_request_action_bg.png") repeat-x top left;
-      border: 1px black solid;
-      border-right: 0;
       float: left;
+      margin: 0;
+      padding: 0;
 
-      &:active {
-        background-color: #e8c894;
-        background-image: url("../images/review_request_action_bg_clicked.png");
+      &:hover>a {
+        background-color: @review-request-action-hover-bg;
       }
 
-      &:hover {
-        background-color: #e8c896;
-        background-image: url("../images/review_request_action_bg_hover.png");
+      &:active>a {
+        background-color: @review-request-action-active-bg;
       }
 
-      &.primary {
-        background-color: #e7c591;
-        background-image: url("../images/review_request_action_primary_bg.png");
+      &.primary>a {
+        background-color: @review-request-action-primary-bg;
       }
 
-      &.primary:hover {
-        background-color: #eed6b1;
-        background-image: url("../images/review_request_action_primary_bg_hover.png");
+      &.primary:hover>a {
+        background-color: @review-request-action-primary-hover-bg;
       }
 
-      &.primary:active {
-        background-color: #eed6af;
-        background-image: url("../images/review_request_action_primary_bg_clicked.png");
+      &.primary:active>a {
+        background-color: @review-request-action-primary-active-bg;
       }
     }
 
     .menu {
-      background: #dfb16a url("../images/review_request_action_bg.png") repeat-x top left;
+      background: @review-request-action-menu-bg;
       border: 1px black solid;
+      float: none;
       list-style: none;
       margin: 0;
       padding: 0;
       position: absolute;
 
       li {
-        background: none;
-        border: 0;
         float: none;
+        background: transparent;
+        border: 0;
         margin: 0;
         padding: 0;
 
@@ -264,15 +268,23 @@
           text-decoration: none;
 
           &:hover {
-            background-color: #c79343;
+            background-color: @review-request-action-menu-item-hover-bg;
           }
         }
       }
     }
   }
 
-  .actions>li:first-child {
-    .border-radius(0 0 0 8px);
+  .actions>li {
+    &:first-child {
+      a, .menu {
+        border-left: 0;
+      }
+    }
+
+    &:last-child a {
+      border-right: 1px black solid;
+    }
   }
 
   #updated_time, #created_time {
