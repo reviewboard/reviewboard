@@ -179,7 +179,6 @@ ul.errorlist {
 }
 
 .box-container {
-  border: 1px #DCDCDC solid;
   margin-bottom: 10px;
   width: 100%;
 }
@@ -198,7 +197,15 @@ ul.errorlist {
 
 .datagrid-title,
 .datagrid-titlebox {
-  background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
+  background: @box-title-bg;
+}
+
+.datagrid-header {
+  border-top: 0;
+}
+
+.datagrid-menu {
+  border: 1px #888A85 solid;
 }
 
 .datagrid .shipit-count {
@@ -370,17 +377,135 @@ form table td {
   }
 }
 
+#headerbar {
+  background: @headerbar-bg;
+  border-bottom: 1px #DDDDDD solid;
+  color: white;
+  font-size: 120%;
+  margin: 0;
+  padding: @headerbar-padding;
+
+  br {
+    clear: both;
+    height: 0;
+  }
+
+  #title {
+    color: white;
+    display: inline;
+    font-weight: normal;
+    vertical-align: middle;
+    margin-left: 4.5em;
+    padding: 0;
+
+    a {
+      color: white;
+      font-size: 120%;
+      text-decoration: none;
+    }
+
+    .version {
+      color: #E0E0E0;
+      font-weight: normal;
+      font-size: 90%;
+    }
+  }
+
+  #logo {
+    position: absolute;
+    top: 2px;
+    left: 0;
+  }
+
+  #search {
+   float: right;
+   margin: 0 1em;
+
+   input {
+     border: 1px black solid;
+     margin: 0;
+     padding: 2px;
+     border-radius: 6px;
+     background-color: #EEEEEE;
+   }
+  }
+}
+
+#rbinfo {
+  float: left;
+  position: relative;
+  padding-top: 0.2em;
+
+  img {
+    display: inline;
+    vertical-align: middle;
+  }
+}
+
 #accountnav {
   list-style: none;
   margin: 0;
-  padding: 0.5em;
-  text-align: right;
-  position: relative;
+  padding: 0;
   z-index: 1;
-  border-bottom: 1px #DDDDDD solid;
+  float: right;
 
   li {
-    display: inline;
+    display: block;
+    float: right;
+    margin: -@headerbar-padding 0;
+    padding: 0;
+    position: relative;
+
+    &:hover {
+      background: @headerbar-bg-active;
+
+      ul {
+        display: block;
+      }
+    }
+
+    a {
+      color: white;
+      display: block;
+      margin: 0;
+      padding: 0 1em;
+      text-decoration: none;
+      height: 32px;
+      vertical-align: middle;
+      line-height: 32px;
+
+      &.user-nav-item {
+        padding-left: 0.2em;
+      }
+    }
+
+    img {
+      display: inline;
+      vertical-align: middle;
+      margin: 0;
+      padding: 0;
+    }
+
+    ul {
+      background-color: @headerbar-bg;
+      display: none;
+      margin: 0;
+      min-width: @headerbar-menu-min-width;
+      padding: 0;
+      position: absolute;
+      right: 0;
+
+      li {
+        float: none;
+        margin: 0;
+        padding: 0;
+        text-align: right;
+
+        a {
+          margin: 0;
+        }
+      }
+    }
   }
 }
 
@@ -439,29 +564,24 @@ form table td {
   font-size: 9pt;
 }
 
-#navbar-outer {
-  border: 1px #E0E0E0 solid;
-  margin: 10px 0;
-  width: 100%;
-}
-
 #navbar {
-  background-color: #C6DCF3;
-  border: 1px #3465A4 solid;
+  background: @navbar-bg;
+  border-bottom: 1px @navbar-border-color solid;
   list-style: none;
-  margin: 0;
-  padding: 9px 6px;
+  margin: 0 0 1em 0;
+  min-height: 1.5em;
+  padding: @headerbar-padding;
+  padding-left: 5.5em;
 
   li {
     display: inline;
     height: 30px;
-    margin-right: 14px;
+    margin: 0 1em;
   }
 
   a {
-    color: #0000AA;
+    color: @navbar-text-color;
     font-size: 110%;
-    font-weight: bold;
     text-decoration: none;
   }
 
@@ -474,38 +594,10 @@ form table td {
   padding: 0 0.8em 0.8em 0.8em;
 }
 
-#rbinfo {
-  position: relative;
-  padding-left: 0.8em;
-
-  img {
-    display: inline;
-    vertical-align: middle;
-  }
-}
-
 #searchbar {
   position: absolute;
   right: 0;
   margin-top: -3px;
-}
-
-#title {
-  display: inline;
-  vertical-align: middle;
-  font-size: 24pt;
-  font-weight: normal;
-
-  a {
-    color: black;
-    text-decoration: none;
-  }
-
-  .version {
-    color: #808080;
-    font-size: 12pt;
-    font-weight: normal;
-  }
 }
 
 
