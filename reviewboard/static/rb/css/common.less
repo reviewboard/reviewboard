@@ -81,8 +81,8 @@ ul.errorlist {
  * Banners
  ****************************************************************************/
 .banner {
-  background: #cdff9c;
-  border: 1px #4e9a06 solid;
+  background: @draft-bg-color;
+  border: 1px @draft-border-color solid;
   margin-bottom: 10px;
   padding: 8px 10px;
   z-index: 999;
@@ -219,9 +219,7 @@ ul.errorlist {
   font-weight: bold;
   padding: 0.05em 0.5em;
   white-space: nowrap;
-  -moz-border-radius: 10px;
-  -webkit-border-radius: 8px; /* WebKit bug */
-  border-radius: 10px;
+  .border-radius(10px);
 }
 
 .server-error-box .response-data {
@@ -425,7 +423,7 @@ form table td {
      border: 1px black solid;
      margin: 0;
      padding: 2px;
-     border-radius: 6px;
+     .border-radius(6px);
      background-color: #EEEEEE;
    }
   }
@@ -662,10 +660,8 @@ form table td {
   position: absolute;
   min-width: 30em;
   z-index: 25;
-  -moz-border-radius: 10px;
-  -webkit-border-radius: 8px; /* WebKit bug */
-  border-radius: 10px;
-  .box-shadow (0px 0px 4px #000);
+  .border-radius(10px);
+  .box-shadow(0px 0px 4px #000);
 
   &.loading {
     background-image: url("../images/spinner.gif");
