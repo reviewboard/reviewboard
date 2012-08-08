@@ -24,7 +24,9 @@
  {{ error }}
  {%  enderrorbox %}
  {% endif %}
- <input type="hidden" name="next_page" value="{{next_page}}"></input>
+{% block hidden_fields %}
+ <input type="hidden" name="next_page" value="{{next_page}}" />
+{% endblock %}
  <table>
   <tr>
    <td class="label"><label for="id_username">{% trans "Username" %}</label></td>

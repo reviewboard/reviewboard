@@ -16,10 +16,10 @@ $(document).ready(function() {
     function refreshWidgets() {
         var sideWidth = $("#admin-actions").outerWidth(),
             centerWidth = $("#admin-widgets").outerWidth(),
-            winWidth = $(window).width();
+            winWidth = $("#dashboard-view").width();
 
         adminExtras
-            .css('width', winWidth - (sideWidth + centerWidth) - 50)
+            .width(Math.max(0, winWidth - (sideWidth + centerWidth) - 50))
             .masonry('reload');
     }
 
