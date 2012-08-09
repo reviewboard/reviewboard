@@ -20,13 +20,21 @@
 @navbar-border-color: @dark-blue;
 @navbar-text-color: #0000AA;
 
+@box-border-color: #888A85;
+@box-border-radius: 6px;
+@box-inner-border-radius: @box-border-radius - 1px;
 @box-title-bg: @light-blue;
+@box-shadow: 1px 1px 2px rgba(0, 0, 0, .15);
 
 @draft-bg-color: #CDFF9C;
 @draft-border-color: darken(@draft-bg-color, 50%);
 
 @review-request-actions-bg: @review-request-action-primary-bg;
+@review-request-actions-border-color:
+  darken(@review-request-action-primary-bg, 40%);
+
 @review-request-action-bg: #DCC889;
+@review-request-action-border-color: @review-request-actions-border-color;
 @review-request-action-active-bg: lighten(@review-request-action-bg, 5%);
 @review-request-action-hover-bg: lighten(@review-request-action-bg, 10%);
 
@@ -36,6 +44,7 @@
 @review-request-action-primary-hover-bg:
   lighten(@review-request-action-primary-bg, 10%);
 
+@review-request-action-menu-border-color: @review-request-actions-border-color;
 @review-request-action-menu-bg: @review-request-action-primary-bg;
 @review-request-action-menu-item-hover-bg:
   lighten(@review-request-action-menu-bg, 5%);

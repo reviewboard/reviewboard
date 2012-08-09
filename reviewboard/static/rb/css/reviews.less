@@ -193,15 +193,20 @@
     }
   }
 
-  .actions {
+  .actions-container {
     background: @review-request-actions-bg;
-    border-bottom: 1px black solid;
-    float: left;
+    border-bottom: 2px @review-request-actions-border-color solid;
+    float: right;
+    width: 100%;
+    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+  }
+
+  .actions {
+    float: right;
     list-style: none;
     margin: 0;
     padding: 0;
     white-space: nowrap;
-    width: 100%;
 
     a {
       color: black;
@@ -211,7 +216,7 @@
       padding: 4px 8px;
 
       background: @review-request-action-bg;
-      border-left: 1px black solid;
+      border-left: 1px @review-request-action-border-color solid;
     }
 
     img {
@@ -246,12 +251,14 @@
 
     .menu {
       background: @review-request-action-menu-bg;
-      border: 1px black solid;
+      border: 1px @review-request-action-menu-border-color solid;
       float: none;
       list-style: none;
       margin: 0;
       padding: 0;
       position: absolute;
+      .border-radius(0 0 @box-border-radius @box-border-radius);
+      .box-shadow(@box-shadow);
 
       li {
         float: none;
@@ -260,8 +267,13 @@
         margin: 0;
         padding: 0;
 
+        &:last-child a {
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+        }
+
         a {
           color: black;
+          border: 0;
           display: block;
           margin: 0;
           padding: 5px 10px;
@@ -277,13 +289,24 @@
 
   .actions>li {
     &:first-child {
-      a, .menu {
+      a {
         border-left: 0;
+        .border-radius(@box-border-radius 0 0 0);
+      }
+
+      .menu {
+        border-left: 0;
+        .border-radius(0 0 @box-border-radius 0);
+        .box-shadow(@box-shadow);
+
+        li:last-child a {
+          .border-radius(0 0 @box-border-radius 0);
+        }
       }
     }
 
     &:last-child a {
-      border-right: 1px black solid;
+      border-right: 1px @review-request-action-border-color solid;
     }
   }
 
@@ -680,14 +703,24 @@
   height: 13em;
   position: relative;
   margin: 0 2em 2em 0;
-  .border-radius(0 0 8px 8px);
+  .border-radius(@box-border-radius);
+
+  .actions {
+    li {
+      a {
+        .border-radius(0 @box-inner-border-radius 0 @box-inner-border-radius);
+        border-left: 1px @review-request-action-border-color solid;
+        border-bottom: 1px @review-request-action-border-color solid;
+      }
+    }
+  }
 
   .file-header {
     background: white;
     padding: 0.5em 10em 0.5em 0.5em;
     line-height: 2.5em;
-    -width: 30em;
     white-space: nowrap;
+    .border-radius(@box-border-radius @box-border-radius 0 0);
 
     a {
       color: blue;
@@ -746,7 +779,7 @@
   border: 1px #999999 solid;
   border-top: 1px #CCCCCC solid;
   padding: 2px 8px;
-  .border-radius(0 0 8px 8px);
+  .border-radius(0 0 @box-border-radius @box-border-radius);
 
   img {
     vertical-align: bottom;
@@ -764,6 +797,7 @@
   text-align: center;
   vertical-align: middle;
   position: relative;
+  .border-radius(@box-border-radius);
 
   &:hover {
     background-color: #F6F6F6;
@@ -786,6 +820,7 @@
     line-height: 100px;
     margin: 0 auto;
     vertical-align: bottom;
+    .border-radius(@box-border-radius @box-border-radius 0 0);
 
     &.loading {
       background: white url("../images/spinner.gif") no-repeat center center;
@@ -793,6 +828,7 @@
 
     img {
       vertical-align: middle;
+      .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
     }
   }
 }
@@ -948,6 +984,8 @@
   }
 
   h1 {
+    background: transparent;
+    border: 0;
     margin: 0 0 6px 0;
     padding: 0;
   }
@@ -1095,10 +1133,17 @@
 #submitted-banner {
   background: #E0E0E0;
   border: 1px #808080 solid;
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
+}
+
+#draft-banner {
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
 }
 
 #review-banner {
-  padding-bottom: 4.5em;
+  padding-bottom: 4em;
 
   .banner {
     border-left: 0;
@@ -1109,6 +1154,7 @@
     top: 0;
     width: 100%;
     z-index: 1000;
+    .box-shadow(@box-shadow);
   }
 }
 

@@ -107,7 +107,9 @@ ul.errorlist {
   background-image: url('../images/box_top_bg.png');
   background-position: top left;
   background-repeat: repeat-x;
-  border: 1px #888A85 solid;
+  border: 1px @box-border-color solid;
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
 }
 
 .box.important {
@@ -157,7 +159,7 @@ ul.errorlist {
     margin: 0;
     padding: 0;
     position: relative;
-    top: -23px;
+    top: -20px;
   }
 }
 
@@ -172,6 +174,7 @@ ul.errorlist {
   margin: 0;
   padding: 5px 10px 5px 5px;
   font-size: 120%;
+  .border-radius(@box-border-radius @box-border-radius 0 0);
 }
 
 .box .main {
@@ -189,6 +192,7 @@ ul.errorlist {
   background-position: bottom left;
   background-repeat: repeat-x;
   padding-bottom: 1px; /* IE wants this and it does no harm. */
+  .border-radius(@box-border-radius);
 }
 
 .box-inner form {
@@ -495,12 +499,17 @@ form table td {
       padding: 0;
       position: absolute;
       right: 0;
+      .border-radius(0 0 @box-border-radius @box-border-radius);
 
       li {
         float: none;
         margin: 0;
         padding: 0;
         text-align: right;
+
+        &:hover {
+          .border-radius(0 0 @box-border-radius @box-border-radius);
+        }
 
         a {
           margin: 0;
