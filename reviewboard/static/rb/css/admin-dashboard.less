@@ -76,6 +76,8 @@
 .admin-widget {
   border: 1px solid @widget-border-color;
   margin: 0 0 (2 * @widget-margin);
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
 
   &.widget-large {
     width: @widget-large-size;
@@ -89,6 +91,8 @@
 
   &.widget-hidden {
     .widget-heading {
+      .border-radius(@box-inner-border-radius);
+
       .btn-state {
         background: url("../images/admin/wid-max.png") 0px 3px no-repeat;
       }
@@ -110,6 +114,7 @@
     margin: 0;
     padding: 5px 10px 5px 5px;
     text-transform: uppercase;
+    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
 
     h1 {
       margin: 0;
@@ -146,6 +151,10 @@
         list-style-type: none;
         padding: @widget-padding 0;
 
+        &:last-child {
+          border-bottom: 0;
+        }
+
         a {
           display: block;
         }
@@ -158,6 +167,10 @@
 
     tr {
       border-bottom: 1px solid @table-border-color;
+
+      &:last-child {
+        border-bottom: 0;
+      }
 
       th {
         color: @table-header-color;
@@ -197,6 +210,7 @@
     padding: 0;
     text-align: left;
     white-space: nowrap;
+    .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
 
     a {
       border-right: 1px solid @widget-action-border-color;

@@ -515,6 +515,8 @@ div.breadcrumbs {
 h1.title {
   border: 1px @box-border-color solid;
   text-transform: uppercase;
+  .border-radius(0);
+  .box-shadow(@box-shadow);
 }
 
 #header {
@@ -569,6 +571,12 @@ h1.title {
 .colM,
 .flex {
   margin-left: @col_left_width !important;
+}
+
+.flex {
+  h1.title {
+    .border-radius(@box-border-radius @box-border-radius 0 0);
+  }
 }
 
 .colSM {
@@ -656,10 +664,17 @@ td, th {
   border: 1px solid @box-border-color;
   margin-top: 10px;
   overflow: hidden;
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
 
   &.filtered {
     border-top: 0;
     margin-top: 0;
+    .border-radius(0 0 @box-border-radius @box-border-radius);
+
+    .paginator {
+      .border-radius(0 0 @box-border-radius @box-border-radius);
+    }
   }
 
   &.manage .count {
