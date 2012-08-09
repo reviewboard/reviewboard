@@ -288,25 +288,9 @@
   }
 
   .actions>li {
-    &:first-child {
-      a {
-        border-left: 0;
-        .border-radius(@box-border-radius 0 0 0);
-      }
-
-      .menu {
-        border-left: 0;
-        .border-radius(0 0 @box-border-radius 0);
-        .box-shadow(@box-shadow);
-
-        li:last-child a {
-          .border-radius(0 0 @box-border-radius 0);
-        }
-      }
-    }
-
     &:last-child a {
-      border-right: 1px @review-request-action-border-color solid;
+      border-right: 0;
+      .border-radius(0 @box-inner-border-radius 0 0);
     }
   }
 
