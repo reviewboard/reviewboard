@@ -31,46 +31,6 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-# The model for the review request summary only allows it to be 300 chars long
-MAX_SUMMARY_LENGTH = 300
-
-
-def update_obj_with_changenum(obj, repository, changenum):
-    """
-    Utility helper to update a review request or draft from the
-    specified changeset's contents on the server.
-    """
-    changeset = repository.get_scmtool().get_changeset(changenum)
-
-    if not changeset:
-        raise InvalidChangeNumberError()
-
-    # If the SCM supports changesets, they should always include a number,
-    # summary and description, parsed from the changeset description. Some
-    # specialized systems may support the other fields, but we don't want to
-    # clobber the user-entered values if they don't.
-    obj.changenum = changenum
-    obj.summary = changeset.summary
-    obj.description = changeset.description
-    if changeset.testing_done:
-        obj.testing_done = changeset.testing_done
-    if changeset.branch:
-        obj.branch = changeset.branch
-    if changeset.bugs_closed:
-        obj.bugs_closed = ','.join(changeset.bugs_closed)
-
-
-def truncate(string, num):
-    if len(string) > num:
-        string = string[0:num]
-        i = string.rfind('.')
-
-        if i != -1:
-            string = string[0:i + 1]
-
-    return string
-
-
 class Group(models.Model):
     """
     A group of reviewers identified by a name. This is usually used to
@@ -257,7 +217,209 @@ class Screenshot(models.Model):
             pass
 
 
-class ReviewRequest(models.Model):
+class BaseReviewRequestDetails(models.Model):
+    """Base information for a review request and draft.
+
+    ReviewRequest and ReviewRequestDraft share a lot of fields and
+    methods. This class provides those fields and methods for those
+    classes.
+    """
+    MAX_SUMMARY_LENGTH = 300
+
+    summary = models.CharField(_("summary"), max_length=MAX_SUMMARY_LENGTH)
+    description = models.TextField(_("description"), blank=True)
+    testing_done = models.TextField(_("testing done"), blank=True)
+    bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
+    branch = models.CharField(_("branch"), max_length=300, blank=True)
+
+    def _get_review_request(self):
+        raise NotImplementedError
+
+    def get_bug_list(self):
+        """
+        Returns a sorted list of bugs associated with this review request.
+        """
+        if self.bugs_closed == "":
+            return []
+
+        bugs = re.split(r"[, ]+", self.bugs_closed)
+
+        # First try a numeric sort, to show the best results for the majority
+        # case of bug trackers with numeric IDs.  If that fails, sort
+        # alphabetically.
+        try:
+            bugs.sort(key=int)
+        except ValueError:
+            bugs.sort()
+
+        return bugs
+
+    def get_screenshots(self):
+        """Returns the list of all screenshots on a review request.
+
+        This includes all current screenshots, but not previous ones.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        review_request = self._get_review_request()
+
+        for screenshot in self.screenshots.all():
+            screenshot._review_request = review_request
+            yield screenshot
+
+    def get_inactive_screenshots(self):
+        """Returns the list of all inactive screenshots on a review request.
+
+        This only includes screenshots that were previously visible but
+        have since been removed.
+
+        By accessing screenshots through this method, future review request
+        lookups from the screenshots will be avoided.
+        """
+        review_request = self._get_review_request()
+
+        for screenshot in self.inactive_screenshots.all():
+            screenshot._review_request = review_request
+            yield screenshot
+
+    def get_file_attachments(self):
+        """Returns the list of all file attachments on a review request.
+
+        This includes all current file attachments, but not previous ones.
+
+        By accessing file attachments through this method, future review
+        request lookups from the file attachments will be avoided.
+        """
+        review_request = self._get_review_request()
+
+        for file_attachment in self.file_attachments.all():
+            file_attachment._review_request = review_request
+            yield file_attachment
+
+    def get_inactive_file_attachments(self):
+        """Returns all inactive file attachments on a review request.
+
+        This only includes file attachments that were previously visible
+        but have since been removed.
+
+        By accessing file attachments through this method, future review
+        request lookups from the file attachments will be avoided.
+        """
+        review_request = self._get_review_request()
+
+        for file_attachment in self.inactive_file_attachments.all():
+            file_attachment._review_request = review_request
+            yield file_attachment
+
+    def add_default_reviewers(self):
+        """Add default reviewers based on the diffset.
+
+        This method goes through the DefaultReviewer objects in the database
+        and adds any missing reviewers based on regular expression comparisons
+        with the set of files in the diff.
+        """
+        diffset = self.get_latest_diffset()
+
+        if not diffset:
+            return
+
+        people = set()
+        groups = set()
+
+        # TODO: This is kind of inefficient, and could maybe be optimized in
+        # some fancy way.  Certainly the most superficial optimization that
+        # could be made would be to cache the compiled regexes somewhere.
+        files = diffset.files.all()
+        reviewers = DefaultReviewer.objects.for_repository(self.repository,
+                                                           self.local_site)
+
+        for default in reviewers:
+            try:
+                regex = re.compile(default.file_regex)
+            except:
+                continue
+
+            for filediff in files:
+                if regex.match(filediff.source_file or filediff.dest_file):
+                    for person in default.people.all():
+                        people.add(person)
+
+                    for group in default.groups.all():
+                        groups.add(group)
+
+                    break
+
+        existing_people = self.target_people.all()
+
+        for person in people:
+            if person not in existing_people:
+                self.target_people.add(person)
+
+        existing_groups = self.target_groups.all()
+
+        for group in groups:
+            if group not in existing_groups:
+                self.target_groups.add(group)
+
+    def update_from_changenum(self, changenum):
+        """Updates the data from a server-side changeset.
+
+        If changesets are supported on the repository, review request
+        information will be pulled from the changeset associated with
+        changenum.
+        """
+        changeset = self.repository.get_scmtool().get_changeset(changenum)
+
+        if not changeset:
+            raise InvalidChangeNumberError()
+
+        # If the SCM supports changesets, they should always include a number,
+        # summary and description, parsed from the changeset description. Some
+        # specialized systems may support the other fields, but we don't want to
+        # clobber the user-entered values if they don't.
+        if hasattr(self, 'changenum'):
+            self.changenum = changenum
+
+        self.summary = changeset.summary
+        self.description = changeset.description
+
+        if changeset.testing_done:
+            self.testing_done = changeset.testing_done
+
+        if changeset.branch:
+            self.branch = changeset.branch
+
+        if changeset.bugs_closed:
+            self.bugs_closed = ','.join(changeset.bugs_closed)
+
+    def save(self, **kwargs):
+        self.bugs_closed = self.bugs_closed.strip()
+        self.summary = self._truncate(self.summary, self.MAX_SUMMARY_LENGTH)
+
+        super(BaseReviewRequestDetails, self).save(**kwargs)
+
+    def _truncate(self, string, num):
+        if len(string) > num:
+            string = string[0:num]
+            i = string.rfind('.')
+
+            if i != -1:
+                string = string[0:i + 1]
+
+        return string
+
+    def __unicode__(self):
+        if self.summary:
+            return self.summary
+        else:
+            return unicode(_('(no summary)'))
+
+    class Meta:
+        abstract = True
+
+
+class ReviewRequest(BaseReviewRequestDetails):
     """
     A review request.
 
@@ -297,15 +459,10 @@ class ReviewRequest(models.Model):
     time_emailed = models.DateTimeField(_("time e-mailed"), null=True,
                                         default=None, blank=True)
 
-    summary = models.CharField(_("summary"), max_length=300)
-    description = models.TextField(_("description"), blank=True)
-    testing_done = models.TextField(_("testing done"), blank=True)
-    bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
     diffset_history = models.ForeignKey(DiffSetHistory,
                                         related_name="review_request",
                                         verbose_name=_('diff set history'),
                                         blank=True)
-    branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(
         Group,
         related_name="review_requests",
@@ -369,25 +526,6 @@ class ReviewRequest(models.Model):
 
     participants = property(get_participants)
 
-    def get_bug_list(self):
-        """
-        Returns a sorted list of bugs associated with this review request.
-        """
-        if self.bugs_closed == "":
-            return []
-
-        bugs = re.split(r"[, ]+", self.bugs_closed)
-
-        # First try a numeric sort, to show the best results for the majority
-        # case of bug trackers with numeric IDs.  If that fails, sort
-        # alphabetically.
-        try:
-            bugs.sort(cmp=lambda x,y: cmp(int(x), int(y)))
-        except ValueError:
-            bugs.sort()
-
-        return bugs
-
     def get_new_reviews(self, user):
         """
         Returns any new reviews since the user last viewed the review request.
@@ -412,49 +550,6 @@ class ReviewRequest(models.Model):
 
         return self.reviews.get_empty_query_set()
 
-    def add_default_reviewers(self):
-        """
-        Add default reviewers to this review request based on the diffset.
-
-        This method goes through the DefaultReviewer objects in the database and
-        adds any missing reviewers based on regular expression comparisons with
-        the set of files in the diff.
-        """
-
-        if self.diffset_history.diffsets.count() != 1:
-            return
-
-        diffset = self.diffset_history.diffsets.get()
-
-        people = set()
-        groups = set()
-
-        # TODO: This is kind of inefficient, and could maybe be optimized in
-        # some fancy way.  Certainly the most superficial optimization that
-        # could be made would be to cache the compiled regexes somewhere.
-        files = diffset.files.all()
-        for default in DefaultReviewer.objects.for_repository(
-                self.repository, self.local_site):
-            regex = re.compile(default.file_regex)
-
-            for filediff in files:
-                if regex.match(filediff.source_file or filediff.dest_file):
-                    for person in default.people.all():
-                        people.add(person)
-                    for group in default.groups.all():
-                        groups.add(group)
-                    break
-
-        existing_people = self.target_people.all()
-        for person in people:
-            if person not in existing_people:
-                self.target_people.add(person)
-
-        existing_groups = self.target_groups.all()
-        for group in groups:
-            if group not in existing_groups:
-                self.target_groups.add(group)
-
     def get_display_id(self):
         """Gets the ID which should be exposed to the user."""
         if self.local_site_id:
@@ -469,13 +564,6 @@ class ReviewRequest(models.Model):
         Returns all public top-level reviews for this review request.
         """
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
-
-    def update_from_changenum(self, changenum):
-        """
-        Updates this review request from the specified changeset's contents
-        on the server.
-        """
-        update_obj_with_changenum(self, self.repository, changenum)
 
     def is_accessible_by(self, user, local_site=None):
         """Returns whether or not the user can read this review request.
@@ -563,10 +651,11 @@ class ReviewRequest(models.Model):
 
         # Check if the diff was updated along with this.
         if not diffsets and self.repository_id:
-            try:
-                diffsets = [self.diffset_history.diffsets.latest()]
-            except DiffSet.DoesNotExist:
-                diffsets = []
+            latest_diffset = self.get_latest_diffset()
+            diffsets = []
+
+            if latest_diffset:
+                diffsets.append(latest_diffset)
 
         if diffsets:
             for diffset in diffsets:
@@ -610,55 +699,6 @@ class ReviewRequest(models.Model):
                                   local_site_name=local_site_name,
                                   kwargs={'review_request_id': self.display_id})
 
-    def get_screenshots(self):
-        """Returns the list of all screenshots on a review request.
-
-        This includes all current screenshots, but not previous ones.
-
-        By accessing screenshots through this method, future review request
-        lookups from the screenshots will be avoided.
-        """
-        for screenshot in self.screenshots.all():
-            screenshot._review_request = self
-            yield screenshot
-
-    def get_inactive_screenshots(self):
-        """Returns all inactive screenshots on a review request.
-
-        This only includes screenshots that were previously visible but
-        have since been removed.
-
-        By accessing screenshots through this method, future review request
-        lookups from the screenshots will be avoided.
-        """
-        for screenshot in self.inactive_screenshots.all():
-            screenshot._review_request = self
-            yield screenshot
-
-    def get_file_attachments(self):
-        """Returns the list of all file attachments on a review request.
-
-        This includes all current file attachments, but not previous ones.
-
-        By accessing file attachments through this method, future review request
-        lookups from the file attachments will be avoided.
-        """
-        for file_attachment in self.file_attachments.all():
-            file_attachment._review_request = self
-            yield file_attachment
-
-    def get_inactive_file_attachments(self):
-        """Returns the list of all file attachments on a review request.
-
-        This includes all current file attachments, but not previous ones.
-
-        By accessing file attachments through this method, future review request
-        lookups from the file attachments will be avoided.
-        """
-        for file_attachment in self.inactive_file_attachments.all():
-            file_attachment._review_request = self
-            yield file_attachment
-
     def get_diffsets(self):
         """Returns a list of all diffsets on this review request."""
         if not self.repository_id:
@@ -670,16 +710,15 @@ class ReviewRequest(models.Model):
 
         return self._diffsets
 
-    def __unicode__(self):
-        if self.summary:
-            return self.summary
-        else:
-            return unicode(_('(no summary)'))
+    def get_latest_diffset(self):
+        """Returns the latest diffset for this review request."""
+        try:
+            return DiffSet.objects.filter(
+                history=self.diffset_history_id).latest()
+        except DiffSet.DoesNotExist:
+            return None
 
     def save(self, update_counts=False, **kwargs):
-        self.bugs_closed = self.bugs_closed.strip()
-        self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
-
         if update_counts or self.id is None:
             self._update_counts()
 
@@ -935,6 +974,13 @@ class ReviewRequest(models.Model):
                         profile__starred_review_requests=self,
                         local_site=local_site))
 
+    def _get_review_request(self):
+        """Returns this review request.
+
+        This is an interface needed by ReviewRequestDetails.
+        """
+        return self
+
     class Meta:
         ordering = ['-last_updated', 'submitter', 'summary']
         unique_together = (('changenum', 'repository'),
@@ -946,7 +992,7 @@ class ReviewRequest(models.Model):
         )
 
 
-class ReviewRequestDraft(models.Model):
+class ReviewRequestDraft(BaseReviewRequestDetails):
     """
     A draft of a review request.
 
@@ -960,18 +1006,12 @@ class ReviewRequestDraft(models.Model):
                                        verbose_name=_("review request"),
                                        unique=True)
     last_updated = ModificationTimestampField(_("last updated"))
-    summary = models.CharField(_("summary"), max_length=300)
-    description = models.TextField(_("description"))
-    testing_done = models.TextField(_("testing done"))
-    bugs_closed = models.CommaSeparatedIntegerField(_("bugs"),
-                                                    max_length=300, blank=True)
     diffset = models.ForeignKey(DiffSet, verbose_name=_('diff set'),
                                 blank=True, null=True,
                                 related_name='review_request_draft')
     changedesc = models.ForeignKey(ChangeDescription,
                                    verbose_name=_('change description'),
                                    blank=True, null=True)
-    branch = models.CharField(_("branch"), max_length=300, blank=True)
     target_groups = models.ManyToManyField(Group,
                                            related_name="drafts",
                                            verbose_name=_("target groups"),
@@ -1001,36 +1041,15 @@ class ReviewRequestDraft(models.Model):
         blank=True)
 
     submitter = property(lambda self: self.review_request.submitter)
+    repository = property(lambda self: self.review_request.repository)
+    local_site = property(lambda self: self.review_request.local_site)
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
-    def get_bug_list(self):
-        """
-        Returns a sorted list of bugs associated with this review request.
-        """
-        if self.bugs_closed == "":
-            return []
-
-        bugs = re.split(r"[, ]+", self.bugs_closed)
-
-        # First try a numeric sort, to show the best results for the majority
-        # case of bug trackers with numeric IDs.  If that fails, sort
-        # alphabetically.
-        try:
-            bugs.sort(cmp=lambda x,y: cmp(int(x), int(y)))
-        except ValueError:
-            bugs.sort()
-
-        return bugs
-
-    def __unicode__(self):
-        return self.summary
-
-    def save(self, **kwargs):
-        self.bugs_closed = self.bugs_closed.strip()
-        self.summary = truncate(self.summary, MAX_SUMMARY_LENGTH)
-        super(ReviewRequestDraft, self).save()
+    def get_latest_diffset(self):
+        """Returns the diffset for this draft."""
+        return self.diffset
 
     @staticmethod
     def create(review_request):
@@ -1083,51 +1102,6 @@ class ReviewRequestDraft(models.Model):
             draft.save();
 
         return draft
-
-    def add_default_reviewers(self):
-        """
-        Add default reviewers to this draft based on the diffset.
-
-        This method goes through the DefaultReviewer objects in the database and
-        adds any missing reviewers based on regular expression comparisons with
-        the set of files in the diff.
-        """
-
-        if not self.diffset:
-            return
-
-        repository = self.review_request.repository
-        people = set()
-        groups = set()
-
-        # TODO: This is kind of inefficient, and could maybe be optimized in
-        # some fancy way.  Certainly the most superficial optimization that
-        # could be made would be to cache the compiled regexes somewhere.
-        files = self.diffset.files.all()
-        for default in DefaultReviewer.objects.for_repository(
-                repository, self.review_request.local_site):
-            try:
-                regex = re.compile(default.file_regex)
-            except:
-                continue
-
-            for filediff in files:
-                if regex.match(filediff.source_file or filediff.dest_file):
-                    for person in default.people.all():
-                        people.add(person)
-                    for group in default.groups.all():
-                        groups.add(group)
-                    break
-
-        existing_people = self.target_people.all()
-        for person in people:
-            if person not in existing_people:
-                self.target_people.add(person)
-
-        existing_groups = self.target_groups.all()
-        for group in groups:
-            if group not in existing_groups:
-                self.target_groups.add(group)
 
     def publish(self, review_request=None, user=None,
                 send_notification=True):
@@ -1335,71 +1309,12 @@ class ReviewRequestDraft(models.Model):
 
         return self.changedesc
 
-    def update_from_changenum(self, changenum):
+    def _get_review_request(self):
+        """Returns the associated review request.
+
+        This is an interface needed by ReviewRequestDetails.
         """
-        Updates this draft from the specified changeset's contents on
-        the server.
-        """
-        update_obj_with_changenum(self, self.review_request.repository,
-                                  changenum)
-
-    def get_screenshots(self):
-        """Returns the list of all screenshots on a review request.
-
-        This includes all current screenshots, but not previous ones.
-
-        By accessing screenshots through this method, future review request
-        lookups from the screenshots will be avoided.
-        """
-        review_request = self.review_request
-
-        for screenshot in self.screenshots.all():
-            screenshot._review_request = review_request
-            yield screenshot
-
-    def get_inactive_screenshots(self):
-        """Returns the list of all inactive screenshots on a review request.
-
-        This only includes screenshots that were previously visible but
-        have since been removed.
-
-        By accessing screenshots through this method, future review request
-        lookups from the screenshots will be avoided.
-        """
-        review_request = self.review_request
-
-        for screenshot in self.inactive_screenshots.all():
-            screenshot._review_request = review_request
-            yield screenshot
-
-    def get_file_attachments(self):
-        """Returns the list of all file attachments on a review request.
-
-        This includes all current file attachments, but not previous ones.
-
-        By accessing file attachments through this method, future review request
-        lookups from the file attachments will be avoided.
-        """
-        review_request = self.review_request
-
-        for file_attachment in self.file_attachments.all():
-            file_attachment._review_request = review_request
-            yield file_attachment
-
-    def get_inactive_file_attachments(self):
-        """Returns all inactive file attachments on a review request.
-
-        This only includes file attachments that were previously visible
-        but have since been removed.
-
-        By accessing file attachments through this method, future review request
-        lookups from the file attachments will be avoided.
-        """
-        review_request = self.review_request
-
-        for file_attachment in self.inactive_file_attachments.all():
-            file_attachment._review_request = review_request
-            yield file_attachment
+        return self.review_request
 
     class Meta:
         ordering = ['-last_updated']
