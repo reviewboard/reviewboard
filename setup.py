@@ -130,6 +130,7 @@ setup(name=PACKAGE_NAME,
               'redmine = reviewboard.hostingsvcs.redmine:Redmine',
               'sourceforge = reviewboard.hostingsvcs.sourceforge:SourceForge',
               'trac = reviewboard.hostingsvcs.trac:Trac',
+              'versionone = reviewboard.hostingsvcs.versionone:VersionOne',
           ],
           'reviewboard.scmtools': [
               'bzr = reviewboard.scmtools.bzr:BZRTool',
