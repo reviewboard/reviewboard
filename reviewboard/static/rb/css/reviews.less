@@ -257,6 +257,7 @@
       margin: 0;
       padding: 0;
       position: absolute;
+      z-index: 100;
       .border-radius(0 0 @box-border-radius @box-border-radius);
       .box-shadow(@box-shadow);
 
@@ -531,6 +532,7 @@
     position: relative;
     width: 4.5em;
     top: -8px;
+    .border-radius(@box-border-radius 0 @box-border-radius 0);
   }
 }
 
