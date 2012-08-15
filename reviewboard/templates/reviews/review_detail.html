@@ -111,7 +111,7 @@
     <dd>
      <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
-     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+     <div id="comment-{{comment.comment_type}}-{{comment.id}}-issue" class="issue-indicator">
        {% comment_issue review_request_details comment "screenshot_comments" %}
      </div>
 {% endif %}
@@ -141,7 +141,7 @@
     <dd>
      <pre class="comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
-     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+     <div id="comment-{{comment.comment_type}}-{{comment.id}}-issue" class="issue-indicator">
        {% comment_issue review_request_details comment "file_attachment_comments" %}
      </div>
 {% endif %}
@@ -180,7 +180,7 @@
     <dd>
      <pre class="reviewtext comment-text" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|escape}}</pre>
 {% if comment.issue_opened %}
-     <div id="comment-{{comment.id}}-issue" class="issue-indicator">
+     <div id="comment-{{comment.comment_type}}-{{comment.id}}-issue" class="issue-indicator">
        {% comment_issue review_request_details comment "diff_comments" %}
      </div>
 {% endif %}

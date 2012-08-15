@@ -7,7 +7,7 @@
  <pre class="body-top editable">{{review.body_top}}</pre>
 
  <div class="comments">
-{% if review.comments.all or review.screenshot_comments.all %}
+{% if review.comments.all or review.screenshot_comments.all or review.file_attachment_comments.all %}
   <dl class="diff-comments">
 {% for comment in review.screenshot_comments.all %}
    <dt>
@@ -20,8 +20,9 @@
    </dt>
    <dd>
     <pre class="editable comment-editable" id="screenshot-comment-{{comment.id}}">{{comment.text|escape}}</pre>
-    <input type="checkbox" id="comment-issue-{{comment.id}}" {% if comment.issue_opened %}checked="checked"{% endif %}/>
-    <label for="comment-issue-{{comment.id}}">Open an issue</label>
+    <input type="checkbox" id="screenshot-comment-issue-{{comment.id}}" {% if comment.issue_opened %}checked="checked"{% endif %}/>
+    <label for="screenshot-comment-issue-{{comment.id}}">Open an issue</label>
+
 {% comment %}
     <!-- We'll want to do this eventually... Need to make it work in a
          non-instant-apply world. -->
@@ -38,7 +39,43 @@
         comment.ready(function() {});
         var editor = $("#screenshot-comment-{{comment.id}}")
             .reviewFormCommentEditor(comment);
-        $("#edit-screenshot-comment-{{comment.id").click(function() {
+        $("#edit-screenshot-comment-{{comment.id}}").click(function() {
+            editor.inlineEditor("startEdit");
+        });
+    </script>
+   </dd>
+{% endfor %}
+
+{% for comment in review.file_attachment_comments.all %}
+   <dt>
+    <div class="file-attachment">
+      <a href="{{comment.file_attachment.get_absolute_url}}">
+       <img src="{{comment.file_attachment.icon_url}}" />
+       <span class="filename">{{comment.file_attachment.filename}}</span>
+      </a>
+    </div>
+   </dt>
+   <dd>
+    <pre class="editable comment-editable" id="file-comment-{{comment.id}}">{{comment.text|escape}}</pre>
+    <input type="checkbox" id="file-comment-issue-{{comment.id}}" {% if comment.issue_opened %}checked="checked"{% endif %}/>
+    <label for="file-comment-issue-{{comment.id}}">Open an issue</label>
+
+{% comment %}
+    <!-- We'll want to do this eventually... Need to make it work in a
+         non-instant-apply world. -->
+
+    <ul class="controls">
+     <li><a href="#" id="delete-file-comment-{{comment.id}}">{% trans "Delete comment" %}</a></li>
+    </ul>
+{% endcomment %}
+
+    <script type="text/javascript">
+        var comment = gReviewRequest.createReview().createFileAttachmentComment(
+            {{comment.id}}, {{comment.file_attachment.id}});
+        comment.ready(function() {});
+        var editor = $("#file-comment-{{comment.id}}")
+            .reviewFormCommentEditor(comment);
+        $("#edit-file-comment-{{comment.id}}").click(function() {
             editor.inlineEditor("startEdit");
         });
     </script>
@@ -73,8 +110,8 @@
    </dt>
    <dd>
     <pre class="editable comment-editable" id="diff-comment-{{comment.id}}">{{comment.text|escape}}</pre>
-    <input type="checkbox" id="comment-issue-{{comment.id}}" {% if comment.issue_opened %}checked="checked"{% endif %}/>
-    <label for="comment-issue-{{comment.id}}">Open an issue</label>
+    <input type="checkbox" id="diff-comment-issue-{{comment.id}}" {% if comment.issue_opened %}checked="checked"{% endif %}/>
+    <label for="diff-comment-issue-{{comment.id}}">Open an issue</label>
 
 {% comment %}
     <!-- We'll want to do this eventually... Need to make it work in a
