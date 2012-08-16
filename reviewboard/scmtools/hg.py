@@ -1,4 +1,5 @@
 import logging
+import re
 
 try:
     from urllib2 import quote as urllib_quote
@@ -98,21 +99,23 @@ class HgDiffParser(DiffParser):
             linenum += 1;
 
         elif self.lines[linenum].startswith("diff --git") and \
-            self.origChangesetId and diffLine[2].startswith("a/") and \
-            diffLine[3].startswith("b/"):
+            self.origChangesetId:
             # diff is in the following form:
             #  "diff --git a/origfilename b/newfilename"
             # possibly followed by:
             #  "{copy|rename} from origfilename"
             #  "{copy|rename} from newfilename"
             self.isGitDiff = True
-            info['origInfo'] = info['origChangesetId' ] = self.origChangesetId
+            info['origInfo'] = info['origChangesetId'] = self.origChangesetId
             if not self.newChangesetId:
                 info['newInfo'] = "Uncommitted"
             else:
                 info['newInfo'] = self.newChangesetId
-            info['origFile'] = diffLine[2][2:]
-            info['newFile'] = diffLine[3][2:]
+            lineMatch = re.search(
+                    r' a/(.*?) b/(.*?)( (copy|rename) from .*)?$',
+                    self.lines[linenum])
+            info['origFile'] = lineMatch.group(1)
+            info['newFile'] = lineMatch.group(2)
             linenum += 1
 
         return linenum
