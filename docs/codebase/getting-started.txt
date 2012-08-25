@@ -19,23 +19,50 @@ feel comfortable.
 Installation
 ============
 
+Virtualenv
+----------
+
+We recommend using virtualenv_ for your development. virtualenv is a tool
+that sandboxes a Python project, allowing you to easily install packages
+without impacting your system packages. It's especially handy when you want to
+test different configurations with different versions of packages or Python.
+
+First, install virtualenv::
+
+    $ sudo easy_install virtualenv
+
+You can then create your first Review Board environment. Choose a spot for it.
+In this guide, we'll assume this is in :file:`~/envs`. Then type::
+
+    $ virtualenv ~/envs/reviewboard
+
+You can name the environment anything you want. One scheme is to have a name
+per-release. So, instead of ``reviewboard`` above, maybe ``rb-master`` or
+``rb-release-1.6.x``. This is up to you.
+
+From then on, before doing any Review Board development, you'll want to switch
+to this environment::
+
+    $ source ~/envs/reviewboard
+
+Note that once you're in your environment, you don't need to install packages
+as root. So, no need for :command:`sudo`.
+
+.. _virtualenv: http://pypi.python.org/pypi/virtualenv
+
+
 Dependencies
 ------------
 
-Before we begin, it's best to walk through the installation instructions
-in the `Administration Guide`_. You'll want to install, at a minimum,
-the following packages:
+Before we begin setting up Review Board, it's best to walk through the
+installation instructions in the `Administration Guide`_. You'll want to
+install, at a minimum, the following packages:
 
-* Django (from Subversion)
-* django-evolution_
 * Git
 * nose
-* paramiko
 * patch
 * Python Setuptools
-* recaptcha-client
 * Sphinx
-* SQLite
 
 Also install any dependencies for search (if needed) and for repository types
 that you may want to use.
@@ -57,7 +84,6 @@ going to use the built-in local memory cache. This is a temporary cache that
 will persist only as long as the development web server is running.
 
 .. _`Administration Guide`: http://www.reviewboard.org/docs/manual/dev/admin/
-.. _django-evolution: http://code.google.com/p/django-evolution
 
 
 Djblets
@@ -120,8 +146,8 @@ RBTools
 -------
 
 You will need the latest version of RBTools both for development and
-(as of September 1, 2009) for a version of :command:`post-review` compatible
-with http://reviews.reviewboard.org/.
+for a version of :command:`post-review` compatible with
+http://reviews.reviewboard.org/.
 
 Like Djblets and Review Board, you can find RBTools on GitHub_, and you can
 `browse the RBTools repository <http://github.com/reviewboard/rbtools>`_.
@@ -141,7 +167,7 @@ set that up using this command::
 
 If you want to install RBTools onto your system, use::
 
-    $ sudo python setup.py install
+    $ python setup.py install
 
 This should install a system package of RBTools, ready to use. If you make
 any changes that you want to test later on, you will need to re-run this
@@ -201,9 +227,9 @@ development on here.
 
 If instead you want to base this on a different branch, put that branch's
 name in place of ``master`` above. For example, to base something on
-the upstream ``release-1.0.x`` branch, you might type::
+the upstream ``release-1.6.x`` branch, you might type::
 
-    $ git checkout -b new-branch release-1.0.x
+    $ git checkout -b new-branch release-1.6.x
 
 
 Switching Branches
@@ -360,7 +386,7 @@ existing commit messages on your branch as a starting point for your
 review request's summary and description (which is really useful when
 your change is only one commit), type::
 
-    $ post-review --guess-summary --guess-description
+    $ post-review -g
 
 This will take the first line of the first commit and use that as the
 summary. The rest of the text of all your combined commits on that branch
