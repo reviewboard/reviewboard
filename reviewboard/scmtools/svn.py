@@ -52,7 +52,6 @@ class SVNTool(SCMTool):
     REVISION_KEYWORDS = ['Revision', 'LastChangedRevision', 'Rev']
     URL_KEYWORDS      = ['HeadURL', 'URL']
     ID_KEYWORDS       = ['Id']
-    HEADER_KEYWORDS   = ['Header']
 
     # Mapping of keywords to known aliases
     keywords = {
@@ -62,7 +61,6 @@ class SVNTool(SCMTool):
         'Revision':            REVISION_KEYWORDS,
         'HeadURL':             URL_KEYWORDS,
         'Id':                  ID_KEYWORDS,
-        'Header':              HEADER_KEYWORDS,
 
         # Aliases
         'LastChangedBy':       AUTHOR_KEYWORDS,
