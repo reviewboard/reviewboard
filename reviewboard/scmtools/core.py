@@ -104,6 +104,13 @@ class SCMTool(object):
     def normalize_path_for_display(self, filename):
         return filename
 
+    def normalize_patch(self, patch, filename, revision):
+        """Adjust patch to apply in a given SCM.
+
+        Some SCMs need adjustments in the patch, such as contraction of
+        keywords for Subversion."""
+        return patch
+
     @classmethod
     def popen(cls, command, local_site_name=None):
         """Launches an application, capturing output.
