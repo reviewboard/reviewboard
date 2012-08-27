@@ -23,10 +23,9 @@ class FedoraHosted(HostingService):
         'Git': {
             'path': 'git://git.fedorahosted.org/git/'
                     '%(fedorahosted_repo_name)s.git',
-            'raw_file_url': 'http://git.fedorahosted.org/git/?p='
-                            '%(fedorahosted_repo_name)s.git;'
-                            'a=blob_plain;'
-                            'f=<filename>;h=<revision>'
+            'raw_file_url': 'http://git.fedorahosted.org/cgit/'
+                            '%(fedorahosted_repo_name)s.git/tree/'
+                            '<filename>?id2=<revision>'
         },
         'Mercurial': {
             'path': 'http://hg.fedorahosted.org/hg/'
