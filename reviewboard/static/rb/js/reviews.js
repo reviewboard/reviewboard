@@ -1060,8 +1060,6 @@ $.fn.floatReplyDraftBanner = function() {
 
         function updateSize() {
             if (floatSpacer != null) {
-                floatSpacer.height(self.height() +
-                                   self.getExtents("bpm", "tb"));
                 self.width(floatSpacer.parent().width() -
                            self.getExtents("bpm", "lr"));
             }
@@ -1099,17 +1097,21 @@ $.fn.floatReplyDraftBanner = function() {
                 containerTop < windowTop &&
                 windowTop < (containerTop + container.outerHeight() -
                              outerHeight)) {
-                self.css({
-                    top: 0,
-                    position: "fixed"
-                });
+                self
+                    .addClass('floating')
+                    .css({
+                        top: 0,
+                        position: "fixed"
+                    });
 
                 updateSize();
             } else {
-                self.css({
-                    top: null,
-                    position: null
-                });
+                self
+                    .removeClass('floating')
+                    .css({
+                        top: null,
+                        position: null
+                    });
             }
         }
     });

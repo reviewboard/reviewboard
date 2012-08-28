@@ -79,7 +79,6 @@
 {% definevar "boxclass" %}review {{entry.class}}{% enddefinevar %}
 {% box boxclass %}
 <div class="main">
- <div class="banners"></div>
  <div class="header">
   {% template_hook_point "review-summary-header-pre" %}
   {% if entry.review.ship_it %}<div class="shipit">{% trans "Ship it!" %}</div>{% endif %}
@@ -88,6 +87,7 @@
   <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}Posted <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
   {% template_hook_point "review-summary-header-post" %}
  </div>
+ <div class="banners"></div>
  <div class="body">
    <pre class="body_top reviewtext">{{entry.review.body_top|escape}}</pre>
    {% reply_section entry "" "body_top" "rcbt" %}
