@@ -1088,7 +1088,7 @@ class MercurialTests(SCMTestCase):
                        '--- a/path/to file/readme.txt\n' + \
                        '+++ b/new/path to/readme.txt\n'
 
-        file = self._firstFileInDiff(diffContents)
+        file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
         self.assertEqual(file.origFile, "path/to file/readme.txt")
         self.assertEqual(file.newInfo, "4960455a8e88")
