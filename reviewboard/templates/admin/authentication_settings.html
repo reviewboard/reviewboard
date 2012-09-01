@@ -1,9 +1,8 @@
 {% extends "admin/settings.html" %}
 {% load djblets_utils i18n %}
 
-{% block extrahead %}
+{% block scripts-post %}
 {{block.super}}
-{% include "js/jquery.html" %}
 <script type="text/javascript">
   function updateAuthFormDisplay() {
       var selection = $("#id_auth_backend").get(0);

@@ -139,10 +139,14 @@
     </noscript>
     <div id="error"></div>
     {% template_hook_point "base-after-navbar" %}
-    <div id="content">
+	<div id="container">
+     {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
-{% block content %}{% endblock %}
+{% block main_content %}
+{%  block content %}{% endblock %}
+{% endblock %}
 {% template_hook_point "base-after-content" %}
+     </div>
     </div>
    </div>
   </div>

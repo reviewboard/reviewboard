@@ -1,6 +1,6 @@
 @import "defs.less";
 
-@widget-border-color: #CCC;
+@widget-border-color: @box-border-color;
 @admin-light-border-color: #f5f5f5;
 @admin-small-font-size: 11px;
 @admin-large-font-size: 14px;
@@ -23,13 +23,12 @@
   @admin-sep-color: @admin-light-border-color;
   @admin-sep-size: 2px;
   @admin-sep-distance: @widget-margin;
-  @admin-actions-width: 200px;
+  @admin-actions-width: 220px;
 
-  border-right: @admin-sep-size solid @admin-sep-color;
   float: left;
   margin: 0 @admin-sep-distance 0
-          -(@admin-actions-width + 4 * @admin-sep-distance);
-  padding: 0 (2 * @admin-sep-distance) 0 0;
+          -(@admin-actions-width + 2 * @admin-sep-distance);
+  padding: 0 (1 * @admin-sep-distance) 0 0;
   width: @admin-actions-width;
 
   .widget-content ul {
@@ -77,6 +76,8 @@
 .admin-widget {
   border: 1px solid @widget-border-color;
   margin: 0 0 (2 * @widget-margin);
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
 
   &.widget-large {
     width: @widget-large-size;
@@ -90,6 +91,8 @@
 
   &.widget-hidden {
     .widget-heading {
+      .border-radius(@box-inner-border-radius);
+
       .btn-state {
         background: url("../images/admin/wid-max.png") 0px 3px no-repeat;
       }
@@ -107,9 +110,11 @@
     color: black;
     cursor: pointer;
     font-size: 11px;
+    font-weight: 400;
     margin: 0;
-    padding: 5px;
+    padding: 5px 10px 5px 5px;
     text-transform: uppercase;
+    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
 
     h1 {
       margin: 0;
@@ -146,6 +151,10 @@
         list-style-type: none;
         padding: @widget-padding 0;
 
+        &:last-child {
+          border-bottom: 0;
+        }
+
         a {
           display: block;
         }
@@ -158,6 +167,10 @@
 
     tr {
       border-bottom: 1px solid @table-border-color;
+
+      &:last-child {
+        border-bottom: 0;
+      }
 
       th {
         color: @table-header-color;
@@ -197,6 +210,7 @@
     padding: 0;
     text-align: left;
     white-space: nowrap;
+    .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
 
     a {
       border-right: 1px solid @widget-action-border-color;
@@ -278,12 +292,11 @@
 }
 
 /* Request Statuses widget */
-#request-statuses-widget {
+#review-request-statuses-widget {
   #requests-percentages {
     margin-top: @widget-padding;
 
     .request-percentage-label {
-      color: white;
       font-size: 10px;
       padding: 2px;
       text-align: center;
@@ -340,8 +353,7 @@
   }
 
   .addlink {
-    background-image: url("../images/db-add.png");
-    background-position: 27px 0;
+    background: url("../images/db-add.png") 27px 0 no-repeat;
     display: block;
     padding: 0 21px 5px 0;
     width: 23px;

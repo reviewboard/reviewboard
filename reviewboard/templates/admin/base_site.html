@@ -1,46 +1,69 @@
-{% extends "admin/base.html" %}
+{% extends "base.html" %}
+{% load admin_static %}
 {% load compressed %}
 {% load i18n %}
 {% load rbadmintags %}
 {% load staticfiles %}
 
-{% block title %}{{title}} | {% trans "Review Board administration" %}{% endblock %}
+{% block title %}{{title}} | {% trans "Administration" %}{% endblock %}
 
-{% block extrastyle %}
-{% compressed_css "common" %}
-{% compressed_css "admin" %}
-<link rel="icon" type="image/png" href="{% static "rb/images/favicon.png" %}" />
-{% include "js/pipeline.html" %}
+{% block scripts %}
+<script type="text/javascript">window.__admin_media_prefix__ = "{% filter escapejs %}{% static "admin/" %}{% endfilter %}";</script>
 {% endblock %}
 
-{% block branding %}
-{%  include "base/branding.html" with section_title=_("Administration") %}
+{% block extrahead %}
+{% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
 {% endblock %}
 
-{% block breadcrumbs %}{% endblock %}
+{% block css %}
+{%  compressed_css "admin" %}
+{%  block extrastyle %}{% endblock %}
+<!--[if lte IE 7]><link rel="stylesheet" type="text/css" href="{% block stylesheet_ie %}{% static "admin/css/ie.css" %}{% endblock %}" /><![endif]-->
+{%  if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}" />{% endif %}
+{% endblock %}
 
-{% block pretitle %}
-{%  if user.is_authenticated %}
+{% block bodytag %}
+<body class="admin {% if is_popup %}popup {% endif %}{% block bodyclass %}{% endblock %}">
+{% endblock %}
+
+{% block contenttag %}
+<div id="content" class="{% block coltype %}colM{% endblock %}">
+{% endblock %}
+
+{% block main_content %}
+{%  block messages %}
+{%   if messages %}
+ <ul class="messagelist">
+{%    for message in messages %}
+  <li{% if message.tags %} class="{{message.tags}}"{% endif %}{{message}}</li>
+{%    endfor %}
+{%   endif %}
+{%  endblock %}
+
+{%  block pretitle %}
+{%   if user.is_authenticated %}
 <div id="admin-actions" class="clear">
  {% admin_actions %}
 </div>
-{%  endif %}
+{%   endif %}
+{%  endblock %}
+{%  block content_title %}
+{%   if title %}<h1 class="title">{{title}}</h1>{% endif %}
+{%  endblock %}
+{%  block content %}
+{%   block object-tools %}{% endblock %}
+{{content}}
+{%  endblock %}
+{%  block sidebar %}{% endblock %}
 {% endblock %}
 
-{% block nav-global %}
+{% block navbar %}
 {%  if user.is_authenticated %}
-<div id="navbar-outer">
- <div id="navbar">
-  <ul>
-   <li><a href="{% url reviewboard.admin.views.dashboard %}" class="nav-first">{% trans "Dashboard" %}</a></li>
-   <li><a href="{% url reviewboard.admin.views.dashboard %}db/">{% trans "Database" %}</a></li>
-   <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
-  </ul>
-  <div id="back-to-rb">
-   <a href="{% url root %}">{% trans "Back to Review Board" %}</a>
-  </div>
- </div>
-</div>
+<ul id="navbar">
+ <li><a href="{% url reviewboard.admin.views.dashboard %}" class="nav-first">{% trans "Admin Dashboard" %}</a></li>
+ <li><a href="{% url reviewboard.admin.views.dashboard %}db/">{% trans "Database" %}</a></li>
+ <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
+</ul>
 {%   block subnavbar %}{% endblock %}
 {%  endif %}
 {% endblock %}

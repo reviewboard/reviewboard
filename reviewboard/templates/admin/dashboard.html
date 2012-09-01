@@ -10,9 +10,8 @@
 {% block bodyclass %}dashboard{% endblock %}
 {% block breadcrumbs %}{% endblock %}
 
-{% block extrahead %}
+{% block scripts-post %}
 <!--[if IE]><script src="{% static "rb/js/flot/excanvas.min.js" %}"></script><![endif]-->
-{% include "js/jquery.html" %}
 {% compressed_js "admin" %}
 {% endblock %}
 

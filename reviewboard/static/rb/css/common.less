@@ -167,9 +167,9 @@ ul.errorlist {
   cursor: pointer;
 }
 
-.box h1.title,
+h1.title,
 .modalbox-title {
-  background: #a2bedc url('../images/title_box_top_bg.png') repeat-x top left;
+  background: @box-title-bg;
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 5px 10px 5px 5px;
@@ -465,6 +465,7 @@ form table td {
 
       ul {
         display: block;
+        z-index: 100;
       }
     }
 
@@ -597,6 +598,14 @@ form table td {
 
   .newreviewrequest {
     text-align: right;
+  }
+}
+
+body.admin #navbar {
+  background: url("../images/admin/yellow_bg_small.png") repeat-x #F9F2C9;
+
+  a {
+    color: black;
   }
 }
 
