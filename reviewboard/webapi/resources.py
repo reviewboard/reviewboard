@@ -1626,7 +1626,7 @@ class DiffResource(WebAPIResource):
         except FileNotFoundError, e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
-                'revision': e.revision
+                'revision': unicode(e.revision)
             }
         except EmptyDiffError, e:
             return DIFF_EMPTY

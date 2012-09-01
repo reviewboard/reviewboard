@@ -378,7 +378,10 @@ def get_original_file(filediff):
 
 
 def get_patched_file(buffer, filediff):
-    return patch(filediff.diff, buffer, filediff.dest_file)
+    tool = filediff.diffset.repository.get_scmtool()
+    diff = tool.normalize_patch(filediff.diff, filediff.source_file,
+                                filediff.source_revision)
+    return patch(diff, buffer, filediff.dest_file)
 
 
 def register_interesting_lines_for_filename(differ, filename):

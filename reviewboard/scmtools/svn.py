@@ -105,7 +105,7 @@ class SVNTool(SCMTool):
                                             # uses 'revision 0'
             """, re.VERBOSE)
 
-    def get_file(self, path, revision=HEAD):
+    def _do_on_path(self, cb, path, revision=HEAD):
         if not path:
             raise FileNotFoundError(path, revision)
 
@@ -124,20 +124,9 @@ class SVNTool(SCMTool):
                                                 urllib.quote(path),
                                                 '',''))
 
-            normrev  = self.__normalize_revision(revision)
+            normrev = self.__normalize_revision(revision)
+            return cb(normpath, normrev)
 
-            data = self.client.cat(normpath, normrev)
-
-            # Find out if this file has any keyword expansion set.
-            # If it does, collapse these keywords. This is because SVN
-            # will return the file expanded to us, which would break patching.
-            keywords = self.client.propget("svn:keywords", normpath, normrev,
-                                           recurse=True)
-
-            if normpath in keywords:
-                data = self.collapse_keywords(data, keywords[normpath])
-
-            return data
         except ClientError, e:
             stre = str(e)
             if 'File not found' in stre or 'path not found' in stre:
@@ -152,6 +141,46 @@ class SVNTool(SCMTool):
                 raise AuthenticationError(msg='Login to the SCM server failed.')
             else:
                 raise SCMError(e)
+
+    def get_file(self, path, revision=HEAD):
+        def get_file_data(normpath, normrev):
+            data = self.client.cat(normpath, normrev)
+
+            # Find out if this file has any keyword expansion set.
+            # If it does, collapse these keywords. This is because SVN
+            # will return the file expanded to us, which would break patching.
+            keywords = self.client.propget("svn:keywords", normpath, normrev,
+                                           recurse=True)
+            if normpath in keywords:
+                data = self.collapse_keywords(data, keywords[normpath])
+
+            return data
+
+        return self._do_on_path(get_file_data, path, revision)
+
+    def get_keywords(self, path, revision=HEAD):
+        def get_file_keywords(normpath, normrev):
+            keywords = self.client.propget("svn:keywords", normpath, normrev,
+                                           recurse=True)
+            return keywords.get(normpath)
+
+        return self._do_on_path(get_file_keywords, path, revision)
+
+    def normalize_patch(self, patch, filename, revision=HEAD):
+        """
+	If using Subversion, we need not only contract keywords in file, but
+        also in the patch. Otherwise, if a file with expanded keyword somehow
+	ends up in the repository (e.g. by first checking in a file without
+	svn:keywords and then setting svn:keywords in the repository), RB
+	won't be able to apply a patch to such file.
+	"""
+        if revision != PRE_CREATION:
+            keywords = self.get_keywords(filename, revision)
+
+	    if keywords:
+                return self.collapse_keywords(patch, keywords)
+
+        return patch
 
     def collapse_keywords(self, data, keyword_str):
         """
@@ -179,7 +208,7 @@ class SVNTool(SCMTool):
                     for name in keyword_str.split(" ")
                     for keyword in self.keywords.get(name, [])]
 
-        return re.sub(r"\$(%s):(:?)([^\$\n\r]+)\$" % '|'.join(keywords),
+        return re.sub(r"\$(%s):(:?)([^\$\n\r]*)\$" % '|'.join(keywords),
                       repl, data)
 
 

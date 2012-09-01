@@ -1078,6 +1078,22 @@ class MercurialTests(SCMTestCase):
         self.assertEqual(file.newInfo, "4960455a8e88")
         self.assertEqual(file.newFile, "readme")
 
+    def test_git_diff_parsing(self):
+        """Testing HgDiffParser git diff support"""
+
+        diffContents = '# Node ID 4960455a8e88\n' + \
+                       '# Parent bf544ea505f8\n' + \
+                       'diff --git a/path/to file/readme.txt ' + \
+                       'b/new/path to/readme.txt\n' + \
+                       '--- a/path/to file/readme.txt\n' + \
+                       '+++ b/new/path to/readme.txt\n'
+
+        file = self._firstFileInDiff(diffContents)
+        self.assertEqual(file.origInfo, "bf544ea505f8")
+        self.assertEqual(file.origFile, "path/to file/readme.txt")
+        self.assertEqual(file.newInfo, "4960455a8e88")
+        self.assertEqual(file.newFile, "new/path to/readme.txt")
+
     def test_revision_parsing(self):
         """Testing HgDiffParser revision number parsing"""
 
