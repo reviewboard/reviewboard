@@ -475,7 +475,7 @@ function setDraftField(field, value) {
                     .delay(6000)
                     .fadeOut(400, function() {
                         $(this).hide();
-                });
+                    });
 
                 /* Wrap each term in quotes or a leading 'and'. */
                 $.each(rsp.fields[field], function(key, value) {
@@ -504,7 +504,10 @@ function setDraftField(field, value) {
                     }
                 }
 
-                $("#review-request-warning").html(message).show();
+                $("#review-request-warning")
+                    .show()
+                    .find("td")
+                        .html(message);
             }
 
             var func = gEditorCompleteHandlers[field];

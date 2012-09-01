@@ -49,8 +49,7 @@
   }
 
   .content {
-    margin: 5px;
-    padding: 0;
+    padding: @box-padding;
 
     &.sliding {
       margin-top: -5px;
@@ -62,7 +61,6 @@
 
     label {
       display: block;
-      margin-top: 20px;
       min-height: 15px;
 
       img {
@@ -85,12 +83,13 @@
 
   .main {
     clear: both;
+    padding: 0;
   }
 
   #required-field-legend {
     color: darkRed;
     font-weight: bold;
-    padding: 12px 0;
+    padding: @box-padding;
   }
 
   .controls {
@@ -119,7 +118,7 @@
   }
 
   .header {
-    margin: 5px;
+    padding: @box-padding;
   }
 
   .star {
@@ -131,8 +130,7 @@
     border-bottom: 1px #c2c1b0 solid;
     border-spacing: 8px;
     border-top: 1px #c2c1b0 solid;
-    margin-top: 5px;
-    padding: 5px 0;
+    padding: @box-padding;
     width: 100%;
 
     .caption {
@@ -155,12 +153,15 @@
     }
 
     #review-request-warning {
-      background-color: #F5A9A9;
-      border: 1px solid #FF0000;
       display: none;
-      font-weight: bold;
-      padding: 5px;
-      text-align: center;
+
+      td {
+        background-color: #F5A9A9;
+        border: 1px solid #FF0000;
+        font-weight: bold;
+        padding: 5px;
+        text-align: center;
+      }
     }
   }
 
@@ -311,7 +312,7 @@
 
   .required-flag {
     color: darkRed;
-    font-size: 14px;
+    font-size: 10px;
     font-weight: bold;
     padding: 0 2px;
   }
