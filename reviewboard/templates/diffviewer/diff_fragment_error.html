@@ -7,7 +7,7 @@
   <tr>
 {% if comment %}
    <th colspan="2" class="filename">
-    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
+    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
     <span class="diffrevision">
 {% if comment.interfilediff %}
      (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})

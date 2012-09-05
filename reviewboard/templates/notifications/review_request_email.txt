@@ -39,7 +39,7 @@ This addresses bug{{ review_request.get_bug_list|length|pluralize }} {{ review_r
 Diffs{% if changes and changes.diff %} (updated){% endif %}
 -----
 {% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
-  {{ filediff.source_file }} {{ filediff.source_revision }} {% endfor %}
+  {{ filediff.source_file_display }} {{ filediff.source_revision }} {% endfor %}
 
 Diff: {{domain_method}}://{{domain}}{% url view_diff review_request.display_id %}
 

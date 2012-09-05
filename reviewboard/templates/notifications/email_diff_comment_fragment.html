@@ -6,7 +6,7 @@
  <thead>
   <tr>
    <th colspan="4" bgcolor="#F0F0F0" style="border-bottom: 1px solid #C0C0C0; font-size: 9pt; padding: 4px 8px; text-align: left;">
-    <a href="{{domain_method}}://{{domain}}{{comment.get_absolute_url}}" style="color: black; font-weight: bold; text-decoration: underline;">{{comment.filediff.dest_file}}</a>
+    <a href="{{domain_method}}://{{domain}}{{comment.get_absolute_url}}" style="color: black; font-weight: bold; text-decoration: underline;">{{comment.filediff.dest_file_display}}</a>
     <span style="font-weight: normal;">
 {% if comment.interfilediff %}
      (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
