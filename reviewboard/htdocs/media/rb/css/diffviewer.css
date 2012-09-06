@@ -111,7 +111,7 @@ table.sidebyside tbody.whitespace-file td {
 }
 
 table.sidebyside tbody.diff-header a {
-  text-decoration: underline;
+  text-decoration: none;
   color: black;
 }
 
@@ -123,6 +123,38 @@ table.sidebyside tbody.diff-header td {
 
 table.sidebyside tbody.diff-header th {
   background: #e4d9cb;
+}
+
+table.sidebyside tbody.diff-header img {
+  vertical-align: middle;
+  padding: 1px;
+}
+
+table.sidebyside tbody.diff-header code {
+  margin: 0 2px;
+}
+
+table.sidebyside tbody div {
+  position: relative;
+}
+
+table.sidebyside tbody td .diff-collapse-btn {
+  background: #E4D9CB;
+  border: 1px black solid;
+  padding: 0.5em;
+  cursor: pointer;
+  position: absolute;
+  right: -8px;
+  z-index: 100;
+  opacity: 0.8;
+}
+
+table.sidebyside tbody tr.selected td .diff-collapse-btn {
+  background: #E4D9CB;
+}
+
+table.sidebyside tbody td .diff-collapse-btn:hover {
+  opacity: 1.0;
 }
 
 table.sidebyside tbody.delete td {

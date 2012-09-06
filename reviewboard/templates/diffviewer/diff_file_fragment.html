@@ -53,7 +53,7 @@
 {%    endif %}
 {%    for chunk in file.chunks %}
 {%     if not chunk.collapsable or not collapseall %}
- <tbody id="chunk{{file.index}}.{{chunk.index}}"{% ifnotequal chunk.change "equal" %} class="{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif%}"{% else %}{% if chunk.collapsable %} class="collapsable"{% endif %}{% endifnotequal %}>
+ <tbody id="chunk{{file.index}}.{{chunk.index}}"{% attr "class" %}{% ifnotequal chunk.change "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif %}{% else %}{% if chunk.collapsable %} collapsable{% endif %}{% endifnotequal %}{% if standalone %} loaded{% endif %}{% endattr %}>
 {%      for line in chunk.lines %}
   <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %} {% attr "class" %}{% if forloop.first %}first {% endif %}{% if forloop.last %}last {% endif %} {% if line.7 %}whitespace-line{% endif %}{% endattr %}{% endifnotequal %}>
 {%       if forloop.first %}
@@ -69,7 +69,18 @@
    <td>{% ifequal chunk.change 'insert' %}{% if line.8 %}
     <a href="#" class="moved-from" line="{{line.8}}" target="{{line.4}}">{% trans "Moved from" %} {{line.8}}</a>
     {% endif %}{% endifequal %}
+{% if standalone and forloop.first %}
+{%  ifequal chunk.change 'equal' %}
+    <div>
+     <img src="{{MEDIA_URL}}rb/images/diff-collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Collapse lines" class="diff-collapse-btn" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', 0, this); return false;" />
+{%  endifequal %}
+{% endif %}
     <pre>{{line.2|showextrawhitespace}}</pre>
+{% if standalone and forloop.first %}
+{%  ifequal chunk.change 'equal' %}
+    </div>
+{%  endifequal %}
+{% endif %}
    </td>
    <th>{{line.4}}</th>
    <td>{% ifequal chunk.change 'delete' %}{% if line.8 %}
@@ -82,22 +93,41 @@
 {%      endfor %}
  </tbody>
 {%     else %}
- <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{forloop.counter0}}">
+ <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{chunk.index}}">
   <tr>
-   <th>...</th>
-   <td colspan="3">{{chunk.numlines}} line{{chunk.numlines|pluralize}} hidden [<a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{forloop.counter0}}', this); return false;">{% trans "Expand" %}</a>]
+   <th>
+{% ifnotequal chunk.index 0 %}
+    <a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0|add:20}},{{lines_of_context.1}}', this); return false;">
+     <img src="{{MEDIA_URL}}rb/images/diff-expand-above.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Expand above" />
+    </a>
+{% endifnotequal %}
+   </th>
+   <td colspan="3">
+    <a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', null, this); return false;">
+     <img src="{{MEDIA_URL}}rb/images/diff-expand-all.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Expand all lines" / >
+     {{chunk.numlines}} line{{chunk.numlines|pluralize}}
+    </a>
    </td>
   </tr>
-{% if chunk.meta.headers %}
+{% ifnotequal chunk.index|add:1 file.num_chunks %}
   <tr>
-{%  ifequal chunk.meta.headers.0 chunk.meta.headers.1 %}
-   <td colspan="4"><pre>{{chunk.meta.headers.0}}</pre></td>
-{%  else %}
-   <td colspan="2"><pre>{{chunk.meta.headers.0}}</pre></td>
-   <td colspan="2"><pre>{{chunk.meta.headers.1}}</pre></td>
-{%  endifequal %}
+   <th>
+    <a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{lines_of_context.1|add:20}}', this); return false;">
+     <img src="{{MEDIA_URL}}rb/images/diff-expand-below.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Expand below" />
+    </a>
+   </th>
+{%   if chunk.meta.headers and chunk.meta.headers.0 %}
+{%    ifequal chunk.meta.headers.0.text chunk.meta.headers.1.text %}
+   <td colspan="3"><a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{chunk.meta.headers.0.expand_offset|add:lines_of_context.1}}', this); return false;"><img src="{{MEDIA_URL}}rb/images/diff-expand-below.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Expand to header" /> <code>{{chunk.meta.headers.0.text}}</code></a></td>
+{%    else %}
+   <td><a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{chunk.meta.headers.1.expand_offset|add:lines_of_context.1}}', this); return false;"><img src="{{MEDIA_URL}}rb/images/diff-expand-below.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Expand to header" /> <code>{{chunk.meta.headers.0.text}}</code></a></td>
+   <td colspan="2"><a href="#" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{chunk.meta.headers.1.expand_offset|add:lines_of_context.1}}', this); return false;"><img src="{{MEDIA_URL}}rb/images/diff-expand-below.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="Expand to header" /> <code>{{chunk.meta.headers.1.text}}</code></a></td>
+{%    endifequal %}
+{%   else %}
+   <td colspan="3"></td>
+{%   endif %}
   </tr>
-{% endif %}
+{% endifnotequal %}
  </tbody>
 {%      endif %}
 {%     endfor %}{# chunks #}
