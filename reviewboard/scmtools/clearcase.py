@@ -92,15 +92,18 @@ class ClearCaseTool(SCMTool):
 
         Python 2.4 doesn't have the os.path.relpath function, so this
         approximates it well enough for our needs.
+
+        ntpath.relpath() overflows and throws TypeError for paths containing
+        atleast 520 characters (not that hard to encounter in UCM
+        repository).
         """
-        if not hasattr(cpath, 'relpath'):
+        try:
+            return cpath.relpath(path, start)
+        except (AttributeError, TypeError):
             if start[-1] != os.sep:
                 start += os.sep
 
             return path[len(start):]
-
-        return cpath.relpath(path, start)
-
 
     def normalize_path_for_display(self, filename):
         """Return display friendly path without revision informations.
