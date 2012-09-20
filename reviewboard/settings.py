@@ -112,6 +112,7 @@ TEMPLATE_DIRS = (
 )
 
 STATICFILES_DIRS = (
+    ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
     ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
     ('djblets', os.path.join(os.path.dirname(djblets.__file__), 'media')),
 )
@@ -247,9 +248,9 @@ SESSION_COOKIE_PATH = SITE_ROOT
 PIPELINE_JS = {
     'common': {
         'source_filenames': (
-            'rb/js/jquery.form.js',
-            'rb/js/jquery.timesince.js',
-            'rb/js/ui.autocomplete.js',
+            'lib/js/jquery.form.js',
+            'lib/js/jquery.timesince.js',
+            'lib/js/ui.autocomplete.js',
             'rb/js/common.js',
             'rb/js/datastore.js',
         ),
@@ -265,10 +266,10 @@ PIPELINE_JS = {
     },
     'admin': {
         'source_filenames': (
-            'rb/js/flot/jquery.flot.min.js',
-            'rb/js/flot/jquery.flot.pie.min.js',
-            'rb/js/flot/jquery.flot.selection.min.js',
-            'rb/js/jquery.masonry.js',
+            'lib/js/flot/jquery.flot.min.js',
+            'lib/js/flot/jquery.flot.pie.min.js',
+            'lib/js/flot/jquery.flot.selection.min.js',
+            'lib/js/jquery.masonry.js',
             'rb/js/admin.js',
         ),
         'output_filename': 'rb/js/admin.min.js',
