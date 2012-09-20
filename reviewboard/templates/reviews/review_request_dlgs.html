@@ -60,21 +60,6 @@
 
       return false;
     });
-
-   $(".file-review").click(function() {
-      $("<div/>").formDlg({
-        title: "{% trans "Review File" %}",
-        confirmLabel: "{% trans "Save" %}",
-        dataStoreObject: gReviewRequest.createReview().createFileComment(this.id),
-        upload: false,
-        fields: {% form_dialog_fields comment_file_form %},
-        success: function(rsp) {
-            gReviewBanner.show();
-        }
-      });
-
-      return false;
-    });
   });
 </script>
 {% endif %}

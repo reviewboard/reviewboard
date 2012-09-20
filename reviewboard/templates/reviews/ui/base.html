@@ -1,0 +1,39 @@
+{% extends "reviews/reviewable_base.html" %}
+{% load djblets_deco %}
+{% load i18n %}
+
+{% block jsconsts %}
+{{block.super}}
+{%  include "reviews/review_flags.js" %}
+{% endblock %}
+
+{% block content %}
+{%  box "review-request"%}
+<div class="actions-container">
+ <ul class="actions">
+{%   include "reviews/review_request_actions_secondary.html" %}
+  <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+{%   include "reviews/review_request_actions_primary.html" %}
+  <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
+{%   if has_diffs %}
+  <li class="primary"><a href="{{review_request.get_absolute_url}}diff/#index_header">{% trans "View Diff" %}</a></li>
+{%   endif %}
+ </ul>
+</div>
+{%   include "reviews/review_request_dlgs.html" %}
+
+ <div class="main">
+  <div class="header">
+   <div id="summary_wrapper">
+    <h1 id="summary">{{caption}}</h1>
+   </div>
+  </div>
+  <div class="content">
+{%   block review_ui_box_content %}{% endblock %}
+  </div>
+ </div>
+{%  endbox %}
+
+{%  block review_ui_content %}
+{%  endblock %}
+{% endblock %}

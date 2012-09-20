@@ -42,6 +42,11 @@ urlpatterns = patterns('reviewboard.reviews.views',
     (r'^(?P<review_request_id>[0-9]+)/diff/(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
      'diff_fragment'),
 
+    # File attachments
+    url(r'^(?P<review_request_id>[0-9]+)/file/(?P<file_attachment_id>[0-9]+)/$',
+        'review_file_attachment',
+        name='file_attachment'),
+
     # Screenshots
     url(r'^(?P<review_request_id>[0-9]+)/s/(?P<screenshot_id>[0-9]+)/$',
         'view_screenshot',

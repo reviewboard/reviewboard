@@ -26,6 +26,14 @@ class FileAttachment(models.Model):
         return MimetypeHandler.for_type(self)
 
     @property
+    def review_ui(self):
+        if not hasattr(self, '_review_ui'):
+            from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+            self._review_ui = FileAttachmentReviewUI.for_type(self)
+
+        return self._review_ui
+
+    @property
     def thumbnail(self):
         """Returns the thumbnail for display."""
         return self.mimetype_handler.get_thumbnail()

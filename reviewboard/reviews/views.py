@@ -32,6 +32,7 @@ from reviewboard.accounts.decorators import check_login_required, \
                                             valid_prefs_required
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.forms import UploadFileForm, CommentFileForm
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import get_file_chunks_in_range
 from reviewboard.diffviewer.models import DiffSet
@@ -39,6 +40,7 @@ from reviewboard.diffviewer.views import view_diff, view_diff_fragment, \
                                          exception_traceback_string
 from reviewboard.extensions.hooks import DashboardHook, \
                                          ReviewRequestDetailHook
+from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.datagrids import DashboardDataGrid, \
                                           GroupDataGrid, \
                                           ReviewRequestDataGrid, \
@@ -1317,10 +1319,30 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
 
 @check_login_required
+def review_file_attachment(request,
+                           review_request_id,
+                           file_attachment_id,
+                           local_site_name=None):
+    """Displays a file attachment with a review UI."""
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site_name)
+
+    if not review_request:
+        return response
+
+    file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
+    review_ui = file_attachment.review_ui
+
+    if review_ui:
+        return review_ui.render_to_response(request)
+    else:
+        raise Http404
+
+
+@check_login_required
 def view_screenshot(request,
                     review_request_id,
                     screenshot_id,
-                    template_name='reviews/screenshot_detail.html',
                     local_site_name=None):
     """
     Displays a screenshot, along with any comments that were made on it.
@@ -1331,44 +1353,10 @@ def view_screenshot(request,
     if not review_request:
         return response
 
-    draft = review_request.get_draft(request.user)
-    review_request_details = draft or review_request
+    screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+    review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
 
-    screenshots = list(review_request_details.get_screenshots())
-    screenshot = None
-
-    # We're going to try to find the screenshot being requested from the
-    # already fetched list, instead of having to query again.
-    for s in screenshots:
-        if s.pk == screenshot_id:
-            screenshot = s
-            break
-
-    if not screenshot:
-        # This wasn't a public screenshot. It may be inactive or on a draft.
-        screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
-
-    review = review_request.get_pending_review(request.user)
-
-    if review_request.repository_id:
-        diffset_count = DiffSet.objects.filter(
-            history__pk=review_request.diffset_history_id).count()
-    else:
-        diffset_count = 0
-
-    return render_to_response(
-        template_name,
-        RequestContext(request, _make_review_request_context(review_request, {
-            'draft': draft,
-            'review_request_details': draft or review_request,
-            'review': review,
-            'details': draft or review_request,
-            'screenshot': screenshot,
-            'screenshots': screenshots,
-            'request': request,
-            'comments': screenshot.get_comments(),
-            'has_diffs': (draft and draft.diffset) or diffset_count > 0,
-        })))
+    return review_ui.render_to_response(request)
 
 
 @check_login_required

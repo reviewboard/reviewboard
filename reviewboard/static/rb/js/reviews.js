@@ -1994,6 +1994,12 @@ $.fn.fileAttachment = function() {
                     return false;
                 });
 
+        self.find('.file-review-inline a')
+            .click(function() {
+                showReviewUI();
+                return false;
+            });
+
         self.find("a.delete")
             .click(function() {
                 fileAttachment.ready(function() {
@@ -2021,6 +2027,10 @@ $.fn.fileAttachment = function() {
                     gCommentDlg.open();
                 })
                 .close();
+        }
+
+        function showReviewUI() {
+            /* TODO: Display a lightbox and show the page. */
         }
 
         function processComments() {

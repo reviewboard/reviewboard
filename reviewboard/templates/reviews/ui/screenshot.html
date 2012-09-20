@@ -1,0 +1,27 @@
+{% extends base_template %}
+{% load i18n %}
+{% load reviewtags %}
+
+{% block title %}{% trans "Image" %}{% if image.caption %}: {{image.caption}}{% endif %}{% endblock %}
+
+{% block jsconsts %}
+{{block.super}}
+  var gScreenshotId = '{{screenshot.id}}';
+{% endblock %}
+
+{% block scripts-post %}
+{{block.super}}
+
+<script language="javascript">
+  $(document).ready(function() {
+      $("#screenshot-display").screenshotCommentBox(
+          {% screenshotcommentcounts screenshot %});
+  });
+</script>
+{% endblock %}
+
+{% block review_ui_content %}
+<div id="screenshot-display">
+ <img src="{{screenshot.image.url}}" alt="{{screenshot.caption}}" />
+</div>
+{% endblock %}

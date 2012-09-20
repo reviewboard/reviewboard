@@ -25,6 +25,7 @@
 {% block bodytag %}
 {{block.super}}
 
+{%  block review_banner %}
 <div id="review-banner"{% if not review %} style="display: none;"{% endif %}>
  <div class="banner">
   <h1>{% trans "You have a pending review." %}</h1>
@@ -33,7 +34,7 @@
   <input id="review-banner-discard" type="button" value="{% trans "Discard" %}" />
  </div>
 </div>
+{%  endblock %}
 
-{% include "reviews/comments_dlg.html" %}
-
+{%  include "reviews/comments_dlg.html" %}
 {% endblock %}
