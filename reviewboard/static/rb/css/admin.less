@@ -248,7 +248,7 @@ tr.alt {
   margin: 0;
 }
 
-th {
+thead th {
   background: transparent url("../../djblets/images/datagrid/header_bg.png") repeat-x;
   border-bottom: 1px solid #999999;
   border-left: 0 !important;
@@ -335,18 +335,20 @@ th {
 }
 
 #changelist {
-  tbody {
-    td, th {
-      border: 0;
-
-      &:first-child {
+  table {
+    tbody {
+      td, th {
         border: 0;
+
+        &:first-child {
+          border: 0;
+        }
       }
     }
-  }
 
-  thead th {
-    padding: 4px;
+    thead th {
+      padding: 4px;
+    }
   }
 }
 
@@ -780,6 +782,10 @@ td, th {
       list-style-type: none;
     }
   }
+}
+
+#changelist-filter {
+  z-index: @z-index-filter-overlay;
 }
 
 .module h2,

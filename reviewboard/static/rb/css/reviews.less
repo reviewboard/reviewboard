@@ -263,7 +263,7 @@
       margin: 0;
       padding: 0;
       position: absolute;
-      z-index: 100;
+      z-index: @z-index-menu;
       .border-radius(0 0 @box-border-radius @box-border-radius);
       .box-shadow(@box-shadow);
 
@@ -274,7 +274,7 @@
         margin: 0;
         padding: 0;
 
-        &:last-child a {
+        &:last-child {
           .border-radius(0 0 @box-border-radius @box-border-radius);
         }
 
@@ -877,7 +877,7 @@
     position: absolute;
     margin: 0;
     padding: 0;
-    z-index: 999;
+    z-index: @z-index-event-overlay;
   }
 
   #selection-interactive {
@@ -911,7 +911,7 @@
   background: black;
   text-align: center;
   vertical-align: middle;
-  z-index: 100;
+  z-index: @z-index-page-overlay;
   color: #DDDDDD;
 
   .dropbox {
@@ -1005,7 +1005,7 @@
     padding: 0.5em;
     position: absolute;
     right: -1px;
-    z-index: 2;
+    z-index: @z-index-deco;
   }
 
   .status {
@@ -1157,7 +1157,7 @@
     position: fixed;
     top: 0;
     width: 100%;
-    z-index: 1000;
+    z-index: @z-index-banner;
     .box-shadow(@box-shadow);
   }
 }
@@ -1216,7 +1216,7 @@
   padding: 6px;
   position: absolute;
   white-space: nowrap;
-  z-index: 999;
+  z-index: @z-index-dialog;
   .border-radius(8px);
 }
 
