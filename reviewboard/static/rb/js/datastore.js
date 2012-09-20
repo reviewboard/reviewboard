@@ -1679,6 +1679,8 @@ RB.FileAttachmentComment = function(review, id, file_attachment_id) {
     this.issue_opened = true;
     this.issue_status = "";
     this.url = null;
+    this.extra_data = {};
+
     return this;
 };
 
@@ -1724,12 +1726,12 @@ $.extend(RB.FileAttachmentComment.prototype, {
 
         self.ready(function() {
             self.review.ensureCreated(function() {
-                var type;
-                var url;
-                var data = {
-                    text: self.text,
-                    issue_opened: self.issue_opened
-                };
+                var type,
+                    url,
+                    data = _.extend({
+                        text: self.text,
+                        issue_opened: self.issue_opened
+                    }, self.extra_data);
 
                 if (self.loaded) {
                     type = "PUT";
@@ -1828,6 +1830,7 @@ $.extend(RB.FileAttachmentComment.prototype, {
         this.url = rsp.file_attachment_comment.links.self.href;
         this.issue_opened = rsp.file_attachment_comment.issue_opened;
         this.issue_status = rsp.file_attachment_comment.issue_status;
+        this.extra_data = rsp.file_attachment_comment.extra_data;
         this.loaded = true;
     }
 });

@@ -17,6 +17,7 @@ RB.AbstractReviewable = Backbone.Model.extend({
      * blocks.
      */
     commentBlockModel: null,
+    reviewableIDField: null,
 
     /*
      * Initializes the reviewable.

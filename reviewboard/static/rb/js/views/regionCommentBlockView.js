@@ -1,15 +1,17 @@
 /*
- * Provides a visual region over a screenshot showing comments.
+ * Provides a visual region over an image or other document showing comments.
  *
- * This will show a selection rectangle over part of a screenshot indicating
- * there are comments there. It will also show the number of comments,
- * along with a tooltip showing comment summaries.
+ * This will show a selection rectangle over part of an image or other
+ * content indicating there are comments there. It will also show the
+ * number of comments, along with a tooltip showing comment summaries.
+ *
+ * This is meant to be used with a RegionCommentBlock model.
  */
-RB.ScreenshotCommentBlockView = RB.AbstractCommentBlockView.extend({
+RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
     className: 'selection',
 
     /*
-     * Initializes ScreenshotCommentBlockView.
+     * Initializes RegionCommentBlockView.
      */
     initialize: function() {
         this.on('change:x change:y change:width change:height',

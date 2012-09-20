@@ -1,15 +1,14 @@
 /*
- * Displays a review UI for screenshots.
+ * Displays a review UI for images.
  *
- * This will display all existing comments on a screenshot as selection
+ * This will display all existing comments on an image as selection
  * boxes, and gives users the ability to click and drag across part of the
- * screenshot to leave a comment on that area.
+ * image to leave a comment on that area.
  */
-RB.ScreenshotReviewableView = RB.AbstractReviewableView.extend({
-    className: 'screenshot-review-ui',
+RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
+    className: 'image-review-ui',
 
-    commentBlockView: RB.ScreenshotCommentBlockView,
-    commentsListName: 'screenshot_comments',
+    commentBlockView: RB.RegionCommentBlockView,
 
     events: {
         'mousedown .selection-container': '_onMouseDown',
@@ -148,7 +147,6 @@ RB.ScreenshotReviewableView = RB.AbstractReviewableView.extend({
              */
             if (width > 5 && height > 5) {
                 this.createAndEditCommentBlock({
-                    screenshotID: this.model.get('screenshotID'),
                     x: Math.floor(offset.left),
                     y: Math.floor(offset.top),
                     width: width,

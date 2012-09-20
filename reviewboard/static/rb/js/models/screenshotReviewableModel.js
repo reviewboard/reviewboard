@@ -9,6 +9,7 @@ RB.ScreenshotReviewable = RB.AbstractReviewable.extend({
     }, RB.AbstractReviewable.prototype.defaults),
 
     commentBlockModel: RB.ScreenshotCommentBlock,
+    reviewableIDField: 'screenshotID',
 
     /*
      * Adds comment blocks for the serialized comments passed to the

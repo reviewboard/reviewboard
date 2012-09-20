@@ -53,11 +53,14 @@ RB.AbstractReviewableView = Backbone.View.extend({
      * Creates a new comment in a comment block and opens it for editing.
      */
     createAndEditCommentBlock: function(opts) {
+        var idField = this.model.reviewableIDField;
+
         /* As soon as we add the comment block, show the dialog. */
         this.once('commentBlockViewAdded', function(commentBlockView) {
             this.showCommentDlg(commentBlockView);
         }, this);
 
+        opts[idField] = this.model.get(idField);
         this.model.commentBlocks.add(opts);
     },
 

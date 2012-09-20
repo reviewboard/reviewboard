@@ -2,14 +2,14 @@
 {% load i18n %}
 {% load reviewtags %}
 
-{% block title %}{% trans "Image" %}{% if image.caption %}: {{image.caption}}{% endif %}{% endblock %}
+{% block title %}{% trans "Screenshot" %}{% if screenshot.caption %}: {{screenshot.caption}}{% endif %}{% endblock %}
 
 {% block scripts-post %}
 {{block.super}}
 
 <script language="javascript">
     $(document).ready(function() {
-        var view = new RB.ScreenshotReviewableView({
+        var view = new RB.ImageReviewableView({
             model: new RB.ScreenshotReviewable({
                 caption: '{{screenshot.caption}}',
                 imageURL: '{{screenshot.image.url}}',

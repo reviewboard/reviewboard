@@ -4,7 +4,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
     },
 
     /*
-     * Disposes ScreenshotCommentBlockView.
+     * Disposes the comment block.
      *
      * This will remove the view and the tooltip.
      */

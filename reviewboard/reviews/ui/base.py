@@ -3,11 +3,17 @@ import logging
 from django.http import HttpRequest
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
+from django.utils import simplejson
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 import mimeparse
 
 from reviewboard.attachments.mimetypes import score_match
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import FileAttachmentComment
+
+
+_file_attachment_review_uis = []
 
 
 class ReviewUI(object):
@@ -26,6 +32,8 @@ class ReviewUI(object):
             base_template_name = 'reviews/ui/base_inline.html'
         else:
             base_template_name = 'reviews/ui/base.html'
+
+        self.request = request
 
         draft = self.review_request.get_draft(request.user)
         review_request_details = draft or self.review_request
@@ -61,33 +69,86 @@ class ReviewUI(object):
     def get_extra_context(self, request):
         return {}
 
+    def get_comments_json(self):
+        """Returns a JSON-serialized representation of comments for a template.
+
+        The result of this can be used directly in a template to provide
+        comments to JavaScript functions.
+        """
+        return mark_safe(simplejson.dumps(
+            self.serialize_comments(self.get_comments())))
+
+    def serialize_comments(self, comments):
+        """Serializes the comments for the review UI target.
+
+        By default, this will return a list of serialized comments,
+        but it can be overridden to return other list or dictionary-based
+        representations, such as comments grouped by an identifier or region.
+        These representations must be serializable into JSON.
+        """
+        return [
+            self.serialize_comment(comment)
+            for comment in comments
+        ]
+
+    def serialize_comment(self, comment):
+        """Serializes a comment.
+
+        This will provide information on the comment that may be useful
+        to the JavaScript code.
+
+        Subclasses that want to add additional data should generally
+        augment the result of this function and not replace it.
+        """
+        review = comment.get_review()
+        user = self.request.user
+
+        return {
+            'comment_id': comment.pk,
+            'text': escape(comment.text),
+            'user': {
+                'username': review.user.username,
+                'name': review.user.get_full_name() or review.user.username,
+            },
+            'url': comment.get_review_url(),
+            'localdraft': review.user == user and not review.public,
+            'review_id': review.pk,
+            'review_request_id': review.review_request_id,
+            'issue_opened': comment.issue_opened,
+            'issue_status':
+                comment.issue_status_to_string(comment.issue_status),
+        }
+
 
 class FileAttachmentReviewUI(ReviewUI):
     comment_class = FileAttachmentComment
     object_key = 'file'
     supported_mimetypes = []
 
+    def serialize_comment(self, comment):
+        data = super(FileAttachmentReviewUI, self).serialize_comment(comment)
+        data.update(comment.extra_data)
+        return data
+
     @classmethod
     def get_best_handler(cls, mimetype):
         """Returns the handler and score that that best fit the mimetype."""
-        best_score, best_fit = (0, None)
+        best_score = 0
+        best_fit = None
 
-        for mt in cls.supported_mimetypes:
-            try:
-                score = score_match(mimeparse.parse_mime_type(mt), mimetype)
+        for review_ui in _file_attachment_review_uis:
+            for mt in review_ui.supported_mimetypes:
+                try:
+                    score = score_match(mimeparse.parse_mime_type(mt),
+                                        mimetype)
 
-                if score > best_score:
-                    best_score, best_fit = (score, cls)
-            except ValueError:
-                continue
+                    if score > best_score:
+                        best_score = score
+                        best_fit = review_ui
+                except ValueError:
+                    continue
 
-        for handler in cls.__subclasses__():
-            score, best_handler = handler.get_best_handler(mimetype)
-
-            if score > best_score:
-                best_score, best_fit = (score, best_handler)
-
-        return (best_score, best_fit)
+        return best_score, best_fit
 
     @classmethod
     def for_type(cls, attachment):
@@ -103,3 +164,38 @@ class FileAttachmentReviewUI(ReviewUI):
                               attachment, e, exc_info=1)
 
         return None
+
+
+def register_ui(review_ui):
+    """Registers a review UI class.
+
+    This will register a review UI. Review Board will use it to
+    display a UI when reviewing a supported file attachment.
+
+    Only FileAttachmentReviewUI subclasses are supported.
+    """
+    if not issubclass(review_ui, FileAttachmentReviewUI):
+        raise TypeError('Only FileAttachmentReviewUI subclasses can be '
+                        'registered')
+
+    _file_attachment_review_uis.append(review_ui)
+
+
+def unregister_ui(review_ui):
+    """Unregisters a review UI class.
+
+    This will unregister a previously registered review UI.
+
+    Only FileAttachmentReviewUI subclasses are supported. The class must
+    have been registered beforehand or a ValueError will be thrown.
+    """
+    if not issubclass(review_ui, FileAttachmentReviewUI):
+        raise TypeError('Only FileAttachmentReviewUI subclasses can be '
+                        'unregistered')
+
+    try:
+        _file_attachment_review_uis.remove(review_ui)
+    except ValueError:
+        logging.error('Failed to unregister missing review UI %r' %
+                      review_ui)
+        raise ValueError('This review UI was not previously registered')

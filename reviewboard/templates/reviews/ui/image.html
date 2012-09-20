@@ -1,0 +1,29 @@
+{% extends base_template %}
+{% load i18n %}
+{% load reviewtags %}
+
+{% block title %}{% trans "Image" %}{% if caption %}: {{caption}}{% endif %}{% endblock %}
+
+{% block scripts-post %}
+{{block.super}}
+
+<script language="javascript">
+    $(document).ready(function() {
+        var view = new RB.ImageReviewableView({
+            model: new RB.ImageReviewable({
+                caption: '{{caption}}',
+                imageURL: '{{image.file.url}}',
+                fileAttachmentID: '{{image.id}}',
+                serializedComments: {{review_ui.get_comments_json}}
+            })
+        });
+
+        view.render();
+        $('#image-review-ui-container').append(view.$el);
+    });
+</script>
+{% endblock %}
+
+{% block review_ui_content %}
+<div id="image-review-ui-container"></div>
+{% endblock %}
