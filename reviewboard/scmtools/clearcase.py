@@ -33,12 +33,21 @@ class ClearCaseTool(SCMTool):
     # called "main" in path.
     UNEXTENDED = re.compile(r'^(.+?)/|/?(.+?)/main/?.*?/([0-9]+|CHECKEDOUT)')
 
+    VIEW_SNAPSHOT, VIEW_DYNAMIC, VIEW_UNKNOWN = range(3)
+
     def __init__(self, repository):
         self.repopath = repository.path
 
         SCMTool.__init__(self, repository)
 
-        self.client = ClearCaseClient(self.repopath)
+        self.viewtype = self._get_view_type(self.repopath)
+
+        if self.viewtype == self.VIEW_SNAPSHOT:
+            self.client = ClearCaseSnapshotViewClient(self.repopath)
+        elif self.viewtype == self.VIEW_DYNAMIC:
+            self.client = ClearCaseDynamicViewClient(self.repopath)
+        else:
+            raise SCMError('Unsupported view type.')
 
     def unextend_path(self, extended_path):
         """Remove ClearCase revision and branch informations from path.
@@ -121,13 +130,37 @@ class ClearCaseTool(SCMTool):
             'uuid': self._get_vobs_uuid(vobstag)
         }
 
+    def _get_view_type(self, repopath):
+        cmdline = ["cleartool", "lsview", "-full", "-properties", "-cview"]
+        p = subprocess.Popen(
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=repopath)
+
+        (res, error) = p.communicate()
+        failure = p.poll()
+
+        if failure:
+            raise SCMError(error)
+
+        for line in res.splitlines(True):
+            splitted = line.split(' ')
+            if splitted[0] == 'Properties:':
+                if 'snapshot' in splitted:
+                    return self.VIEW_SNAPSHOT
+                elif 'dynamic' in splitted:
+                    return self.VIEW_DYNAMIC
+
+        return self.VIEW_UNKNOWN
+
     def _get_vobs_tag(self, repopath):
         cmdline = ["cleartool", "describe", "-short", "vob:."]
         p = subprocess.Popen(
-                cmdline,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=self.repopath)
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=self.repopath)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -140,10 +173,10 @@ class ClearCaseTool(SCMTool):
     def _get_vobs_uuid(self, vobstag):
         cmdline = ["cleartool", "lsvob", "-long", vobstag]
         p = subprocess.Popen(
-                cmdline,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=self.repopath)
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=self.repopath)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -157,6 +190,22 @@ class ClearCaseTool(SCMTool):
 
         raise SCMError("Can't find familly uuid for vob: %s" % vobstag)
 
+    def _get_object_kind(self, extended_path):
+        cmdline = ["cleartool", "desc", "-fmt", "%m", extended_path]
+        p = subprocess.Popen(
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=self.repopath)
+
+        (res, error) = p.communicate()
+        failure = p.poll()
+
+        if failure:
+            raise SCMError(error)
+
+        return res.strip()
+
     def get_file(self, extended_path, revision=HEAD):
         """Return content of file or list content of directory"""
         if not extended_path:
@@ -165,12 +214,25 @@ class ClearCaseTool(SCMTool):
         if revision == PRE_CREATION:
             return ''
 
-        if cpath.isdir(extended_path):
-            output = self.client.list_dir(extended_path, revision)
-        elif cpath.exists(extended_path):
-            output = self.client.cat_file(extended_path, revision)
+        if self.viewtype == self.VIEW_SNAPSHOT:
+            # Get the path to (presumably) file element (remove version)
+            # The '@@' at the end of file_path is required.
+            file_path = extended_path.rsplit('@@', 1)[0] + '@@'
+            okind = self._get_object_kind(file_path)
+
+            if okind == 'directory element':
+                raise SCMError('Directory elements are unsupported.')
+            elif okind == 'file element':
+                output = self.client.cat_file(extended_path, revision)
+            else:
+                raise FileNotFoundError(extended_path, revision)
         else:
-            raise FileNotFoundError(extended_path, revision)
+            if cpath.isdir(extended_path):
+                output = self.client.list_dir(extended_path, revision)
+            elif cpath.exists(extended_path):
+                output = self.client.cat_file(extended_path, revision)
+            else:
+                raise FileNotFoundError(extended_path, revision)
 
         return output
 
@@ -248,10 +310,10 @@ class ClearCaseDiffParser(DiffParser):
     def _oid2filename(self, oid):
         cmdline = ["cleartool", "describe", "-fmt", "%En@@%Vn", "oid:%s" % oid]
         p = subprocess.Popen(
-                cmdline,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=self.repopath)
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=self.repopath)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -265,7 +327,7 @@ class ClearCaseDiffParser(DiffParser):
 
         return ClearCaseTool.relpath(res, self.repopath)
 
-class ClearCaseClient(object):
+class ClearCaseDynamicViewClient(object):
     def __init__(self, path):
         self.path = path
 
@@ -280,3 +342,34 @@ class ClearCaseClient(object):
             '%s\n' % s
             for s in sorted(os.listdir(path))
         ])
+
+class ClearCaseSnapshotViewClient(object):
+    def __init__(self, path):
+        self.path = path
+
+    def cat_file(self, extended_path, revision):
+        import tempfile
+        # Use tempfile to generate temporary filename
+        temp = tempfile.NamedTemporaryFile()
+        # Remove the file, so cleartool can write to it
+        temp.close()
+
+        cmdline = ["cleartool", "get", "-to", temp.name, extended_path]
+        p = subprocess.Popen(
+            cmdline,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+
+        (res, error) = p.communicate()
+        failure = p.poll()
+
+        if failure:
+            raise FileNotFoundError(filename, revision)
+
+        try:
+            fp = open(temp.name, 'r')
+            data = fp.read()
+            fp.close()
+            return data
+        except:
+            raise FileNotFoundError(filename, revision)
