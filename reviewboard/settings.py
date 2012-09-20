@@ -246,11 +246,18 @@ SESSION_COOKIE_PATH = SITE_ROOT
 
 # Media compression
 PIPELINE_JS = {
-    'common': {
+    '3rdparty': {
         'source_filenames': (
+            'lib/js/underscore-1.3.3.min.js',
+            'lib/js/backbone-0.9.2.min.js',
             'lib/js/jquery.form.js',
             'lib/js/jquery.timesince.js',
             'lib/js/ui.autocomplete.js',
+        ),
+        'output_filename': 'lib/js/3rdparty.min.js',
+    },
+    'common': {
+        'source_filenames': (
             'rb/js/common.js',
             'rb/js/datastore.js',
         ),

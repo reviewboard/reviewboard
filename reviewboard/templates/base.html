@@ -57,6 +57,7 @@
   <link rel="stylesheet" type="text/css" href="{% static "rb/css/ie_hacks.css" %}"></script>
   <![endif]-->
 {% include "js/jquery.html" %}
+{% compressed_js "3rdparty" %}
 {% block scripts %}{% endblock %}
 {% include "js/pipeline.html" %}
 {% template_hook_point "base-scripts" %}
