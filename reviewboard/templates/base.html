@@ -57,7 +57,6 @@
   <link rel="stylesheet" type="text/css" href="{% static "rb/css/ie_hacks.css" %}"></script>
   <![endif]-->
 {% include "js/jquery.html" %}
-{% compressed_js "3rdparty" %}
 {% block scripts %}{% endblock %}
 {% include "js/pipeline.html" %}
 {% template_hook_point "base-scripts" %}
@@ -153,6 +152,7 @@
    </div>
   </div>
   {% include "js/jquery-ui.html" %}
+  {% compressed_js "3rdparty" %}
   <script type="text/javascript" src="{% static "djblets/js/jquery.gravy.js" %}"></script>
   {% compressed_js "common" %}
 {% block scripts-post %}{% endblock %}
