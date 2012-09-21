@@ -199,6 +199,9 @@ class Site(object):
         rb_djblets_dest = os.path.join(static_dir, "djblets")
 
         self.link_pkg_dir("reviewboard",
+                          "htdocs/static/lib",
+                          os.path.join(static_dir, 'lib'))
+        self.link_pkg_dir("reviewboard",
                           "htdocs/static/rb",
                           os.path.join(static_dir, 'rb'))
         self.link_pkg_dir("reviewboard",
