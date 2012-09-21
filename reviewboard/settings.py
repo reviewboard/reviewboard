@@ -265,6 +265,9 @@ PIPELINE_JS = {
     },
     'reviews': {
         'source_filenames': (
+            'rb/js/models/abstractCommentBlockModel.js',
+            'rb/js/models/screenshotCommentBlockModel.js',
+            'rb/js/views/screenshotCommentBlockView.js',
             'rb/js/diffviewer.js',
             'rb/js/reviews.js',
             'rb/js/screenshots.js',

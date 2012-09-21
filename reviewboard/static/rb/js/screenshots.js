@@ -1,193 +1,4 @@
 /*
- * Creates a comment block to the screenshot comments area.
- *
- * @param {int}    x          The X area of the block.
- * @param {int}    y          The Y area of the block.
- * @param {int}    width      The block's width.
- * @param {int}    height     The block's height.
- * @param {jQuery} container  The container for the comment block.
- * @param {array}  comments   The list of comments in this block.
- *
- * @return {object} The comment block.
- */
-function CommentBlock(x, y, width, height, container, comments) {
-    var self = this;
-
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.hasDraft = false;
-    this.comments = [];
-    this.canDelete = false;
-    this.draftComment = null;
-
-    this.el = $('<div class="selection"/>').appendTo(container);
-    this.tooltip = $.tooltip(this.el, {
-        side: "lrbt"
-    }).addClass("comments");
-    this.flag = $('<div class="selection-flag"/>').appendTo(this.el);
-
-    /*
-     * Find out if there's any draft comments, and filter them out of the
-     * stored list of comments.
-     */
-    if (comments && comments.length > 0) {
-        for (var i in comments) {
-            var comment = comments[i];
-
-            // We load in encoded text, so decode it.
-            comment.text = $("<div/>").html(comment.text).text();
-
-            if (comment.localdraft) {
-                this._createDraftComment(comment.comment_id, comment.text);
-            } else {
-                this.comments.push(comment);
-            }
-        }
-    } else {
-        this._createDraftComment();
-    }
-
-    this.el
-        .move(this.x, this.y, "absolute")
-        .width(this.width)
-        .height(this.height);
-
-    this.updateCount();
-    this.updateTooltip();
-
-    return this;
-}
-
-jQuery.extend(CommentBlock.prototype, {
-    /*
-     * Updates the tooltip contents.
-     */
-    updateTooltip: function() {
-        function addEntry(text) {
-            var item = $("<li>").appendTo(list);
-            item.text(text.truncate());
-            return item;
-        }
-
-        this.tooltip.empty();
-        var list = $("<ul/>").appendTo(this.tooltip);
-
-        if (this.draftComment != null) {
-            addEntry(this.draftComment.text).addClass("draft");
-        }
-
-        $(this.comments).each(function(i) {
-            addEntry(this.text);
-        });
-    },
-
-    /*
-     * Updates the displayed number of comments in the comment block.
-     *
-     * If there's a draft comment, it will be added to the count. Otherwise,
-     * this depends solely on the number of published comments.
-     */
-    updateCount: function() {
-        var count = this.comments.length;
-
-        if (this.draftComment != null) {
-            count++;
-        }
-
-        this.count = count;
-        this.flag.html(count);
-    },
-
-    /*
-     * Notifies the user of some update. This notification appears in the
-     * comment area.
-     *
-     * @param {string} text  The notification text.
-     */
-    notify: function(text, cb) {
-        var offset = this.el.offset();
-
-        var bubble = $("<div/>")
-            .addClass("bubble")
-            .appendTo(this.el)
-            .text(text);
-
-        bubble
-            .css("opacity", 0)
-            .move(Math.round((this.el.width()  - bubble.width())  / 2),
-                  Math.round((this.el.height() - bubble.height()) / 2))
-            .animate({
-                top: "-=10px",
-                opacity: 0.8
-            }, 350, "swing")
-            .delay(1200)
-            .animate({
-                top: "+=10px",
-                opacity: 0
-            }, 350, "swing", function() {
-                bubble.remove();
-
-                if ($.isFunction(cb)) {
-                    cb();
-                }
-            });
-    },
-
-    _createDraftComment: function(id, text) {
-        if (this.draftComment != null) {
-            return;
-        }
-
-        var self = this;
-        var el = this.el;
-        var comment = gReviewRequest.createReview().createScreenshotComment(
-            id, gScreenshotId, this.x, this.y, this.width, this.height);
-
-        if (text) {
-            comment.text = text;
-        }
-
-        $.event.add(comment, "textChanged", function() {
-            self.updateTooltip();
-        });
-
-        $.event.add(comment, "deleted", function() {
-            el.queue(function() {
-                self.notify("Comment Deleted", function() {
-                    el.dequeue();
-                });
-            });
-        });
-
-        $.event.add(comment, "destroyed", function() {
-            /* Discard the comment block if empty. */
-            if (self.comments.length == 0) {
-                el.fadeOut(350, function() { el.remove(); })
-            } else {
-                el.removeClass("draft");
-                self.flag.removeClass("flag-draft");
-                self.updateCount();
-                self.updateTooltip();
-            }
-        });
-
-        $.event.add(comment, "saved", function() {
-            self.updateCount();
-            self.updateTooltip();
-            self.notify("Comment Saved");
-            showReviewBanner();
-        });
-
-        this.draftComment = comment;
-        el.addClass("draft");
-        this.flag.addClass("flag-draft");
-    }
-});
-
-
-/*
  * Creates a box for creating and seeing all comments on a screenshot.
  *
  * @param {object} regions  The regions containing comments.
@@ -343,31 +154,47 @@ jQuery.fn.screenshotCommentBox = function(regions) {
      * @return {CommentBlock} The new comment block.
      */
     function addCommentBlock(x, y, width, height, comments) {
-        var commentBlock = new CommentBlock(x, y, width, height,
-                                            selectionArea, comments)
-        commentBlock.el.click(function() {
-            showCommentDlg(commentBlock);
+        var commentBlock = new RB.ScreenshotCommentBlock({
+                screenshotID: gScreenshotId,
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                serializedComments: comments || []
+            }),
+            commentBlockView = new RB.ScreenshotCommentBlockView({
+                model: commentBlock
+            });
+
+        commentBlockView.on('clicked', function() {
+            showCommentDlg(commentBlockView);
         });
 
-        return commentBlock;
+        selectionArea.append(commentBlockView.$el);
+        commentBlockView.render();
+
+        return commentBlockView;
     }
 
     /*
      * Shows the comment details dialog for a comment block.
      *
-     * @param {CommentBlock} commentBlock  The comment block to show.
+     * @param {CommentBlock} commentBlockView  The comment block view to show.
      */
-    function showCommentDlg(commentBlock) {
+    function showCommentDlg(commentBlockView) {
         gCommentDlg
             .one("close", function() {
-                commentBlock._createDraftComment();
+                var commentBlock = commentBlockView.model;
+
+                commentBlock.ensureDraftComment();
                 activeCommentBlock = commentBlock;
 
                 gCommentDlg
-                    .setDraftComment(commentBlock.draftComment)
-                    .setCommentsList(commentBlock.comments,
+                    .setDraftComment(commentBlock.get('draftComment'))
+                    .setCommentsList(commentBlock.get('serializedComments'),
                                      "screenshot_comments")
-                    .positionToSide(commentBlock.flag, {
+                    // XXX
+                    .positionToSide(commentBlockView._$flag, {
                         side: 'b',
                         fitOnScreen: true
                     });
