@@ -841,7 +841,7 @@
   }
 }
 
-#screenshot-display {
+.screenshot-review-ui {
   border: 1px #777777 solid;
   cursor: crosshair;
   padding: 10px;
@@ -859,6 +859,10 @@
 
     &.draft {
       border: 1px #aceb6f solid;
+
+      .selection-flag {
+        background: #aceb6f;
+      }
     }
   }
 
@@ -871,20 +875,16 @@
     text-align: center;
     top: 0px;
     width: 2em;
-
-    &.flag-draft {
-      background: #aceb6f;
-    }
   }
 
-  #selection-container {
+  .selection-container {
     position: absolute;
     margin: 0;
     padding: 0;
     z-index: @z-index-event-overlay;
   }
 
-  #selection-interactive {
+  .selection-rect {
     border: 1px #ff0000 dashed;
     position: absolute;
   }

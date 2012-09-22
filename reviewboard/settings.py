@@ -258,6 +258,7 @@ PIPELINE_JS = {
     },
     'common': {
         'source_filenames': (
+            'rb/js/utils/backboneUtils.js',
             'rb/js/common.js',
             'rb/js/datastore.js',
         ),
@@ -266,11 +267,15 @@ PIPELINE_JS = {
     'reviews': {
         'source_filenames': (
             'rb/js/models/abstractCommentBlockModel.js',
+            'rb/js/models/abstractReviewableModel.js',
             'rb/js/models/screenshotCommentBlockModel.js',
+            'rb/js/models/screenshotReviewableModel.js',
+            'rb/js/views/abstractCommentBlockView.js',
+            'rb/js/views/abstractReviewableView.js',
             'rb/js/views/screenshotCommentBlockView.js',
+            'rb/js/views/screenshotReviewableView.js',
             'rb/js/diffviewer.js',
             'rb/js/reviews.js',
-            'rb/js/screenshots.js',
         ),
         'output_filename': 'rb/js/reviews.min.js',
     },
