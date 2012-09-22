@@ -194,21 +194,23 @@ $.fn.formDlg = function(options) {
 
 
 /*
- * Toggles whether an object is starred. Right now, we support
- * "reviewrequests" and "groups" types. Loads parameters from
- * data attributes on the element. Attaches via 'live' so it applies
- * to future stars matching the current jQuery selector.
+ * Registers handlers for the toggleable stars.
+ *
+ * These will listen for when a star is clicked, which will toggle
+ * whether an object is starred. Right now, we support "reviewrequests"
+ * and "groups" types. Loads parameters from data attributes on the element.
+ * Attaches at the document level so it applies to future stars.
  *
  * @param {string} object-type  The type used for constructing the path.
  * @param {string} object-id    The object ID to star/unstar.
  * @param {bool}   starred      The default value.
  */
-$.fn.toggleStar = function() {
+function registerToggleStar() {
     // Constants
     var STAR_ON_IMG = STATIC_URLS["rb/images/star_on.png"],
         STAR_OFF_IMG = STATIC_URLS["rb/images/star_off.png"];
 
-    return this.live('click', function() {
+    $(document).on('click', '.star', function() {
         var self = $(this);
 
         var obj = self.data("rb.obj");
@@ -382,8 +384,9 @@ $(document).ready(function() {
 
     $("#search_field").searchAutoComplete();
     $('.user').user_infobox();
-    $('.star').toggleStar();
     $("time.timesince").timesince();
+
+    registerToggleStar();
 });
 
 // vim: set et:sw=4:

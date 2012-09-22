@@ -2018,7 +2018,7 @@ RB.apiCall = function(options) {
                 var rsp = null;
 
                 try {
-                    rsp = $.httpData(xhr, options.dataType || "json");
+                    rsp = $.parseJSON(xhr.responseText);
                 } catch (e) {
                 }
 
@@ -2120,7 +2120,7 @@ RB.apiCall = function(options) {
                     'material that may exist in the error page before ' +
                     'reporting a bug!</p>')
             .append(iframe)
-            .bind("resize", function() {
+            .on("resize", function() {
                 iframe.height($(this).height() - iframe.position().top);
             })
             .modalBox({

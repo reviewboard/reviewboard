@@ -196,7 +196,7 @@ var issueSummaryTableManager = new function() {
         uncollapseTarget();
 
         // Event Listeners
-        tbody.find(".summary-anchor").live("click", function(event) {
+        tbody.find('.summary-anchor').on('click', function(event) {
             event.stopPropagation();
             /*
             * Extract the issue-id attribute and attach '#comment-' and
@@ -585,7 +585,7 @@ $.fn.reviewsAutoComplete = function(options) {
                 url: SITE_ROOT + gReviewRequestSitePrefix + "api/" + options.fieldName + "/",
                 extraParams: options.extraParams
             })
-            .bind("autocompleteshow", function() {
+            .on("autocompleteshow", function() {
                 /*
                  * Add the footer to the bottom of the results pane the
                  * first time it's created.
@@ -704,7 +704,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
         createCommentEditor(yourcommentEl);
         yourcommentEl
             .inlineEditor("startEdit")
-            .bind("cancel", function(el, initialValue) {
+            .on("cancel", function(el, initialValue) {
                 if (initialValue == "") {
                     yourcomment.remove();
                 }
@@ -732,50 +732,52 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                     notifyUnchangedCompletion: true,
                     multiline: true
                 })
-                .bind("beginEdit", function() {
-                    gEditCount++;
-                })
-                .bind("complete", function(e, value) {
-                    gEditCount--;
+                .on({
+                    "beginEdit": function() {
+                        gEditCount++;
+                    },
+                    "complete": function(e, value) {
+                        gEditCount--;
 
-                    self.html(linkifyText(self.text()));
+                        self.html(linkifyText(self.text()));
 
-                    if (context_type == "body_top" ||
-                        context_type == "body_bottom") {
-                        review_reply[context_type] = value;
-                        obj = review_reply;
-                    } else if (context_type === "diff_comments") {
-                        obj = new RB.DiffCommentReply(review_reply, null,
-                                                      context_id);
-                        obj.setText(value);
-                    } else if (context_type === "screenshot_comments") {
-                        obj = new RB.ScreenshotCommentReply(review_reply, null,
-                                                            context_id);
-                        obj.setText(value);
-                    } else if (context_type === "file_attachment_comments") {
-                        obj = new RB.FileAttachmentCommentReply(
-                            review_reply, null, context_id);
-                        obj.setText(value);
-                    } else {
-                        /* Shouldn't be reached. */
-                        console.log("createCommentEditor received unexpected " +
-                                    "context type '%s'",
-                                    context_type);
-                        return;
-                    }
-
-                    obj.save({
-                        buttons: bannerButtonsEl,
-                        success: function() {
-                            removeCommentFormIfEmpty(self);
-                            showReplyDraftBanner(review_id);
+                        if (context_type == "body_top" ||
+                            context_type == "body_bottom") {
+                            review_reply[context_type] = value;
+                            obj = review_reply;
+                        } else if (context_type === "diff_comments") {
+                            obj = new RB.DiffCommentReply(review_reply, null,
+                                                        context_id);
+                            obj.setText(value);
+                        } else if (context_type === "screenshot_comments") {
+                            obj = new RB.ScreenshotCommentReply(review_reply, null,
+                                                                context_id);
+                            obj.setText(value);
+                        } else if (context_type === "file_attachment_comments") {
+                            obj = new RB.FileAttachmentCommentReply(
+                                review_reply, null, context_id);
+                            obj.setText(value);
+                        } else {
+                            /* Shouldn't be reached. */
+                            console.log("createCommentEditor received unexpected " +
+                                        "context type '%s'",
+                                        context_type);
+                            return;
                         }
-                    });
+
+                        obj.save({
+                            buttons: bannerButtonsEl,
+                            success: function() {
+                                removeCommentFormIfEmpty(self);
+                                showReplyDraftBanner(review_id);
+                            }
+                        });
+                    },
+                    "cancel": function(e) {
+                        gEditCount--;
+                        removeCommentFormIfEmpty(self);
+                    }
                 })
-                .bind("cancel", function(e) {
-                    gEditCount--;
-                    removeCommentFormIfEmpty(self);
-                });
         });
     }
 
@@ -1112,8 +1114,8 @@ $.fn.floatReplyDraftBanner = function() {
                 self
                     .removeClass('floating')
                     .css({
-                        top: null,
-                        position: null
+                        top: '',
+                        position: ''
                     });
             }
         }
@@ -1258,27 +1260,29 @@ $.fn.commentDlg = function() {
          * Enable resizing through a grip motion on a touchpad.
          */
         $([this[0], textField[0]])
-            .bind("gesturestart", function(evt) {
-                startOffset = self.offset();
-                startWidth = self.width();
-                startHeight = self.height();
-            })
-            .bind("gesturechange", function(evt) {
-                if (event.scale == 0) {
+            .on({
+                "gesturestart": function(evt) {
+                    startOffset = self.offset();
+                    startWidth = self.width();
+                    startHeight = self.height();
+                },
+                "gesturechange": function(evt) {
+                    if (event.scale == 0) {
+                        return false;
+                    }
+
+                    var newWidth = startWidth * event.scale;
+                    var newHeight = startHeight * event.scale;
+
+                    self
+                        .width(newWidth)
+                        .height(newHeight)
+                        .move(startOffset.left - (newWidth - startWidth) / 2,
+                            startOffset.top - (newHeight - startHeight) / 2);
+                    self.handleResize();
+
                     return false;
                 }
-
-                var newWidth = startWidth * event.scale;
-                var newHeight = startHeight * event.scale;
-
-                self
-                    .width(newWidth)
-                    .height(newHeight)
-                    .move(startOffset.left - (newWidth - startWidth) / 2,
-                          startOffset.top - (newHeight - startHeight) / 2);
-                self.handleResize();
-
-                return false;
             });
 
         /* Reset the opacity, which resizable() changes. */
@@ -1637,11 +1641,13 @@ $.reviewForm = function(review) {
                     showButtons: false,
                     showEditIcon: false
                 })
-                .bind("beginEdit", function() {
-                    gEditCount++;
-                })
-                .bind("cancel complete", function() {
-                    gEditCount--;
+                .on({
+                    "beginEdit": function() {
+                        gEditCount++;
+                    },
+                    "cancel complete": function() {
+                        gEditCount--;
+                    }
                 });
         }
 
@@ -1736,20 +1742,22 @@ $.fn.reviewFormCommentEditor = function(comment) {
             showEditIcon: false,
             useEditIconOnly: false
         })
-        .bind("beginEdit", function() {
-            gEditCount++;
-        })
-        .bind("cancel", function() {
-            gEditCount--;
-        })
-        .bind("complete", function(e, value) {
-            gEditCount--;
-            comment.text = value;
-            comment.save({
-                success: function() {
-                    self.trigger("saved");
-                }
-            });
+        .on({
+            "beginEdit": function() {
+                gEditCount++;
+            },
+            "cancel": function() {
+                gEditCount--;
+            },
+            "complete": function(e, value) {
+                gEditCount--;
+                comment.text = value;
+                comment.save({
+                    success: function() {
+                        self.trigger("saved");
+                    }
+                });
+            }
         })
         .data('comment', comment);
 };
@@ -1769,7 +1777,7 @@ $.fn.reviewCloseCommentEditor = function(type) {
             multiline: true,
             startOpen: false
         })
-        .bind("complete", function(e, value) {
+        .on("complete", function(e, value) {
             gReviewRequest.close({
                 type: type,
                 description: value
@@ -1793,15 +1801,17 @@ $.fn.reviewRequestFieldEditor = function() {
                 useEditIconOnly: $(this).hasClass("comma-editable"),
 		showRequiredFlag: $(this).hasClass("required")
             })
-            .bind("beginEdit", function() {
-                gEditCount++;
-            })
-            .bind("cancel", function() {
-                gEditCount--;
-            })
-            .bind("complete", function(e, value) {
-                gEditCount--;
-                setDraftField(this.id, value);
+            .on({
+                "beginEdit": function() {
+                    gEditCount++;
+                },
+                "cancel": function() {
+                    gEditCount--;
+                },
+                "complete": function(e, value) {
+                    gEditCount--;
+                    setDraftField(this.id, value);
+                }
             });
     });
 }
@@ -1826,23 +1836,25 @@ $.fn.screenshotThumbnail = function() {
                 editIconPath: STATIC_URLS["rb/images/edit.png"],
                 showButtons: false
             })
-            .bind("beginEdit", function() {
-                gEditCount++;
-            })
-            .bind("cancel", function() {
-                gEditCount--;
-            })
-            .bind("complete", function(e, value) {
-                gEditCount--;
-                screenshot.ready(function() {
-                    screenshot.caption = value;
-                    screenshot.save({
-                        buttons: gDraftBannerButtons,
-                        success: function(rsp) {
-                            gDraftBanner.show();
-                        }
+            .on({
+                "beginEdit": function() {
+                    gEditCount++;
+                },
+                "cancel": function() {
+                    gEditCount--;
+                },
+                "complete": function(e, value) {
+                    gEditCount--;
+                    screenshot.ready(function() {
+                        screenshot.caption = value;
+                        screenshot.save({
+                            buttons: gDraftBannerButtons,
+                            success: function(rsp) {
+                                gDraftBanner.show();
+                            }
+                        });
                     });
-                });
+                }
             });
 
         captionEl.find("a.delete")
@@ -1948,23 +1960,25 @@ $.fn.fileAttachment = function() {
                 editIconPath: STATIC_URLS["rb/images/edit.png"],
                 showButtons: false
             })
-            .bind("beginEdit", function() {
-                gEditCount++;
-            })
-            .bind("cancel", function() {
-                gEditCount--;
-            })
-            .bind("complete", function(e, value) {
-                gEditCount--;
-                fileAttachment.ready(function() {
-                    fileAttachment.caption = value;
-                    fileAttachment.save({
-                        buttons: gDraftBannerButtons,
-                        success: function(rsp) {
-                            gDraftBanner.show();
-                        }
+            .on({
+                "beginEdit": function() {
+                    gEditCount++;
+                },
+                "cancel": function() {
+                    gEditCount--;
+                },
+                "complete": function(e, value) {
+                    gEditCount--;
+                    fileAttachment.ready(function() {
+                        fileAttachment.caption = value;
+                        fileAttachment.save({
+                            buttons: gDraftBannerButtons,
+                            success: function(rsp) {
+                                gDraftBanner.show();
+                            }
+                        });
                     });
-                });
+                }
             });
 
         var addCommentButton =
@@ -2310,7 +2324,7 @@ function initDnD() {
     var removeDropIndicatorHandle = null;
 
     $(document.body)
-        .bind("dragenter", function(event) {
+        .on("dragenter", function(event) {
             handleDragEnter(event);
         });
 
@@ -2323,7 +2337,7 @@ function initDnD() {
                 .appendTo(document.body)
                 .width($(window).width())
                 .height(height)
-                .bind("dragleave", function(event) {
+                .on("dragleave", function(event) {
                     /*
                      * This should check whether we've exited the drop
                      * indicator properly. It'll prevent problems when
@@ -2360,7 +2374,7 @@ function initDnD() {
             screenshotDropBox = $("<div/>")
                 .addClass("dropbox")
                 .appendTo(dropIndicator)
-                .bind('drop', function(event) {
+                .on('drop', function(event) {
                     return handleDrop(event, "screenshot");
                 });
             var screenshotText = $("<h1/>")
@@ -2374,7 +2388,7 @@ function initDnD() {
             fileDropBox = $("<div/>")
                 .addClass("dropbox")
                 .appendTo(dropIndicator)
-                .bind('drop', function(event) {
+                .on('drop', function(event) {
                     return handleDrop(event, "file");
                 });
             var fileText = $("<h1/>")
@@ -2384,24 +2398,26 @@ function initDnD() {
             var dropBoxHeight = (height - middleBox.height()) / 2;
             $([screenshotDropBox[0], fileDropBox[0]])
                 .height(dropBoxHeight)
-                .bind("dragover", function() {
-                    var dt = event.originalEvent.dataTransfer;
+                .on({
+                    "dragover": function() {
+                        var dt = event.originalEvent.dataTransfer;
 
-                    if (dt) {
-                        dt.dropEffect = "copy";
+                        if (dt) {
+                            dt.dropEffect = "copy";
+                        }
+
+                        $(this).addClass("hover");
+                        return false;
+                    },
+                    "dragleave": function(event) {
+                        var dt = event.originalEvent.dataTransfer;
+
+                        if (dt) {
+                            dt.dropEffect = "none";
+                        }
+
+                        $(this).removeClass("hover");
                     }
-
-                    $(this).addClass("hover");
-                    return false;
-                })
-                .bind("dragleave", function(event) {
-                    var dt = event.originalEvent.dataTransfer;
-
-                    if (dt) {
-                        dt.dropEffect = "none";
-                    }
-
-                    $(this).removeClass("hover");
                 });
 
             screenshotText.css("margin-top", -screenshotText.height() / 2);
@@ -2741,11 +2757,13 @@ $(document).ready(function() {
             if (targetGroupsEl.length > 0) {
                 targetGroupsEl
                     .inlineEditor("field")
-                    .bind("beginEdit", function() {
-                        gEditCount++;
-                    })
-                    .bind("cancel complete", function() {
-                        gEditCount--;
+                    .on({
+                        "beginEdit": function() {
+                            gEditCount++;
+                        },
+                        "cancel complete": function() {
+                            gEditCount--;
+                        }
                     })
                     .reviewsAutoComplete({
                         fieldName: "groups",
@@ -2760,11 +2778,13 @@ $(document).ready(function() {
             if (targetPeopleEl.length > 0) {
                 targetPeopleEl
                     .inlineEditor("field")
-                    .bind("beginEdit", function() {
-                        gEditCount++;
-                    })
-                    .bind("cancel complete", function() {
-                        gEditCount--;
+                    .on({
+                        "beginEdit": function() {
+                            gEditCount++;
+                        },
+                        "cancel complete": function() {
+                            gEditCount--;
+                        }
                     })
                     .reviewsAutoComplete({
                         fieldName: "users",

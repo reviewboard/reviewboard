@@ -212,7 +212,7 @@ jQuery.fn.screenshotCommentBox = function(regions) {
         .prependTo(selectionArea)
         .hide();
 
-    gCommentDlg.bind("close", function() { activeCommentBlock = null; });
+    gCommentDlg.on("close", function() { activeCommentBlock = null; });
 
     /*
      * Register events on the selection area for handling new comment
