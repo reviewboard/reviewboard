@@ -196,7 +196,7 @@
 
   .actions-container {
     background: @review-request-actions-bg;
-    border-bottom: 2px @review-request-actions-border-color solid;
+    border-bottom: 1px @review-request-actions-border-color solid;
     float: right;
     width: 100%;
     .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
@@ -294,11 +294,8 @@
     }
   }
 
-  .actions>li {
-    &:last-child a {
-      border-right: 0;
-      .border-radius(0 @box-inner-border-radius 0 0);
-    }
+  .actions>li:last-child {
+    .border-radius(0 @box-inner-border-radius 0 0);
   }
 
   #updated_time, #created_time {
