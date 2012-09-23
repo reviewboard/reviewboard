@@ -852,7 +852,7 @@ $.fn.highlightChunk = function() {
  * @param {bool}   scroll  If true, scrolls the page to the anchor.
  */
 function gotoAnchor(name, scroll) {
-    return scrollToAnchor($("a[name=" + name + "]"), scroll || false);
+    return scrollToAnchor($("a[name='" + name + "']"), scroll || false);
 }
 
 
