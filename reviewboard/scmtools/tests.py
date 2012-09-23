@@ -1119,7 +1119,9 @@ class GitTests(SCMTestCase):
             'r').read()
 
     def _getFileInDiff(self, diff, filenum=0):
-        return self.tool.get_parser(diff).parse()[filenum]
+        files = self.tool.get_parser(diff).parse()
+        self.assertTrue(filenum < len(files))
+        return files[filenum]
 
     def test_ssh(self):
         """Testing a SSH-backed git repository"""
@@ -1339,6 +1341,25 @@ class GitTests(SCMTestCase):
                          '612544e4343bf04967eb5ea80257f6c64d6f42c7')
         self.assertEqual(files[0].newInfo,
                          'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+
+    def test_parse_diff_with_deleted_binary_files(self):
+        """Testing Git diff parsing with deleted binary files"""
+        diff = "diff --git a/foo.bin b/foo.bin\n" \
+               "deleted file mode 100644\n" \
+               "Binary file foo.bin has changed\n" \
+               "diff --git a/bar.bin b/bar.bin\n" \
+               "deleted file mode 100644\n" \
+               "Binary file bar.bin has changed\n"
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files[0].origFile, 'foo.bin')
+        self.assertEqual(files[0].newFile, 'foo.bin')
+        self.assertEqual(files[0].binary, True)
+        self.assertEqual(files[0].deleted, True)
+        self.assertEqual(files[1].origFile, 'bar.bin')
+        self.assertEqual(files[1].newFile, 'bar.bin')
+        self.assertEqual(files[1].binary, True)
+        self.assertEqual(files[1].deleted, True)
 
     def testParseDiffRevision(self):
         """Testing Git revision number parsing"""
