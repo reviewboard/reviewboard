@@ -231,10 +231,17 @@ function linkifyText(text) {
 
     /* Bug numbers */
     if (gBugTrackerURL != "") {
-        text = text.replace(/\b(bug|issue) (#[^.\s]+|#?\d+)/gi,
-            function(m1, m2, m3) {
-                return '<a href="' + gBugTrackerURL.replace("%s", m3) +
-                       '">' + m1 + '</a>';
+        text = text.replace(/\b(bug|issue) (#([^.\s]+)|#?(\d+))/gi,
+            function(text, m2, m3, bugnum1, bugnum2) {
+                /*
+                 * The bug number can appear in either of those groups,
+                 * depending on how this was typed, so try both.
+                 */
+                var bugnum = bugnum1 || bugnum2;
+
+                return '<a href="' +
+                       gBugTrackerURL.replace("%s", bugnum) +
+                       '">' + text + '</a>';
             });
     }
 
