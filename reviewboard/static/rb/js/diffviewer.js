@@ -465,9 +465,8 @@ $.fn.diffFile = function(lines, key) {
                  *
                  * @param {event} e  The mouseout event.
                  */
-                var relTarget = e.relatedTarget;
-                var node = getActualLineNumCell($(e.fromElement ||
-                                                  e.originalTarget));
+                var relTarget = e.relatedTarget,
+                    node = getActualLineNumCell($(e.target));
 
                 if (relTarget != ghostCommentFlag[0]) {
                     ghostCommentFlag.hide();
