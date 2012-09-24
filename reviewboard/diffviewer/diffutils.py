@@ -31,6 +31,7 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 # The maximum size a line can be before we start shutting off styling.
 STYLED_MAX_LINE_LEN = 1000
+STYLED_MAX_LIMIT_BYTES = 200000 # 200KB
 
 DEFAULT_DIFF_COMPAT_VERSION = 1
 
@@ -626,6 +627,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
     if threshold and (a_num_lines > threshold or b_num_lines > threshold):
         enable_syntax_highlighting = False
+
+    if enable_syntax_highlighting:
+        # Very long files, especially XML files, can take a long time to
+        # highlight. For files over a certain size, don't highlight them.
+        if (len(old) > STYLED_MAX_LIMIT_BYTES or
+            len(new) > STYLED_MAX_LIMIT_BYTES):
+            enable_syntax_highlighting = False
 
     if enable_syntax_highlighting:
         # Don't style the file if we have any *really* long lines.
