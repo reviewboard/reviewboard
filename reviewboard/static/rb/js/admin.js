@@ -27,7 +27,7 @@ $(document).ready(function() {
         itemSelector: '.admin-widget'
     });
 
-    $(window).resize(refreshWidgets);
+    $(window).on('reflowWidgets resize', refreshWidgets);
     refreshWidgets();
 
     // Heading Toggle

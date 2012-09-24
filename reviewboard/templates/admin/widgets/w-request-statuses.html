@@ -41,6 +41,19 @@ $(document).ready(function() {
             legend: {
                 container: $("#requests-labels"),
                 show: true
+            },
+            hooks: {
+                draw: [
+                    function() {
+                        /*
+                         * Because drawing ends up packing in new elements
+                         * after Masonry has set up the layout, this widget
+                         * and the one below will partially stack unless we
+                         * emit this.
+                         */
+                        $(window).triggerHandler('reflowWidgets');
+                    }
+                ]
             }
         });
     });
