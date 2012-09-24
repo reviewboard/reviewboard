@@ -282,12 +282,12 @@ $.fn.searchAutoComplete = function() {
         selectFirst: false,
         width: 240,
         parse: function(data) {
-            var jsonData = JSON.parse(data);
-            var jsonDataSearch = jsonData.search;
-            var parsed = [];
-            var objects = ["users", "groups", "review_requests"];
-            var values = ["username", "name", "summary"];
-            var items;
+            var jsonData = data,
+                jsonDataSearch = jsonData.search,
+                parsed = [],
+                objects = ["users", "groups", "review_requests"],
+                values = ["username", "name", "summary"],
+                items;
 
             for (var j = 0; j < objects.length; j++) {
                 items = jsonDataSearch[objects[j]];

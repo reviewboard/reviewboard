@@ -566,9 +566,8 @@ $.fn.reviewsAutoComplete = function(options) {
                 matchCase: false,
                 multiple: true,
                 parse: function(data) {
-                    var jsonData = eval("(" + data + ")");
-                    var items = jsonData[options.fieldName];
-                    var parsed = [];
+                    var items = data[options.fieldName],
+                        parsed = [];
 
                     for (var i = 0; i < items.length; i++) {
                         var value = items[i];
