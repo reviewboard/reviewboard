@@ -142,21 +142,43 @@ class GitDiffParser(DiffParser):
         """
         self.files = []
         i = 0
+        preamble = ''
+
         while i < len(self.lines):
-            i, file_info = self._parse_diff(i)
+            next_i, file_info, new_diff = self._parse_diff(i)
+
             if file_info:
                 self._ensure_file_has_required_fields(file_info)
+
+                if preamble:
+                    file_info.data = preamble + file_info.data
+                    preamble = ''
+
                 self.files.append(file_info)
+            elif new_diff:
+                # We found a diff, but it was empty and has no file entry.
+                # Reset the preamble.
+                preamble = ''
+            else:
+                preamble += self.lines[i] + '\n'
+
+            i = next_i
+
         return self.files
 
     def _parse_diff(self, linenum):
-        """
-        Parses out one file from a Git diff
+        """Parses out one file from a Git diff
+
+        This will return a tuple of the next line number, the file info
+        (if any), and whether or not we've found a file (even if we decided
+        not to record it).
         """
         if self.lines[linenum].startswith("diff --git"):
-            return self._parse_git_diff(linenum)
+            parts = self._parse_git_diff(linenum)
+
+            return parts[0], parts[1], True
         else:
-            return linenum + 1, None
+            return linenum + 1, None, False
 
     def _parse_git_diff(self, linenum):
         # First check if it is a new file with no content or
@@ -228,6 +250,7 @@ class GitDiffParser(DiffParser):
 
             if self._is_binary_patch(linenum):
                 file_info.binary = True
+                file_info.data += self.lines[linenum] + "\n"
                 return linenum + 1, file_info
 
             if self._is_diff_fromfile_line(linenum):

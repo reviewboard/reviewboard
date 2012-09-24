@@ -700,7 +700,7 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(file.newInfo, '')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(file.data, '')
+        self.assertEqual(file.data, diff)
 
     def testBinaryDiff(self):
         """Testing Perforce binary diff parsing"""
@@ -712,7 +712,7 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(file.origInfo, '//depot/foo/proj/test.png#1')
         self.assertEqual(file.newFile, '/src/proj/test.png')
         self.assertEqual(file.newInfo, '')
-        self.assertEqual(file.data, '')
+        self.assertEqual(file.data, diff)
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
 
@@ -726,7 +726,7 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(file.origInfo, '//depot/foo/proj/test.png#1')
         self.assertEqual(file.newFile, '/src/proj/test.png')
         self.assertEqual(file.newInfo, '')
-        self.assertEqual(file.data, '')
+        self.assertEqual(file.data, diff)
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
 
@@ -750,7 +750,7 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(files[0].newInfo, '')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
-        self.assertEqual(files[0].data, '')
+        self.assertEqual(files[0].data, diff1_text)
 
         self.assertEqual(files[1].origFile, 'test.c')
         self.assertEqual(files[1].origInfo, '//depot/foo/proj/test.c#2')
@@ -1241,9 +1241,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.newInfo, '86b520c')
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
-        self.assertEqual(len(file.data), 97)
-        self.assertEqual(file.data.splitlines()[0],
+        lines = file.data.splitlines()
+        self.assertEqual(len(lines), 4)
+        self.assertEqual(lines[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+        self.assertEqual(lines[3],
+                         "Binary files /dev/null and b/pysvn-1.5.1.tar.gz "
+                         "differ")
 
     def testComplexDiff(self):
         """Testing parsing Git diff with existing and new files"""
@@ -1268,10 +1272,11 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[1].newInfo, 'e279a06')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
-        self.assertEqual(len(files[1].data), 182)
-        self.assertEqual(files[1].data.splitlines()[0],
+        lines = files[1].data.splitlines()
+        self.assertEqual(len(lines), 8)
+        self.assertEqual(lines[0],
                          "diff --git a/tests/tests.py b/tests/tests.py")
-        self.assertEqual(files[1].data.splitlines()[-1],
+        self.assertEqual(lines[7],
                          "+This is some new content")
 
         self.assertEqual(files[2].origFile, 'pysvn-1.5.1.tar.gz')
@@ -1280,9 +1285,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[2].newInfo, '86b520c')
         self.assertTrue(files[2].binary)
         self.assertFalse(files[2].deleted)
-        self.assertEqual(len(files[2].data), 97)
-        self.assertEqual(files[2].data.splitlines()[0],
+        lines = files[2].data.splitlines()
+        self.assertEqual(len(lines), 4)
+        self.assertEqual(lines[0],
                          "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+        self.assertEqual(lines[3],
+                         'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
+                         'differ')
 
         self.assertEqual(files[3].origFile, 'readme')
         self.assertEqual(files[3].newFile, 'readme')
@@ -1290,11 +1299,10 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[3].newInfo, 'e254ef4')
         self.assertFalse(files[3].binary)
         self.assertFalse(files[3].deleted)
-        self.assertEqual(len(files[3].data), 127)
-        self.assertEqual(files[3].data.splitlines()[0],
-                         "diff --git a/readme b/readme")
-        self.assertEqual(files[3].data.splitlines()[-1],
-                         "+Hello there")
+        lines = files[3].data.splitlines()
+        self.assertEqual(len(lines), 7)
+        self.assertEqual(lines[0], "diff --git a/readme b/readme")
+        self.assertEqual(lines[6], "+Hello there")
 
         self.assertEqual(files[4].origFile, 'OLDFILE')
         self.assertEqual(files[4].newFile, 'OLDFILE')
@@ -1302,11 +1310,10 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[4].newInfo, '0000000')
         self.assertFalse(files[4].binary)
         self.assertTrue(files[4].deleted)
-        self.assertEqual(len(files[4].data), 132)
-        self.assertEqual(files[4].data.splitlines()[0],
-                         "diff --git a/OLDFILE b/OLDFILE")
-        self.assertEqual(files[4].data.splitlines()[-1],
-                         "-Goodbye")
+        lines = files[4].data.splitlines()
+        self.assertEqual(len(lines), 7)
+        self.assertEqual(lines[0], "diff --git a/OLDFILE b/OLDFILE")
+        self.assertEqual(lines[6], "-Goodbye")
 
         self.assertEqual(files[5].origFile, 'readme2')
         self.assertEqual(files[5].newFile, 'readme2')
@@ -1314,11 +1321,10 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[5].newInfo, 'e248ef4')
         self.assertFalse(files[5].binary)
         self.assertFalse(files[5].deleted)
-        self.assertEqual(len(files[5].data), 131)
-        self.assertEqual(files[5].data.splitlines()[0],
-                         "diff --git a/readme2 b/readme2")
-        self.assertEqual(files[5].data.splitlines()[-1],
-                         "+Hello there")
+        lines = files[5].data.splitlines()
+        self.assertEqual(len(lines), 7)
+        self.assertEqual(lines[0], "diff --git a/readme2 b/readme2")
+        self.assertEqual(lines[6], "+Hello there")
 
     def test_parse_diff_with_index_range(self):
         """Testing Git diff parsing with an index range"""
@@ -1360,6 +1366,63 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[1].newFile, 'bar.bin')
         self.assertEqual(files[1].binary, True)
         self.assertEqual(files[1].deleted, True)
+
+    def test_parse_diff_with_all_headers(self):
+        """Testing Git diff parsing and preserving all headers"""
+        preamble = (
+            "From 38d8fa94a9aa0c5b27943bec31d94e880165f1e0 Mon Sep "
+            "17 00:00:00 2001\n"
+            "From: Example Joe <joe@example.com>\n"
+            "Date: Thu, 5 Apr 2012 00:41:12 -0700\n"
+            "Subject: [PATCH 1/1] Sample patch.\n"
+            "\n"
+            "This is a test summary.\n"
+            "\n"
+            "With a description.\n"
+            "---\n"
+            " foo/bar |   2 -+n"
+            " README  |   2 -+n"
+            " 2 files changed, 2 insertions(+), 2 deletions(-)\n"
+            "\n")
+        diff1 = (
+            "diff --git a/foo/bar b/foo/bar2\n"
+            "index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
+            "e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+            "--- a/foo/bar\n"
+            "+++ b/foo/bar2\n"
+            "@ -1,1 +1,1 @@\n"
+            "-blah blah\n"
+            "+blah\n")
+        diff2 = (
+            "diff --git a/README b/README\n"
+            "index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
+            "f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+            "--- a/README\n"
+            "+++ b/README\n"
+            "@ -1,1 +1,1 @@\n"
+            "-blah blah\n"
+            "+blah\n"
+            "--n"
+            "1.7.1\n")
+        diff = preamble + diff1 + diff2
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 2)
+        self.assertEqual(files[0].origFile, 'foo/bar')
+        self.assertEqual(files[0].newFile, 'foo/bar2')
+        self.assertEqual(files[0].origInfo,
+                         '612544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[0].newInfo,
+                         'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[0].data, preamble + diff1)
+
+        self.assertEqual(files[1].origFile, 'README')
+        self.assertEqual(files[1].newFile, 'README')
+        self.assertEqual(files[1].origInfo,
+                         '712544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[1].newInfo,
+                         'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[1].data, diff2)
 
     def testParseDiffRevision(self):
         """Testing Git revision number parsing"""

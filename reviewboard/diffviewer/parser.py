@@ -40,6 +40,7 @@ class DiffParser(object):
         logging.debug("DiffParser.parse: Beginning parse of diff, size = %s",
                       len(self.data))
 
+        preamble = ''
         self.files = []
         file = None
         i = 0
@@ -51,11 +52,17 @@ class DiffParser(object):
             if new_file:
                 # This line is the start of a new file diff.
                 file = new_file
+                file.data = preamble + file.data
+                preamble = ''
                 self.files.append(file)
                 i = next_linenum
             else:
+                line = self.lines[i] + '\n'
+
                 if file:
-                    file.data += self.lines[i] + "\n"
+                    file.data += line
+                else:
+                    preamble += line
 
                 i += 1
 
@@ -86,24 +93,12 @@ class DiffParser(object):
             file.origInfo = info.get('origInfo')
             file.newInfo  = info.get('newInfo')
             file.origChangesetId = info.get('origChangesetId')
-            file.data = ""
 
             # The header is part of the diff, so make sure it gets in the
-            # diff content. But only the parts that patch will understand.
-            for i in xrange(start, linenum):
-                line = self.lines[i]
-
-                if line.startswith("--- ") or line.startswith("+++ ") or \
-                   line.startswith("RCS file: ") or \
-                   line.startswith("retrieving revision ") or \
-                   line.startswith("diff ") or \
-                   (i > start and line == self.INDEX_SEP and \
-                    self.lines[i - 1].startswith("Index: ")) or \
-                   (i + 1 < linenum and line.startswith("Index: ") and \
-                    self.lines[i + 1] == self.INDEX_SEP):
-
-                    # This is a valid part of a diff header. Add it.
-                    file.data += self.lines[i] + "\n"
+            # diff content.
+            file.data = ''.join([
+                self.lines[i] + '\n' for i in xrange(start, linenum)
+            ])
 
         return linenum, file
 
