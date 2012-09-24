@@ -98,9 +98,17 @@
       }
     }
 
+    &.widget-has-actions .widget-heading {
+      .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+    }
+
     .widget-content {
       display: none;
     }
+  }
+
+  &.widget-collapsable .widget-heading {
+    cursor: pointer;
   }
 
   .widget-heading {
@@ -108,7 +116,6 @@
     border-bottom: 1px solid @widget-heading-border-color;
     background-image: url("../images/title_box_top_bg.png");
     color: black;
-    cursor: pointer;
     font-size: 11px;
     font-weight: 400;
     margin: 0;
