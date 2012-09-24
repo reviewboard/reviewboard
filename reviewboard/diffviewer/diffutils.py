@@ -1294,10 +1294,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 else:
                     header = last_header
 
-                new_chunk['meta']['headers'] = [
-                    (header[0] or "").strip(),
-                    (header[1] or "").strip(),
-                ]
+                new_chunk['meta']['headers'] = header
 
             yield new_chunk
 
