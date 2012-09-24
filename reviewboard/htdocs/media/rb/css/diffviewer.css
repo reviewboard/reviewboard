@@ -140,7 +140,7 @@ table.sidebyside tbody div {
 
 table.sidebyside tbody td .diff-collapse-btn {
   background: #E4D9CB;
-  border: 1px black solid;
+  border: 1px #59554F solid;
   padding: 0.5em;
   cursor: pointer;
   position: absolute;
