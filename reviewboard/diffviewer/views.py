@@ -132,8 +132,6 @@ def build_diff_fragment(request, file, chunkindex, highlighting, collapseall,
                                 if header[0] <= new_lines[-1][index]
                             ]
 
-                        left_headers = chunk['meta']['left_headers']
-                        right_headers = chunk['meta']['right_headers']
                         chunk['meta']['headers'] = \
                             compute_chunk_last_header(new_lines, numlines,
                                                       chunk['meta'])

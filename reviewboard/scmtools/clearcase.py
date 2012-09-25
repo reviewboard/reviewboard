@@ -364,7 +364,7 @@ class ClearCaseSnapshotViewClient(object):
         failure = p.poll()
 
         if failure:
-            raise FileNotFoundError(filename, revision)
+            raise FileNotFoundError(extended_path, revision)
 
         try:
             fp = open(temp.name, 'r')
@@ -372,4 +372,4 @@ class ClearCaseSnapshotViewClient(object):
             fp.close()
             return data
         except:
-            raise FileNotFoundError(filename, revision)
+            raise FileNotFoundError(extended_path, revision)
