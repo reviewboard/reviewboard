@@ -1254,7 +1254,10 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
     def find_header(headers):
         for header in reversed(headers):
             if header[0] < first_line:
-                return header[1]
+                return {
+                    'line': header[0],
+                    'text': header[1],
+                }
 
     interdiffset = None
 
@@ -1276,7 +1279,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
         raise StopIteration
 
     assert len(files) == 1
-    last_header = (None, None)
+    last_header = [None, None]
 
     for chunk in files[0]['chunks']:
         if ('headers' in chunk['meta'] and

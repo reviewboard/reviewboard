@@ -23,6 +23,7 @@
   </tr>
  </thead>
 {% if chunks.0.meta.headers %}
+{%  if chunks.0.meta.headers.0 or chunks.0.meta.headers.1 %}
  <tbody class="diff-header">
   <tr>
 {%  if chunks.0.meta.headers.0.text == chunks.0.meta.headers.1.text %}
@@ -33,6 +34,7 @@
 {%  endif %}
   </tr>
  </tbody>
+{%  endif %}
 {% endif %}
 {% for chunk in chunks %}
  <tbody class="{{chunk.change}}">
