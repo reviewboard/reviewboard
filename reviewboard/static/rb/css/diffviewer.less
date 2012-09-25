@@ -141,8 +141,20 @@
   }
 
   tbody {
+    div {
+      position: relative;
+    }
+
     tr {
-      &.selected * { background: @diff-selected-color; }
+      &.selected {
+        * {
+          background: @diff-selected-color;
+        }
+
+        td .diff-collapse-btn {
+          background: #E4D9CB;
+        }
+      }
 
       &.first {
         td, th {
@@ -158,6 +170,21 @@
 
       td {
         vertical-align: top;
+
+        .diff-collapse-btn {
+          background: #E4D9CB;
+          border: 1px black solid;
+          padding: 0.5em;
+          cursor: pointer;
+          position: absolute;
+          right: -8px;
+          z-index: @z-index-diff-collapse-btn;
+          opacity: 0.8;
+
+          &:hover {
+            opacity: 1.0;
+          }
+        }
       }
 
       th {
@@ -215,8 +242,17 @@
 
     &.diff-header {
       a {
-        text-decoration: underline;
+        text-decoration: none;
         color: black;
+      }
+
+      code {
+        margin: 0 2px;
+      }
+
+      img {
+        vertical-align: middle;
+        padding: 1px;
       }
 
       td {

@@ -321,17 +321,25 @@ RB.Diff = function(review_request, revision, interdiff_revision) {
 
 $.extend(RB.Diff.prototype, {
     getDiffFragment: function(review_base_url, fileid, filediff_id, revision,
-                              interdiff_revision, chunk_index, onSuccess) {
-        var revisionStr = revision;
+                              interdiff_revision, file_index, chunk_index,
+                              lines_of_context, onSuccess) {
+        var revisionStr = revision,
+            data = {
+                index: file_index
+            };
 
-        if (interdiff_revision != null) {
+        if (interdiff_revision !== null) {
             revisionStr += "-" + interdiff_revision;
+        }
+
+        if (lines_of_context !== null) {
+            data['lines-of-context'] = lines_of_context;
         }
 
         RB.apiCall({
             url: review_base_url + 'diff/' + revisionStr + '/fragment/' +
                  filediff_id + '/chunk/' + chunk_index + '/',
-            data: {},
+            data: data,
             type: "GET",
             dataType: "html",
             complete: function(res, status) {

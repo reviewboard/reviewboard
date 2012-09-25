@@ -41,6 +41,7 @@ class DiffParser(object):
         logging.debug("DiffParser.parse: Beginning parse of diff, size = %s",
                       len(self.data))
 
+        preamble = ''
         self.files = []
         file = None
         i = 0
@@ -52,11 +53,17 @@ class DiffParser(object):
             if new_file:
                 # This line is the start of a new file diff.
                 file = new_file
+                file.data = preamble + file.data
+                preamble = ''
                 self.files.append(file)
                 i = next_linenum
             else:
+                line = self.lines[i] + '\n'
+
                 if file:
-                    file.data += self.lines[i] + "\n"
+                    file.data += line
+                else:
+                    preamble += line
 
                 i += 1
 
@@ -75,10 +82,19 @@ class DiffParser(object):
         linenum = self.parse_special_header(linenum, info)
         linenum = self.parse_diff_header(linenum, info)
 
+        if info.get('skip', False):
+            return linenum, None
+
         # If we have enough information to represent a header, build the
         # file to return.
-        if 'origFile' in info and 'newFile' in info and \
-           'origInfo' in info and 'newInfo' in info:
+        if ('origFile' in info and 'newFile' in info and
+            'origInfo' in info and 'newInfo' in info):
+            if linenum < len(self.lines):
+                linenum = self.parse_after_headers(linenum, info)
+
+                if info.get('skip', False):
+                    return linenum, None
+
             file = File()
             file.binary   = info.get('binary', False)
             file.deleted  = info.get('deleted', False)
@@ -87,24 +103,12 @@ class DiffParser(object):
             file.origInfo = info.get('origInfo')
             file.newInfo  = info.get('newInfo')
             file.origChangesetId = info.get('origChangesetId')
-            file.data = ""
 
             # The header is part of the diff, so make sure it gets in the
-            # diff content. But only the parts that patch will understand.
-            for i in xrange(start, linenum):
-                line = self.lines[i]
-
-                if line.startswith("--- ") or line.startswith("+++ ") or \
-                   line.startswith("RCS file: ") or \
-                   line.startswith("retrieving revision ") or \
-                   line.startswith("diff ") or \
-                   (i > start and line == self.INDEX_SEP and \
-                    self.lines[i - 1].startswith("Index: ")) or \
-                   (i + 1 < linenum and line.startswith("Index: ") and \
-                    self.lines[i + 1] == self.INDEX_SEP):
-
-                    # This is a valid part of a diff header. Add it.
-                    file.data += self.lines[i] + "\n"
+            # diff content.
+            file.data = ''.join([
+                self.lines[i] + '\n' for i in xrange(start, linenum)
+            ])
 
         return linenum, file
 
@@ -160,6 +164,14 @@ class DiffParser(object):
                 raise DiffParserError("The diff file is missing revision " +
                                       "information", linenum)
 
+        return linenum
+
+    def parse_after_headers(self, linenum, info):
+        """Parses data after the diff headers but before the data.
+
+        By default, this does nothing, but a DiffParser subclass can
+        override to look for special headers before the content.
+        """
         return linenum
 
     def parse_filename_header(self, s, linenum):

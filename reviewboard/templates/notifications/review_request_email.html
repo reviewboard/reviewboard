@@ -74,7 +74,7 @@
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Diffs</b> {% if changes and changes.diff %}(updated){% endif %}</h1>
 <ul style="margin-left: 3em; padding-left: 0;">
 {% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
- <li>{{filediff.source_file}} <span style="color: grey">({{filediff.source_revision}})</span></li>
+ <li>{{filediff.source_file_display}} <span style="color: grey">({{filediff.source_revision}})</span></li>
 {% endfor %}
 </ul>
 

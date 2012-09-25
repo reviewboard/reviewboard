@@ -11,7 +11,7 @@
  <thead>
   <tr>
    <th colspan="4" class="filename">
-    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file}}</a>
+    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
     <span class="diffrevision">
 {% if comment.interfilediff %}
      (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
@@ -25,11 +25,11 @@
 {% if chunks.0.meta.headers %}
  <tbody class="diff-header">
   <tr>
-{%  if chunks.0.meta.headers.0 == chunks.0.meta.headers.1 %}
-   <td colspan="4"><pre>{{chunks.0.meta.headers.0}}</pre></td>
+{%  if chunks.0.meta.headers.0.text == chunks.0.meta.headers.1.text %}
+   <td colspan="4"><pre>{{chunks.0.meta.headers.0.text}}</pre></td>
 {%  else %}
-   <td colspan="2"><pre>{{chunks.0.meta.headers.0}}</pre></td>
-   <td colspan="2"><pre>{{chunks.0.meta.headers.1}}</pre></td>
+   <td colspan="2"><pre>{{chunks.0.meta.headers.0.text}}</pre></td>
+   <td colspan="2"><pre>{{chunks.0.meta.headers.1.text}}</pre></td>
 {%  endif %}
   </tr>
  </tbody>

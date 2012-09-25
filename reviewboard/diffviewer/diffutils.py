@@ -33,6 +33,7 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 # The maximum size a line can be before we start shutting off styling.
 STYLED_MAX_LINE_LEN = 1000
+STYLED_MAX_LIMIT_BYTES = 200000 # 200KB
 
 DEFAULT_DIFF_COMPAT_VERSION = 1
 
@@ -407,6 +408,36 @@ def register_interesting_lines_for_filename(differ, filename):
         differ.add_interesting_line_regex('header', regex)
 
 
+def compute_chunk_last_header(lines, numlines, meta, last_header=None):
+    """Computes information for the displayed function/class headers.
+
+    This will record the displayed headers, their line numbers, and expansion
+    offsets relative to the header's collapsed line range.
+
+    The last_header variable, if provided, will be modified, which is
+    important when processing several chunks at once. It will also be
+    returned as a convenience.
+    """
+    if last_header is None:
+        last_header = [None, None]
+
+    line = lines[0]
+
+    for i, (linenum, header_key) in enumerate([(line[1], 'left_headers'),
+                                               (line[4], 'right_headers')]):
+        headers = meta[header_key]
+
+        if headers:
+            header = headers[-1]
+            last_header[i] = {
+                'line': header[0],
+                'text': header[1].strip(),
+                'expand_offset': linenum + numlines - header[0],
+            }
+
+    return last_header
+
+
 def get_chunks(diffset, filediff, interfilediff, force_interdiff,
                enable_syntax_highlighting):
     def diff_line(vlinenum, oldlinenum, newlinenum, oldline, newline,
@@ -434,35 +465,32 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
 
         return result
 
-    def new_chunk(lines, start, end, collapsable=False,
+    def new_chunk(chunk_index, all_lines, start, end, collapsable=False,
                   tag='equal', meta=None):
         if not meta:
             meta = {}
 
-        left_headers = list(get_interesting_headers(differ, lines,
+        left_headers = list(get_interesting_headers(differ, all_lines,
                                                     start, end - 1, False))
-        right_headers = list(get_interesting_headers(differ, lines,
+        right_headers = list(get_interesting_headers(differ, all_lines,
                                                      start, end - 1, True))
 
         meta['left_headers'] = left_headers
         meta['right_headers'] = right_headers
 
-        if left_headers:
-            last_header[0] = left_headers[-1][1]
+        lines = all_lines[start:end]
+        numlines = len(lines)
 
-        if right_headers:
-            last_header[1] = right_headers[-1][1]
+        compute_chunk_last_header(lines, numlines, meta, last_header)
 
-        if (collapsable and end < len(lines) and
+        if (collapsable and end < len(all_lines) and
             (last_header[0] or last_header[1])):
-            meta['headers'] = [
-                (last_header[0] or "").strip(),
-                (last_header[1] or "").strip(),
-            ]
+            meta['headers'] = list(last_header)
 
         return {
-            'lines': lines[start:end],
-            'numlines': end - start,
+            'index': chunk_index,
+            'lines': lines,
+            'numlines': numlines,
             'change': tag,
             'collapsable': collapsable,
             'meta': meta,
@@ -605,6 +633,13 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
         enable_syntax_highlighting = False
 
     if enable_syntax_highlighting:
+        # Very long files, especially XML files, can take a long time to
+        # highlight. For files over a certain size, don't highlight them.
+        if (len(old) > STYLED_MAX_LIMIT_BYTES or
+            len(new) > STYLED_MAX_LIMIT_BYTES):
+            enable_syntax_highlighting = False
+
+    if enable_syntax_highlighting:
         # Don't style the file if we have any *really* long lines.
         # It's likely a minified file or data or something that doesn't
         # need styling, and it will just grind Review Board to a halt.
@@ -665,6 +700,8 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             "Generating diff chunks for filediff id %s (%s)" %
             (filediff.id, filediff.source_file))
 
+    chunk_index = 0
+
     for tag, i1, i2, j1, j2, meta in opcodes_with_metadata(differ):
         oldlines = markup_a[i1:i2]
         newlines = markup_b[j1:j2]
@@ -679,19 +716,30 @@ def get_chunks(diffset, filediff, interfilediff, force_interdiff,
             last_range_start = numlines - context_num_lines
 
             if linenum == 1:
-                yield new_chunk(lines, 0, last_range_start, True)
-                yield new_chunk(lines, last_range_start, numlines)
+                yield new_chunk(chunk_index, lines, 0, last_range_start, True)
+                chunk_index += 1
+
+                yield new_chunk(chunk_index, lines, last_range_start, numlines)
+                chunk_index += 1
             else:
-                yield new_chunk(lines, 0, context_num_lines)
+                yield new_chunk(chunk_index, lines, 0, context_num_lines)
+                chunk_index += 1
 
                 if i2 == a_num_lines and j2 == b_num_lines:
-                    yield new_chunk(lines, context_num_lines, numlines, True)
+                    yield new_chunk(chunk_index, lines, context_num_lines,
+                                    numlines, True)
+                    chunk_index += 1
                 else:
-                    yield new_chunk(lines, context_num_lines,
+                    yield new_chunk(chunk_index, lines, context_num_lines,
                                     last_range_start, True)
-                    yield new_chunk(lines, last_range_start, numlines)
+                    chunk_index += 1
+
+                    yield new_chunk(chunk_index, lines, last_range_start,
+                                    numlines)
+                    chunk_index += 1
         else:
-            yield new_chunk(lines, 0, numlines, False, tag, meta)
+            yield new_chunk(chunk_index, lines, 0, numlines, False, tag, meta)
+            chunk_index += 1
 
         linenum += numlines
 
@@ -1144,6 +1192,7 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True):
 
         file.update({
             'chunks': chunks,
+            'num_chunks': len(chunks),
             'changed_chunk_indexes': [],
             'whitespace_only': True,
         })
@@ -1262,10 +1311,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 else:
                     header = last_header
 
-                new_chunk['meta']['headers'] = [
-                    (header[0] or "").strip(),
-                    (header[1] or "").strip(),
-                ]
+                new_chunk['meta']['headers'] = header
 
             yield new_chunk
 

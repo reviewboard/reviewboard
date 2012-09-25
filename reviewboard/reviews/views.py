@@ -329,7 +329,6 @@ def review_detail(request,
     all_reviews = list(review_request.reviews.select_related('user'))
 
     for review in all_reviews:
-        reviews_id_map[review.pk] = review
         review._body_top_replies = []
         review._body_bottom_replies = []
 
@@ -363,6 +362,8 @@ def review_detail(request,
 
         if review.public or (request.user.is_authenticated() and
                              review.user_id == request.user.pk):
+            reviews_id_map[review.pk] = review
+
             # If this review is replying to another review's body_top or
             # body_bottom fields, store that data.
             for reply_id, reply_list in (

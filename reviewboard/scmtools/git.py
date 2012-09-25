@@ -143,21 +143,43 @@ class GitDiffParser(DiffParser):
         """
         self.files = []
         i = 0
+        preamble = ''
+
         while i < len(self.lines):
-            i, file_info = self._parse_diff(i)
+            next_i, file_info, new_diff = self._parse_diff(i)
+
             if file_info:
                 self._ensure_file_has_required_fields(file_info)
+
+                if preamble:
+                    file_info.data = preamble + file_info.data
+                    preamble = ''
+
                 self.files.append(file_info)
+            elif new_diff:
+                # We found a diff, but it was empty and has no file entry.
+                # Reset the preamble.
+                preamble = ''
+            else:
+                preamble += self.lines[i] + '\n'
+
+            i = next_i
+
         return self.files
 
     def _parse_diff(self, linenum):
-        """
-        Parses out one file from a Git diff
+        """Parses out one file from a Git diff
+
+        This will return a tuple of the next line number, the file info
+        (if any), and whether or not we've found a file (even if we decided
+        not to record it).
         """
         if self.lines[linenum].startswith("diff --git"):
-            return self._parse_git_diff(linenum)
+            parts = self._parse_git_diff(linenum)
+
+            return parts[0], parts[1], True
         else:
-            return linenum + 1, None
+            return linenum + 1, None, False
 
     def _parse_git_diff(self, linenum):
         # First check if it is a new file with no content or
@@ -165,14 +187,8 @@ class GitDiffParser(DiffParser):
         # a deleted file with no content
         # then skip
 
-        try:
-            if self._is_empty_change(linenum):
-                linenum += GIT_DIFF_EMPTY_CHANGESET_SIZE
-                return linenum, None
-        except IndexError:
-            # This means this is the only bit left in the file
-            linenum += GIT_DIFF_EMPTY_CHANGESET_SIZE
-            return linenum, None
+        empty_change = self._is_empty_change(linenum)
+        empty_change_linenum = linenum + GIT_DIFF_EMPTY_CHANGESET_SIZE
 
         # Now we have a diff we are going to use so get the filenames + commits
         file_info = File()
@@ -187,6 +203,7 @@ class GitDiffParser(DiffParser):
         except ValueError:
             raise DiffParserError('The diff file is missing revision '
                                   'information', linenum)
+
         linenum += 1
 
         # Parse the extended header to save the new file, deleted file,
@@ -209,6 +226,12 @@ class GitDiffParser(DiffParser):
             linenum += 3
             file_info.moved = True
 
+        # Only show interesting empty changes. Basically, deletions.
+        # It's likely a binary file if we're at this point, and so we want
+        # to process the rest of it.
+        if empty_change and not file_info.deleted:
+            return empty_change_linenum, None
+
         if self._is_index_range_line(linenum):
             index_range = self.lines[linenum].split(None, 2)[1]
 
@@ -228,6 +251,7 @@ class GitDiffParser(DiffParser):
 
             if self._is_binary_patch(linenum):
                 file_info.binary = True
+                file_info.data += self.lines[linenum] + "\n"
                 return linenum + 1, file_info
 
             if self._is_diff_fromfile_line(linenum):
@@ -240,7 +264,12 @@ class GitDiffParser(DiffParser):
         return linenum, file_info
 
     def _is_empty_change(self, linenum):
-        next_diff_start = self.lines[linenum + GIT_DIFF_EMPTY_CHANGESET_SIZE]
+        next_diff_start_linenum = linenum + GIT_DIFF_EMPTY_CHANGESET_SIZE
+
+        if next_diff_start_linenum >= len(self.lines):
+            return True
+
+        next_diff_start = self.lines[next_diff_start_linenum]
         next_line = self.lines[linenum + 1]
         return ((next_line.startswith("new file mode") or
                  next_line.startswith("old mode") or
@@ -272,7 +301,7 @@ class GitDiffParser(DiffParser):
     def _is_binary_patch(self, linenum):
         line = self.lines[linenum]
 
-        return (line.startswith("Binary files") or
+        return (line.startswith("Binary file") or
                 line.startswith("GIT binary patch"))
 
     def _is_diff_fromfile_line(self, linenum):

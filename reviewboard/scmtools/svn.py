@@ -435,11 +435,40 @@ class SVNTool(SCMTool):
 
 class SVNDiffParser(DiffParser):
     BINARY_STRING = "Cannot display: file marked as a binary type."
+    PROPERTY_PATH_RE = re.compile(r'Property changes on: (.*)')
 
-    def __init__(self, data):
-        DiffParser.__init__(self, data)
+    def parse_diff_header(self, linenum, info):
+        # We're looking for a SVN property change for SVN < 1.7.
+        #
+        # There's going to be at least 5 lines left:
+        # 1) --- (blah)
+        # 2) +++ (blah)
+        # 3) Property changes on: <path>
+        # 4) -----------------------------------------------------
+        # 5) Modified: <propname>
+        if (linenum + 4 < len(self.lines) and
+            self.lines[linenum].startswith('--- (') and
+            self.lines[linenum + 1].startswith('+++ (') and
+            self.lines[linenum + 2].startswith('Property changes on:')):
+            # Subversion diffs with property changes have no really
+            # parsable format. The content of a property can easily mimic
+            # the property change headers. So we can't rely upon it, and
+            # can't easily display it. Instead, skip it, so it at least
+            # won't break diffs.
+            info['skip'] = True
+            linenum += 4
+
+            return linenum
+        else:
+            return super(SVNDiffParser, self).parse_diff_header(linenum, info)
 
     def parse_special_header(self, linenum, info):
+        if (linenum + 1 < len(self.lines) and
+            self.lines[linenum] == 'Index:'):
+            # This is an empty Index: line. This might mean we're parsing
+            # a property change.
+            return linenum + 2
+
         linenum = super(SVNDiffParser, self).parse_special_header(linenum, info)
 
         if 'index' in info and linenum != len(self.lines):
@@ -453,5 +482,27 @@ class SVNDiffParser(DiffParser):
                 # We can't get the revision info from this diff header.
                 info['origInfo'] = '(unknown)'
                 info['newInfo'] = '(working copy)'
+
+        return linenum
+
+    def parse_after_headers(self, linenum, info):
+        # We're looking for a SVN property change for SVN 1.7+.
+        #
+        # This differs from SVN property changes in older versions of SVN
+        # in a couple ways:
+        #
+        # 1) The ---, +++, and Index: lines have actual filenames.
+        #    Because of this, we won't hit the case in parse_diff_header
+        #    above.
+        # 2) There's an actual section per-property, so we could parse these
+        #    out in a usable form. We'd still need a way to display that
+        #    sanely, though.
+        if (self.lines[linenum] == '' and
+            linenum + 2 < len(self.lines) and
+            self.lines[linenum + 1].startswith('Property changes on:')):
+            # Skip over the next 3 lines (blank, "Property changes on:", and
+            # the "__________" divider.
+            info['skip'] = True
+            linenum += 3
 
         return linenum

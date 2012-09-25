@@ -58,6 +58,16 @@ class FileDiff(models.Model):
     status = models.CharField(_("status"), max_length=1, choices=STATUSES)
 
     @property
+    def source_file_display(self):
+        tool = self.diffset.repository.get_scmtool()
+        return tool.normalize_path_for_display(self.source_file)
+
+    @property
+    def dest_file_display(self):
+        tool = self.diffset.repository.get_scmtool()
+        return tool.normalize_path_for_display(self.dest_file)
+
+    @property
     def deleted(self):
         return self.status == self.DELETED
 

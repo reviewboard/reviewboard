@@ -1,0 +1,148 @@
+=================================
+Review Board 1.6.12 Release Notes
+=================================
+
+**Release date**: September 24, 2012
+
+
+New Features
+============
+
+* Added support for incremental diff expansion.
+  (:bug:`342`, :bug:`603`, :bug:`1231`)
+
+  One of our oldest feature requests was to offer a way to expand only a few
+  lines of a diff at a time. Currently, you can expand an entire collapsed
+  segment of a diff at once, but when this is very big, that's not very
+  helpful.
+
+  Now you can expand the lines above or below the header at 20 lines at a time
+  by clicking the expansion links on the far left. Or you can expand up to the
+  definition of the function or class listed by clicking the expansion button
+  for that.  ou can still of course expand the entire contents as well.
+
+  Whenever you expand part of the diff, a collapse button will appear that
+  will allow you to easily re-collapse what you've expanded.
+
+  This feature was sponsored by `NetApp, Inc.`_
+
+* Replaced our old :guilabel:`Report Bug` and :guilabel:`Bugs` links in
+  the top-right with :guilabel:`Support`. This takes you to our new
+  `Support tracker`_, where you can see our different support options
+  and get help outside of a bug tracker.
+
+* Added support for Clear Case snapshot views. Patch by Tomasz Moń.
+
+.. _`NetApp, Inc.`: http://www.netapp.com/
+.. _`Support tracker`: http://support.beanbaginc.com/
+
+
+Performance Improvements
+========================
+
+* We no longer perform syntax highlighting for very large files.
+
+  Files over 200KB in size are no longer syntax highlighted. This speeds
+  up render time and reduces CPU time dramatically for large data files.
+
+
+Hosting Service Changes
+=======================
+
+* Fedora Hosted has been switched to use cgit instead of GitWeb.
+  Patch by Stephen Gallagher.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed a regression where users could see other users' unpublished replies.
+  (:bug:`2710`, :bug:`2719`)
+
+  The recent optimizations triggered a bug where users could end up seeing
+  unpublished replies from other users.
+
+  Patch by Tommy Beadle.
+
+* Diff upload API errors now serialize the revision correctly.
+
+  When a file can't be found in the repository during a diff upload
+  using the API, an error with the filename and revision is returned.
+  However, if the revision was HEAD or PRE-CREATION, we wouldn't serialize
+  this correctly.
+
+* Fixed linking to bug numbers when they contain a ``#``. (:bug:`2449`)
+
+  The ``#`` was being included in the URL when it should have been stripped.
+
+
+Clear Case
+----------
+
+* Filenames on Clear Case are now displayed in a more readable format.
+  Patch by Tomasz Moń.
+
+* Fixed some issues with handling paths on Clear Case on Windows.
+  Patch by Tomasz Moń.
+
+
+Git
+---
+
+* Fixed Git diffs with deleted binary files. (:bug:`2419`)
+
+  Deleted binary files in Git diffs were causing parsing problems. The entire
+  entry would be skipped over, so it would never show up in the diff viewer.
+
+* Extended data in Git diffs (such as the author, description, etc.) is no
+  longer lost when uploading a diff. (:bug:`929`)
+
+* The ``Binary files have changed`` parts in a Git diff are no longer lost
+  when uploading a diff. (:bug:`929`)
+
+
+Mercurial
+---------
+
+* Fixed support for hg git diffs with spaces in the path. Patch by G Coupar.
+
+
+Subversion
+----------
+
+* Fixed parsing of SVN diffs with property changes. (:bug:`2359`)
+
+  SVN diffs with property changes used to break the diff parser pretty
+  badly, due to their non-standard format. We now handle this format and
+  parse it successfully.
+
+  We don't actually show any property changes in the diff viewer, however.
+  More work will be needed before we have that ability. For now, they're
+  skipped over.
+
+* Fixed display of SVN diffs with changes in ``$Keyword$`` formatting.
+
+  In some cases, if a file contained an invalid keyword (using the form of
+  ``$Keyword$`` instead of ``$Keyword:$``) and then tried to correct it,
+  the resulting diff couldn't be parsed due to how the keywords were expanded.
+  We're better about this now and ensure that the resulting diff can be
+  viewed.
+
+  Patch by Alexey Neyman.
+
+
+Contributors
+============
+
+* Alexey Neyman
+* Christian Hammond
+* G Coupar
+* Stephen Gallagher
+* Tomasz Moń
+* Tommy Beadle
+
+
+.. comment: vim: ft=rst et
