@@ -152,7 +152,7 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           'Django>=1.4.1',
           'django_evolution>=0.6.7',
-          'Djblets>=0.7.2alpha0.dev',
+          'Djblets>=0.7.2',
           'django-pipeline>=1.2.16',
           'Pygments>=1.4',
           'flup',
