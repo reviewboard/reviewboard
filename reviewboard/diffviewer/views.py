@@ -251,15 +251,23 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
                 temp_files = get_diff_files(diffset, filediff, interdiffset)
 
             if temp_files:
-                populate_diff_chunks(temp_files, highlighting)
-
-                file_temp = temp_files[0]
-                file_temp['index'] = first_file['index']
-                first_file['fragment'] = \
-                    build_diff_fragment(request, file_temp, None,
-                                        highlighting, collapse_diffs, None,
-                                        context,
-                                        'diffviewer/diff_file_fragment.html')
+                try:
+                    populate_diff_chunks(temp_files, highlighting)
+                except Exception, e:
+                    file_temp = temp_files[0]
+                    file_temp['index'] = first_file['index']
+                    first_file['fragment'] = \
+                        exception_traceback(request, e,
+                                            'diffviewer/diff_fragment_error.html',
+                                            extra_context={'file': file_temp})
+                else:
+                    file_temp = temp_files[0]
+                    file_temp['index'] = first_file['index']
+                    first_file['fragment'] = \
+                        build_diff_fragment(request, file_temp, None,
+                                            highlighting, collapse_diffs, None,
+                                            context,
+                                            'diffviewer/diff_file_fragment.html')
 
         response = render_to_response(template_name,
                                       RequestContext(request, context))
