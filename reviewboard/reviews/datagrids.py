@@ -473,6 +473,7 @@ class ReviewRequestDataGrid(DataGrid):
     This datagrid accepts the show_submitted parameter in the URL, allowing
     submitted review requests to be filtered out or displayed.
     """
+    my_comments  = MyCommentsColumn()
     star         = ReviewRequestStarColumn()
     ship_it      = ShipItColumn()
     summary      = SummaryColumn(expand=True, link=True, css_class="summary")
