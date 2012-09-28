@@ -21,7 +21,7 @@ class DateTimeSinceColumn(DateTimeColumn):
     number of minutes, hours, days, etc. ago is correct.
     """
     def render_data(self, obj):
-        return '<time class="timesince" datetime="%s">%s</time>' % (
+        return u'<time class="timesince" datetime="%s">%s</time>' % (
             date(getattr(obj, self.field_name), 'c'),
             super(DateTimeSinceColumn, self).render_data(obj))
 
@@ -120,10 +120,10 @@ class ShipItColumn(Column):
 
     def render_data(self, review_request):
         if review_request.shipit_count > 0:
-            return '<span class="shipit-count">' \
-                    '<img src="%srb/images/shipit_checkmark.png?%s" ' \
-                         'width="9" height="8" alt="%s" title="%s" /> %s' \
-                   '</span>' % \
+            return u'<span class="shipit-count">' \
+                    u'<img src="%srb/images/shipit_checkmark.png?%s" ' \
+                         u'width="9" height="8" alt="%s" title="%s" /> %s' \
+                   u'</span>' % \
                 (settings.MEDIA_URL, settings.MEDIA_SERIAL,
                  self.image_alt, self.image_alt, review_request.shipit_count)
 
@@ -211,8 +211,8 @@ class MyCommentsColumn(Column):
                     (settings.MEDIA_URL, settings.MEDIA_SERIAL)
                 image_alt = _("Comments published")
 
-        return '<img src="%s?%s" width="%s" height="%s" alt="%s" ' \
-               'title="%s" />' % \
+        return u'<img src="%s?%s" width="%s" height="%s" alt="%s" ' \
+                u'title="%s" />' % \
                 (image_url, settings.MEDIA_SERIAL, self.image_width,
                  self.image_height, image_alt, image_alt)
 
@@ -234,8 +234,8 @@ class NewUpdatesColumn(Column):
 
     def render_data(self, review_request):
         if review_request.new_review_count > 0:
-            return '<img src="%s" width="%s" height="%s" alt="%s" ' \
-                   'title="%s" />' % \
+            return u'<img src="%s" width="%s" height="%s" alt="%s" ' \
+                    u'title="%s" />' % \
                 (self.image_url, self.image_width, self.image_height,
                  self.image_alt, self.image_alt)
 
