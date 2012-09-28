@@ -15,6 +15,7 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 from django.contrib.auth import get_backends
+from django.contrib.auth import hashers
 from django.utils.translation import ugettext as _
 from djblets.util.misc import get_object_or_none
 
@@ -120,11 +121,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         return ModelBackend.get_or_create_user(self, username)
 
     def update_password(self, user, password):
-        salt = sha1(str(time.time())).hexdigest()[:5]
-        hash = sha1(salt + password)
-        new_password = 'sha1$%s$%s' % (salt, hash.hexdigest())
-        user.password = new_password
-
+        user.password = hashers.make_password(password)
 
 class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""
