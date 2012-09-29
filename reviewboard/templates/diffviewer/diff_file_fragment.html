@@ -8,7 +8,7 @@
 
 {% if file.changed_chunk_indexes or file.binary or file.deleted %}
 {%  if not standalone %}
-<table class="sidebyside{% if not file.interfilediff and file.newfile %} newfile{% endif %}" id="file{{file.filediff.id}}">
+<table class="sidebyside{% if not file.interfilediff and file.newfile and not file.filediff.parent_diff %} newfile{% endif %}" id="file{{file.filediff.id}}">
  <colgroup>
   <col class="line" />
   <col class="left" />
