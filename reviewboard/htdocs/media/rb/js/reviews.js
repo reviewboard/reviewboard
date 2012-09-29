@@ -1442,7 +1442,8 @@ $.reviewForm = function(review) {
         $(".comment-editable", dlg).each(function() {
             var editable = $(this);
             var comment = editable.data('comment');
-            var issueOpened = editable.next()[0].checked;
+            var issue = editable.next()[0];
+            var issueOpened = issue ? issue.checked : false;
 
             if (editable.inlineEditor("dirty") ||
                 issueOpened != comment.issue_opened) {
