@@ -43,7 +43,7 @@ per-release. So, instead of ``reviewboard`` above, maybe ``rb-master`` or
 From then on, before doing any Review Board development, you'll want to switch
 to this environment::
 
-    $ source ~/envs/reviewboard
+    $ source ~/envs/reviewboard/bin/activate
 
 Note that once you're in your environment, you don't need to install packages
 as root. So, no need for :command:`sudo`.
