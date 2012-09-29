@@ -1,4 +1,5 @@
 import pytz
+import logging
 
 from django.contrib.auth.models import User
 from django.contrib.staticfiles.templatetags.staticfiles import static
@@ -466,6 +467,31 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
             return ""
 
 
+class BugsColumn(Column):
+    def __init__(self, *args, **kwargs):
+        super(BugsColumn, self).__init__(_("Bugs"), link=False, shrink=True,
+                                         sortable=False, css_class="bugs",
+                                         *args, **kwargs)
+
+    def augment_queryset(self, queryset):
+        return queryset.select_related('repository')
+
+    def render_data(self, review_request):
+        bugs = review_request.get_bug_list()
+        repository = review_request.repository
+
+        if repository and repository.bug_tracker:
+            try:
+                return (", ").join(['<a href="%s">%s</a>' %
+                                    (repository.bug_tracker % bug, bug)
+                                    for bug in bugs])
+            except TypeError:
+                logging.warning('Invalid bug tracker format when rendering '
+                                'bugs column: %s' % repository.bug_tracker)
+
+        return (", ").join(bugs)
+
+
 class ReviewRequestDataGrid(DataGrid):
     """
     A datagrid that displays a list of review requests.
@@ -481,8 +507,7 @@ class ReviewRequestDataGrid(DataGrid):
 
     branch       = Column(_("Branch"), db_field="branch",
                           shrink=True, sortable=True, link=False)
-    bugs_closed  = Column(_("Bugs"), db_field="bugs_closed",
-                          shrink=True, sortable=False, link=False)
+    bugs_closed  = BugsColumn()
     repository   = RepositoryColumn()
     time_added   = DateTimeColumn(_("Posted"),
         detailed_label=_("Posted Time"),
