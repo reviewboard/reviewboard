@@ -7,6 +7,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_services, \
@@ -119,7 +120,10 @@ class RepositoryForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}),
         help_text=_("The optional path to the bug tracker for this "
-                    "repository."))
+                    "repository. The path should resemble: "
+                    "http://www.example.com/issues?id=%s, where %s will be the "
+                    "bug number."),
+        validators=[validate_bug_tracker])
 
     def __init__(self, *args, **kwargs):
         self.local_site_name = kwargs.pop('local_site_name', None)
