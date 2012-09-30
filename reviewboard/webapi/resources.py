@@ -410,7 +410,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     mimetype_item_resource_name = 'file-diff-comment'
 
     def get_queryset(self, request, review_request_id, diff_revision,
-                     *args, **kwargs):
+                     filediff_id, *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request
@@ -424,7 +424,8 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         """
         q = super(FileDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        return q.filter(filediff__diffset__revision=diff_revision)
+        return q.filter(filediff__diffset__revision=diff_revision,
+                        filediff__id=filediff_id)
 
     @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
