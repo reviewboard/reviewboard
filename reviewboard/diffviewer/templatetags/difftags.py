@@ -1,6 +1,10 @@
 import re
 
 from django import template
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.translation import ugettext as _
+from djblets.util.decorators import basictag
 
 register = template.Library()
 
@@ -128,3 +132,85 @@ def showextrawhitespace(value):
     return value.replace("\t", '<span class="tb">\t</span>')
 
 showextrawhitespace.is_safe = True
+
+
+def _diff_expand_link(context, expandable, text, tooltip,
+                      expand_pos, image, image_alt='[+]',
+                      image_width=14, image_height=14):
+    """Utility function to render a diff expansion link.
+
+    This is used internally by other template tags to provide a diff
+    expansion link. It assumes nothing about the content and serves only
+    to render the data from a template.
+    """
+    return render_to_string('diffviewer/expand_link.html', {
+        'tooltip': tooltip,
+        'text': text,
+        'base_url': context['base_url'],
+        'chunk': context['chunk'],
+        'file': context['file'],
+        'expand_pos': expand_pos,
+        'image': image,
+        'image_width': image_width,
+        'image_height': image_height,
+        'image_alt': image_alt,
+        'expandable': expandable,
+        'MEDIA_URL': settings.MEDIA_URL,
+        'MEDIA_SERIAL': settings.MEDIA_SERIAL,
+    })
+
+@register.tag
+@basictag(takes_context=True)
+def diff_expand_link(context, expanding, tooltip,
+                     expand_pos_1=None, expand_pos_2=None, text=None):
+    """Renders a diff expansion link.
+
+    This link will expand the diff entirely, or incrementally in one
+    or more directions.
+
+    'expanding' is expected to be one of 'all', 'above', or 'below'.
+    """
+    if expanding == 'all':
+        image = 'rb/images/diff-expand-all.png'
+        expand_pos = None
+        image_alt = '[20]'
+        image_width = 14
+    else:
+        lines_of_context = context['lines_of_context']
+        expand_pos = (lines_of_context[0] + expand_pos_1,
+                      lines_of_context[1] + expand_pos_2)
+        image = 'rb/images/diff-expand-%s.png' % expanding
+        image_width = 28
+        image_alt = '[+20]'
+
+
+    return _diff_expand_link(context, True, text, tooltip, expand_pos,
+                             image, image_alt, image_width)
+
+@register.tag
+@basictag(takes_context=True)
+def diff_chunk_header(context, header):
+    """Renders a diff header as HTML.
+
+    This diff header may be expandable, depending on whether or not the
+    function/class referenced in the header is contained within the collapsed
+    region.
+    """
+    lines_of_context = context['lines_of_context']
+    chunk = context['chunk']
+
+    line = chunk['lines'][0]
+
+    if header['line'] >= line[1]:
+        expand_offset = line[1] + chunk['numlines'] - header['line']
+        expandable = True
+    else:
+        expand_offset = 0
+        expandable = False
+
+    return _diff_expand_link(context, expandable,
+                             '<code>%s</code>' % header['text'],
+                             _('Expand to header'),
+                             (lines_of_context[0],
+                              expand_offset + lines_of_context[1]),
+                             'rb/images/diff-expand-header.png')
