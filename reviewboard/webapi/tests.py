@@ -1927,6 +1927,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['count'],
                          ReviewRequest.objects.from_user("grumpy").count())
 
+    @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_ship_it_0(self):
         """Testing the GET review-requests/?ship-it=0 API"""
         rsp = self.apiGet(self.get_list_url(), {
@@ -1935,10 +1936,13 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertNotEqual(len(rsp['review_requests']), 0)
 
-        q = ReviewRequest.objects.public(user=self.user, status='P')
-        q = q.exclude(Q(reviews__ship_it=True))
+
+        q = ReviewRequest.objects.public(user=self.user,
+                                         status='P',
+                                         extra_query=Q(shipit_count=0))
         self.assertEqual(len(rsp['review_requests']), q.count())
 
+    @add_fixtures(['test_site'])
     def test_get_reviewrequests_with_ship_it_1(self):
         """Testing the GET review-requests/?ship-it=1 API"""
         rsp = self.apiGet(self.get_list_url(), {
@@ -1949,7 +1953,7 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
 
         q = ReviewRequest.objects.public(user=self.user,
                                          status='P',
-                                         extra_query=Q(reviews__ship_it=True))
+                                         extra_query=Q(shipit_count__gt=0))
         self.assertEqual(len(rsp['review_requests']), q.count())
 
     @add_fixtures(['test_site'])

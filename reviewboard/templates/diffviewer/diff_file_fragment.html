@@ -96,31 +96,23 @@
   <tr>
    <th>
 {% if chunk.index != 0 %}
-    <a href="#" title="{% trans "Expand 20 lines above" %}" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0|add:20}},{{lines_of_context.1}}', this); return false;">
-     <img src="{% static "rb/images/diff-expand-above.png" %}" width="28" height="14" alt="[+20]" />
-    </a>
+    {% diff_expand_link 'above' _('Show 20 more lines above') 20 0 %}
 {% endif %}
    </th>
    <td colspan="3">
-    <a href="#" title="{% trans "Expand all lines" %}" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', null, this); return false;">
-     <img src="{% static "rb/images/diff-expand-all.png" %}" width="14" height="14" alt="[+]" />
-     {{chunk.numlines}} line{{chunk.numlines|pluralize}}
-    </a>
+    {% definevar 'expand_text' %}{{chunk.numlines}} line{{chunk.numlines|pluralize}}{% enddefinevar %}
+    {% diff_expand_link 'all' _('Show all lines') 0 0 expand_text %}
    </td>
   </tr>
 {% if chunk.index|add:1 != file.num_chunks %}
   <tr>
-   <th>
-    <a href="#" title="{% trans "Expand 20 lines below" %}" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{lines_of_context.1|add:20}}', this); return false;">
-     <img src="{% static "rb/images/diff-expand-below.png" %}" width="28" height="14" alt="[+20]" />
-    </a>
-   </th>
+   <th>{% diff_expand_link 'below' _('Show 20 more lines below') 0 20 %}</th>
 {%   if chunk.meta.headers and chunk.meta.headers.0 %}
 {%    if chunk.meta.headers.0.text == chunk.meta.headers.1.text %}
-   <td colspan="3"><a href="#" title="{% trans "Expand to header" %}" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{chunk.meta.headers.0.expand_offset|add:lines_of_context.1}}', this); return false;"><img src="{% static "rb/images/diff-expand-header.png" %}" width="14" height="14" alt="[+]" /> <code>{{chunk.meta.headers.0.text}}</code></a></td>
+   <td colspan="3">{% diff_chunk_header chunk.meta.headers.0 %}</td>
 {%    else %}
-   <td><a href="#" title="{% trans "Expand to header" %}" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{chunk.meta.headers.1.expand_offset|add:lines_of_context.1}}', this); return false;"><img src="{% static "rb/images/diff-expand-header.png" %}" width="14" height="14" alt="[+]" /> <code>{{chunk.meta.headers.0.text}}</code></a></td>
-   <td colspan="2"><a href="#" title="{% trans "Expand to header" %}" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', '{{lines_of_context.0}},{{chunk.meta.headers.1.expand_offset|add:lines_of_context.1}}', this); return false;"><img src="{% static "rb/images/diff-expand-header.png" %}" width="14" height="14" alt="[+]" /> <code>{{chunk.meta.headers.1.text}}</code></a></td>
+   <td>{% diff_chunk_header chunk.meta.headers.0 %}</td>
+   <td colspan="2">{% diff_chunk_header chunk.meta.headers.1 %}</td>
 {%    endif %}
 {%   else %}
    <td colspan="3"></td>

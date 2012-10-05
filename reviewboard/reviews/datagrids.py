@@ -24,7 +24,7 @@ class DateTimeSinceColumn(DateTimeColumn):
     number of minutes, hours, days, etc. ago is correct.
     """
     def render_data(self, obj):
-        return '<time class="timesince" datetime="%s">%s</time>' % (
+        return u'<time class="timesince" datetime="%s">%s</time>' % (
             date(getattr(obj, self.field_name), 'c'),
             super(DateTimeSinceColumn, self).render_data(obj))
 
@@ -121,10 +121,10 @@ class ShipItColumn(Column):
 
     def render_data(self, review_request):
         if review_request.shipit_count > 0:
-            return '<span class="shipit-count">' \
-                    '<img src="%s" width="9" height="8" alt="%s" ' \
-                         'title="%s" /> %s' \
-                   '</span>' % \
+            return u'<span class="shipit-count">' \
+                    u'<img src="%s" width="9" height="8" alt="%s" ' \
+                         u'title="%s" /> %s' \
+                   u'</span>' % \
                 (static("rb/images/shipit_checkmark.png"),
                  self.image_alt, self.image_alt, review_request.shipit_count)
 
@@ -209,8 +209,8 @@ class MyCommentsColumn(Column):
                 image_url = static("rb/images/comment-small.png")
                 image_alt = _("Comments published")
 
-        return '<img src="%s" width="%s" height="%s" alt="%s" ' \
-               'title="%s" />' % \
+        return u'<img src="%s" width="%s" height="%s" alt="%s" ' \
+               u'title="%s" />' % \
                 (image_url, self.image_width, self.image_height,
                  image_alt, image_alt)
 
@@ -230,8 +230,8 @@ class ToMeColumn(Column):
         user = self.datagrid.request.user
         if (user.is_authenticated() and
             review_request.target_people.filter(pk=user.pk).exists()):
-            return '<div title="%s"><b>&raquo;</b></div>' % \
-                    (self.detailed_label)
+            return u'<div title="%s"><b>&raquo;</b></div>' % \
+                     (self.detailed_label)
 
         return ""
 
@@ -252,8 +252,8 @@ class NewUpdatesColumn(Column):
 
     def render_data(self, review_request):
         if review_request.new_review_count > 0:
-            return '<img src="%s" width="%s" height="%s" alt="%s" ' \
-                   'title="%s" />' % \
+            return u'<img src="%s" width="%s" height="%s" alt="%s" ' \
+                    u'title="%s" />' % \
                 (self.image_url, self.image_width, self.image_height,
                  self.image_alt, self.image_alt)
 

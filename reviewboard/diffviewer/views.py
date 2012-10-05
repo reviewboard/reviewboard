@@ -268,7 +268,8 @@ def view_diff(request, diffset, interdiffset=None, extra_context={},
                                             context,
                                             'diffviewer/diff_file_fragment.html')
 
-        response = render_to_response(template_name, RequestContext(request, context))
+        response = render_to_response(template_name,
+                                      RequestContext(request, context))
         response.set_cookie('collapsediffs', collapse_diffs)
 
         if interdiffset:

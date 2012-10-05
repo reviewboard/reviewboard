@@ -1133,7 +1133,7 @@
             "time_added": "2007-06-24T00:14:32+00:00", 
             "public": true, 
             "status": "P", 
-            "shipit_count": 0, 
+            "shipit_count": 1, 
             "description": "Be compatible with cleaned_data changes in Django.", 
             "repository": 1, 
             "last_review_timestamp": null, 

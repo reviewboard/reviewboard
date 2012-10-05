@@ -418,7 +418,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
     mimetype_item_resource_name = 'file-diff-comment'
 
     def get_queryset(self, request, review_request_id, diff_revision,
-                     *args, **kwargs):
+                     filediff_id, *args, **kwargs):
         """Returns a queryset for Comment models.
 
         This filters the query for comments on the specified review request
@@ -432,7 +432,8 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         """
         q = super(FileDiffCommentResource, self).get_queryset(
             request, review_request_id, *args, **kwargs)
-        return q.filter(filediff__diffset__revision=diff_revision)
+        return q.filter(filediff__diffset__revision=diff_revision,
+                        filediff__id=filediff_id)
 
     @webapi_check_local_site
     @augment_method_from(BaseDiffCommentResource)
@@ -5922,7 +5923,6 @@ class ReviewRequestResource(WebAPIResource):
 
         if is_list:
             q = Q()
-            exclude_q = Q()
 
             if 'to-groups' in request.GET:
                 for group_name in request.GET.get('to-groups').split(','):
@@ -5957,9 +5957,9 @@ class ReviewRequestResource(WebAPIResource):
                 ship_it = request.GET.get('ship-it')
 
                 if ship_it in ('1', 'true', 'True'):
-                    q = q & Q(reviews__ship_it=True)
+                    q = q & Q(shipit_count__gt=0)
                 elif ship_it in ('0', 'false', 'False'):
-                    exclude_q = exclude_q & Q(reviews__ship_it=True)
+                    q = q & Q(shipit_count=0)
 
             if 'time-added-from' in request.GET:
                 date = self._parse_date(request.GET['time-added-from'])
@@ -5991,9 +5991,6 @@ class ReviewRequestResource(WebAPIResource):
                                                  status=status,
                                                  local_site=local_site,
                                                  extra_query=q)
-
-            if exclude_q:
-                queryset = queryset.exclude(exclude_q)
 
             return queryset
         else:

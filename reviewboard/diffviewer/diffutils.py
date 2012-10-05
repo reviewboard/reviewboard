@@ -432,7 +432,6 @@ def compute_chunk_last_header(lines, numlines, meta, last_header=None):
             last_header[i] = {
                 'line': header[0],
                 'text': header[1].strip(),
-                'expand_offset': linenum + numlines - header[0],
             }
 
     return last_header

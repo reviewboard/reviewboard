@@ -1,8 +1,10 @@
 from django.conf import settings
+from django.forms import ValidationError
 from django.test import TestCase
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin import checks
+from reviewboard.admin.validation import validate_bug_tracker
 
 
 class UpdateTests(TestCase):
@@ -49,3 +51,25 @@ class UpdateTests(TestCase):
         response = self.client.get("/dashboard/")
         self.assertTemplateNotUsed(response,
                                    "admin/manual_updates_required.html")
+
+
+class ValidatorTests(TestCase):
+    def test_validate_bug_tracker(self):
+        """Testing bug tracker url form field validation"""
+        # Invalid - invalid format specification types
+        self.assertRaises(ValidationError, validate_bug_tracker, "%20")
+        self.assertRaises(ValidationError, validate_bug_tracker, "%d")
+
+        # Invalid - too many format specification types
+        self.assertRaises(ValidationError, validate_bug_tracker, "%s %s")
+
+        # Invalid - no format specification types
+        self.assertRaises(ValidationError, validate_bug_tracker, "www.a.com")
+
+        # Valid - Escaped %'s, with a valid format specification type
+        try:
+            validate_bug_tracker("%%20%s")
+        except ValidationError:
+            self.assertFalse(True, "validate_bug_tracker() raised a "
+                                   "ValidationError when no error was "
+                                   "expected.")

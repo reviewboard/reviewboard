@@ -17,14 +17,14 @@
    </th>
   </tr>
  </thead>
-{% if chunks.0.meta.headers %}
+{% if chunks.0.meta.headers and chunks.0.meta.headers.0 %}
  <tbody style="background-color: #e4d9cb; padding: 4px 8px; text-align: center;">
   <tr>
-{%  if chunks.0.meta.headers.0 == chunks.0.meta.headers.1 %}
-   <td colspan="4"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0}}</pre></td>
+{%  if chunks.0.meta.headers.0.text == chunks.0.meta.headers.1.text %}
+   <td colspan="4"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0.text}}</pre></td>
 {%  else %}
-   <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0}}</pre></td>
-   <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.1}}</pre></td>
+   <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.0.text}}</pre></td>
+   <td colspan="2"><pre style="{{difflinecss}}">{{chunks.0.meta.headers.1.text}}</pre></td>
 {%  endif %}
   </tr>
  </tbody>
