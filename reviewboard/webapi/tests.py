@@ -23,15 +23,15 @@ from reviewboard.reviews.models import FileAttachmentComment, Group, \
                                        ReviewRequest, ReviewRequestDraft, \
                                        Review, Comment, Screenshot, \
                                        ScreenshotComment
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
-                                        BadHostKeyError, \
-                                        UnknownHostKeyError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.svn import SVNTool
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.models import LocalSite
+from reviewboard.ssh.client import SSHClient
+from reviewboard.ssh.errors import BadHostKeyError, \
+                                   UnknownHostKeyError
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_TOO_BIG, \
                                       INVALID_REPOSITORY, \
@@ -594,16 +594,16 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         # so we can restore them.
         self._old_check_repository = SVNTool.check_repository
         self._old_accept_certificate = SVNTool.accept_certificate
-        self._old_add_host_key = sshutils.add_host_key
-        self._old_replace_host_key = sshutils.replace_host_key
+        self._old_add_host_key = SSHClient.add_host_key
+        self._old_replace_host_key = SSHClient.replace_host_key
 
     def tearDown(self):
         super(RepositoryResourceTests, self).tearDown()
 
         SVNTool.check_repository = self._old_check_repository
         SVNTool.accept_certificate = self._old_accept_certificate
-        sshutils.add_host_key = self._old_add_host_key
-        sshutils.replace_host_key = self._old_replace_host_key
+        SSHClient.add_host_key = self._old_add_host_key
+        SSHClient.replace_host_key = self._old_replace_host_key
 
     def test_get_repositories(self):
         """Testing the GET repositories/ API"""
@@ -664,7 +664,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         expected_key = key2
         saw = {'replace_host_key': False}
 
-        def _replace_host_key(_hostname, _expected_key, _key, local_site_name):
+        def _replace_host_key(cls, _hostname, _expected_key, _key):
             self.assertEqual(hostname, _hostname)
             self.assertEqual(expected_key, _expected_key)
             self.assertEqual(key, _key)
@@ -676,7 +676,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                 raise BadHostKeyError(hostname, key, expected_key)
 
         SVNTool.check_repository = _check_repository
-        sshutils.replace_host_key = _replace_host_key
+        SSHClient.replace_host_key = _replace_host_key
 
         self._login_user(admin=True)
         self._post_repository(False, data={
@@ -711,7 +711,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         key = key1
         saw = {'add_host_key': False}
 
-        def _add_host_key(_hostname, _key, local_site_name):
+        def _add_host_key(cls, _hostname, _key):
             self.assertEqual(hostname, _hostname)
             self.assertEqual(key, _key)
             saw['add_host_key'] = True
@@ -722,7 +722,7 @@ class RepositoryResourceTests(BaseWebAPITestCase):
                 raise UnknownHostKeyError(hostname, key)
 
         SVNTool.check_repository = _check_repository
-        sshutils.add_host_key = _add_host_key
+        SSHClient.add_host_key = _add_host_key
 
         self._login_user(admin=True)
         self._post_repository(False, data={

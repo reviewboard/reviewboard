@@ -12,7 +12,6 @@ except ImportError:
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
 from reviewboard.scmtools.errors import AuthenticationError, \
@@ -20,6 +19,7 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         RepositoryNotFoundError, \
                                         SCMError, \
                                         UnverifiedCertificateError
+from reviewboard.ssh import utils as sshutils
 
 
 # Register these URI schemes so we can handle them properly.

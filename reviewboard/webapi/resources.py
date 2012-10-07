@@ -51,20 +51,21 @@ from reviewboard.reviews.models import BaseComment, Comment, DiffSet, \
                                        ReviewRequest, ReviewRequestDraft, \
                                        Review, ScreenshotComment, Screenshot, \
                                        FileAttachmentComment
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.errors import AuthenticationError, \
-                                        BadHostKeyError, \
                                         ChangeNumberInUseError, \
                                         EmptyChangeSetError, \
                                         FileNotFoundError, \
                                         InvalidChangeNumberError, \
                                         SCMError, \
                                         RepositoryNotFoundError, \
-                                        UnknownHostKeyError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.ssh.client import SSHClient
+from reviewboard.ssh.errors import SSHError, \
+                                   BadHostKeyError, \
+                                   UnknownHostKeyError
 from reviewboard.webapi.decorators import webapi_check_login_required, \
                                           webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
@@ -2740,10 +2741,10 @@ class RepositoryResource(WebAPIResource):
             except BadHostKeyError, e:
                 if trust_host:
                     try:
-                        sshutils.replace_host_key(e.hostname,
-                                                  e.raw_expected_key,
-                                                  e.raw_key,
-                                                  local_site_name)
+                        client = SSHClient(namespace=local_site_name)
+                        client.replace_host_key(e.hostname,
+                                                e.raw_expected_key,
+                                                e.raw_key)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2757,8 +2758,8 @@ class RepositoryResource(WebAPIResource):
             except UnknownHostKeyError, e:
                 if trust_host:
                     try:
-                        sshutils.add_host_key(e.hostname, e.raw_key,
-                                              local_site_name)
+                        client = SSHClient(namespace=local_site_name)
+                        client.add_host_key(e.hostname, e.raw_key)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),
@@ -2796,8 +2797,16 @@ class RepositoryResource(WebAPIResource):
                     return REPO_AUTHENTICATION_ERROR, {
                         'reason': str(e),
                     }
+            except SSHError, e:
+                logging.error('Got unexpected SSHError when checking '
+                              'repository: %s'
+                              % e, exc_info=1)
+                return REPO_INFO_ERROR, {
+                    'error': str(e),
+                }
             except SCMError, e:
-                logging.error('Got unexpected SCMError when checking repository: %s'
+                logging.error('Got unexpected SCMError when checking '
+                              'repository: %s'
                               % e, exc_info=1)
                 return REPO_INFO_ERROR, {
                     'error': str(e),
@@ -6006,6 +6015,10 @@ class ReviewRequestResource(WebAPIResource):
             return INVALID_CHANGE_NUMBER
         except EmptyChangeSetError:
             return EMPTY_CHANGESET
+        except SSHError, e:
+            logging.error("Got unexpected SSHError when creating repository: %s"
+                          % e, exc_info=1)
+            return REPO_INFO_ERROR
         except SCMError, e:
             logging.error("Got unexpected SCMError when creating repository: %s"
                           % e, exc_info=1)

@@ -51,6 +51,7 @@ from reviewboard.reviews.models import Comment, FileAttachmentComment, \
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
+from reviewboard.ssh.errors import SSHError
 from reviewboard.webapi.encoder import status_to_string
 
 
@@ -266,7 +267,7 @@ def new_review_request(request,
                     parent_diff_file=request.FILES.get('parent_diff_path'),
                     local_site=local_site)
                 return HttpResponseRedirect(review_request.get_absolute_url())
-            except (OwnershipError, SCMError, ValueError):
+            except (OwnershipError, SCMError, SSHError, ValueError):
                 pass
     else:
         form = NewReviewRequestForm(request.user, local_site)
