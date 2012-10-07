@@ -155,8 +155,6 @@ def _diff_expand_link(context, expandable, text, tooltip,
         'image_height': image_height,
         'image_alt': image_alt,
         'expandable': expandable,
-        'MEDIA_URL': settings.MEDIA_URL,
-        'MEDIA_SERIAL': settings.MEDIA_SERIAL,
     })
 
 @register.tag
