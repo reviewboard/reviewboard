@@ -2,9 +2,15 @@ import re
 
 from django import template
 from django.conf import settings
-from django.template.loader import render_to_string
+from django.template.context import Context
+from django.template.loader import get_template, render_to_string
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from djblets.util.decorators import basictag
+
+from reviewboard.diffviewer.diffutils import STYLED_MAX_LINE_LEN
+
 
 register = template.Library()
 
@@ -212,3 +218,133 @@ def diff_chunk_header(context, header):
                              (lines_of_context[0],
                               expand_offset + lines_of_context[1]),
                              'rb/images/diff-expand-header.png')
+
+
+@register.simple_tag
+def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
+               begin_collapse_fmt, end_collapse_fmt, moved_fmt):
+    """Renders the lines of a diff.
+
+    This will render each line in the diff viewer. The function expects
+    some basic data on what will be rendered, as well as printf-formatted
+    templates for the contents.
+
+    printf-formatted templates are used instead of standard Django templates
+    because they're much faster to render, which makes a huge difference
+    when rendering thousands of lines or more.
+    """
+    lines = chunk['lines']
+    num_lines = len(lines)
+    chunk_index = chunk['index']
+    change = chunk['change']
+    is_equal = (change == 'equal')
+    is_replace = (change == 'replace')
+    is_insert = (change == 'insert')
+    is_delete = (change == 'delete')
+
+    result = []
+
+    for i, line in enumerate(lines):
+        class_attr = ''
+        line1 = line[2]
+        line2 = line[5]
+        linenum1 = line[1]
+        linenum2 = line[4]
+        show_collapse = False
+        anchor = None
+
+        if not is_equal:
+            classes = ''
+
+            if i == 0:
+                classes += 'first '
+                anchor = '%s.%s' % (file['index'], chunk_index)
+
+            if i == num_lines - 1:
+                classes += 'last '
+
+            if line[7]:
+                classes += 'whitespace-line'
+
+            if classes:
+                class_attr = ' class="%s"' % classes
+
+            if is_replace:
+                if len(line1) < STYLED_MAX_LINE_LEN:
+                    line1 = highlightregion(line1, line[3])
+
+                if len(line2) < STYLED_MAX_LINE_LEN:
+                    line2 = highlightregion(line2, line[6])
+        else:
+            show_collapse = (i == 0 and standalone)
+
+        if not is_delete and len(line1) < STYLED_MAX_LINE_LEN:
+            line1 = showextrawhitespace(line1)
+
+        if not is_insert and len(line2) < STYLED_MAX_LINE_LEN:
+            line2 = showextrawhitespace(line2)
+
+        moved_from = {}
+        moved_to = {}
+
+        if len(line) > 8 and line[8]:
+            if is_insert:
+                moved_from = {
+                    'class': 'moved-from',
+                    'line': mark_safe(line[8]),
+                    'target': mark_safe(linenum2),
+                    'text': _('Moved from %s') % line[8],
+                }
+
+            if is_delete:
+                moved_to = {
+                    'class': 'moved-to',
+                    'line': mark_safe(line[8]),
+                    'target': mark_safe(linenum1),
+                    'text': _('Moved to %s') % line[8],
+                }
+
+        anchor_html = ''
+        begin_collapse_html = ''
+        end_collapse_html = ''
+        moved_from_html = ''
+        moved_to_html = ''
+
+        context = {
+            'chunk_index': chunk_index,
+            'class_attr': class_attr,
+            'linenum_row': line[0],
+            'linenum1': linenum1,
+            'linenum2': linenum2,
+            'line1': line1,
+            'line2': line2,
+            'moved_from': moved_from,
+            'moved_to': moved_to,
+        }
+
+        if anchor:
+            anchor_html = anchor_fmt % {
+                'anchor': anchor,
+            }
+
+        if show_collapse:
+            begin_collapse_html = begin_collapse_fmt % context
+            end_collapse_html = end_collapse_fmt % context
+
+        if moved_from:
+            moved_from_html = moved_fmt % moved_from
+
+        if moved_to:
+            moved_to_html = moved_fmt % moved_to
+
+        context.update({
+            'anchor_html': anchor_html,
+            'begin_collapse_html': begin_collapse_html,
+            'end_collapse_html': end_collapse_html,
+            'moved_from_html': moved_from_html,
+            'moved_to_html': moved_to_html,
+        })
+
+        result.append(line_fmt % context)
+
+    return ''.join(result)
