@@ -6,6 +6,37 @@
 {{error}}
 {% endif %}
 
+{% definevar 'line_fmt' %}
+  <tr line="%(linenum_row)s"%(class_attr)s>
+   <th>%(anchor_html)s%(linenum1)s</th>
+   <td>%(moved_from_html)s
+    %(begin_collapse_html)s
+    <pre>%(line1)s</pre>
+    %(end_collapse_html)s
+   </td>
+   <th>%(linenum2)s</th>
+   <td>%(moved_to_html)s
+    <pre>%(line2)s</pre>
+   </td>
+  </tr>
+{% enddefinevar %}
+
+{% definevar 'anchor_fmt' %}
+ <a name="%(anchor)s" class="chunk-anchor"></a>
+{% enddefinevar %}
+
+{% definevar 'begin_collapse_fmt' %}
+ <div><img src="{{MEDIA_URL}}rb/images/diff-collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="{% trans "Collapse lines" %}" title="{% trans "Collapse lines" %}" class="diff-collapse-btn" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.pk}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '%(chunk_index)s', 0, this); return false;" />
+{% enddefinevar %}
+
+{% definevar 'end_collapse_fmt' %}
+</div>
+{% enddefinevar %}
+
+{% definevar 'moved_fmt' %}
+ <a href="#" class="%(class)s" line="%(line)s" target="%(target)s">%(text)s</a>
+{% enddefinevar %}
+
 {% if file.changed_chunk_indexes or file.binary or file.deleted %}
 {%  if not standalone %}
 <table class="sidebyside{% if not file.interfilediff and file.newfile and not file.filediff.parent_diff %} newfile{% endif %}" id="file{{file.filediff.id}}">
@@ -54,43 +85,7 @@
 {%    for chunk in file.chunks %}
 {%     if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% attr "class" %}{% ifnotequal chunk.change "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif %}{% else %}{% if chunk.collapsable %} collapsable{% endif %}{% endifnotequal %}{% if standalone %} loaded{% endif %}{% endattr %}>
-{%      for line in chunk.lines %}
-  <tr line="{{line.0}}"{% ifnotequal chunk.change "equal" %} {% attr "class" %}{% if forloop.first %}first {% endif %}{% if forloop.last %}last {% endif %} {% if line.7 %}whitespace-line{% endif %}{% endattr %}{% endifnotequal %}>
-{%       if forloop.first %}
-   <th>{% ifnotequal chunk.change 'equal' %}<a name="{{file.index}}.{{chunk.index}}" class="chunk-anchor"></a>{% endifnotequal %}{{line.1}}</th>
-{%       else %}
-   <th>{{line.1}}</th>
-{%       endif %}
-{%       ifequal chunk.change "replace" %}
-   <td><pre>{{ line.2|highlightregion:line.3|showextrawhitespace }}</pre></td>
-   <th>{{line.4}}</th>
-   <td><pre>{{ line.5|highlightregion:line.6|showextrawhitespace }}</pre></td>
-{%       else %}
-   <td>{% ifequal chunk.change 'insert' %}{% if line.8 %}
-    <a href="#" class="moved-from" line="{{line.8}}" target="{{line.4}}">{% trans "Moved from" %} {{line.8}}</a>
-    {% endif %}{% endifequal %}
-{% if standalone and forloop.first %}
-{%  ifequal chunk.change 'equal' %}
-    <div>
-     <img src="{{MEDIA_URL}}rb/images/diff-collapse.png?{{MEDIA_SERIAL}}" width="14" height="14" alt="{% trans "Collapse lines" %}" title="{% trans "Collapse lines" %}" class="diff-collapse-btn" onclick="javascript:expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.id}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '{{chunk.index}}', 0, this); return false;" />
-{%  endifequal %}
-{% endif %}
-    <pre>{{line.2|showextrawhitespace}}</pre>
-{% if standalone and forloop.first %}
-{%  ifequal chunk.change 'equal' %}
-    </div>
-{%  endifequal %}
-{% endif %}
-   </td>
-   <th>{{line.4}}</th>
-   <td>{% ifequal chunk.change 'delete' %}{% if line.8 %}
-    <a href="#" class="moved-to" line="{{line.8}}" target="{{line.1}}">{% trans "Moved to" %} {{line.8}}</a>
-    {% endif %}{% endifequal %}
-    <pre>{{line.5|showextrawhitespace}}</pre>
-   </td>
-{%       endifequal %}
-  </tr>
-{%      endfor %}
+{%     diff_lines file chunk standalone line_fmt anchor_fmt begin_collapse_fmt end_collapse_fmt moved_fmt %}
  </tbody>
 {%     else %}
  <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{chunk.index}}">
