@@ -40,4 +40,22 @@ To enable query caching with 64MB, set::
     query_cache_limit = 1M
 
 
+MySQL Packet Size
+=================
+
+Viewing very large diffs can cause a problem where queries exceed the default
+MySQL packet size (16M). One way around this issue is to change the value of the
+max_allowed_packet variable. To do this, connect to your database using the
+mysql command-line interface:
+
+shell$ mysql -- max_allowed_packet=32M
+
+This will set the maximum packet size to 32M.
+
+However, diffs larger than a megabyte are nearly impossible for ordinary humans
+to review and can slow down the server in other ways. Reviews with such large
+diffs are almost always caused by some intermediate build step such as
+auto-generated or emitted code. A better solution is to be more careful about
+posting reviews that may contain these sorts of files.
+
 .. comment: vim: ft=rst et
