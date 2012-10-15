@@ -54,7 +54,7 @@ class SCMTestCase(SSHTestCase):
             raise nose.SkipTest(
                 "Cannot perform SSH access tests. The local user's SSH "
                 "public key must be in the %s file and SSH must be enabled."
-                % os.path.join(self.ssh_client.get_ssh_dir(),
+                % os.path.join(self.ssh_client.storage.get_ssh_dir(),
                                'authorized_keys'))
 
     def _test_ssh(self, repo_path, filename=None):
@@ -92,7 +92,7 @@ class SCMTestCase(SSHTestCase):
         sshdir = os.path.join(self.tempdir, '.ssh')
         self._set_home(self.tempdir)
 
-        self.assertEqual(sshdir, self.ssh_client.get_ssh_dir())
+        self.assertEqual(sshdir, self.ssh_client.storage.get_ssh_dir())
         self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_rsa')))
         self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_dsa')))
         self.assertEqual(self.ssh_client.get_user_key(), None)
@@ -118,7 +118,7 @@ class SCMTestCase(SSHTestCase):
             tool = repo.get_scmtool()
 
             ssh_client = SSHClient(namespace=local_site_name)
-            self.assertEqual(ssh_client.get_ssh_dir(),
+            self.assertEqual(ssh_client.storage.get_ssh_dir(),
                              os.path.join(sshdir, local_site_name))
             ssh_client.import_user_key(user_key)
             self.assertEqual(ssh_client.get_user_key(), user_key)
