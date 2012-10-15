@@ -139,6 +139,7 @@ class RepositoryForm(forms.ModelForm):
         self.bug_tracker_forms = {}
         self.hosting_service_info = {}
         self.validate_repository = True
+        self.cert = None
 
         # Determine the local_site that will be associated with any
         # repository coming from this form.
@@ -818,6 +819,9 @@ class RepositoryForm(forms.ModelForm):
             'bug_tracker_use_hosting': bug_tracker_use_hosting,
         }
 
+        if self.cert:
+            repository.extra_data['cert'] = self.cert
+
         hosting_type = self.cleaned_data['hosting_type']
 
         if hosting_type in self.repository_forms:
@@ -908,8 +912,8 @@ class RepositoryForm(forms.ModelForm):
             except UnverifiedCertificateError, e:
                 if self.cleaned_data['trust_host']:
                     try:
-                        scmtool_class.accept_certificate(path,
-                                                         self.local_site_name)
+                        self.cert = scmtool_class.accept_certificate(
+                            path, self.local_site_name)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:

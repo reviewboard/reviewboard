@@ -2537,9 +2537,10 @@ class RepositoryResource(WebAPIResource):
                 }
             }
 
+        cert = {}
         error_result = self._check_repository(scmtool.get_scmtool_class(),
                                               path, username, password,
-                                              local_site, trust_host)
+                                              local_site, trust_host, cert)
 
         if error_result is not None:
             return error_result
@@ -2547,7 +2548,7 @@ class RepositoryResource(WebAPIResource):
         if public is None:
             public = True
 
-        repository = Repository.objects.create(
+        repository = Repository(
             name=name,
             path=path,
             mirror_path=mirror_path or '',
@@ -2559,6 +2560,11 @@ class RepositoryResource(WebAPIResource):
             encoding=encoding or '',
             public=public,
             local_site=local_site)
+
+        if cert:
+            repository.extra_data['cert'] = cert
+
+        repository.save()
 
         return 201, {
             self.item_result_key: repository,
@@ -2668,16 +2674,22 @@ class RepositoryResource(WebAPIResource):
 
         # Only check the repository if the access information has changed.
         if 'path' in kwargs or 'username' in kwargs or 'password' in kwargs:
+            cert = {}
+
             error_result = self._check_repository(
                 repository.tool.get_scmtool_class(),
                 repository.path,
                 repository.username,
                 repository.password,
                 repository.local_site,
-                trust_host)
+                trust_host,
+                cert)
 
             if error_result is not None:
                 return error_result
+
+            if cert:
+                repository.extra_data['cert'] = cert
 
         # If the API call is requesting that we archive the name, we'll give it
         # a name which won't overlap with future user-named repositories. This
@@ -2723,7 +2735,7 @@ class RepositoryResource(WebAPIResource):
         return 204, {}
 
     def _check_repository(self, scmtool_class, path, username, password,
-                          local_site, trust_host):
+                          local_site, trust_host, ret_cert):
         if local_site:
             local_site_name = local_site.name
         else:
@@ -2772,7 +2784,11 @@ class RepositoryResource(WebAPIResource):
             except UnverifiedCertificateError, e:
                 if trust_host:
                     try:
-                        scmtool_class.accept_certificate(path, local_site_name)
+                        cert = scmtool_class.accept_certificate(
+                            path, local_site_name)
+
+                        if cert:
+                            ret_cert.update(cert)
                     except IOError, e:
                         return SERVER_CONFIG_ERROR, {
                             'reason': str(e),

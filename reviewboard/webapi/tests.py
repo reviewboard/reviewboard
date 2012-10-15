@@ -782,15 +782,22 @@ class RepositoryResourceTests(BaseWebAPITestCase):
         @classmethod
         def _accept_certificate(cls, path, local_site_name=None):
             saw['accept_certificate'] = True
+            return {
+                'fingerprint': '123',
+            }
 
         SVNTool.check_repository = _check_repository
         SVNTool.accept_certificate = _accept_certificate
 
         self._login_user(admin=True)
-        self._post_repository(False, data={
+        rsp = self._post_repository(False, data={
             'trust_host': 1,
         })
         self.assertTrue(saw['accept_certificate'])
+
+        repository = Repository.objects.get(pk=rsp['repository']['id'])
+        self.assertTrue('cert' in repository.extra_data)
+        self.assertEqual(repository.extra_data['cert']['fingerprint'], '123')
 
     def test_post_repository_with_missing_user_key(self):
         """Testing the POST repositories/ API with Missing User Key error"""
