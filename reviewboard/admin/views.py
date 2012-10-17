@@ -83,7 +83,6 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         fingerprint = None
 
     return render_to_response(template_name, RequestContext(request, {
-        'title': _('SSH Settings'),
         'key': key,
         'fingerprint': fingerprint,
         'public_key': client.get_public_key(key),

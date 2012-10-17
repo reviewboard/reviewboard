@@ -1,9 +1,9 @@
 {% extends "admin/settings.html" %}
 {% load djblets_utils i18n %}
 
-{% block content %}
-<div class="module aligned">
- <div class="form-row">
+{% block form_content %}
+<fieldset class="module aligned">
+ <div class="description">
   <p>
   {% blocktrans %}
    The SSH key configured here will be used for communication with any
@@ -11,9 +11,9 @@
   {% endblocktrans %}
   </p>
  </div>
-</div>
+</fieldset>
 {% if key %}
-<div class="module aligned">
+<fieldset class="module aligned">
  <div class="form-row">
   <label class="required">{% trans "Key type:" %}</label>
   {{key.get_name}}
@@ -30,9 +30,9 @@
   <label class="required">{% trans "Public key:" %}</label>
   <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{public_key}}</textarea>
  </div>
-</div>
+</fieldset>
 {% else %}
-<div class="module aligned">
+<fieldset class="module aligned">
  <div class="form-row">
   <h3>{% trans "Generate an SSH Key" %}</h3>
   <p>
@@ -65,6 +65,6 @@
    <input type="submit" value="{% trans "Upload Key" %}" />
   </form>
  </div>
-</div>
+</fieldset>
 {% endif %}
 {% endblock %}
