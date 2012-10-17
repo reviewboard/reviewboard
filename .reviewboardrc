@@ -1,2 +1,3 @@
 REVIEWBOARD_URL = "http://reviews.reviewboard.org"
 REPOSITORY = "Review Board'
+BRANCH = "master"
