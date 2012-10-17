@@ -8,11 +8,39 @@
  * http://docs.jquery.com/UI/Autocomplete
  *
  * Depends:
- *	ui.core.js
+ *    ui.core.js
  */
 (function($) {
 
-$.widget("ui.autocomplete", {
+$.widget("ui.rbautocomplete", {
+    options: {
+        inputClass: "ui-autocomplete-input",
+        resultsClass: "ui-autocomplete-results",
+        loadingClass: "ui-autocomplete-loading",
+        minChars: 1,
+        ajaxDelay: 400,
+        localDelay: 10,
+        matchCase: false,
+        matchSubset: true,
+        matchContains: false,
+        cacheLength: 10,
+        scrollMax: 150,
+        noScrollMax: 10,
+        mustMatch: false,
+        extraParams: {},
+        selectFirst: true,
+        formatItem: function(row) { return row[0]; },
+        formatMatch: null,
+        autoFill: false,
+        width: 0,
+        multiple: false,
+        multipleSeparator: ", ",
+        highlight: function(value, term) {
+            return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>");
+        },
+        scroll: true,
+        scrollHeight: 180
+    },
 
     _init: function() {
         $.extend(this.options, {
@@ -28,7 +56,7 @@ $.widget("ui.autocomplete", {
             $input = $(input).attr("autocomplete", "off").addClass(options.inputClass),
             KEY = $.ui.keyCode,
             previousValue = "",
-            cache = $.ui.autocomplete.cache(options),
+            cache = $.ui.rbautocomplete.cache(options),
             hasFocus = 0,
             config = {
                 mouseDownOnSelect: false
@@ -36,14 +64,14 @@ $.widget("ui.autocomplete", {
             timeout,
             blockSubmit,
             lastKeyPressCode,
-            select = $.ui.autocomplete.select(options, input, selectCurrent, config);
+            select = $.ui.rbautocomplete.select(options, input, selectCurrent, config);
 
         if(options.result) {
-            $input.bind('result.autocomplete', options.result);
+            $input.bind('result.rbautocomplete', options.result);
         }
 
         // prevent form submit in opera when selecting with return key
-        $.browser.opera && $(input.form).bind("submit.autocomplete", function() {
+        $.browser.opera && $(input.form).bind("submit.rbautocomplete", function() {
             if (blockSubmit) {
                 blockSubmit = false;
                 return false;
@@ -51,7 +79,7 @@ $.widget("ui.autocomplete", {
         });
 
         // only opera doesn't trigger keydown multiple times while pressed, others don't work with keypress at all
-        $input.bind(($.browser.opera ? "keypress" : "keydown") + ".autocomplete", function(event) {
+        $input.bind(($.browser.opera ? "keypress" : "keydown") + ".rbautocomplete", function(event) {
             // track last key pressed
             lastKeyPressCode = event.keyCode;
             switch(event.keyCode) {
@@ -136,7 +164,7 @@ $.widget("ui.autocomplete", {
                     for (var i=0; i < data.length; i++) {
                         if( data[i].result.toLowerCase() == q.toLowerCase() ) {
                             result = data[i];
-	                            break;
+                            break;
                         }
                     }
                 }
@@ -156,7 +184,7 @@ $.widget("ui.autocomplete", {
         }).bind("unautocomplete", function() {
             select.unbind();
             $input.unbind();
-            $(input.form).unbind(".autocomplete");
+            $(input.form).unbind(".rbautocomplete");
         });
 
 
@@ -239,7 +267,7 @@ $.widget("ui.autocomplete", {
                 // fill in the value (keep the case the user has typed)
                 $input.val($input.val() + sValue.substring(lastWord(previousValue).length));
                 // select the portion of the value not typed by the user (so the next character will erase)
-                $.ui.autocomplete.selection(input, previousValue.length, previousValue.length + sValue.length);
+                $.ui.rbautocomplete.selection(input, previousValue.length, previousValue.length + sValue.length);
             }
         };
 
@@ -255,7 +283,7 @@ $.widget("ui.autocomplete", {
             stopLoading();
             if (options.mustMatch) {
                 // call search and run callback
-                $input.autocomplete("search", function (result){
+                $input.rbautocomplete("search", function (result){
                         // if no value found, clear the input box
                         if( !result ) {
                             if (options.multiple) {
@@ -270,7 +298,7 @@ $.widget("ui.autocomplete", {
             }
             if (wasVisible)
                 // position cursor at end of input field
-                $.ui.autocomplete.selection(input, input.value.length, input.value.length);
+                $.ui.rbautocomplete.selection(input, input.value.length, input.value.length);
         };
 
         function receiveData(q, data) {
@@ -400,39 +428,7 @@ $.widget("ui.autocomplete", {
     }
 });
 
-$.extend($.ui.autocomplete, {
-    defaults: {
-        inputClass: "ui-autocomplete-input",
-        resultsClass: "ui-autocomplete-results",
-        loadingClass: "ui-autocomplete-loading",
-        minChars: 1,
-        ajaxDelay: 400,
-        localDelay: 10,
-        matchCase: false,
-        matchSubset: true,
-        matchContains: false,
-        cacheLength: 10,
-        scrollMax: 150,
-        noScrollMax: 10,
-        mustMatch: false,
-        extraParams: {},
-        selectFirst: true,
-        formatItem: function(row) { return row[0]; },
-        formatMatch: null,
-        autoFill: false,
-        width: 0,
-        multiple: false,
-        multipleSeparator: ", ",
-        highlight: function(value, term) {
-            return value.replace(new RegExp("(?![^&;]+;)(?!<[^<>]*)(" + term.replace(/([\^\$\(\)\[\]\{\}\*\.\+\?\|\\])/gi, "\\$1") + ")(?![^<>]*>)(?![^&;]+;)", "gi"), "<strong>$1</strong>");
-        },
-        scroll: true,
-        scrollHeight: 180,
-        clickToURL: false //clicking on the suggestion will go to the URL
-    }
-});
-
-$.ui.autocomplete.cache = function(options) {
+$.ui.rbautocomplete.cache = function(options) {
 
     var data = {};
     var length = 0;
@@ -568,7 +564,7 @@ $.ui.autocomplete.cache = function(options) {
     };
 };
 
-$.ui.autocomplete.select = function (options, input, select, config) {
+$.ui.rbautocomplete.select = function (options, input, select, config) {
     var CLASSES = {
         ACTIVE: "ui-autocomplete-over"
     };
@@ -656,18 +652,6 @@ $.ui.autocomplete.select = function (options, input, select, config) {
             : available;
     }
 
-    function makeItem(data) {
-        if (options.clickToURL === false) {
-            return $("<li/>");
-        }
-        else {
-            //For Quick Search
-            return $("<li/>").click(function() {
-                window.open(data["url"]);
-            });
-        }
-    }
-
     function fillList() {
         list.empty();
         var max = limitNumberOfItems(data.length);
@@ -677,8 +661,7 @@ $.ui.autocomplete.select = function (options, input, select, config) {
             var formatted = options.formatItem(data[i].data, i+1, max, data[i].value, term);
             if ( formatted === false )
                 continue;
-
-            var li = makeItem(data[i].data).html( options.highlight(formatted, term) ).addClass(i%2 == 0 ? "ui-autocomplete-even" : "ui-autocomplete-odd").appendTo(list)[0];
+            var li = $("<li/>").html( options.highlight(formatted, term) ).addClass(i%2 == 0 ? "ui-autocomplete-even" : "ui-autocomplete-odd").appendTo(list)[0];
             $.data(li, "ui-autocomplete-data", data[i]);
         }
         listItems = list.find("li");
@@ -732,17 +715,10 @@ $.ui.autocomplete.select = function (options, input, select, config) {
         },
         show: function() {
             var offset = $(input).offset();
-            var inputWidth = $(input).width();
-            var width = typeof options.width == "string" || options.width > 0
-                        ? options.width : inputWidth;
-            var scrollWidth = $(window).width();
-
             element.css({
-                width: width,
+                width: typeof options.width == "string" || options.width > 0 ? options.width : $(input).width(),
                 top: offset.top + input.offsetHeight,
-                left: (width + offset.left > scrollWidth
-                       ? offset.left + inputWidth - width
-                       : offset.left)
+                left: offset.left
             }).show();
 
             if(options.scroll) {
@@ -783,7 +759,7 @@ $.ui.autocomplete.select = function (options, input, select, config) {
     };
 };
 
-$.ui.autocomplete.selection = function(field, start, end) {
+$.ui.rbautocomplete.selection = function(field, start, end) {
     if( field.createTextRange ){
         var selRange = field.createTextRange();
         selRange.collapse(true);
