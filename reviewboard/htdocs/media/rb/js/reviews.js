@@ -572,6 +572,7 @@ $.fn.commentSection = function(review_id, context_id, context_type) {
                 })
                 .bind("cancel", function(e) {
                     gEditCount--;
+                    addCommentLink.fadeIn();
                     removeCommentFormIfEmpty(self);
                 });
         });
