@@ -6,6 +6,8 @@ try:
 except ImportError:
     from urllib import quote as urllib_quote
 
+from pkg_resources import parse_version
+
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.scmtools.git import GitDiffParser
 from reviewboard.scmtools.core import \
@@ -210,10 +212,7 @@ class HgClient(object):
         from mercurial import hg, ui
         from mercurial.__version__ import version
 
-        version = version.replace("+", ".")
-        version_parts = [int(x) for x in version.split(".")]
-
-        if version_parts[0] == 1 and version_parts[1] <= 2:
+        if parse_version(version) <= parse_version("1.2"):
             hg_ui = ui.ui(interactive=False)
         else:
             hg_ui = ui.ui()
