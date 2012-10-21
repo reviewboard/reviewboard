@@ -56,6 +56,9 @@ class RBTestRunner(DjangoTestSuiteRunner):
 
         settings.STATIC_URL = settings.SITE_ROOT + 'static/'
         settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
+        settings.PASSWORD_HASHERS = (
+            'django.contrib.auth.hashers.SHA1PasswordHasher',
+        )
         settings.RUNNING_TEST = True
 
         self._setup_media_dirs()
