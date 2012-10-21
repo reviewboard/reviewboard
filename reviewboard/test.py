@@ -30,6 +30,10 @@ import tempfile
 from django.core.management import execute_from_command_line
 from django.test.simple import DjangoTestSuiteRunner
 import nose
+try:
+    import cProfile as profile
+except ImportError:
+    import profile
 
 try:
     # Make sure to pre-load all the image handlers. If we do this later during
@@ -71,7 +75,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         self.setup_test_environment()
         old_config = self.setup_databases()
 
-        nose_argv = [
+        self.nose_argv = [
             sys.argv[0],
             '-v',
             '--with-doctest',
@@ -79,30 +83,45 @@ class RBTestRunner(DjangoTestSuiteRunner):
         ]
 
         if '--with-coverage' in sys.argv:
-            nose_argv += ['--with-coverage',
-                          '--cover-package=reviewboard']
+            self.nose_argv += ['--with-coverage',
+                               '--cover-package=reviewboard']
             sys.argv.remove('--with-coverage')
 
         for package in settings.TEST_PACKAGES:
-            nose_argv.append('--where=%s' % package)
+            self.nose_argv.append('--where=%s' % package)
 
         if '--with-webtests' in sys.argv:
-            nose_argv.append('--where=webtests')
+            self.nose_argv.append('--where=webtests')
             sys.argv.remove('--with-webtests')
+
+        if '--with-profiling' in sys.argv:
+            sys.argv.remove('--with-profiling')
+            profiling = True
+        else:
+            profiling = False
 
         # manage.py captures everything before "--"
         if len(sys.argv) > 2 and sys.argv.__contains__("--"):
-            nose_argv += sys.argv[(sys.argv.index("--") + 1):]
+            self.nose_argv += sys.argv[(sys.argv.index("--") + 1):]
 
-        result = nose.main(argv=nose_argv, exit=False)
+        if profiling:
+            profile.runctx('run_nose()',
+                           {'run_nose': self.run_nose},
+                           {},
+                           os.path.join(os.getcwd(), 'tests.profile'))
+        else:
+            self.run_nose()
 
         self.teardown_databases(old_config)
         self.teardown_test_environment()
 
-        if result.success:
+        if self.result.success:
             return 0
         else:
             return 1
+
+    def run_nose(self):
+        self.result = nose.main(argv=self.nose_argv, exit=False)
 
     def _setup_media_dirs(self):
         self.tempdir = tempfile.mkdtemp(prefix='rb-tests-')
