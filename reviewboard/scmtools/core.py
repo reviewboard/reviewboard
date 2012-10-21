@@ -6,8 +6,11 @@ import urllib2
 import urlparse
 
 import reviewboard.diffviewer.parser as diffparser
-from reviewboard.scmtools import sshutils
-from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.scmtools.errors import AuthenticationError, \
+                                        FileNotFoundError, \
+                                        SCMError
+from reviewboard.ssh import utils as sshutils
+from reviewboard.ssh.errors import SSHAuthenticationError
 
 
 class ChangeSet:
@@ -149,7 +152,18 @@ class SCMTool(object):
             logging.debug(
                 "%s: Attempting ssh connection with host: %s, username: %s" % \
                 (cls.__name__, hostname, username))
-            sshutils.check_host(hostname, username, password, local_site_name)
+
+            try:
+                sshutils.check_host(hostname, username, password,
+                                    local_site_name)
+            except SSHAuthenticationError, e:
+                # Represent an SSHAuthenticationError as a standard
+                # AuthenticationError.
+                raise AuthenticationError(e.allowed_types, unicode(e),
+                                          e.user_key)
+            except:
+                # Re-raise anything else
+                raise
 
     @classmethod
     def get_auth_from_uri(cls, path, username):

@@ -44,7 +44,7 @@ from reviewboard.admin.checks import get_can_enable_search, \
                                      get_can_use_amazon_s3, \
                                      get_can_use_couchdb
 from reviewboard.admin.siteconfig import load_site_config
-from reviewboard.scmtools import sshutils
+from reviewboard.ssh.client import SSHClient
 
 
 class GeneralSettingsForm(SiteSettingsForm):
@@ -536,7 +536,7 @@ class SSHSettingsForm(forms.Form):
     def create(self, files):
         if self.cleaned_data['generate_key']:
             try:
-                sshutils.generate_user_key()
+                SSHClient().generate_user_key()
             except IOError, e:
                 self.errors['generate_key'] = forms.util.ErrorList([
                     _('Unable to write SSH key file: %s') % e
@@ -549,7 +549,7 @@ class SSHSettingsForm(forms.Form):
                 raise
         elif self.cleaned_data['keyfile']:
             try:
-                sshutils.import_user_key(files['keyfile'])
+                SSHClient().import_user_key(files['keyfile'])
             except IOError, e:
                 self.errors['keyfile'] = forms.util.ErrorList([
                     _('Unable to write SSH key file: %s') % e

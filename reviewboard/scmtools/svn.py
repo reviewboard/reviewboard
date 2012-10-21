@@ -12,7 +12,6 @@ except ImportError:
 from django.utils.translation import ugettext as _
 
 from reviewboard.diffviewer.parser import DiffParser
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION, UNKNOWN
 from reviewboard.scmtools.errors import AuthenticationError, \
@@ -20,6 +19,7 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         RepositoryNotFoundError, \
                                         SCMError, \
                                         UnverifiedCertificateError
+from reviewboard.ssh import utils as sshutils
 
 
 # Register these URI schemes so we can handle them properly.
@@ -87,6 +87,9 @@ class SVNTool(SCMTool):
         self.config_dir, self.client = \
             self.build_client(repository.username, repository.password,
                               local_site_name)
+
+        self.client.callback_ssl_server_trust_prompt = \
+            self._ssl_server_trust_prompt
 
         # svnlook uses 'rev 0', while svn diff uses 'revision 0'
         self.revision_re = re.compile("""
@@ -298,6 +301,19 @@ class SVNTool(SCMTool):
     def get_parser(self, data):
         return SVNDiffParser(data)
 
+    def _ssl_server_trust_prompt(self, trust_dict):
+        """Callback for SSL cert verification.
+
+        This will be called when accessing a repository with an SSL cert.
+        We will look up a matching cert in the database and see if it's
+        accepted.
+        """
+        saved_cert = self.repository.extra_data.get('cert', {})
+        cert = trust_dict.copy()
+        del cert['failures']
+
+        return saved_cert == cert, trust_dict['failures'], False
+
     @classmethod
     def check_repository(cls, path, username=None, password=None,
                          local_site_name=None):
@@ -370,7 +386,11 @@ class SVNTool(SCMTool):
     @classmethod
     def accept_certificate(cls, path, local_site_name=None):
         """Accepts the certificate for the given repository path."""
+        cert = {}
+
         def ssl_server_trust_prompt(trust_dict):
+            cert.update(trust_dict.copy())
+            del cert['failures']
             return True, trust_dict['failures'], True
 
         client = cls.build_client(local_site_name=local_site_name)[1]
@@ -380,6 +400,8 @@ class SVNTool(SCMTool):
             client.info2(path, recurse=False)
         except ClientError:
             pass
+
+        return cert
 
     @classmethod
     def build_client(cls, username=None, password=None, local_site_name=None):

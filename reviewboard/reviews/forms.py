@@ -15,6 +15,7 @@ from reviewboard.scmtools.errors import SCMError, ChangeNumberInUseError, \
                                         ChangeSetError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.validation import validate_review_groups, validate_users
+from reviewboard.ssh.errors import SSHError
 
 
 class DefaultReviewerForm(forms.ModelForm):
@@ -187,7 +188,7 @@ class NewReviewRequestForm(forms.Form):
                 # This scmtool doesn't have changesets
                 self.errors['changenum'] = forms.util.ErrorList(['Changesets are not supported.'])
                 raise ChangeSetError(None)
-            except SCMError, e:
+            except (SCMError, SSHError), e:
                 self.errors['changenum'] = forms.util.ErrorList([str(e)])
                 raise ChangeSetError(None)
 

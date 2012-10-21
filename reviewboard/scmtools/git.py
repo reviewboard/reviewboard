@@ -14,12 +14,12 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import FileNotFoundError, \
                                         InvalidRevisionFormatError, \
                                         RepositoryNotFoundError, \
                                         SCMError
+from reviewboard.ssh import utils as sshutils
 
 
 GIT_DIFF_EMPTY_CHANGESET_SIZE = 3

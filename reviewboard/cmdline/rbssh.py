@@ -39,8 +39,8 @@ from optparse import OptionParser
 import paramiko
 
 from reviewboard import get_version_string
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool
+from reviewboard.ssh.client import SSHClient
 
 
 DEBUG = os.getenv('DEBUG_RBSSH')
@@ -277,13 +277,13 @@ def main():
 
     logging.debug('!!! %s, %s, %s' % (hostname, username, command))
 
-    client = sshutils.get_ssh_client(options.local_site_name)
+    client = SSHClient(namespace=options.local_site_name)
     client.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     attempts = 0
     password = None
 
-    key = sshutils.get_user_key(options.local_site_name)
+    key = client.get_user_key()
 
     while True:
         try:

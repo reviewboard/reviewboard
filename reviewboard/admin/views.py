@@ -17,7 +17,8 @@ from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.widgets import dynamic_activity_data, \
                                       primary_widgets, \
                                       secondary_widgets
-from reviewboard.scmtools import sshutils
+from reviewboard.ssh.client import SSHClient
+from reviewboard.ssh.utils import humanize_key
 
 
 @staff_member_required
@@ -60,7 +61,8 @@ def site_settings(request, form_class,
 
 @staff_member_required
 def ssh_settings(request, template_name='admin/ssh_settings.html'):
-    key = sshutils.get_user_key()
+    client = SSHClient()
+    key = client.get_user_key()
 
     if request.method == 'POST':
         form = SSHSettingsForm(request.POST, request.FILES)
@@ -76,7 +78,7 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         form = SSHSettingsForm()
 
     if key:
-        fingerprint = sshutils.humanize_key(key)
+        fingerprint = humanize_key(key)
     else:
         fingerprint = None
 
@@ -84,7 +86,7 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
         'title': _('SSH Settings'),
         'key': key,
         'fingerprint': fingerprint,
-        'public_key': sshutils.get_public_key(key),
+        'public_key': client.get_public_key(key),
         'form': form,
     }))
 

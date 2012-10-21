@@ -15,9 +15,9 @@ try:
 except ImportError:
     has_bzrlib = False
 
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import RepositoryNotFoundError, SCMError
+from reviewboard.ssh import utils as sshutils
 
 
 # Register these URI schemes so we can handle them properly.

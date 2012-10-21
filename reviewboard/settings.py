@@ -153,6 +153,7 @@ RB_BUILTIN_APPS = [
     'reviewboard.reviews',
     'reviewboard.scmtools',
     'reviewboard.site',
+    'reviewboard.ssh',
     'reviewboard.webapi',
 ]
 RB_EXTRA_APPS = []

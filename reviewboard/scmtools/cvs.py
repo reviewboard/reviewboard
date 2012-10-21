@@ -5,11 +5,14 @@ import urlparse
 
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
-from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
+from reviewboard.scmtools.errors import AuthenticationError, \
+                                        SCMError, \
+                                        FileNotFoundError, \
                                         RepositoryNotFoundError
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
+from reviewboard.ssh import utils as sshutils
+from reviewboard.ssh.errors import SSHAuthenticationError, SSHError
 
 
 sshutils.register_rbssh('CVS_RSH')
@@ -128,15 +131,24 @@ class CVSTool(SCMTool):
         m = cls.ext_cvsroot_re.match(path)
 
         if m:
-            sshutils.check_host(m.group('hostname'), username, password,
-                                local_site_name)
+            try:
+                sshutils.check_host(m.group('hostname'), username, password,
+                                    local_site_name)
+            except SSHAuthenticationError, e:
+                # Represent an SSHAuthenticationError as a standard
+                # AuthenticationError.
+                raise AuthenticationError(e.allowed_types, unicode(e),
+                                          e.user_key)
+            except:
+                # Re-raise anything else
+                raise
 
         cvsroot, repopath = cls.build_cvsroot(path, username, password)
         client = CVSClient(cvsroot, repopath, local_site_name)
 
         try:
             client.cat_file('CVSROOT/modules', HEAD)
-        except (SCMError, FileNotFoundError):
+        except (SCMError, SSHError, FileNotFoundError):
             raise RepositoryNotFoundError()
 
     @classmethod

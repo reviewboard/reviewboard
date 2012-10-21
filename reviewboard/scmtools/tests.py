@@ -1,9 +1,6 @@
 import errno
 import imp
 import os
-import nose
-import paramiko
-import shutil
 import socket
 import tempfile
 try:
@@ -14,6 +11,7 @@ except ImportError:
 from django.contrib.auth.models import AnonymousUser, User
 from django.test import TestCase as DjangoTestCase
 from djblets.util.filesystem import is_exe_in_path
+import nose
 try:
     imp.find_module("P4")
     from P4 import P4Error
@@ -24,7 +22,6 @@ from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import Group
-from reviewboard.scmtools import sshutils
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, ChangeSet, Revision
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError, \
                                         RepositoryNotFoundError, \
@@ -34,38 +31,31 @@ from reviewboard.scmtools.git import ShortSHA1Error
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
 from reviewboard.site.models import LocalSite
+from reviewboard.ssh.client import SSHClient
+from reviewboard.ssh.tests import SSHTestCase
 
 
-class SCMTestCase(DjangoTestCase):
+class SCMTestCase(SSHTestCase):
+    ssh_client = None
     _can_test_ssh = None
 
     def setUp(self):
-        self.old_home = os.getenv('HOME')
-        self.tempdir = None
+        super(SCMTestCase, self).setUp()
         self.tool = None
-        os.environ['RBSSH_ALLOW_AGENT'] = '0'
 
-    def tearDown(self):
-        self._set_home(self.old_home)
-
-        if self.tempdir:
-            shutil.rmtree(self.tempdir)
-
-    def _set_home(self, homedir):
-        os.environ['HOME'] = homedir
-
-    def _check_can_test_ssh(self):
+    def _check_can_test_ssh(self, local_site_name=None):
         if SCMTestCase._can_test_ssh is None:
-            key = sshutils.get_user_key()
-
-            SCMTestCase._can_test_ssh = (key is not None and
-                                         sshutils.is_key_authorized(key))
+            SCMTestCase.ssh_client = SSHClient()
+            key = self.ssh_client.get_user_key()
+            SCMTestCase._can_test_ssh = \
+                key is not None and self.ssh_client.is_key_authorized(key)
 
         if not SCMTestCase._can_test_ssh:
             raise nose.SkipTest(
                 "Cannot perform SSH access tests. The local user's SSH "
                 "public key must be in the %s file and SSH must be enabled."
-                % os.path.join(sshutils.get_ssh_dir(), 'authorized_keys'))
+                % os.path.join(self.ssh_client.storage.get_ssh_dir(),
+                               'authorized_keys'))
 
     def _test_ssh(self, repo_path, filename=None):
         self._check_can_test_ssh()
@@ -94,7 +84,7 @@ class SCMTestCase(DjangoTestCase):
         self._check_can_test_ssh()
 
         # Get the user's .ssh key, for use in the tests
-        user_key = sshutils.get_user_key()
+        user_key = self.ssh_client.get_user_key()
         self.assertNotEqual(user_key, None)
 
         # Switch to a new SSH directory.
@@ -102,17 +92,17 @@ class SCMTestCase(DjangoTestCase):
         sshdir = os.path.join(self.tempdir, '.ssh')
         self._set_home(self.tempdir)
 
-        self.assertEqual(sshdir, sshutils.get_ssh_dir())
+        self.assertEqual(sshdir, self.ssh_client.storage.get_ssh_dir())
         self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_rsa')))
         self.assertFalse(os.path.exists(os.path.join(sshdir, 'id_dsa')))
-        self.assertEqual(sshutils.get_user_key(), None)
+        self.assertEqual(self.ssh_client.get_user_key(), None)
 
         tool_class = self.repository.tool
 
         # Make sure we aren't using the old SSH key. We want auth errors.
         repo = Repository(name='SSH Test', path=repo_path, tool=tool_class)
         tool = repo.get_scmtool()
-        self.assertRaises(sshutils.AuthenticationError,
+        self.assertRaises(AuthenticationError,
                           lambda: tool.check_repository(repo_path))
 
         if filename:
@@ -127,10 +117,11 @@ class SCMTestCase(DjangoTestCase):
                               local_site=local_site)
             tool = repo.get_scmtool()
 
-            self.assertEqual(sshutils.get_ssh_dir(local_site_name),
+            ssh_client = SSHClient(namespace=local_site_name)
+            self.assertEqual(ssh_client.storage.get_ssh_dir(),
                              os.path.join(sshdir, local_site_name))
-            sshutils.import_user_key(user_key, local_site_name)
-            self.assertEqual(sshutils.get_user_key(local_site_name), user_key)
+            ssh_client.import_user_key(user_key)
+            self.assertEqual(ssh_client.get_user_key(), user_key)
 
             # Make sure we can verify the repository and access files.
             tool.check_repository(repo_path, local_site_name=local_site_name)
@@ -153,99 +144,6 @@ class CoreTests(DjangoTestCase):
         self.assertEqual(cs.branch, '')
         self.assert_(len(cs.bugs_closed) == 0)
         self.assert_(len(cs.files) == 0)
-
-
-class SSHUtilsTests(SCMTestCase):
-    """Unit tests for sshutils."""
-    def setUp(self):
-        super(SSHUtilsTests, self).setUp()
-
-        self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
-
-    def test_get_ssh_dir_with_dot_ssh(self):
-        """Testing sshutils.get_ssh_dir with ~/.ssh"""
-        self._set_home(self.tempdir)
-        sshdir = os.path.join(self.tempdir, '.ssh')
-        self.assertEqual(sshutils.get_ssh_dir(), sshdir)
-
-    def test_get_ssh_dir_with_ssh(self):
-        """Testing sshutils.get_ssh_dir with ~/ssh"""
-        self._set_home(self.tempdir)
-        sshdir = os.path.join(self.tempdir, 'ssh')
-        os.mkdir(sshdir, 0700)
-        self.assertEqual(sshutils.get_ssh_dir(), sshdir)
-
-    def test_get_ssh_dir_with_dot_ssh_and_localsite(self):
-        """Testing sshutils.get_ssh_dir with ~/.ssh and localsite"""
-        self._set_home(self.tempdir)
-        sshdir = os.path.join(self.tempdir, '.ssh', 'site-1')
-        self.assertEqual(sshutils.get_ssh_dir(local_site_name='site-1'), sshdir)
-
-    def test_get_ssh_dir_with_ssh_and_localsite(self):
-        """Testing sshutils.get_ssh_dir with ~/ssh and localsite"""
-        self._set_home(self.tempdir)
-        sshdir = os.path.join(self.tempdir, 'ssh')
-        os.mkdir(sshdir, 0700)
-        sshdir = os.path.join(sshdir, 'site-1')
-        self.assertEqual(sshutils.get_ssh_dir(local_site_name='site-1'), sshdir)
-
-    def test_generate_user_key(self, local_site_name=None):
-        """Testing sshutils.generate_user_key"""
-        self._set_home(self.tempdir)
-        key = sshutils.generate_user_key(local_site_name)
-        key_file = os.path.join(sshutils.get_ssh_dir(local_site_name), 'id_rsa')
-        self.assertTrue(os.path.exists(key_file))
-        self.assertEqual(sshutils.get_user_key(local_site_name), key)
-
-    def test_generate_user_key_with_localsite(self):
-        """Testing sshutils.generate_user_key with localsite"""
-        self.test_generate_user_key('site-1')
-
-    def test_add_host_key(self, local_site_name=None):
-        """Testing sshutils.add_host_key"""
-        self._set_home(self.tempdir)
-        key = paramiko.RSAKey.generate(2048)
-        sshutils.add_host_key('example.com', key, local_site_name)
-
-        known_hosts_file = sshutils.get_host_keys_filename(local_site_name)
-        self.assertTrue(os.path.exists(known_hosts_file))
-
-        f = open(known_hosts_file, 'r')
-        lines = f.readlines()
-        f.close()
-
-        self.assertEqual(len(lines), 1)
-        self.assertEqual(lines[0].split(),
-                         ['example.com', key.get_name(), key.get_base64()])
-
-    def test_add_host_key_with_localsite(self):
-        """Testing sshutils.add_host_key with localsite"""
-        self.test_add_host_key('site-1')
-
-    def test_replace_host_key(self, local_site_name=None):
-        """Testing sshutils.replace_host_key"""
-        self._set_home(self.tempdir)
-        key = paramiko.RSAKey.generate(2048)
-        sshutils.add_host_key('example.com', key, local_site_name)
-
-        new_key = paramiko.RSAKey.generate(2048)
-        sshutils.replace_host_key('example.com', key, new_key, local_site_name)
-
-        known_hosts_file = sshutils.get_host_keys_filename(local_site_name)
-        self.assertTrue(os.path.exists(known_hosts_file))
-
-        f = open(known_hosts_file, 'r')
-        lines = f.readlines()
-        f.close()
-
-        self.assertEqual(len(lines), 1)
-        self.assertEqual(lines[0].split(),
-                         ['example.com', new_key.get_name(),
-                          new_key.get_base64()])
-
-    def test_replace_host_key_with_localsite(self):
-        """Testing sshutils.replace_host_key with localsite"""
-        self.test_replace_host_key('site-1')
 
 
 class BZRTests(SCMTestCase):
