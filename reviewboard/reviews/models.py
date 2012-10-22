@@ -9,7 +9,8 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.db import ConcurrencyManager
-from djblets.util.fields import CounterField, ModificationTimestampField
+from djblets.util.fields import CounterField, JSONField, \
+                                ModificationTimestampField
 from djblets.util.misc import get_object_or_none
 from djblets.util.templatetags.djblets_images import crop_image, thumbnail
 
@@ -1504,6 +1505,7 @@ class FileAttachmentComment(BaseComment):
     file_attachment = models.ForeignKey(FileAttachment,
                                         verbose_name=_('file_attachment'),
                                         related_name="comments")
+    extra_data = JSONField(null=True)
 
     def get_file(self):
         """

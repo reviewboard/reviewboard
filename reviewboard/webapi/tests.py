@@ -423,7 +423,8 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
     def _postNewFileAttachmentComment(self, review_request, review_id,
                                       file_attachment, comment_text,
                                       issue_opened=None,
-                                      issue_status=None):
+                                      issue_status=None,
+                                      extra_fields={}):
         """Creates a file attachment comment and returns the payload response."""
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -434,6 +435,7 @@ class BaseWebAPITestCase(TestCase, EmailTestHelper):
             'file_attachment_id': file_attachment.id,
             'text': comment_text,
         }
+        post_data.update(extra_fields)
 
         if issue_opened is not None:
             post_data['issue_opened'] = issue_opened
@@ -6186,6 +6188,74 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         rsp = self.apiGet(comments_url, expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_post_file_attachment_comments_with_extra_fields(self):
+        """Testing the POST review-requests/<id>/file-attachments/<id>/comments/ API with extra fields"""
+        comment_text = "This is a test comment."
+        extra_fields = {
+            'foo': '123',
+            'bar': '456',
+            'baz': '',
+        }
+
+        rsp = self._postNewReviewRequest()
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+
+        # Post the file_attachment.
+        rsp = self._postNewFileAttachment(review_request)
+        file_attachment = FileAttachment.objects.get(
+            pk=rsp['file_attachment']['id'])
+        self.assertTrue('links' in rsp['file_attachment'])
+        self.assertTrue('file_attachment_comments' in
+                        rsp['file_attachment']['links'])
+        comments_url = \
+            rsp['file_attachment']['links']['file_attachment_comments']['href']
+
+        # Make these public.
+        review_request.publish(self.user)
+
+        # Post the review.
+        rsp = self._postNewReview(review_request)
+        review = Review.objects.get(pk=rsp['review']['id'])
+
+        rsp = self._postNewFileAttachmentComment(review_request, review.id,
+                                                 file_attachment, comment_text,
+                                                 extra_fields=extra_fields)
+
+        comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+
+        self.assertTrue('foo' in comment.extra_data)
+        self.assertTrue('bar' in comment.extra_data)
+        self.assertFalse('baz' in comment.extra_data)
+        self.assertEqual(comment.extra_data['foo'], extra_fields['foo'])
+        self.assertEqual(comment.extra_data['bar'], extra_fields['bar'])
+
+        return rsp
+
+    def test_put_file_attachment_comments_with_extra_fields(self):
+        """Testing the PUT review-requests/<id>/file-attachments/<id>/comments/<id>/ API with extra fields"""
+        extra_fields = {
+            'foo': 'abc',
+            'bar': '',
+        }
+
+        rsp = self.test_post_file_attachment_comments_with_extra_fields()
+
+        rsp = self.apiPut(
+            rsp['file_attachment_comment']['links']['self']['href'],
+            extra_fields,
+            expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        comment = FileAttachmentComment.objects.get(
+            pk=rsp['file_attachment_comment']['id'])
+
+        self.assertTrue('foo' in comment.extra_data)
+        self.assertFalse('bar' in comment.extra_data)
+        self.assertEqual(len(comment.extra_data.keys()), 1)
+        self.assertEqual(comment.extra_data['foo'], extra_fields['foo'])
 
 
 class DraftReviewFileAttachmentCommentResourceTests(BaseWebAPITestCase):

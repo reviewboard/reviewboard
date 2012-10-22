@@ -11,4 +11,5 @@ SEQUENCE = [
     'default_reviewer_local_site',
     'add_issues_to_comments',
     'file_attachments',
+    'file_attachment_comment_extra_data',
 ]

@@ -4516,6 +4516,11 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             'type': 'reviewboard.webapi.resources.UserResource',
             'description': 'The user who made the comment.',
         },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the comment. This depends '
+                           'on the type of file being commented on.',
+        },
     }, **BaseCommentResource.fields)
 
     uri_object_key = 'comment_id'
@@ -4620,9 +4625,10 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'description': 'Whether the comment opens an issue.',
             },
         },
+        allow_unknown=True
     )
     def create(self, request, file_attachment_id=None, text=None,
-               issue_opened=False, *args, **kwargs):
+               issue_opened=False, extra_fields={}, *args, **kwargs):
         """Creates a file comment on a review.
 
         This will create a new comment on a file as part of a review.
@@ -4654,6 +4660,10 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         new_comment = self.model(file_attachment=file_attachment,
                                  text=text,
                                  issue_opened=bool(issue_opened))
+
+        for key, value in extra_fields.iteritems():
+            if value != '':
+                new_comment.extra_data[key] = value
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -4687,8 +4697,9 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                 'description': 'The status of an open issue.',
             }
         },
+        allow_unknown=True
     )
-    def update(self, request, *args, **kwargs):
+    def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates a file comment.
 
         This can update the text or region of an existing comment. It
@@ -4722,6 +4733,12 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
 
             if value is not None:
                 setattr(file_comment, field, value)
+
+        for key, value in extra_fields.iteritems():
+            if value != '':
+                file_comment.extra_data[key] = value
+            elif key in file_comment.extra_data:
+                del file_comment.extra_data[key]
 
         file_comment.save()
 
