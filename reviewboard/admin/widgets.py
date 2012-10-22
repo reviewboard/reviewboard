@@ -452,10 +452,10 @@ def register(widget, primary=False):
 
 def unregister(widget):
     try:
-        primary_widgets.append(widget)
+        primary_widgets.remove(widget)
     except ValueError:
         try:
-            secondary_widgets.append(widget)
+            secondary_widgets.remove(widget)
         except ValueError:
             pass
 
