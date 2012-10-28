@@ -33,6 +33,15 @@ class SSHStorage(object):
         """
         raise NotImplementedError
 
+    def delete_user_key(self, key):
+        """Deletes a user key.
+
+        The user key, if it exists, will be removed from storage.
+
+        If no user key exists, this will do nothing.
+        """
+        raise NotImplementedError
+
     def read_authorized_keys(self):
         """Reads a list of authorized keys.
 
@@ -75,7 +84,7 @@ class FileSSHStorage(SSHStorage):
 
     _ssh_dir = None
 
-    def read_user_key(self):
+    def get_user_key_info(self):
         for cls, filename in self.DEFAULT_KEY_FILES:
             # Paramiko looks in ~/.ssh and ~/ssh, depending on the platform,
             # so check both.
@@ -83,7 +92,15 @@ class FileSSHStorage(SSHStorage):
                 path = os.path.join(self.get_ssh_dir(sshdir), filename)
 
                 if os.path.isfile(path):
-                    return cls.from_private_key_file(path)
+                    return cls, path
+
+        return None, None
+
+    def read_user_key(self):
+        cls, path = self.get_user_key_info()
+
+        if path:
+            return cls.from_private_key_file(path)
 
         return None
 
@@ -100,6 +117,13 @@ class FileSSHStorage(SSHStorage):
         sshdir = self.ensure_ssh_dir()
         filename = os.path.join(sshdir, key_filename)
         key.write_private_key_file(filename)
+
+    def delete_user_key(self):
+        cls, path = self.get_user_key_info()
+
+        if path:
+            # Allow any exceptions to bubble up.
+            os.unlink(path)
 
     def read_authorized_keys(self):
         filename = os.path.join(self.get_ssh_dir(), 'authorized_keys')
