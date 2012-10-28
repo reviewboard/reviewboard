@@ -164,6 +164,24 @@ class SSHClientTests(SSHTestCase):
         """Testing SSHClient.generate_user_key with localsite"""
         self.test_generate_user_key('site-1')
 
+    def test_delete_user_key(self, namespace=None):
+        """Testing SSHClient.delete_user_key"""
+        self._set_home(self.tempdir)
+
+        client = SSHClient(namespace=namespace)
+        client.import_user_key(self.key1)
+
+        key_file = os.path.join(client.storage.get_ssh_dir(), 'id_rsa')
+        self.assertTrue(os.path.exists(key_file))
+        self.assertEqual(client.get_user_key(), self.key1)
+
+        client.delete_user_key()
+        self.assertFalse(os.path.exists(key_file))
+
+    def test_delete_user_key_with_localsite(self):
+        """Testing SSHClient.delete_user_key with localsite"""
+        self.test_delete_user_key('site-1')
+
     def test_add_host_key(self, namespace=None):
         """Testing SSHClient.add_host_key"""
         self._set_home(self.tempdir)

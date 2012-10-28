@@ -122,6 +122,17 @@ class SSHClient(paramiko.SSHClient):
 
         return key
 
+    def delete_user_key(self):
+        """Deletes the user key for this client.
+
+        If no key exists, this will do nothing.
+        """
+        try:
+            self.storage.delete_user_key()
+        except Exception, e:
+            logging.error('Unable to delete SSH key file: %s' % e)
+            raise
+
     def get_public_key(self, key):
         """Returns the public key portion of an SSH key.
 
