@@ -53,11 +53,11 @@ Writing and applying an evolution is very simple:
 
 4. Edit (or create) :file:`reviewboard/{app_dir}/evolutions/__init__.py`
    and place the name of the evolution (without the ``.py``) in the
-   ``SEQUENCES`` list.
+   ``SEQUENCE`` list.
 
    For example::
 
-    SEQUENCES = [
+    SEQUENCE = [
         'my_evolution',
     ]
 
@@ -139,7 +139,7 @@ I wrote an evolution but Django Evolution isn't seeing it
 You may have forgotten to add it to the :file:`evolutions/__init__.py`
 file.
 
-To fix this, make sure it's in the ``SEQUENCES`` list, without a file
+To fix this, make sure it's in the ``SEQUENCE`` list, without a file
 extension.
 
 
