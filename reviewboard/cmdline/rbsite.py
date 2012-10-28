@@ -137,6 +137,11 @@ class Dependencies(object):
 
 
 class Site(object):
+    CACHE_BACKENDS = {
+        'memcached': 'django.core.cache.backends.memcached.MemcachedCache',
+        'file': 'django.core.cache.backends.filebased.FileBasedCache',
+    }
+
     def __init__(self, install_dir, options):
         self.install_dir = install_dir
         self.abs_install_dir = os.path.abspath(install_dir)
@@ -251,6 +256,7 @@ class Site(object):
         # Make sure that we have our settings_local.py in our path for when
         # we need to run manager commands.
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'
 
     def generate_config_files(self):
         web_conf_filename = ""
@@ -331,7 +337,13 @@ class Site(object):
         fp.write("SECRET_KEY = '%s'\n" % secret_key)
         fp.write("\n")
         fp.write("# Cache backend settings.\n")
-        fp.write("CACHE_BACKEND = '%s'\n" % self.cache_info)
+        fp.write("CACHES = {\n")
+        fp.write("    'default': {\n")
+        fp.write("        'BACKEND': '%s',\n" %
+                 self.CACHE_BACKENDS[self.cache_type])
+        fp.write("        'LOCATION': '%s',\n" % self.cache_info)
+        fp.write("    },\n")
+        fp.write("}\n")
         fp.write("\n")
         fp.write("# Extra site information.\n")
         fp.write("SITE_ID = 1\n")
@@ -377,7 +389,8 @@ class Site(object):
         try:
             import settings_local
 
-            return hasattr(settings_local, 'DATABASE_ENGINE')
+            return (hasattr(settings_local, 'DATABASE_ENGINE') or
+                    hasattr(settings_local, 'CACHE_BACKEND'))
         except ImportError:
             sys.stderr.write("Unable to import settings_local. "
                              "Cannot determine if upgrade is needed.\n")
@@ -387,9 +400,14 @@ class Site(object):
         """Performs a settings upgrade."""
         settings_file = os.path.join(self.abs_install_dir, "conf",
                                      "settings_local.py")
+        perform_upgrade = False
         buf = []
         database_info = {}
         database_keys = ('ENGINE', 'NAME', 'USER', 'PASSWORD', 'HOST', 'PORT')
+        backend_info = {}
+
+        from django.core.cache import parse_backend_uri, \
+                                      InvalidCacheBackendError
 
         try:
             import settings_local
@@ -408,13 +426,27 @@ class Site(object):
                     if key != 'ENGINE':
                         database_info[key] = getattr(settings_local,
                                                      'DATABASE_%s' % key, '')
+
+                perform_upgrade = True
+
+            if hasattr(settings_local, 'CACHE_BACKEND'):
+                try:
+                    backend_info = parse_backend_uri(
+                        settings_local.CACHE_BACKEND)
+                    perform_upgrade = True
+                except InvalidCacheBackendError:
+                    pass
         except ImportError:
             sys.stderr.write("Unable to import settings_local for upgrade.\n")
+            return
+
+        if not perform_upgrade:
             return
 
         fp = open(settings_file, 'r')
 
         found_database = False
+        found_cache = False
 
         for line in fp.readlines():
             if line.startswith('DATABASE_'):
@@ -429,6 +461,17 @@ class Site(object):
                             buf.append("        '%s': '%s',\n" %
                                        (key, database_info[key]))
 
+                    buf.append("    },\n")
+                    buf.append("}\n")
+            elif line.startswith('CACHE_BACKEND') and backend_info:
+                if not found_cache:
+                    found_cache = True
+
+                    buf.append("CACHES = {\n")
+                    buf.append("    'default': {\n")
+                    buf.append("        'BACKEND': '%s',\n"
+                               % self.CACHE_BACKENDS[backend_info[0]])
+                    buf.append("        'LOCATION': '%s',\n" % backend_info[1])
                     buf.append("    },\n")
                     buf.append("}\n")
             else:
@@ -1543,14 +1586,13 @@ class InstallCommand(Command):
 
     def ask_cache_info(self):
         # Appears only if using memcached.
-        page = ui.page("What memcached connection string should be used?",
+        page = ui.page("What memcached host should be used?",
                        is_visible_func=lambda: site.cache_type == "memcached")
 
-        ui.text(page, "This is generally in the format of "
-                      "memcached://hostname:port/")
+        ui.text(page, "This is in the format of hostname:port")
 
         ui.prompt_input(page, "Memcache Server",
-                        site.cache_info or "memcached://localhost:11211/",
+                        site.cache_info or "localhost:11211",
                         save_obj=site, save_var="cache_info")
 
         # Appears only if using file caching.

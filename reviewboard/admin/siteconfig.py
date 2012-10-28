@@ -282,11 +282,3 @@ def load_site_config():
         settings.AWS_CALLING_FORMAT = int(siteconfig.get('aws_calling_format'))
     except ValueError:
         settings.AWS_CALLING_FORMAT = 0
-
-    # Add a local memory-based 'staticfiles' cache backend. This prevents
-    # Django from storing the cached information in the default cache backend,
-    # which will screw up upgrades until the cache is cleared.
-    settings.CACHES['staticfiles'] = {
-        'BACKEND': 'django.core.cach.backends.locmem.LocMemCache',
-        'LOCATION': 'staticfiles-filehashes',
-    }
