@@ -385,9 +385,20 @@ class BaseDiffCommentResource(BaseCommentResource):
         },
         allow_unknown=True
     )
-    @augment_method_from(WebAPIResource)
-    def get_list(self, *args, **kwargs):
-        pass
+    @webapi_response_errors(DOES_NOT_EXIST)
+    def get_list(self, request, review_id=None, *args, **kwargs):
+        try:
+            review_request = review_request_resource.get_object(
+                request, *args, **kwargs)
+
+            if review_id:
+                review_resource.get_object(request,
+                    review_id=review_id, *args, **kwargs)
+
+            return super(BaseDiffCommentResource, self).get_list(
+                request, review_id=review_id, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
@@ -429,8 +440,7 @@ class FileDiffCommentResource(BaseDiffCommentResource):
                         filediff__id=filediff_id)
 
     @webapi_check_local_site
-    @augment_method_from(BaseDiffCommentResource)
-    def get_list(self, *args, **kwargs):
+    def get_list(self, request, diff_revision=None, *args, **kwargs):
         """Returns the list of comments on a file in a diff.
 
         This list can be filtered down by using the ``?line=`` and
@@ -442,7 +452,14 @@ class FileDiffCommentResource(BaseDiffCommentResource):
         To filter for comments that span revisions of diffs, you can specify
         the second revision in the range using ``?interdiff-revision=``.
         """
-        pass
+        try:
+            filediff_resource.get_object(request,
+                diff_revision=diff_revision, *args, **kwargs)
+
+            return super(FileDiffCommentResource, self).get_list(
+                request, diff_revision=diff_revision, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
 
 filediff_comment_resource = FileDiffCommentResource()
 
@@ -915,7 +932,17 @@ class FileDiffResource(WebAPIResource):
         return obj.diffset.timestamp
 
     def get_queryset(self, request, review_request_id, diff_revision,
-                     *args, **kwargs):
+                     local_site_name=None, *args, **kwargs):
+        if local_site_name:
+            review_request = review_request_resource.get_object(
+                request,
+                review_request_id=review_request_id,
+                diff_revision=diff_revision,
+                local_site_name=local_site_name,
+                *args,
+                **kwargs)
+            review_request_id = review_request.pk
+
         return self.model.objects.filter(
             diffset__history__review_request=review_request_id,
             diffset__revision=diff_revision)
