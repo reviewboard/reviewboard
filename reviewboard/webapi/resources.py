@@ -15,6 +15,7 @@ from django.http import HttpResponseRedirect, HttpResponse, \
 from django.template.defaultfilters import timesince
 from django.utils.encoding import force_unicode
 from django.utils.translation import ugettext as _
+from djblets.gravatars import get_gravatar_url
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, \
@@ -1910,6 +1911,13 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         watched_resource,
     ]
 
+    fields = dict({
+        'avatar_url': {
+            'type': str,
+            'description': 'The URL for an avatar representing the user.',
+        },
+    }, **DjbletsUserResource.fields)
+
     hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
 
     def get_etag(self, request, obj, *args, **kwargs):
@@ -1954,6 +1962,9 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                     del data[field]
 
         return data
+
+    def serialize_avatar_url_field(self, user, request=None, **kwargs):
+        return get_gravatar_url(request, user)
 
     @webapi_check_local_site
     @webapi_request_fields(
