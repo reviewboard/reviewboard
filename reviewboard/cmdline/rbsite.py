@@ -1835,6 +1835,8 @@ def main():
     command = COMMANDS[command_name]
     site = Site(install_dir, options)
 
+    os.putenv('HOME', os.path.join(site.install_dir, "data"))
+
     if command.needs_ui and can_use_gtk and not options.force_console:
         ui = GtkUI()
 

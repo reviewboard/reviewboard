@@ -2,6 +2,7 @@ import base64
 import logging
 import os
 import subprocess
+import sys
 import urllib2
 import urlparse
 
@@ -126,6 +127,8 @@ class SCMTool(object):
 
         if local_site_name:
             env['RB_LOCAL_SITE'] = local_site_name
+
+        env['PYTHONPATH'] = ':'.join(sys.path)
 
         return subprocess.Popen(command,
                                 env=env,
