@@ -263,7 +263,7 @@ class BaseCommentResource(WebAPIResource):
             .issue_string_to_status(kwargs.get('issue_status', None)) \
             != comment.issue_status
 
-    def serialize_issue_status_field(self, obj):
+    def serialize_issue_status_field(self, obj, **kwargs):
         return BaseComment.issue_status_to_string(obj.issue_status)
 
 
@@ -359,13 +359,13 @@ class BaseDiffCommentResource(BaseCommentResource):
 
         return q
 
-    def serialize_public_field(self, obj):
+    def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public
 
-    def serialize_timesince_field(self, obj):
+    def serialize_timesince_field(self, obj, **kwargs):
         return timesince(obj.timestamp)
 
-    def serialize_user_field(self, obj):
+    def serialize_user_field(self, obj, **kwargs):
         return obj.review.get().user
 
     @webapi_check_local_site
@@ -1255,7 +1255,7 @@ class ChangeResource(WebAPIResource):
         'target_groups': Group,
     }
 
-    def serialize_fields_changed_field(self, obj):
+    def serialize_fields_changed_field(self, obj, **kwargs):
         def get_object_cached(model, pk, obj_cache={}):
             if model not in obj_cache:
                 obj_cache[model] = {}
@@ -1914,13 +1914,13 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     def get_etag(self, request, obj, *args, **kwargs):
         if obj.is_profile_visible(request.user):
-            return self.generate_etag(obj, self.fields.iterkeys())
+            return self.generate_etag(obj, self.fields.iterkeys(), request)
         else:
             return self.generate_etag(obj, [
                 field
                 for field in self.fields.iterkeys()
                 if field not in self.hidden_fields
-            ])
+            ], request)
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
@@ -2138,7 +2138,7 @@ class ReviewGroupResource(WebAPIResource):
 
         return query
 
-    def serialize_url_field(self, group):
+    def serialize_url_field(self, group, **kwargs):
         return group.get_absolute_url()
 
     def has_access_permissions(self, request, group, *args, **kwargs):
@@ -2424,7 +2424,7 @@ class RepositoryResource(WebAPIResource):
                                              visible_only=True,
                                              local_site=local_site)
 
-    def serialize_tool_field(self, obj):
+    def serialize_tool_field(self, obj, **kwargs):
         return obj.tool.name
 
     def has_access_permissions(self, request, repository, *args, **kwargs):
@@ -2928,16 +2928,16 @@ class BaseScreenshotResource(WebAPIResource):
 
         return self.model.objects.filter(q)
 
-    def serialize_path_field(self, obj):
+    def serialize_path_field(self, obj, **kwargs):
         return obj.image.name
 
-    def serialize_url_field(self, obj):
+    def serialize_url_field(self, obj, **kwargs):
         return obj.image.url
 
-    def serialize_thumbnail_url_field(self, obj):
+    def serialize_thumbnail_url_field(self, obj, **kwargs):
         return obj.get_thumbnail_url()
 
-    def serialize_caption_field(self, obj):
+    def serialize_caption_field(self, obj, **kwargs):
         # We prefer 'caption' here, because when creating a new screenshot, it
         # won't be full of data yet (and since we're posting to screenshots/,
         # it doesn't hit DraftScreenshotResource). DraftScreenshotResource will
@@ -3103,7 +3103,7 @@ class DraftScreenshotResource(BaseScreenshotResource):
         except ObjectDoesNotExist:
             return self.model.objects.none()
 
-    def serialize_caption_field(self, obj):
+    def serialize_caption_field(self, obj, **kwargs):
         return obj.draft_caption or obj.caption
 
     @webapi_check_local_site
@@ -3224,10 +3224,10 @@ class BaseFileAttachmentResource(WebAPIResource):
 
         return self.model.objects.filter(q)
 
-    def serialize_url_field(self, obj):
+    def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()
 
-    def serialize_caption_field(self, obj):
+    def serialize_caption_field(self, obj, **kwargs):
         # We prefer 'caption' here, because when creating a new screenshot, it
         # won't be full of data yet (and since we're posting to screenshots/,
         # it doesn't hit DraftFileAttachmentResource).
@@ -3393,7 +3393,7 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
         except ObjectDoesNotExist:
             return self.model.objects.none()
 
-    def serialize_caption_field(self, obj):
+    def serialize_caption_field(self, obj, **kwargs):
         return obj.draft_caption or obj.caption
 
     @webapi_check_local_site
@@ -3563,19 +3563,19 @@ class ReviewRequestDraftResource(WebAPIResource):
             request, review_request_id, *args, **kwargs)
         return self.model.objects.filter(review_request=review_request)
 
-    def serialize_bugs_closed_field(self, obj):
+    def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
 
-    def serialize_changedescription_field(self, obj):
+    def serialize_changedescription_field(self, obj, **kwargs):
         if obj.changedesc:
             return obj.changedesc.text
         else:
             return ''
 
-    def serialize_status_field(self, obj):
+    def serialize_status_field(self, obj, **kwargs):
         return status_to_string(obj.status)
 
-    def serialize_public_field(self, obj):
+    def serialize_public_field(self, obj, **kwargs):
         return False
 
     def has_delete_permissions(self, request, draft, *args, **kwargs):
@@ -3958,13 +3958,13 @@ class BaseScreenshotCommentResource(BaseCommentResource):
                                          Q(screenshot__inactive_review_request=review_request),
                                          review__isnull=False)
 
-    def serialize_public_field(self, obj):
+    def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public
 
-    def serialize_timesince_field(self, obj):
+    def serialize_timesince_field(self, obj, **kwargs):
         return timesince(obj.timestamp)
 
-    def serialize_user_field(self, obj):
+    def serialize_user_field(self, obj, **kwargs):
         return obj.review.get().user
 
     @webapi_check_local_site
@@ -4435,13 +4435,13 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
             file_attachment__review_request=review_request,
             review__isnull=False)
 
-    def serialize_public_field(self, obj):
+    def serialize_public_field(self, obj, **kwargs):
         return obj.review.get().public
 
-    def serialize_timesince_field(self, obj):
+    def serialize_timesince_field(self, obj, **kwargs):
         return timesince(obj.timestamp)
 
-    def serialize_user_field(self, obj):
+    def serialize_user_field(self, obj, **kwargs):
         return obj.review.get().user
 
     @webapi_check_local_site
@@ -5937,13 +5937,13 @@ class ReviewRequestResource(WebAPIResource):
     def has_delete_permissions(self, request, review_request, *args, **kwargs):
         return request.user.has_perm('reviews.delete_reviewrequest')
 
-    def serialize_bugs_closed_field(self, obj):
+    def serialize_bugs_closed_field(self, obj, **kwargs):
         return obj.get_bug_list()
 
-    def serialize_status_field(self, obj):
+    def serialize_status_field(self, obj, **kwargs):
         return status_to_string(obj.status)
 
-    def serialize_id_field(self, obj):
+    def serialize_id_field(self, obj, **kwargs):
         return obj.display_id
 
     @webapi_check_local_site
