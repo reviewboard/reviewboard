@@ -45,6 +45,11 @@ class ReviewGroupManager(Manager):
 
         return qs.filter(local_site=local_site)
 
+    def can_create(self, user, local_site=None):
+        """Returns whether the user can create groups."""
+        return (user.is_superuser or
+                (local_site and local_site.is_mutable_by(user)))
+
 
 class ReviewRequestQuerySet(QuerySet):
     def with_counts(self, user):
