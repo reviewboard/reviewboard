@@ -1562,4 +1562,25 @@ $(document).ready(function() {
     });
 });
 
+function differentRevisionSelected(revision, prefix, postfix)
+{
+    var elems = $('#show_interdiff a'),
+        i, current_revision, elem, middle;
+    for(i = 0; i < elems.length; i++) {
+        elem = elems.eq(i);
+        current_revision = elem.data('revision');
+        if(revision > current_revision) {
+            middle = current_revision + '-' + revision;
+        } else {
+            middle = revision + '-' + current_revision;
+        }
+        elem.attr('href', prefix + middle + postfix);
+        if(revision == current_revision) {
+            elem.addClass('disabled');
+        } else {
+            elem.removeClass('disabled');
+        }
+    }
+}
+
 // vim: set et:
