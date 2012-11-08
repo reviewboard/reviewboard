@@ -7,6 +7,7 @@ from reviewboard.scmtools.models import Repository, Tool
 
 class RepositoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'path', 'hosting', 'visible')
+    raw_id_fields = ('local_site',)
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'visible',),

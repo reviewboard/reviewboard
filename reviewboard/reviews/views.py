@@ -484,9 +484,19 @@ def review_detail(request,
 
     # Get all the file attachments and screenshots and build a couple maps,
     # so we can easily associate those objects in comments.
-    file_attachments = list(review_request_details.get_file_attachments())
+    file_attachments = []
+
+    for file_attachment in review_request_details.get_file_attachments():
+        file_attachment._comments = []
+        file_attachments.append(file_attachment)
+
+    screenshots = []
+
+    for screenshot in review_request_details.get_screenshots():
+        screenshot._comments = []
+        screenshots.append(screenshot)
+
     file_attachment_id_map = _build_id_map(file_attachments)
-    screenshots = list(review_request_details.get_screenshots())
     screenshot_id_map = _build_id_map(screenshots)
 
     # There will be non-visible (generally deleted) file attachments and
@@ -551,7 +561,11 @@ def review_detail(request,
                 if (comment.screenshot_id not in screenshot_id_map and
                     not has_inactive_screenshots):
                     inactive_screenshots = \
-                        review_request_details.get_inactive_screenshots()
+                        list(review_request_details.get_inactive_screenshots())
+
+                    for screenshot in inactive_screenshots:
+                        screenshot._comments = []
+
                     screenshot_id_map.update(
                         _build_id_map(inactive_screenshots))
                     has_inactive_screenshots = True
@@ -559,16 +573,16 @@ def review_detail(request,
                 if comment.screenshot_id in screenshot_id_map:
                     screenshot = screenshot_id_map[comment.screenshot_id]
                     comment.screenshot = screenshot
-
-                    if not hasattr(screenshot, '_comments'):
-                        screenshot._comments = []
-
                     screenshot._comments.append(comment)
             elif isinstance(comment, FileAttachmentComment):
                 if (comment.file_attachment_id not in file_attachment_id_map and
                     not has_inactive_file_attachments):
-                    inactive_file_attachments = \
-                        review_request_details.get_inactive_file_attachments()
+                    inactive_file_attachments = list(
+                        review_request_details.get_inactive_file_attachments())
+
+                    for file_attachment in inactive_file_attachments:
+                        file_attachment._comments = []
+
                     file_attachment_id_map.update(
                         _build_id_map(inactive_file_attachments))
                     has_inactive_file_attachments = True
@@ -577,10 +591,6 @@ def review_detail(request,
                     file_attachment = \
                         file_attachment_id_map[comment.file_attachment_id]
                     comment.file_attachment = file_attachment
-
-                    if not hasattr(file_attachment, '_comments'):
-                        file_attachment._comments = []
-
                     file_attachment._comments.append(comment)
 
             if parent_review.is_reply():
