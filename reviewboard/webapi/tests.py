@@ -34,7 +34,9 @@ from reviewboard.ssh.errors import BadHostKeyError, \
                                    UnknownHostKeyError
 from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_TOO_BIG, \
+                                      GROUP_ALREADY_EXISTS, \
                                       INVALID_REPOSITORY, \
+                                      INVALID_USER, \
                                       MISSING_USER_KEY, \
                                       REPO_AUTHENTICATION_ERROR, \
                                       UNVERIFIED_HOST_CERT, \
@@ -1098,6 +1100,166 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     list_mimetype = _build_mimetype('review-groups')
     item_mimetype = _build_mimetype('review-group')
 
+    def test_post_group(self, local_site=None):
+        """Testing the POST groups/ API"""
+        name = 'my-group'
+        display_name = 'My Group'
+        mailing_list = 'mygroup@example.com'
+        visible = False
+        invite_only = True
+
+        self._login_user(admin=True)
+
+        rsp = self.apiPost(self.get_list_url(local_site), {
+            'name': name,
+            'display_name': display_name,
+            'mailing_list': mailing_list,
+            'visible': visible,
+            'invite_only': invite_only,
+        }, expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        group = Group.objects.get(pk=rsp['group']['id'])
+        self.assertEqual(group.local_site, local_site)
+        self.assertEqual(group.name, name)
+        self.assertEqual(group.display_name, display_name)
+        self.assertEqual(group.mailing_list, mailing_list)
+        self.assertEqual(group.visible, visible)
+        self.assertEqual(group.invite_only, invite_only)
+
+    @add_fixtures(['test_site'])
+    def test_post_group_with_site(self):
+        """Testing the POST groups/ API with a local site"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        self.test_post_group(local_site)
+
+    def test_post_group_with_defaults(self):
+        """Testing the POST groups/ API with field defaults"""
+        name = 'my-group'
+        display_name = 'My Group'
+
+        self._login_user(admin=True)
+
+        rsp = self.apiPost(self.get_list_url(), {
+            'name': name,
+            'display_name': display_name,
+        }, expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        group = Group.objects.get(pk=rsp['group']['id'])
+        self.assertEqual(group.mailing_list, '')
+        self.assertEqual(group.visible, True)
+        self.assertEqual(group.invite_only, False)
+
+    @add_fixtures(['test_site'])
+    def test_post_group_with_site_admin(self):
+        """Testing the POST groups/ API with a local site admin"""
+        user = self._login_user(local_site=True, admin=True)
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        rsp = self.apiPost(self.get_list_url(local_site), {
+            'name': 'mygroup',
+            'display_name': 'My Group',
+            'mailing_list': 'mygroup@example.com',
+        }, expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    def test_post_group_with_no_access(self, local_site=None):
+        """Testing the POST groups/ API with no access"""
+        rsp = self.apiPost(self.get_list_url(local_site), {
+            'name': 'mygroup',
+            'display_name': 'My Group',
+            'mailing_list': 'mygroup@example.com',
+        }, expected_status=403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+
+    @add_fixtures(['test_site'])
+    def test_post_group_with_site_no_access(self):
+        """Testing the POST groups/ API with local site and no access"""
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+        self.test_post_group_with_no_access(local_site)
+
+    def test_post_group_with_conflict(self):
+        """Testing the POST groups/ API with Group Already Exists error"""
+        self._login_user(admin=True)
+        group = Group.objects.get(pk=1)
+
+        rsp = self.apiPost(self.get_list_url(), {
+            'name': group.name,
+            'display_name': 'My Group',
+        }, expected_status=409)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
+
+    @add_fixtures(['test_site'])
+    def test_put_group(self, local_site=None):
+        """Testing the PUT groups/<name>/ API"""
+        name = 'my-group'
+        display_name = 'My Group'
+        mailing_list = 'mygroup@example.com'
+
+        group = Group.objects.get(pk=1)
+        group.local_site = local_site
+        group.save()
+
+        self._login_user(admin=True)
+        rsp = self.apiPut(self.get_item_url(group.name, local_site), {
+            'name': name,
+            'display_name': display_name,
+            'mailing_list': mailing_list,
+        }, expected_mimetype=self.item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        group = Group.objects.get(pk=group.pk)
+        self.assertEqual(group.local_site, local_site)
+        self.assertEqual(group.name, name)
+        self.assertEqual(group.display_name, display_name)
+        self.assertEqual(group.mailing_list, mailing_list)
+
+    @add_fixtures(['test_site'])
+    def test_put_group_with_site(self):
+        """Testing the PUT groups/<name>/ API with local site"""
+        self.test_put_group(LocalSite.objects.get(name=self.local_site_name))
+
+    def test_put_group_with_no_access(self, local_site=None):
+        """Testing the PUT groups/<name>/ API with no access"""
+        group = Group.objects.get(pk=1)
+        group.local_site = local_site
+        group.save()
+
+        rsp = self.apiPut(self.get_item_url(group.name, local_site), {
+            'name': 'mygroup',
+            'display_name': 'My Group',
+            'mailing_list': 'mygroup@example.com',
+        }, expected_status=403)
+
+        self.assertEqual(rsp['stat'], 'fail')
+
+    @add_fixtures(['test_site'])
+    def test_put_group_with_site_no_access(self):
+        """Testing the PUT groups/<name>/ API with local site and no access"""
+        self.test_put_group_with_no_access(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    def test_put_group_with_conflict(self):
+        """Testing the PUT groups/<name>/ API with Group Already Exists error"""
+        group = Group.objects.get(pk=1)
+        group2 = Group.objects.get(pk=2)
+
+        self._login_user(admin=True)
+        rsp = self.apiPut(self.get_item_url(group.name), {
+            'name': group2.name,
+        }, expected_status=409)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], GROUP_ALREADY_EXISTS.code)
+
     @add_fixtures(['test_site'])
     def test_get_groups(self):
         """Testing the GET groups/ API"""
@@ -1246,6 +1408,139 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
                                   local_site_name=local_site_name,
                                   kwargs={
                                       'group_name': group_name,
+                                  })
+
+
+class ReviewGroupUserResourceTests(BaseWebAPITestCase):
+    """Testing the ReviewGroupUserResource API tests."""
+    fixtures = ['test_users', 'test_scmtools', 'test_reviewrequests']
+
+    list_mimetype = _build_mimetype('users')
+    item_mimetype = _build_mimetype('user')
+
+    def test_create_user(self, local_site=None):
+        """Testing the POST groups/<name>/users/ API"""
+        self._login_user(admin=True, local_site=local_site)
+
+        group = Group.objects.get(pk=1)
+        group.local_site = local_site
+        group.users = []
+        group.save()
+
+        user = User.objects.get(pk=1)
+
+        rsp = self.apiPost(self.get_list_url(group.name, local_site), {
+            'username': user.username,
+        }, expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertEqual(group.users.count(), 1)
+        self.assertEqual(group.users.get().username, user.username)
+
+    @add_fixtures(['test_site'])
+    def test_create_user_with_site(self):
+        """Testing the POST groups/<name>/users/ API with local site"""
+        self.test_create_user(LocalSite.objects.get(name=self.local_site_name))
+
+    def test_create_user_with_no_access(self, local_site=None):
+        """Testing the POST groups/<name>/users/ API with Permission Denied"""
+        group = Group.objects.get(pk=1)
+        user = User.objects.get(pk=1)
+
+        rsp = self.apiPost(self.get_list_url(group.name, local_site), {
+            'username': user.username,
+        }, expected_status=403)
+        self.assertEqual(rsp['stat'], 'fail')
+
+    @add_fixtures(['test_site'])
+    def test_create_user_with_site_no_access(self):
+        """Testing the POST groups/<name>/users/ API with local site and Permission Denied"""
+        self.test_create_user_with_no_access(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    def test_create_user_with_invalid_user(self):
+        """Testing the POST groups/<name>/users/ API with invalid user"""
+        self._login_user(admin=True)
+
+        group = Group.objects.get(pk=1)
+        group.users = []
+        group.save()
+
+        rsp = self.apiPost(self.get_list_url(group.name), {
+            'username': 'grabl',
+        }, expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_USER.code)
+
+        self.assertEqual(group.users.count(), 0)
+
+    def test_delete_user(self, local_site=None):
+        """Testing the DELETE groups/<name>/users/<username>/ API"""
+        self._login_user(admin=True, local_site=local_site)
+
+        group = Group.objects.get(pk=1)
+        group.local_site = local_site
+        group.save()
+
+        old_count = group.users.count()
+        user = group.users.all()[0]
+
+        rsp = self.apiDelete(
+            self.get_item_url(group.name, user.username, local_site),
+            expected_status=204)
+
+        self.assertEqual(group.users.count(), old_count - 1)
+
+    @add_fixtures(['test_site'])
+    def test_delete_user_with_site(self):
+        """Testing the DELETE groups/<name>/users/<username>/ API with local site"""
+        self.test_delete_user(LocalSite.objects.get(name=self.local_site_name))
+
+    def test_delete_user_with_no_access(self, local_site=None):
+        """Testing the DELETE groups/<name>/users/<username>/ API with Permission Denied"""
+        group = Group.objects.get(pk=1)
+        user = group.users.all()[0]
+
+        rsp = self.apiDelete(
+            self.get_item_url(group.name, user.username, local_site),
+            expected_status=403)
+
+    @add_fixtures(['test_site'])
+    def test_delete_user_with_site_no_access(self):
+        """Testing the DELETE groups/<name>/users/<username>/ API with local site and Permission Denied"""
+        self.test_delete_user_with_no_access(
+            LocalSite.objects.get(name=self.local_site_name))
+
+    def test_get_users(self, local_site=None):
+        """Testing the GET groups/<name>/users/ API"""
+        group = Group.objects.get(pk=1)
+        group.local_site = local_site
+        group.save()
+
+        rsp = self.apiGet(self.get_list_url(group.name, local_site),
+                          expected_mimetype=self.list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['users']), group.users.count())
+
+    @add_fixtures(['test_site'])
+    def test_get_users_with_site(self):
+        """Testing the GET groups/<name>/users/ API with local site"""
+        self._login_user(local_site=True)
+        self.test_get_users(LocalSite.objects.get(name=self.local_site_name))
+
+    def get_list_url(self, group_name, local_site_name=None):
+        return local_site_reverse('users-resource',
+                                  kwargs={
+                                      'group_name': group_name,
+                                  },
+                                  local_site_name=local_site_name)
+
+    def get_item_url(self, group_name, username, local_site_name=None):
+        return local_site_reverse('user-resource',
+                                  local_site_name=local_site_name,
+                                  kwargs={
+                                      'group_name': group_name,
+                                      'username': username,
                                   })
 
 

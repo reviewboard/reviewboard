@@ -86,7 +86,7 @@ class Group(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        if self.local_site:
+        if self.local_site_id:
             local_site_name = self.local_site.name
         else:
             local_site_name = None

@@ -82,6 +82,7 @@ from reviewboard.webapi.errors import BAD_HOST_KEY, \
                                       DIFF_TOO_BIG, \
                                       EMPTY_CHANGESET, \
                                       FILE_RETRIEVAL_ERROR, \
+                                      GROUP_ALREADY_EXISTS, \
                                       HOSTINGSVC_AUTH_ERROR, \
                                       INVALID_CHANGE_NUMBER, \
                                       INVALID_REPOSITORY, \
@@ -2142,13 +2143,65 @@ user_resource = UserResource()
 
 class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
-    uri_object_key = None
+    allowed_methods = ('GET', 'POST', 'DELETE')
 
     def get_queryset(self, request, group_name, local_site_name=None,
                      *args, **kwargs):
         group = Group.objects.get(name=group_name,
                                   local_site__name=local_site_name)
         return group.users.all()
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, INVALID_USER,
+                            NOT_LOGGED_IN, PERMISSION_DENIED)
+    @webapi_request_fields(required={
+        'username': {
+            'type': str,
+            'description': 'The user to add to the group.',
+        },
+    })
+    def create(self, request, username, *args, **kwargs):
+        """Adds a user to a review group."""
+        try:
+            group = review_group_resource.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_group_resource.has_modify_permissions(request, group):
+            return _no_access_error(request.user)
+
+        local_site = _get_local_site(kwargs.get('local_site_name', None))
+
+        try:
+            user = User.objects.get(username=username, local_site=local_site)
+        except ObjectDoesNotExist:
+            return INVALID_USER
+
+        group.users.add(user)
+
+        return 201, {
+            self.item_result_key: group,
+        }
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, INVALID_USER,
+                            NOT_LOGGED_IN, PERMISSION_DENIED)
+    def delete(self, request, *args, **kwargs):
+        """Removes a user from a review group."""
+        try:
+            group = review_group_resource.get_object(request, *args, **kwargs)
+            user = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not review_group_resource.has_modify_permissions(request, group):
+            return _no_access_error(request.user)
+
+        group.users.remove(user)
+
+        return 204, {}
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
@@ -2239,9 +2292,12 @@ class ReviewGroupResource(WebAPIResource):
     mimetype_list_resource_name = 'review-groups'
     mimetype_item_resource_name = 'review-group'
 
-    allowed_methods = ('GET', 'DELETE')
+    allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
     def has_delete_permissions(self, request, group, *args, **kwargs):
+        return group.is_mutable_by(request.user)
+
+    def has_modify_permissions(self, request, group):
         return group.is_mutable_by(request.user)
 
     def get_queryset(self, request, is_list=False, local_site_name=None,
@@ -2324,9 +2380,149 @@ class ReviewGroupResource(WebAPIResource):
 
     @webapi_check_local_site
     @webapi_login_required
+    @webapi_response_errors(GROUP_ALREADY_EXISTS, INVALID_FORM_DATA,
+                            INVALID_USER, NOT_LOGGED_IN, PERMISSION_DENIED)
+    @webapi_request_fields(
+        required={
+            'name': {
+                'type': str,
+                'description': 'The name of the group.',
+            },
+            'display_name': {
+                'type': str,
+                'description': 'The human-readable name of the group.',
+            },
+        },
+        optional={
+            'mailing_list': {
+                'type': str,
+                'description': 'The e-mail address that all posts on a review '
+                               'group are sent to.',
+            },
+            'visible': {
+                'type': bool,
+                'description': 'Whether or not the group is visible to users '
+                               'who are not members. The default is true.',
+            },
+            'invite_only': {
+                'type': bool,
+                'description': 'Whether or not the group is invite-only. '
+                               'The default is false.',
+            },
+        }
+    )
+    def create(self, request, name, display_name, mailing_list=None,
+               visible=True, invite_only=False, local_site_name=None,
+               *args, **kargs):
+        """Creates a new review group.
+
+        This will create a brand new review group with the given name
+        and display name. The group will be public by default, unless
+        specified otherwise.
+        """
+        local_site = _get_local_site(local_site_name)
+
+        if not self.model.objects.can_create(request.user, local_site):
+            return _no_access_error(request.user)
+
+        group, is_new = self.model.objects.get_or_create(
+            name=name,
+            local_site=local_site,
+            defaults={
+                'display_name': display_name,
+                'mailing_list': mailing_list or '',
+                'visible': bool(visible),
+                'invite_only': bool(invite_only),
+            })
+
+        if not is_new:
+            return GROUP_ALREADY_EXISTS
+
+        return 201, {
+            self.item_result_key: group,
+        }
+
+    @webapi_check_local_site
+    @webapi_login_required
+    @webapi_response_errors(DOES_NOT_EXIST, INVALID_FORM_DATA,
+                            GROUP_ALREADY_EXISTS, NOT_LOGGED_IN,
+                            PERMISSION_DENIED)
+    @webapi_request_fields(
+        optional={
+            'name': {
+                'type': str,
+                'description': 'The new name for the group.',
+            },
+            'display_name': {
+                'type': str,
+                'description': 'The human-readable name of the group.',
+            },
+            'mailing_list': {
+                'type': str,
+                'description': 'The e-mail address that all posts on a review '
+                               'group are sent to.',
+            },
+            'visible': {
+                'type': bool,
+                'description': 'Whether or not the group is visible to users '
+                               'who are not members.',
+            },
+            'invite_only': {
+                'type': bool,
+                'description': 'Whether or not the group is invite-only.'
+            },
+        }
+    )
+    def update(self, request, name=None, *args, **kwargs):
+        """Updates an existing review group.
+
+        All the fields of a review group can be modified, including the
+        name, so long as it doesn't conflict with another review group.
+        """
+        try:
+            group = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        if not self.has_modify_permissions(request, group):
+            return _no_access_error(request.user)
+
+        if name is not None and name != group.name:
+            # If we're changing the group name, make sure that group doesn't
+            # exist.
+            local_site = _get_local_site(kwargs.get('local_site_name', None))
+
+            if self.model.objects.filter(name=name,
+                                         local_site=local_site).count():
+                return GROUP_ALREADY_EXISTS
+
+            group.name = name
+
+        for field in ("display_name", "mailing_list", "visible",
+                      "invite_only"):
+            val = kwargs.get(field, None)
+
+            if val is not None:
+                setattr(group, field, val)
+
+        group.save()
+
+        return 200, {
+            self.item_result_key: group,
+        }
+
+    @webapi_check_local_site
+    @webapi_login_required
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     def delete(self, request, *args, **kwargs):
-        """Deletes a review group."""
+        """Deletes a review group.
+
+        This will disassociate the group from all review requests previously
+        targetting the group, and permanently delete the group.
+
+        It is best to only delete empty, unused groups, and to instead
+        change a group to not be visible if it's on longer needed.
+        """
         try:
             group = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
@@ -2336,6 +2532,7 @@ class ReviewGroupResource(WebAPIResource):
             return _no_access_error(request.user)
 
         group.delete()
+
         return 204, {}
 
 review_group_resource = ReviewGroupResource()
