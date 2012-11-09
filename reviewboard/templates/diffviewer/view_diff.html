@@ -160,24 +160,15 @@
    </td>
   </tr>
   <tr>
-   <th><label>{% trans "Changes between" %}</label>
-   <select onchange="differentRevisionSelected($(this).val(), '{{review_request.get_absolute_url}}diff/', '/#index_header')">
-{% for item in review_request.diffset_history.diffsets.all %}
-{%  if item.revision == revision %}
-     <option value="{{ item.revision }}"selected>{{ item.revision }}</option>
-{%  else %}
-     <option value="{{ item.revision }}">{{ item.revision }}</option>
-{%  endif %}
-{% endfor %}
-   </select>
-   <label>{% trans "and" %}:</label>
-   </th>
+   <th><label for="show_interdiff">{% blocktrans %}Changes between r{{revision}} and:{% endblocktrans %}</label></th>
    <td>
+	   <div id="interdiff_switcher">
+		   <input type="button" class="pick_interdiff" value="view" onclick="diffHopper.goToSelectedRevisions('{{review_request.get_absolute_url}}diff/', '/#index_header');"/>
+	   </div>
     <div id="show_interdiff" class="revisions">
 {%  for item in review_request.diffset_history|interdiff_link_list:diffset_pair %}
-     <a class="{{ item.is_current|yesno:"disabled current," }}"
-       href="{{review_request.get_absolute_url}}diff/{{item.path}}/#index_header" data-revision="{{ item.revision }}"
-       onclick="return !$(this).hasClass('disabled')">{{item.revision}}</a>
+     <a class="{{ item.is_current|yesno:"current," }}" href="#"
+       onclick="diffHopper.differentRevisionSelected({{ item.revision }}); return false;">{{item.revision}}</a>
 {%  endfor %}
 {%  if draft and draft.diffset %}
 {#   There's a draft diff, so display it in the list. #}
@@ -192,7 +183,7 @@
   </tr>
  </table>
 {% endif %}
-
+<br />
  <p><label>{% trans "Files Changed:" %}</label></p>
 {% include "diffviewer/changeindex.html" %}
   </div>
@@ -247,6 +238,16 @@
 {% endif %}
                   "{{file.index}}",
 			      {% commentcounts file.filediff file.interfilediff %});
+  $('#interdiff_switcher').show();
+{% if num_diffs > 1 %}
+{%  if interdiffset %}
+  diffHopper.init({{ diffset.revision }}, {{ interdiffset.revision }});
+{%  elif diffset.revision == 1 %}
+  diffHopper.init({{ diffset.revision }}, {{ diffset.revision }} + 1);
+{%  else %}
+  diffHopper.init({{ diffset.revision }} - 1, {{ diffset.revision }});
+{%  endif %}
+{% endif %}
 });
 </script>
 {% endfor %}

@@ -1562,25 +1562,106 @@ $(document).ready(function() {
     });
 });
 
-function differentRevisionSelected(revision, prefix, postfix)
-{
-    var elems = $('#show_interdiff a'),
-        i, current_revision, elem, middle;
-    for(i = 0; i < elems.length; i++) {
-        elem = elems.eq(i);
-        current_revision = elem.data('revision');
-        if(revision > current_revision) {
-            middle = current_revision + '-' + revision;
-        } else {
-            middle = revision + '-' + current_revision;
+/**
+ * The magic behind the "Changes between rX and:" buttons
+ */
+var diffHopper = new function() {
+    var left_diff = 1,
+        right_diff = 1,
+        unsure_change,
+        /**
+         * Call this when unsure to which interdiff to switch
+         */
+        storeUnsureChange = function(which, old_value, new_value) {
+            unsure_change = {
+                which: which,
+                old_value: old_value,
+                new_value: new_value
+            };
+        },
+        /**
+         * Call this when the switch was clear
+         */
+        resetUnsureChange = function() {
+            unsure_change = { which: null, old_value: null, new_value: null }
+        },
+        /**
+         * Pick the other option you had for the unsure change
+         */
+        switchUnsureChange = function(revision) {
+            if(unsure_change.which === 'left') {
+                var tmp = unsure_change;
+                storeUnsureChange('right', right_diff, revision);
+                right_diff = left_diff;
+                left_diff = tmp.old_value;
+            } else {
+                var tmp = unsure_change;
+                storeUnsureChange('left', left_diff, revision);
+                left_diff = right_diff;
+                right_diff = tmp.old_value;
+            }
+        },
+        /**
+         * Decided which interdiff is most important, lets display
+         * it to the user!
+         */
+        positionInterDiffSwitcher = function() {
+            var diffs = $('#show_interdiff a');
+            var left_elem = diffs.eq(left_diff - 1);
+            var left_offset = left_elem.offset();
+            var left = left_offset.left + (left_elem.outerWidth() / 2) - 1;
+
+            var right_elem = diffs.eq(right_diff - 1);
+            var right_offset = right_elem.offset();
+            var width = right_offset.left + (right_elem.outerWidth() / 2) - left;
+            var child_width = $('#interdiff_switcher .pick_interdiff').outerWidth();
+
+            $('#interdiff_switcher').css({
+              top: (left_offset.top + left_elem.outerHeight()) + 'px',
+              left: left + 'px',
+              width: width + 'px'
+            });
+            // If the child width is bigger, this will be negative
+            // And that just works :)
+            $('#interdiff_switcher .pick_interdiff').css({
+                left: ((width - child_width) / 2 - 1) + 'px'
+            });
         }
-        elem.attr('href', prefix + middle + postfix);
-        if(revision == current_revision) {
-            elem.addClass('disabled');
-        } else {
-            elem.removeClass('disabled');
+    ;
+    resetUnsureChange();
+
+    // These make up the public API
+    return {
+        init: function(one_revision, other_revision) {
+            left_diff = Math.min(one_revision, other_revision);
+            right_diff = Math.max(one_revision, other_revision);
+            positionInterDiffSwitcher();
+        },
+        differentRevisionSelected: function(revision)
+        {
+            if(revision === unsure_change.new_value) {
+                // We moved the wrong picker, move the other one!
+                switchUnsureChange(revision);
+            } else if(revision > right_diff) {
+                resetUnsureChange();
+                right_diff = revision
+            } else if(revision < left_diff) {
+                resetUnsureChange();
+                left_diff = revision;
+            } else if(revision > left_diff && revision < right_diff) {
+                // Somewhere in between, lets gamble on the left picker
+                storeUnsureChange('left', left_diff, revision);
+                left_diff = revision;
+            }
+            positionInterDiffSwitcher();
+        },
+        goToSelectedRevisions: function(prefix, postfix)
+        {
+            var middle = left_diff + '-' + right_diff;
+            location.href = prefix + middle + postfix;
         }
     }
-}
+}();
+
 
 // vim: set et:
