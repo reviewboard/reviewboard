@@ -30,7 +30,7 @@ over. This guide will help with some of these dependencies.
 
 It's assumed that you know which database and web server you want to use,
 and have already installed these on your server. It's also assumed that
-you have Python v2.4 or v2.5 installed.
+you have Python v2.x (2.5 or newer) installed.
 
 Review Board supports the following database servers:
 
@@ -81,7 +81,7 @@ Installing Python Setuptools
 Before you begin, you'll need `Python setuptools`_ version 0.6c9 or higher.
 Most Linux distributions have this packaged and available for installation.
 
-To install on on Debian_, Ubuntu_, or another Debian-based distribution,
+To install on Debian_, Ubuntu_, or another Debian-based distribution,
 type::
 
     $ apt-get install python-setuptools
@@ -117,7 +117,7 @@ Installing Python Development Headers
 You will need to install the Python development headers for your
 distribution.
 
-To install on on Debian_, Ubuntu_, or another Debian-based distribution,
+To install on Debian_, Ubuntu_, or another Debian-based distribution,
 type::
 
     $ apt-get install python-dev
