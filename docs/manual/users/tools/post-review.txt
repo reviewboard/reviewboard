@@ -15,10 +15,111 @@ review request on an associated Review Board server. This saves a lot of time
 over the web UI, and for some types of code repositories (such as Perforce),
 it's actually required in order to produce a compatible diff.
 
-:command:`post-review` is part of the RBTools package, and can be installed
-and upgraded by running::
+
+Installation
+============
+
+:command:`post-review` is part of the RBTools package.
+
+Before installing RBTools, you will need to have both Python and Setuptools
+installed.
+
+We require Python 2.x. We recommend installing Python 2.7. The 3.x releases
+will not work.
+
+
+Installing Python
+-----------------
+
+Linux
+~~~~~
+
+Python 2.x should come with your distribution. If not, or if 2.x isn't
+installed, you will need to install the appropriate package. Please refer to
+your package manager for the appropriate version.
+
+
+Windows
+~~~~~~~
+
+You can install Python by running the latest `Python 2.7 Installer`_ for
+Windows. We recommend the 32-bit MSI installer, as Setuptools is not packaged
+for 64-bit.
+
+.. _`Python 2.7 Installer`: http://www.python.org/download/releases/2.7.3/
+
+
+Installing Setuptools
+---------------------
+
+Linux
+~~~~~
+
+To install Setuptools on Debian_, Ubuntu_, or another Debian-based
+distribution, type::
+
+    $ apt-get install python-setuptools
+
+
+To install on Fedora_ 8 and above, type::
+
+    $ yum install -y python-setuptools-devel.noarch
+
+To install on a `RedHat Enterprise`_, CentOS_, Fedora_ 7 and earlier, or
+another RedHat-based distribution, type::
+
+    $ yum install python-setuptools
+
+
+Users of other distributions should check with their distribution for native
+packages, or follow the `setuptools installation`_ instructions.
+
+If the version of setuptools available for your distribution is older than
+0.6c9, you'll need to install it first, and then upgrade it to the latest
+version by running::
+
+    $ easy_install -U setuptools
+
+
+.. _`Python setuptools`: http://peak.telecommunity.com/DevCenter/setuptools
+.. _`setuptools installation`: http://peak.telecommunity.com/DevCenter/EasyInstall#installation-instructions
+
+
+Windows
+~~~~~~~
+
+You'll then need to run the latest `Python Setuptools Installer`_ (look
+toward the bottom of the page for the file listing).
+
+Once Python and Setuptools are installed, you may need to add a couple
+directories to your system path.
+
+1. Open :menuselection:`Start --> Control Panel` and navigate to the
+   :guilabel:`System` icon.
+2. Click on the :guilabel:`Advanced` tab.
+3. Click :guilabel:`Environment Variables`.
+4. Find :envvar:`PATH` in :guilabel:`System variables` and click
+   :guilabel:`Edit`.
+5. Add ``;C:\Python27;C:\Python27\Scripts`` (substitute your Python
+   directory if it's not ``C:\Python27``) to the end of the list.
+
+.. _`Python Setuptools Installer`: http://pypi.python.org/pypi/setuptools#windows
+
+
+Installing RBTools
+------------------
+
+Once Python and Setuptools are installed, you can install RBTools just by
+typing::
 
     $ easy_install -U RBTools
+
+
+.. _Debian: http://www.debian.org/
+.. _Ubuntu: http://www.ubuntu.com/
+.. _`RedHat Enterprise`: http://www.redhat.com/
+.. _Fedora: http://fedoraproject.org/
+.. _CentOS: http://www.centos.org/
 
 
 Posting and Updating Review Requests
