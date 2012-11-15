@@ -6162,13 +6162,6 @@ class ReviewRequestResource(WebAPIResource):
                             REPO_AUTHENTICATION_ERROR, REPO_INFO_ERROR,
                             MISSING_REPOSITORY)
     @webapi_request_fields(
-        required={
-            'repository': {
-                'type': str,
-                'description': 'The path or ID of the repository that the '
-                               'review request is for.',
-            },
-        },
         optional={
             'changenum': {
                 'type': int,
@@ -6176,6 +6169,11 @@ class ReviewRequestResource(WebAPIResource):
                                'review request details. This only works with '
                                'repositories that support server-side '
                                'changesets.',
+            },
+            'repository': {
+                'type': str,
+                'description': 'The path or ID of the repository that the '
+                               'review request is for.',
             },
             'submit_as': {
                 'type': str,
@@ -6186,7 +6184,7 @@ class ReviewRequestResource(WebAPIResource):
                                'permission.',
             },
         })
-    def create(self, request, repository, submit_as=None, changenum=None,
+    def create(self, request, repository=None, submit_as=None, changenum=None,
                local_site_name=None, *args, **kwargs):
         """Creates a new review request.
 
@@ -6202,12 +6200,14 @@ class ReviewRequestResource(WebAPIResource):
         must be set through the draft. The new review request will be public
         when that first draft is published.
 
-        The only requirement when creating a review request is that a valid
-        repository is passed. This can be a numeric repository ID, the name
-        of a repository, or the path to a repository (matching exactly the
-        registered repository's Path or Mirror Path fields in the
-        adminstration interface). Failing to pass a valid repository will
-        result in an error.
+        A repository can be passed. This is required for diffs associated
+        with a review request. A valid repository is in the form of a numeric
+        repository ID, the name of a repository, or the path to a repository
+        (matching exactly the registered repository's Path or Mirror Path
+        fields in the adminstration interface).
+
+        If a repository is not passed, this review request can only be
+        used for attached files.
 
         Clients can create review requests on behalf of another user by setting
         the ``submit_as`` parameter to the username of the desired user. This
@@ -6228,24 +6228,25 @@ class ReviewRequestResource(WebAPIResource):
             except User.DoesNotExist:
                 return INVALID_USER
 
-        try:
+        if repository is not None:
             try:
-                repository = Repository.objects.get(pk=int(repository),
-                                                    local_site=local_site)
-            except ValueError:
-                # The repository is not an ID.
-                repository = Repository.objects.get(
-                    (Q(path=repository) |
-                     Q(mirror_path=repository) |
-                     Q(name=repository)) &
-                    Q(local_site=local_site))
-        except Repository.DoesNotExist, e:
-            return INVALID_REPOSITORY, {
-                'repository': repository
-            }
+                try:
+                    repository = Repository.objects.get(pk=int(repository),
+                                                        local_site=local_site)
+                except ValueError:
+                    # The repository is not an ID.
+                    repository = Repository.objects.get(
+                        (Q(path=repository) |
+                         Q(mirror_path=repository) |
+                         Q(name=repository)) &
+                        Q(local_site=local_site))
+            except Repository.DoesNotExist, e:
+                return INVALID_REPOSITORY, {
+                    'repository': repository
+                }
 
-        if not repository.is_accessible_by(request.user):
-            return _no_access_error(request.user)
+            if not repository.is_accessible_by(request.user):
+                return _no_access_error(request.user)
 
         try:
             review_request = ReviewRequest.objects.create(user, repository,
