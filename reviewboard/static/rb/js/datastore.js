@@ -1728,10 +1728,14 @@ $.extend(RB.FileAttachmentComment.prototype, {
             self.review.ensureCreated(function() {
                 var type,
                     url,
-                    data = _.extend({
+                    data = {
                         text: self.text,
                         issue_opened: self.issue_opened
-                    }, self.extra_data);
+                    };
+
+                _.each(self.extra_data, function(value, key) {
+                    data['extra_data.' + key] = value;
+                }, this);
 
                 if (self.loaded) {
                     type = "PUT";

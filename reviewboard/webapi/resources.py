@@ -130,6 +130,19 @@ def _no_access_error(user):
         return NOT_LOGGED_IN
 
 
+EXTRA_DATA_LEN = len('extra_data.')
+
+def _import_extra_data(extra_data, fields):
+    for key, value in fields.iteritems():
+        if key.startswith('extra_data.'):
+            key = key[EXTRA_DATA_LEN:]
+
+            if value != '':
+                extra_data[key] = value
+            elif norm_key in fields:
+                del file_comment.extra_data[key]
+
+
 class WebAPIResource(DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
@@ -4896,9 +4909,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                                  text=text,
                                  issue_opened=bool(issue_opened))
 
-        for key, value in extra_fields.iteritems():
-            if value != '':
-                new_comment.extra_data[key] = value
+        _import_extra_data(new_comment.extra_data, extra_fields)
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -4969,12 +4980,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             if value is not None:
                 setattr(file_comment, field, value)
 
-        for key, value in extra_fields.iteritems():
-            if value != '':
-                file_comment.extra_data[key] = value
-            elif key in file_comment.extra_data:
-                del file_comment.extra_data[key]
-
+        _import_extra_data(file_comment.extra_data, extra_fields)
         file_comment.save()
 
         return 200, {
