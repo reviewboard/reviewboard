@@ -178,7 +178,7 @@ class NewReviewRequestForm(forms.Form):
 
         # It's a little odd to validate this here, but we want to have access to
         # the user.
-        if changenum:
+        if repository and changenum:
             try:
                 changeset = repository.get_scmtool().get_changeset(changenum)
             except ChangeSetError, e:
