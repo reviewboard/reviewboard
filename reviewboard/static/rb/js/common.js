@@ -251,7 +251,7 @@ function registerToggleStar() {
 var SUMMARY_TRIM_LEN = 28;
 
 $.fn.searchAutoComplete = function() {
-    this.autocomplete({
+    this.rbautocomplete({
         formatItem: function(data) {
             var s;
 

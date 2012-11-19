@@ -687,7 +687,12 @@ class PerforceTests(SCMTestCase):
                           tool=Tool.objects.get(name='Perforce'),
                           username='samwise',
                           password='bogus')
-        tool = repo.get_scmtool()
+
+        try:
+            tool = repo.get_scmtool()
+        except ImportError:
+            raise nose.SkipTest('perforce/p4python is not installed')
+
         self.assertRaises(AuthenticationError,
                           lambda: tool.get_changeset(157))
 
@@ -1627,6 +1632,11 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_new_account(self):
         """Testing RepositoryForm with a hosting service and new account"""
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest('Hg is not installed')
+
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'bitbucket',
@@ -1649,6 +1659,11 @@ class RepositoryFormTests(DjangoTestCase):
     def test_with_hosting_service_new_account_localsite(self):
         """Testing RepositoryForm with a hosting service, new account and LocalSite"""
         local_site = LocalSite.objects.create(name='testsite')
+
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest('Hg is not installed')
 
         form = RepositoryForm({
             'name': 'test',
@@ -1673,6 +1688,11 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_existing_account(self):
         """Testing RepositoryForm with a hosting service and existing account"""
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest('Hg is not installed')
+
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='bitbucket')
 
@@ -1694,6 +1714,11 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_custom_bug_tracker(self):
         """Testing RepositoryForm with a custom bug tracker"""
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest('Hg is not installed')
+
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='bitbucket')
 
@@ -1716,6 +1741,11 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_bug_tracker_service(self):
         """Testing RepositoryForm with a bug tracker service"""
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest('Hg is not installed')
+
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='bitbucket')
 
@@ -1780,6 +1810,11 @@ class RepositoryFormTests(DjangoTestCase):
 
     def test_with_hosting_service_no_bug_tracker(self):
         """Testing RepositoryForm with no bug tracker"""
+        try:
+            import mercurial
+        except ImportError:
+            raise nose.SkipTest('Hg is not installed')
+
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='bitbucket')
 
