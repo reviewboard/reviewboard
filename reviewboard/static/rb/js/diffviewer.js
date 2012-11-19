@@ -1563,105 +1563,71 @@ $(document).ready(function() {
 });
 
 /**
- * The magic behind the "Changes between rX and:" buttons
+ * The magic behind the "View revision:" buttons
  */
 var diffHopper = new function() {
-    var left_diff = 1,
-        right_diff = 1,
-        unsure_change,
+    var diffs = $('#jump_to_revision a.diff'),
+        currentDiff,
+        hideTimer = null,
         /**
-         * Call this when unsure to which interdiff to switch
+         * Shows all the entries except the current selected
          */
-        storeUnsureChange = function(which, old_value, new_value) {
-            unsure_change = {
-                which: which,
-                old_value: old_value,
-                new_value: new_value
-            };
+        fixInterDiffForDisplay = function(revision) {
+            $('#diffhopper_interdiff a').show();
+            $('#diffhopper_interdiff_' + revision).hide();
         },
         /**
-         * Call this when the switch was clear
+         * Hides the top and the bottom pickers
          */
-        resetUnsureChange = function() {
-            unsure_change = { which: null, old_value: null, new_value: null }
-        },
-        /**
-         * Pick the other option you had for the unsure change
-         */
-        switchUnsureChange = function(revision) {
-            if(unsure_change.which === 'left') {
-                var tmp = unsure_change;
-                storeUnsureChange('right', right_diff, revision);
-                right_diff = left_diff;
-                left_diff = tmp.old_value;
-            } else {
-                var tmp = unsure_change;
-                storeUnsureChange('left', left_diff, revision);
-                left_diff = right_diff;
-                right_diff = tmp.old_value;
-            }
-        },
-        /**
-         * Decided which interdiff is most important, lets display
-         * it to the user!
-         */
-        positionInterDiffSwitcher = function() {
-            var diffs = $('#show_interdiff a');
-            var left_elem = diffs.eq(left_diff - 1);
-            var left_offset = left_elem.offset();
-            var left = left_offset.left + (left_elem.outerWidth() / 2) - 1;
-
-            var right_elem = diffs.eq(right_diff - 1);
-            var right_offset = right_elem.offset();
-            var width = right_offset.left + (right_elem.outerWidth() / 2) - left;
-            var child_width = $('#interdiff_switcher .pick_interdiff').outerWidth();
-
-            $('#interdiff_switcher').css({
-              top: (left_offset.top + left_elem.outerHeight()) + 'px',
-              left: left + 'px',
-              width: width + 'px'
-            });
-            // If the child width is bigger, this will be negative
-            // And that just works :)
-            $('#interdiff_switcher .pick_interdiff').css({
-                left: ((width - child_width) / 2 - 1) + 'px'
-            });
+        hide = function() {
+            $('#diffhopper_diff').hide();
+            $('#diffhopper_interdiff').hide();
+            diffs.removeClass('hovered');
         }
     ;
-    resetUnsureChange();
 
     // These make up the public API
     return {
-        init: function(one_revision, other_revision) {
-            left_diff = Math.min(one_revision, other_revision);
-            right_diff = Math.max(one_revision, other_revision);
-            positionInterDiffSwitcher();
+        hoverOver: function(revision) {
+            currentDiff = revision;
+            fixInterDiffForDisplay(revision);
+            var revision_elem = diffs.eq(revision - 1),
+              revision_offset = revision_elem.offset();
+              centre = revision_offset.left + (revision_elem.outerWidth() / 2) - 1,
+              diff_elem = $('#diffhopper_diff'),
+              diff_width = diff_elem.outerWidth(),
+              interdiff_width = $('#diffhopper_interdiff').outerWidth();
+
+            diffs.removeClass('hovered');
+            revision_elem.addClass('hovered');
+
+            diff_elem.css({
+                top: (revision_offset.top - diff_elem.outerHeight(true)) + 'px',
+                left: (centre - diff_width / 2) + 'px',
+                display: 'block'
+            });
+
+            $('#diffhopper_interdiff').css({
+              top: (revision_offset.top + revision_elem.outerHeight()) + 'px',
+              left: (centre - interdiff_width / 2) + 'px',
+              display: 'block'
+            });
         },
-        differentRevisionSelected: function(revision)
-        {
-            if(revision === unsure_change.new_value) {
-                // We moved the wrong picker, move the other one!
-                switchUnsureChange(revision);
-            } else if(revision > right_diff) {
-                resetUnsureChange();
-                right_diff = revision
-            } else if(revision < left_diff) {
-                resetUnsureChange();
-                left_diff = revision;
-            } else if(revision > left_diff && revision < right_diff) {
-                // Somewhere in between, lets gamble on the left picker
-                storeUnsureChange('left', left_diff, revision);
-                left_diff = revision;
-            }
-            positionInterDiffSwitcher();
+        startHideTimer: function() {
+            hideTimer = window.setTimeout(hide, 500);
         },
-        goToSelectedRevisions: function(prefix, postfix)
-        {
-            var middle = left_diff + '-' + right_diff;
-            location.href = prefix + middle + postfix;
+        clearHideTimer: function() {
+            window.clearTimeout(hideTimer);
+        },
+        hopToDiff: function(prefix, postfix) {
+            location.href = prefix + currentDiff + postfix;
+        },
+        hopToInterDiff: function(otherDiff, prefix, postfix) {
+            var leftDiff = Math.min(currentDiff, otherDiff),
+              rightDiff = Math.max(currentDiff, otherDiff);
+            location.href = prefix + leftDiff + '-' + rightDiff + postfix;
         }
     }
 }();
-
 
 // vim: set et:
