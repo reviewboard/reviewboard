@@ -206,6 +206,7 @@ $(document).ready(function() {
                 repoMirrorPathRowEl.show();
             } else {
                 var accounts = HOSTING_SERVICES[hostingType].accounts,
+                    foundSelected = false,
                     i;
 
                 hideAllToolsFields();
@@ -226,8 +227,9 @@ $(document).ready(function() {
                             .data('account', account)
                             .appendTo(hostingAccountEl);
 
-                    if (account.pk === selectedAccount) {
+                    if (account.pk === selectedAccount || !foundSelected) {
                         opt.attr("selected", "selected");
+                        foundSelected = true;
                     }
                 }
             }
