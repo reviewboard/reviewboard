@@ -2381,6 +2381,20 @@ class ReviewRequestResourceTests(BaseWebAPITestCase):
         # unit tests.
         return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
+    def test_post_reviewrequests_with_no_repository(self):
+        """Testing the POST review-requests/ API with no repository"""
+        rsp = self.apiPost(self.get_list_url(),
+                           expected_mimetype=self.item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertFalse('repository' in rsp['review_request']['links'])
+
+        # See if we can fetch this. Also return it for use in other
+        # unit tests.
+        review_request = ReviewRequest.objects.get(
+            pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.repository, None)
+
     @add_fixtures(['test_site'])
     def test_post_reviewrequests_with_site(self):
         """Testing the POST review-requests/ API with a local site"""

@@ -13,17 +13,34 @@ function forEachField(fields, wholeRows, func) {
     }
 }
 
-function updateFormDisplay(id, fields) {
+function updateFormDisplay(id, tools_info) {
     var type = $("#id_" + id)[0].value,
+        oldInfo = tools_info[prevTypes[id]],
+        newInfo = tools_info[type],
+        field,
         i;
 
-    for (i in fields[prevTypes[id]]) {
-        $("#row-" + fields[prevTypes[id]][i]).hide();
+    for (i = 0; i < oldInfo.fields.length; i++) {
+        $("#row-" + oldInfo.fields[i]).hide();
     }
 
-    for (i in fields[type]) {
-        $("#row-" + fields[type][i]).show();
+    for (field in oldInfo.help_text) {
+        $("#row-" + field).find('p.help')
+            .remove();
     }
+
+    for (i = 0; i < newInfo.fields.length; i++) {
+        $("#row-" + newInfo.fields[i]).show();
+    }
+
+    for (field in newInfo.help_text) {
+        var text = newInfo.help_text[field];
+
+        $("#row-" + field)
+            .append($('<p class="help"/>')
+                .text(text))
+    }
+
 
     prevTypes[id] = type;
 }
@@ -65,7 +82,7 @@ function updateHostingForm(hostingTypeEl, formPrefix, planEl, formsEl) {
 }
 
 function hideAllToolsFields() {
-    var fields = TOOLS_FIELDS["none"];
+    var fields = TOOLS_INFO["none"].fields;
 
     for (i = 0; i < fields.length; i++) {
         $("#row-" + fields[i]).hide();
@@ -189,6 +206,7 @@ $(document).ready(function() {
                 repoMirrorPathRowEl.show();
             } else {
                 var accounts = HOSTING_SERVICES[hostingType].accounts,
+                    foundSelected = false,
                     i;
 
                 hideAllToolsFields();
@@ -209,8 +227,9 @@ $(document).ready(function() {
                             .data('account', account)
                             .appendTo(hostingAccountEl);
 
-                    if (account.pk === selectedAccount) {
+                    if (account.pk === selectedAccount || !foundSelected) {
                         opt.attr("selected", "selected");
+                        foundSelected = true;
                     }
                 }
             }
@@ -271,7 +290,7 @@ $(document).ready(function() {
     toolEl
         .change(function() {
             if (hostingTypeEl[0].value === "custom") {
-                updateFormDisplay("tool", TOOLS_FIELDS);
+                updateFormDisplay("tool", TOOLS_INFO);
             } else {
                 hideAllToolsFields();
             }

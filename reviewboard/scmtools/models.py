@@ -15,30 +15,40 @@ class Tool(models.Model):
 
     objects = ToolManager()
 
+    # Templates can't access variables on a class properly. It'll attempt to
+    # instantiate the class, which will fail without the necessary parameters.
+    # So, we use these as convenient wrappers to do what the template can't do.
     supports_authentication = property(
-        lambda x: x.get_scmtool_class().supports_authentication)
+        lambda x: x.scmtool_class.supports_authentication)
     supports_raw_file_urls = property(
-        lambda x: x.get_scmtool_class().supports_raw_file_urls)
+        lambda x: x.get_scmtool_class.supports_raw_file_urls)
+    field_help_text = property(
+        lambda x: x.scmtool_class.field_help_text)
 
     def __unicode__(self):
         return self.name
 
     def get_scmtool_class(self):
-        path = self.class_name
-        i = path.rfind('.')
-        module, attr = path[:i], path[i+1:]
+        if not hasattr(self, '_scmtool_class'):
+            path = self.class_name
+            i = path.rfind('.')
+            module, attr = path[:i], path[i+1:]
 
-        try:
-            mod = __import__(module, {}, {}, [attr])
-        except ImportError, e:
-            raise ImproperlyConfigured, \
-                'Error importing SCM Tool %s: "%s"' % (module, e)
+            try:
+                mod = __import__(module, {}, {}, [attr])
+            except ImportError, e:
+                raise ImproperlyConfigured, \
+                    'Error importing SCM Tool %s: "%s"' % (module, e)
 
-        try:
-            return getattr(mod, attr)
-        except AttributeError:
-            raise ImproperlyConfigured, \
-                'Module "%s" does not define a "%s" SCM Tool' % (module, attr)
+            try:
+                self._scmtool_class = getattr(mod, attr)
+            except AttributeError:
+                raise ImproperlyConfigured, \
+                    'Module "%s" does not define a "%s" SCM Tool' \
+                    % (module, attr)
+
+        return self._scmtool_class
+    scmtool_class = property(get_scmtool_class)
 
     class Meta:
         ordering = ("name",)
@@ -46,17 +56,7 @@ class Tool(models.Model):
 
 class Repository(models.Model):
     name = models.CharField(max_length=64)
-    path = models.CharField(
-        max_length=255,
-        help_text=_("This should be the path to the repository. For most "
-                    "version control systems, this will be a URI of some "
-                    "form or another. For CVS, this should be a pserver "
-                    "path. For Perforce, this should be a port name. For "
-                    "local git, this should be the path to the .git directory "
-                    "on the local disk. For remote git, this should be the "
-                    "git URL that users clone. For Plastic, this should be a "
-                    "repository spec in the form [repo]@[hostname]:[port]."
-                    "In case of ClearCase enter absolute path to VOB."))
+    path = models.CharField(max_length=255)
     mirror_path = models.CharField(max_length=255, blank=True)
     raw_file_url = models.CharField(
         _('Raw file URL mask'),

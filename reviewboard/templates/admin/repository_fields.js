@@ -2,17 +2,23 @@
 
 var HOSTING_SERVICES = {{form.hosting_service_info|json_dumps:2}};
 
-var TOOLS_FIELDS = { {% spaceless %}
-    "none": [ "raw_file_url", "username", "password" ],
+var TOOLS_INFO = {
+    "none": {
+        fields: [ "raw_file_url", "username", "password" ],
+    },
+
 {% for tool in form.tool.field.queryset %}
-    "{{tool.id}}": [ {% spaceless %}
+    "{{tool.id}}": {
+        fields: [ {% spaceless %}
 {%  if tool.supports_raw_file_urls %}
-         "raw_file_url",
+           "raw_file_url",
 {%  endif %}
-         "username", "password"
-    {% endspaceless %} ]{% if not forloop.last %},{% endif %}
+           "username", "password"
+        {% endspaceless %} ],
+        help_text: {{tool.field_help_text|json_dumps:2}}
+    }{% if not forloop.last %},{% endif %}
 {% endfor %}
-};{% endspaceless %}
+};
 
 {% if form.hostkeyerror or form.certerror or adminform.userkeyerror %}
 $(document).ready(function() {

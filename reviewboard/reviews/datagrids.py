@@ -822,7 +822,7 @@ def get_sidebar_counts(user, local_site):
         counts['groups'][group.name] = group.incoming_request_count
 
     for group in Group.objects.filter(
-            starred_by=user, local_site=local_site).order_by('name'):
+            starred_by=profile, local_site=local_site).order_by('name'):
         counts['starred_groups'][group.name] = group.incoming_request_count
 
     return counts

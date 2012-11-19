@@ -3,6 +3,7 @@ import os
 import re
 import urllib
 import urlparse
+import weakref
 
 try:
     from pysvn import ClientError, Revision, opt_revision_kind
@@ -88,8 +89,18 @@ class SVNTool(SCMTool):
             self.build_client(repository.username, repository.password,
                               local_site_name)
 
+        # If we assign a function to the pysvn Client that accesses anything
+        # bound to SVNClient, it'll end up keeping a reference and a copy of
+        # the function for every instance that gets created, and will never
+        # let go. This will cause a rather large memory leak.
+        #
+        # The solution is to access a weakref instead. The weakref will
+        # reference the repository, but it will safely go away when needed.
+        # The function we pass can access that without causing the leaks
+        repository_ref = weakref.ref(repository)
         self.client.callback_ssl_server_trust_prompt = \
-            self._ssl_server_trust_prompt
+            lambda trust_dict: \
+            SVNTool._ssl_server_trust_prompt(trust_dict, repository_ref())
 
         # svnlook uses 'rev 0', while svn diff uses 'revision 0'
         self.revision_re = re.compile("""
@@ -301,14 +312,15 @@ class SVNTool(SCMTool):
     def get_parser(self, data):
         return SVNDiffParser(data)
 
-    def _ssl_server_trust_prompt(self, trust_dict):
+    @classmethod
+    def _ssl_server_trust_prompt(cls, trust_dict, repository):
         """Callback for SSL cert verification.
 
         This will be called when accessing a repository with an SSL cert.
         We will look up a matching cert in the database and see if it's
         accepted.
         """
-        saved_cert = self.repository.extra_data.get('cert', {})
+        saved_cert = repository.extra_data.get('cert', {})
         cert = trust_dict.copy()
         del cert['failures']
 

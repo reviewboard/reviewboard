@@ -244,6 +244,10 @@ class PerforceTool(SCMTool):
     name = "Perforce"
     uses_atomic_revisions = True
     supports_authentication = True
+    field_help_text = {
+        'path': 'The Perforce port identifier for the repository. This can '
+                'also use an stunnel with a stunnel: prefix.',
+    }
     dependencies = {
         'modules': ['P4'],
     }
