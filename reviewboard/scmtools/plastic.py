@@ -17,6 +17,10 @@ class PlasticTool(SCMTool):
     name = "Plastic SCM"
     supports_authentication = True
     uses_atomic_revisions = True
+    field_help_text = {
+        'path': 'The Plastic repository spec in the form of '
+                '[repo]@[hostname]:[port].',
+    }
     dependencies = {
         'executables': ['cm'],
     }

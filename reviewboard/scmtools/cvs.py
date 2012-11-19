@@ -21,6 +21,9 @@ sshutils.register_rbssh('CVS_RSH')
 class CVSTool(SCMTool):
     name = "CVS"
     supports_authentication = True
+    field_help_text = {
+        'path': 'The CVSROOT used to access the repository.',
+    }
     dependencies = {
         'executables': ['cvs'],
     }

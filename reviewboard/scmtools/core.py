@@ -55,6 +55,10 @@ class SCMTool(object):
     diff_uses_changeset_ids = False
     supports_authentication = False
     supports_raw_file_urls = False
+    field_help_text = {
+        'path': 'The path to the repository. This will generally be the URL '
+                'you would use to check out the repository.',
+    }
 
     # A list of dependencies for this SCMTool. This should be overridden
     # by subclasses. Python module names go in dependencies['modules'] and
