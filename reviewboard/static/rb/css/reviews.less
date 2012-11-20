@@ -49,6 +49,7 @@
   }
 
   .content {
+    clear: both;
     padding: @box-padding;
 
     &.sliding {
@@ -128,39 +129,48 @@
 
   #details {
     border-bottom: 1px #c2c1b0 solid;
-    border-spacing: 8px;
     border-top: 1px #c2c1b0 solid;
-    padding: @box-padding;
+    float: left;
     width: 100%;
 
-    .caption {
-      color: #39350b;
-      font-weight: bold;
-      white-space: nowrap;
-    }
-
-    .indented {
-      padding-left: 20px;
-    }
-
-    .label {
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    #target_people .inactive {
-      text-decoration: line-through;
-    }
-
     #review-request-warning {
+      background-color: @review-request-warning-bg;
+      border: 1px solid @review-request-warning-border-color;
       display: none;
+      font-weight: bold;
+      padding: 5px;
+      text-align: center;
+    }
 
-      td {
-        background-color: #F5A9A9;
-        border: 1px solid #FF0000;
+    .details-column {
+      border-spacing: 0px;
+      float: left;
+      width: 50%;
+      padding: @box-padding;
+
+      th {
+        color: #39350b;
         font-weight: bold;
-        padding: 5px;
-        text-align: center;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      td, th {
+        padding: 0 0 0 1em;
+        height: 2.5em;
+      }
+
+      #target_people .inactive {
+        text-decoration: line-through;
+      }
+
+      .indented th {
+        padding-left: 20px;
+      }
+
+      .label {
+        text-align: right;
+        white-space: nowrap;
       }
     }
   }

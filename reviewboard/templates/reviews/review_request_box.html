@@ -32,71 +32,111 @@
   {% endwith %}
   </p>
  </div>
- <table id="details">
-  <colgroup>
-   <col width="0%" />
-   <col width="50%" />
-  </colgroup>
-  <colgroup>
-   <col width="0%" />
-   <col width="50%" />
-  </colgroup>
-  <tr id="review-request-warning">
-   <td colspan="4"></td>
-  </tr>
-  <tr>
-   <td class="label"><label for="submitter">{% trans "Submitter" %}:</label></td>
-   <td class="value"><a id="submitter" class="user" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
-   <td class="caption" colspan="2">
-    {% trans "Reviewers" %}
-{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
-    <span class="required-flag">*</span>
-{% endif %}
-   </td>
-  </tr>
-  <tr>
-   <td class="label"><label for="branch">{% trans "Branch" %}:</label></td>
-   <td class="value" id="branch-value-cell"><span id="branch" class="editable">{{review_request_details.branch|safe}}</span></td>
-   <td class="indented label"><label for="target_groups">{% trans "Groups" %}:</label></td>
-   <td class="value" id="target-groups-value-cell"><span id="target_groups" class="editable">{% spaceless %}
-{%  for group in review_request_details.target_groups.all %}
-<a href="{% url group group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
-{%  endfor %}
-{% endspaceless %}</span></td>
-  </tr>
-  <tr>
-   <td class="label"><label for="bugs_closed">{% trans "Bugs" %}:</label></td>
-   <td class="value" id="bugs-closed-value-cell"><span id="bugs_closed" class="editable comma-editable">{% spaceless %}
+ <div id="details">
+  <div id="review-request-warning"></div>
+
+  <table class="details-column">
+   <colgroup>
+    <col width="0%" />
+    <col width="100%" />
+   </colgroup>
+   <tr>
+    <th class="label"><label for="submitter">{% trans "Submitter" %}:</label></th>
+    <td class="value"><a id="submitter" class="user" href="{% url user review_request.submitter %}">{{review_request.submitter|user_displayname}}</a></td>
+   </tr>
+   <tr>
+    <th class="label"><label for="branch">{% trans "Branch" %}:</label></th>
+    <td class="value" id="branch-value-cell"><span id="branch" class="editable">{{review_request_details.branch|safe}}</span></td>
+   </tr>
+   <tr>
+    <th class="label"><label for="bugs_closed">{% trans "Bugs" %}:</label></th>
+    <td class="value" id="bugs-closed-value-cell"><span id="bugs_closed" class="editable comma-editable">{% spaceless %}
 {%  for bug in review_request_details.get_bug_list %}
 {%   with bug|bug_url:review_request as bug_url %}
 {%    if bug_url %}<a href="{{bug_url}}">{{bug}}</a>{% else %}{{bug}}{% endif %}{% if not forloop.last %}, {% endif %}
 {%   endwith %}
 {%  endfor %}
 {% endspaceless %}</span></td>
-   <td class="indented label"><label for="target_people">{% trans "People" %}:</label></td>
-   <td class="value" id="target-people-value-cell"><span id="target_people" class="editable comma-editable">{% spaceless %}
+   </tr>
+
+{% if review_request.changenum %}
+   <tr>
+    <th class="label"><label for="changenum">{% trans "Change Number" %}:</label></th>
+    <td class="value"><span id="changenum">{{review_request.changenum}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
+   </tr>
+{% endif %}
+
+{% for hook in detail_hooks %}
+{%  if not forloop.counter0|divisibleby:2 %}
+   <tr>
+    <th class="label"><label for="{{hook.get_field_id}}">{{hook.get_label}}:</label></th>
+    <td class="value"><span id="{{hook.get_field_id}}">{{hook.get_detail}}</span></td>
+   </tr>
+{%  endif %}
+{% endfor %}
+  </table>
+
+  <table class="details-column">
+   <colgroup>
+    <col width="0%" />
+    <col width="100%" />
+   </colgroup>
+   <tr>
+    <th class="caption">
+     {% trans "Reviewers" %}
+    </th>
+    <td>
+{% if request.user == review_request.submitter or perms.reviews.can_edit_reviewrequest %}
+     <span class="required-flag">*</span>
+{% endif %}
+    </td>
+   </tr>
+   <tr class="indented">
+    <th class="label"><label for="target_groups">{% trans "Groups" %}:</label></th>
+    <td class="value" id="target-groups-value-cell"><span id="target_groups" class="editable">{% spaceless %}
+{%  for group in review_request_details.target_groups.all %}
+<a href="{% url group group %}">{{group}}</a>{%if not forloop.last %}, {%endif %}
+{%  endfor %}
+{% endspaceless %}</span></td>
+   </tr>
+   <tr class="indented">
+    <th class="label"><label for="target_people">{% trans "People" %}:</label></th>
+    <td class="value" id="target-people-value-cell"><span id="target_people" class="editable comma-editable">{% spaceless %}
 {%  for person in review_request_details.target_people.all %}
 <a href="{% url user person %}" class="user{% if not person.is_active %} inactive{% endif %}">{{person}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
 {% endspaceless %}</span></td>
-  </tr>
-  <tr>
-   <td class="label"><label for="changenum">{% trans "Change Number" %}:</label></td>
-   <td class="value"><span id="changenum">{{review_request.changenum}}{% if review_request.changeset_is_pending %} {% trans "(pending)" %} {% endif %}</span></td>
-   <td class="label"><label for="repository">{% trans "Repository" %}:</label></td>
-   <td class="value"><span id="repository">{{review_request.repository}}</span></td>
-  </tr>
+   </tr>
+
+{% if review_request.repository %}
+   <tr>
+    <th class="label"><label for="repository">{% trans "Repository" %}:</label></th>
+    <td class="value"><span id="repository">{{review_request.repository}}</span></td>
+   </tr>
+{% endif %}
+
+{% for hook in detail_hooks %}
+{%  if forloop.counter0|divisibleby:2 %}
+   <tr>
+    <th class="label"><label for="{{hook.get_field_id}}">{{hook.get_label}}:</label></th>
+    <td class="value"><span id="{{hook.get_field_id}}">{{hook.get_detail}}</span></td>
+   </tr>
+{%  endif %}
+{% endfor %}
+  </table>
+
 {% for hook in detail_hooks %}
 {%  if forloop.counter0|divisibleby:2 %}
   <tr>
 {%  endif %}
-  <td class="label"><label for="{{hook.get_field_id}}">{{hook.get_label}}:</label></td>
+  <th class="label"><label for="{{hook.get_field_id}}">{{hook.get_label}}:</label></th>
   <td class="value"><span id="{{hook.get_field_id}}">{{hook.get_detail}}</span></td>
 {%  if forloop.last or forloop.counter|divisibleby:2 %}
   </tr>
 {%  endif %}
 {% endfor %}
- </table>
+ </div>
+
  <div class="content" id="description-value-cell">
   <label for="description">{% trans "Description" %}:</label>
   <pre id="description" class="editable required">{{review_request_details.description|escape}}</pre>
