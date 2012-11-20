@@ -141,10 +141,6 @@
   }
 
   tbody {
-    div {
-      position: relative;
-    }
-
     tr {
       &.selected {
         * {
@@ -170,6 +166,10 @@
 
       td {
         vertical-align: top;
+
+        .collapse-floater {
+          position: relative;
+        }
 
         .diff-collapse-btn {
           background: #E4D9CB;
