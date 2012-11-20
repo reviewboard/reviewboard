@@ -134,7 +134,7 @@ table.sidebyside tbody.diff-header code {
   margin: 0 2px;
 }
 
-table.sidebyside tbody div {
+table.sidebyside tbody .collapse-floater {
   position: relative;
 }
 
