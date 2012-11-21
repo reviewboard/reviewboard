@@ -568,7 +568,7 @@ $.fn.reviewsAutoComplete = function(options) {
                 formatItem: function(data) {
                     var s = data[options.nameKey];
 
-                    if (options.descKey) {
+                    if (options.descKey && data[options.descKey]) {
                         s += " <span>(" + data[options.descKey] + ")</span>";
                     }
 
