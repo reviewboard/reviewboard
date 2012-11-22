@@ -21,26 +21,6 @@
     });
 {%  endif %}
 
-    $("#upload-screenshot-link").click(function() {
-      $("<div/>").formDlg({
-        title: "{% trans "Upload Screenshot" %}",
-        confirmLabel: "{% trans "Upload" %}",
-        dataStoreObject: gReviewRequest.createScreenshot(),
-        width: "50em",
-        upload: true,
-        fields: {% form_dialog_fields upload_screenshot_form %},
-        success: function(rsp) {
-            if (!$("#screenshot-thumbnails").length == 0) {
-                $.newScreenshotThumbnail(rsp.screenshot);
-            }
-
-            RB.draftBanner.show();
-        }
-      });
-
-      return false;
-    });
-
     $("#upload-file-link").click(function() {
       $("<div/>").formDlg({
         title: "{% trans "Upload File" %}",
