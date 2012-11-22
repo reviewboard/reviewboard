@@ -1054,7 +1054,7 @@ RB.FileAttachment = function(review_request, id) {
     this.review_request = review_request;
     this.id = id;
     this.caption = null;
-    this.thumbnail_url = null;
+    this.thumbnail = null;
     this.path = null;
     this.url = null;
     this.loaded = false;
@@ -1163,7 +1163,7 @@ $.extend(RB.FileAttachment.prototype, {
     _loadDataFromResponse: function(rsp) {
         this.id = rsp.file_attachment.id;
         this.caption = rsp.file_attachment.caption;
-        this.thumbnail_url = rsp.file_attachment.thumbnail_url;
+        this.thumbnail = rsp.file_attachment.thumbnail;
         this.path = rsp.file_attachment.path;
         this.url = rsp.file_attachment.links.self.href;
         this.loaded = true;

@@ -2080,6 +2080,10 @@ $.newFileAttachment = function(fileAttachment) {
         fileCaption.find('a')
             .attr('href', fileAttachment.url)
             .text(fileAttachment.caption);
+
+        if (fileAttachment.thumbnail) {
+            thumbnailContainer.html(fileAttachment.thumbnail);
+        }
     }
 
     container.fileAttachment();
