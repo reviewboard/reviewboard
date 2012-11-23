@@ -13,6 +13,7 @@ except ImportError:
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
+from djblets.util.http import is_mimetype_a
 from djblets.webapi.core import WebAPIResponseError
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from docutils import nodes
@@ -26,13 +27,11 @@ from sphinx.util.compat import Directive
 
 
 # Mapping of mimetypes to language names for syntax highlighting.
-MIMETYPE_LANGUAGE_MAPPING = {
-    'application/json': 'javascript',
-    'application/xml': 'xml',
-    'text/x-patch': 'diff',
-    FileDiffResource.DIFF_DATA_MIMETYPE_JSON: 'javascript',
-    FileDiffResource.DIFF_DATA_MIMETYPE_XML: 'xml',
-}
+MIMETYPE_LANGUAGES = [
+    ('application/json', 'javascript'),
+    ('application/xml', 'xml'),
+    ('text/x-patch', 'diff'),
+]
 
 
 # Initialize Review Board
@@ -93,6 +92,11 @@ class ResourceDirective(Directive):
 
     item_http_methods = set(['GET', 'DELETE', 'PUT'])
     list_http_methods = set(['GET', 'POST'])
+
+    FILTERED_MIMETYPES = [
+        'application/json',
+        'application/xml',
+    ]
 
     type_mapping = {
         int: 'Integer',
@@ -167,6 +171,12 @@ class ResourceDirective(Directive):
                 allowed_mimetypes = resource.allowed_item_mimetypes
 
             for mimetype in allowed_mimetypes:
+                if mimetype in self.FILTERED_MIMETYPES:
+                    # Resources have more specific mimetypes. We want to
+                    # filter out the general ones (like application/json)
+                    # so we don't show redundant examples.
+                    continue
+
                 example_node = build_example(
                     self.fetch_resource_data(resource, mimetype),
                     mimetype)
@@ -543,10 +553,45 @@ class ResourceDirective(Directive):
             set(resource.allowed_methods).intersection(possible_http_methods))
 
 
+class ResourceTreeDirective(Directive):
+    has_content = True
+
+    def run(self):
+        bullet_list = nodes.bullet_list()
+        self._output_resource(root_resource, bullet_list, True)
+
+        return [bullet_list]
+
+    def _output_resource(self, resource, parent, is_list):
+        item = nodes.list_item()
+        parent += item
+
+        paragraph = nodes.paragraph()
+        item += paragraph
+
+        paragraph += parse_text(
+            self,
+            ':ref:`%s <%s>`' %
+            (get_resource_title(resource, is_list, False),
+             'webapi2.0-%s-resource' % get_resource_docname(resource, is_list)))
+
+        bullet_list = nodes.bullet_list()
+        item += bullet_list
+
+        if is_list:
+            if resource.uri_object_key:
+                self._output_resource(resource, bullet_list, False)
+
+            for child in resource.list_child_resources:
+                self._output_resource(child, bullet_list, True)
+        else:
+            for child in resource.item_child_resources:
+                self._output_resource(child, bullet_list, True)
+
+
 class ErrorDirective(Directive):
     has_content = True
     final_argument_whitespace = True
-    has_content = True
     option_spec = {
         'instance': directives.unchanged_required,
         'example-data': directives.unchanged,
@@ -736,16 +781,21 @@ def uncamelcase(name, separator='_'):
     return ALL_CAP_RE.sub(r'\1%s\2' % separator, s1).lower()
 
 
-def get_resource_title(resource, is_list):
+def get_resource_title(resource, is_list, append_resource=True):
     """Returns a human-readable name for the resource."""
     class_name = resource.__class__.__name__
     class_name = class_name.replace('Resource', '')
     normalized_title = title(uncamelcase(class_name, ' '))
 
     if is_list:
-        return '%s List Resource' % normalized_title
+        s = '%s List' % normalized_title
     else:
-        return '%s Resource' % normalized_title
+        s = normalized_title
+
+    if append_resource:
+        s += ' Resource'
+
+    return s
 
 def get_resource_docname(resource, is_list):
     """Returns the name of the page used for a resource's documentation."""
@@ -767,7 +817,7 @@ def get_ref_to_doc(refname):
     """Returns a node that links to a document with the given ref name."""
     ref = addnodes.pending_xref(reftype='ref', reftarget=refname,
                                 refexplicit=False, refdomain='std')
-    ref += nodes.literal(refname, refname, classes=['xref'])
+    ref += nodes.literal('hello', 'hello', classes=['xref'])
     return ref
 
 
@@ -835,7 +885,12 @@ def build_example(data, mimetype):
     if not data:
         return None
 
-    language = MIMETYPE_LANGUAGE_MAPPING.get(mimetype, None)
+    language = None
+
+    for base_mimetype, lang in MIMETYPE_LANGUAGES:
+        if is_mimetype_a(mimetype, base_mimetype):
+            language = lang
+            break
 
     if language == 'javascript':
         code = json.dumps(json.loads(data), sort_keys=True, indent=2)
@@ -858,6 +913,7 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
 
 def setup(app):
     app.add_directive('webapi-resource', ResourceDirective)
+    app.add_directive('webapi-resource-tree', ResourceTreeDirective)
     app.add_directive('webapi-error', ErrorDirective)
     app.add_crossref_type('webapi2.0', 'webapi2.0', 'single: %s',
                           nodes.emphasis)
