@@ -20,6 +20,8 @@ Resources
    file-diff-comment-list
    file-diff-list
    file-diff
+   hosting-service-account-list
+   hosting-service-account
    repository-info
    repository-list
    repository
@@ -31,6 +33,7 @@ Resources
    review-group-list
    review-group
    review-group-user-list
+   review-group-user
    review-list
    review-reply-diff-comment-list
    review-reply-diff-comment
