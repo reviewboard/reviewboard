@@ -77,6 +77,6 @@ FILE_RETRIEVAL_ERROR      = WebAPIError(221, "There was an error fetching "
 HOSTINGSVC_AUTH_ERROR     = WebAPIError(222, "There was an error authorizing "
                                              "with a service.",
                                         http_status=403) # 403 Forbidden
-GROUP_ALREADY_EXISTS      = WebAPIError(223, "A group with this name already"
+GROUP_ALREADY_EXISTS      = WebAPIError(223, "A group with this name already "
                                              "exists.",
                                         http_status=409) # 409 Conflict
