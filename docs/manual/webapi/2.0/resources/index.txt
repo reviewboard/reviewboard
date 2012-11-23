@@ -13,6 +13,8 @@ Resources
    draft-file-attachment
    draft-screenshot-list
    draft-screenshot
+   extension-list
+   extension
    file-attachment-comment-list
    file-attachment-comment
    file-attachment-list
@@ -20,6 +22,8 @@ Resources
    file-diff-comment-list
    file-diff-list
    file-diff
+   hosting-service-account-list
+   hosting-service-account
    original-file
    patched-file
    repository-info
@@ -33,6 +37,7 @@ Resources
    review-group-list
    review-group
    review-group-user-list
+   review-group-user
    review-list
    review-reply-diff-comment-list
    review-reply-diff-comment
