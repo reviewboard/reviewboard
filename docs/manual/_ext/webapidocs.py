@@ -13,6 +13,7 @@ except ImportError:
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
+from djblets.util.http import is_mimetype_a
 from djblets.webapi.core import WebAPIResponseError
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from docutils import nodes
@@ -25,13 +26,11 @@ from sphinx.util.compat import Directive
 
 
 # Mapping of mimetypes to language names for syntax highlighting.
-MIMETYPE_LANGUAGE_MAPPING = {
-    'application/json': 'javascript',
-    'application/xml': 'xml',
-    'text/x-patch': 'diff',
-    FileDiffResource.DIFF_DATA_MIMETYPE_JSON: 'javascript',
-    FileDiffResource.DIFF_DATA_MIMETYPE_XML: 'xml',
-}
+MIMETYPE_LANGUAGES = [
+    ('application/json', 'javascript'),
+    ('application/xml', 'xml'),
+    ('text/x-patch', 'diff'),
+]
 
 
 # Build the list of parents.
@@ -88,6 +87,11 @@ class ResourceDirective(Directive):
 
     item_http_methods = set(['GET', 'DELETE', 'PUT'])
     list_http_methods = set(['GET', 'POST'])
+
+    FILTERED_MIMETYPES = [
+        'application/json',
+        'application/xml',
+    ]
 
     type_mapping = {
         int: 'Integer',
@@ -162,6 +166,12 @@ class ResourceDirective(Directive):
                 allowed_mimetypes = resource.allowed_item_mimetypes
 
             for mimetype in allowed_mimetypes:
+                if mimetype in self.FILTERED_MIMETYPES:
+                    # Resources have more specific mimetypes. We want to
+                    # filter out the general ones (like application/json)
+                    # so we don't show redundant examples.
+                    continue
+
                 example_node = build_example(
                     self.fetch_resource_data(resource, mimetype),
                     mimetype)
@@ -870,7 +880,12 @@ def build_example(data, mimetype):
     if not data:
         return None
 
-    language = MIMETYPE_LANGUAGE_MAPPING.get(mimetype, None)
+    language = None
+
+    for base_mimetype, lang in MIMETYPE_LANGUAGES:
+        if is_mimetype_a(mimetype, base_mimetype):
+            language = lang
+            break
 
     if language == 'javascript':
         code = json.dumps(json.loads(data), sort_keys=True, indent=2)
