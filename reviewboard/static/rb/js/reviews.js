@@ -1070,9 +1070,10 @@ $.fn.floatReplyDraftBanner = function() {
         var floatSpacer = null;
         var container = null;
 
-        $(window).scroll(updateFloatPosition);
-        $(window).resize(updateSize);
-        updateFloatPosition();
+        $(window)
+            .scroll(updateFloatPosition)
+            .resize(updateSize);
+        _.defer(updateFloatPosition);
 
         function updateSize() {
             if (floatSpacer != null) {
