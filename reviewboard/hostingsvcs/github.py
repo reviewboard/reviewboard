@@ -219,6 +219,34 @@ class GitHub(HostingService):
         except (urllib2.URLError, urllib2.HTTPError):
             return False
 
+    def is_ssh_key_associated(self, repository, key):
+        if not key:
+            return False
+
+        formatted_key = self._format_public_key(key)
+
+        # The key might be a deploy key (associated with a repository) or a
+        # user key (associated with the currently authorized user account),
+        # so check both.
+        deploy_keys_url = self._build_api_url(repository, 'keys')
+        user_keys_url = ('%suser/keys?access_token=%s'
+                         % (self.API_URL,
+                            self.account.data['authorization']['token']))
+
+        for url in (deploy_keys_url, user_keys_url):
+            keys_resp = self._key_association_api_call(self._json_get, url)
+
+            keys = [
+                item['key']
+                for item in keys_resp
+                if 'key' in item
+            ]
+
+            if formatted_key in keys:
+                return True
+
+        return False
+
     def associate_ssh_key(self, repository, key, *args, **kwargs):
         url = self._build_api_url(repository, 'keys')
 
@@ -229,22 +257,33 @@ class GitHub(HostingService):
                          Site.objects.get_current().domain,
             }
 
-            try:
-                self._http_post(url, content_type='application/json',
-                                body=simplejson.dumps(post_data))
-            except (urllib2.HTTPError, urllib2.URLError), e:
-                try:
-                    rsp = simplejson.loads(e.read())
-                    status_code = e.code
-                except:
-                    rsp = None
-                    status_code = None
+            self._key_association_api_call(self._http_post, url,
+                                           content_type='application/json',
+                                           body=simplejson.dumps(post_data))
 
-                if rsp and status_code:
-                    api_msg = self._get_api_error_message(rsp, status_code)
-                    raise SSHKeyAssociationError('%s (%s)' % (api_msg, e))
-                else:
-                    raise SSHKeyAssociationError(str(e))
+    def _key_association_api_call(self, instance_method, *args,
+                                  **kwargs):
+        """Returns response of API call, or raises SSHKeyAssociationError.
+
+        The `instance_method` should be one of the HostingService http methods
+        (e.g. _http_post, _http_get, etc.)
+        """
+        try:
+            response, headers = instance_method(*args, **kwargs)
+            return response
+        except (urllib2.HTTPError, urllib2.URLError), e:
+            try:
+                rsp = simplejson.loads(e.read())
+                status_code = e.code
+            except:
+                rsp = None
+                status_code = None
+
+            if rsp and status_code:
+                api_msg = self._get_api_error_message(rsp, status_code)
+                raise SSHKeyAssociationError('%s (%s)' % (api_msg, e))
+            else:
+                raise SSHKeyAssociationError(str(e))
 
     def _format_public_key(self, key):
         """Return the server's SSH public key as a string (if it exists)
