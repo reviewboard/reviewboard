@@ -20,7 +20,7 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.statemachine import ViewList
 from reviewboard import initialize
-from reviewboard.webapi.resources import root_resource, FileDiffResource
+from reviewboard.webapi.resources import root_resource
 from sphinx import addnodes
 from sphinx.util import docname_join
 from sphinx.util.compat import Directive

@@ -1156,7 +1156,7 @@ class ReviewGroupResourceTests(BaseWebAPITestCase):
     @add_fixtures(['test_site'])
     def test_post_group_with_site_admin(self):
         """Testing the POST groups/ API with a local site admin"""
-        user = self._login_user(local_site=True, admin=True)
+        self._login_user(local_site=True, admin=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
 
         rsp = self.apiPost(self.get_list_url(local_site), {
@@ -1485,7 +1485,7 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         old_count = group.users.count()
         user = group.users.all()[0]
 
-        rsp = self.apiDelete(
+        self.apiDelete(
             self.get_item_url(group.name, user.username, local_site),
             expected_status=204)
 
@@ -1501,7 +1501,7 @@ class ReviewGroupUserResourceTests(BaseWebAPITestCase):
         group = Group.objects.get(pk=1)
         user = group.users.all()[0]
 
-        rsp = self.apiDelete(
+        self.apiDelete(
             self.get_item_url(group.name, user.username, local_site),
             expected_status=403)
 
