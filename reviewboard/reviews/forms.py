@@ -89,7 +89,7 @@ class NewReviewRequestForm(forms.Form):
     optionally a changelist number (for use in certain repository types
     such as Perforce).
     """
-    NO_REPOSITORY_ENTRY = _('(None - Graphics only)')
+    NO_REPOSITORY_ENTRY = _('(None - File attachments only)')
 
     basedir = forms.CharField(
         label=_("Base Directory"),

@@ -97,11 +97,8 @@ class GeneralSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '50'}))
 
     def load(self):
-        # First set some sane defaults.
         domain_method = self.siteconfig.get("site_domain_method")
         site = Site.objects.get_current()
-        self.fields['server'].initial = "%s://%s" % (domain_method,
-                                                     site.domain)
 
         can_enable_search, reason = get_can_enable_search()
         if not can_enable_search:
@@ -111,6 +108,9 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         super(GeneralSettingsForm, self).load()
 
+        # This must come after we've loaded the general settings.
+        self.fields['server'].initial = "%s://%s" % (domain_method,
+                                                     site.domain)
 
     def save(self):
         server = self.cleaned_data['server']

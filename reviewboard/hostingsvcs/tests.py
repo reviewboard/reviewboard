@@ -321,13 +321,45 @@ class GitHubTests(ServiceTests):
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
 
+    def test_is_ssh_key_associated(self):
+        """Testing that GitHub associated SSH keys are correctly identified"""
+        associated_key = 'good_key'
+        unassociated_key = 'bad_key'
+        keys = simplejson.dumps([
+            {'key': 'neutral_key'},
+            {'key': associated_key}
+        ])
+
+        def _http_get(self, *args, **kwargs):
+            return keys, None
+
+        self.service_class._http_get = _http_get
+        self.service_class._format_public_key = lambda self, key: key
+
+        account = self._get_hosting_account()
+        account.data['authorization'] = {'token': 'abc123'}
+        service = account.service
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {
+            'repository_plan': 'public',
+            'github_public_repo_name': 'myrepo',
+        }
+
+        self.assertTrue(service.is_ssh_key_associated(repository,
+                                                      associated_key))
+        self.assertFalse(service.is_ssh_key_associated(repository,
+                                                       unassociated_key))
+        self.assertFalse(service.is_ssh_key_associated(repository, None))
+
     def test_associate_ssh_key(self):
-        """Testing that automatic SSH key association sends expected data"""
+        """Testing that GitHub SSH key association sends expected data"""
         http_post_data = {}
 
         def _http_post(self, *args, **kwargs):
             http_post_data['args'] = args
             http_post_data['kwargs'] = kwargs
+            return None, None
 
         self.service_class._http_post = _http_post
         self.service_class._format_public_key = lambda self, key: key
@@ -344,7 +376,8 @@ class GitHubTests(ServiceTests):
         service = account.service
         service.associate_ssh_key(repository, 'mykey')
         req_body = simplejson.loads(http_post_data['kwargs']['body'])
-        expected_title = 'Review Board (%s)' % Site.objects.get_current().domain
+        expected_title = ('Review Board (%s)'
+                          % Site.objects.get_current().domain)
 
         self.assertEqual(http_post_data['args'][0],
                          'https://api.github.com/repos/myuser/myrepo/keys?'

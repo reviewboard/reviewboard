@@ -139,8 +139,8 @@ def _import_extra_data(extra_data, fields):
 
             if value != '':
                 extra_data[key] = value
-            elif norm_key in fields:
-                del file_comment.extra_data[key]
+            elif key in extra_data:
+                del extra_data[key]
 
 
 class WebAPIResource(DjbletsWebAPIResource):
@@ -411,8 +411,7 @@ class BaseDiffCommentResource(BaseCommentResource):
     @webapi_response_errors(DOES_NOT_EXIST)
     def get_list(self, request, review_id=None, *args, **kwargs):
         try:
-            review_request = review_request_resource.get_object(
-                request, *args, **kwargs)
+            review_request_resource.get_object(request, *args, **kwargs)
 
             if review_id:
                 review_resource.get_object(request,

@@ -1,53 +1,74 @@
 {% extends "admin/base_site.html" %}
-{% load i18n %}
+{% load adminmedia i18n %}
+
+{% block bodyclass %}change-form{% endblock %}
+
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" type="text/css" href="{% admin_media_prefix %}css/forms.css" />{% endblock %}
 
 {% block content %}
-<b>Cache backend:</b> {{cache_backend}}
+<div id="content-main">
+ <fieldset class="module aligned">
+  <div class="form-row">
+   <div>
+    <label>Cache backend:</label>
+    <p><tt>{{cache_backend}}</tt></p>
+   </div>
+  </div>
+ </fieldset>
 
-<h2>Statistics</h2>
 {% if cache_hosts %}
-{%  for hostname,stats in cache_hosts %}
-<div class="module">
- <table>
-  <caption>{{hostname}}</caption>
-  <colgroup>
-   <col width="10%" />
-   <col width="90%" />
-  </colgroup>
-  <tr>
-   <th scope="row">{% trans "Memory usage:" %}</th>
-   <td>{{stats.bytes|filesizeformat}}</td>
-  </tr>
-  <tr>
-   <th scope="row">{% trans "Keys in cache:" %}</th>
-   <td>{{stats.curr_items}} of {{stats.total_items}}</td>
-  </tr>
-  <tr>
-   <th scope="row">{% trans "Cache hits:" %}</th>
-   <td>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate}}%</td>
-  </tr>
-  <tr>
-   <th scope="row">{% trans "Cache misses:" %}</th>
-   <td>{{stats.get_misses}} of {{stats.cmd_get}}: {{stats.miss_rate}}%</td>
-  </tr>
-  <tr>
-   <th scope="row">{% trans "Cache evictions:" %}</th>
-   <td>{{stats.evictions}}</td>
-  </tr>
-  <tr>
-   <th scope="row">{% trans "Cache traffic:" %}</th>
-   <td>{{stats.bytes_read|filesizeformat}} in,
-       {{stats.bytes_written|filesizeformat}} out</td>
-  </tr>
-  <tr>
-   <th scope="row">{% trans "Uptime:" %}</th>
-   <td>{{stats.uptime}} seconds</td>
-  </tr>
- </table>
-</div>
+{%  for hostname, stats in cache_hosts %}
+<fieldset class="module aligned">
+ <h2>{{hostname}}</h2>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Memory usage:" %}</label>
+   <p>{{stats.bytes|filesizeformat}}</p>
+  </div>
+ </div>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Keys in cache:" %}</label>
+   <p>{{stats.curr_items}} of {{stats.total_items}}</p>
+  </div>
+ </div>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Cache hits:" %}</label>
+   <p>{{stats.get_hits}} of {{stats.cmd_get}}: {{stats.hit_rate}}%</p>
+  </div>
+ </div>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Cache misses:" %}</label>
+   <p>{{stats.get_misses}} of {{stats.cmd_get}}: {{stats.miss_rate}}%</p>
+  </div>
+ </div>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Cache evictions:" %}</label>
+   <p>{{stats.evictions}}</p>
+  </div>
+ </div>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Cache traffic:" %}</label>
+   <p>{{stats.bytes_read|filesizeformat}} in,
+       {{stats.bytes_written|filesizeformat}} out</p>
+  </div>
+ </div>
+ <div class="form-row">
+  <div>
+   <label>{% trans "Uptime:" %}</label>
+   <p>{{stats.uptime}} seconds</p>
+  </div>
+ </div>
+</fieldset>
 {%  endfor %}
 {% else %}
-<p>{% trans "Statistics are not available for this backend." %}</p>
+  <div class="description">
+   <p>{% trans "Statistics are not available for this backend." %}</p>
+  </div>
 {% endif %}
-
+</div>
 {% endblock %}

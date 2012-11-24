@@ -15,5 +15,7 @@ reviewboard/scmtools/hg.py:*: redefinition of unused 'urllib_quote' from line *
 reviewboard/scmtools/tests.py:*: redefinition of unused 'md5' from line *
 reviewboard/settings.py:*: 'from settings_local import *' used; unable to detect undefined names
 reviewboard/site/tests.py:*: 'templatetags' imported but unused
+reviewboard/ssh/client.py:*: redefinition of unused 'StringIO' from line *
+reviewboard/ssh/client.py:*: 'StringIO' imported but unused
 setup.py:*: redefinition of unused 'setup' from line *
 setup.py:*: redefinition of unused 'find_packages' from line *

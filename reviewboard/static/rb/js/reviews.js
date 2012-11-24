@@ -1070,9 +1070,10 @@ $.fn.floatReplyDraftBanner = function() {
         var floatSpacer = null;
         var container = null;
 
-        $(window).scroll(updateFloatPosition);
-        $(window).resize(updateSize);
-        updateFloatPosition();
+        $(window)
+            .scroll(updateFloatPosition)
+            .resize(updateSize);
+        _.defer(updateFloatPosition);
 
         function updateSize() {
             if (floatSpacer != null) {
@@ -1884,74 +1885,6 @@ $.fn.screenshotThumbnail = function() {
 
 
 /*
- * Adds a new, dynamic thumbnail to the thumbnail list.
- *
- * If a screenshot object is given, then this will display actual
- * thumbnail data. Otherwise, this will display a spinner.
- *
- * @param {object} screenshot  The optional screenshot to display.
- *
- * @return {jQuery} The root screenshot thumbnail div.
- */
-$.newScreenshotThumbnail = function(screenshot) {
-    var container = $('<div/>')
-        .addClass("screenshot-container");
-
-    var body = $('<div class="screenshot"/>')
-        .addClass("screenshot")
-        .appendTo(container);
-
-    var captionArea = $('<div/>')
-        .addClass("screenshot-caption")
-        .appendTo(container);
-
-    if (screenshot) {
-        body.append($("<a/>")
-            .attr("href", "s/" + screenshot.id + "/")
-            .append($("<img/>")
-                .attr({
-                    src: screenshot.thumbnail_url,
-                    alt: screenshot.caption
-                })
-            )
-        );
-
-        captionArea
-            .append($("<a/>")
-                .addClass("screenshot-editable edit")
-                .attr({
-                    href: "#",
-                    id: "screenshot_" + screenshot.id + "_caption"
-                })
-                .text(screenshot.caption)
-            )
-            .append($("<a/>")
-                .addClass("delete")
-                .attr("href", "#")
-                .append($("<img/>")
-                    .attr({
-                        src: STATIC_URLS["rb/images/delete.png"],
-                        alt: "Delete Screenshot"
-                    })
-                )
-            );
-
-        container
-            .attr("data-screenshot-id", screenshot.id)
-            .screenshotThumbnail();
-    } else {
-        body.addClass("loading");
-
-        captionArea.append("&nbsp;");
-    }
-
-    var thumbnails = $("#screenshot-thumbnails");
-    $(thumbnails.parent()[0]).show();
-    return container.insertBefore(thumbnails.find("br"));
-};
-
-
-/*
  * Handles interaction and events with a file attachment.
 
  * @return {jQuery} The provided file attachment container.
@@ -2148,6 +2081,10 @@ $.newFileAttachment = function(fileAttachment) {
         fileCaption.find('a')
             .attr('href', fileAttachment.url)
             .text(fileAttachment.caption);
+
+        if (fileAttachment.thumbnail) {
+            thumbnailContainer.html(fileAttachment.thumbnail);
+        }
     }
 
     container.fileAttachment();
@@ -2340,7 +2277,6 @@ function loadDiffFragments(queue_name, container_prefix) {
  */
 function initDnD() {
     var dropIndicator = null;
-    var screenshotDropBox;
     var fileDropBox;
     var middleBox;
     var removeDropIndicatorHandle = null;
@@ -2393,33 +2329,16 @@ function initDnD() {
                     return false;
                 });
 
-            screenshotDropBox = $("<div/>")
-                .addClass("dropbox")
-                .appendTo(dropIndicator)
-                .on('drop', function(event) {
-                    return handleDrop(event, "screenshot");
-                });
-            var screenshotText = $("<h1/>")
-                .text("Drop Screenshot")
-                .appendTo(screenshotDropBox);
-
-            middleBox = $("<h2/>")
-                .text("or")
-                .appendTo(dropIndicator);
-
             fileDropBox = $("<div/>")
                 .addClass("dropbox")
                 .appendTo(dropIndicator)
-                .on('drop', function(event) {
-                    return handleDrop(event, "file");
-                });
+                .on('drop', handleDrop)
             var fileText = $("<h1/>")
-                .text("Drop File Attachment")
+                .text("Drop to Upload")
                 .appendTo(fileDropBox);
 
-            var dropBoxHeight = (height - middleBox.height()) / 2;
-            $([screenshotDropBox[0], fileDropBox[0]])
-                .height(dropBoxHeight)
+            fileDropBox
+                .height(height)
                 .on({
                     "dragover": function() {
                         var dt = event.originalEvent.dataTransfer;
@@ -2442,7 +2361,6 @@ function initDnD() {
                     }
                 });
 
-            screenshotText.css("margin-top", -screenshotText.height() / 2);
             fileText.css("margin-top", -fileText.height() / 2);
         }
     }
@@ -2469,7 +2387,7 @@ function initDnD() {
         }
     }
 
-    function handleDrop(event, type) {
+    function handleDrop(event) {
         /* Do these early in case we hit some error. */
         event.stopPropagation();
         event.preventDefault();
@@ -2482,66 +2400,11 @@ function initDnD() {
             return;
         }
 
-        if (type == "screenshot") {
-            var foundImages = false;
-
-            for (var i = 0; i < files.length; i++) {
-                var file = files[i];
-
-                if (file.type == "image/jpeg" ||
-                    file.type == "image/pjpeg" ||
-                    file.type == "image/png" ||
-                    file.type == "image/bmp" ||
-                    file.type == "image/gif" ||
-                    file.type == "image/svg+xml") {
-
-                    foundImages = true;
-
-                    uploadScreenshot(file);
-                }
-            }
-
-            if (foundImages) {
-                handleDragExit();
-            } else {
-                if (dropIndicator) {
-                    screenshotDropBox.empty();
-                    fileDropBox.empty();
-                    middleBox.html("None of the dropped files were valid " +
-                                   "images");
-                }
-
-                setTimeout(function() {
-                    handleDragExit(true);
-                }, 1500);
-            }
-        } else if (type == "file") {
-            for (var i = 0; i < files.length; i++) {
-                uploadFile(files[i]);
-            }
-
-            handleDragExit(true);
+        for (var i = 0; i < files.length; i++) {
+            uploadFile(files[i]);
         }
-    }
 
-    function uploadScreenshot(file) {
-        /* Create a temporary screenshot thumbnail. */
-        var thumb = $.newScreenshotThumbnail()
-            .css("opacity", 0)
-            .fadeTo(1000, 1);
-
-        var screenshot = gReviewRequest.createScreenshot();
-        screenshot.setFile(file);
-        screenshot.save({
-            buttons: gDraftBannerButtons,
-            success: function(rsp, screenshot) {
-                thumb.replaceWith($.newScreenshotThumbnail(screenshot));
-                gDraftBanner.show();
-            },
-            error: function(rsp, msg) {
-                thumb.remove();
-            }
-        });
+        handleDragExit(true);
     }
 
     function uploadFile(file) {
