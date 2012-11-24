@@ -152,7 +152,7 @@
   <label for="images">{% trans "Screenshots" %}:</label>
   <div id="screenshot-thumbnails">
 {% for image in screenshots %}
-   <div class="image-container" data-screenshot-id="{{image.id}}">
+   <div class="screenshot-container" data-screenshot-id="{{image.id}}">
     <div class="image" onclick="javascript:window.location='{{image.get_absolute_url}}'; return false;"><a href="{{image.get_absolute_url}}">{{image.thumb}}</a></div>
     <div class="screenshot-caption">
      <a href="{{image.get_absolute_url}}" class="edit">{% if draft %}{{image.draft_caption|default:image.caption}}{% else %}{{image.caption}}{% endif %}</a>
