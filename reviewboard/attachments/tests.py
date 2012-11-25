@@ -6,7 +6,9 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from reviewboard.attachments.forms import UploadFileForm
-from reviewboard.attachments.mimetypes import MimetypeHandler
+from reviewboard.attachments.mimetypes import MimetypeHandler, \
+                                              register_mimetype_handler, \
+                                              unregister_mimetype_handler
 from reviewboard.reviews.models import ReviewRequest
 
 
@@ -72,6 +74,32 @@ class Test3StarMimetype(MimetypeHandler):
 
 
 class MimetypeHandlerTests(TestCase):
+    def setUp(self):
+        # Register test cases in same order as they are defined
+        # in this test
+        register_mimetype_handler(MimetypeTest)
+        register_mimetype_handler(TestAbcMimetype)
+        register_mimetype_handler(TestXmlMimetype)
+        register_mimetype_handler(Test2AbcXmlMimetype)
+        register_mimetype_handler(StarDefMimetype)
+        register_mimetype_handler(StarAbcDefMimetype)
+        register_mimetype_handler(Test3XmlMimetype)
+        register_mimetype_handler(Test3AbcXmlMimetype)
+        register_mimetype_handler(Test3StarMimetype)
+
+    def tearDown(self):
+        # Unregister test cases in same order as they are defined
+        # in this test
+        unregister_mimetype_handler(MimetypeTest)
+        unregister_mimetype_handler(TestAbcMimetype)
+        unregister_mimetype_handler(TestXmlMimetype)
+        unregister_mimetype_handler(Test2AbcXmlMimetype)
+        unregister_mimetype_handler(StarDefMimetype)
+        unregister_mimetype_handler(StarAbcDefMimetype)
+        unregister_mimetype_handler(Test3XmlMimetype)
+        unregister_mimetype_handler(Test3AbcXmlMimetype)
+        unregister_mimetype_handler(Test3StarMimetype)
+
     def _handler_for(self, mimetype):
         mt = mimeparse.parse_mime_type(mimetype)
         score, handler = MimetypeHandler.get_best_handler(mt)

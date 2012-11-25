@@ -1,10 +1,53 @@
-import mimeparse
+import logging
+import os
 
+from django.conf import settings
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
+from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
+from djblets.util.misc import cache_memoize
 from djblets.util.templatetags.djblets_images import thumbnail
 from pipeline.storage import default_storage
+import docutils.core
+import markdown
+import mimeparse
+
+
+_registered_mimetype_handlers = []
+
+
+def register_mimetype_handler(handler):
+    """Registers a MimetypeHandler class.
+
+    This will register a Mimetype Handler used by Review Board to render
+    thumbnails for the file attachements across different mimetypes.
+
+    Only MimetypeHandler subclasses are supported.
+    """
+    if not issubclass(handler, MimetypeHandler):
+        raise TypeError('Only MimetypeHandler subclasses can be registered')
+
+    _registered_mimetype_handlers.append(handler)
+
+
+def unregister_mimetype_handler(handler):
+    """Unregisters a MimetypeHandler class.
+
+    This will unregister a previously registered mimetype handler.
+
+    Only MimetypeHandler subclasses are supported. The class must ahve been
+    registered beforehand or a ValueError will be thrown.
+    """
+    if not issubclass(handler, MimetypeHandler):
+        raise TypeError('Only MimetypeHandler subclasses can be unregistered')
+
+    try:
+        _registered_mimetype_handlers.remove(handler)
+    except ValueError:
+        logging.error('Failed to unregister missing mimetype handler %r' %
+                      handler)
+        raise ValueError('This mimetype handler was not previously registered')
 
 
 def score_match(pattern, mimetype):
@@ -73,22 +116,18 @@ class MimetypeHandler(object):
     @classmethod
     def get_best_handler(cls, mimetype):
         """Returns the handler and score that that best fit the mimetype."""
-        best_score, best_fit = (0, cls)
+        best_score, best_fit = (0, None)
 
-        for mt in cls.supported_mimetypes:
-            try:
-                score = score_match(mimeparse.parse_mime_type(mt), mimetype)
+        for mimetype_handler in _registered_mimetype_handlers:
+            for mt in mimetype_handler.supported_mimetypes:
+                try:
+                    score = score_match(mimeparse.parse_mime_type(mt),
+                                        mimetype)
 
-                if score > best_score:
-                    best_score, best_fit = (score, cls)
-            except ValueError:
-                continue
-
-        for handler in cls.__subclasses__():
-            score, best_handler = handler.get_best_handler(mimetype)
-
-            if score > best_score:
-                best_score, best_fit = (score, best_handler)
+                    if score > best_score:
+                        best_score, best_fit = (score, mimetype_handler)
+                except ValueError:
+                    continue
 
         return (best_score, best_fit)
 
@@ -96,8 +135,24 @@ class MimetypeHandler(object):
     def for_type(cls, attachment):
         """Returns the handler that is the best fit for provided mimetype."""
         mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+
+        # Override the mimetype if mimeparse is known to misinterpret this
+        # type of file as `octet-stream`
+        extension = os.path.splitext(attachment.filename)[1]
+
+        if extension in MIMETYPE_EXTENSIONS:
+            mimetype = MIMETYPE_EXTENSIONS[extension]
+
         score, handler = cls.get_best_handler(mimetype)
-        return handler(attachment, mimetype)
+
+        if handler:
+            try:
+                return handler(attachment, mimetype)
+            except Exception, e:
+                logging.error('Unable to load Mimetype Handler for %s: %s',
+                              attachment, e, exc_info=1)
+
+        return None
 
     def get_icon_url(self):
         mimetype_string = self.mimetype[0] + '/' + self.mimetype[1]
@@ -143,22 +198,78 @@ class TextMimetype(MimetypeHandler):
     """Handles text mimetypes."""
     supported_mimetypes = ['text/*']
 
-    def get_thumbnail(self):
-        """Returns the first few truncated lines of the file."""
-        height = 4
-        length = 50
+    # Read up to 'FILE_CROP_CHAR_LIMIT' number of characters from
+    # the file attachment to prevent long reads caused by malicious
+    # or auto-generated files.
+    FILE_CROP_CHAR_LIMIT = 2000
+    TEXT_CROP_NUM_HEIGHT = 4
+    TEXT_CROP_NUM_LENGTH = 50
 
+    def _generate_preview_html(self, data_string):
+        """Returns the first few truncated lines of the text file."""
+
+        preview_lines = data_string.splitlines()[:self.TEXT_CROP_NUM_HEIGHT]
+
+        for i in range(min(self.TEXT_CROP_NUM_HEIGHT, len(preview_lines))):
+            preview_lines[i] = escape(preview_lines[i][:self.TEXT_CROP_NUM_LENGTH])
+
+        return '<br />'.join(preview_lines)
+
+    def _generate_thumbnail(self):
+        """Returns the HTML for a thumbnail preview for a text file."""
         f = self.attachment.file.file
         f.open()
-        preview = escape(f.readline()[:length])
 
-        for i in range(height - 1):
-            preview = preview + '<br />' + escape(f.readline()[:length])
+        try:
+            data_string = f.read(self.FILE_CROP_CHAR_LIMIT)
+        except (ValueError, IOError), e:
+            logging.error('Failed to read from file attachment %s: %s'
+                          % (self.attachment.pk, e))
+            raise
 
         f.close()
+        return mark_safe('<div class="file-thumbnail-clipped">%s</div>'
+                         % self._generate_preview_html(data_string))
 
-        return mark_safe('<pre class="file-thumbnail">%s</pre>'
-                         % preview)
+    def get_thumbnail(self):
+        """Returns the thumbnail of the text file as rendered as html"""
+        # Caches the generated thumbnail to eliminate the need on each page
+        # reload to:
+        # 1) re-read the file attachment
+        # 2) re-generate the html based on the data read
+        return cache_memoize('file-attachment-thumbnail-%s-html-%s'
+                             % (self.__class__.__name__, self.attachment.pk),
+                             self._generate_thumbnail)
+
+
+class ReStructuredTextMimetype(TextMimetype):
+    """Handles ReStructuredText (.rst) mimetypes."""
+    supported_mimetypes = ['text/x-rst', 'text/rst']
+
+    def _generate_preview_html(self, data_string):
+        """Returns html of the ReST file as produced by docutils."""
+        # Use safe filtering against injection attacks
+        settings = {
+            'file_insertion_enabled': False,
+            'raw_enabled': False,
+            '_disable_config': True
+        }
+        return docutils.core.publish_parts(
+            source=smart_str(data_string),
+            writer_name='html4css1',
+            settings_overrides=settings)['html_body']
+
+
+class MarkDownMimetype(TextMimetype):
+    """Handles MarkDown (.md) mimetypes."""
+    supported_mimetypes = ['text/x-markdown', 'text/markdown']
+
+    def _generate_preview_html(self, data_string):
+        """Returns html of the MarkDown file as produced by markdown."""
+        # Use safe filtering against injection attacks
+        return markdown.markdown(
+            force_unicode(data_string), safe_mode='escape',
+            enable_attributes=False)
 
 
 # A mapping of mimetypes to icon names.
@@ -263,4 +374,17 @@ MIMETYPE_ICON_ALIASES = {
     'text/x-vcalendar': 'x-office-calendar',
     'text/x-vcard': 'x-office-address-book',
     'text/x-zsh': 'text-x-script',
+}
+
+
+# A mapping of file extensions to mimetypes
+#
+# Normally mimetypes are determined by mimeparse, then matched with
+# one of the supported mimetypes classes through a best-match algorithm.
+# However, mimeparse isn't always able to catch the unofficial mimetypes
+# such as 'text/x-rst' or 'text/x-markdown', so we just go by the
+# extension name.
+MIMETYPE_EXTENSIONS = {
+    '.rst': (u'text', u'x-rst', {}),
+    '.md': (u'text', u'x-markdown', {}),
 }
