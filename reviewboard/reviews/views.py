@@ -1072,9 +1072,9 @@ def raw_diff(request,
     resp = HttpResponse(data, mimetype='text/x-patch')
 
     if diffset.name == 'diff':
-        filename = "bug%s.patch" % review_request.bugs_closed.replace(',', '_')
+        filename = "rb%d.patch" % review_request.display_id
     else:
-        filename = diffset.name
+        filename = unicode(diffset.name).encode('ascii', 'ignore')
 
     resp['Content-Disposition'] = 'inline; filename=%s' % filename
     set_last_modified(resp, diffset.timestamp)
