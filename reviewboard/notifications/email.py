@@ -34,7 +34,11 @@ def review_published_cb(sender, user, review, **kwargs):
     ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail"):
+    
+    if review.ship_it:
+        if siteconfig.get("mail_send_shipit_mail"):
+            mail_review(user, review)
+    elif siteconfig.get("mail_send_review_mail"):
         mail_review(user, review)
 
 
