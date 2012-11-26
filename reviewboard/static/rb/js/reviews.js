@@ -972,7 +972,7 @@ $.fn.commentIssue = function(review_id, comment_id, comment_type,
 
     // Register to update issue summary table
     gCommentIssueManager
-	.registerCallback(self.comment_id, self.update_issue_summary_table);
+        .registerCallback(self.comment_id, self.update_issue_summary_table);
 
     return self;
 }
@@ -1361,6 +1361,9 @@ $.fn.commentDlg = function() {
             })
             .setDirty(false);
 
+        cancelButton.attr("disabled", false);
+        deleteButton.attr("disabled", false);
+        saveButton.attr("disabled", textField.val() == "");
         textField.focus();
 
         return this;
@@ -1375,6 +1378,10 @@ $.fn.commentDlg = function() {
         if (self.is(":visible")) {
             textField.val("");
             issueField[0].checked = false;
+
+            cancelButton.attr("disabled", true);
+            deleteButton.attr("disabled", true);
+            saveButton.attr("disabled", true);
 
             self
                 .setDirty(false)
@@ -1812,7 +1819,7 @@ $.fn.reviewRequestFieldEditor = function() {
                 showButtons: !$(this).hasClass("screenshot-editable"),
                 startOpen: this.id == "changedescription",
                 useEditIconOnly: $(this).hasClass("comma-editable"),
-		showRequiredFlag: $(this).hasClass("required")
+                showRequiredFlag: $(this).hasClass("required")
             })
             .on({
                 "beginEdit": function() {
@@ -2618,8 +2625,8 @@ $(document).ready(function() {
 
     /* Collapse all reviews */
     $("#collapse-all").click(function() {
-	$(".box").addClass("collapsed");
-	return false;
+        $(".box").addClass("collapsed");
+        return false;
     });
 
     gCommentDlg = $("#comment-detail")
