@@ -52,6 +52,11 @@ class GitTool(SCMTool):
     name = "Git"
     supports_raw_file_urls = True
     supports_authentication = True
+    field_help_text = {
+        'path': 'For local Git repositories, this should be the path to a '
+                '.git directory that Review Board can read from. For remote '
+                'Git repositories, it should be the clone URL.',
+    }
     dependencies = {
         'executables': ['git']
     }

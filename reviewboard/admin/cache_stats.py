@@ -1,3 +1,4 @@
+import logging
 import socket
 
 try:
@@ -9,22 +10,25 @@ except ImportError:
         memcache = None
 
 from django.conf import settings
-from django.core.cache import parse_backend_uri
 
 
 def get_memcached_hosts():
-    """
-    Returns the hosts currently configured for memcached.
-    """
+    """Returns the hosts currently configured for memcached."""
     if not memcache:
         return None
 
-    scheme, host, params = parse_backend_uri(settings.CACHE_BACKEND)
+    cache_info = settings.CACHES['default']
+    backend = cache_info['BACKEND']
+    locations = cache_info.get('LOCATION', [])
 
-    if scheme == "memcached":
-        return host.split(";")
+    if (not backend.startswith('django.core.cache.backends.memcached') or
+        not locations):
+        return []
 
-    return None
+    if not isinstance(locations, list):
+        locations = [locations]
+
+    return locations
 
 
 def get_has_cache_stats():

@@ -1,0 +1,126 @@
+=================================
+Review Board 1.6.14 Release Notes
+=================================
+
+**Release date**: November 24, 2012
+
+
+New Features
+============
+
+* Accepted Subversion certificates are now stored in the database.
+
+  Previously, accepted Subversion certificates were only stored in
+  the :file:`.subversion/auth` directory within the site directory. Now
+  they're recorded in the database, making it easier scale out.
+
+* SSH key handling has internally been made more flexible and extensible.
+  We'll be able to offer a better SSH key handling solution down the road for
+  larger scale deployments.
+
+
+Performance Improvements
+========================
+
+* The diff viewer now handle very large files.
+
+  Previously, the diff viewer would have issues with very large files (such
+  as files over 10,000 lines), as it would greatly slow down the rendering.
+
+  Now, very large files can be rendered much faster. Even smaller files may
+  have a noticeable speed improvement, and will reduce the load on the server.
+  As an example, a 44,000 line sample file was known to take several minutes
+  and slow down the server, while now it only takes a few seconds.
+
+* The number of database queries for the review request page has been
+  further reduced. Per-file attachment and per-screenshot comment queries
+  were being executed previously, which would add up when there were many
+  file attachments and comments.
+
+
+Usability Improvements
+======================
+
+* The Create/Update Repository forms now have more meaningful content
+  for the Path field's help text.
+
+  The Path field's help text will list useful information specific to the
+  type of repository being created or updated, and not a giant wall of text.
+
+* The Create/Update Repository form's default hosting account is now the
+  first actual account listed for that hosting service, and not
+  "<Link a new account>", making it quicker to configure a repository.
+
+
+Web API Changes
+===============
+
+* Review groups can now be added, modified or deleted using the API.
+
+  This allows scripts to create new review groups, modify their data or
+  user lists, or delete the groups. These are accessible via /groups/.
+
+  The original work was done by Stephen Holsappie and Paul Hobb.
+
+* Review requests not backed by a repository can now be created by
+  simply not providing a ``repository`` argument.
+
+* The Diff Comments resource now returns a 404 if the resource IDs in the
+  path were invalid. It was previously showing 0 results instead.
+  (:bug:`2552`)
+
+  Patch by Michelle Chuang.
+
+* The User list resources now include an ``avatar_url`` field in the
+  resulting payload that provides the Gravatar_ URL for the user.
+
+.. _Gravatar: http://www.gravatar.com/
+
+
+Bug Fixes
+=========
+
+* The "Add Comment" link is no longer missing after canceling the edit field.
+  Patch by Jason Veatch. (:bug:`2696`)
+
+* The "Server" field in the General Settings page in the Administration UI
+  now reflects the proper server value, rather than being blank. (:bug:`2757`)
+
+* Added a better fallback for diff content encoding. (:bug:`2776`)
+
+  Diff content encoding onversion no longer breaks if it can't decode to UTF-8
+  or the repository-specified encoding. Instead, it now falls back to UTF-8
+  with unknown characters replaced with U+FFFD.
+
+* Mercurial version parsing no longer fails when including "rc" or other
+  identifiers in the version.
+
+* Fixed some edge cases with data entered into the New Review Request page.
+  (:bug:`2708`)
+
+  If the user first chose a Perforce repository and entered a change number,
+  and then changed the repository type to "None (Graphics Only)", the
+  change number field would still be sent to the server and cause a failure.
+
+* The starred groups list in the dashboard didn't always show the right
+  list of groups.
+
+  The query was targetting the profile IDs in the database and not the
+  user IDs, which in some cases would cause problems.
+
+* The "Comment Saved" bubble in the diff viewer had a broken style. The bubble
+  wasn't covering the whole text.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Jason Veatch
+* Michelle Chuang
+* Paul Hobb
+* Stephen Holsappie
+
+
+.. comment: vim: ft=rst et

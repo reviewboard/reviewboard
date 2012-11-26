@@ -320,17 +320,24 @@ def convert_to_utf8(s, enc):
         return s.encode('utf-8')
     elif isinstance(s, basestring):
         try:
-            u = unicode(s, 'utf-8')
-            return s
+            # First try strict unicode (for when everything is valid utf-8)
+            return unicode(s, 'utf-8')
         except UnicodeError:
+            # Now try any candidate encodings.
             for e in enc.split(','):
                 try:
                     u = unicode(s, e)
                     return u.encode('utf-8')
                 except UnicodeError:
                     pass
-            raise Exception(_("Diff content couldn't be converted to UTF-8 "
-                              "using the following encodings: %s") % enc)
+
+            # Finally, try to convert to straight unicode and replace all
+            # unknown characters.
+            try:
+                return unicode(s, 'utf-8', errors='replace')
+            except UnicodeError:
+                raise Exception(_("Diff content couldn't be converted to UTF-8 "
+                                  "using the following encodings: %s") % enc)
     else:
         raise TypeError("Value to convert is unexpected type %s", type(s))
 

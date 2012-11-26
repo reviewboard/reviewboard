@@ -45,7 +45,7 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
 
     return render_to_response(template_name, RequestContext(request, {
         'cache_hosts': cache_stats,
-        'cache_backend': cache.__module__,
+        'cache_backend': settings.CACHES['default']['BACKEND'],
         'title': _("Server Cache"),
         'root_path': settings.SITE_ROOT + "admin/db/"
     }))

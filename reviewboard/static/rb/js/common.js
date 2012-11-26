@@ -258,7 +258,11 @@ $.fn.searchAutoComplete = function() {
             if (data.username) {
                 // For the format of users
                 s = data.username;
-                s += " <span>(" + data.fullname + ")</span>";
+
+                if (data.fullname) {
+                    s += " <span>(" + data.fullname + ")</span>";
+                }
+
             } else if (data.name) {
                 // For the format of groups
                 s = data.name;

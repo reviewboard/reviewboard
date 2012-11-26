@@ -27,7 +27,7 @@
 {% enddefinevar %}
 
 {% definevar 'begin_collapse_fmt' %}
- <div><img src="{% static "rb/images/diff-collapse.png" %}" width="14" height="14" alt="{% trans "Collapse lines" %}" title="{% trans "Collapse lines" %}" class="diff-collapse-btn" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.pk}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '%(chunk_index)s', 0, this); return false;" />
+ <div class="collapse-floater"><img src="{% static "rb/images/diff-collapse.png" %}" width="14" height="14" alt="{% trans "Collapse lines" %}" title="{% trans "Collapse lines" %}" class="diff-collapse-btn" onclick="javascript:RB.expandChunk('{{base_url}}', 'file{{file.index}}', '{{file.filediff.pk}}', '{{file.filediff.diffset.revision}}', {% if file.interfilediff %}'{{file.interfilediff.diffset.revision}}'{% else %}null{% endif %}, '{{file.index}}', '%(chunk_index)s', 0, this); return false;" />
 {% enddefinevar %}
 
 {% definevar 'end_collapse_fmt' %}

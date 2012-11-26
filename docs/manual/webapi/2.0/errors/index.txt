@@ -25,6 +25,11 @@ Errors
    216-unverified-host-cert
    217-missing-user-key
    218-repo-authentication-error
+   219-diff-empty.txt
+   220-diff-too-big.txt
+   221-file-retrieval-error.txt
+   222-hosting-service-auth-error.txt
+   223-group-already-exists.txt
 
 
 .. comment: vim: ft=rst et ts=3

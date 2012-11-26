@@ -149,9 +149,12 @@ class TextMimetype(MimetypeHandler):
         length = 50
 
         f = self.attachment.file.file
+        f.open()
         preview = escape(f.readline()[:length])
+
         for i in range(height - 1):
             preview = preview + '<br />' + escape(f.readline()[:length])
+
         f.close()
 
         return mark_safe('<pre class="file-thumbnail">%s</pre>'
