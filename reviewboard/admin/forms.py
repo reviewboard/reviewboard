@@ -325,6 +325,9 @@ class EMailSettingsForm(SiteSettingsForm):
     mail_send_review_mail = forms.BooleanField(
         label=_("Send e-mails for review requests and reviews"),
         required=False)
+    mail_send_shipit_mail = forms.BooleanField(
+        label=_("Send e-mails for ship-its"),
+        required=False)
     mail_send_new_user_mail = forms.BooleanField(
         label=_("Send e-mails when new users register an account"),
         required=False)
