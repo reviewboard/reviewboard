@@ -11,4 +11,5 @@ SEQUENCE = [
     'default_reviewer_local_site',
     'add_issues_to_comments',
     'file_attachments',
+    'review_request_last_review_activity_timestamp',
 ]
