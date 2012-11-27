@@ -779,6 +779,50 @@ class ViewTests(TestCase):
 
         self.client.logout()
 
+    def test_review_request_etag_with_issues(self):
+        """Testing review request ETags with issue status toggling"""
+        self.client.login(username='doc', password='doc')
+
+        # Some objects we need.
+        user = User.objects.get(username="doc")
+
+        review_request = ReviewRequest.objects.get(
+            summary="Add permission checking for JSON API")
+        filediff = \
+            review_request.diffset_history.diffsets.latest().files.all()[0]
+
+        # Create a review.
+        review = Review(review_request=review_request, user=user)
+        review.save()
+
+        comment = review.comments.create(filediff=filediff, first_line=1)
+        comment.text = 'This is a test'
+        comment.issue_opened = True
+        comment.issue_status = Comment.OPEN
+        comment.num_lines = 1
+        comment.save()
+
+        review.publish()
+
+        # Get the etag
+        response = self.client.get(review_request.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        etag1 = response['ETag']
+        self.assertNotEqual(etag1, '')
+
+        # Change the issue status
+        comment.issue_status = Comment.RESOLVED
+        comment.save()
+
+        # Check the etag again
+        response = self.client.get(review_request.get_absolute_url())
+        self.assertEqual(response.status_code, 200)
+        etag2 = response['ETag']
+        self.assertNotEqual(etag2, '')
+
+        # Make sure they're not equal
+        self.assertNotEqual(etag1, etag2)
+
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_reviewrequests', 'test_scmtools']
