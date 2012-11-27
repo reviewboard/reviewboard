@@ -718,7 +718,6 @@
   border: 1px black solid;
   display: block;
   float: left;
-  height: 13em;
   position: relative;
   margin: 0 2em 2em 0;
   .border-radius(@box-border-radius);
@@ -735,7 +734,7 @@
 
   .file-header {
     background: white;
-    padding: 0.5em 10em 0.5em 0.5em;
+    padding: 0 10em 0 0.5em;
     line-height: 2.5em;
     white-space: nowrap;
     .border-radius(@box-border-radius @box-border-radius 0 0);
@@ -753,7 +752,7 @@
 
   .file-thumbnail-container {
     background: white;
-    height: 6em;
+    height: 100px;
     padding: 0 1em;
     padding-bottom: 1em;
     text-align: center;
@@ -761,7 +760,7 @@
     .file-thumbnail {
       border: 0;
       margin: 0;
-      max-height: 6em;
+      height: 100px;
       max-width: 18em;
       overflow: hidden;
       padding: 0;
@@ -788,6 +787,7 @@
   .file-caption {
     border-top: 1px #CCCCCC solid;
     line-height: 2.5em;
+    height: 2.5em;
     padding: 0 0.5em;
     text-align: center;
     .border-radius(0 0 7px 7px);
@@ -795,6 +795,15 @@
     a {
       color: black;
       text-decoration: none;
+
+      &.empty-caption {
+        color: gray;
+        font-style: italic;
+      }
+    }
+
+    .inline-editor-form > input {
+      margin-top: 0.4em;
     }
 
     img {

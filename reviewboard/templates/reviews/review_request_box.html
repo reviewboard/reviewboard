@@ -188,9 +188,21 @@
       </a>
 {% endif %}
      </div>
-     <div class="file-thumbnail-container">{{file.thumbnail}}</div>
+     <div class="file-thumbnail-container">
+      {% if file.review_ui %}
+      <a href="{% url file_attachment review_request.pk file.pk %}">{{file.thumbnail}}</a>
+      {% else %}
+      {{file.thumbnail}}
+      {% endif %}
+      {% if file.review_ui %}</a>{% endif %}
+     </div>
      <div class="file-caption">
-      <a href="{{file.get_absolute_url}}" class="edit">{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}</a>
+      {% definevar "caption" %}{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}{% enddefinevar %}
+      {% if caption %}
+       <a href="{{file.get_absolute_url}}" class="edit">{{caption}}</a>
+      {% else %}
+        <a href="{{file.get_absolute_url}}" class="edit empty-caption">No caption</a>
+      {% endif %}
      </div>
     </div>
    </div>

@@ -1914,6 +1914,10 @@ $.fn.fileAttachment = function() {
             })
             .on({
                 "beginEdit": function() {
+                     if ($(this).hasClass("empty-caption")) {
+                         $(this).inlineEditor("field").val("");
+                     }
+
                     gEditCount++;
                 },
                 "cancel": function() {
@@ -1921,6 +1925,13 @@ $.fn.fileAttachment = function() {
                 },
                 "complete": function(e, value) {
                     gEditCount--;
+                    if (value === "") {
+                        $(this)
+                            .text("No caption")
+                            .addClass("empty-caption");
+                    } else {
+                        $(this).removeClass("empty-caption");
+                    }
                     fileAttachment.ready(function() {
                         fileAttachment.caption = value;
                         fileAttachment.save({
