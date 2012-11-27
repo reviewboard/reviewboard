@@ -4,6 +4,7 @@ import os
 import sys
 
 import djblets
+from djblets.util.filesystem import is_exe_in_path
 
 
 # Can't import django.utils.translation yet
@@ -349,7 +350,11 @@ PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.jsmin.JSMinCompressor'
 # with the built output, so treat it like a production install.
 
 if PRODUCTION or not DEBUG or os.getenv('FORCE_BUILD_MEDIA', ''):
-    PIPELINE_COMPILERS = ['djblets.pipeline.compilers.bless.BlessCompiler']
+    if is_exe_in_path('lessc'):
+        PIPELINE_COMPILERS = ['pipeline.compilers.less.LessCompiler']
+    else:
+        PIPELINE_COMPILERS = ['djblets.pipeline.compilers.bless.BlessCompiler']
+
     PIPELINE = True
 elif DEBUG:
     PIPELINE_COMPILERS = []

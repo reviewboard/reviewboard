@@ -125,7 +125,8 @@ class ReviewRequestAdmin(admin.ModelAdmin):
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
             'fields': ('email_message_id', 'time_emailed',
-                       'last_review_timestamp', 'shipit_count', 'local_id'),
+                       'last_review_activity_timestamp',
+                       'shipit_count', 'local_id'),
             'classes': ['collapse'],
         }),
     )
