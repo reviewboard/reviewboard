@@ -421,10 +421,11 @@ def review_detail(request,
     else:
         draft_timestamp = ""
 
-    etag = "%s:%s:%s:%s:%s:%s" % (request.user, last_activity_time,
-                                  draft_timestamp, review_timestamp,
-                                  int(starred),
-                                  settings.AJAX_SERIAL)
+    etag = "%s:%s:%s:%s:%s:%s:%s" % (
+        request.user, last_activity_time, draft_timestamp,
+        review_timestamp, review_request.last_review_activity_timestamp,
+        int(starred), settings.AJAX_SERIAL
+    )
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()

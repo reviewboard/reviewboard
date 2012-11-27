@@ -504,9 +504,15 @@ class ReviewRequest(BaseReviewRequestDetails):
         blank=True)
 
     # Review-related information
-    last_review_timestamp = models.DateTimeField(_("last review timestamp"),
-                                                 null=True, default=None,
-                                                 blank=True)
+
+    # The timestamp representing the last public activity of a review.
+    # This includes publishing reviews and manipulating issues.
+    last_review_activity_timestamp = models.DateTimeField(
+        _("last review activity timestamp"),
+        db_column='last_review_timestamp',
+        null=True,
+        default=None,
+        blank=True)
     shipit_count = CounterField(_("ship-it count"), default=0)
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True)
@@ -1420,6 +1426,9 @@ class BaseComment(models.Model):
             if not review.public:
                 review.timestamp = self.timestamp
                 review.save()
+
+            ReviewRequest.objects.filter(pk=review.review_request_id).update(
+                last_review_activity_timestamp=self.timestamp)
         except Review.DoesNotExist:
             pass
 
@@ -1684,8 +1693,9 @@ class Review(models.Model):
             comment.timetamp = self.timestamp
             comment.save()
 
-        # Update the last_updated timestamp on the review request.
-        self.review_request.last_review_timestamp = self.timestamp
+        # Update the last_updated timestamp and the last review activity
+        # timestamp on the review request.
+        self.review_request.last_review_activity_timestamp = self.timestamp
         self.review_request.save()
 
         # Atomicly update the shipit_count
