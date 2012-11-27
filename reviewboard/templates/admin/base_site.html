@@ -40,13 +40,8 @@
 {%   endif %}
 {%  endblock %}
 
-{%  block pretitle %}
-{%   if user.is_authenticated %}
-<div id="admin-actions" class="clear">
- {% admin_actions %}
-</div>
-{%   endif %}
-{%  endblock %}
+{%  block pretitle %}{% endblock %}
+
 {%  block content_title %}
 {%   if title %}<h1 class="title">{{title}}</h1>{% endif %}
 {%  endblock %}
@@ -65,5 +60,8 @@
  <li><a href="{% url djblets.extensions.views.extension_list %}">{% trans "Extensions" %}</a></li>
 </ul>
 {%   block subnavbar %}{% endblock %}
+<div id="admin-actions" class="clear">
+ {% admin_actions %}
+</div>
 {%  endif %}
 {% endblock %}

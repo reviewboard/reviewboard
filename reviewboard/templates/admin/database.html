@@ -12,9 +12,10 @@
 
 {% if app_list %}
 {%  for app in app_list %}
- <div class="module">
+ <fieldset class="module">
+  <h2>{% blocktrans with app.name as name %}{{name}}{% endblocktrans %}</h2>
+
   <table summary="{% blocktrans with app.name as name %}Models available in the {{name}} application.{% endblocktrans %}">
-   <caption>{% blocktrans with app.name as name %}{{name}}{% endblocktrans %}</caption>
 {%   for model in app.models %}
     <tr>
 {%    if model.perms.change %}
@@ -37,7 +38,7 @@
     </tr>
 {%   endfor %}
    </table>
-  </div>
+  </fieldset>
 {%  endfor %}
 {% else %}
  <p>{% trans "You don't have permission to edit anything." %}</p>

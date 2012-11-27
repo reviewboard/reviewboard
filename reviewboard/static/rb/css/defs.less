@@ -9,6 +9,8 @@
 
 @link-color: #0000C0;
 
+@page-container-padding: 1em;
+
 @headerbar-logo-padding-horiz: 6px;
 @headerbar-logo-width: 60px;
 @headerbar-padding-left: @headerbar-logo-width +
@@ -52,6 +54,8 @@
 @review-request-warning-bg: #F5A9A9;
 @review-request-warning-border-color: #FF0000;
 
+@admin-sidebar-width: 22em;
+
 @z-index-base: 1;
 @z-index-deco: 20;
 @z-index-event-overlay: 30;
@@ -73,6 +77,12 @@
   -moz-box-shadow: @arguments;
   -webkit-box-shadow: @arguments;
   box-shadow: @arguments;
+}
+
+.box-sizing () {
+  -moz-box-sizing: @arguments;
+  -webkit-box-sizing: @arguments;
+  box-sizing: @arguments;
 }
 
 .opacity (@value) {

@@ -358,9 +358,11 @@ $.fn.user_infobox = function() {
                                   function(responseText, textStatus) {
                                       gUserInfoBoxCache[url] = responseText;
                                       infobox.removeClass("loading");
+                                      infobox.find('.gravatar').retinaGravatar();
                                   });
                     } else {
                         infobox.html(gUserInfoBoxCache[url]);
+                        infobox.find('.gravatar').retinaGravatar();
                     }
 
                     var offset = self.offset();
@@ -389,6 +391,8 @@ $(document).ready(function() {
     $("#search_field").searchAutoComplete();
     $('.user').user_infobox();
     $("time.timesince").timesince();
+
+    $('.gravatar').retinaGravatar();
 
     registerToggleStar();
 });

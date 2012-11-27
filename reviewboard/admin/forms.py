@@ -561,6 +561,9 @@ class SSHSettingsForm(forms.Form):
                 ])
                 raise
 
+    class Meta:
+        title = _('SSH Settings')
+
 
 class StorageSettingsForm(SiteSettingsForm):
     """File storage backend settings for Review Board."""
@@ -687,7 +690,7 @@ class StorageSettingsForm(SiteSettingsForm):
             },
             {
                 'id':      'storage_couchdb',
-                'classes': ('wide' 'hidden'),
+                'classes': ('wide', 'hidden'),
                 'title':   _('CouchDB Settings'),
                 'fields':  ('couchdb_default_server',),
             },
