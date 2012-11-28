@@ -3535,6 +3535,10 @@ class BaseFileAttachmentResource(WebAPIResource):
             'type': str,
             'description': 'A thumbnail representing this file.',
         },
+        'review_url': {
+            'type': str,
+            'description': 'The URL to a review UI for this file.',
+        },
     }
 
     uri_object_key = 'file_attachment_id'
@@ -3574,6 +3578,23 @@ class BaseFileAttachmentResource(WebAPIResource):
         # DraftFileAttachmentResource will prefer draft_caption, in case people
         # are changing an existing one.
         return obj.caption or obj.draft_caption
+
+    def serialize_review_url_field(self, obj, **kwargs):
+        if obj.review_ui:
+            review_request = obj.get_review_request()
+            if review_request.local_site_id:
+                local_site_name = review_request.local_site.name
+            else:
+                local_site_name = None
+
+            return local_site_reverse(
+                'file_attachment', local_site_name=local_site_name,
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'file_attachment_id': obj.pk,
+                })
+
+        return ''
 
     @webapi_check_local_site
     @webapi_login_required
