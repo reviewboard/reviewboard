@@ -334,6 +334,9 @@ class RepositoryColumn(Column):
     def augment_queryset(self, queryset):
         return queryset.select_related('repository')
 
+    def render_data(self, obj):
+        return super(RepositoryColumn, self).render_data(obj) or ''
+
 
 class PendingCountColumn(Column):
     """

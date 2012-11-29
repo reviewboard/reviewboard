@@ -1,6 +1,6 @@
 from django.template import Context, Template
 from django.test import TestCase
-from djblets.extensions.base import RegisteredExtension
+from djblets.extensions.base import ExtensionManager, RegisteredExtension
 
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import DashboardHook, DiffViewerActionHook, \
@@ -16,7 +16,8 @@ class DummyExtension(Extension):
 class HookTests(TestCase):
     """Tests the extension hooks."""
     def setUp(self):
-        self.extension = DummyExtension()
+        manager = ExtensionManager('')
+        self.extension = DummyExtension(extension_manager=manager)
 
     def tearDown(self):
         self.extension.shutdown()

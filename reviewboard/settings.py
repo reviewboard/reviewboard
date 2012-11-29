@@ -166,6 +166,15 @@ WEB_API_ENCODERS = (
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
+# Set up a default cache backend. This will mostly be useful for
+# local development, as sites will override this.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'reviewboard',
+    },
+}
+
 LOGGING_NAME = "reviewboard"
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
@@ -234,6 +243,16 @@ STATIC_ROOT = os.path.join(HTDOCS_ROOT, 'static')
 MEDIA_ROOT = os.path.join(HTDOCS_ROOT, 'media')
 EXTENSIONS_STATIC_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 ADMIN_MEDIA_ROOT = STATIC_ROOT + 'admin/'
+
+
+# Make sure that we have a staticfiles cache set up for media generation.
+# By default, we want to store this in local memory and not memcached or
+# some other backend, since that will cause stale media problems.
+if 'staticfiles' not in CACHES:
+    CACHES['staticfiles'] = {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'staticfiles-filehashes',
+    }
 
 
 # URL prefix for media -- CSS, JavaScript and images. Make sure to use a

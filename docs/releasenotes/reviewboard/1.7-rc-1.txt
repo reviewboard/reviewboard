@@ -1,0 +1,211 @@
+===================================
+Review Board 1.7 RC 1 Release Notes
+===================================
+
+**Release date**: November 29, 2012
+
+
+This release contains all bug fixes and features found in
+Review Board version :doc:`1.6.14 <1.6.14>`.
+
+
+New Features
+============
+
+* Added infrastructure for new review UIs for file attachments.
+
+  Going forward, this will allow us to provide ways to review different types
+  of file attachments. The support is still young and we'll flesh it out in
+  subsequent 1.7.x releases.
+
+* Added the ability to review image file attachments.
+
+  This works just like screenshot functionality. An image uploaded as a file
+  attachment can be reviewed by clicking-and-dragging on the image to comment
+  on the selected area. These comments will appear in the review.
+
+* Markdown (.md) and ReStructured Text (.rst) file attachments now have
+  nice rendered thumbnails. Patch by Sampson Chen.
+
+* Added the "My Comments" column to the per-user review request list.
+  Patch by Aamir Mansoor. (:bug:`2163`)
+
+* Bugs listed in the dashboard now link to the bug report. (:bug:`2589`)
+
+
+Removed Features
+================
+
+* Screenshots can no longer be uploaded in the UI.
+
+  Instead, file attachments should be used, now that image file attachments
+  can be reviewed just like screenshots could. Existing screenshots are
+  unaffected.
+
+  The API can still be used to upload screenshots. That will be removed in
+  1.8.
+
+
+Usability Improvements
+======================
+
+* Restyled the administration UI.
+
+  This is cleaner, less visually cluttered, and more consistent across most
+  all pages.
+
+* The "Repository" and "Change Number" fields on a review request are no
+  longer shown if they're unrelated to that review request.
+
+* The expand/collapse review buttons are now larger, making them easier to
+  hit, particularly on touch screens. Patch by Aamir Mansoor. (:bug:`2358`)
+
+* Added Retina versions of the Gravatars.
+
+  If using a Retina-capable display (newer MacBook Pro, iPhone, or iPad),
+  all gravatars will load as higher-resolution images.
+
+  We'll be making Retina versions of all our artwork over time.
+
+* File attachment thumbnails are now slimmed down. Clicking the thumbnail
+  will open the review UI, if any.
+
+
+Web API Changes
+===============
+
+* Custom data can be stored in a file attachment comment.
+
+  This can be done by specifing a ``extra_data.myfield`` field when creating
+  or updating a file attachment comment. ``myfield`` will then be accessible
+  in the ``extra_data`` dictionary.
+
+  If the value is blank, the key will be removed.
+
+
+Extension Changes
+=================
+
+* Extensions must now accept variable arguments and pass them down to the
+  main Extension class. All Extension subclasses that don't do this will
+  break.
+
+
+Bug Fixes
+=========
+
+General Interface
+-----------------
+
+* Fixed a number of regressions in the UI from 1.7 beta 2.
+
+  This includes auto-completion, quick search, and much more.
+
+* The latest static media will always be used after an upgrade. Previously,
+  older media could be cached and used.
+
+* Fixed the display of the avatar on the account bar at the top of the page.
+  Patch by Mike Conley.
+
+* Fixed several style issues with rounded corners throughout the UI.
+
+* Long nicknames and e-mail addresses on the user page no longer overflows
+  on most browsers. Patch by Yazan Medanat.
+
+* Removed parenthesis in the user autocompletion and quick search lists
+  when the user doesn't have a name listed. Patch by Crystal Lok Koo.
+
+
+User Profiles
+-------------
+
+* Fixed setting timezones for users. (:bug:`2797`)
+
+  We were only showing the timezone selector if using standard authentication,
+  and setting the timezone didn't work properly. Now it works properly for
+  any and all authentication backends.
+
+
+File Attachments
+----------------
+
+* Fixed deleting text file attachments. (:bug:`2805`)
+
+* The thumbnail for a file attachment is now shown after newly uploading
+  a file.
+
+
+Review Requests
+---------------
+
+* The review request draft/submitted/discarded banner no longer shifts when
+  opening or closing the description editor.
+
+* The review request fields no longer shift around when opening the inline
+  editors.
+
+* The reply draft banner is now shown immediately when replying to a comment.
+
+* Changing the status of issues on a review now invalidates the cache of the
+  page.
+
+* It's no longer possible to accidentally trigger saving a comment in a
+  hidden comment dialog. (:bug:`2775`)
+
+* Attempting to download raw diffs with unicode filenames no longer causes
+  errors. (:bug:`2581`)
+
+* The editable fields no longer go into edit mode when simply selecting
+  text. Patch by Dave Druska.
+
+
+Dashboard
+---------
+
+* Review requests without repositories no longer shows "None" in the
+  Repository column.
+
+
+Extensions
+----------
+
+* URLs for URLHooks, administration pages, and API resources are now added
+  and removed properly when enabling or disabling extensions.
+
+* Extension settings and lists are now synced across all Apache threads or
+  processes.
+
+
+Administration UI
+-----------------
+
+* The Request Statuses widget in the admin UI no longer overlaps other
+  widgets.
+
+* The Server setting in General Settings no longer appears blank.
+  (:bug:`2757`)
+
+* The Cache Statistics page now consistently shows statistics for memcached.
+
+* Removed the "View On Site" link in the admin UI. (:bug:`2099`)
+
+  This never did the right thing and only confused users.
+
+
+Contributors
+============
+
+* Aamir Mansoor
+* Christian Hammond
+* Crystal Lok Koo
+* Dave Druska
+* David Trowbridge
+* Karl Leuschen
+* Mike Conley
+* Sampson Chen
+* Tina Yang
+* Wesley Ellis
+* Yazan Medanat
+
+
+.. comment: vim: ft=rst et
