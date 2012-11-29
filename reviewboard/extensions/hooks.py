@@ -1,6 +1,8 @@
 from djblets.extensions.base import ExtensionHook, ExtensionHookPoint
 import djblets.extensions.hooks as djblets_hooks
 
+from reviewboard.reviews.ui.base import register_ui, unregister_ui
+
 
 class DashboardHook(ExtensionHook):
     __metaclass__ = ExtensionHookPoint
@@ -52,6 +54,29 @@ class ReviewRequestDetailHook(ExtensionHook):
     def get_wide(self):
         """Returns whether or not this detail spans multiple columns."""
         return False
+
+
+class ReviewUIHook(ExtensionHook):
+    """This hook allows integration of Extension-defined Review UIs
+    
+    This accepts a list of Review UIs specified by the Extension and
+    registers them when the hook is created. Likewise, it unregisters
+    the same list of Review UIs when the Extension is disabled.
+    """
+    __metaclass__ = ExtensionHookPoint
+
+    def __init__(self, extension, review_uis):
+        super(ReviewUIHook, self).__init__(extension)
+        self.review_uis = review_uis
+
+        for review_ui in self.review_uis:
+            register_ui(review_ui)
+
+    def shutdown(self):
+        super(ReviewUIHook, self).shutdown()
+
+        for review_ui in self.review_uis:
+            unregister_ui(review_ui)
 
 
 class ActionHook(ExtensionHook):
