@@ -30,7 +30,7 @@ class {{class_name}}(Extension):
 
 {%- endif %}
     def __init__(self, *args, **kwargs):
-        super({{class_name}}, self).__init__()
+        super({{class_name}}, self).__init__(*args, **kwargs)
 {%- if dashboard_link is not none %}
         self.url_hook = {{class_name}}URLHook(self)
         self.dashboard_hook = {{class_name}}DashboardHook(self)

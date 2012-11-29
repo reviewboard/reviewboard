@@ -28,6 +28,8 @@ urlpatterns = patterns('',
     (r'^admin/', include('reviewboard.admin.urls')),
 )
 
+urlpatterns += extension_manager.get_url_patterns()
+
 # Add static media if running in DEBUG mode
 if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
     # Django's handling of staticfiles is a bit of a mess. It has two
