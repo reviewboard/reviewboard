@@ -152,7 +152,7 @@ class MimetypeHandler(object):
                 logging.error('Unable to load Mimetype Handler for %s: %s',
                               attachment, e, exc_info=1)
 
-        return None
+        return MimetypeHandler(attachment, mimetype)
 
     def get_icon_url(self):
         mimetype_string = self.mimetype[0] + '/' + self.mimetype[1]
