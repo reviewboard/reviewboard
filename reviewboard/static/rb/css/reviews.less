@@ -736,6 +736,7 @@
     background: white;
     padding: 0 10em 0 0.5em;
     line-height: 2.5em;
+    height: 2.5em;
     white-space: nowrap;
     .border-radius(@box-border-radius @box-border-radius 0 0);
 
@@ -753,19 +754,20 @@
   .file-thumbnail-container {
     background: white;
     height: 100px;
-    padding: 0 1em;
-    padding-bottom: 1em;
+    line-height: 100px;
+    padding: 0 1em 1em 1em;
     text-align: center;
 
     .file-thumbnail {
       border: 0;
       margin: 0;
-      height: 100px;
+      max-height: 100px;
       max-width: 18em;
       overflow: hidden;
       padding: 0;
       text-align: left;
       white-space: nowrap;
+      vertical-align: middle;
     }
 
     .file-thumbnail-clipped {
