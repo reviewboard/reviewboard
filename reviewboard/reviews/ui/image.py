@@ -1,5 +1,3 @@
-from django.utils import simplejson
-
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 

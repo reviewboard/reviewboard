@@ -1,6 +1,5 @@
 import logging
 
-from django.http import HttpRequest
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from django.utils import simplejson

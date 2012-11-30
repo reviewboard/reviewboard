@@ -1,7 +1,6 @@
 from django import template
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.template.context import RequestContext
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import basictag
@@ -10,6 +9,7 @@ from reviewboard import get_version_string
 from reviewboard.admin.cache_stats import get_has_cache_stats
 from reviewboard.reviews.models import DefaultReviewer, Group
 from reviewboard.scmtools.models import Repository
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 register = template.Library()
@@ -21,7 +21,7 @@ def admin_subnav(context, url_name, name, icon=""):
     Returns a <li> containing a link to the desired setting tab.
     """
     request = context.get('request')
-    url = reverse(url_name)
+    url = local_site_reverse(url_name)
 
     return RequestContext(request, {
         'url': url,

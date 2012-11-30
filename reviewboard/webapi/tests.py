@@ -6519,8 +6519,6 @@ class FileAttachmentCommentResourceTests(BaseWebAPITestCase):
         self.assertTrue('links' in rsp['file_attachment'])
         self.assertTrue('file_attachment_comments' in
                         rsp['file_attachment']['links'])
-        comments_url = \
-            rsp['file_attachment']['links']['file_attachment_comments']['href']
 
         # Make these public.
         review_request.publish(self.user)

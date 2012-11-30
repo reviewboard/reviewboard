@@ -1,7 +1,6 @@
 import logging
 import os
 
-from django.conf import settings
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
 from django.utils.encoding import smart_str, force_unicode
@@ -249,15 +248,18 @@ class ReStructuredTextMimetype(TextMimetype):
     def _generate_preview_html(self, data_string):
         """Returns html of the ReST file as produced by docutils."""
         # Use safe filtering against injection attacks
-        settings = {
+        docutils_settings = {
             'file_insertion_enabled': False,
             'raw_enabled': False,
             '_disable_config': True
         }
-        return docutils.core.publish_parts(
+
+        parts = docutils.core.publish_parts(
             source=smart_str(data_string),
             writer_name='html4css1',
-            settings_overrides=settings)['html_body']
+            settings_overrides=docutils_settings)
+
+        return parts['html_body']
 
 
 class MarkDownMimetype(TextMimetype):
