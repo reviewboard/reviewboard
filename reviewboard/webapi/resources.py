@@ -1488,6 +1488,15 @@ class DiffResource(WebAPIResource):
             'type': 'reviewboard.webapi.resources.RepositoryResource',
             'description': 'The repository that the diff is applied against.',
         },
+        'basedir': {
+                'type': str,
+                'description': 'The base directory that will prepended to '
+                               'all paths in the diff. This is needed for '
+                               'some types of repositories. The directory '
+                               'must be between the root of the repository '
+                               'and the top directory referenced in the '
+                               'diff paths.',
+        },
     }
     item_child_resources = [filediff_resource]
 
