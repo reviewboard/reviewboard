@@ -2035,6 +2035,34 @@ $.fn.fileAttachment = function() {
 
 
 /*
+ * Adds a loading placeholder to the file attachments list.
+ *
+ * @return {jQuery} The root file attachment div.
+ */
+var newFileAttachmentPlaceholderTemplate = _.template([
+    '<div class="file-container">',
+    ' <div class="file">',
+    '  <div class="file-header" />',
+    '  <div class="file-thumbnail-container">',
+    '   <img class="file-thumbnail" width="16" height="16" src="<%= spinner %>" />',
+    '  </div>',
+    '  <div class="file-caption" />',
+    ' </div>',
+    '</div>'
+].join(''));
+
+$.newFileAttachmentPlaceholder = function() {
+    var attachments = $("#file-list");
+    var container = $(newFileAttachmentPlaceholderTemplate({
+        spinner: STATIC_URLS['rb/images/spinner.gif']
+    }));
+
+    $(attachments.parent()[0]).show();
+    return container.insertBefore(attachments.children("br"));
+}
+
+
+/*
  * Adds a file to the file attachments list.
  *
  * If an FileAttachment object is given, then this will display the
@@ -2044,72 +2072,62 @@ $.fn.fileAttachment = function() {
  *
  * @return {jQuery} The root file attachment div.
  */
+var newFileAttachmentTemplate = _.template([
+    '<div class="file-container" data-file-id="<%= id %>">',
+    ' <div class="file">',
+    '  <ul class="actions">',
+    '   <% if (review_url) { %>',
+    '    <li class="file-review"><a href="<%= review_url %>">Review</a></li>',
+    '   <% } else { %>',
+    '    <li class="file-add-comment"><a href="#">Add Comment</a></li>',
+    '   <% } %>',
+    '  </ul>',
+    '  <div class="file-header">',
+    '   <a href="<%= url %>">',
+    '    <img src="<%= icon_url %>" />',
+    '    <%= filename %>',
+    '   </a>',
+    '   <a href="#" class="delete">',
+    '    <img src="<%= delete_image_url %>" alt="Delete File" />',
+    '   </a>',
+    '  </div>',
+    '  <div class="file-thumbnail-container">',
+    '   <% if (review_url) { %><a href="<%= review_url %>"><% } %>',
+    '   <%= thumbnail %>',
+    '   <% if (review_url) { %></a><% } %>',
+    '  </div>',
+    '  <div class="file-caption">',
+    '   <a href="<%= url %>" class="edit <% if (!caption) { %>empty-caption<% } %>">',
+    '    <% if (caption) { %><%= caption %><% } else { %>No caption<% } %>',
+    '   </a>',
+    '  </div>',
+    ' </div>',
+    '</div>'
+].join(''));
+
 $.newFileAttachment = function(fileAttachment) {
-    var container = $('<div/>')
-        .addClass('file-container');
+    /*
+     * TODO: this currently doesn't have the allow_inline check that the
+     * django template does, because we don't have inline review UIs yet.
+     */
+    var container,
+        attachments = $("#file-list");
 
-    var body = $('<div/>')
-        .addClass('file')
-        .appendTo(container);
-
-    var actions = $('<ul/>')
-        .addClass('actions')
-        .appendTo(body);
-
-    var fileHeader = $('<div/>')
-        .addClass('file-header')
-        .appendTo(body);
-
-    var thumbnailContainer = $('<div/>')
-        .addClass('file-thumbnail-container')
-        .appendTo(body);
-
-    var fileCaption = $('<div/>')
-        .addClass('file-caption')
-        .append($('<a/>')
-            .addClass('edit'))
-        .appendTo(body);
-
-    if (fileAttachment) {
-        container.attr('data-file-id', fileAttachment.id);
-
-        actions.append($('<li/>')
-            .addClass('file-add-comment')
-            .append($('<a/>')
-                .attr('href', '#')
-                .text('Add Comment')));
-
-        fileHeader
-            .append($('<img/>')
-                .attr('src', fileAttachment.icon_url))
-            .append(' ')
-            .append($('<a/>')
-                .attr('href', fileAttachment.url)
-                .text(fileAttachment.filename))
-            .append(' ')
-            .append($('<a/>')
-                .addClass('delete')
-                .attr('href', '#')
-                .append($('<img/>')
-                    .attr({
-                        src: STATIC_URLS['rb/images/delete.png'],
-                        alt: 'Delete File'
-                    })));
-
-        fileCaption.find('a')
-            .attr('href', fileAttachment.url)
-            .text(fileAttachment.caption);
-
-        if (fileAttachment.thumbnail) {
-            thumbnailContainer.html(fileAttachment.thumbnail);
-        }
-    }
+    container = $(newFileAttachmentTemplate({
+        caption: fileAttachment.caption,
+        delete_image_url: STATIC_URLS['rb/images/delete.png'],
+        filename: fileAttachment.filename,
+        icon_url: fileAttachment.icon_url,
+        id: fileAttachment.id,
+        review_url: fileAttachment.review_url,
+        thumbnail: fileAttachment.thumbnail,
+        url: fileAttachment.url
+    }));
 
     container.fileAttachment();
 
-    var attachments = $("#file-list");
     $(attachments.parent()[0]).show();
-    return container.insertBefore(attachments.find("> br"));
+    return container.insertBefore(attachments.children("br"));
 };
 
 
@@ -2427,7 +2445,7 @@ function initDnD() {
 
     function uploadFile(file) {
         /* Create a temporary file listing. */
-        var thumb = $.newFileAttachment()
+        var thumb = $.newFileAttachmentPlaceholder()
             .css("opacity", 0)
             .fadeTo(1000, 1);
 
