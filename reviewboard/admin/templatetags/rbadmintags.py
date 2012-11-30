@@ -21,7 +21,7 @@ def admin_subnav(context, url_name, name, icon=""):
     Returns a <li> containing a link to the desired setting tab.
     """
     request = context.get('request')
-    url = local_site_reverse(url_name)
+    url = local_site_reverse(url_name, request=request)
 
     return RequestContext(request, {
         'url': url,
