@@ -63,21 +63,21 @@
  <h1 class="widget-heading">{% trans "System Information" %}</h1>
  <div class="widget-content admin-box action-box">
   <ul>
-   <li><a href="/admin/cache/">{% trans "Server Cache" %}
+   <li><a href="{% url admin-server-cache %}">{% trans "Server Cache" %}
 {% if has_cache_stats %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="/admin/settings/authentication/">{% trans "Public Read-only Access" %}
+   <li><a href="{% url settings-authentication %}">{% trans "Public Read-only Access" %}
 {% if siteconfig.settings.auth_anonymous_access %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="/admin/settings/diffs/">{% trans "Syntax Highlighting" %}
+   <li><a href="{% url settings-diffs %}">{% trans "Syntax Highlighting" %}
 {% if siteconfig.settings.diffviewer_syntax_highlighting %}
     {{enabled_img}}
 {% else %}
@@ -91,28 +91,28 @@
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="/admin/settings/logging/">{% trans "Log Profiling" %}
+   <li><a href="{% url settings-logging %}">{% trans "Log Profiling" %}
 {% if siteconfig.settings.logging_allow_profiling %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="/admin/settings/email/">{% trans "Review Emails" %}
+   <li><a href="{% url settings-email %}">{% trans "Review Emails" %}
 {% if siteconfig.settings.mail_send_review_mail %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="/admin/settings/email/">{% trans "Email TLS Authentication" %}
+   <li><a href="{% url settings-email %}">{% trans "Email TLS Authentication" %}
 {% if siteconfig.settings.mail_use_tls %}
     {{enabled_img}}
 {% else %}
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="/admin/settings/general/">{% trans "Indexed Search" %}
+   <li><a href="{% url settings-general %}">{% trans "Indexed Search" %}
 {% if siteconfig.settings.search_enable %}
     {{enabled_img}}
 {% else %}
