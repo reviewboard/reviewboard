@@ -3,13 +3,7 @@ import pkg_resources
 import re
 import sre_constants
 import sys
-import time
 from warnings import warn
-
-try:
-    from hashlib import sha1
-except ImportError:
-    from sha import sha as sha1
 
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
