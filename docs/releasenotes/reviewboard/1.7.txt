@@ -290,6 +290,9 @@ Web API Changes
 
 * Added a diff's ``basedir`` field to the Diff resource.
 
+  This represents the base directory within a repository that all files
+  in a patch are relative to. Primarily, this is used for Subversion diffs.
+
   Patch by John Sintal.
 
 * Added the URL to a file attachment's review UI on the file attachment
@@ -521,9 +524,7 @@ General
 Web API Changes
 ---------------
 
-* Added a diff's ``basedir`` field to the Diff resource.
-
-  Patch by John Sintal.
+* Added a diff's ``basedir`` field to the Diff resource. Patch by John Sintal.
 
 * Added the URL to a file attachment's review UI on the file attachment
   resource.
