@@ -103,7 +103,7 @@ sample_extension/**extension.py**
 
       class SampleExtension(Extension):
           def __init__(self, *args, **kwargs):
-              super(SampleExtension, self).__init__()
+              super(SampleExtension, self).__init__(*args, **kwargs)
 
 
 Other Structure
@@ -283,7 +283,7 @@ Here is an example extension setting :py:attr:`default_settings`::
       }
 
       def __init__(self, *args, **kwargs):
-        super(SampleExtension, self).__init__()
+        super(SampleExtension, self).__init__(*args, **kwargs)
 
 
 .. _extension-configuration:
@@ -559,8 +559,8 @@ defining a requirements list::
    class SampleExtension(Extension):
        requirements = ['other_extension.extension.OtherExtension']
 
-       def __init__(self):
-           super(RBWebHooksExtension, self).__init__()
+       def __init__(self, *args, **kwargs):
+           super(RBWebHooksExtension, self).__init__(*args, **kwargs)
 
 
 .. _extension-egg-developing:
