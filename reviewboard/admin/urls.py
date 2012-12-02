@@ -36,7 +36,7 @@ NEWS_FEED = "http://www.reviewboard.org/news/feed/"
 settings_urlpatterns = patterns('reviewboard.admin.views',
     url(r'^general/$', 'site_settings',
         {'form_class': forms.GeneralSettingsForm,
-         'template_name': 'admin/settings.html'},
+         'template_name': 'admin/general_settings.html'},
         name="settings-general"),
     url(r'^authentication/$', 'site_settings',
         {'form_class': forms.AuthenticationSettingsForm,
