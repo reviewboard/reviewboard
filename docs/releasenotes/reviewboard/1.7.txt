@@ -13,7 +13,7 @@ New User Features
 =================
 
 Site Style
-==========
+----------
 
 We introduced some incremental style improvements for Review Board.
 
@@ -24,6 +24,15 @@ it and modernized it a bit.
 The new site design should be familiar to all existing Review Board
 users, but makes better use of space, and is a bit more polished and
 consistent, and a bit more responsive.
+
+Some highlights include:
+
+* Less wasted space near the top of the page.
+* A clear and consistent navigation bar with account and support menus and
+  a search field.
+* Crisper, less boxy look to the UI.
+* Fields are less jumpy.
+* Faster animation speeds.
 
 We'll be continuing to iterate on this in subsequent 1.7.x releases.
 
@@ -131,14 +140,14 @@ refer to a review request by ID from just the e-mail.
 Patch by Curtis Miller. (:bug:`2271`)
 
 
-Localization
-------------
+Time Zone Support
+-----------------
 
 Dates and times are now localized to the user's region.
 
-The default timezone in the database is now UTC, and users are able to
-set their own timezone in their preferences page. All dates and times will
-be shown relative to their timezone.
+The default time zone in the database is now UTC, and users are able to
+set their own time zone in their preferences page. All dates and times will
+be shown relative to their time zone.
 
 Patch by Dave Druska.
 
@@ -199,7 +208,9 @@ Review Requests
   longer shown if they're unrelated to that review request.
 
 * The expand/collapse review buttons are now larger, making them easier to
-  hit, particularly on touch screens. Patch by Aamir Mansoor. (:bug:`2358`)
+  hit, particularly on touch screens.
+
+  Patch by Aamir Mansoor. (:bug:`2358`)
 
 * File attachment thumbnails are now slimmed down. Clicking the thumbnail
   will open the review UI, if any.
@@ -226,7 +237,7 @@ entire Review Board codebase to be used as a stable API. We will in time
 document a stable API that can be relied upon.
 
 There's a `guide
-<http://www.reviewboard.org/docs/codebase/dev/extending/extensions/>`
+<http://www.reviewboard.org/docs/codebase/dev/extending/extensions/>`_
 on creating extensions and doing some interesting things with them. We will
 flesh this out in time to provide more information on extension development.
 
@@ -276,6 +287,16 @@ Web API Changes
   in the ``extra_data`` dictionary.
 
   If the value is blank, the key will be removed.
+
+* Added a diff's ``basedir`` field to the Diff resource.
+
+  This represents the base directory within a repository that all files
+  in a patch are relative to. Primarily, this is used for Subversion diffs.
+
+  Patch by John Sintal.
+
+* Added the URL to a file attachment's review UI on the file attachment
+  resource.
 
 
 Performance Improvements
@@ -440,8 +461,8 @@ Administration UI
 Compatibilty Changes
 ====================
 
-User-Side Changes
------------------
+User-Facing Changes
+-------------------
 
 * Added support for the latest CVS diff file format.
 
@@ -493,6 +514,27 @@ Server-Side Changes
 
 Changes since 1.7 RC 1
 ======================
+
+General
+-------
+
+* Tweaked the styling of file attachment thumbnails.
+
+
+Web API Changes
+---------------
+
+* Added a diff's ``basedir`` field to the Diff resource. Patch by John Sintal.
+
+* Added the URL to a file attachment's review UI on the file attachment
+  resource.
+
+
+Bug Fixes
+---------
+
+* Fixed the URLs for settings pages on the sidebar in the administration
+  UI when on a subdirectory install.
 
 
 Contributors
