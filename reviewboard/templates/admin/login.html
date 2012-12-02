@@ -1,10 +1,14 @@
 {% extends "accounts/login.html" %}
-{% load i18n %}
+{% load compressed i18n %}
 
 {% block title %}{{title}} | {% trans "Administration" %}{% endblock %}
 
+{% block css %}
+{%  compressed_css "admin" %}
+{% endblock %}
+
 {% block bodytag %}
-<body class="admin">
+<body class="admin login">
 {% endblock %}
 
  {% block hidden_fields %}
