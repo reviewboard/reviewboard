@@ -11,6 +11,7 @@ from pipeline.storage import default_storage
 import docutils.core
 import markdown
 import mimeparse
+import pygments
 
 
 _registered_mimetype_handlers = []
@@ -272,6 +273,18 @@ class MarkDownMimetype(TextMimetype):
         return markdown.markdown(
             force_unicode(data_string), safe_mode='escape',
             enable_attributes=False)
+
+
+class XMLMimetype(TextMimetype):
+    """Handles XML (.xml) mimetypes."""
+    supported_mimetypes = ['application/xml', 'text/xml']
+
+    def _generate_preview_html(self, data_string):
+        """Returns syntax-highlighted XML"""
+        return pygments.highlight(
+            force_unicode(data_string),
+            pygments.lexers.XmlLexer(),
+            pygments.formatters.HtmlFormatter())
 
 
 # A mapping of mimetypes to icon names.
