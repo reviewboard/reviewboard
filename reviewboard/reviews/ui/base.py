@@ -48,7 +48,7 @@ class ReviewUI(object):
             self.template_name,
             RequestContext(request, {
                 'base_template': base_template_name,
-                'caption': self.get_caption(),
+                'caption': self.get_caption(draft),
                 'comments': self.get_comments(),
                 'draft': draft,
                 'has_diffs': (draft and draft.diffset) or diffset_count > 0,
@@ -62,7 +62,10 @@ class ReviewUI(object):
     def get_comments(self):
         return self.obj.get_comments()
 
-    def get_caption(self):
+    def get_caption(self, draft=None):
+        if draft and self.obj.draft_caption:
+            return self.obj.draft_caption
+
         return self.obj.caption
 
     def get_extra_context(self, request):
