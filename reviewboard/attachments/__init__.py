@@ -8,8 +8,7 @@ def _register_mimetype_handlers(**kwargs):
                                                   MimetypeHandler, \
                                                   register_mimetype_handler, \
                                                   ReStructuredTextMimetype, \
-                                                  TextMimetype, \
-                                                  XMLMimetype
+                                                  TextMimetype
 
 
     register_mimetype_handler(ImageMimetype)
@@ -17,7 +16,6 @@ def _register_mimetype_handlers(**kwargs):
     register_mimetype_handler(MimetypeHandler)
     register_mimetype_handler(ReStructuredTextMimetype)
     register_mimetype_handler(TextMimetype)
-    register_mimetype_handler(XMLMimetype)
 
 
 initializing.connect(_register_mimetype_handlers)
