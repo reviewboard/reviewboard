@@ -369,10 +369,7 @@ PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.jsmin.JSMinCompressor'
 # with the built output, so treat it like a production install.
 
 if PRODUCTION or not DEBUG or os.getenv('FORCE_BUILD_MEDIA', ''):
-    if is_exe_in_path('lessc'):
-        PIPELINE_COMPILERS = ['pipeline.compilers.less.LessCompiler']
-    else:
-        PIPELINE_COMPILERS = ['djblets.pipeline.compilers.bless.BlessCompiler']
+    PIPELINE_COMPILERS = ['pipeline.compilers.less.LessCompiler']
 
     PIPELINE = True
 elif DEBUG:
