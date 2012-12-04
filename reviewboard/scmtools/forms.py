@@ -8,7 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.admin.validation import validate_bug_tracker
-from reviewboard.hostingsvcs.errors import AuthorizationError
+from reviewboard.hostingsvcs.errors import AuthorizationError, \
+                                           SSHKeyAssociationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import get_hosting_services, \
                                             get_hosting_service
@@ -16,6 +17,7 @@ from reviewboard.scmtools.errors import AuthenticationError, \
                                         UnverifiedCertificateError
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.validation import validate_review_groups, validate_users
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import BadHostKeyError, \
@@ -31,6 +33,7 @@ class RepositoryForm(forms.ModelForm):
     """
     REPOSITORY_INFO_FIELDSET = _('Repository Information')
     BUG_TRACKER_FIELDSET = _('Bug Tracker')
+    SSH_KEY_FIELDSET = _('Review Board Server SSH Key')
 
     NO_HOSTING_SERVICE_ID = 'custom'
     NO_HOSTING_SERVICE_NAME = _('(None - Custom Repository)')
@@ -93,6 +96,17 @@ class RepositoryForm(forms.ModelForm):
         required=True,
         help_text=_('The plan for your repository on this hosting service. '
                     'This must match what is set for your repository.'))
+
+    # Auto SSH key association field
+    associate_ssh_key = forms.BooleanField(
+        label=_('Associate my SSH key with the hosting service'),
+        required=False,
+        help_text=_('Add the Review Board public SSH key to the list of '
+                    'authorized SSH keys on the hosting service.'))
+
+    NO_KEY_HELP_FMT = (_('This repository type supports SSH key association, '
+                         'but the Review Board server does not have an SSH '
+                         'key. <a href="%s">Add an SSH key.</a>'))
 
     # Bug Tracker fields
     bug_tracker_use_hosting = forms.BooleanField(
@@ -190,6 +204,8 @@ class RepositoryForm(forms.ModelForm):
                 'planInfo': {},
                 'needs_authorization': hosting_service.needs_authorization,
                 'supports_bug_trackers': hosting_service.supports_bug_trackers,
+                'supports_ssh_key_association':
+                    hosting_service.supports_ssh_key_association,
                 'accounts': [
                     {
                         'pk': account.pk,
@@ -246,6 +262,14 @@ class RepositoryForm(forms.ModelForm):
         self.ssh_client = SSHClient(namespace=self.local_site_name)
         self.public_key = self.ssh_client.get_public_key(
             self.ssh_client.get_user_key())
+
+        # If no SSH key has been created, disable the key association field.
+        if not self.public_key:
+            self.fields['associate_ssh_key'].help_text = \
+                self.NO_KEY_HELP_FMT % local_site_reverse('settings-ssh',
+                    local_site_name=self.local_site_name)
+            self.fields['associate_ssh_key'].widget.attrs['disabled'] = \
+                'disabled'
 
         if self.instance:
             self._populate_hosting_service_fields()
@@ -701,7 +725,52 @@ class RepositoryForm(forms.ModelForm):
                 self.validate_repository):
                 self._verify_repository_path()
 
+            self._clean_ssh_key_association()
+
         return super(RepositoryForm, self).clean()
+
+    def _clean_ssh_key_association(self):
+        hosting_type = self.cleaned_data['hosting_type']
+        hosting_account = self.cleaned_data['hosting_account']
+
+        # Don't proceed if there are already errors, or if not using hosting
+        # (hosting type and account should be clean by this point)
+        if (self.errors or hosting_type == self.NO_HOSTING_SERVICE_ID or
+            not hosting_account):
+            return
+
+        hosting_service_cls = get_hosting_service(hosting_type)
+        hosting_service = hosting_service_cls(hosting_account)
+
+        # Check the requirements for SSH key association. If the requirements
+        # are not met, do not proceed.
+        if (not hosting_service_cls.supports_ssh_key_association or
+            not self.cleaned_data['associate_ssh_key'] or
+            not self.public_key):
+            return
+
+        if not self.instance.extra_data:
+            # The instance is either a new repository or a repository that
+            # was previously configured without a hosting service. In either
+            # case, ensure the repository is fully initialized.
+            repository = self.save(commit=False)
+        else:
+            repository = self.instance
+
+        key = self.ssh_client.get_user_key()
+
+        try:
+            # Try to upload the key if it hasn't already been associated.
+            if not hosting_service.is_ssh_key_associated(repository, key):
+                hosting_service.associate_ssh_key(repository, key)
+        except SSHKeyAssociationError, e:
+            logging.warning('SSHKeyAssociationError for repository "%s" (%s)'
+                            % (repository, e.message))
+            raise forms.ValidationError([_('Unable to associate SSH key with '
+                'your hosting service. This is most often the result of a '
+                'problem communicating with the hosting service. Please try '
+                'again later or manually upload the SSH key to your hosting '
+                'service.')])
 
     def clean_path(self):
         return self.cleaned_data['path'].strip()
