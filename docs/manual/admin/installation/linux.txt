@@ -222,27 +222,6 @@ To install, type::
     $ easy_install psycopg2
 
 
-SQLite
-------
-
-.. note:: If you have Python 2.5 or higher, you already have SQLite and won't
-          need to install this.
-
-To install, type::
-
-    $ easy_install pysqlite
-
-Distributions may provide native packages.
-
-To install on Debian_ or Ubuntu_, type::
-
-    $ apt-get install python-sqlite2
-
-To install on Fedora_ type::
-
-    $ yum install py-pysqlite2
-
-
 Installing Source Control Components
 ====================================
 

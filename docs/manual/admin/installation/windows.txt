@@ -199,17 +199,6 @@ To install, type::
     $ easy_install psycopg2
 
 
-SQLite
-------
-
-.. note:: If you have Python 2.5 or higher, you already have SQLite and won't
-          need to install this.
-
-To install, type::
-
-    $ easy_install pysqlite
-
-
 Installing Source Control Components
 ====================================
 
