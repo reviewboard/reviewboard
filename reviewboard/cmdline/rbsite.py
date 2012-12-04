@@ -1679,7 +1679,7 @@ class InstallCommand(Command):
         ])
 
         ui.text(page, "For more information, visit:")
-        ui.urllink(page, "%sadmin/sites/creating-sites/" % DOCS_BASE)
+        ui.urllink(page, "%sadmin/installation/creating-sites/" % DOCS_BASE)
 
     def save_settings(self):
         """
