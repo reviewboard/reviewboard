@@ -10,7 +10,15 @@ class ImageReviewUI(FileAttachmentReviewUI):
         result = {}
 
         for comment in comments:
-            position = '%(x)sx%(y)s+%(width)s+%(height)s' % comment.extra_data
+            try:
+                position = '%(x)sx%(y)s+%(width)s+%(height)s' \
+                           % comment.extra_data
+            except KeyError:
+                # It's possible this comment was made before the review UI
+                # was provided, meaning it has no data. If this is the case,
+                # ignore this particular comment, since it doesn't have a
+                # region.
+                continue
 
             result.setdefault(position, []).append(
                 self.serialize_comment(comment))
