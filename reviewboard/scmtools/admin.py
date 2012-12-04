@@ -34,6 +34,12 @@ class RepositoryAdmin(admin.ModelAdmin):
             ),
             'classes': ('wide',),
         }),
+        (RepositoryForm.SSH_KEY_FIELDSET, {
+            'fields': (
+                'associate_ssh_key',
+            ),
+            'classes': ('wide',),
+        }),
         (RepositoryForm.BUG_TRACKER_FIELDSET, {
             'fields': (
                 'bug_tracker_use_hosting',

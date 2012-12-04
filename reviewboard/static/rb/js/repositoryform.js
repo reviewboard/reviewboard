@@ -130,6 +130,9 @@ $(document).ready(function() {
             .addClass('errornote')
             .hide()
             .appendTo(hostingAccountRowEl),
+        associateSshKeyFieldsetEl = $("#row-associate_ssh_key").parent("fieldset"),
+        associateSshKeyEl = $("#id_associate_ssh_key"),
+        associateSshKeyElDisabled = associateSshKeyEl[0].disabled,
         bugTrackerUseHostingEl = $("#id_bug_tracker_use_hosting"),
         bugTrackerTypeEl = $("#id_bug_tracker_type"),
         bugTrackerTypeRowEl = $("#row-bug_tracker_type"),
@@ -243,6 +246,20 @@ $(document).ready(function() {
                 bugTrackerUseHostingEl.triggerHandler("change");
             } else {
                 bugTrackerUseHostingEl[0].disabled = false;
+            }
+
+            if (hostingType === "custom" ||
+                !HOSTING_SERVICES[hostingType].supports_ssh_key_association) {
+                associateSshKeyFieldsetEl.hide();
+                associateSshKeyEl[0].disabled = true;
+                associateSshKeyEl[0].checked = false;
+            } else {
+                /*
+                 * Always use the original state of the checkbox (i.e. the
+                 * state on page load)
+                 */
+                associateSshKeyEl[0].disabled = associateSshKeyElDisabled;
+                associateSshKeyFieldsetEl.show();
             }
         })
         .triggerHandler("change");
