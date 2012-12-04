@@ -137,9 +137,12 @@ class PerforceClient(object):
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
         error = str(e)
+
         if 'Perforce password' in error or 'Password must be set' in error:
             raise AuthenticationError(msg=error)
-        elif 'check $P4PORT' in error:
+        elif ('check $P4PORT' in error or
+              (error.startswith('[P4.connect()] TCP connect to') and
+               'failed.' in error)):
             raise RepositoryNotFoundError
         else:
             raise SCMError(error)
