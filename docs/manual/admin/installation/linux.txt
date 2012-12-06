@@ -9,14 +9,13 @@ Installing on Linux
    both are pretty well supported.
 
    You can run Review Board inside a Linux virtual machine running on top
-   of `VMware ESXi`_ or `VMware Server`_.
+   of `VMware ESXi`_ or `VMware Workstation Server`_.
 
-   Alternatively, we can host your Review Board server at RBCommons_ for
-   a monthly fee.
+   Alternatively, we can host your Review Board server at RBCommons_.
 
 .. _`VMware ESXi`:
    http://www.vmware.com/products/vsphere-hypervisor/overview.html
-.. _`VMware Server`: http://www.vmware.com/products/server/overview.html
+.. _`VMware Workstation Server`: http://www.vmware.com/products/workstation/overview.html
 .. _RBCommons: http://www.rbcommons.com/
 
 
