@@ -12,6 +12,7 @@ Administration Guide
    optimization/index
    admin-ui/index
    configuration/index
+   extensions/index
    sites/index
 
 .. comment: vim: ft=rst et
