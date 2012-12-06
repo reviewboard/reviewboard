@@ -169,7 +169,8 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
         label=_("Domain name"),
         help_text=_("Enter the domain name to use, (ie. example.com). This will be "
                     "used to query for LDAP servers and to bind to the domain."),
-        required=True)
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ad_use_tls = forms.BooleanField(
         label=_("Use TLS for authentication"),
@@ -184,30 +185,35 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
         label=_("Domain controller"),
         help_text=_("If not using DNS to find the DC specify the domain "
                     "controller here"),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ad_ou_name = forms.CharField(
         label=_("OU name"),
         help_text=_("Optionally restrict users to specified OU."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ad_group_name = forms.CharField(
         label=_("Group name"),
         help_text=_("Optionally restrict users to specified group."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ad_search_root = forms.CharField(
         label=_("Custom search root"),
         help_text=_("Optionally specify a custom search root, overriding "
                     "the built-in computed search root. If set, \"OU name\" "
                     "is ignored."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ad_recursion_depth = forms.IntegerField(
         label=_("Recursion Depth"),
         help_text=_('Depth to recurse when checking group membership. '
                     '0 to turn off, -1 for unlimited.'),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     def load(self):
         can_enable_dns, reason = get_can_enable_dns()
@@ -256,12 +262,12 @@ class StandardAuthSettingsForm(SiteSettingsForm):
     recaptcha_public_key = forms.CharField(
         label=_('reCAPTCHA Public Key'),
         required=False,
-        widget=forms.TextInput(attrs={'size': '40'}))
+        widget=forms.TextInput(attrs={'size': '60'}))
 
     recaptcha_private_key = forms.CharField(
         label=_('reCAPTCHA Private Key'),
         required=False,
-        widget=forms.TextInput(attrs={'size': '40'}))
+        widget=forms.TextInput(attrs={'size': '60'}))
 
     def clean_recaptcha_public_key(self):
         """Validates that the reCAPTCHA public key is specified if needed."""
@@ -290,13 +296,15 @@ class LDAPSettingsForm(SiteSettingsForm):
     auth_ldap_uri = forms.CharField(
         label=_("LDAP Server"),
         help_text=_("The LDAP server to authenticate with. "
-                    "For example: ldap://localhost:389"))
+                    "For example: ldap://localhost:389"),
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_base_dn = forms.CharField(
         label=_("LDAP Base DN"),
         help_text=_("The LDAP Base DN for performing LDAP searches.  For "
                     "example: ou=users,dc=example,dc=com"),
-        required=True)
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_given_name_attribute = forms.CharField(
         label=_("Given Name Attribute"),
@@ -324,7 +332,8 @@ class LDAPSettingsForm(SiteSettingsForm):
         help_text=_("The domain name appended to the username to construct "
                     "the user's e-mail address. This takes precedence over "
                     '"E-Mail LDAP Attribute."'),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_email_attribute = forms.CharField(
         label=_("E-Mail LDAP Attribute"),
@@ -343,17 +352,19 @@ class LDAPSettingsForm(SiteSettingsForm):
                     "where the username would normally go. For example: "
                     "(uid=%(varname)s) or (sAMAccountName=%(varname)s) "
                     "[for active directory LDAP]") %
-                  {'varname': '%s'})
+                  {'varname': '%s'},
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_anon_bind_uid = forms.CharField(
         label=_("Anonymous User Mask"),
         help_text=_("The user mask string for anonymous users. If specified, "
                     "this should be in the same format as User Mask."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_ldap_anon_bind_passwd = forms.CharField(
         label=_("Anonymous User Password"),
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'size': '30'}),
         help_text=_("The optional password for the anonymous user."),
         required=False)
 
@@ -385,7 +396,8 @@ class LegacyAuthModuleSettingsForm(SiteSettingsForm):
     custom_backends = forms.CharField(
         label=_("Backends"),
         help_text=_('A comma-separated list of old-style custom auth '
-                    'backends. These are represented as Python module paths.'))
+                    'backends. These are represented as Python module paths.'),
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     def load(self):
         self.fields['custom_backends'].initial = \
@@ -405,7 +417,9 @@ class LegacyAuthModuleSettingsForm(SiteSettingsForm):
 
 
 class NISSettingsForm(SiteSettingsForm):
-    auth_nis_email_domain = forms.CharField(label=_("E-Mail Domain"))
+    auth_nis_email_domain = forms.CharField(
+        label=_("E-Mail Domain"),
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     class Meta:
         title = _('NIS Authentication Settings')
@@ -433,7 +447,8 @@ class X509SettingsForm(SiteSettingsForm):
                     "username, use this regex to get the username from an "
                     "e-mail address: '(\s+)@yoursite.com'. There must be only "
                     "one group in the regex."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     auth_x509_autocreate_users = forms.BooleanField(
         label=_("Automatically create new user accounts."),
