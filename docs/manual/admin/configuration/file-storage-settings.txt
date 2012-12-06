@@ -4,20 +4,16 @@
 File Storage Settings
 =====================
 
-The File Storage Settings allows you to customize where uploaded media files
-(such as screenshots) will be stored. By default, uploaded media is stored on
+The File Storage Settings allows you to customize where uploaded file
+attachments will be stored. By default, uploaded files are stored on
 the Review Board server, but it can be changed to store on `Amazon S3`_, a
 scalable file storage service provided by Amazon.
-
-.. note:: This is not used to store diff files or the database. In
-          Review Board 1.5, it is used only for uploaded screenshots, but in
-          future releases it may be used for additional types of files.
 
 .. _`Amazon S3`: http://aws.amazon.com/s3/
 
 
-File Storage Settings
-=====================
+General Settings
+================
 
 * **File storage method:**
     Allows you to choose how you want uploaded files. There are two options:

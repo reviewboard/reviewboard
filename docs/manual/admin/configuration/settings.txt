@@ -8,22 +8,26 @@ Review Board sites can be configured through the Settings portion of the
 :ref:`Administration UI <administration-ui>`. You'll generally need to make
 some changes in here before others use the site.
 
-Clicking on :guilabel:`Settings` anywhere in the
-:ref:`Administration UI <administration-ui>` will take you to the
-:ref:`general-settings` page. The navigation bar below the main administration
-navigation bar contains links for jumping to the other available settings
-pages, which consists of:
+The list of settings pages are available on the left-hand side panel of any
+page in the :ref:`Administration UI <administration-ui>` under
+:guilabel:`System Settings`.
+
+They include:
 
 .. toctree::
    :maxdepth: 1
 
-   general-settings
-   authentication-settings
-   email-settings
-   diffviewer-settings
-   logging-settings
-   ssh-settings
-   file-storage-settings
+   General <general-settings>
+   Authentication <authentication-settings>
+   E-Mail <email-settings>
+   Diff Viewer <diffviewer-settings>
+   Logging <logging-settings>
+   SSH <ssh-settings>
+   File Storage <file-storage-settings>
+
+
+You can also get an overview of a few key settings near the bottom of the side
+panel as well, under :guilabel:`System Information`.
 
 
 .. comment: vim: ft=rst et

@@ -55,6 +55,16 @@ General
 Advanced
 ========
 
+* **Max diff size:**
+    The maximum size of an uploaded diff (in bytes).
+
+    Any diffs larger than this will be rejected during upload. This can be
+    used to lighten the load on the server.
+
+    Specify 0 to allow diffs of any size.
+
+    This defaults to 0.
+
 * **Lines of Context:**
     The number of unchanged lines shown above and below changed lines.
 

@@ -8,6 +8,7 @@ The General Settings page contains most of the settings you'll want to change
 for a new site. It's split up into the following sections:
 
 * :ref:`site-settings`
+* :ref:`cache-settings`
 * :ref:`search-settings`
 
 
@@ -51,10 +52,41 @@ The following settings can be configured:
     The time zone where the server resides. All the timestamps shown for
     review requests will be based on this time zone.
 
-    It's important to note that changing the time zone will have no effect
-    on any existing review requests. It will only take effect for new
-    review requests. This is due to a limitation in how the timestamps are
-    stored, and is beyond our control.
+    New review requests created in Review Board 1.7 or higher will have
+    this timezone stored. Users will see the correct date and time in their
+    own timezone.
+
+
+.. _cache-settings:
+
+Cache Settings
+==============
+
+* **Cache Backend:**
+    The type of cache backend to use for your server.
+
+    We **strongly** recommend using Memcached.
+
+    Depending on the cache backend, other settings fields may be available.
+
+    Available options are:
+
+    * Memcached
+    * File cache
+
+* **Cache Hosts:**
+    The list of Memcached servers to use for all cache storage. More than
+    one server can be listed by seperating the servers with semicolons.
+
+    Servers should be in ``hostname:port`` format.
+
+    This is only shown if choosing "Memcached" as the cache backend.
+
+
+* **Cache Path:**
+    The file path on the server where Review Board can cache data.
+
+    This is only shown if choosing "File cache" as the cache backend.
 
 
 .. _search-settings:
