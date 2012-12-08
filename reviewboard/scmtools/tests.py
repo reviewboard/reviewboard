@@ -14,7 +14,11 @@ from djblets.util.filesystem import is_exe_in_path
 import nose
 try:
     imp.find_module("P4")
-    from P4 import P4Error
+
+    try:
+        from P4 import P4Error
+    except ImportError:
+        from P4 import P4Exception as P4Error
 except ImportError:
     pass
 

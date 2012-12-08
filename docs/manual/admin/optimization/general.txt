@@ -70,12 +70,8 @@ multiple machines, particularly if you need to increase your cache size but
 are limited by how much RAM you can put in each system.
 
 Review Board can be configured to provide a list of memcached servers.
-Simply edit your :file:`{sitedir}/conf/settings_local.py` file and specify
-the list of servers in ``CACHE_BACKEND``, like so::
-
-    CACHE_BACKEND = 'memcached://server1:11211;server2:11211/'
-
-Each server and port is separated by a semicolon.
+Simply change your :ref:`cache settings <cache-settings>` to specify a list
+of servers. For example, ``server1:11211;server2:11211``.
 
 
 Web Server
@@ -87,6 +83,19 @@ many diffs can be generated at once.
 
 Diff generation is performed on the web server, and will therefore be scaled
 out along with the web server.
+
+.. note::
+
+   If you want to scale out your web server, be aware of a couple important
+   changes you need to make to your configuration.
+
+   You will need to make sure your :file:`{sitedir}/htdocs/media/` directory
+   is shared across all web server instances, or that you're using Amazon S3
+   for your media.
+
+   You will also need to ensure that your :file:`{sitedir}/data/` directory
+   is shared across all instances. This is mainly due to each server needing
+   access to your SSH keys.
 
 
 .. comment: vim: ft=rst et

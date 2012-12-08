@@ -9,14 +9,13 @@ Installing on Linux
    both are pretty well supported.
 
    You can run Review Board inside a Linux virtual machine running on top
-   of `VMware ESXi`_ or `VMware Server`_.
+   of `VMware ESXi`_ or `VMware Workstation Server`_.
 
-   Alternatively, we can host your Review Board server at RBCommons_ for
-   a monthly fee.
+   Alternatively, we can host your Review Board server at RBCommons_.
 
 .. _`VMware ESXi`:
    http://www.vmware.com/products/vsphere-hypervisor/overview.html
-.. _`VMware Server`: http://www.vmware.com/products/server/overview.html
+.. _`VMware Workstation Server`: http://www.vmware.com/products/workstation/overview.html
 .. _RBCommons: http://www.rbcommons.com/
 
 
@@ -220,27 +219,6 @@ PostgreSQL
 To install, type::
 
     $ easy_install psycopg2
-
-
-SQLite
-------
-
-.. note:: If you have Python 2.5 or higher, you already have SQLite and won't
-          need to install this.
-
-To install, type::
-
-    $ easy_install pysqlite
-
-Distributions may provide native packages.
-
-To install on Debian_ or Ubuntu_, type::
-
-    $ apt-get install python-sqlite2
-
-To install on Fedora_ type::
-
-    $ yum install py-pysqlite2
 
 
 Installing Source Control Components
