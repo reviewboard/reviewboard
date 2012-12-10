@@ -2,11 +2,11 @@
 Editing Fields
 ==============
 
-Updating review requests is very much like
-:ref:`creating review requests <creating-review-requests>`. Once you have
-a review request out there, you can upload a new diff, add new screenshots,
-or modify the fields. Any changes you make will be seen by you only until you
-:ref:`publish the changes <publishing-review-requests>`.
+Updating review requests is very much like :ref:`creating review requests
+<creating-review-requests>`. Once you have a review request out there, you can
+upload a new diff, add new file attachments, or modify the fields. Any changes
+you make will be seen by you only until you :ref:`publish the changes
+<publishing-review-requests>`.
 
 
 Changing Fields

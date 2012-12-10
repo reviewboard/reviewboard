@@ -19,14 +19,13 @@ These comments apply to file attachments as a whole. See
 
 There are two ways to upload a file attachment:
 
-1. Click :guilabel:`Add File` on the action bar, browse for the
+1. Click :menuselection:`Update -->Add File` on the action bar, browse for the
    file to upload, and optionally enter a caption for the file.
 
 2. Drag the file from your file manager into the review request.
 
    When dragging over the browser window, a black overlay will appear,
-   showing you where to drop the screenshot to upload it. You also have
-   the option of :ref:`uploading a screenshot <uploading-screenshots>`.
+   showing you where to drop the file to upload it.
 
    When you drop the file, the overlay will disappear and the file will
    upload.

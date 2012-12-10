@@ -9,7 +9,6 @@ Working with Review Requests
    fields
    uploading-diffs
    uploading-files
-   uploading-screenshots
    publishing
    closing
 
