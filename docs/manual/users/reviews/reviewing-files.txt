@@ -6,17 +6,19 @@ Reviewing File Attachments
 
 .. versionadded:: 1.6
 
-Reviewers can add comments to file attachments as a whole. Review Board
-doesn't provide any special UI for reviewing the contents of file attachments,
-but it does allow you to download the file and, separately, add a comment on
-the file.
+File attachments can be reviewed using Review Board. Some file types, such as
+images, have special interfaces for doing reviews.
+
+To learn how to review image files, read ref:`Reviewing Images <reviewing-images>`.
+
+For other files, reviewers can download the files, and add comments to the
+attachment as a whole.
 
 .. image:: ../review-requests/file-attachment.png
 
 The file attachment box provides a :guilabel:`Add Comment` button. Clicking
 this button pops up a comment dialog that works exactly like the dialog you
-get when :doc:`reviewing diffs <reviewing-diffs>` or
-:doc:`reviewing screenshots <reviewing-screenshots>`.
+get when :doc:`reviewing diffs <reviewing-diffs>`.
 
 .. image:: comment-box.png
 

@@ -7,7 +7,7 @@ Reviewing
 
    reviewing-diffs
    reviewing-files
-   reviewing-screenshots
+   reviewing-images
    issue-tracking
    draft-banner
    editing-reviews

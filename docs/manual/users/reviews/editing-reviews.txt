@@ -5,9 +5,9 @@ Creating and Editing Reviews
 Creating Reviews
 ================
 
-Adding comments on diffs, screenshots or file attachments will immediately
-create a new review if one doesn't already exist. Once a review is created,
-a :ref:`review draft banner <review-draft-banner>` will show on the page.
+Adding comments on diffs or file attachments will immediately create a new
+review if one doesn't already exist. Once a review is created, a :ref:`review
+draft banner <review-draft-banner>` will show on the page.
 
 Blank reviews can also be created without having to first add a comment.
 This can be useful if you have a generic comment about the change, rather

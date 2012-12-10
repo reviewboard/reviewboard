@@ -420,7 +420,6 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'title':   _('General'),
                 'fields':  ('auth_anonymous_access',
                             'auth_backend'),
             },
@@ -442,18 +441,22 @@ class EMailSettingsForm(SiteSettingsForm):
         help_text=_('The e-mail address that all e-mails will be sent from. '
                     'The "Sender" header will be used to make e-mails appear '
                     'to come from the user triggering the e-mail.'),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '50'}))
     mail_host = forms.CharField(
         label=_("Mail Server"),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '50'}))
     mail_port = forms.IntegerField(
         label=_("Port"),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '5'}))
     mail_host_user = forms.CharField(
         label=_("Username"),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
     mail_host_password = forms.CharField(
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'size': '30'}),
         label=_("Password"),
         required=False)
     mail_use_tls = forms.BooleanField(
@@ -481,7 +484,8 @@ class DiffSettingsForm(SiteSettingsForm):
         label=_("Syntax highlighting threshold"),
         help_text=_("Files with lines greater than this number will not have "
                     "syntax highlighting.  Enter 0 for no limit."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '5'}))
 
     diffviewer_show_trailing_whitespace = forms.BooleanField(
         label=_("Show trailing whitespace"),
@@ -495,30 +499,35 @@ class DiffSettingsForm(SiteSettingsForm):
         required=False,
         help_text=_("A comma-separated list of file patterns for which all "
                     "whitespace changes should be shown. "
-                    "(e.g., \"*.py, *.txt\")"))
+                    "(e.g., \"*.py, *.txt\")"),
+        widget=forms.TextInput(attrs={'size': '60'}))
 
     diffviewer_context_num_lines = forms.IntegerField(
         label=_("Lines of Context"),
         help_text=_("The number of unchanged lines shown above and below "
                     "changed lines."),
-        initial=5)
+        initial=5,
+        widget=forms.TextInput(attrs={'size': '5'}))
 
     diffviewer_paginate_by = forms.IntegerField(
         label=_("Paginate by"),
         help_text=_("The number of files to display per page in the diff "
                     "viewer."),
-        initial=20)
+        initial=20,
+        widget=forms.TextInput(attrs={'size': '5'}))
 
     diffviewer_paginate_orphans = forms.IntegerField(
         label=_("Paginate orphans"),
         help_text=_("The number of extra files required before adding another "
                     "page to the diff viewer."),
-        initial=10)
+        initial=10,
+        widget=forms.TextInput(attrs={'size': '5'}))
 
     diffviewer_max_diff_size = forms.IntegerField(
-        label=_('Max diff size'),
+        label=_('Max diff size (bytes)'),
         help_text=_('The maximum size (in bytes) for any given diff. Enter 0 '
-                    'to disable size restrictions.'))
+                    'to disable size restrictions.'),
+        widget=forms.TextInput(attrs={'size': '15'}))
 
     def load(self):
         # TODO: Move this check into a dependencies module so we can catch it
@@ -548,7 +557,6 @@ class DiffSettingsForm(SiteSettingsForm):
         save_blacklist = ('include_space_patterns',)
         fieldsets = (
             {
-                'title': _("General"),
                 'classes': ('wide',),
                 'fields': ('diffviewer_syntax_highlighting',
                            'diffviewer_syntax_highlighting_threshold',
@@ -584,7 +592,8 @@ class LoggingSettingsForm(SiteSettingsForm):
         label=_("Log directory"),
         help_text=_("The directory where log files will be stored. This must "
                     "be writable by the web server."),
-        required=False)
+        required=False,
+        widget=forms.TextInput(attrs={'size': '60'}))
 
     logging_allow_profiling = forms.BooleanField(
         label=_("Allow code profiling"),
@@ -621,7 +630,6 @@ class LoggingSettingsForm(SiteSettingsForm):
         title = _("Logging Settings")
         fieldsets = (
             {
-                'title':   _('General'),
                 'classes': ('wide',),
                 'fields':  ('logging_enabled',
                             'logging_directory'),
@@ -693,18 +701,21 @@ class StorageSettingsForm(SiteSettingsForm):
         label=_('Amazon AWS access key'),
         help_text=_('Your Amazon AWS access key ID. This can be found in '
                     'the "Security Credentials" section of the AWS site.'),
-        required=True)
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     aws_secret_access_key = forms.CharField(
         label=_('Amazon AWS secret access key'),
         help_text=_('Your Amazon AWS secret access ID. This can be found in '
                     'the "Security Credentials" section of the AWS site.'),
-        required=True)
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     aws_s3_bucket_name = forms.CharField(
         label=_('S3 bucket name'),
         help_text=_('Bucket name inside Amazon S3.'),
-        required=True)
+        required=True,
+        widget=forms.TextInput(attrs={'size': '40'}))
 
     aws_calling_format = forms.ChoiceField(
         label=_('Amazon AWS calling format'),
@@ -785,7 +796,6 @@ class StorageSettingsForm(SiteSettingsForm):
         fieldsets = (
             {
                 'classes': ('wide',),
-                'title':   _('File Storage Settings'),
                 'fields':  ('storage_backend',),
             },
             {

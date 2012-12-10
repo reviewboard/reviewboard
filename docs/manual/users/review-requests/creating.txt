@@ -5,8 +5,8 @@ Creating Review Requests
 ========================
 
 A review request consists of, at a minimum, a summary, a description, and some
-reviewers. A review request usually has a diff, but it isn't required, as the
-review request may be used for screenshot review purposes only.
+reviewers. A review request usually has a diff, but it can be useful to have
+review requests that only have file attachments.
 
 There are two main ways of submitting a new review request: through the
 web UI and through :ref:`post-review`. We recommend the latter when posting
@@ -21,7 +21,7 @@ To post a review request through the web UI, click
 :guilabel:`New Review Request` in the upper-left of a page. This will take
 you to a form where you can create your review request. What information you
 provide depends on whether you're posting a diff for review, or intending to
-post screenshots for review.
+post file attachments for review.
 
 Once you've filled out all fields, click :guilabel:`Submit` to post the
 review request.
@@ -73,14 +73,14 @@ may become available. Here are some fields you may encounter.
   administrator if you have problems.
 
 
-Review Requests for Screenshots Only
-------------------------------------
+Review Requests for File Attachments Only
+-----------------------------------------
 
-If you're intending to post a review request only for screenshot review,
-you will want to change the :guilabel:`Repository` to
-:guilabel:`(None - Graphics only)`. You will not be able to add any diffs
-to this review request, but after creating it, you will be able to add
-screenshots.
+If you're intending to post a review request only for reviewing file
+attachments, you will want to change the :guilabel:`Repository` to
+:guilabel:`(None - File Attachments only)`. You will not be able to add any
+diffs to this review request, but after creating it, you will be able to add
+attachments.
 
 No other fields will need to be provided when using this option.
 
@@ -98,9 +98,13 @@ on your repository type, the tool you used to post the review request, and
 any defaults your administrator has set up for the reviewers (see
 :ref:`managing-default-reviewers` if you're the administrator).
 
-You can also add screenshots or preview your diff by clicking :guilabel:`View
-Diff` in the review request action bar (in the top-right of the review
-request), or replace it if the diff wasn't correct.
+File attachments can be added with the :menuselection:`Update --> Add File` menu
+item or by dragging and dropping files onto the page in the browser.
+
+You can preview your diff by clicking :guilabel:`View Diff` in the review
+request action bar (in the top-right of the review request). Uploading a new
+diff (either using the :menuselection:`Update --> Update Diff` menu item or with
+:ref:`post-review`) before publishing will replace the diff.
 
 When you're finished, click :guilabel:`Publish Review Request` in the green
 draft banner above the review request. You can also choose to discard the
