@@ -260,10 +260,11 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         self.fields['auth_backend'].choices = backend_choices
 
     def load(self):
+        super(AuthenticationSettingsForm, self).load()
+
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get("auth_require_sitewide_login")
 
-        super(AuthenticationSettingsForm, self).load()
 
     def save(self):
         self.siteconfig.set("auth_require_sitewide_login",
