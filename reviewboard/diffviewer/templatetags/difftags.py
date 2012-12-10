@@ -278,10 +278,10 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
         else:
             show_collapse = (i == 0 and standalone)
 
-        if not is_delete and len(line1) < STYLED_MAX_LINE_LEN:
+        if not is_insert and len(line1) < STYLED_MAX_LINE_LEN:
             line1 = showextrawhitespace(line1)
 
-        if not is_insert and len(line2) < STYLED_MAX_LINE_LEN:
+        if not is_delete and len(line2) < STYLED_MAX_LINE_LEN:
             line2 = showextrawhitespace(line2)
 
         moved_from = {}
