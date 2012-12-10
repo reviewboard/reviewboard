@@ -424,10 +424,10 @@ class DiffSettingsForm(SiteSettingsForm):
             self.disabled_fields['diffviewer_syntax_highlighting_threshold'] = True
             self.disabled_reasons['diffviewer_syntax_highlighting_threshold'] = _(reason)
 
+        super(DiffSettingsForm, self).load()
         self.fields['include_space_patterns'].initial = \
             ', '.join(self.siteconfig.get('diffviewer_include_space_patterns'))
 
-        super(DiffSettingsForm, self).load()
 
     def save(self):
         self.siteconfig.set('diffviewer_include_space_patterns',
