@@ -21,7 +21,7 @@ class Tool(models.Model):
     supports_authentication = property(
         lambda x: x.scmtool_class.supports_authentication)
     supports_raw_file_urls = property(
-        lambda x: x.get_scmtool_class.supports_raw_file_urls)
+        lambda x: x.scmtool_class.supports_raw_file_urls)
     field_help_text = property(
         lambda x: x.scmtool_class.field_help_text)
 
