@@ -131,13 +131,15 @@
       </a>
 {% if draft and comment.file_attachment.draft_caption %}
       <p class="caption">{{comment.file_attachment.draft_caption}}</p>
-{% else %}
-{%  if comment.file_attachment.caption %}
+{% elif comment.file_attachment.caption %}
       <p class="caption">{{comment.file_attachment.caption}}</p>
-{%  endif %}
 {% endif %}
 {% endspaceless %}</a>
-      </span>
+{% with comment.thumbnail as thumbnail %}
+{%  if thumbnail %}
+	  <div class="thumbnail">{{thumbnail|default:''|safe}}</div>
+{%  endif %}
+{% endwith %}
      </div>
     </dt>
     <dd>

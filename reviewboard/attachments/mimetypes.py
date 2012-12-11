@@ -133,6 +133,9 @@ class MimetypeHandler(object):
     @classmethod
     def for_type(cls, attachment):
         """Returns the handler that is the best fit for provided mimetype."""
+        if not attachment.mimetype:
+            return None
+
         mimetype = mimeparse.parse_mime_type(attachment.mimetype)
 
         # Override the mimetype if mimeparse is known to misinterpret this
