@@ -28,10 +28,10 @@ class Gitorious(HostingService):
         'Git': {
             'path': 'git://gitorious.org/%(gitorious_project_name)s/'
                     '%(gitorious_repo_name)s.git',
-            'mirror_path': 'http://git.gitorious.org/'
+            'mirror_path': 'https://gitorious.org/'
                            '%(gitorious_project_name)s/'
                            '%(gitorious_repo_name)s.git',
-            'raw_file_url': 'http://git.gitorious.org/'
+            'raw_file_url': 'https://gitorious.org/'
                             '%(gitorious_project_name)s/'
                             '%(gitorious_repo_name)s/blobs/raw/<revision>'
         },
