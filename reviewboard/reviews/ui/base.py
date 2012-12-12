@@ -68,6 +68,15 @@ class ReviewUI(object):
 
         return self.obj.caption
 
+    def get_comment_thumbnail(self, comment):
+        """Returns the thumbnail (as HTML) for a comment.
+
+        If this ReviewUI can render comments with a contextual thumbnail,
+        it should return HTML representing that comment. Otherwise, return
+        None in order to use the fallback.
+        """
+        return None
+
     def get_extra_context(self, request):
         return {}
 
@@ -155,15 +164,16 @@ class FileAttachmentReviewUI(ReviewUI):
     @classmethod
     def for_type(cls, attachment):
         """Returns the handler that is the best fit for provided mimetype."""
-        mimetype = mimeparse.parse_mime_type(attachment.mimetype)
-        score, handler = cls.get_best_handler(mimetype)
+        if attachment.mimetype:
+            mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+            score, handler = cls.get_best_handler(mimetype)
 
-        if handler:
-            try:
-                return handler(attachment.get_review_request(), attachment)
-            except Exception, e:
-                logging.error('Unable to load review UI for %s: %s',
-                              attachment, e, exc_info=1)
+            if handler:
+                try:
+                    return handler(attachment.get_review_request(), attachment)
+                except Exception, e:
+                    logging.error('Unable to load review UI for %s: %s',
+                                  attachment, e, exc_info=1)
 
         return None
 

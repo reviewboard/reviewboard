@@ -1516,6 +1516,15 @@ class FileAttachmentComment(BaseComment):
                                         related_name="comments")
     extra_data = JSONField(null=True)
 
+    @property
+    def thumbnail(self):
+        """Returns the thumbnail for this comment, if any, as HTML.
+
+        The thumbnail will be generated from the appropriate ReviewUI,
+        if there is one for this type of file.
+        """
+        return self.file_attachment.review_ui.get_comment_thumbnail(self)
+
     def get_file(self):
         """
         Generates the file referenced by this

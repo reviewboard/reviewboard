@@ -569,8 +569,6 @@ $.fn.diffFile = function(lines, key) {
          * @param {jQuery} row  The row to add to the selection.
          */
         function addRowToSelection(row) {
-            row.css("cursor", "pointer");
-
             if (selection.begin != null) {
                 /* We have an active selection. */
                 var linenum = parseInt(row.attr("line"), 10);
