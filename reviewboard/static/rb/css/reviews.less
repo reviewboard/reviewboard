@@ -340,7 +340,9 @@
 .box {
   &.collapsed {
     .collapse-button {
-      background: url('../images/expand.png') no-repeat;
+      .ui-collapse-icon {
+        background-image: url('../images/expand-review.png');
+      }
     }
 
     .body {
@@ -353,12 +355,17 @@
   }
 
   .collapse-button {
-    background: url('../images/collapse.png') no-repeat;
+    border: 1px #333333 solid;
     cursor: pointer;
     float: left;
-    height: 18px;
-    width: 18px;
-    padding-right: 7px;
+    margin-right: 0.5em;
+    padding: 0;
+
+    .ui-collapse-icon {
+      background: url('../images/collapse-review.png') no-repeat;
+      width: 18px;
+      height: 18px;
+    }
   }
 }
 
