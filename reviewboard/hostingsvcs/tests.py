@@ -453,9 +453,9 @@ class GitoriousTests(ServiceTests):
         self.assertEqual(fields['path'],
                          'git://gitorious.org/myproj/myrepo.git')
         self.assertEqual(fields['mirror_path'],
-                         'http://git.gitorious.org/myproj/myrepo.git')
+                         'https://gitorious.org/myproj/myrepo.git')
         self.assertEqual(fields['raw_file_url'],
-                         'http://git.gitorious.org/myproj/myrepo/blobs/raw/'
+                         'https://gitorious.org/myproj/myrepo/blobs/raw/'
                          '<revision>')
 
 
