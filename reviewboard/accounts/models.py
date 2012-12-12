@@ -225,3 +225,4 @@ def _is_user_profile_visible(self, user=None):
         return True
 
 User.is_profile_visible = _is_user_profile_visible
+User._meta.ordering = ('username',)
