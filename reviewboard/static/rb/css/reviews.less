@@ -187,16 +187,26 @@
   }
 
   #summary_wrapper {
-    margin-right: 10em;
+    @line-height: 2.6em;
+
+    height: @line-height;
+    line-height: @line-height;
     padding: 0;
 
+    label, #summary {
+      font-size: 14px;
+    }
+
     label {
-      font-size: 130%;
+      margin-right: 0.5em;
+    }
+
+    img {
+      vertical-align: middle;
     }
 
     #summary {
       display: inline;
-      font-size: 130%;
 
       a {
         color: black;
@@ -211,6 +221,10 @@
     float: right;
     width: 100%;
     .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+
+    .star {
+      margin: 3px 0 0 3px;
+    }
   }
 
   .actions {

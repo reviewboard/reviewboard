@@ -1,6 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load djblets_deco %}
-{% load i18n %}
+{% load djblets_deco i18n reviewtags %}
 
 {% block jsconsts %}
 {{block.super}}
@@ -10,6 +9,7 @@
 {% block content %}
 {%  box "review-request"%}
 <div class="actions-container">
+ {% star review_request %}
  <ul class="actions">
 {%   include "reviews/review_request_actions_secondary.html" %}
 {%   if has_diffs %}
