@@ -219,7 +219,7 @@ class NewReviewRequestForm(forms.Form):
                 review_request.status = 'P'
                 review_request.public = False
 
-            review_request.save()
+            review_request.save(update_counts=True)
 
         if diff_file:
             diff_form = UploadDiffForm(
