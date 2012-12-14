@@ -28,7 +28,7 @@
  </div>
  <div class="form-row">
   <label class="required">{% trans "Public key:" %}</label>
-  <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{public_key}}</textarea>
+  <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{key.get_name}} {{public_key}}</textarea>
  </div>
 </fieldset>
 {% else %}

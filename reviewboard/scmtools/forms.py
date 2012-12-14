@@ -260,8 +260,12 @@ class RepositoryForm(forms.ModelForm):
         # Get the current SSH public key that would be used for repositories,
         # if one has been created.
         self.ssh_client = SSHClient(namespace=self.local_site_name)
-        self.public_key = self.ssh_client.get_public_key(
-            self.ssh_client.get_user_key())
+        ssh_key = self.ssh_client.get_user_key()
+        self.public_key = self.ssh_client.get_public_key(ssh_key)
+        self.public_key_str = '%s %s' % (
+            ssh_key.get_name(),
+            ''.join(str(self.public_key).splitlines())
+        )
 
         # If no SSH key has been created, disable the key association field.
         if not self.public_key:

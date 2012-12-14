@@ -59,6 +59,7 @@
 
 {% box "review-request" %}
 <div class="actions-container">
+ {% star review_request %}
  <ul class="actions">
 {% include "reviews/review_request_actions_secondary.html" %}
 {% diffviewer_action_hooks %}

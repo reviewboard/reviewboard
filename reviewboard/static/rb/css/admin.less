@@ -790,13 +790,15 @@ td, th {
  ***************************************************************************/
 #ssh-public-key-popup {
   display: none;
-  margin: 1em;
 
   textarea {
     background: #FFFDC9;
     border: 0;
     margin: 0;
-    padding: 0;
+    padding: 1em;
+    width: 100%;
+    .box-sizing(border-box);
+    resize: none;
   }
 }
 
@@ -903,14 +905,11 @@ td, th {
   }
 }
 
-.confirmation {
-  border: 1px solid #FFBD09;
+.change-form fieldset.confirmation {
+  border-bottom: 1px solid #FFBD09;
   color: black;
   display: block;
-  margin: 1em 0;
-  padding: 0 1em;
   background: #FFFDC9;
-  .border-radius(10px);
 
   a, a:visited {
     color: blue;

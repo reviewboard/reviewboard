@@ -6,8 +6,7 @@
 {% include "reviews/review_request_dlgs.html" %}
 
  <div class="header">
-  {% star review_request %}
-  <div id="summary_wrapper"><label>{% trans "Summary" %}: </label><h1 id="summary" class="editable required">{{review_request_details.summary|escape}}</h1></div>
+  <div id="summary_wrapper"><label for="summary">{% trans "Summary" %}:</label><h1 id="summary" class="editable required">{{review_request_details.summary|escape}}</h1></div>
   <p id="status">
   {% with review_request_details.time_added|date as dateadded and review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw %}
   {% blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}

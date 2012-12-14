@@ -1,16 +1,16 @@
 {% load djblets_utils %}
 {% load i18n %}
 
-<div class="confirmation" id="ssh-public-key-popup">
- <p><label class="required">{% trans "SSH Public Key:" %}</label></p>
- <textarea cols="65" rows="11" readonly="readonly" class="public-key">{{form.public_key}}</textarea>
-</div>
+<fieldset class="module confirmation" id="ssh-public-key-popup">
+ <h2>{% trans "SSH Public Key:" %}</h2>
+ <textarea cols="65" rows="10" readonly="readonly" class="public-key">{{form.public_key_str}}</textarea>
+</fieldset>
 
 {%  with form.hostkeyerror as hostkeyerror %}
 {%  with form.certerror as certerror %}
 {%  with form.certerror.certificate as certificate %}
 {%   if hostkeyerror or certerror %}
-<div class="confirmation">
+<fieldset class="module confirmation">
 
 {%   if hostkeyerror %}
  {{hostkeyerror|paragraphs}}
@@ -53,7 +53,7 @@
   <input type="submit" name="trust_host" value="{% trans "I trust this host" %}" />
   <input type="submit" name="reedit_repository" value="{% trans "Re-edit repository" %}" />
  </div>
-</div>
+</fieldset>
 {%   endif %}
 {%  endwith %}
 {%  endwith %}
@@ -61,7 +61,7 @@
 
 {%  with form.userkeyerror as userkeyerror %}
 {%   if userkeyerror %}
-<div class="confirmation">
+<fieldset class="module confirmation">
 {{userkeyerror|paragraphs}}
 
 {% url settings-ssh as ssh_settings_url %}
@@ -70,6 +70,6 @@
  <a href="{{ssh_settings_url}}" target="ssh_settings">create one</a>, add it to the server,
  and then try again.
 {% endblocktrans %}</p>
-</div>
+</fieldset>
 {%   endif %}
 {%  endwith %}
