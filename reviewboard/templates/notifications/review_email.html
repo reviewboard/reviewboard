@@ -25,6 +25,16 @@
 <br />
 {% endfor %}
 
+{% for comment in review.file_attachment_comments.all %}
+<table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
+ <tr>
+  <td><a href="{{domain_method}}://{{domain}}{{comment.file_attachment.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.file_attachment.caption|default:comment.file_attachment.filename}}</a></td>
+ </tr>
+</table>
+<pre style="margin-left: 2em; {{precss}}">{{comment.text}}</pre>
+<br />
+{% endfor %}
+
 {% for entry in comment_entries %}
 <div>
 {{entry.html|safe}}
