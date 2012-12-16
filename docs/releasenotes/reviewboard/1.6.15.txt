@@ -1,0 +1,62 @@
+=================================
+Review Board 1.6.15 Release Notes
+=================================
+
+**Release date**: December 16, 2012
+
+
+Upgrade Notes
+=============
+
+* To upgrade to this release, make sure you specify the version when running
+  :command:`easy_install`. For example::
+
+      sudo easy_install ReviewBoard==1.6.15
+
+  Otherwise, you will end up with a 1.7.x release.
+
+
+New Features
+============
+
+* Added support for p4api 12.2. This won't break existing setups, but new
+  users who install the P4PythonInstaller package will use the new support.
+  This allows Perforce support on MacOS X.
+
+
+Bug Fixes
+=========
+
+* Fixed stale caching of issue statuses in review requests. (:bug:`2645`)
+
+* Fixed a bug that caused counts in the dashboard to be incorrect.
+
+* The "Raw file URL mask" field for Git repositories wasn't displaying
+  anymore. Patch by Lance Chen. (:bug:`2822`)
+
+* Fixed the URLs for settings pages on the sidebar in the administration
+  UI when on a subdirectory install.
+
+* Fixed the display of extra whitespace in the diff viewer.
+
+* Fixed default raw paths for Gitorious repositories to accomodate their
+  latest URLs.
+
+* Some settings in the administration UI weren't showing the correct values,
+  due to a load order issue. Patch by Raja Venkataraman.
+  (:bug:`2814`, :bug:`2787`)
+
+* Fixed a broken link in the site installer. Patch by Manu Cupcic.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Lance Chen
+* Manu Cupcic
+* Raja Venkataraman
+
+
+.. comment: vim: ft=rst et
