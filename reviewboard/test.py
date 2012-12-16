@@ -105,6 +105,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
 
     def _setup_media_dirs(self):
         settings.MEDIA_ROOT = tempfile.mkdtemp(prefix='rb-tests-')
+        self.media_root = settings.MEDIA_ROOT
 
         if os.path.exists(settings.MEDIA_ROOT):
             self._destroy_media_dirs()
@@ -149,7 +150,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         generate_media_serial()
 
     def _destroy_media_dirs(self):
-        for root, dirs, files in os.walk(settings.MEDIA_ROOT, topdown=False):
+        for root, dirs, files in os.walk(self.media_root, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
 
@@ -161,4 +162,4 @@ class RBTestRunner(DjangoTestSuiteRunner):
                 else:
                     os.rmdir(path)
 
-        os.rmdir(settings.MEDIA_ROOT)
+        os.rmdir(self.media_root)
