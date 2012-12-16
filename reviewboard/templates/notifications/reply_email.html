@@ -29,6 +29,35 @@
 <br />
 {% endif %}
 
+{% for comment in reply.file_attachment_comments.all %}
+<blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
+  {# Prevents a display glitch on the table in Outlook 2007 #}
+  <br style="display: none;" />
+
+  <table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
+   <tr>
+    <td><a href="{{domain_method}}://{{domain}}{{comment.file_attachment.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.file_attachment.caption|default:comment.file_attachment.filename}}</a></td>
+   </tr>
+  </table>
+  <pre style="{{precss}}">{{comment.reply_to.text}}</pre>
+ </blockquote>
+{%  for reply_comment in comment.reply_to.public_replies %}
+{%   if reply_comment.text %}
+{%    if reply_comment != comment %}
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
+  <pre style="{{precss}}">{{reply_comment.text}}</pre>
+ </blockquote>
+{%    endif %}
+{%   endif %}
+{%  endfor %}
+</blockquote>
+<pre style="margin-left: 1em; {{precss}}">{{comment.text}}</pre>
+<br />
+{% endfor %}
+
 {% for comment in reply.screenshot_comments.all %}
 <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>

@@ -81,6 +81,17 @@
 <p><a href="{{domain_method}}://{{domain}}{% url view_diff review_request.display_id %}" style="margin-left: 3em;">View Diff</a></p>
 
 
+{% if review_request.file_attachments.count %}
+<h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">File Attachments {% if changes and changes.files %}(updated){% endif %}</h1>
+
+<ul>
+{% for file in review_request.file_attachments.all %}
+ <li><a href="{{domain_method}}://{{domain}}{{file.get_absolute_url}}">{{file.caption|default:file.filename}}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+
+
 {% if review_request.screenshots.count %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Screenshots {% if changes and changes.screenshots %}(updated){% endif %}</h1>
 

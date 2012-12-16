@@ -8,7 +8,12 @@ Ship it!
 {% endif %}
 {% if review.body_top %}
 {{ review.body_top }}
-{% endif %}{% for comment in review.screenshot_comments.all %}
+{% endif %}{% for comment in review.file_attachment_comments.all %}
+
+File Attachment: {{comment.file_attachment.caption|default:comment.file_attachment.filename}}
+<{{domain_method}}://{{domain}}/{{comment.get_review_url}}>
+{{comment.text|indent}}
+{% endfor %}{% for comment in review.screenshot_comments.all %}
 
 Screenshot: {{ comment.screenshot.caption }}
 <{{domain_method}}://{{domain}}/{{comment.get_review_url}}>

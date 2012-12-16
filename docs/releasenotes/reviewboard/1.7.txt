@@ -2,11 +2,11 @@
 Review Board 1.7 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: December 15, 2012
 
 
 This release contains all bug fixes and features found in
-Review Board version :doc:`1.6.14 <1.6.14>`.
+Review Board version :doc:`1.6.15 <1.6.15>`.
 
 
 New User Features
@@ -171,6 +171,13 @@ Some of the main settings are also listed on the side, for quick reference.
 This was based on work done by Vlad Filippov.
 
 
+Improved Cache Settings
+-----------------------
+
+The server-side cache settings is now easier to configure, and doesn't require
+obscure cache backend URI knowledge.
+
+
 Usability Improvements
 ======================
 
@@ -183,6 +190,9 @@ General
   all gravatars will load as higher-resolution images.
 
   We'll be making Retina versions of all our artwork over time.
+
+* Many of the form fields throughout the UI have grown wider to make it
+  easier to see all available text.
 
 
 Review Requests
@@ -365,6 +375,10 @@ General Interface
 * Removed parenthesis in the user autocompletion and quick search lists
   when the user doesn't have a name listed. Patch by Crystal Lok Koo.
 
+* Text fields (for Description/Testing Done/Add Comment) are now guaranteed
+  to use monospaced text. This was a problem in some configurations,
+  particularly on MacOS X.
+
 
 User Profiles
 -------------
@@ -391,6 +405,9 @@ File Attachments
 
 * File attachment comments are no longer missing from the review box.
   Patch by Bogdana Popa.
+
+* File attachments and comments now show up in e-mails. They were previously
+  missing.
 
 
 Review Requests
@@ -445,9 +462,6 @@ Extensions
 Administration UI
 -----------------
 
-* The Request Statuses widget in the admin UI no longer overlaps other
-  widgets.
-
 * The Server setting in General Settings no longer appears blank.
   (:bug:`2757`)
 
@@ -456,6 +470,9 @@ Administration UI
 * Removed the "View On Site" link in the admin UI. (:bug:`2099`)
 
   This never did the right thing and only confused users.
+
+* User lists in the administration UI are now sorted by username instead of
+  ID.
 
 
 Compatibilty Changes
@@ -470,6 +487,9 @@ User-Facing Changes
   in the diffs. We now support this format if encountered.
 
   Patch by Rodrigo Castro.
+
+* Added support for newer versions of p4api. We now support 12.2, which
+  P4PythonInstaller will soon use by default.
 
 * Dropped Internet Explorer 6 and 7 as officially supported browsers.
 
@@ -515,10 +535,10 @@ Server-Side Changes
 Changes since 1.7 RC 1
 ======================
 
-General
--------
+New Features
+------------
 
-* Tweaked the styling of file attachment thumbnails.
+* Added the cache backend selector in General Settings.
 
 
 Web API Changes
@@ -530,11 +550,56 @@ Web API Changes
   resource.
 
 
+Usability Improvements
+----------------------
+
+* Many of the form fields throughout the UI have grown wider to make it
+  easier to see all available text.
+
+* Switched to a standardized button style throughout the UI.
+
+
+Extensions
+----------
+
+* All extensions must accept variable arguments (``*args, **kwargs``)
+  in their ``__init__`` method and pass them down to ``Extension.__init__``.
+
+* Review UIs can be provided by extensions now by using ReviewUIHook.
+  Patch by Sampson Chen.
+
+* Review UIs can be provided by extensions now by using
+  FileAttachmentThumbnailHook. Patch by Sampson Chen.
+
+
 Bug Fixes
 ---------
 
-* Fixed the URLs for settings pages on the sidebar in the administration
-  UI when on a subdirectory install.
+* Uploaded file attachments now have the appropriate Review/Add Comment link,
+  depending on the file type.
+
+* Fixed some styling issues with the administration UI.
+
+* Fixed some styling issues with file attachment thumbnails.
+
+* Fixed problems with linkifying text in review request descriptions
+  when using ``&`` in the URL. Patch by Emil Stanchev.
+
+* Draft captions are now shown in the review UIs.
+
+* Comments on images that predate review UIs no longer break on load.
+
+* Fixed a font selection problem with Description/Testing fields on
+  MacOS X.
+
+* Review UI pages no longer show :guilabel:`Download Diff` if there's no
+  diff to download. Patch by Michelle Chuang.
+
+* Comments on file attachments now show the appropriate section of the
+  file that was commented on, instead of just the filename.
+
+* We no longer absolutely rely on the browser to know the type of uploaded
+  files. If it doesn't know, we determine it on the system.
 
 
 Contributors
@@ -548,11 +613,14 @@ Contributors
 * Curtis Miller
 * Dave Druska
 * David Trowbridge
+* Emil Stanchev
 * Jacob Farkas
 * Jim Chen
+* John Sintal
 * Kahlil Almani
 * Karl Leuschen
 * Kevin Quinn
+* Michelle Chuang
 * Mike Conley
 * Rodrigo Castro
 * Sampson Chen
