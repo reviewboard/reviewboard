@@ -4,13 +4,13 @@
 #
 #   (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #
-VERSION = (1, 7, 0, 0, 'final', 0, True)
+VERSION = (1, 7, 0, 1, 'final', 0, True)
 
 
 def get_version_string():
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
-    if VERSION[2]:
+    if VERSION[2] or VERSION[3]:
         version += ".%s" % VERSION[2]
 
     if VERSION[3]:
@@ -31,7 +31,7 @@ def get_version_string():
 def get_package_version():
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
-    if VERSION[2]:
+    if VERSION[2] or VERSION[3]:
         version += ".%s" % VERSION[2]
 
     if VERSION[3]:
