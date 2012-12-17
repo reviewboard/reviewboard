@@ -245,11 +245,16 @@ class RepositoryForm(forms.ModelForm):
         # if one has been created.
         self.ssh_client = SSHClient(namespace=self.local_site_name)
         ssh_key = self.ssh_client.get_user_key()
-        self.public_key = self.ssh_client.get_public_key(ssh_key)
-        self.public_key_str = '%s %s' % (
-            ssh_key.get_name(),
-            ''.join(str(self.public_key).splitlines())
-        )
+
+        if ssh_key:
+            self.public_key = self.ssh_client.get_public_key(ssh_key)
+            self.public_key_str = '%s %s' % (
+                ssh_key.get_name(),
+                ''.join(str(self.public_key).splitlines())
+            )
+        else:
+            self.public_key = None
+            self.public_key_str = ''
 
         if self.instance:
             self._populate_hosting_service_fields()
