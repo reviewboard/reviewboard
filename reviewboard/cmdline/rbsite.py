@@ -1770,13 +1770,21 @@ class UpgradeCommand(Command):
 
         if options.upgrade_db:
             print "Updating database. This may take a while."
+            print
+            print "The log output below, including warnings and errors,"
+            print "can be ignored unless upgrade fails."
+            print
+            print "------------------ <begin log output> ------------------"
             site.sync_database()
             site.migrate_database()
+            print "------------------- <end log output> -------------------"
+            print
 
             print "Resetting in-database caches."
             site.run_manage_command("fixreviewcounts")
 
-        print "Upgrade complete."
+        print
+        print "Upgrade complete!"
 
         if not data_dir_exists:
             # This is an upgrade of a site that pre-dates the new $HOME
