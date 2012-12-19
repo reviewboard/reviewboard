@@ -90,10 +90,10 @@ class FileAttachmentThumbnailHook(ExtensionHook):
        *
           Subclass
           :py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`
-       * 
+       *
           Define a list of file mimetypes it can handle in a class variable
           called `supported_mimetypes`
-       * 
+       *
           Define how to generate a thumbnail of that mimetype by overriding
           the instance function `def get_thumbnail(self):`
 
