@@ -389,12 +389,20 @@ class Site(object):
         try:
             import settings_local
 
-            return (hasattr(settings_local, 'DATABASE_ENGINE') or
-                    hasattr(settings_local, 'CACHE_BACKEND'))
+            if (hasattr(settings_local, 'DATABASE_ENGINE') or
+                hasattr(settings_local, 'CACHE_BACKEND')):
+                return True
+
+            if hasattr(settings_local, 'DATABASES'):
+                engine = settings_local.DATABASES['default']['ENGINE']
+
+                if not engine.startswith('django.db.backends'):
+                    return True
         except ImportError:
             sys.stderr.write("Unable to import settings_local. "
                              "Cannot determine if upgrade is needed.\n")
-            return False
+
+        return False
 
     def upgrade_settings(self):
         """Performs a settings upgrade."""
@@ -417,7 +425,8 @@ class Site(object):
 
                 # Don't convert anything other than the ones we know about,
                 # or third parties with custom databases may have problems.
-                if engine in ('sqlite3', 'mysql', 'postgresql'):
+                if engine in ('sqlite3', 'mysql', 'postgresql',
+                              'postgresql_psycopg2'):
                     engine = 'django.db.backends.' + engine
 
                 database_info['ENGINE'] = engine
@@ -428,6 +437,12 @@ class Site(object):
                                                      'DATABASE_%s' % key, '')
 
                 perform_upgrade = True
+
+            if hasattr(settings_local, 'DATABASES'):
+                engine = settings_local.DATABASES['default']['ENGINE']
+
+                if engine == 'postgresql_psycopg2':
+                    perform_upgrade = True
 
             if hasattr(settings_local, 'CACHE_BACKEND'):
                 try:
@@ -474,6 +489,9 @@ class Site(object):
                     buf.append("        'LOCATION': '%s',\n" % backend_info[1])
                     buf.append("    },\n")
                     buf.append("}\n")
+            elif line.strip().startswith("'ENGINE': 'postgresql_psycopg2'"):
+                buf.append("        'ENGINE': '"
+                           "django.db.backends.postgresql_psycopg2',\n")
             else:
                 buf.append(line)
 
@@ -482,6 +500,12 @@ class Site(object):
         fp = open(settings_file, 'w')
         fp.writelines(buf)
         fp.close()
+
+        # Reload the settings module
+        del sys.modules['settings_local']
+        del sys.modules['reviewboard.settings']
+        import django.conf
+        django.conf.settings = django.conf.LazySettings()
 
     def create_admin_user(self):
         """
