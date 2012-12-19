@@ -811,7 +811,7 @@ class ConsoleUI(UIToolkit):
 
         setattr(save_obj, save_var, choice)
 
-    def text(self, page, text, leading_newline=True):
+    def text(self, page, text, leading_newline=True, wrap=True):
         """
         Displays a block of text to the user.
 
@@ -823,7 +823,10 @@ class ConsoleUI(UIToolkit):
         if leading_newline:
             print
 
-        print self.text_wrapper.fill(text)
+        if wrap:
+            print self.text_wrapper.fill(text)
+        else:
+            print '    %s' % text
 
     def disclaimer(self, page, text):
         self.text(page, 'NOTE: %s' % text)
@@ -832,7 +835,7 @@ class ConsoleUI(UIToolkit):
         """
         Displays a URL to the user.
         """
-        self.text(page, url)
+        self.text(page, url, wrap=False)
 
     def itemized_list(self, page, title, items):
         """
@@ -1791,13 +1794,27 @@ class UpgradeCommand(Command):
             print
             print "For Apache, you will need to add:"
             print
+            print "    <Location \"%sstatic\">" % settings.SITE_ROOT
+            print "        SetHandler None"
+            print "    </Location>"
+            print
             print "    Alias %sstatic \"%s\"" % (settings.SITE_ROOT,
                                                  static_dir)
             print
-            print "For lighttpd, add the following to alias.url:"
+            print "For lighttpd:"
             print
-            print "    \"%sstatic\" => \"%s\"" % (settings.SITE_ROOT,
-                                                  static_dir)
+            print "    alias.url = ("
+            print "        ..."
+            print "        \"%sstatic\" => \"%s\"," % (settings.SITE_ROOT,
+                                                       static_dir)
+            print "        ..."
+            print "    )"
+            print
+            print "    url.rewrite-once = ("
+            print "        ..."
+            print "        \"^(%sstatic/.*)$\" => \"$1\"," % settings.SITE_ROOT
+            print "        ..."
+            print "    )"
             print
             print "Once you have made these changes, type the following "
             print "to resolve this:"

@@ -7,28 +7,39 @@
   You will need to make manual changes to your web server configuration.
 {% endblocktrans %}
  </p>
+ <h2>{% trans "Apache" %}</h2>
+ <pre>
+  Alias {{SITE_ROOT}}static "{{STATIC_ROOT}}"
+
+  &lt;Location "{{SITE_ROOT}}static"&gt;
+      SetHandler None
+  &lt;/Location&gt;
+</pre>
+ <p>
+ <h2>{% trans "lighttpd" %}</h2>
  <p>
 {% blocktrans %}
-  For Apache, you will need to add:
+  Add the following to <tt>alias.url</tt>:
 {% endblocktrans %}
  </p>
  <pre>
-  $ Alias {{SITE_ROOT}}static "{{STATIC_ROOT}}"
+  "{{SITE_ROOT}}static" =&gt; "{{STATIC_ROOT}}",
 </pre>
-<p>
+ <p>
 {% blocktrans %}
-  For lighttpd, add the following to <tt>alias.url</tt>:
+  And this to <tt>url.rewrite-once</tt>:
 {% endblocktrans %}
  </p>
  <pre>
-  $ "{{SITE_ROOT}}static" =&gt; "{{STATIC_ROOT}}"
+  "^({{SITE_ROOT}}static/.*)$" =&gt; "$1",
 </pre>
 <p>
 {% blocktrans %}
   These lines will look similar to the existing lines for the media files.
 {% endblocktrans %}
  </p>
-<p>
+ <h2>{% trans "Finishing up" %}</h2>
+ <p>
 {% blocktrans %}
   Once you have made these changes, type the following to resolve this:
 {% endblocktrans %}
