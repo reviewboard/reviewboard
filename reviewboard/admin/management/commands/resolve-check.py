@@ -17,12 +17,15 @@ class Command(BaseCommand):
         siteconfig = SiteConfiguration.objects.get_current()
         updates = siteconfig.settings.get('manual-updates', {})
 
-        if check_name in updates and not updates[check_name]:
+        if check_name not in updates:
+            sys.stderr.write("Couldn't find manual update check '%s'\n" %
+                             check_name)
+            sys.exit(1)
+
+        if updates[check_name]:
+            print "Already resolved manual update check '%s'" % check_name
+        else:
             updates[check_name] = True
             siteconfig.save()
 
             print "Resolved manual update check '%s'" % check_name
-        else:
-            sys.stderr.write("Couldn't find manual update check '%s'\n" %
-                             check_name)
-            sys.exit(1)

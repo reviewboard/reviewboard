@@ -389,12 +389,20 @@ class Site(object):
         try:
             import settings_local
 
-            return (hasattr(settings_local, 'DATABASE_ENGINE') or
-                    hasattr(settings_local, 'CACHE_BACKEND'))
+            if (hasattr(settings_local, 'DATABASE_ENGINE') or
+                hasattr(settings_local, 'CACHE_BACKEND')):
+                return True
+
+            if hasattr(settings_local, 'DATABASES'):
+                engine = settings_local.DATABASES['default']['ENGINE']
+
+                if not engine.startswith('django.db.backends'):
+                    return True
         except ImportError:
             sys.stderr.write("Unable to import settings_local. "
                              "Cannot determine if upgrade is needed.\n")
-            return False
+
+        return False
 
     def upgrade_settings(self):
         """Performs a settings upgrade."""
@@ -417,7 +425,8 @@ class Site(object):
 
                 # Don't convert anything other than the ones we know about,
                 # or third parties with custom databases may have problems.
-                if engine in ('sqlite3', 'mysql', 'postgresql'):
+                if engine in ('sqlite3', 'mysql', 'postgresql',
+                              'postgresql_psycopg2'):
                     engine = 'django.db.backends.' + engine
 
                 database_info['ENGINE'] = engine
@@ -428,6 +437,12 @@ class Site(object):
                                                      'DATABASE_%s' % key, '')
 
                 perform_upgrade = True
+
+            if hasattr(settings_local, 'DATABASES'):
+                engine = settings_local.DATABASES['default']['ENGINE']
+
+                if engine == 'postgresql_psycopg2':
+                    perform_upgrade = True
 
             if hasattr(settings_local, 'CACHE_BACKEND'):
                 try:
@@ -474,6 +489,9 @@ class Site(object):
                     buf.append("        'LOCATION': '%s',\n" % backend_info[1])
                     buf.append("    },\n")
                     buf.append("}\n")
+            elif line.strip().startswith("'ENGINE': 'postgresql_psycopg2'"):
+                buf.append("        'ENGINE': '"
+                           "django.db.backends.postgresql_psycopg2',\n")
             else:
                 buf.append(line)
 
@@ -482,6 +500,12 @@ class Site(object):
         fp = open(settings_file, 'w')
         fp.writelines(buf)
         fp.close()
+
+        # Reload the settings module
+        del sys.modules['settings_local']
+        del sys.modules['reviewboard.settings']
+        import django.conf
+        django.conf.settings = django.conf.LazySettings()
 
     def create_admin_user(self):
         """
@@ -811,7 +835,7 @@ class ConsoleUI(UIToolkit):
 
         setattr(save_obj, save_var, choice)
 
-    def text(self, page, text, leading_newline=True):
+    def text(self, page, text, leading_newline=True, wrap=True):
         """
         Displays a block of text to the user.
 
@@ -823,7 +847,10 @@ class ConsoleUI(UIToolkit):
         if leading_newline:
             print
 
-        print self.text_wrapper.fill(text)
+        if wrap:
+            print self.text_wrapper.fill(text)
+        else:
+            print '    %s' % text
 
     def disclaimer(self, page, text):
         self.text(page, 'NOTE: %s' % text)
@@ -832,7 +859,7 @@ class ConsoleUI(UIToolkit):
         """
         Displays a URL to the user.
         """
-        self.text(page, url)
+        self.text(page, url, wrap=False)
 
     def itemized_list(self, page, title, items):
         """
@@ -1743,13 +1770,21 @@ class UpgradeCommand(Command):
 
         if options.upgrade_db:
             print "Updating database. This may take a while."
+            print
+            print "The log output below, including warnings and errors,"
+            print "can be ignored unless upgrade fails."
+            print
+            print "------------------ <begin log output> ------------------"
             site.sync_database()
             site.migrate_database()
+            print "------------------- <end log output> -------------------"
+            print
 
             print "Resetting in-database caches."
             site.run_manage_command("fixreviewcounts")
 
-        print "Upgrade complete."
+        print
+        print "Upgrade complete!"
 
         if not data_dir_exists:
             # This is an upgrade of a site that pre-dates the new $HOME
@@ -1791,13 +1826,27 @@ class UpgradeCommand(Command):
             print
             print "For Apache, you will need to add:"
             print
+            print "    <Location \"%sstatic\">" % settings.SITE_ROOT
+            print "        SetHandler None"
+            print "    </Location>"
+            print
             print "    Alias %sstatic \"%s\"" % (settings.SITE_ROOT,
                                                  static_dir)
             print
-            print "For lighttpd, add the following to alias.url:"
+            print "For lighttpd:"
             print
-            print "    \"%sstatic\" => \"%s\"" % (settings.SITE_ROOT,
-                                                  static_dir)
+            print "    alias.url = ("
+            print "        ..."
+            print "        \"%sstatic\" => \"%s\"," % (settings.SITE_ROOT,
+                                                       static_dir)
+            print "        ..."
+            print "    )"
+            print
+            print "    url.rewrite-once = ("
+            print "        ..."
+            print "        \"^(%sstatic/.*)$\" => \"$1\"," % settings.SITE_ROOT
+            print "        ..."
+            print "    )"
             print
             print "Once you have made these changes, type the following "
             print "to resolve this:"
