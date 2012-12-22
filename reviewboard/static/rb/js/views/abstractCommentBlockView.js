@@ -42,7 +42,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * be displayed.
      */
     positionCommentDlg: function(commentDlg) {
-        commentDlg.positionToSide(this.$el, {
+        commentDlg.positionBeside(this.$el, {
             side: 'r',
             fitOnScreen: true
         });

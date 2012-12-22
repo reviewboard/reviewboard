@@ -73,7 +73,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 },
                 function() {
                     if (self._$selectionRect.is(':hidden') &&
-                        self.commentDlg.is(':hidden')) {
+                        !self.commentDlg) {
                         self._$selectionArea.hide();
                     }
                 })
@@ -100,7 +100,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      */
     _onMouseDown: function(evt) {
         if (evt.which === 1 &&
-            this.commentDlg.is(':hidden') &&
+            !this.commentDlg &&
             !$(evt.target).hasClass('selection-flag')) {
             var offset = this._$selectionArea.offset();
 
@@ -117,7 +117,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 .show();
 
             if (this._$selectionRect.is(':hidden')) {
-                this.commentDlg.hide();
+                this.commentDlg.close();
             }
 
             return false;
@@ -131,7 +131,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      * comment dialog.
      */
     _onMouseUp: function(evt) {
-        if (this.commentDlg.is(':hidden') &&
+        if (!this.commentDlg &&
             this._$selectionRect.is(":visible")) {
             var width = this._$selectionRect.width(),
                 height = this._$selectionRect.height(),
@@ -163,8 +163,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      * size/position of the block.
      */
     _onMouseMove: function(evt) {
-        if (this.commentDlg.is(':hidden') &&
-            this._$selectionRect.is(":visible")) {
+        if (!this.commentDlg && this._$selectionRect.is(":visible")) {
             var offset = this._$selectionArea.offset(),
                 x = evt.pageX - Math.floor(offset.left) - 1,
                 y = evt.pageY - Math.floor(offset.top) - 1;

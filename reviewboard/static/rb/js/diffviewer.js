@@ -272,24 +272,16 @@ $.extend(DiffCommentBlock.prototype, {
      * Shows the comment dialog.
      */
     showCommentDlg: function() {
-        var self = this;
+        this._createDraftComment();
 
-        gCommentDlg
-            .one("close", function() {
-                self._createDraftComment();
-
-                gCommentDlg
-                    .setDraftComment(self.draftComment)
-                    .setCommentsList(self.comments, "diff_comments")
-                    .css({
-                        left: $(document).scrollLeft() +
-                              ($(window).width() - gCommentDlg.width()) / 2,
-                        top:  self.endRow.offset().top +
-                              self.endRow.height()
-                    })
-                    .open(self.el);
-            })
-            .close();
+        RB.CommentDialogView.create({
+            comment: this.draftComment,
+            publishedComments: this.comments,
+            publishedCommentsType: 'diff_comments',
+            position: {
+                y: this.endRow.offset().top + this.endRow.height()
+            }
+        });
     },
 
     _createDraftComment: function(id, text) {

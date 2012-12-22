@@ -282,7 +282,9 @@ PIPELINE_JS = {
         'source_filenames': (
             'lib/js/jasmine-1.3.1.js',
             'lib/js/jasmine-html-1.3.1.js',
+            'rb/js/models/tests/commentEditorModelTests.js',
             'rb/js/utils/tests/propertyUtilsTests.js',
+            'rb/js/views/tests/commentDialogViewTests.js',
         ),
         'output_filename': 'rb/js/js-tests.min.js',
     },
@@ -301,6 +303,7 @@ PIPELINE_JS = {
             # Note: These are roughly in dependency order.
             'rb/js/models/abstractCommentBlockModel.js',
             'rb/js/models/abstractReviewableModel.js',
+            'rb/js/models/commentEditorModel.js',
             'rb/js/models/commentIssueManagerModel.js',
             'rb/js/models/fileAttachmentCommentBlockModel.js',
             'rb/js/models/fileAttachmentReviewableModel.js',
@@ -310,6 +313,7 @@ PIPELINE_JS = {
             'rb/js/models/screenshotReviewableModel.js',
             'rb/js/views/abstractCommentBlockView.js',
             'rb/js/views/abstractReviewableView.js',
+            'rb/js/views/commentDialogView.js',
             'rb/js/views/fileAttachmentCommentBlockView.js',
             'rb/js/views/fileAttachmentReviewableView.js',
             'rb/js/views/issueSummaryTableView.js',

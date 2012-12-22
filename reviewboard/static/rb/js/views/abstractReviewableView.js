@@ -23,7 +23,7 @@ RB.AbstractReviewableView = Backbone.View.extend({
         console.assert(this.commentsListName,
                        'commentsListName must be defined by the subclass');
 
-        this.commentDlg = gCommentDlg;
+        this.commentDlg = null;
     },
 
     /*
@@ -68,20 +68,22 @@ RB.AbstractReviewableView = Backbone.View.extend({
      * Shows the comment details dialog for a comment block.
      */
     showCommentDlg: function(commentBlockView) {
-        this.commentDlg
-            .one('close', _.bind(function() {
-                var commentBlock = commentBlockView.model;
+        var commentBlock = commentBlockView.model;
 
-                commentBlock.ensureDraftComment();
+        commentBlock.ensureDraftComment();
 
-                this.commentDlg
-                    .setDraftComment(commentBlock.get('draftComment'))
-                    .setCommentsList(commentBlock.get('serializedComments'),
-                                     this.commentsListName);
-                commentBlockView.positionCommentDlg(this.commentDlg);
-                this.commentDlg.open();
-            }, this))
-            .close();
+        this.commentDlg = RB.CommentDialogView.create({
+            comment: commentBlock.get('draftComment'),
+            publishedComments: commentBlock.get('serializedComments'),
+            publishedCommentsType: this.commentsListName,
+            position: function(dlg) {
+                commentBlockView.positionCommentDlg(dlg);
+            }
+        });
+
+        this.commentDlg.on('closed', function() {
+            this.commentDlg = null;
+        }, this);
     },
 
     /*

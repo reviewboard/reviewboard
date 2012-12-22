@@ -7,8 +7,26 @@
 {%  compressed_css "js-tests" %}
 {% endblock %}
 
+{% block jsconsts %}
+{{block.super}}
+  /* XXX Ideally, these should all be optional. */
+  var gBugTrackerURL = '',
+      gEditable = false,
+      gOpenAnIssue = true,
+      gReviewPending = false,
+      gReviewRequestId = 1,
+      gReviewRequestPath = "{{SITE_ROOT}}/r/1/",
+      gReviewRequestSitePrefix = "{{SITE_ROOT}}",
+      gReviewRequestSummary = '',
+      gUserURL = "{{SITE_ROOT}}/users/test/";
+{% endblock %}
+
 {% block scripts-post %}
+{%  include "reviews/comments_dlg.html" %}
+
+{%  compressed_js "reviews" %}
 {%  compressed_js "js-tests" %}
+
 <script type="text/javascript">
 $(document).ready(function() {
     var jasmineEnv = jasmine.getEnv(),
@@ -17,6 +35,29 @@ $(document).ready(function() {
     jasmineEnv.specFilter = function(spec) {
         return htmlReporter.specFilter(spec);
     };
+
+    window.$testsScratch = $("<div id='tests-scratch'/>")
+        .width(1)
+        .height(1)
+        .move(-10000, -10000, 'absolute')
+        .appendTo(document.body);
+
+    beforeEach(function() {
+        /*
+         * Capture all assertions, so we can sanely inspect them.
+         * We don't want to call the original version, though, or we'll
+         * possibly get errors in the console.
+         */
+        spyOn(console, 'assert').andCallFake(function(condition, msg) {
+            if (!condition) {
+                throw Error(msg);
+            }
+        });
+    });
+
+    afterEach(function() {
+        $testsScratch.empty();
+    });
 
     jasmineEnv.addReporter(htmlReporter);
     jasmineEnv.execute();

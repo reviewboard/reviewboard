@@ -16,11 +16,11 @@ RB.DiffComment = function(review, id, filediff, interfilediff, beginLineNum,
 };
 
 $.extend(RB.DiffComment.prototype, {
-    ready: function(on_ready) {
+    ready: function(on_ready, context) {
         if (this.loaded) {
-            on_ready.apply(this, arguments);
+            on_ready.call(context);
         } else {
-            this._load(on_ready);
+            this._load(on_ready, context);
         }
     },
 
@@ -126,17 +126,17 @@ $.extend(RB.DiffComment.prototype, {
         $.event.trigger("destroyed", null, this);
     },
 
-    _load: function(on_done) {
+    _load: function(on_done, context) {
         var self = this;
 
         if (!self.id) {
-            on_done.apply(this, arguments);
+            on_done.call(context);
             return;
         }
 
         self.review.ready(function() {
             if (!self.review.loaded) {
-                on_done.apply(this, arguments);
+                on_done.call(context);
                 return;
             }
 
@@ -148,7 +148,7 @@ $.extend(RB.DiffComment.prototype, {
                         self._loadDataFromResponse(rsp);
                     }
 
-                    on_done.apply(this, arguments);
+                    on_done.call(context);
                 }
             });
         });
@@ -1524,11 +1524,11 @@ RB.ScreenshotComment = function(review, id, screenshot_id, x, y, width,
 };
 
 $.extend(RB.ScreenshotComment.prototype, {
-    ready: function(on_ready) {
+    ready: function(on_ready, context) {
         if (this.loaded) {
-            on_ready.apply(this, arguments);
+            on_ready.call(context);
         } else {
-            this._load(on_ready);
+            this._load(on_ready, context);
         }
     },
 
@@ -1625,17 +1625,17 @@ $.extend(RB.ScreenshotComment.prototype, {
         $.event.trigger("destroyed", null, this);
     },
 
-    _load: function(on_done) {
+    _load: function(on_done, context) {
         var self = this;
 
         if (!self.id) {
-            on_done.apply(this, arguments);
+            on_done.call(context);
             return;
         }
 
         self.review.ready(function() {
             if (!self.review.loaded) {
-                on_done.apply(this, arguments);
+                on_done.call(context);
                 return;
             }
 
@@ -1648,7 +1648,7 @@ $.extend(RB.ScreenshotComment.prototype, {
                         self._loadDataFromResponse(rsp);
                     }
 
-                    on_done.apply(this, arguments);
+                    on_done.call(context);
                 }
             });
         });
@@ -1685,11 +1685,11 @@ RB.FileAttachmentComment = function(review, id, file_attachment_id) {
 };
 
 $.extend(RB.FileAttachmentComment.prototype, {
-    ready: function(on_ready) {
+    ready: function(on_ready, context) {
         if (this.loaded) {
-            on_ready.apply(this, arguments);
+            on_ready.call(context);
         } else {
-            this._load(on_ready);
+            this._load(on_ready, context);
         }
     },
 
@@ -1798,17 +1798,17 @@ $.extend(RB.FileAttachmentComment.prototype, {
         $.event.trigger("destroyed", null, this);
     },
 
-    _load: function(on_done) {
+    _load: function(on_done, context) {
         var self = this;
 
         if (!self.id) {
-            on_done.apply(this, arguments);
+            on_done.call(context);
             return;
         }
 
         self.review.ready(function() {
             if (!self.review.loaded) {
-                on_done.apply(this, arguments);
+                on_done.call(context);
                 return;
             }
 
@@ -1821,7 +1821,7 @@ $.extend(RB.FileAttachmentComment.prototype, {
                         self._loadDataFromResponse(rsp);
                     }
 
-                    on_done.apply(this, arguments);
+                    on_done.call(context);
                 }
             });
         });

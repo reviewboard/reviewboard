@@ -42,7 +42,7 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      * Positions the comment dlg to the side of the flag.
      */
     positionCommentDlg: function(commentDlg) {
-        commentDlg.positionToSide(this._$flag, {
+        commentDlg.positionBeside(this._$flag, {
             side: 'b',
             fitOnScreen: true
         });
