@@ -278,6 +278,13 @@ PIPELINE_JS = {
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },
+    'js-tests': {
+        'source_filenames': (
+            'lib/js/jasmine-1.3.1.js',
+            'lib/js/jasmine-html-1.3.1.js',
+        ),
+        'output_filename': 'rb/js/js-tests.min.js',
+    },
     'common': {
         'source_filenames': (
             'rb/js/utils/backboneUtils.js',
@@ -336,6 +343,13 @@ PIPELINE_CSS = {
             'rb/css/search.less',
         ),
         'output_filename': 'rb/css/common.min.css',
+        'absolute_paths': False,
+    },
+    'js-tests': {
+        'source_filenames': (
+            'rb/css/js-tests.less',
+        ),
+        'output_filename': 'rb/css/js-tests.min.css',
         'absolute_paths': False,
     },
     'reviews': {
