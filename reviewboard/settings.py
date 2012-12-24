@@ -282,12 +282,14 @@ PIPELINE_JS = {
         'source_filenames': (
             'lib/js/jasmine-1.3.1.js',
             'lib/js/jasmine-html-1.3.1.js',
+            'rb/js/utils/tests/propertyUtilsTests.js',
         ),
         'output_filename': 'rb/js/js-tests.min.js',
     },
     'common': {
         'source_filenames': (
             'rb/js/utils/backboneUtils.js',
+            'rb/js/utils/propertyUtils.js',
             'rb/js/common.js',
             'rb/js/datastore.js',
         ),
