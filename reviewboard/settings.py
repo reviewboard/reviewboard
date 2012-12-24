@@ -291,6 +291,7 @@ PIPELINE_JS = {
             # Note: These are roughly in dependency order.
             'rb/js/models/abstractCommentBlockModel.js',
             'rb/js/models/abstractReviewableModel.js',
+            'rb/js/models/commentIssueManagerModel.js',
             'rb/js/models/fileAttachmentCommentBlockModel.js',
             'rb/js/models/fileAttachmentReviewableModel.js',
             'rb/js/models/regionCommentBlockModel.js',
@@ -301,6 +302,7 @@ PIPELINE_JS = {
             'rb/js/views/abstractReviewableView.js',
             'rb/js/views/fileAttachmentCommentBlockView.js',
             'rb/js/views/fileAttachmentReviewableView.js',
+            'rb/js/views/issueSummaryTableView.js',
             'rb/js/views/regionCommentBlockView.js',
             'rb/js/views/imageReviewableView.js',
             'rb/js/diffviewer.js',
