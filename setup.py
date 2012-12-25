@@ -25,6 +25,18 @@ from distutils.core import Command
 from reviewboard import get_package_version, is_release, VERSION
 
 
+# Make sure this is a version of Python we are compatible with. This should
+# prevent people on older versions from unintentionally trying to install
+# the source tarball, and failing.
+if sys.hexversion < 0x02050000:
+    sys.stderr.write('Review Board %s is incompatible with your version of '
+                     'Python.\n' % get_package_version())
+    sys.stderr.write('Please install Review Board 1.6.x, or '
+                     'upgrade\n')
+    sys.stderr.write('Python to a newer 2.x version (preferably 2.7).\n')
+    sys.exit(1)
+
+
 # Make sure we're actually in the directory containing setup.py.
 root_dir = os.path.dirname(__file__)
 
