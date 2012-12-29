@@ -414,7 +414,7 @@ class PerforceTool(SCMTool):
 
 
 class PerforceDiffParser(DiffParser):
-    SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD])== (.*) ====$")
+    SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$")
 
     def __init__(self, data):
         DiffParser.__init__(self, data)
@@ -434,8 +434,12 @@ class PerforceDiffParser(DiffParser):
                 info['binary'] = True
                 linenum += 1
 
-            if m.group(3) == 'D':
+            change_type = m.group(3)
+
+            if change_type == 'D':
                 info['deleted'] = True
+            elif change_type == 'MV':
+                info['moved'] = True
 
             # In this case, this *is* our diff header. We don't want to
             # let the next line's real diff header be a part of this one,
@@ -443,3 +447,15 @@ class PerforceDiffParser(DiffParser):
             return linenum
 
         return super(PerforceDiffParser, self).parse_diff_header(linenum, info)
+
+    def parse_special_header(self, linenum, info):
+        linenum = super(PerforceDiffParser, self).parse_special_header(
+            linenum, info)
+
+        if (linenum + 2 < len(self.lines) and
+            self.lines[linenum].startswith('Moved from:') and
+            self.lines[linenum + 1].startswith('Moved to:')):
+            info['moved'] = True
+            linenum += 2
+
+        return linenum

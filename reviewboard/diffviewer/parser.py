@@ -98,6 +98,7 @@ class DiffParser(object):
             file = File()
             file.binary   = info.get('binary', False)
             file.deleted  = info.get('deleted', False)
+            file.moved    = info.get('moved', False)
             file.origFile = info.get('origFile')
             file.newFile  = info.get('newFile')
             file.origInfo = info.get('origInfo')
