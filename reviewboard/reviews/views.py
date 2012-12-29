@@ -776,7 +776,7 @@ def all_review_requests(request,
                                      status=None,
                                      local_site=local_site,
                                      with_counts=True),
-        _("All review requests"),
+        _("All Review Requests"),
         local_site=local_site)
     return datagrid.render_to_response(template_name)
 
