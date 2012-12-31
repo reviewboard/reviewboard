@@ -1628,7 +1628,6 @@ class InstallCommand(Command):
 
         ui.prompt_input(page, "Cache Directory",
                         site.cache_info or "/tmp/reviewboard_cache",
-                        normalize_func=lambda value: "file://" + value,
                         save_obj=site, save_var="cache_info")
 
     def ask_web_server_type(self):
