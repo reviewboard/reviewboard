@@ -4,6 +4,7 @@ from django.conf import settings
 from django.conf.urls.defaults import patterns, include, url
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.views.generic import TemplateView
 
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.webapi.resources import root_resource
@@ -63,6 +64,11 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
     urlpatterns += static(settings.MEDIA_URL,
                           document_root=settings.MEDIA_ROOT,
                           show_indexes=True)
+
+    urlpatterns += patterns('',
+        url(r'^js-tests/$',
+            TemplateView.as_view(template_name='js/tests.html')),
+    )
 
 localsite_urlpatterns = patterns('',
     url(r'^$', 'django.views.generic.simple.redirect_to',

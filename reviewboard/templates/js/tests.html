@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load compressed %}
+
+{% block title %}JavaScript Unit Tests{% endblock %}
+
+{% block css %}
+{%  compressed_css "js-tests" %}
+{% endblock %}
+
+{% block scripts-post %}
+{%  compressed_js "js-tests" %}
+<script type="text/javascript">
+$(document).ready(function() {
+    var jasmineEnv = jasmine.getEnv(),
+        htmlReporter = new jasmine.HtmlReporter();
+
+    jasmineEnv.specFilter = function(spec) {
+        return htmlReporter.specFilter(spec);
+    };
+
+    jasmineEnv.addReporter(htmlReporter);
+    jasmineEnv.execute();
+});
+</script>
+{% endblock %}

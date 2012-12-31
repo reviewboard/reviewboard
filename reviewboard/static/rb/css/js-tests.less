@@ -1,0 +1,258 @@
+#page-container {
+  display: none;
+}
+
+#HTMLReporter {
+  font-size: 11px;
+  font-family: Monaco, "Lucida Console", monospace;
+  line-height: 14px;
+  color: #333333;
+  margin: 1em;
+
+  &.showDetails {
+    #details {
+      display: block;
+    }
+
+    .detailsMenuItem {
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    .summaryMenuItem {
+      font-weight: normal;
+      text-decoration: inherit;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    .summary {
+      display: none;
+    }
+  }
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  p, h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    line-height: 14px;
+  }
+
+  #details {
+    display: none;
+
+    .specDetail {
+      margin-bottom: 28px;
+
+      .description {
+        display: block;
+        color: white;
+        background-color: #b03911;
+      }
+    }
+  }
+
+  #jasmine_content {
+    position: fixed;
+    right: 100%;
+  }
+
+  .banner,
+  .symbolSummary,
+  .summary,
+  .resultMessage,
+  .specDetail .description,
+  .alert .bar,
+  .stackTrace {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .version {
+    color: #666666;
+  }
+
+  .banner {
+    margin-top: 14px;
+  }
+
+  .duration {
+    color: #666666;
+    float: right;
+  }
+
+  .symbolSummary {
+    overflow: hidden;
+    *zoom: 1;
+    margin: 14px 0;
+
+    li {
+      display: block;
+      float: left;
+      height: 7px;
+      width: 14px;
+      margin-bottom: 7px;
+      font-size: 16px;
+
+      &.passed {
+        font-size: 14px;
+
+        &:before {
+          color: #5e7d00;
+          content: "\02022";
+        }
+      }
+
+      &.failed {
+        line-height: 9px;
+
+        &:before {
+          color: #b03911;
+          content: "x";
+          font-weight: bold;
+          margin-left: -1px;
+        }
+      }
+
+      &.skipped {
+        font-size: 14px;
+
+        &:before {
+          color: #bababa;
+          content: "\02022";
+        }
+      }
+
+      &.pending {
+        line-height: 11px;
+
+        &:before {
+          color: #aaaaaa;
+          content: "-";
+        }
+      }
+    }
+  }
+
+  .exceptions {
+    color: #fff;
+    float: right;
+    margin-top: 5px;
+    margin-right: 5px;
+  }
+
+  .bar {
+    line-height: 28px;
+    font-size: 14px;
+    display: block;
+    color: #eee;
+  }
+
+  .runningAlert {
+    background-color: #666666;
+  }
+
+  .skippedAlert {
+    background-color: #aaaaaa;
+
+    &:first-child {
+      background-color: #333333;
+    }
+
+    &:hover {
+      text-decoration: none;
+      color: white;
+      text-decoration: underline;
+    }
+  }
+
+  .passingAlert {
+    background-color: #a6b779;
+
+    &:first-child {
+      background-color: #5e7d00;
+    }
+  }
+
+  .failingAlert {
+    background-color: #cf867e;
+
+    &:first-child {
+      background-color: #b03911;
+    }
+  }
+
+  .results {
+    margin-top: 14px;
+  }
+
+  .resultsMenu,
+  .resultsMenu a {
+    background-color: #fff;
+    color: #333333;
+  }
+
+  .summaryMenuItem {
+    font-weight: bold;
+    text-decoration: underline;
+  }
+
+  .summary {
+    margin-top: 14px;
+
+    .suite .suite,
+    .specSummary {
+      margin-left: 14px;
+    }
+
+    .specSummary {
+      &.passed a {
+        color: #5e7d00;
+      }
+
+      &.failed a {
+        color: #b03911;
+      }
+    }
+  }
+
+  .description + .suite {
+    margin-top: 0;
+  }
+
+  .suite {
+    margin-top: 14px;
+
+    a {
+      color: #333333;
+    }
+  }
+
+  .resultMessage {
+    padding-top: 14px;
+    color: #333333;
+
+    span.result {
+      display: block;
+    }
+  }
+
+  .stackTrace {
+    background: white;
+    border: 1px solid #ddd;
+    color: #666666;
+    line-height: 18px;
+    margin: 5px 0 0 0;
+    max-height: 224px;
+    overflow: auto;
+    white-space: pre;
+  }
+}
