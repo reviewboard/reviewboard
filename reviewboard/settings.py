@@ -319,6 +319,7 @@ PIPELINE_JS = {
             'rb/js/views/abstractCommentBlockView.js',
             'rb/js/views/abstractReviewableView.js',
             'rb/js/views/commentDialogView.js',
+            'rb/js/views/dndUploaderView.js',
             'rb/js/views/fileAttachmentCommentBlockView.js',
             'rb/js/views/fileAttachmentReviewableView.js',
             'rb/js/views/issueSummaryTableView.js',
@@ -367,6 +368,7 @@ PIPELINE_CSS = {
     'reviews': {
         'source_filenames': (
             'rb/css/diffviewer.less',
+            'rb/css/dndUploader.less',
             'rb/css/reviews.less',
             'rb/css/syntax.css',
         ),

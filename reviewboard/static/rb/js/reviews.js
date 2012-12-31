@@ -19,6 +19,7 @@ var issueSummaryTableManager;
 
 // Attach to global RB object
 RB.draftBanner = gDraftBanner;
+RB.draftBannerButtons = gDraftBannerButtons;
 
 /*
  * "complete" signal handlers for various fields, designed to do
@@ -1559,166 +1560,6 @@ function loadDiffFragments(queue_name, container_prefix) {
 }
 
 
-/*
- * Initializes drag-and-drop support.
- *
- * This makes it possible to drag screenshots and other files from a file
- * manager and drop them into Review Board. This requires browser support
- * for HTML 5 file drag-and-drop.
- */
-function initDnD() {
-    var dropIndicator = null;
-    var fileDropBox;
-    var middleBox;
-    var removeDropIndicatorHandle = null;
-
-    $(document.body)
-        .on("dragenter", function(event) {
-            handleDragEnter(event);
-        });
-
-    function handleDragEnter(event) {
-        if (!dropIndicator) {
-            var height = $(window).height();
-
-            dropIndicator = $("<div/>")
-                .addClass("drop-indicator")
-                .appendTo(document.body)
-                .width($(window).width())
-                .height(height)
-                .on("dragleave", function(event) {
-                    /*
-                     * This should check whether we've exited the drop
-                     * indicator properly. It'll prevent problems when
-                     * transitioning between elements within the indicator.
-                     *
-                     * Note that while this should work cross-browser,
-                     * Firefox 4+ appears broken in that it doesn't send us
-                     * dropleave events on exiting the window.
-                     *
-                     * Also note that it doesn't appear that we need to check
-                     * the Y coordinate. X should be 0 in most cases when
-                     * leaving, except when dragging over the right scrollbar
-                     * in Chrome, when it'll be >= the container width.
-                     */
-                    if (event.pageX <= 0 ||
-                        event.pageX >= dropIndicator.width()) {
-                        handleDragExit();
-                    }
-
-                    return false;
-                })
-                .mouseenter(function() {
-                    /*
-                     * If we get a mouse enter, then the user has moved
-                     * the mouse over the drop indicator without there
-                     * being any drag-and-drop going on. This is likely due
-                     * to the broken Firefox 4+ behavior where dragleave
-                     * events when leaving windows aren't firing.
-                     */
-                    handleDragExit();
-                    return false;
-                });
-
-            fileDropBox = $("<div/>")
-                .addClass("dropbox")
-                .appendTo(dropIndicator)
-                .on('drop', handleDrop)
-            var fileText = $("<h1/>")
-                .text("Drop to Upload")
-                .appendTo(fileDropBox);
-
-            fileDropBox
-                .height(height)
-                .on({
-                    "dragover": function() {
-                        var dt = event.originalEvent.dataTransfer;
-
-                        if (dt) {
-                            dt.dropEffect = "copy";
-                        }
-
-                        $(this).addClass("hover");
-                        return false;
-                    },
-                    "dragleave": function(event) {
-                        var dt = event.originalEvent.dataTransfer;
-
-                        if (dt) {
-                            dt.dropEffect = "none";
-                        }
-
-                        $(this).removeClass("hover");
-                    }
-                });
-
-            fileText.css("margin-top", -fileText.height() / 2);
-        }
-    }
-
-    function handleDragExit(closeImmediately) {
-        if (dropIndicator == null) {
-            return;
-        }
-
-        if (removeDropIndicatorHandle) {
-            window.clearInterval(removeDropIndicatorHandle);
-            removeDropIndicatorHandle = null;
-        }
-
-        if (closeImmediately) {
-            dropIndicator.fadeOut(function() {
-                dropIndicator.remove();
-                dropIndicator = null;
-            });
-        } else {
-            removeDropIndicatorHandle = window.setInterval(function() {
-                handleDragExit(true);
-            }, 1000);
-        }
-    }
-
-    function handleDrop(event) {
-        /* Do these early in case we hit some error. */
-        event.stopPropagation();
-        event.preventDefault();
-
-        var dt = event.originalEvent.dataTransfer;
-
-        var files = dt && dt.files;
-
-        if (!files) {
-            return;
-        }
-
-        for (var i = 0; i < files.length; i++) {
-            uploadFile(files[i]);
-        }
-
-        handleDragExit(true);
-    }
-
-    function uploadFile(file) {
-        /* Create a temporary file listing. */
-        var thumb = $.newFileAttachmentPlaceholder()
-            .css("opacity", 0)
-            .fadeTo(1000, 1);
-
-        var fileAttachment = gReviewRequest.createFileAttachment();
-        fileAttachment.setFile(file);
-        fileAttachment.save({
-            buttons: gDraftBannerButtons,
-            success: function(rsp, fileAttachment) {
-                thumb.replaceWith($.newFileAttachment(fileAttachment));
-                gDraftBanner.show();
-            },
-            error: function(rsp, msg) {
-                thumb.remove();
-            }
-        });
-    }
-}
-
 $(document).ready(function() {
     /* Provide support for expanding submenus in the action list. */
     var menuitem = null;
@@ -1918,6 +1759,8 @@ $(document).ready(function() {
 
     if (gUserAuthenticated) {
         if (window["gEditable"]) {
+            var dndUploader;
+
             $(".editable").reviewRequestFieldEditor();
             $(".screenshot-container").screenshotThumbnail();
             $(".file-container").fileAttachment();
@@ -1994,7 +1837,9 @@ $(document).ready(function() {
                 }
             };
 
-            initDnD();
+            dndUploader = new RB.DnDUploader({
+                reviewRequest: gReviewRequest
+            });
         }
     }
 
