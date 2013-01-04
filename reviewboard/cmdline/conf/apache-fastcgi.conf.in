@@ -21,7 +21,7 @@
 
 	<Directory "@sitedir@/htdocs">
 		AllowOverride All
-		Options -Indexes FollowSymLinks
+		Options -Indexes +FollowSymLinks
 		Allow from all
 	</Directory>
 
