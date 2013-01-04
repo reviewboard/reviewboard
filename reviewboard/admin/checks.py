@@ -185,8 +185,10 @@ def get_can_enable_search():
         return (False, _(
             'PyLucene (with JCC) is required to enable search. See the '
             '<a href="%(url)s">documentation</a> for instructions.'
-        ) % {'url': 'http://www.reviewboard.org/docs/manual/dev/admin/'
-                    'sites/enabling-search/'})
+        ) % {
+            'url': 'http://www.reviewboard.org/docs/manual/dev/admin/'
+                   'installation/linux/#installing-pylucene'
+        })
 
 
 def get_can_enable_syntax_highlighting():
