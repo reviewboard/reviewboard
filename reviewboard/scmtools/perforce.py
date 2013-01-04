@@ -15,11 +15,13 @@ except ImportError:
     pass
 
 from reviewboard.diffviewer.parser import DiffParser
+from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import SCMTool, ChangeSet, \
                                       HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError, \
                                         AuthenticationError, \
-                                        RepositoryNotFoundError
+                                        RepositoryNotFoundError, \
+                                        UnverifiedCertificateError
 
 
 STUNNEL_SERVER, STUNNEL_CLIENT = (0, 1)
@@ -143,10 +145,17 @@ class PerforceClient(object):
 
         if 'Perforce password' in error or 'Password must be set' in error:
             raise AuthenticationError(msg=error)
+        elif 'SSL library must be at least version' in error:
+            raise SCMError('The specified Perforce port includes ssl:, but '
+                           'the p4python library was built without SSL '
+                           'support or the system library path is incorrect. ')
         elif ('check $P4PORT' in error or
               (error.startswith('[P4.connect()] TCP connect to') and
                'failed.' in error)):
             raise RepositoryNotFoundError
+        elif "To allow connection use the 'p4 trust' command" in error:
+            fingerprint = error.split('\\n')[3]
+            raise UnverifiedCertificateError(Certificate(fingerprint=fingerprint))
         else:
             raise SCMError(error)
 
@@ -176,6 +185,9 @@ class PerforceClient(object):
         Get the contents of a changeset description.
         """
         return self._run_worker(lambda: self._get_changeset(changesetid))
+
+    def get_info(self):
+        return self._run_worker(self.p4.run_info)
 
     def _get_pending_changesets(self, userid):
         changesets = self.p4.run_changes('-s', 'pending', '-u', userid)
@@ -248,8 +260,10 @@ class PerforceTool(SCMTool):
     uses_atomic_revisions = True
     supports_authentication = True
     field_help_text = {
-        'path': 'The Perforce port identifier for the repository. This can '
-                'also use an stunnel with a stunnel: prefix.',
+        'path': 'The Perforce port identifier (P4PORT) for the repository. If '
+                'your server is set up to use SSL (2012.1+), prefix the port '
+                'with "ssl:". If your server connection is secured with '
+                'stunnel (2011.x or older), prefix the port with "stunnel:".',
     }
     dependencies = {
         'modules': ['P4'],
@@ -300,7 +314,7 @@ class PerforceTool(SCMTool):
                                                   local_site_name)
 
         client = cls._create_client(str(path), str(username), str(password))
-        client.get_changeset(1)
+        client.get_info()
 
     def get_pending_changesets(self, userid):
         return self.client.get_pending_changesets(userid)
@@ -383,6 +397,20 @@ class PerforceTool(SCMTool):
 
     def get_parser(self, data):
         return PerforceDiffParser(data)
+
+    @classmethod
+    def accept_certificate(cls, path, local_site_name=None, certificate=None):
+        """Accepts the certificate for the given repository path."""
+        args = ['p4', '-p', path, 'trust', '-i', certificate.fingerprint]
+        p = subprocess.Popen(args, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        _, errdata = p.communicate()
+        failure = p.poll()
+
+        if failure:
+            raise IOError(errdata)
+
+        return certificate.fingerprint
 
 
 class PerforceDiffParser(DiffParser):

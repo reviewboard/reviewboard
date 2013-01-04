@@ -396,7 +396,7 @@ class SVNTool(SCMTool):
             raise RepositoryNotFoundError()
 
     @classmethod
-    def accept_certificate(cls, path, local_site_name=None):
+    def accept_certificate(cls, path, local_site_name=None, certificate=None):
         """Accepts the certificate for the given repository path."""
         cert = {}
 

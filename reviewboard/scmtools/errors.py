@@ -82,9 +82,9 @@ class AuthenticationError(SSHAuthenticationError, SCMError):
 
 
 class UnverifiedCertificateError(SCMError):
-    """An error representing an unverified HTTPS certificate."""
+    """An error representing an unverified SSL certificate."""
     def __init__(self, certificate):
-        SCMError.__init__(self, _('A verified HTTPS certificate is required '
+        SCMError.__init__(self, _('A verified SSL certificate is required '
                                   'to connect to this repository.'))
         self.certificate = certificate
 
