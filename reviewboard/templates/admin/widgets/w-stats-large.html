@@ -181,10 +181,18 @@ $(document).ready(function() {
                     plot_data.push(datasets[key]);
                 }
             });
+            empty_dataset = {
+                bars: {
+		    show: true},
+                lines: {
+		    show: false}
+            };
 
-            if (plot_data.length > 0) {
-                $.plot($("#placeholder-stats"), plot_data, options);
+            if (plot_data.length == 0) {
+	        plot_data.push(empty_dataset);
             }
+
+            $.plot($("#placeholder-stats"), plot_data, options);
         });
     }
 
