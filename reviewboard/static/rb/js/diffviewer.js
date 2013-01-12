@@ -225,7 +225,7 @@ $.extend(DiffCommentBlock.prototype, {
 
         if (this.draftComment) {
             $("<li/>")
-                .text(this.draftComment.text.truncate())
+                .text(this.draftComment.get('text').truncate())
                 .addClass("draft")
                 .appendTo(list);
         }
@@ -291,44 +291,38 @@ $.extend(DiffCommentBlock.prototype, {
             return;
         }
 
-        var self = this;
         var el = this.el;
         var comment = gReviewRequest.createReview().createDiffComment(
             id, this.filediff, this.interfilediff, this.beginLineNum,
             this.endLineNum);
 
         if (text) {
-            comment.text = text;
+            comment.set('text', text);
         }
 
-        $.event.add(comment, "textChanged", function() {
-            self.updateTooltip();
-        });
+        comment.on('change:text', this.updateTooltip, this);
+        comment.on('destroy', function() {
+            this.notify("Comment Deleted");
 
-        $.event.add(comment, "deleted", function() {
-            self.notify("Comment Deleted");
-        });
-
-        $.event.add(comment, "destroyed", function() {
-            self.draftComment = null;
+            this.draftComment = null;
 
             /* Discard the comment block if empty. */
-            if (self.comments.length == 0) {
+            if (this.comments.length == 0) {
                 el.fadeOut(350, function() { el.remove(); })
-                self.anchor.remove();
+                this.anchor.remove();
             } else {
                 el.removeClass("draft");
-                self.updateCount();
-                self.updateTooltip();
+                this.updateCount();
+                this.updateTooltip();
             }
-        });
+        }, this);
 
-        $.event.add(comment, "saved", function() {
-            self.updateCount();
-            self.updateTooltip();
-            self.notify("Comment Saved");
+        comment.on('saved', function() {
+            this.updateCount();
+            this.updateTooltip();
+            this.notify("Comment Saved");
             showReviewBanner();
-        });
+        }, this);
 
         this.draftComment = comment;
         el.addClass("draft");

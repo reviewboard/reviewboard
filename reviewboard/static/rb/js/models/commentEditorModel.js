@@ -23,27 +23,8 @@ RB.CommentEditor = Backbone.Model.extend({
     },
 
     initialize: function() {
-        this.on('change:comment', function(model, comment) {
-            var oldComment = model.previous('comment');
-
-            if (oldComment) {
-                oldComment.deleteIfEmpty();
-            }
-
-            this.set('statusText', '');
-
-            if (comment) {
-                comment.ready(function() {
-                    this.set({
-                        dirty: false,
-                        openIssue: comment.loaded
-                                   ? comment.issue_opened
-                                   : this.defaults.openIssue,
-                        text: comment.text
-                    });
-                }, this);
-            }
-        }, this);
+        this.on('change:comment', this._updateFromComment, this);
+        this._updateFromComment();
 
         this.on('change:dirty', function(model, dirty) {
             if (dirty) {
@@ -95,11 +76,13 @@ RB.CommentEditor = Backbone.Model.extend({
 
         console.assert(this.get('canDelete'),
                        'deleteComment() called when canDelete is false.');
-        comment.deleteComment();
+        comment.destroy({
+            success: function() {
+                this.trigger('deleted');
 
-        this.trigger('deleted');
-
-        this.close();
+                this.close();
+            }
+        }, this);
     },
 
     /*
@@ -113,7 +96,7 @@ RB.CommentEditor = Backbone.Model.extend({
         var comment = this.get('comment');
 
         if (comment) {
-            comment.deleteIfEmpty();
+            comment.destroyIfEmpty();
             this.trigger('canceled');
         }
 
@@ -151,19 +134,61 @@ RB.CommentEditor = Backbone.Model.extend({
      * The editor will not automatically be marked as closed. That is up
      * to the caller.
      */
-    save: function() {
+    save: function(options, context) {
         var comment = this.get('comment');
 
         console.assert(this.get('canSave'),
                        'save() called when canSave is false.');
 
-        comment.setText(this.get('text'));
-        comment.issue_opened = this.get('openIssue');
-        comment.save();
+        options = options || {};
 
-        this.set('dirty', false);
+        comment.set({
+            text: this.get('text'),
+            issueOpened: this.get('openIssue')
+        });
 
-        this.trigger('saved');
+        comment.save({
+            success: _.bind(function() {
+                this.set('dirty', false);
+                this.trigger('saved');
+
+                if (_.isFunction(options.success)) {
+                    options.success.call(context);
+                }
+            }, this),
+
+            error: _.isFunction(options.error)
+                   ? _.bind(options.error, context)
+                   : undefined
+        });
+    },
+
+    /*
+     * Updates the state of the editor from the currently set comment.
+     */
+    _updateFromComment: function() {
+        var oldComment = this.previous('comment'),
+            comment = this.get('comment');
+
+        if (oldComment) {
+            oldComment.destroyIfEmpty();
+        }
+
+        this.set('statusText', '');
+
+        if (comment) {
+            comment.ready({
+                ready: function() {
+                    this.set({
+                        dirty: false,
+                        openIssue: comment.get('loaded')
+                                   ? comment.get('issueOpened')
+                                   : this.defaults.openIssue,
+                        text: comment.get('text')
+                    });
+                }
+            }, this);
+        }
     },
 
     /*
@@ -178,7 +203,7 @@ RB.CommentEditor = Backbone.Model.extend({
             comment = this.get('comment');
 
         this.set({
-            canDelete: canEdit && editing && comment && comment.loaded,
+            canDelete: canEdit && editing && comment && comment.get('loaded'),
             canSave: canEdit && editing && this.get('text') !== ''
         });
     }

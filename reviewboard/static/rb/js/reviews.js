@@ -1026,7 +1026,7 @@ $.fn.reviewFormCommentEditor = function(comment) {
             },
             "complete": function(e, value) {
                 gEditCount--;
-                comment.text = value;
+                comment.set('text', value);
                 comment.save({
                     success: function() {
                         self.trigger("saved");
@@ -1278,10 +1278,10 @@ $.fn.fileAttachment = function() {
                                                               fileID);
 
             if (text) {
-                draftComment.text = text;
+                draftComment.set('text', text);
             }
 
-            $.event.add(draftComment, "saved", function() {
+            draftComment.on('saved', function() {
                 showReviewBanner();
             });
         }

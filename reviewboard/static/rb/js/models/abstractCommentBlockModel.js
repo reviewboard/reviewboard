@@ -91,15 +91,15 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
         comment = this.createComment(id);
 
         if (text) {
-            comment.text = text;
+            comment.set('text', text);
         }
 
-        $.event.add(comment, 'destroyed', function() {
-            self.set('draftComment', null);
-            self._updateCount();
-        });
+        comment.on('destroy', function() {
+            this.set('draftComment', null);
+            this._updateCount();
+        }, this);
 
-        $.event.add(comment, 'saved', _.bind(this._updateCount, this));
+        comment.on('saved', this._updateCount, this);
 
         this.set('draftComment', comment);
     },

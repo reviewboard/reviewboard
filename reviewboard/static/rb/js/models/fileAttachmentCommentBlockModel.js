@@ -12,7 +12,7 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
 
     /*
      * The list of fields on this model that will be stored on the server
-     * in the FileAttachmentComment's extra_data.
+     * in the FileAttachmentComment's extraData.
      */
     serializedFields: [],
 
@@ -27,7 +27,7 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
             comment = review.createFileAttachmentComment(
                 id, this.get('fileAttachmentID'));
 
-        _.extend(comment.extra_data,
+        _.extend(comment.get('extraData'),
                  _.pick(this.attributes, this.serializedFields));
 
         return comment;
