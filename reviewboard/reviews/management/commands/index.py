@@ -3,9 +3,11 @@ import os
 import optparse
 import sys
 import time
+import settings
 
 from django.core.management.base import NoArgsCommand
 from django.db.models import Q
+from django.utils import timezone
 
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -60,7 +62,11 @@ class Command(NoArgsCommand):
         if incremental:
             try:
                 f = open(timestamp_file, 'r')
-                timestamp = datetime.utcfromtimestamp(int(f.read()))
+                if timezone and settings.USE_TZ:
+                    timestamp = timezone.make_aware(datetime.utcfromtimestamp(int(f.read())),
+                                                    timezone.get_default_timezone())
+                else:
+                    timestamp = datetime.utcfromtimestamp(int(f.read()))
                 f.close()
             except IOError:
                 incremental = False
