@@ -412,6 +412,17 @@ class PerforceTool(SCMTool):
 
         return certificate.fingerprint
 
+    def normalize_patch(self, patch, filename, revision):
+        # The patch contents may represent an unchanged, moved file, which
+        # isn't technically a valid diff, and will make patch mad. So, look
+        # for this and return a blank diff instead.
+        m = PerforceDiffParser.SPECIAL_REGEX.match(patch.strip())
+
+        if m and m.group(3) == 'MV':
+            return ''
+
+        return patch
+
 
 class PerforceDiffParser(DiffParser):
     SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$")
