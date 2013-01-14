@@ -15,11 +15,13 @@ except ImportError:
     pass
 
 from reviewboard.diffviewer.parser import DiffParser
+from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import SCMTool, ChangeSet, \
                                       HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, EmptyChangeSetError, \
                                         AuthenticationError, \
-                                        RepositoryNotFoundError
+                                        RepositoryNotFoundError, \
+                                        UnverifiedCertificateError
 
 
 STUNNEL_SERVER, STUNNEL_CLIENT = (0, 1)
@@ -143,10 +145,17 @@ class PerforceClient(object):
 
         if 'Perforce password' in error or 'Password must be set' in error:
             raise AuthenticationError(msg=error)
+        elif 'SSL library must be at least version' in error:
+            raise SCMError('The specified Perforce port includes ssl:, but '
+                           'the p4python library was built without SSL '
+                           'support or the system library path is incorrect. ')
         elif ('check $P4PORT' in error or
               (error.startswith('[P4.connect()] TCP connect to') and
                'failed.' in error)):
             raise RepositoryNotFoundError
+        elif "To allow connection use the 'p4 trust' command" in error:
+            fingerprint = error.split('\\n')[3]
+            raise UnverifiedCertificateError(Certificate(fingerprint=fingerprint))
         else:
             raise SCMError(error)
 
@@ -176,6 +185,9 @@ class PerforceClient(object):
         Get the contents of a changeset description.
         """
         return self._run_worker(lambda: self._get_changeset(changesetid))
+
+    def get_info(self):
+        return self._run_worker(self.p4.run_info)
 
     def _get_pending_changesets(self, userid):
         changesets = self.p4.run_changes('-s', 'pending', '-u', userid)
@@ -248,8 +260,10 @@ class PerforceTool(SCMTool):
     uses_atomic_revisions = True
     supports_authentication = True
     field_help_text = {
-        'path': 'The Perforce port identifier for the repository. This can '
-                'also use an stunnel with a stunnel: prefix.',
+        'path': 'The Perforce port identifier (P4PORT) for the repository. If '
+                'your server is set up to use SSL (2012.1+), prefix the port '
+                'with "ssl:". If your server connection is secured with '
+                'stunnel (2011.x or older), prefix the port with "stunnel:".',
     }
     dependencies = {
         'modules': ['P4'],
@@ -300,7 +314,7 @@ class PerforceTool(SCMTool):
                                                   local_site_name)
 
         client = cls._create_client(str(path), str(username), str(password))
-        client.get_changeset(1)
+        client.get_info()
 
     def get_pending_changesets(self, userid):
         return self.client.get_pending_changesets(userid)
@@ -384,9 +398,34 @@ class PerforceTool(SCMTool):
     def get_parser(self, data):
         return PerforceDiffParser(data)
 
+    @classmethod
+    def accept_certificate(cls, path, local_site_name=None, certificate=None):
+        """Accepts the certificate for the given repository path."""
+        args = ['p4', '-p', path, 'trust', '-i', certificate.fingerprint]
+        p = subprocess.Popen(args, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        _, errdata = p.communicate()
+        failure = p.poll()
+
+        if failure:
+            raise IOError(errdata)
+
+        return certificate.fingerprint
+
+    def normalize_patch(self, patch, filename, revision):
+        # The patch contents may represent an unchanged, moved file, which
+        # isn't technically a valid diff, and will make patch mad. So, look
+        # for this and return a blank diff instead.
+        m = PerforceDiffParser.SPECIAL_REGEX.match(patch.strip())
+
+        if m and m.group(3) == 'MV':
+            return ''
+
+        return patch
+
 
 class PerforceDiffParser(DiffParser):
-    SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD])== (.*) ====$")
+    SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$")
 
     def __init__(self, data):
         DiffParser.__init__(self, data)
@@ -406,8 +445,12 @@ class PerforceDiffParser(DiffParser):
                 info['binary'] = True
                 linenum += 1
 
-            if m.group(3) == 'D':
+            change_type = m.group(3)
+
+            if change_type == 'D':
                 info['deleted'] = True
+            elif change_type == 'MV':
+                info['moved'] = True
 
             # In this case, this *is* our diff header. We don't want to
             # let the next line's real diff header be a part of this one,
@@ -415,3 +458,15 @@ class PerforceDiffParser(DiffParser):
             return linenum
 
         return super(PerforceDiffParser, self).parse_diff_header(linenum, info)
+
+    def parse_special_header(self, linenum, info):
+        linenum = super(PerforceDiffParser, self).parse_special_header(
+            linenum, info)
+
+        if (linenum + 2 < len(self.lines) and
+            self.lines[linenum].startswith('Moved from:') and
+            self.lines[linenum + 1].startswith('Moved to:')):
+            info['moved'] = True
+            linenum += 2
+
+        return linenum

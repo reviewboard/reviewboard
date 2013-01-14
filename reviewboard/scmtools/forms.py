@@ -991,7 +991,7 @@ class RepositoryForm(forms.ModelForm):
                 if self.cleaned_data['trust_host']:
                     try:
                         self.cert = scmtool_class.accept_certificate(
-                            path, self.local_site_name)
+                            path, self.local_site_name, e.certificate)
                     except IOError, e:
                         raise forms.ValidationError(e)
                 else:

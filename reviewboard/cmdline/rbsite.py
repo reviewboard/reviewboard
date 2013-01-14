@@ -1758,6 +1758,7 @@ class UpgradeCommand(Command):
     def run(self):
         site.setup_settings()
 
+        static_media_upgrade_needed = site.get_static_media_upgrade_needed()
         data_dir_exists = os.path.exists(os.path.join(site.install_dir, "data"))
 
         print "Rebuilding directory structure"
@@ -1802,8 +1803,7 @@ class UpgradeCommand(Command):
             print "    SetEnv HOME %s" % os.path.join(site.abs_install_dir,
                                                       "data")
 
-
-        if site.get_static_media_upgrade_needed():
+        if static_media_upgrade_needed:
             from djblets.siteconfig.models import SiteConfiguration
             from django.conf import settings
 

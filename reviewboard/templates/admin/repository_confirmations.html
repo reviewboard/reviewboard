@@ -34,13 +34,19 @@
 {%    endif %}
  <div class="cert-info">
   <h3>{% trans "Certificate information:" %}</h3>
-  <p><label>{% trans "Hostname:" %}</label> {{certificate.hostname}}</p>
+{%    if certificate.hostname %}
+  <p><label>{% trans "Hostname:" %}</label>{{certificate.hostname}}</p>
+{%    endif %}
+{%    if certificate.valid_from %}
   <p><label>{% trans "Valid:" %}</label>
-{% blocktrans with certificate.valid_from as valid_from and certificate.valid_until as valid_until %}
+{%     blocktrans with certificate.valid_from as valid_from and certificate.valid_until as valid_until %}
    from {{valid_from}} until {{valid_until}}
-{% endblocktrans %}
+{%     endblocktrans %}
   </p>
-  <p><label>{% trans "Issuer:" %}</label> {{certificate.issuer}}</p>
+{%    endif %}
+{%    if certificate.issuer %}
+  <p><label>{% trans "Issuer:" %}</label>{{certificate.issuer}}</p>
+{%    endif %}
   <p><label>{% trans "Fingerprint:" %}</label> {{certificate.fingerprint}}</p>
  </div>
 {%   endif %}

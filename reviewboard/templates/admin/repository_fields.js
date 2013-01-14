@@ -24,10 +24,11 @@ var TOOLS_INFO = {
 $(document).ready(function() {
   var inputs = $("fieldset, .submit-row").find("input, select");
 
-  inputs.attr("disabled", true);
-
-  $(".confirmation input").click(function() {
-      inputs.attr("disabled", false);
-  });
+  inputs.prop("disabled", true);
+  $(".confirmation input")
+      .prop("disabled", false);
+      .click(function() {
+          inputs.prop("disabled", false);
+      });
 });
 {% endif %}
