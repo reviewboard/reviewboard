@@ -1,0 +1,98 @@
+================================
+Review Board 1.7.2 Release Notes
+================================
+
+**Release date**: January 16, 2013
+
+
+New Features
+============
+
+* Added bug tracker support for VersionOne_. Patch by nn1436401. (:bug:`2680`)
+
+.. _VersionOne: http://www.versionone.com/
+
+* Added support for ``ssl:``-prefixed P4PORTs for Perforce 2012.1+.
+
+  Perforce 2012.1 introduced actual SSL support, indicated by an ``ssl:``
+  prefix for the P4PORT. Review Board now understands this and will do the
+  right thing.
+
+  However, this requires that p4python is specially compiled with OpenSSL
+  support, and that the system has development headers for OpenSSL 1.0.1.
+  P4PythonInstaller doesn't do this, so users who need this feature will
+  currently have to compile p4python manually, providing the path to the
+  SSL directory using ``--ssl``.
+
+* Added support for moved file handling for Perforce.
+
+  Files moved using :command:`p4 move` and posted with
+  :command:`post-review` in the upcoming RBTools 0.4.3 will show up as
+  have been moved in the diff viewer, instead of showing up as one big
+  deleted file and one big moved file. If there were changes made,
+  they'll be shown as modifications to the original file.
+
+  This feature was sponsored by `NetApp, Inc.`_
+
+.. _`NetApp, Inc.`: http://www.netapp.com/
+
+
+Bug Fixes
+=========
+
+* Fixed an HTML escaping issue when listing filenames in the diff viewer.
+
+  Any filenames consisting of HTML-unsafe characters were being interpreted.
+  In theory, this could be used to inject scripts into the diff viewer
+  page when uploading a diff (though in practice, our diff parsing wouldn't
+  allow it). We now make sure the filenames are escaped properly.
+
+* Fixed the display of the static media instructions in rb-site.
+
+  These were't showing up for all users. Now a new upgrade from pre-1.7
+  will always show the instructions for upgrading the static media
+  settings.
+
+* Attempting to install on Python 2.4 will now display a helpful error
+  before failing, instead of a cryptic error.
+
+* Fixed the display of file attachment names in review request change
+  descriptions that don't have captions.
+
+* Fixed the default file-based cache path used when creating a new
+  site. Patch by Raja Venkataraman. (:bug:`2826`)
+
+* The Review Board Activity widget in the administration UI will now
+  clear the data shown when the datasets are unselected. Patch by
+  Bogdana Popa. (:bug:`2846`)
+
+* Fixed capitalization of the navigation bar entries to be consistent.
+  Patch by Matthias Krüger.
+
+* Fixed the link to the PyLucene documentation in the General Settings
+  page.
+
+* Fixed default Apache configuration files to be explicit in enabling
+  ``FollowSymLinks``.
+
+* Fixed timezone warnings when running the search index command. (:bug:`2830`)
+
+  If the database has older time fields the lack timezone information
+  (pre-1.7), generating a search index would spew warnings for each field,
+  possibly causing e-mails when run from crontab. This will no longer happen.
+
+  Patch by Pi Bi.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Matthias Krüger
+* nn1436401
+* Pi Bi
+* Raja Venkataraman
+
+
+.. comment: vim: ft=rst et
