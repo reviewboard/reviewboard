@@ -44,6 +44,14 @@ class FileAttachment(models.Model):
         return os.path.basename(self.file.name)
 
     @property
+    def display_name(self):
+        """Returns a display name for the file."""
+        if self.caption:
+            return self.caption
+        else:
+            return self.filename
+
+    @property
     def icon_url(self):
         """Returns the icon URL for this file."""
         return self.mimetype_handler.get_icon_url()

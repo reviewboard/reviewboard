@@ -1273,7 +1273,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 caption_changes
 
         update_list(review_request.file_attachments, self.file_attachments,
-                    'files', name_field="caption")
+                    'files', name_field="display_name")
 
         # There's no change notification required for this field.
         review_request.inactive_file_attachments.clear()
