@@ -1454,7 +1454,7 @@ RB.registerForUpdates = function(lastTimestamp, type) {
         summaryEl.text(info.summary);
         userEl
             .attr('href', info.user.url)
-            .text(info.user.fullname);
+            .text(info.user.fullname || info.user.username);
 
         bubble
             .hide()
