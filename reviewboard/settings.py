@@ -259,8 +259,11 @@ if 'staticfiles' not in CACHES:
 # trailing slash.
 #
 # Examples: "http://foo.com/media/", "/media/".
-STATIC_URL = getattr(settings_local, 'STATIC_URL', SITE_ROOT + 'static/')
-MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + 'media/')
+STATIC_DIRECTORY = 'static/'
+STATIC_URL = getattr(settings_local, 'STATIC_URL', SITE_ROOT + STATIC_DIRECTORY)
+
+MEDIA_DIRECTORY = 'media/'
+MEDIA_URL = getattr(settings_local, 'MEDIA_URL', SITE_ROOT + MEDIA_DIRECTORY)
 
 
 # Base these on the user's SITE_ROOT.
