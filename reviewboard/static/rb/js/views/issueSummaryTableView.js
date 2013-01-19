@@ -110,8 +110,8 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         * '-issue' to find the comment's location. Then find the
         * closest box class and uncollapse it.
         */
-        var issueId = '#comment-' + $(event.srcElement).attr("issue-id") +
-                      '-issue';
+        var issueId = '#comment-' + $(event.srcElement).attr("comment-type") + '-' +
+                      $(event.srcElement).attr("issue-id") + '-issue';
         $(issueId).closest(".box").removeClass("collapsed");
     },
 
