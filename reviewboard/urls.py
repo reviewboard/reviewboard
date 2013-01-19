@@ -57,11 +57,11 @@ if settings.DEBUG or getattr(settings, 'RUNNING_TEST', False):
     if not settings.PRODUCTION and not os.path.exists(settings.STATIC_ROOT):
         staticfiles_kwargs['view'] = 'django.contrib.staticfiles.views.serve'
 
-    urlpatterns += static(settings.STATIC_URL,
+    urlpatterns += static(settings.STATIC_DIRECTORY,
                           document_root=settings.STATIC_ROOT,
                           show_indexes=True,
                           **staticfiles_kwargs)
-    urlpatterns += static(settings.MEDIA_URL,
+    urlpatterns += static(settings.MEDIA_DIRECTORY,
                           document_root=settings.MEDIA_ROOT,
                           show_indexes=True)
 
