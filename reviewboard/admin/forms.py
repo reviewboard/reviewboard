@@ -463,6 +463,10 @@ class EMailSettingsForm(SiteSettingsForm):
         label=_("Use TLS for authentication"),
         required=False)
 
+    def clean_mail_host(self):
+        # Strip whitespaces from the SMTP address.
+        return self.cleaned_data['mail_host'].strip()
+
     def save(self):
         super(EMailSettingsForm, self).save()
 
