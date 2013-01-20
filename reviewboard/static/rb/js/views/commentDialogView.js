@@ -510,6 +510,8 @@ RB.CommentDialogView = Backbone.View.extend({
             RB.CommentDialogView._instance = dlg;
         }
 
+        console.assert(options.comment, 'A comment must be specified');
+
         options = options || {};
 
         dlg = new RB.CommentDialogView({
