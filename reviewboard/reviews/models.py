@@ -901,6 +901,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             changes = None
 
         self.public = True
+        self.time_added = timezone.now()
         self.save(update_counts=True)
 
         review_request_published.send(sender=self.__class__, user=user,
