@@ -214,7 +214,9 @@ function setDraftField(field, value) {
             var func = gEditorCompleteHandlers[field];
 
             if ($.isFunction(func)) {
-                $("#" + field).html(func(rsp['draft'][field]));
+                $("#" + field)
+		    .empty()
+		    .html(func(rsp['draft'][field]));
             }
 
             gDraftBanner.show();
