@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import os
 import re
@@ -102,7 +103,9 @@ class SVNTool(SCMTool):
             lambda trust_dict: \
             SVNTool._ssl_server_trust_prompt(trust_dict, repository_ref())
 
-        # svnlook uses 'rev 0', while svn diff uses 'revision 0'
+        # 'svn diff' produces patches which have the revision string localized
+        # to their system locale. This is a little ridiculous, but we have to
+        # deal with it because not everyone uses post-review.
         self.revision_re = re.compile("""
             ^(\(([^\)]+)\)\s)?              # creating diffs between two branches
                                             # of a remote repository will insert
@@ -115,8 +118,20 @@ class SVNTool(SCMTool):
                                             # probably a really crappy way to
                                             # express that, but oh well.
 
-            \ *\([Rr]ev(?:ision)?\ (\d+)\)$ # svnlook uses 'rev 0' while svn diff
-                                            # uses 'revision 0'
+            \ *\((?:
+                [Rr]ev(?:ision)?|           # english - svnlook uses 'rev 0'
+                                            #           while svn diff uses
+                                            #           'revision 0'
+                revisión:|                  # espanol
+                révision|                   # french
+                revisione|                  # italian
+                リビジョン|                 # japanese
+                리비전|                     # korean
+                revisjon|                   # norwegian
+                wersja|                     # polish
+                revisão|                    # brazilian portuguese
+                版本                        # simplified chinese
+            )\ (\d+)\)$
             """, re.VERBOSE)
 
     def _do_on_path(self, cb, path, revision=HEAD):
