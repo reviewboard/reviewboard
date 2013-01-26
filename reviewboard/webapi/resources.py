@@ -6840,6 +6840,11 @@ class ServerInfoResource(WebAPIResource):
                     'diffs': {
                         'moved_files': True,
                     },
+                    'scmtools': {
+                        'perforce': {
+                            'moved_files': True,
+                        },
+                    },
                 },
             },
         }
