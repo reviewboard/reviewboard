@@ -628,7 +628,7 @@ class DashboardDataGrid(ReviewRequestDataGrid):
     my_comments = MyCommentsColumn()
 
     def __init__(self, *args, **kwargs):
-        local_site = kwargs.pop('local_site', None)
+        local_site = kwargs.get('local_site', None)
         ReviewRequestDataGrid.__init__(self, *args, **kwargs)
         self.listview_template = 'datagrid/listview.html'
         self.profile_sort_field = 'sort_dashboard_columns'

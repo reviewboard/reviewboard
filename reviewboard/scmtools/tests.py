@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import errno
 import imp
 import os
@@ -482,6 +483,14 @@ class SubversionTests(SCMTestCase):
 
         self.assertRaises(SCMError,
                           lambda: self.tool.parse_diff_revision('', 'hello'))
+
+        # Verify that 'svn diff' localized revision strings parse correctly.
+        self.assertEqual(self.tool.parse_diff_revision('', '(revisión: 5)')[1],
+                         '5')
+        self.assertEqual(self.tool.parse_diff_revision('',
+                         '(リビジョン 6)')[1], '6')
+        self.assertEqual(self.tool.parse_diff_revision('', '(版本 7)')[1],
+                         '7')
 
     def test_interface(self):
         """Testing basic SVNTool API"""

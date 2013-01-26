@@ -10,10 +10,11 @@ class VersionOneForm(HostingServiceForm):
         label=_('VersionOne URL'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))      
+        widget=forms.TextInput(attrs={'size': '60'}))
+
 
 class VersionOne(HostingService):
-    name = 'versionone'
+    name = 'VersionOne'
     form = VersionOneForm
     bug_tracker_field = '%(versionone_url)s/assetdetail.v1?Number=%%s'
-    supports_bug_trackers = True 
+    supports_bug_trackers = True

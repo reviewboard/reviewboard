@@ -5204,6 +5204,18 @@ class ScreenshotResourceTests(BaseWebAPITestCase):
     list_mimetype = _build_mimetype('screenshots')
     item_mimetype = _build_mimetype('screenshot')
 
+    def test_get_screenshots_with_invalid_review_request_id(self):
+        """Testing the GET review-requests/<id>/screenshots/ API with an invalid review request ID"""
+        screenshot_invalid_id_url = local_site_reverse(
+            'screenshots-resource',
+            kwargs={
+                'review_request_id': 999999,
+            })
+
+        rsp = self.apiGet(screenshot_invalid_id_url, expected_status=404)
+
+        self.assertEqual(rsp['stat'], 'fail')
+
     def test_post_screenshots(self):
         """Testing the POST review-requests/<id>/screenshots/ API"""
         rsp = self._postNewReviewRequest()
