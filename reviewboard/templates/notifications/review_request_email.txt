@@ -9,6 +9,15 @@ This is an automatically generated e-mail. To reply, visit:
 (Updated {{review_request.time_emailed}})
 
 {% endif %}
+{% if changes and changes.status and review_request.status in "SD" %}Status
+------
+{%  if review_request.status == 'S' %}
+This change has been marked as submitted.
+{%  elif review_request.status == 'D' %}
+This change has been discarded.
+{%  endif %}
+{% endif %}
+
 Review request for {% reviewer_list review_request %}.
 
 {% if change_text %}

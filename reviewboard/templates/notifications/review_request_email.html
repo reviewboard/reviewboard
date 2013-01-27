@@ -5,6 +5,17 @@
 {% load staticfiles %}
 
 {% block content %}
+{% if changes and changes.status and review_request.status in "SD" %}
+<table bgcolor="#e0e0e0" width="100%" cellpadding="8" style="border: 1px gray solid;">
+ <tr>
+  <td>
+   <h1 style="margin-right: 0.2em; padding: 0; font-size: 10pt;">{% if review_request.status == 'S' %}This change has been marked as submitted.{% elif review_request.status == 'D' %}This change has been discarded.{% endif %}</h1>
+  </td>
+ </tr>
+</table>
+<br />
+{% endif %}
+
 <table bgcolor="#fefadf" width="100%" cellspacing="0" cellpadding="8" style="background-image: url('{{domain_method}}://{{domain}}{% static "rb/images/review_request_box_top_bg.png" %}'); background-position: left top; background-repeat: repeat-x; border: 1px black solid;">
  <tr>
   <td>
