@@ -11,8 +11,21 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.accounts.signals import user_registered
 from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard.reviews.signals import review_request_published, \
-                                        review_published, reply_published
+                                        review_published, reply_published, \
+                                        review_request_closed
 from reviewboard.reviews.views import build_diff_comment_fragments
+
+
+def review_request_closed_cb(sender, user, review_request, **kwargs):
+    """Sends e-mail when a review request is closed.
+
+    Listens to the ``review_request_closed`` signal and sends an
+    email if this type of notification is enabled (through
+    ``mail_send_review_close_mail`` site configuration).
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    if siteconfig.get("mail_send_review_close_mail"):
+        mail_review_request(user, review_request, on_close=True)
 
 
 def review_request_published_cb(sender, user, review_request, changedesc,
@@ -65,6 +78,8 @@ def connect_signals():
                                      sender=ReviewRequest)
     review_published.connect(review_published_cb, sender=Review)
     reply_published.connect(reply_published_cb, sender=Review)
+    review_request_closed.connect(review_request_closed_cb,
+                                  sender=ReviewRequest)
     user_registered.connect(user_registered_cb)
 
 
@@ -239,7 +254,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     return message.message_id
 
 
-def mail_review_request(user, review_request, changedesc=None):
+def mail_review_request(user, review_request, changedesc=None, on_close=False):
     """
     Send an e-mail representing the supplied review request.
 
@@ -249,10 +264,15 @@ def mail_review_request(user, review_request, changedesc=None):
     request, and will be None when publishing initially.  This is used by
     the template to add contextual (updated) flags to inform people what
     changed.
+
+    The "on_close" argument indicates whether review request emails should
+    be sent on closing (SUBMITTED,DISCARDED) review requests.
     """
     # If the review request is not yet public or has been discarded, don't send
-    # any mail.
-    if not review_request.public or review_request.status == 'D':
+    # any mail. Relax the "discarded" rule when emails are sent on closing
+    # review requests
+    if (   not review_request.public
+        or (not on_close and review_request.status == 'D')):
         return
 
     subject = u"Review Request %d: %s" % (review_request.id, review_request.summary)
@@ -267,6 +287,9 @@ def mail_review_request(user, review_request, changedesc=None):
         extra_recipients = None
 
     extra_context = {}
+
+    if on_close:
+        changedesc = review_request.changedescs.filter(public=True).latest()
 
     if changedesc:
         extra_context['change_text'] = changedesc.text

@@ -141,6 +141,48 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         message = mail.outbox[0].message()
         self.assertEqual(message['Sender'], self._get_sender(review.user))
 
+    def test_review_close_no_email(self):
+        """Tests email is not generated when a review is closed and email setting is False"""
+        user1 = User.objects.get(username="dopey")
+        review_request = ReviewRequest.objects.create(user1, None)
+        review_request.summary = "Test no email notification on close"
+        review_request.publish(user1)
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        review_request.close(ReviewRequest.SUBMITTED, user1)
+
+        # Verify that no email is generated as option is false by default
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_review_close_with_email(self):
+        """Tests email is generated when a review is closed and email setting is True"""
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set("mail_send_review_close_mail", True)
+        siteconfig.save()
+        load_site_config()
+
+        user1 = User.objects.get(username="dopey")
+        review_request = ReviewRequest.objects.create(user1, None)
+        review_request.summary = "Test email notification on close"
+        review_request.publish(user1)
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        review_request.close(ReviewRequest.SUBMITTED, user1)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0].message()
+        self.assertTrue("This change has been marked as submitted"
+                        in message.as_string())
+
+        # Reset settings for review close requests
+        siteconfig.set("mail_send_review_close_mail", False)
+        siteconfig.save()
+        load_site_config()
+
     def testReviewReplyEmail(self):
         """Testing sending an e-mail when replying to a review"""
         review_request = ReviewRequest.objects.get(
