@@ -1,0 +1,86 @@
+===========================
+RBTools 0.4.3 Release Notes
+===========================
+
+**Release date**: January 28, 2013
+
+
+New Features
+============
+
+* Added support for posting from Bazaar repositories. Patch by Max Rabkin.
+  (:bug:`773`)
+
+* Passing :option:`--basedir` to :command:`post-review` will override
+  the computed base directory used for Subversion diffs.
+
+* Added better support for moved files in Perforce.
+
+  Moved files in Git and Perforce now have additional information in the diffs
+  that, on a modern Review Board server, will generate nicer diffs, instead
+  of showing a big deleted file and a big added file.
+
+  This requires Review Board 1.7.3 or higher.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed problems authenticating with the server when anonymous access is
+  disabled. Patch by Xiaodang Xu. (:bug:`2429`, :bug:`2430`)
+
+* Fixed loading settings from the user's :file:`~/.reviewboardrc` when it's
+  the only :file:`.reviewboardrc` in the search path. Patch by
+  Markku Linnoskivi.
+
+* Fixed a crash when the user's home directory isn't writable. (:bug:`2344`)
+
+* Added a fallback when failing to get the API version from a Review Board
+  server. Patch by Damian Johnson.
+
+* The "Username" prompt is now printed to stderr instead of stdout, to match
+  the "Password" prompt's inputted text. (:bug:`2831`)
+
+* Unicode URLs are now encoded as UTF-8, preventing an encoding conflict when
+  talking to Review Board. (:bug:`2238`)
+
+
+Git
+---
+
+* Git diffs no longer contain move/rename information if the Review Board
+  server doesn't support it. Patch by Dave Druska.
+
+
+Mercurial
+---------
+
+* Fixed :option:`--guess-summary` when it has newline characters in it.
+  Patch by Alexander Kouznetsov. (:bug:`2703`)
+
+
+Subversion
+----------
+
+* Fixed problems generating diffs containing deleted files.
+
+
+Contributors
+============
+
+* Alexander Kouznetsov
+* Christian Hammond
+* Damian Johnson
+* Dave Druska
+* David Trowbridge
+* Manu Cupcic
+* Markku Linnoskivi
+* Max Rabkin
+* Steven MacLeod
+* Xiaodang Xu
+
+
+.. comment: vim: ft=rst et
