@@ -210,9 +210,33 @@ class HgWebClient(SCMClient):
 class HgClient(object):
     def __init__(self, repoPath, local_site):
         from mercurial import hg, ui
-        from mercurial.__version__ import version
 
-        if parse_version(version) <= parse_version("1.2"):
+        # We've encountered problems getting the Mercurial version number.
+        # Originally, we imported 'version' from mercurial.__version__,
+        # which would sometimes return None.
+        #
+        # We are now trying to go through their version() function, if
+        # available. That is likely the most reliable.
+        try:
+            from mercurial.util import version
+            hg_version = version()
+        except ImportError:
+            # If version() wasn't available, we'll try to import __version__
+            # ourselves, and then get 'version' from that.
+            try:
+                from mercurial import __version__
+                hg_version = __version__.version
+            except ImportError:
+                # If that failed, we'll hard-code an empty string. This will
+                # trigger the "<= 1.2" case below.
+                hg_version = ''
+
+        # If something gave us None, convert it to an empty string so
+        # parse_version can accept it.
+        if hg_version is None:
+            hg_version = ''
+
+        if parse_version(hg_version) <= parse_version("1.2"):
             hg_ui = ui.ui(interactive=False)
         else:
             hg_ui = ui.ui()

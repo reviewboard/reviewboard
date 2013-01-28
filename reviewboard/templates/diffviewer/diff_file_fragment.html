@@ -111,7 +111,11 @@
    <td colspan="3">{% diff_chunk_header chunk.meta.headers.0 %}</td>
 {%    else %}
    <td>{% diff_chunk_header chunk.meta.headers.0 %}</td>
-   <td colspan="2">{% diff_chunk_header chunk.meta.headers.1 %}</td>
+   <td colspan="2">
+{%     if chunk.meta.headers.1 %}
+{%      diff_chunk_header chunk.meta.headers.1 %}
+{%     endif %}
+   </td>
 {%    endif %}
 {%   else %}
    <td colspan="3"></td>

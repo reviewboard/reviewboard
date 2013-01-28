@@ -859,12 +859,12 @@ class ReviewRequest(BaseReviewRequestDetails):
         self.save()
 
     def publish(self, user):
-        from reviewboard.accounts.models import LocalSiteProfile
-
         """
         Save the current draft attached to this review request. Send out the
         associated email. Returns the review request that was saved.
         """
+        from reviewboard.accounts.models import LocalSiteProfile
+
         if not self.is_mutable_by(user):
             raise PermissionError
 
@@ -900,8 +900,12 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             changes = None
 
+        if not self.public and self.changedescs.count() == 0:
+            # This is a brand new review request that we're publishing
+            # for the first time. Set the creation timestamp to now.
+            self.time_added = timezone.now()
+
         self.public = True
-        self.time_added = timezone.now()
         self.save(update_counts=True)
 
         review_request_published.send(sender=self.__class__, user=user,
