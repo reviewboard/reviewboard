@@ -139,7 +139,8 @@ class ClearCaseTool(SCMTool):
             cmdline,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=repopath)
+            cwd=repopath,
+            shell=True)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -163,7 +164,8 @@ class ClearCaseTool(SCMTool):
             cmdline,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=self.repopath)
+            cwd=self.repopath,
+            shell=True)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -179,7 +181,8 @@ class ClearCaseTool(SCMTool):
             cmdline,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=self.repopath)
+            cwd=self.repopath,
+            shell=True)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -199,7 +202,8 @@ class ClearCaseTool(SCMTool):
             cmdline,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=self.repopath)
+            cwd=self.repopath,
+            shell=True)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -316,7 +320,8 @@ class ClearCaseDiffParser(DiffParser):
             cmdline,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=self.repopath)
+            cwd=self.repopath,
+            shell=True)
 
         (res, error) = p.communicate()
         failure = p.poll()
@@ -361,7 +366,8 @@ class ClearCaseSnapshotViewClient(object):
         p = subprocess.Popen(
             cmdline,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+            stderr=subprocess.PIPE,
+            shell=True)
 
         (res, error) = p.communicate()
         failure = p.poll()
