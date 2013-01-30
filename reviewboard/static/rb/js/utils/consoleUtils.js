@@ -1,9 +1,10 @@
-var _origAssert = console.assert;
-
+var _origAssert;
 
 if (typeof window.console === 'undefined') {
     window.console = {};
 }
+
+_origAssert = console.assert;
 
 if (typeof console.log === 'undefined') {
     console.log = function() {}
@@ -23,8 +24,4 @@ console.assert = function(conditional, msg) {
     if (!conditional) {
         throw Error(msg);
     }
-}
-
-if (typeof console.assert === 'undefined') {
-    console.log = function() {}
 }
