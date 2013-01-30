@@ -342,6 +342,72 @@ class DiffParserTest(unittest.TestCase):
         return data
 
 
+class FileDiffMigrationTests(TestCase):
+    fixtures = ['test_scmtools.json']
+
+    def setUp(self):
+        self.diff = (
+            '--- README  123\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah blah\n'
+            '+blah!\n')
+        self.parent_diff = (
+            '--- README  123\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah..\n'
+            '+blah blah\n')
+
+        repository = Repository.objects.get(pk=1)
+        diffset = DiffSet.objects.create(name='test',
+                                         revision=1,
+                                         repository=repository)
+        self.filediff = FileDiff(source_file='README',
+                                 dest_file='README',
+                                 diffset=diffset,
+                                 diff64='',
+                                 parent_diff64='')
+
+    def test_migration_by_diff(self):
+        """Testing FileDiffData migration accessing FileDiff.diff"""
+        self.filediff.diff64 = self.diff
+
+        self.assertEqual(self.filediff.diff_hash, None)
+        self.assertEqual(self.filediff.parent_diff_hash, None)
+
+        # This should prompt the migration
+        diff = self.filediff.diff
+
+        self.assertEqual(self.filediff.parent_diff_hash, None)
+        self.assertNotEqual(self.filediff.diff_hash, None)
+
+        self.assertEqual(diff, self.diff)
+        self.assertEqual(self.filediff.diff64, '')
+        self.assertEqual(self.filediff.diff_hash.binary, self.diff)
+        self.assertEqual(self.filediff.diff, diff)
+        self.assertEqual(self.filediff.parent_diff, None)
+        self.assertEqual(self.filediff.parent_diff_hash, None)
+
+    def test_migration_by_parent_diff(self):
+        """Testing FileDiffData migration accessing FileDiff.parent_diff"""
+        self.filediff.diff64 = self.diff
+        self.filediff.parent_diff64 = self.parent_diff
+
+        self.assertEqual(self.filediff.parent_diff_hash, None)
+
+        # This should prompt the migration
+        parent_diff = self.filediff.parent_diff
+
+        self.assertNotEqual(self.filediff.parent_diff_hash, None)
+
+        self.assertEqual(parent_diff, self.parent_diff)
+        self.assertEqual(self.filediff.parent_diff64, '')
+        self.assertEqual(self.filediff.parent_diff_hash.binary,
+                         self.parent_diff)
+        self.assertEqual(self.filediff.parent_diff, self.parent_diff)
+
+
 class HighlightRegionTest(TestCase):
     def setUp(self):
         siteconfig = SiteConfiguration.objects.get_current()

@@ -1,4 +1,5 @@
 import hashlib
+import logging
 
 from django.db import models
 from django.utils import timezone
@@ -80,12 +81,10 @@ class FileDiff(models.Model):
         return self.source_revision == PRE_CREATION
 
     def _get_diff(self):
-        # If the diff is not in FileDiffData, it is in FileDiff.
         if not self.diff_hash:
-            return self.diff64
-        else:
-            # Data exists in FileDiffData, retrieve it.
-            return self.diff_hash.binary
+            self._migrate_diff_data()
+
+        return self.diff_hash.binary
 
     def _set_diff(self, diff):
         hashkey = self._hash_hexdigest(diff)
@@ -98,10 +97,13 @@ class FileDiff(models.Model):
     diff = property(_get_diff, _set_diff)
 
     def _get_parent_diff(self):
-        if not self.parent_diff_hash:
-            return self.parent_diff64
-        else:
+        if self.parent_diff64 and not self.parent_diff_hash:
+            self._migrate_diff_data()
+
+        if self.parent_diff_hash:
             return self.parent_diff_hash.binary
+        else:
+            return None
 
     def _set_parent_diff(self, parent_diff):
         if parent_diff != "":
@@ -118,6 +120,25 @@ class FileDiff(models.Model):
         hasher = hashlib.sha1()
         hasher.update(diff)
         return hasher.hexdigest()
+
+    def _migrate_diff_data(self):
+        """Migrates the data stored in the FileDiff to a FileDiffData."""
+        needs_save = False
+
+        if not self.diff_hash:
+            logging.debug('Migrating FileDiff %s diff data to FileDiffData'
+                          % self.pk)
+            needs_save = True
+            self._set_diff(self.diff64)
+
+        if self.parent_diff64 and not self.parent_diff_hash:
+            logging.debug('Migrating FileDiff %s parent_diff data to '
+                          'FileDiffData' % self.pk)
+            needs_save = True
+            self._set_parent_diff(self.parent_diff64)
+
+        if needs_save:
+            self.save()
 
     def __unicode__(self):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
