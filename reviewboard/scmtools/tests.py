@@ -294,6 +294,8 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.newFile, 'testfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_new_diff_revision_format(self):
         """Testing parsing CVS diff with new revision format"""
@@ -314,6 +316,8 @@ class CVSTests(SCMTestCase):
         self.assertEqual(revision, '1.5.2.1')
         self.assertEqual(file.newFile, 'test/testfile')
         self.assertEqual(file.newInfo, 'Tue Jan 10 10:36:26 2012')
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_bad_diff(self):
         """Testing parsing CVS diff with bad info"""
@@ -359,6 +363,8 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.newFile, 'newfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:11:45 -0000')
         self.assertEqual(file.data, diff)
+        self.assertEqual(file.insert_count, 1)
+        self.assertEqual(file.delete_count, 0)
 
     def test_inter_revision_diff(self):
         """Testing parsing CVS inter-revision diff"""
@@ -382,6 +388,8 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.newFile, 'testfile')
         self.assertEqual(file.newInfo, '27 Sep 2007 22:57:16 -0000      1.2')
         self.assertEqual(file.data, diff)
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_bad_root(self):
         """Testing a bad CVSROOT"""
@@ -584,6 +592,8 @@ class SubversionTests(SCMTestCase):
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].origFile, 'binfile')
         self.assertTrue(files[0].binary)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
 
     def test_svn17_property_diff(self):
         """Testing parsing SVN 1.7+ diff with property changes"""
@@ -612,12 +622,12 @@ class SubversionTests(SCMTestCase):
         diff = prop_diff + bin_diff
 
         files = self.tool.get_parser(diff).parse()
-        print files
-        print files[0].__dict__
 
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].origFile, 'binfile')
         self.assertTrue(files[0].binary)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
 
 
 class PerforceTests(SCMTestCase):
@@ -747,6 +757,8 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(file.deleted)
         self.assertFalse(file.moved)
         self.assertEqual(file.data, diff)
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
 
     def test_binary_diff(self):
         """Testing Perforce binary diff parsing"""
@@ -762,6 +774,8 @@ class PerforceTests(SCMTestCase):
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
         self.assertFalse(file.moved)
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
 
     def test_deleted_diff(self):
         """Testing Perforce deleted diff parsing"""
@@ -777,6 +791,8 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
         self.assertFalse(file.moved)
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
 
     def test_moved_file_diff(self):
         """Testing Perforce moved file diff parsing"""
@@ -801,6 +817,8 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(file.deleted)
         self.assertTrue(file.moved)
         self.assertEqual(file.data, diff)
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_moved_file_diff_no_changes(self):
         """Testing Perforce moved file diff parsing without changes"""
@@ -816,6 +834,8 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
         self.assertTrue(file.moved)
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
 
     def test_empty_and_normal_diffs(self):
         """Testing Perforce empty and normal diff parsing"""
@@ -839,6 +859,8 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(files[0].deleted)
         self.assertFalse(files[0].moved)
         self.assertEqual(files[0].data, diff1_text)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
 
         self.assertEqual(files[1].origFile, 'test.c')
         self.assertEqual(files[1].origInfo, '//depot/foo/proj/test.c#2')
@@ -848,6 +870,8 @@ class PerforceTests(SCMTestCase):
         self.assertFalse(files[1].deleted)
         self.assertFalse(files[1].moved)
         self.assertEqual(files[1].data, diff2_text)
+        self.assertEqual(files[1].insert_count, 2)
+        self.assertEqual(files[1].delete_count, 1)
 
 
 class PerforceStunnelTests(SCMTestCase):
@@ -1224,6 +1248,7 @@ class GitTests(SCMTestCase):
     def test_filemode_diff(self):
         """Testing parsing filemode changes Git diff"""
         diff = self._read_fixture('git_filemode.diff')
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'testing')
         self.assertEqual(file.newFile, 'testing')
@@ -1234,10 +1259,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
+        self.assertEqual(file.insert_count, 1)
+        self.assertEqual(file.delete_count, 0)
 
     def test_filemode_with_following_diff(self):
         """Testing parsing filemode changes with following Git diff"""
         diff = self._read_fixture('git_filemode2.diff')
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'testing')
         self.assertEqual(file.newFile, 'testing')
@@ -1248,6 +1276,9 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
+        self.assertEqual(file.insert_count, 1)
+        self.assertEqual(file.delete_count, 0)
+
         file = self._get_file_in_diff(diff, 1)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
@@ -1256,10 +1287,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_simple_diff(self):
         """Testing parsing simple Git diff"""
         diff = self._read_fixture('git_simple.diff')
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
@@ -1271,10 +1305,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], "+db = pyunit")
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_new_file_diff(self):
         """Testing parsing Git diff with new file"""
         diff = self._read_fixture('git_newfile.diff')
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'IAMNEW')
         self.assertEqual(file.newFile, 'IAMNEW')
@@ -1286,6 +1323,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/IAMNEW b/IAMNEW")
         self.assertEqual(file.data.splitlines()[-1], "+Hello")
+        self.assertEqual(file.insert_count, 1)
+        self.assertEqual(file.delete_count, 0)
 
     def test_new_file_no_content_diff(self):
         """Testing parsing Git diff new file, no content"""
@@ -1297,6 +1336,7 @@ class GitTests(SCMTestCase):
         """Testing parsing Git diff new file, no content, with following"""
         diff = self._read_fixture('git_newfile_nocontent2.diff')
         self.assertEqual(len(self.tool.get_parser(diff).parse()), 1)
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'cfg/testcase.ini')
         self.assertEqual(file.newFile, 'cfg/testcase.ini')
@@ -1305,10 +1345,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
         self.assertEqual(file.data.splitlines()[-1], '+db = pyunit')
+        self.assertEqual(file.insert_count, 2)
+        self.assertEqual(file.delete_count, 1)
 
     def test_del_file_diff(self):
         """Testing parsing Git diff with deleted file"""
         diff = self._read_fixture('git_delfile.diff')
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'OLDFILE')
         self.assertEqual(file.newFile, 'OLDFILE')
@@ -1320,10 +1363,13 @@ class GitTests(SCMTestCase):
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/OLDFILE b/OLDFILE")
         self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 1)
 
     def test_binary_diff(self):
         """Testing parsing Git diff with binary"""
         diff = self._read_fixture('git_binary.diff')
+
         file = self._get_file_in_diff(diff)
         self.assertEqual(file.origFile, 'pysvn-1.5.1.tar.gz')
         self.assertEqual(file.newFile, 'pysvn-1.5.1.tar.gz')
@@ -1338,6 +1384,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(lines[3],
                          "Binary files /dev/null and b/pysvn-1.5.1.tar.gz "
                          "differ")
+        self.assertEqual(file.insert_count, 0)
+        self.assertEqual(file.delete_count, 0)
 
     def test_complex_diff(self):
         """Testing parsing Git diff with existing and new files"""
@@ -1350,6 +1398,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[0].newInfo, 'e254ef4')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
+        self.assertEqual(files[0].insert_count, 2)
+        self.assertEqual(files[0].delete_count, 1)
         self.assertEqual(len(files[0].data), 549)
         self.assertEqual(files[0].data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
@@ -1362,6 +1412,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[1].newInfo, 'e279a06')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
+        self.assertEqual(files[1].insert_count, 2)
+        self.assertEqual(files[1].delete_count, 0)
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 8)
         self.assertEqual(lines[0],
@@ -1375,6 +1427,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[2].newInfo, '86b520c')
         self.assertTrue(files[2].binary)
         self.assertFalse(files[2].deleted)
+        self.assertEqual(files[2].insert_count, 0)
+        self.assertEqual(files[2].delete_count, 0)
         lines = files[2].data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(lines[0],
@@ -1389,6 +1443,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[3].newInfo, 'e254ef4')
         self.assertFalse(files[3].binary)
         self.assertFalse(files[3].deleted)
+        self.assertEqual(files[3].insert_count, 1)
+        self.assertEqual(files[3].delete_count, 1)
         lines = files[3].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], "diff --git a/readme b/readme")
@@ -1400,6 +1456,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[4].newInfo, '0000000')
         self.assertFalse(files[4].binary)
         self.assertTrue(files[4].deleted)
+        self.assertEqual(files[4].insert_count, 0)
+        self.assertEqual(files[4].delete_count, 1)
         lines = files[4].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], "diff --git a/OLDFILE b/OLDFILE")
@@ -1411,6 +1469,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[5].newInfo, 'e248ef4')
         self.assertFalse(files[5].binary)
         self.assertFalse(files[5].deleted)
+        self.assertEqual(files[5].insert_count, 1)
+        self.assertEqual(files[5].delete_count, 1)
         lines = files[5].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], "diff --git a/readme2 b/readme2")
@@ -1437,6 +1497,8 @@ class GitTests(SCMTestCase):
                          '612544e4343bf04967eb5ea80257f6c64d6f42c7')
         self.assertEqual(files[0].newInfo,
                          'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[0].insert_count, 1)
+        self.assertEqual(files[0].delete_count, 1)
 
     def test_parse_diff_with_deleted_binary_files(self):
         """Testing Git diff parsing with deleted binary files"""
@@ -1452,10 +1514,14 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[0].newFile, 'foo.bin')
         self.assertEqual(files[0].binary, True)
         self.assertEqual(files[0].deleted, True)
+        self.assertEqual(files[0].insert_count, 0)
+        self.assertEqual(files[0].delete_count, 0)
         self.assertEqual(files[1].origFile, 'bar.bin')
         self.assertEqual(files[1].newFile, 'bar.bin')
         self.assertEqual(files[1].binary, True)
         self.assertEqual(files[1].deleted, True)
+        self.assertEqual(files[1].insert_count, 0)
+        self.assertEqual(files[1].delete_count, 0)
 
     def test_parse_diff_with_all_headers(self):
         """Testing Git diff parsing and preserving all headers"""
@@ -1492,7 +1558,7 @@ class GitTests(SCMTestCase):
             "@ -1,1 +1,1 @@\n"
             "-blah blah\n"
             "+blah\n"
-            "--n"
+            "-\n"
             "1.7.1\n")
         diff = preamble + diff1 + diff2
 
@@ -1505,6 +1571,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[0].newInfo,
                          'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(files[0].data, preamble + diff1)
+        self.assertEqual(files[0].insert_count, 1)
+        self.assertEqual(files[0].delete_count, 1)
 
         self.assertEqual(files[1].origFile, 'README')
         self.assertEqual(files[1].newFile, 'README')
@@ -1513,6 +1581,8 @@ class GitTests(SCMTestCase):
         self.assertEqual(files[1].newInfo,
                          'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
         self.assertEqual(files[1].data, diff2)
+        self.assertEqual(files[1].insert_count, 1)
+        self.assertEqual(files[1].delete_count, 2)
 
     def test_parse_diff_revision(self):
         """Testing Git revision number parsing"""

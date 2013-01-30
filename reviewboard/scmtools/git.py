@@ -253,18 +253,19 @@ class GitDiffParser(DiffParser):
         while linenum < len(self.lines):
             if self._is_git_diff(linenum):
                 return linenum, file_info
-
-            if self._is_binary_patch(linenum):
+            elif self._is_binary_patch(linenum):
                 file_info.binary = True
                 file_info.data += self.lines[linenum] + "\n"
                 return linenum + 1, file_info
-
-            if self._is_diff_fromfile_line(linenum):
+            elif self._is_diff_fromfile_line(linenum):
                 if self.lines[linenum].split()[1] == "/dev/null":
                     file_info.origInfo = PRE_CREATION
 
-            file_info.data += self.lines[linenum] + "\n"
-            linenum += 1
+                file_info.data += self.lines[linenum] + '\n'
+                file_info.data += self.lines[linenum + 1] + '\n'
+                linenum += 2
+            else:
+                linenum = self.parse_diff_line(linenum, file_info)
 
         return linenum, file_info
 

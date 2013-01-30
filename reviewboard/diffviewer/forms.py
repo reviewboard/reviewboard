@@ -150,6 +150,7 @@ class UploadDiffForm(forms.Form):
                                 parent_diff=parent_content,
                                 binary=f.binary,
                                 status=status)
+            filediff.set_line_counts(f.insert_count, f.delete_count)
             filediff.save()
 
         return diffset

@@ -13,13 +13,15 @@ class FileDiffAdmin(admin.ModelAdmin):
             'fields': ('diffset', 'status', 'binary',
                        ('source_file', 'source_revision'),
                        ('dest_file', 'dest_detail'),
+                       'insert_count',
+                       'delete_count',
                        'diff', 'parent_diff')
         }),
     )
     list_display = ('source_file', 'source_revision',
                     'dest_file', 'dest_detail')
     raw_id_fields = ('diffset',)
-    readonly_fields = ('diff', 'parent_diff')
+    readonly_fields = ('diff', 'parent_diff', 'insert_count', 'delete_count')
 
     def diff(self, filediff):
         return self._style_diff(filediff.diff)

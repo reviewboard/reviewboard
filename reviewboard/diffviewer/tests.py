@@ -335,6 +335,29 @@ class DiffParserTest(unittest.TestCase):
             self.assertEqual(i_moves[0][j], i)
             self.assertEqual(r_moves[0][i], j)
 
+    def test_line_counts(self):
+        """Testing DiffParser with insert/delete line counts"""
+        diff = (
+            '+ This is some line before the change\n'
+            '- And another line\n'
+            'Index: foo\n'
+            '- One last.\n'
+            '--- README  123\n'
+            '+++ README  (new)\n'
+            '@ -1,1 +1,1 @@\n'
+            '-blah blah\n'
+            '-blah\n'
+            '+blah!\n'
+            '-blah...\n'
+            '+blah?\n'
+            '-blah!\n'
+            '+blah?!\n')
+        files = diffparser.DiffParser(diff).parse()
+
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].insert_count, 3)
+        self.assertEqual(files[0].delete_count, 4)
+
     def _get_file(self, *relative):
         f = open(os.path.join(*tuple([self.PREFIX] + list(relative))))
         data = f.read()
@@ -406,6 +429,47 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.parent_diff_hash.binary,
                          self.parent_diff)
         self.assertEqual(self.filediff.parent_diff, self.parent_diff)
+
+    def test_migration_by_delete_count(self):
+        """Testing FileDiffData migration accessing FileDiff.delete_count"""
+        self.filediff.diff64 = self.diff
+
+        self.assertEqual(self.filediff.diff_hash, None)
+
+        # This should prompt the migration
+        delete_count = self.filediff.delete_count
+
+        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertEqual(delete_count, 1)
+        self.assertEqual(self.filediff.diff_hash.delete_count, 1)
+
+    def test_migration_by_insert_count(self):
+        """Testing FileDiffData migration accessing FileDiff.insert_count"""
+        self.filediff.diff64 = self.diff
+
+        self.assertEqual(self.filediff.diff_hash, None)
+
+        # This should prompt the migration
+        insert_count = self.filediff.insert_count
+
+        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertEqual(insert_count, 1)
+        self.assertEqual(self.filediff.diff_hash.insert_count, 1)
+
+    def test_migration_by_set_line_counts(self):
+        """Testing FileDiffData migration calling FileDiff.set_line_counts"""
+        self.filediff.diff64 = self.diff
+
+        self.assertEqual(self.filediff.diff_hash, None)
+
+        # This should prompt the migration, but with our line counts.
+        self.filediff.set_line_counts(10, 20)
+
+        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertEqual(self.filediff.insert_count, 10)
+        self.assertEqual(self.filediff.delete_count, 20)
+        self.assertEqual(self.filediff.diff_hash.insert_count, 10)
+        self.assertEqual(self.filediff.diff_hash.delete_count, 20)
 
 
 class HighlightRegionTest(TestCase):

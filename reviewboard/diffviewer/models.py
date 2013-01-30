@@ -21,6 +21,32 @@ class FileDiffData(models.Model):
     binary = Base64Field(_("base64"))
     objects = FileDiffDataManager()
 
+    # These are null by default so that we don't get counts of 0 for older
+    # changes.
+    insert_count = models.IntegerField(null=True, blank=True)
+    delete_count = models.IntegerField(null=True, blank=True)
+
+    def recalculate_line_counts(self, tool):
+        """Recalculates the insert_count and delete_count values.
+
+        This will attempt to re-parse the stored diff and fetch the
+        line counts through the parser.
+        """
+        logging.debug('Recalculating insert/delete line counts on '
+                      'FileDiffData %s' % self.pk)
+
+        files = tool.get_parser(self.binary).parse()
+
+        if len(files) != 1:
+            logging.error('Failed to correctly parse stored diff data in '
+                          'FileDiffData ID %s when trying to get '
+                          'insert/delete line counts' % self.pk)
+        else:
+            file_info = files[0]
+            self.insert_count = file_info.insert_count
+            self.delete_count = file_info.delete_count
+            self.save()
+
 
 class FileDiff(models.Model):
     """
@@ -116,12 +142,63 @@ class FileDiff(models.Model):
 
     parent_diff = property(_get_parent_diff, _set_parent_diff)
 
+    @property
+    def insert_count(self):
+        if not self.diff_hash:
+            self._migrate_diff_data()
+
+        if self.diff_hash.insert_count is None:
+            self._recalculate_line_counts(self.diff_hash)
+
+        return self.diff_hash.insert_count
+
+    @property
+    def delete_count(self):
+        if not self.diff_hash:
+            self._migrate_diff_data()
+
+        if self.diff_hash.delete_count is None:
+            self._recalculate_line_counts(self.diff_hash)
+
+        return self.diff_hash.delete_count
+
+    def set_line_counts(self, insert_count, delete_count):
+        """Sets the insert/delete line count on the FileDiff."""
+        if not self.diff_hash:
+            # This really shouldn't happen, but if it does, we should handle
+            # it gracefully.
+            logging.warning('Attempting to call set_line_counts on '
+                            'un-migrated FileDiff %s' % self.pk)
+            self._migrate_diff_data(False)
+
+        if (self.diff_hash.insert_count is not None and
+            self.diff_hash.insert_count != insert_count):
+            logging.warning('Attempting to override insert count on '
+                            'FileDiffData %s from %s to %s (FileDiff %s)'
+                            % (self.diff_hash.pk,
+                               self.diff_hash.insert_count,
+                               insert_count,
+                               self.pk))
+
+        if (self.diff_hash.delete_count is not None and
+            self.diff_hash.delete_count != delete_count):
+            logging.warning('Attempting to override delete count on '
+                            'FileDiffData %s from %s to %s (FileDiff %s)'
+                            % (self.diff_hash.pk,
+                               self.diff_hash.delete_count,
+                               delete_count,
+                               self.pk))
+
+        self.diff_hash.insert_count = insert_count
+        self.diff_hash.delete_count = delete_count
+        self.diff_hash.save()
+
     def _hash_hexdigest(self, diff):
         hasher = hashlib.sha1()
         hasher.update(diff)
         return hasher.hexdigest()
 
-    def _migrate_diff_data(self):
+    def _migrate_diff_data(self, recalculate_counts=True):
         """Migrates the data stored in the FileDiff to a FileDiffData."""
         needs_save = False
 
@@ -131,14 +208,28 @@ class FileDiff(models.Model):
             needs_save = True
             self._set_diff(self.diff64)
 
+            if recalculate_counts:
+                self._recalculate_line_counts(self.diff_hash)
+
         if self.parent_diff64 and not self.parent_diff_hash:
             logging.debug('Migrating FileDiff %s parent_diff data to '
                           'FileDiffData' % self.pk)
             needs_save = True
             self._set_parent_diff(self.parent_diff64)
 
+            if recalculate_counts:
+                self._recalculate_line_counts(self.parent_diff_hash)
+
         if needs_save:
             self.save()
+
+    def _recalculate_line_counts(self, diff_hash):
+        """Recalculates the line counts on the specified FileDiffData.
+
+        This requires that diff_hash is set. Otherwise, it will assert.
+        """
+        diff_hash.recalculate_line_counts(
+            self.diffset.repository.get_scmtool())
 
     def __unicode__(self):
         return u"%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,

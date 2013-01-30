@@ -13,6 +13,8 @@ class File(object):
         self.binary = False
         self.deleted = False
         self.moved = False
+        self.insert_count = 0
+        self.delete_count = 0
 
 
 class DiffParserError(Exception):
@@ -58,18 +60,28 @@ class DiffParser(object):
                 self.files.append(file)
                 i = next_linenum
             else:
-                line = self.lines[i] + '\n'
-
                 if file:
-                    file.data += line
+                    i = self.parse_diff_line(i, file)
                 else:
-                    preamble += line
-
-                i += 1
+                    preamble += self.lines[i] + '\n'
+                    i += 1
 
         logging.debug("DiffParser.parse: Finished parsing diff.")
 
         return self.files
+
+    def parse_diff_line(self, linenum, info):
+        line = self.lines[linenum]
+
+        if info.origFile is not None and info.newFile is not None:
+            if line.startswith('-'):
+                info.delete_count += 1
+            elif line.startswith('+'):
+                info.insert_count += 1
+
+        info.data += line + '\n'
+
+        return linenum + 1
 
     def parse_change_header(self, linenum):
         """
