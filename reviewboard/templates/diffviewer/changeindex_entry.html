@@ -1,5 +1,5 @@
 {% load i18n %}
-<a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.dest_filename}}</a>
+<a href="#{{file.index}}" onclick="return !gotoAnchor('{{file.index}}');">{{file.dest_filename|force_escape|escapejs}}</a>
 {% if file.dest_filename != file.depot_filename %}
  (was {{file.depot_filename}})
 {% endif %}
